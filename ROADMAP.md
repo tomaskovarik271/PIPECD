@@ -16,43 +16,42 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [x] Setup Local Development Environment (`.env` for credentials, `.gitignore`)
 *   [x] Create initial `README.md` with setup instructions.
 *   [x] Setup Supabase Project (via Supabase CLI/Dashboard)
-*   [ ] Setup Netlify Site (link to Git repo later)
-*   [ ] Setup Inngest Account/Project
+*   [x] Setup Netlify Site (link to Git repo later)
+*   [x] Setup Inngest Account/Project
 
-## Phase 1: Core Architecture Implementation
+## Phase 1: Core Architecture Implementation (Current)
 
-*   [ ] **Backend (`/lib`, Netlify Functions):**
-    *   [ ] Implement Basic GraphQL Gateway (Netlify Function `/graphql` with Apollo Server)
-        *   [ ] Basic schema definition
-        *   [ ] Health check query
-    *   [ ] Implement Basic Inngest Handler (Netlify Function `/api/inngest`)
-        *   [ ] Basic setup, respond to Inngest verification
-    *   [ ] Establish `/lib` structure for backend logic modules.
-    *   [ ] Setup Supabase Client library and configuration.
-    *   [ ] Implement basic Supabase connection test from a logic module.
-*   [ ] **Frontend (React/Vite):**
-    *   [ ] Initialize React project using Vite (`frontend/` directory).
-    *   [ ] Setup Basic Routing.
-    *   [ ] Setup GraphQL Client (e.g., Apollo Client).
-    *   [ ] Implement basic connection test to GraphQL Gateway.
-*   [ ] **Authentication:**
-    *   [ ] Integrate Supabase Auth on the Frontend (Login/Signup UI).
-    *   [ ] Implement JWT verification in the GraphQL Gateway.
-    *   [ ] Pass user context from Gateway to Backend Logic modules.
-*   [ ] **Configuration:**
-    *   [ ] Configure `netlify.toml` for functions, redirects, build settings.
-    *   [ ] Setup environment variables (local `.env`, Netlify UI).
+*   [-] **Backend (`/lib`, Netlify Functions):**
+    *   [x] Implement Basic GraphQL Gateway (Netlify Function `/graphql` with **GraphQL Yoga**)
+        *   [x] Basic schema definition
+        *   [x] Health check query
+    *   [x] Implement Basic Inngest Handler (Netlify Function `/api/inngest`)
+        *   [x] Basic setup, respond to Inngest verification
+    *   [x] Establish `/lib` structure for backend logic modules.
+    *   [x] Setup Supabase Client library and configuration.
+    *   [x] Implement basic Supabase connection test from a logic module.
+*   [-] **Frontend (React/Vite):**
+    *   [x] Initialize React project using Vite (`frontend/` directory).
+    *   [x] Setup Basic Routing.
+    *   [x] Setup GraphQL Client (e.g., `graphql-request`).
+    *   [x] Implement basic connection test to GraphQL Gateway.
+*   [-] **Authentication:**
+    *   [x] Integrate Supabase Auth on the Frontend (Login/Signup UI).
+    *   [x] Implement JWT verification in the GraphQL Gateway.
+    *   [x] Pass user context from Gateway to Backend Logic modules.
+*   [-] **Configuration:**
+    *   [x] Configure `netlify.toml` for functions, redirects, build settings.
+    *   [x] Setup environment variables (local `.env`, Netlify UI).
 
-## Phase 2: MVP Feature Development (Core CRM)
+## Phase 2: MVP Feature Development (Core CRM) (Current)
 
 *   *(Define specific MVP features here - e.g., Contact Management, Basic Deal Tracking)*
-*   [ ] **Database Schema:**
-    *   [ ] Define initial Supabase schema (e.g., `users`, `contacts`, `deals`).
-    *   [ ] Create initial Supabase Migrations.
-    *   [ ] Define initial Row Level Security (RLS) policies (default deny, grant specific access).
-*   [ ] **Backend Logic (`/lib`):**
+*   [-] **Database Schema:**
+    *   [x] Define initial Supabase schema (e.g., `users`, `contacts`, `deals`).
+    *   [x] Create initial Supabase Migrations.
+    *   [x] Define initial Row Level Security (RLS) policies (default deny, grant specific access).
+*   [-] **Backend Logic (`/lib`):**
     *   [ ] Implement logic for MVP features (CRUD operations for Contacts, Deals).
-    *   [ ] Implement input validation (`zod`).
 *   [ ] **GraphQL API (Gateway):**
     *   [ ] Define GraphQL schema (Types, Queries, Mutations) for MVP features.
     *   [ ] Implement Resolvers connecting to Backend Logic.
@@ -96,6 +95,20 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [ ] Implement Compliance Workflows (GDPR Data Erasure).
 *   [ ] Regularly review Inngest usage/cost and evaluate alternatives.
 *   [ ] Enhance Security (APQ, Operation Whitelisting).
+
+## Development Log / Issues
+
+This section tracks issues encountered during development and their status/resolution.
+
+1.  **Issue:** `netlify dev` build fails to resolve Inngest module.
+    *   **Error:** `✘ [ERROR] Could not resolve "inngest/netlify"` because the path is not listed in the package's `exports` map.
+    *   **Attempts:** Correct `tsconfig.json` (`moduleResolution: NodeNext`), explicit `node_bundler = "esbuild"` in `netlify.toml`.
+    *   **Status:** **Unresolved (Ignored for now).** Despite the build-time error, `netlify dev` seems to load the `inngest` function successfully at runtime. Will monitor if this causes issues later or blocks deployment.
+
+2.  **Issue:** `netlify dev` failed to inject `.env` variables into function context.
+    *   **Symptom:** Supabase client initialization failed with `Error: SUPABASE_URL environment variable is not set.` despite `.env` file being correct.
+    *   **Attempts:** Verified `.env` content and location, deleted `.netlify` cache directory, restarted `netlify dev` cleanly.
+    *   **Status:** **Resolved.** Restarting `netlify dev` cleanly after verifying `.env` caused it to correctly log `◈ Injected .env file env var: SUPABASE_URL` etc., and the Supabase client initialized successfully. Explicitly loading with `dotenv` was added as a temporary workaround but is likely now redundant.
 
 ---
 

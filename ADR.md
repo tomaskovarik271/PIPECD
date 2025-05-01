@@ -1,46 +1,47 @@
 # Architecture Decision Record (ADR): Custom CRM System
 
-**Status:** Proposed | **Date:** 2025-05-01
+**Status:** Proposed | **Date:** 2025-05-01 (Revised: 2025-05-26)
 
 ## 1. Context
 
-This document outlines the architectural decisions for building a custom Customer Relationship Management (CRM) system intended to replace Pipedrive. The system aims to be scalable, maintainable, secure, and ready for future expansion into adjacent business domains (e.g., Accounting, Logistics), aligning with Domain-Driven Design (DDD) principles. This ADR reflects lessons learned from previous projects and incorporates feedback on simplifying the developer experience and mitigating common risks.
+This document outlines the architectural decisions for building a custom Customer Relationship Management (CRM) system intended to replace Pipedrive. The system aims to be scalable, maintainable, secure, and ready for future expansion into adjacent business domains (e.g., Accounting, Logistics), aligning with Domain-Driven Design (DDD) principles. **The initial implementation will focus on delivering a core Minimum Viable Product (MVP) feature set** before achieving full feature parity. This ADR reflects lessons learned from previous projects and incorporates feedback on simplifying the developer experience and mitigating common risks.
 
 ## 2. Goal
 
-Build a custom CRM system leveraging a serverless microservices architecture deployed on Netlify, with robust security, compliance, and scalability features, designed for future extensibility.
+Build a custom CRM system leveraging a serverless architecture deployed on Netlify, with robust security, compliance, and scalability features, designed for future extensibility, starting with an MVP feature set.
 
 ## 3. Core Principles
 
-1.  **Microservices Architecture:** Decompose functionality into independent backend services (Netlify Functions or logic modules) aligned with DDD principles, enabling easier addition of new business domains.
-2.  **GraphQL API Layer:** Utilize a central GraphQL Gateway (as a Netlify Function) to provide a unified, typed API for the frontend, simplifying data aggregation across domains. **Decision:** Use a custom gateway, **not** Supabase `pg_graphql` directly for the main API (See ADR-001).
-3.  **Serverless First:** Leverage Netlify Functions (gateway, backend logic) and Supabase (database, auth) to minimize infrastructure management.
+1.  **Logically Decomposed Services:** Decompose functionality into independent backend logic modules (initially within a shared `/lib` structure, invoked by Netlify Functions) aligned with DDD principles, enabling easier addition of new business domains. Avoid premature optimization into many separate Netlify Functions beyond the core Gateway and Inngest handler.
+2.  **GraphQL API Layer:** Utilize a central GraphQL Gateway (as a Netlify Function) to provide a unified, typed API for the frontend, simplifying data aggregation across domains. **Decision:** Use a custom gateway (**GraphQL Yoga**), **not** Supabase `pg_graphql` directly for the main API (See ADR-001).
+3.  **Serverless First:** Leverage Netlify Functions (gateway, Inngest handler, potentially other future background tasks) and Supabase (database, auth, storage) to minimize infrastructure management.
 4.  **Local First Development:** Prioritize efficient local development and testing using `netlify dev` and `supabase start`. Local credentials obtained via `supabase status`.
-5.  **Clear Separation of Concerns:** Maintain boundaries between Frontend (UI - React/Vite), GraphQL Gateway (API - Apollo Server), Backend Logic (Domain Logic - Node/TS modules), Database (Data Persistence - Supabase/Postgres), and Authentication (Supabase Auth).
-6.  **Infrastructure as Code:** Define configurations in `netlify.toml` and manage schema via Supabase migrations.
-7.  **Security by Default:** Implement authentication (Supabase JWT), authorization (Gateway/RLS), Row Level Security, secure function defaults (`SECURITY INVOKER`), input validation, and GraphQL security measures.
+5.  **Clear Separation of Concerns:** Maintain boundaries between Frontend (UI - React/Vite), GraphQL Gateway (API - **GraphQL Yoga**), Backend Logic (Domain Logic - Node/TS modules in `/lib`), Database (Data Persistence - Supabase/Postgres), Authentication (Supabase Auth), and Asynchronous Tasks (Inngest).
+6.  **Infrastructure as Code:** Define configurations in `netlify.toml` and manage schema via Supabase migrations (using Supabase CLI workflow).
+7.  **Security by Default:** Implement authentication (Supabase JWT), authorization (Gateway checks + RLS), Row Level Security (default deny, specific grants), secure function defaults (`SECURITY INVOKER` where possible, controlled use of `service_role` or `SECURITY DEFINER` documented), rigorous input validation, and GraphQL security measures (depth/complexity limits, disable introspection in prod).
 8.  **Leverage Managed Services:** Use managed services (Supabase, Netlify, Inngest) where appropriate, but plan for potential exit strategies (See Risks & ADR-003).
-9.  **Data Integrity & Privacy:** Ensure data isolation and implement workflows for compliance (GDPR data erasure, etc.).
-10. **Automated Testing & Deployment:** Implement comprehensive testing (GraphQL, backend logic, frontend components, E2E) and leverage Netlify CI/CD.
-11. **Event-Driven Architecture:** Use asynchronous events (via Inngest - See ADR-003) for crucial cross-service/domain communication, decoupling, and handling background tasks.
+9.  **Data Integrity & Privacy:** Ensure data isolation and implement workflows for compliance (GDPR data erasure via Inngest, etc.).
+10. **Automated Testing & Deployment:** Implement a **prioritized testing strategy** (focusing on integration tests for resolvers/handlers, critical unit tests, and core E2E flows for MVP) and leverage Netlify CI/CD. Expand coverage iteratively.
+11. **Event-Driven Architecture:** Use asynchronous events (via Inngest - See ADR-003) for crucial cross-service/domain communication, decoupling, reliable background task execution (e.g., post-mutation workflows, data cleanup, compliance tasks), and future A2A communication.
 12. **Stable Dependencies:** Prioritize latest stable versions (LTS Node, non-RC libraries) and verify compatibility.
 13. **Future Extensibility:** Design architectural components (GraphQL schema, Backend Logic Modules, Events) to facilitate adding new features and business domains (See ADR-004).
 
 ## 4. Architecture Outline
 
 *   **Frontend:** React SPA (built with Vite - See ADR-002), communicates via GraphQL. Hosted on Netlify CDN.
-*   **API Layer:** GraphQL Gateway (Apollo Server on Netlify Function) at `/graphql`. Authenticates requests (Supabase JWT), performs authorization checks, validates inputs, and orchestrates data fetching/mutations by calling backend logic modules or Supabase directly for simple cases.
-*   **Backend Logic:** Domain-specific Node.js/TypeScript modules (likely in `/lib` or `/packages` monorepo structure) containing business logic, complex validation, and database interactions. Invoked by GraphQL resolvers.
-*   **Database:** Supabase (PostgreSQL) with RLS enabled. Accessed primarily by backend logic modules via Supabase client library.
+*   **API Layer:** GraphQL (**GraphQL Yoga** on Netlify Function) at `/graphql`. Authenticates requests (Supabase JWT), performs authorization checks, validates inputs, and orchestrates data fetching/mutations by calling backend logic modules or Supabase directly for simple cases.
+*   **Backend Logic:** Domain-specific Node.js/TypeScript modules located **within a `/lib` directory** in the project structure. Contains business logic, complex validation, and database interactions. Invoked by GraphQL resolvers or Inngest handlers. (Future: May refactor into a `packages/` monorepo if complexity warrants).
+*   **Database:** Supabase (PostgreSQL) with RLS enabled. Accessed primarily by backend logic modules via Supabase client library. Migrations managed via Supabase CLI.
 *   **Authentication:** Supabase Auth. JWT passed from Frontend to Gateway via `Authorization` header.
-*   **Asynchronous Workflows:** Inngest for event-driven, cross-service communication and background task processing (e.g., post-mutation workflows, data cleanup, future A2A communication bus - See ADR-003). Requires an Inngest handler Netlify Function.
+*   **Asynchronous Workflows:** Inngest for event-driven, cross-service communication and background task processing (e.g., post-mutation workflows, data cleanup, GDPR erasure, future A2A communication bus - See ADR-003). Requires an Inngest handler Netlify Function (`/api/inngest`).
 *   **File Storage:** Supabase Storage for user uploads, etc. Accessed via Supabase client library.
-*   **Deployment:** Netlify handles frontend hosting, GraphQL Gateway function, Inngest handler function, and any other potential backend Netlify Functions. CI/CD via Netlify Build/GitHub Actions.
+*   **Deployment:** Netlify handles frontend hosting, GraphQL Gateway function, Inngest handler function. CI/CD via Netlify Build/GitHub Actions. Secrets managed via Netlify environment variables (populated from `.env` locally, `.env` is gitignored).
 
 **Diagrams:**
 
-**C4 Model - Level 1: System Context**
+**(Diagrams remain the same as they accurately reflect the architecture including Frontend, Gateway, Logic (running within Function context), DB, Auth, Inngest, and Netlify)**
 
+**C4 Model - Level 1: System Context**
 ```mermaid
 graph TD
     user[User] -- Uses --> crm(Custom CRM System)
@@ -50,13 +51,12 @@ graph TD
 ```
 
 **C4 Model - Level 2: Container Diagram**
-
 ```mermaid
 graph TD
     subgraph crm [Custom CRM System]
         direction LR
         frontend["Frontend SPA\n(React/Vite)"]
-        gateway["GraphQL Gateway\n(Netlify Function / Apollo)"]
+        gateway["GraphQL Gateway\n(Netlify Function / **Yoga**))"]
         inngesthandler["Inngest Handler\n(Netlify Function)"]
         logic["Backend Logic Modules\n(Node/TS in /lib)"]
     end
@@ -78,8 +78,7 @@ graph TD
     supabase_db -- Manages --> supabase_storage
 ```
 
-**Sequence Diagram: Authenticated GraphQL Request**
-
+**Sequence Diagram: Authenticated GraphQL Request** (Remains the same)
 ```mermaid
 sequenceDiagram
     participant FE as Frontend SPA
@@ -102,8 +101,7 @@ sequenceDiagram
     GW-->>-FE: GraphQL Response / Error
 ```
 
-**Sequence Diagram: Async Event Workflow (e.g., Deal Creation)**
-
+**Sequence Diagram: Async Event Workflow (e.g., Deal Creation)** (Remains the same)
 ```mermaid
 sequenceDiagram
     participant FE as Frontend SPA
@@ -129,56 +127,52 @@ sequenceDiagram
     Handler-->>-Inngest: Acknowledge Event (200 OK)
 ```
 
-**Future Expansion:** New domains (Accounting, etc.) added as backend logic modules/services, integrated into the GraphQL schema via the Gateway. Inngest handles async communication between domains.
+**Future Expansion:** New domains (Accounting, etc.) added as backend logic modules/services (potentially transitioning to a `packages/` monorepo structure then), integrated into the GraphQL schema via the Gateway. Inngest handles async communication between domains.
 
 ## 5. Key Technology Choices & Rationale
 
 *   **Hosting & Serverless (Functions/Gateway): Netlify**
-    *   **Rationale:** Integrated platform, simplifies deployment of frontend, gateway, and backend functions. Aligns with DDD/microservices. Reduces infrastructure overhead. Good developer experience with Netlify Dev.
-*   **API Layer: GraphQL (Apollo Server on Netlify Function)**
-    *   **Rationale:** Flexible, typed API for frontend, simplifies cross-domain data aggregation. Reduces over/under-fetching. Well-positioned for future AI agent integration (e.g., providing context via MCP concepts). Provides a necessary abstraction layer over the database for security and business logic. (See ADR-001)
+    *   **Rationale:** Integrated platform, simplifies deployment of frontend, gateway, and backend functions. Aligns with logical service decomposition. Reduces infrastructure overhead. Good developer experience with Netlify Dev.
+*   **API Layer: GraphQL (GraphQL Yoga on Netlify Function)**
+    *   **Rationale:** Flexible, typed API for frontend, simplifies cross-domain data aggregation. Reduces over/under-fetching. Provides necessary abstraction layer over the database for security and business logic. Lightweight and performant, suitable for serverless environments addressing cold start concerns proactively. Well-established ecosystem. (See ADR-001).
     *   **Alternatives Considered:**
-        *   Supabase `pg_graphql`: **Rejected** for main API to provide clear separation/control layer, allow for custom business logic, enforce fine-grained authorization beyond RLS, and facilitate stitching future non-Supabase data sources. Using both `pg_graphql` and a custom gateway introduces unnecessary complexity and potential confusion.
-        *   Lighter GraphQL Servers (Yoga, Mercurius): Potential fallback if Apollo Server cold starts prove consistently problematic (>500ms p95). (See Risks).
-        *   REST API: Rejected due to potential for over/under-fetching and increased complexity in managing multiple endpoints compared to a unified GraphQL schema, especially with future domain expansion.
-    *   **Cost Considerations:** Be mindful of potential Apollo Studio costs if relying heavily on paid features. Core Apollo Server is open source.
+        *   Supabase `pg_graphql`: **Rejected** for main API (see ADR-001 rationale).
+        *   **Apollo Server**: Considered but **not chosen** as the primary due to potential cold start overhead compared to Yoga in a serverless context. Remains a viable alternative if advanced Apollo-specific features become essential.
+        *   REST API: Rejected (see original ADR).
+    *   **Cost Considerations:** GraphQL Yoga is open source.
 *   **Identity & Access Management (IAM): Supabase Auth**
-    *   **Rationale:** Managed, integrated with DB/RLS, good DX. JWT used for authenticating GraphQL requests. Supports various auth providers.
+    *   **Rationale:** Managed, integrated with DB/RLS, good DX. JWT used for authenticating GraphQL requests.
 *   **Database: Supabase (PostgreSQL)**
-    *   **Rationale:** Managed Postgres with RLS, backups, extensions. Excellent developer experience and integration with Auth/Storage.
+    *   **Rationale:** Managed Postgres with RLS, backups, extensions. Excellent DX. Migrations managed via Supabase CLI.
 *   **Asynchronous Communication: Inngest** (See ADR-003)
-    *   **Rationale:** Reliable event handling, scheduling, retries, good developer experience for decoupling domains and handling async tasks. Simplifies implementation of workflows like GDPR deletion or post-processing tasks. Well-suited as a potential future A2A communication bus.
-    *   **Risk Mitigation:** Define criteria for evaluating alternatives (e.g., managed queues like SQS, `pg_cron` + custom worker, Supabase Edge Functions with limitations) if cost, features, or vendor lock-in become significant concerns. Schedule regular review. (See Risks/Roadmap).
+    *   **Rationale:** Reliable event handling, scheduling, retries, observability for background tasks and cross-domain communication. Simplifies implementation of workflows like GDPR deletion, post-processing, and future integrations.
+    *   **Risk Mitigation:** Abstract Inngest calls behind internal service interfaces. Define criteria and schedule periodic reviews for evaluating alternatives (e.g., `pg_cron` + worker, SQS+Lambda) based on cost, features, or lock-in concerns (See Risks/Roadmap/ADR-003).
 *   **Frontend Framework: React + TypeScript + Vite** (See ADR-002)
-    *   **Rationale:** Strong ecosystem, TS typing. Vite provides superior DX, build performance, and maintenance status compared to Create React App (CRA).
+    *   **Rationale:** Strong ecosystem, typing. Vite provides superior DX/performance over CRA.
 *   **UI Component Library: Chakra UI**
-    *   **Rationale:** Accelerates development, accessible components, good composability.
-    *   **Future Consideration:** Re-evaluate if/when React Server Components (RSC) become a core requirement, potentially choosing an RSC-compatible library if needed, though current architecture focuses on a client-rendered SPA.
-*   **Dependency Versioning Strategy:** Use Node LTS (e.g., 18 or 20). Use latest stable libraries, checking compatibility (e.g., React vs. UI Kit vs. Apollo Client). Avoid Release Candidates (RCs) for critical dependencies like React in production.
+    *   **Rationale:** Accelerates development, accessible, composable. (Future consideration for RSC remains).
+*   **Dependency Versioning Strategy:** Use Node LTS. Use latest stable libraries, checking compatibility. Avoid RCs for critical dependencies.
 
 ## 6. Key Architectural Risks & Considerations
 
-*   **GraphQL Gateway Cold Starts:** Serverless functions have cold starts. **Mitigation:** Monitor p95 latency for the gateway function via Netlify logs/analytics or external monitoring. If >500ms consistently impacts UX:
-    *   Investigate Netlify Function settings (e.g., memory).
-    *   Consider Netlify Function provisioned concurrency (if available/cost-effective).
-    *   Explore lighter GraphQL servers (Yoga).
-    *   *Less Ideal:* Edge Functions (have limitations on Node APIs, execution time).
-*   **Serverless Limits:** Be mindful of Netlify Function execution time limits (e.g., 10s default, configurable up to 26s for background) and memory limits. **Mitigation:** Design resolvers efficiently. Offload long-running tasks to Inngest. Increase function timeout if necessary and justified.
-*   **GraphQL Security:** Potential for DoS via complex/malicious queries. **Mitigation:**
-    *   Implement query depth limiting (mandatory).
-    *   Implement query complexity analysis (mandatory).
-    *   Disable introspection in production (mandatory).
-    *   Consider Automatic Persisted Queries (APQ) or Operation Whitelisting for production (recommended).
-    *   Implement input validation rigorously in resolvers/logic modules.
-    *   (See `DEVELOPER_RUNBOOK.md` for implementation details).
-*   **Inngest Lock-in/Cost:** Dependency on a third-party SaaS for core async processing. **Mitigation:**
-    *   Monitor usage against pricing tiers.
-    *   Define an exit strategy: Identify specific Inngest features used (events, scheduling, retries) and evaluate alternatives (e.g., `pg_cron` + Supabase Function/worker, AWS SQS + Lambda) based on complexity and cost. Abstract Inngest calls behind internal service interfaces where feasible. Schedule periodic re-evaluation (See Roadmap). (See ADR-003).
-*   **Compliance & Data Handling (GDPR/CCPA):** Requires specific workflows for data access, portability, and especially erasure (Right to be Forgotten). **Mitigation:**
-    *   Design and implement an explicit data erasure workflow (e.g., using Inngest triggered by `auth.users` deletion hook or admin action) that removes user data from all relevant tables *and* associated Supabase Storage objects. Document this flow.
-    *   Ensure RLS and authorization logic correctly handle data access requests.
-    *   Clarify data residency requirements. If strict residency (e.g., EU-only) is needed, select the appropriate Supabase project region and verify Netlify's function execution/data processing locations align with requirements.
-*   **Monorepo Build Times:** If using a monorepo (`packages/`), CI build times may increase as the project grows. **Mitigation:** Not an immediate concern. Consider build caching tools like Nx or Turborepo *later* if build times become problematic (>10-15 mins).
-*   **Testing Complexity:** Ensuring adequate test coverage across frontend, gateway, backend logic, and database requires effort. **Mitigation:** Implement a layered testing strategy (unit, integration, E2E) as outlined in the Run-book. Automate tests in CI.
+*   **GraphQL Gateway Cold Starts:** Serverless functions have cold starts. Using GraphQL Yoga helps mitigate this compared to heavier alternatives. **Mitigation:**
+    *   Monitor p95 latency via Netlify/external monitoring. Set target (e.g., <500ms).
+    *   Implement standard optimizations (reduce dependencies, efficient resolvers).
+    *   If targets are still missed: 1) Investigate Netlify Function settings (memory), 2) Consider provisioned concurrency (cost).
+*   **Serverless Limits:** Be mindful of Netlify Function execution time (10s default) and memory limits. **Mitigation:** Design efficiently. Offload *genuinely* long tasks to Inngest. Increase timeouts judiciously.
+*   **GraphQL Security:** Potential for DoS via complex queries. **Mitigation:**
+    *   **Mandatory:** Implement query depth limiting (e.g., `graphql-depth-limit`), query complexity analysis (e.g., `graphql-validation-complexity`), disable introspection in production.
+    *   **Recommended:** Consider APQ or Operation Whitelisting later for enhanced security.
+    *   **Process:** Rigorous input validation in resolvers/logic modules (e.g., using `zod`). Document patterns in `DEVELOPER_RUNBOOK.md`.
+*   **Inngest Lock-in/Cost:** Dependency on a third-party SaaS. **Mitigation:**
+    *   Monitor usage/cost.
+    *   Abstract Inngest client calls.
+    *   Execute scheduled re-evaluation of alternatives based on pre-defined criteria (See Roadmap/ADR-003).
+*   **Compliance & Data Handling (GDPR/CCPA):** Requires specific workflows. **Mitigation:**
+    *   Design, implement, and **test** the data erasure workflow using Inngest triggered by appropriate events (e.g., user deletion request, auth hook). Document the flow, including handling associated Storage objects.
+    *   Implement RLS/authorization correctly.
+    *   Confirm Supabase/Netlify region choices meet data residency requirements.
+*   **Monorepo Build Times:** **Deferred Risk.** Starting with `/lib` simplifies initial builds. Re-evaluate if/when refactoring to a `packages/` monorepo structure; consider Nx/Turborepo at that time if build times (>10-15 mins) become problematic.
+*   **Testing Complexity:** Ensuring adequate coverage requires effort. **Mitigation:** Implement a **prioritized testing strategy for MVP:** Focus on integration tests (GraphQL resolvers, Inngest handlers connecting to a test DB), unit tests for critical/complex logic in `/lib`, and core E2E tests (e.g., using Playwright/Cypress) for essential user flows. Automate in CI. Iteratively expand coverage post-MVP.
 
---- 
+---

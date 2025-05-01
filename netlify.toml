@@ -1,0 +1,30 @@
+# netlify.toml
+
+# Base settings for all contexts
+[build]
+  # Command to build your site (if applicable, e.g., for frontend)
+  # command = "npm run build"
+  # Directory containing deploy-ready assets (frontend build output)
+  # publish = "frontend/dist"
+  # Directory containing Netlify functions
+  functions = "netlify/functions"
+
+# Optional: Specify Node.js bundler for functions
+# This might help resolve module issues like the one with inngest/netlify
+[functions]
+  node_bundler = "esbuild"
+
+# Development server settings (optional, netlify dev often auto-detects)
+# [dev]
+#   command = "npm run dev:frontend" # Command to start your frontend dev server
+#   port = 3000 # Port your frontend server runs on
+#   publish = "frontend/dist" # Fictional, often not needed if targetPort is set
+#   targetPort = 3000 # Port netlify dev should proxy to
+#   jwtRolePath = "role"
+#   jwtSecret = "YOUR_JWT_SECRET"
+
+# Redirects and rewrites (example)
+# [[redirects]]
+#   from = "/*"
+#   to = "/index.html"
+#   status = 200 
