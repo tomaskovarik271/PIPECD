@@ -1,6 +1,24 @@
-import { supabase } from './supabaseClient';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { User } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
+
+// Load env vars for URL (Anon key is not needed globally anymore for RLS writes)
+import dotenv from 'dotenv';
+dotenv.config();
+const supabaseUrl = process.env.SUPABASE_URL;
+if (!supabaseUrl) {
+  throw new Error('SUPABASE_URL environment variable is not set.');
+}
+
+// Helper to get a request-specific Supabase client instance authenticated with JWT
+function getAuthenticatedClient(accessToken: string): SupabaseClient {
+  if (!supabaseUrl) throw new Error('Supabase URL is not configured.'); // Should not happen due to check above
+  // Use the user's access token to make the request, RLS policies using auth.uid() will work
+  return createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY!, { // Need anon key for the connection itself
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    // auth: { persistSession: false } // Ensure no session persistence on server
+  });
+}
 
 // Define the shape of the contact data (matches DB and GraphQL type)
 // Consider using Zod for schema definition and validation later
@@ -24,86 +42,87 @@ function handleSupabaseError(error: any, context: string) {
   }
 }
 
-// --- Placeholder Contact Service --- 
-// TODO: Implement actual database logic using Supabase client
-
+// --- Contact Service --- 
 export const contactService = {
-  // Get all contacts for the authenticated user
-  async getContacts(userId: string) {
+  // Get all contacts - Uses global client as RLS SELECT policy uses auth.uid() derived from JWT via middleware
+  async getContacts(userId: string, accessToken: string) { // Pass token for consistency, though SELECT might work via middleware auth
     console.log('[contactService.getContacts] called for user:', userId);
+    const supabase = getAuthenticatedClient(accessToken);
     const { data, error } = await supabase
       .from('contacts')
-      .select('*') // Select all columns
-      .eq('user_id', userId) // Filter by user ID (redundant with RLS but good practice)
-      .order('created_at', { ascending: false }); // Optional: order by creation date
+      .select('*') 
+      // .eq('user_id', userId) // RLS should handle this, redundant
+      .order('created_at', { ascending: false }); 
 
     handleSupabaseError(error, 'fetching contacts');
-    return data || []; // Return fetched data or empty array
+    return data || [];
   },
 
-  // Get a single contact by ID for the authenticated user
-  async getContactById(userId: string, id: string) {
+  // Get a single contact by ID - Uses global client as RLS SELECT policy uses auth.uid() derived from JWT via middleware
+  async getContactById(userId: string, id: string, accessToken: string) { // Pass token for consistency
     console.log('[contactService.getContactById] called for user:', userId, 'id:', id);
+    const supabase = getAuthenticatedClient(accessToken);
     const { data, error } = await supabase
       .from('contacts')
       .select('*')
-      .eq('user_id', userId) // Filter by user ID
-      .eq('id', id) // Filter by contact ID
-      .single(); // Expect exactly one result or null
+      // .eq('user_id', userId) // RLS should handle this
+      .eq('id', id) // Still need to filter by specific ID
+      .single(); 
 
-    // Don't throw a GraphQLError if not found, just return null as per GQL schema
-    if (error && error.code !== 'PGRST116') { // PGRST116 = Row not found
+    if (error && error.code !== 'PGRST116') { 
        handleSupabaseError(error, 'fetching contact by ID');
     }
-    return data; // Returns the contact or null if not found/error
+    return data; 
   },
 
-  // Create a new contact for the authenticated user
-  async createContact(userId: string, input: ContactInput) {
+  // Create a new contact - Needs authenticated client for INSERT RLS policy
+  async createContact(userId: string, input: ContactInput, accessToken: string) {
     console.log('[contactService.createContact] called for user:', userId, 'input:', input);
+    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
     const { data, error } = await supabase
       .from('contacts')
-      .insert({ ...input, user_id: userId }) // Insert input data + user_id
-      .select() // Select the newly created row
-      .single(); // Expect a single row back
+      .insert({ ...input, user_id: userId }) // RLS CHECK (auth.uid() = user_id) needs authenticated client
+      .select() 
+      .single(); 
 
     handleSupabaseError(error, 'creating contact');
     if (!data) {
         throw new GraphQLError('Failed to create contact, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
     }
-    return data; // Return the newly created contact
+    return data; 
   },
 
-  // Update an existing contact by ID for the authenticated user
-  async updateContact(userId: string, id: string, input: ContactInput) {
+  // Update an existing contact - Needs authenticated client for UPDATE RLS policy
+  async updateContact(userId: string, id: string, input: ContactInput, accessToken: string) {
     console.log('[contactService.updateContact] called for user:', userId, 'id:', id, 'input:', input);
+    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
     const { data, error } = await supabase
       .from('contacts')
-      .update(input) // Update with new input data
-      .eq('user_id', userId) // Ensure user owns the record
+      .update(input) 
+      // .eq('user_id', userId) // RLS handles the check (auth.uid() = user_id)
       .eq('id', id) // Target the specific contact ID
-      .select() // Select the updated row
-      .single(); // Expect a single row back
+      .select() 
+      .single(); 
 
     handleSupabaseError(error, 'updating contact');
      if (!data) {
-        // This could happen if the ID doesn't exist or RLS prevents update
         throw new GraphQLError('Contact not found or update failed', { extensions: { code: 'NOT_FOUND' } });
     }
-    return data; // Return the updated contact
+    return data; 
   },
 
-  // Delete a contact by ID for the authenticated user
-  async deleteContact(userId: string, id: string): Promise<boolean> {
+  // Delete a contact - Needs authenticated client for DELETE RLS policy
+  async deleteContact(userId: string, id: string, accessToken: string): Promise<boolean> {
     console.log('[contactService.deleteContact] called for user:', userId, 'id:', id);
+    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
     const { error, count } = await supabase
       .from('contacts')
       .delete()
-      .eq('user_id', userId) // Ensure user owns the record
+      // .eq('user_id', userId) // RLS handles the check (auth.uid() = user_id)
       .eq('id', id); // Target the specific contact ID
 
     handleSupabaseError(error, 'deleting contact');
-    console.log('Deleted count:', count); // Log how many rows were deleted
-    return count !== null && count > 0; // Return true if deletion happened
+    console.log('Deleted count:', count);
+    return count !== null && count > 0; 
   },
 }; 

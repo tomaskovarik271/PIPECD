@@ -1,11 +1,19 @@
 # netlify.toml
 
+# Add the Inngest plugin configuration
+[[plugins]]
+  package = "netlify-plugin-inngest"
+  # Optional inputs if defaults aren't suitable:
+  # [plugins.inputs]
+  #   host = "https://my-specific-domain.com"
+  #   path = "/api/inngest" # Default is /.netlify/functions/inngest
+
 # Base settings for all contexts
 [build]
-  # Command to build your site (if applicable, e.g., for frontend)
-  # command = "npm run build"
-  # Directory containing deploy-ready assets (frontend build output)
-  # publish = "frontend/dist"
+  # Command to build your site (runs in the root, so prefix path)
+  command = "npm run build --prefix frontend"
+  # Directory (relative to root) containing deploy-ready assets
+  publish = "frontend/dist"
   # Directory containing Netlify functions
   functions = "netlify/functions"
 
@@ -14,17 +22,19 @@
 [functions]
   node_bundler = "esbuild"
 
-# Development server settings (optional, netlify dev often auto-detects)
-# [dev]
-#   command = "npm run dev:frontend" # Command to start your frontend dev server
-#   port = 3000 # Port your frontend server runs on
-#   publish = "frontend/dist" # Fictional, often not needed if targetPort is set
-#   targetPort = 3000 # Port netlify dev should proxy to
-#   jwtRolePath = "role"
-#   jwtSecret = "YOUR_JWT_SECRET"
+# Development server settings for Vite
+[dev]
+  # Explicitly run the dev script from the frontend directory
+  command = "npm run dev --prefix frontend"
+  # framework = "vite" # Commented out
+  # viteProjectDirectory = "frontend" # Commented out
+  # Port the frontend dev server (Vite) runs on
+  targetPort = 5173 # Use default Vite port
+  # Serve static assets from build output if needed (can sometimes help)
+  publish = "frontend/dist"
 
-# Redirects and rewrites (example)
-# [[redirects]]
-#   from = "/*"
-#   to = "/index.html"
-#   status = 200 
+# Redirects and rewrites (Essential for SPAs)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200 

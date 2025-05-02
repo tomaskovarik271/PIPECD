@@ -51,15 +51,19 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Create initial Supabase Migrations.
     *   [x] Define initial Row Level Security (RLS) policies (default deny, grant specific access).
 *   [-] **Backend Logic (`/lib`):**
-    *   [ ] Implement logic for MVP features (CRUD operations for Contacts, Deals).
-*   [ ] **GraphQL API (Gateway):**
-    *   [ ] Define GraphQL schema (Types, Queries, Mutations) for MVP features.
-    *   [ ] Implement Resolvers connecting to Backend Logic.
-    *   [ ] Implement authorization checks within resolvers.
-*   [ ] **Frontend (UI):**
-    *   [ ] Build UI components (using Chakra UI) for MVP features.
-    *   [ ] Integrate UI with GraphQL API (Queries/Mutations).
-    *   [ ] Implement basic state management.
+    *   [x] Implement logic for MVP features (CRUD operations for **Contacts**).
+    *   [ ] Implement logic for MVP features (CRUD operations for **Deals**).
+*   [-] **GraphQL API (Gateway):**
+    *   [x] Define GraphQL schema (Types, Queries, Mutations) for **Contacts**.
+    *   [x] Implement Resolvers connecting to Backend Logic for **Contacts**.
+    *   [x] Implement authorization checks within resolvers (via JWT context).
+    *   [x] Implement basic input validation (e.g., using Zod) for **Contacts**.
+    *   [ ] Define GraphQL schema/resolvers for **Deals**.
+*   [-] **Frontend (UI):**
+    *   [x] Build UI components (using Chakra UI) for **Contacts CRUD**.
+    *   [x] Integrate UI with GraphQL API (Queries/Mutations) for **Contacts**.
+    *   [x] Implement basic state management for **Contacts** page.
+    *   [ ] Build UI components/integration for **Deals**.
 *   [ ] **Async Workflows (Inngest):**
     *   [ ] Implement a simple async task for MVP (e.g., send a welcome email stub on user signup, or log deal creation).
     *   [ ] Define and send events from Gateway/Logic.
@@ -80,7 +84,7 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [ ] **Security Hardening:**
     *   [ ] Implement GraphQL depth/complexity limiting.
     *   [ ] Disable GraphQL introspection in production.
-    *   [ ] Review RLS policies.
+    *   [x] Review RLS policies (Done for Contacts).
 *   [ ] **Monitoring:**
     *   [ ] Setup basic monitoring for Netlify Functions (latency, errors).
 
@@ -101,14 +105,19 @@ This document outlines the development roadmap for the custom CRM system, based 
 This section tracks issues encountered during development and their status/resolution.
 
 1.  **Issue:** `netlify dev` build fails to resolve Inngest module.
-    *   **Error:** `✘ [ERROR] Could not resolve "inngest/netlify"` because the path is not listed in the package's `exports` map.
-    *   **Attempts:** Correct `tsconfig.json` (`moduleResolution: NodeNext`), explicit `node_bundler = "esbuild"` in `netlify.toml`.
-    *   **Status:** **Unresolved (Ignored for now).** Despite the build-time error, `netlify dev` seems to load the `inngest` function successfully at runtime. Will monitor if this causes issues later or blocks deployment.
+    *   **Status:** **Unresolved (Ignored for now).**
 
 2.  **Issue:** `netlify dev` failed to inject `.env` variables into function context.
-    *   **Symptom:** Supabase client initialization failed with `Error: SUPABASE_URL environment variable is not set.` despite `.env` file being correct.
-    *   **Attempts:** Verified `.env` content and location, deleted `.netlify` cache directory, restarted `netlify dev` cleanly.
-    *   **Status:** **Resolved.** Restarting `netlify dev` cleanly after verifying `.env` caused it to correctly log `◈ Injected .env file env var: SUPABASE_URL` etc., and the Supabase client initialized successfully. Explicitly loading with `dotenv` was added as a temporary workaround but is likely now redundant.
+    *   **Status:** **Resolved.**
+
+3.  **Issue:** Vite dev server (`npm run dev` in `frontend/`) failed to parse `index.html`.
+    *   **Status:** **Resolved.** Cleared Vite cache (`frontend/node_modules/.vite`).
+
+4.  **Issue:** RLS policy prevented contact creation.
+    *   **Status:** **Resolved.** Updated `contactService.ts` to use an authenticated Supabase client (via JWT) for write operations.
+
+5.  **Issue:** Generic error messages for Zod validation failures on frontend.
+    *   **Status:** **Resolved.** Configured Yoga `maskedErrors` and updated frontend `catch` blocks to display specific validation messages.
 
 ---
 

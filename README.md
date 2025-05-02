@@ -71,14 +71,15 @@ Refer to `ADR.md` for detailed architectural decisions and `ROADMAP.md` for the 
 After completing the Local Setup:
 
 1.  **Ensure Supabase is running:** If not already started from setup, run `supabase start` in the project root.
-2.  **Start Netlify Dev Server:** In the project root, run:
+2.  **Start Netlify Dev Server (Recommended):** In the project root, run:
     ```bash
     netlify dev 
     ```
-    *   This serves the backend functions (API, Inngest handler) typically at `http://localhost:8888`.
+    *   This single command serves **both** the backend functions (API, Inngest handler) typically at `http://localhost:8888` **and** the frontend application.
+    *   The frontend will likely be served on the port specified in `netlify.toml` (e.g., `5173`) if available, or the next available port (e.g., `http://localhost:5174`). Check the terminal output for the exact frontend URL.
     *   Monitor the output for errors (like the known Inngest resolution issue).
 3.  **Test Backend API:**
-    *   Open `http://localhost:8888/.netlify/functions/graphql` in your browser.
+    *   Open the backend URL `http://localhost:8888/.netlify/functions/graphql` in your browser.
     *   Use the GraphiQL interface to execute queries like:
         ```graphql
         query VerifyBackend {
@@ -87,14 +88,16 @@ After completing the Local Setup:
         }
         ```
     *   You should see a successful response confirming the API is up and connected to Supabase.
-4.  **Start Frontend Dev Server:** In a **separate terminal**, navigate to the frontend directory and run:
-    ```bash
-    cd frontend
-    npm run dev
-    ```
-    *   This starts the Vite dev server, typically at `http://localhost:5173` (check terminal output for the exact URL).
+4.  **(Optional) Start Frontend Dev Server Separately:** If you prefer to manage the frontend server independently (e.g., for specific debugging), you can:
+    *   Run the backend only: `netlify dev --target=8888` (or similar, adjust port if needed).
+    *   In a **separate terminal**, navigate to the frontend directory and run:
+      ```bash
+      cd frontend
+      npm run dev
+      ```
+    *   This starts *only* the Vite dev server, typically at `http://localhost:5173`.
 5.  **Test Frontend App & Auth:**
-    *   Open the Vite server URL (e.g., `http://localhost:5173`) in your browser.
+    *   Open the frontend URL provided by `netlify dev` (e.g., `http://localhost:5174`) or the separate Vite server (e.g., `http://localhost:5173`) in your browser.
     *   You should see the Supabase Auth UI.
     *   **Sign Up:** Create a new user via the UI. Check local Inbucket (`http://127.0.0.1:54324`) for the confirmation email if needed.
     *   **Log In:** Log in with the new credentials.

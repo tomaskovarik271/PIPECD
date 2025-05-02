@@ -67,17 +67,15 @@ PIPECD/
 (See also `README.md` section "Running Locally & Verification")
 
 1.  **Start Supabase:** Ensure Docker is running. In the project root, run `supabase start`. This starts Postgres, GoTrue, Storage, etc., locally.
-2.  **Start Backend/Netlify Dev:** In the project root, run `netlify dev`. This:
+2.  **Start Development Environment (Recommended):** In the project root, run `netlify dev`. This:
     *   Reads `netlify.toml`.
     *   Loads environment variables from the root `.env` file.
     *   Builds and serves the Netlify functions in `netlify/functions/` (typically on port 8888).
+    *   **Also proxies or runs the frontend development server.** The frontend URL will be shown in the output (e.g., `http://localhost:5174`).
     *   *Note the known `inngest/netlify` resolution error during build; monitor runtime.*
-3.  **Start Frontend Dev:** In a **separate terminal**, navigate to `cd frontend` and run `npm run dev`. This:
-    *   Starts the Vite development server (typically on port 5173).
-    *   Loads environment variables from `frontend/.env`.
-    *   Provides Hot Module Replacement (HMR) for fast UI updates.
+3.  **(Optional) Start Frontend Dev Separately:** If preferred, run the backend only using `netlify dev --target=8888` (or similar) and, in a **separate terminal**, navigate to `cd frontend` and run `npm run dev`. This starts the Vite server (typically on port 5173) with HMR.
 4.  **Access:**
-    *   Frontend App: `http://localhost:5173` (or as shown by Vite).
+    *   Frontend App: URL from `netlify dev` output (e.g., `http://localhost:5174`) or separate Vite server (`http://localhost:5173`).
     *   Backend GraphQL API (GraphiQL): `http://localhost:8888/.netlify/functions/graphql`.
     *   Local Email Catchall (Inbucket): `http://127.0.0.1:54324`.
     *   Local Supabase Studio: `http://127.0.0.1:54323`.

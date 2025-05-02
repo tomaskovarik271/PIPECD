@@ -4,13 +4,39 @@ import type { User } from '@supabase/supabase-js'; // Import User type
 import { supabase } from '../../lib/supabaseClient'; // Import Supabase client
 import { GraphQLError } from 'graphql'; // Import GraphQLError
 import { contactService } from '../../lib/contactService'; // Import the actual service
+import { z, ZodError } from 'zod'; // Import Zod and ZodError
+import { inngest } from './inngest'; // Import the Inngest client
 
 // Define GraphQL types related to User
 type GraphQLContext = {
   currentUser: User | null;
+  request: Request; // Add the original request object to context for header access
   event: HandlerEvent;
   context: HandlerContext;
 };
+
+// Helper to get token from context (or request headers)
+function getAccessToken(context: GraphQLContext): string | null {
+  const authHeader = context.request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7);
+  }
+  return null;
+}
+
+// Zod schema for ContactInput validation
+const ContactInputSchema = z.object({
+  first_name: z.string().trim().min(1, { message: "First name cannot be empty if provided" }).optional().nullable(),
+  last_name: z.string().trim().min(1, { message: "Last name cannot be empty if provided" }).optional().nullable(),
+  email: z.string().trim().email({ message: "Invalid email address" }).optional().nullable(),
+  phone: z.string().trim().optional().nullable(), // Add more specific phone validation if needed
+  company: z.string().trim().optional().nullable(),
+  notes: z.string().trim().optional().nullable(),
+}).refine(data => data.first_name || data.last_name || data.email, {
+  // Ensure at least one identifier is present
+  message: "At least a first name, last name, or email is required",
+  path: ["first_name"], // Assign error to a field for better client handling
+});
 
 // Placeholder service functions (REMOVED)
 // const contactService = {
@@ -103,45 +129,111 @@ const resolvers = {
     // --- Contact Resolvers ---
     contacts: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
       if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      return contactService.getContacts(context.currentUser.id);
+      const token = getAccessToken(context);
+      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
+      return contactService.getContacts(context.currentUser.id, token);
     },
     contact: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      return contactService.getContactById(context.currentUser.id, args.id);
+      const token = getAccessToken(context);
+      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
+      return contactService.getContactById(context.currentUser.id, args.id, token);
     },
   },
 
   Mutation: {
     createContact: async (_parent: unknown, args: { input: any }, context: GraphQLContext) => {
       if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      // TODO: Add input validation (e.g., using Zod)
-      return contactService.createContact(context.currentUser.id, args.input);
+      const token = getAccessToken(context);
+      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
+      
+      // Validate input using Zod
+      const validatedInput = ContactInputSchema.parse(args.input);
+      // Now pass validatedInput to the service
+      const newContact = await contactService.createContact(context.currentUser.id, validatedInput, token);
+
+      // Send event to Inngest AFTER successful creation
+      // Use await, but don't necessarily block the GraphQL response if sending fails
+      try {
+        await inngest.send({
+          name: 'crm/contact.created', // Event name
+          data: { // Event payload
+            contactId: newContact.id,
+            email: newContact.email,
+            firstName: newContact.first_name,
+          },
+          user: { // Pass user info if available/useful for the event
+            id: context.currentUser.id,
+            email: context.currentUser.email,
+          }
+        });
+        console.log(`Sent 'crm/contact.created' event for contact ID: ${newContact.id}`);
+      } catch (eventError) {
+        console.error("Failed to send Inngest event:", eventError);
+        // Decide if this failure should cause the mutation to fail.
+        // For logging, probably not critical, so we just log the error.
+      }
+
+      return newContact; // Return the created contact
     },
     updateContact: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext) => {
       if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      // TODO: Add input validation
-      return contactService.updateContact(context.currentUser.id, args.id, args.input);
+      const token = getAccessToken(context);
+      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
+
+      // Validate input using Zod
+      const validatedInput = ContactInputSchema.parse(args.input);
+      // Now pass validatedInput to the service
+      const updatedContact = await contactService.updateContact(context.currentUser.id, args.id, validatedInput, token);
+
+      // TODO: Optionally send crm/contact.updated event here
+
+      return updatedContact;
     },
     deleteContact: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
       if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      return contactService.deleteContact(context.currentUser.id, args.id);
+      const token = getAccessToken(context);
+      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
+      
+      const success = await contactService.deleteContact(context.currentUser.id, args.id, token);
+
+      // TODO: Optionally send crm/contact.deleted event here (if success)
+      
+      return success;
     },
   },
 };
 
+// Define the expected shape of the context passed *into* the factory by Yoga
+// Typically includes the Request object and potentially others based on environment
+interface YogaInitialParams {
+  request: Request;
+  // Include other params Yoga might pass, like the ones from server adapters
+  event?: HandlerEvent; // Netlify specific
+  context?: HandlerContext; // Netlify specific
+}
+
+// Define the final shape of the context object *returned* by the factory
+// This is what resolvers will receive
+interface ResolverContext extends YogaInitialParams { // Inherit initial params
+  currentUser: User | null;
+  // Add any other derived context properties here
+}
+
 // Create GraphQL Yoga instance with context factory
-const yoga = createYoga<GraphQLContext>({
+const yoga = createYoga<ResolverContext>({
   schema: createSchema({
     typeDefs,
     resolvers,
   }),
-  // Context factory to inject user info
-  context: async ({ request }) => {
+  // Context factory: receives initial params, returns the final ResolverContext
+  context: async (initialContext: YogaInitialParams): Promise<ResolverContext> => {
     let currentUser: User | null = null;
-    const authHeader = request.headers.get('authorization');
+    const authHeader = initialContext.request.headers.get('authorization');
+    let token: string | null = null;
 
     if (authHeader?.startsWith('Bearer ')) {
-      const token = authHeader.substring(7);
+      token = authHeader.substring(7);
       try {
         const { data: { user }, error } = await supabase.auth.getUser(token);
         if (error) {
@@ -153,16 +245,37 @@ const yoga = createYoga<GraphQLContext>({
         console.error('Unexpected error during token verification:', err);
       }
     }
-    
-    // Return the context object, including the Netlify event/context if needed later
-    // The request object itself gives access to headers, body etc.
+
+    // Return the full context object, explicitly merging initial params and derived values
     return {
-      currentUser,
-      // We might not need to pass event/context explicitly here anymore
-      // as they are usually derivable from the `request` object if needed by Yoga plugins
-      // event: ? 
-      // context: ? 
+      ...initialContext, // Pass through initial params like request, event, context
+      currentUser,       // Add the derived user
     };
+  },
+  // Configure error masking
+  maskedErrors: {
+    maskError: (error, message, isDev) => {
+      // Allow GraphQLErrors (like authentication errors) to pass through
+      if (error instanceof GraphQLError) {
+        return error;
+      }
+      // Handle Zod validation errors
+      if (error instanceof ZodError) {
+        // Combine Zod issues into a user-friendly message
+        const validationMessage = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ');
+        // Return a specific GraphQLError for validation issues
+        return new GraphQLError(`Validation Error: ${validationMessage}`, {
+          extensions: { code: 'BAD_USER_INPUT', validationErrors: error.flatten() }
+        });
+      }
+      // Mask other unexpected errors in production
+      if (!isDev) {
+        console.error('Unexpected error in GraphQL resolver:', error); // Log the original error server-side
+        return new GraphQLError('Internal Server Error', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+      // In development, return the original error for easier debugging
+      return error as Error;
+    },
   },
   // Enable/disable GraphiQL interface
   graphiql: process.env.NODE_ENV !== 'production', // Disable in production

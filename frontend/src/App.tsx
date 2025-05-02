@@ -1,4 +1,4 @@
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import { useEffect, useState } from 'react'; // Import hooks
 import { gql } from 'graphql-request'; // Import gql
 import { gqlClient } from './lib/graphqlClient'; // Import client
@@ -6,7 +6,17 @@ import { supabase } from './lib/supabase'; // Import frontend supabase client
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import type { Session } from '@supabase/supabase-js';
-import './App.css';
+import ContactsPage from './pages/ContactsPage'; // Import the new page
+import { 
+  Box, 
+  Container, 
+  Heading, 
+  Text, 
+  Link, // Use Chakra Link
+  Button, 
+  HStack, 
+  // Divider // Keep Divider as it's used in AppContent - Removing temporarily
+} from '@chakra-ui/react';
 
 // Define the health query
 const HEALTH_QUERY = gql`
@@ -32,7 +42,7 @@ interface MeQueryResult {
   } | null;
 }
 
-// Placeholder Components
+// --- Page Components (using Chakra UI) ---
 function HomePage() {
   const [healthStatus, setHealthStatus] = useState<string>('Checking...');
   const [userInfo, setUserInfo] = useState<string>('Fetching...');
@@ -63,39 +73,41 @@ function HomePage() {
   }, []); 
 
   return (
-    <div>
-      <h2>Home Page</h2>
-      <p>Welcome to the CRM!</p>
-      <p>
+    <Box p={4}>
+      <Heading as="h2" size="lg" mb={4}>
+        Home Page
+      </Heading>
+      <Text mb={2}>Welcome to the CRM!</Text>
+      <Text mb={2}>
         <strong>API Health:</strong> {healthStatus}
-      </p>
-      <p>
+      </Text>
+      <Text>
         <strong>User Status:</strong> {userInfo}
-      </p>
-    </div>
+      </Text>
+    </Box>
   );
 }
 
 function AboutPage() {
   return (
-    <div>
-      <h2>About Page</h2>
-      <p>This is a custom CRM system.</p>
-    </div>
+    <Box p={4}>
+      <Heading as="h2" size="lg" mb={4}>About Page</Heading>
+      <Text>This is a custom CRM system built with React, Vite, Netlify, Supabase, GraphQL Yoga, and Chakra UI.</Text>
+    </Box>
   );
 }
 
 function NotFoundPage() {
   return (
-    <div>
-      <h2>404 - Not Found</h2>
-      <p>The page you are looking for does not exist.</p>
-      <Link to="/">Go Home</Link>
-    </div>
+    <Box p={4}>
+      <Heading as="h2" size="lg" mb={4}>404 - Not Found</Heading>
+      <Text mb={4}>The page you are looking for does not exist.</Text>
+      <Link as={RouterLink} to="/" color="teal.500">Go Home</Link>
+    </Box>
   );
 }
 
-// --- Component for Logged-In State ---
+// --- Component for Logged-In State (using Chakra UI) ---
 function AppContent() {
   const handleSignOut = async () => {
     const { error } = await supabase.auth.signOut();
@@ -105,35 +117,33 @@ function AppContent() {
   };
 
   return (
-    <div className="App">
-      <nav>
-        <ul>
-          <li>
-            <Link to="/">Home</Link>
-          </li>
-          <li>
-            <Link to="/about">About</Link>
-          </li>
-          <li>
-            <button onClick={handleSignOut}>Sign Out</button>
-          </li>
-        </ul>
-      </nav>
+    <Box>
+      <Box as="nav" bg="gray.100" p={4}>
+        <HStack spacing={4}>
+          <Link as={RouterLink} to="/">Home</Link>
+          <Link as={RouterLink} to="/contacts">Contacts</Link>
+          <Link as={RouterLink} to="/about">About</Link>
+          <Button size="sm" onClick={handleSignOut}>Sign Out</Button>
+        </HStack>
+      </Box>
 
-      <hr />
+      {/* <Divider /> */}
 
-      <main>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="*" element={<NotFoundPage />} /> {/* Catch-all route */} 
-        </Routes>
-      </main>
-    </div>
+      <Container maxW="container.xl" mt={4}>
+        <main>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/contacts" element={<ContactsPage />} />
+            <Route path="/about" element={<AboutPage />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </main>
+      </Container>
+    </Box>
   );
 }
 
-// --- Main App Component with Auth Logic ---
+// --- Main App Component with Auth Logic (Auth UI uses Chakra theme via ThemeSupa) ---
 function App() {
   const [session, setSession] = useState<Session | null>(null);
 
@@ -157,14 +167,13 @@ function App() {
   if (!session) {
     // Render Supabase Auth UI if not logged in
     return (
-      <div style={{ maxWidth: '400px', margin: '2rem auto' }}>
+      <Container maxW="sm" mt="10vh">
         <Auth
           supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }} // Optional theme
-          providers={['google', 'github']} // Example providers
-          // Add other options as needed (e.g., socialLayout)
+          appearance={{ theme: ThemeSupa }} // ThemeSupa integrates well with Chakra
+          providers={['google', 'github']}
         />
-      </div>
+      </Container>
     );
   } else {
     // Render the main application content if logged in
