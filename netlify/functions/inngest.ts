@@ -59,19 +59,26 @@ const logContactCreation = inngest.createFunction(
 // Export functions in an array (plugin might look for this)
 export const functions = [helloWorld, logContactCreation];
 
-// Add a minimal handler export to satisfy Netlify Dev
+// Add back the minimal handler export to satisfy Netlify Dev
 // The Inngest Dev Server + Plugin should handle the actual serving.
 export const handler: Handler = async (event, context) => {
-  console.warn('[inngest.ts handler] Invoked directly by Netlify Dev - this should ideally be handled by Inngest Dev Server/Plugin.');
+  console.warn('[inngest.ts handler] Invoked directly by Netlify Dev - this should ideally be handled by Inngest infrastructure (Plugin/Dev Server).');
   // Return a simple response to avoid crashing Netlify Dev
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ message: 'Inngest functions defined; placeholder handler invoked.' }),
+    headers: { 'Content-Type': 'application/json' },
+  };
+};
+
+// Remove the minimal handler export again
+/*
+export const handler: Handler = async (event, context) => {
+  console.warn('[inngest.ts handler] Invoked directly by Netlify Dev - this should ideally be handled by Inngest Dev Server/Plugin.');
   return {
     statusCode: 200,
     body: JSON.stringify({ message: 'Inngest functions defined; serving handled by Inngest infrastructure.' }),
     headers: { 'Content-Type': 'application/json' },
   };
 };
-
-// Remove the explicit handler export
-/*
-export const handler = serve({ ... });
 */ 
