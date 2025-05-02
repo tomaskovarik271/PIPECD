@@ -56,8 +56,40 @@ const logContactCreation = inngest.createFunction(
   }
 );
 
+// Function to log deal creation
+const logDealCreation = inngest.createFunction(
+  { id: 'log-deal-creation' }, // Function ID
+  { event: 'crm/deal.created' }, // Event trigger
+  async ({ event, step }) => {
+    // Log received event details
+    console.log(`[Inngest Fn: log-deal-creation] Received event '${event.name}'`);
+    console.log('[Inngest Fn: log-deal-creation] Event Data:', event.data);
+    console.log('[Inngest Fn: log-deal-creation] User Info:', event.user);
+
+    // Example step (optional)
+    await step.sleep('wait-a-moment', '100ms'); 
+
+    const logMessage = `Deal created: ID=${event.data.dealId}, Name=${event.data.name}, Stage=${event.data.stage}, Amount=${event.data.amount}, ContactID=${event.data.contactId}`; 
+    console.log(`[Inngest Fn: log-deal-creation] Processed: ${logMessage}`);
+
+    // You could add steps here to interact with other services, send emails, etc.
+    // Example: Fetch contact details if contactId exists
+    // if (event.data.contactId) {
+    //   await step.run('fetch-contact-details', async () => {
+    //      // NOTE: Need a way to get an authenticated Supabase client here.
+    //      // This might involve passing the user's JWT in the event or using a service role key.
+    //      // For now, just logging.
+    //      console.log(`[Inngest Fn: log-deal-creation] Would fetch details for contact ${event.data.contactId}`);
+    //      return { fetched: true }; 
+    //   });
+    // }
+
+    return { success: true, message: logMessage }; // Return value from function run
+  }
+);
+
 // Export functions in an array (plugin might look for this)
-export const functions = [helloWorld, logContactCreation];
+export const functions = [helloWorld, logContactCreation, logDealCreation];
 
 // Add back the minimal handler export to satisfy Netlify Dev
 // The Inngest Dev Server + Plugin should handle the actual serving.

@@ -52,39 +52,40 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Define initial Row Level Security (RLS) policies (default deny, grant specific access).
 *   [-] **Backend Logic (`/lib`):**
     *   [x] Implement logic for MVP features (CRUD operations for **Contacts**).
-    *   [ ] Implement logic for MVP features (CRUD operations for **Deals**).
+    *   [x] Implement logic for MVP features (CRUD operations for **Deals**).
 *   [-] **GraphQL API (Gateway):**
     *   [x] Define GraphQL schema (Types, Queries, Mutations) for **Contacts**.
     *   [x] Implement Resolvers connecting to Backend Logic for **Contacts**.
     *   [x] Implement authorization checks within resolvers (via JWT context).
     *   [x] Implement basic input validation (e.g., using Zod) for **Contacts**.
-    *   [ ] Define GraphQL schema/resolvers for **Deals**.
+    *   [x] Define GraphQL schema/resolvers for **Deals**.
+    *   [x] Implement input validation (Zod) for **Deals**.
 *   [-] **Frontend (UI):**
     *   [x] Build UI components (using Chakra UI) for **Contacts CRUD**.
     *   [x] Integrate UI with GraphQL API (Queries/Mutations) for **Contacts**.
     *   [x] Implement basic state management for **Contacts** page.
-    *   [ ] Build UI components/integration for **Deals**.
+    *   [x] Build UI components/integration for **Deals CRUD** (Table, Create/Edit Modals).
 *   [ ] **Async Workflows (Inngest):**
-    *   [-] Implement a simple async task for MVP (e.g., send a welcome email stub on user signup, or log deal creation).
-    *   [x] Define and send events from Gateway/Logic (Implemented for `crm/contact.created`).
-    *   [-] Implement corresponding logic in the Inngest Handler (Basic handler defined; full local testing deferred).
+    *   [x] Define and send events from Gateway/Logic (`crm/contact.created`, `crm/deal.created`).
+    *   [-] Implement corresponding logic in the Inngest Handler (`logContactCreation`, `logDealCreation`). 
+        *   Note: Full E2E testing of handler *execution* requires deployment; local testing limited to verifying event *sending* via `npx inngest-cli dev`.
 
 ## Phase 3: Testing & Deployment
 
 *   [ ] **Testing Strategy (Initial Implementation):**
     *   [ ] Setup Testing Framework (e.g., Vitest for unit/integration, Playwright/Cypress for E2E).
     *   [ ] Write Integration tests for critical GraphQL Resolvers & Inngest Handlers.
-    *   [ ] Write Unit tests for key Backend Logic modules.
-    *   [ ] Write core E2E tests for MVP user flows (e.g., login, create contact).
+    *   [ ] Write Unit tests for key Backend Logic modules (`contactService`, `dealService`).
+    *   [ ] Write core E2E tests for MVP user flows (login, create/edit/delete contact, create/edit/delete deal).
 *   [ ] **CI/CD:**
     *   [ ] Configure Netlify Build pipeline.
     *   [ ] Add automated testing step to CI.
     *   [ ] Setup preview deployments on Netlify.
-    *   [ ] Perform initial Production Deployment.
+    *   [x] Perform initial Production Deployment. (Already live)
 *   [ ] **Security Hardening:**
     *   [ ] Implement GraphQL depth/complexity limiting.
     *   [ ] Disable GraphQL introspection in production.
-    *   [x] Review RLS policies (Done for Contacts).
+    *   [x] Review RLS policies (Done for Contacts & Deals).
 *   [ ] **Monitoring:**
     *   [ ] Setup basic monitoring for Netlify Functions (latency, errors).
 

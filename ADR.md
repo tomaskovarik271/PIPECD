@@ -129,6 +129,29 @@ sequenceDiagram
 
 **Future Expansion:** New domains (Accounting, etc.) added as backend logic modules/services (potentially transitioning to a `packages/` monorepo structure then), integrated into the GraphQL schema via the Gateway. Inngest handles async communication between domains.
 
+### 4.1 Conceptual Service Decomposition (Domain Modules)
+
+> **Purpose:** Provide a clear mapping between Pipedrive‑like business capabilities and our DDD‑aligned backend logic modules. During MVP, these will live in `/lib` as isolated folders (`/lib/deals`, `/lib/leads`, …). They may later graduate to separate services or packages.
+
+|  #  | Domain Module (Conceptual Microservice) | Core Responsibilities                                | Initial MVP Scope                           |
+| :-: | --------------------------------------- | ---------------------------------------------------- | ------------------------------------------- |
+|  1  | **Lead Management**                     | Capture, store, qualify leads → promote to deals.    | ✅ *In* (basic lead inbox, convert to deal)  |
+|  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ *In* (CRUD implemented)                   |
+|  3  | **Pipeline Management**                 | Define pipelines & stages; validate deal stage flow. | ✅ *In* (single default pipeline)            |
+|  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ *In* (basic CRUD)                         |
+|  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ *In* (tasks & reminders only)             |
+|  6  | **Project (Post‑Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ *Later* (post‑MVP)                        |
+|  7  | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ *Later* (post‑MVP)                        |
+|  8  | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | ⬜ *Later* (phase 2)                         |
+|  9  | **Workflow Automation**                 | Rule‑based triggers/actions across modules.          | ⬜ *Later* (phase 2)                         |
+|  10 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ *Later* (phase 2)                         |
+|  11 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ *In* (basic user table via Supabase Auth) |
+|  12 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ *In* (owner / company‑wide)               |
+|  13 | **Integration Gateway**                 | Third‑party connectors, webhooks, API management.    | ⬜ *Later* (phase 2)                         |
+|  14 | **Document Management**                 | Files, proposals, e‑signature, attachment storage.   | ⬜ *Later* (phase 2)                         |
+
+*Legend: ✅ Included in MVP · ⬜ Deferred*
+
 ## 5. Key Technology Choices & Rationale
 
 *   **Hosting & Serverless (Functions/Gateway): Netlify**

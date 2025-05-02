@@ -17,9 +17,10 @@ The system utilizes a serverless architecture based on:
 **Current Status:**
 *   Core infrastructure is set up (Supabase, Netlify, Inngest).
 *   Authentication (Email/Password, GitHub) is working.
-*   Contact CRUD (Create, Read, Update, Delete) functionality is implemented with backend validation.
-*   Inngest event sending is implemented for contact creation (logging).
-*   Basic UI (Chakra UI) implemented for Auth and Contacts.
+*   Contact CRUD implemented.
+*   Deal CRUD implemented.
+*   Inngest event sending implemented for Contact & Deal creation (simple logging handlers).
+*   Basic UI (Chakra UI) implemented for Auth, Contacts, and Deals.
 *   Production deployment is live.
 
 Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technical details, and `ROADMAP.md` for the development plan and issue log.
@@ -64,17 +65,18 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
 ### Verification (Local)
 
 1.  Open the frontend URL from `netlify dev` output.
-2.  Sign up/Log in using Email/Password or GitHub (GitHub requires local Supabase config). 
+2.  Sign up/Log in using Email/Password or GitHub (GitHub requires local Supabase config).
 3.  Verify Home page shows `API Health: Ok` and correct user status.
 4.  Navigate to the Contacts page, create, edit, and delete a contact.
+5.  Navigate to the Deals page, create, edit, and delete a deal. (Requires manual addition of test data locally - see `DEVELOPER_GUIDE.md`)
 
 ### Local Development Notes & Issues
 
 *   **Inngest Build Warning:** You may see `Could not resolve "inngest/netlify"` during `netlify dev` startup. This is currently benign; the functions load correctly.
 *   **Inngest Local Workflow:** 
-    *   **Sending Events:** Works correctly from functions running within `netlify dev` (e.g., from the GraphQL API).
-    *   **Viewing Sent Events:** Run the Inngest Dev Server (`npx inngest-cli dev`) in a separate terminal. Access its web UI (usually `http://localhost:8288`) to see events as they are sent by your application.
-    *   **Testing Function Execution:** Reliably testing the *execution* of the Inngest handler function (`netlify/functions/inngest.ts`) triggered by the Dev Server is problematic when the handler is running inside `netlify dev` (due to proxy limitations). Rely on deployed environments (see below) for full end-to-end workflow testing.
+    *   **Sending Events:** Works correctly from functions running within `netlify dev`.
+    *   **Viewing Sent Events:** Run the Inngest Dev Server (`npx inngest-cli dev`) in a separate terminal to verify events are sent.
+    *   **Testing Function Execution:** Due to limitations with `netlify dev`, testing the *execution* logic within your Inngest functions (in `netlify/functions/inngest.ts`) requires deploying to Netlify (Preview or Prod) and checking logs there.
 
 ## Deployment (Production)
 

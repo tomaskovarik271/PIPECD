@@ -6,7 +6,8 @@ import { supabase } from './lib/supabase'; // Import frontend supabase client
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import type { Session } from '@supabase/supabase-js';
-import ContactsPage from './pages/ContactsPage'; // Import the new page
+import ContactsPage from './pages/ContactsPage'; // Import the Contacts page
+import DealsPage from './pages/DealsPage'; // Import the Deals page
 import { 
   Box, 
   Container, 
@@ -122,6 +123,7 @@ function AppContent() {
         <HStack spacing={4}>
           <Link as={RouterLink} to="/">Home</Link>
           <Link as={RouterLink} to="/contacts">Contacts</Link>
+          <Link as={RouterLink} to="/deals">Deals</Link>
           <Link as={RouterLink} to="/about">About</Link>
           <Button size="sm" onClick={handleSignOut}>Sign Out</Button>
         </HStack>
@@ -134,6 +136,7 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/contacts" element={<ContactsPage />} />
+            <Route path="/deals" element={<DealsPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

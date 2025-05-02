@@ -125,4 +125,33 @@ export const contactService = {
     console.log('Deleted count:', count);
     return count !== null && count > 0; 
   },
+
+  // Get a simple list of contacts (ID and name) for dropdowns
+  async getContactListForUser(userId: string, accessToken: string): Promise<{ id: string; name: string }[]> {
+    console.log('[contactService.getContactListForUser] called for user:', userId);
+    const supabase = getAuthenticatedClient(accessToken);
+    // Select only necessary fields and construct a name
+    const { data, error } = await supabase
+      .from('contacts')
+      .select('id, first_name, last_name, email') // Fetch fields needed for display name
+      // RLS handles filtering by user_id
+      .order('last_name', { ascending: true })
+      .order('first_name', { ascending: true });
+
+    handleSupabaseError(error, 'fetching contact list');
+
+    // Format the data for dropdown usage
+    return (data || []).map(contact => ({
+      id: contact.id,
+      // Construct a display name (e.g., "Last, First" or "Email")
+      name: 
+        contact.last_name && contact.first_name 
+        ? `${contact.last_name}, ${contact.first_name}` 
+        : contact.first_name 
+        ? contact.first_name 
+        : contact.last_name 
+        ? contact.last_name
+        : contact.email || 'Unnamed Contact'
+    }));
+  },
 }; 
