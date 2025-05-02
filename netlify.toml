@@ -10,8 +10,8 @@
 
 # Base settings for all contexts
 [build]
-  # Command to build your site (runs in the root, so prefix path)
-  command = "npm run build --prefix frontend"
+  # Command to build your site: cd into frontend, install deps, then build
+  command = "cd frontend && npm install && npm run build"
   # Directory (relative to root) containing deploy-ready assets
   publish = "frontend/dist"
   # Directory containing Netlify functions
