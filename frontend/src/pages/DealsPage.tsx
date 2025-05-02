@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { gql } from 'graphql-request';
 import {
   Box,
   Heading,
@@ -19,10 +20,7 @@ import {
   IconButton,
   HStack,
   useToast,
-  Link as ChakraLink,
 } from '@chakra-ui/react';
-// Import the GraphQL client and gql tag
-import { gql } from 'graphql-request';
 import { gqlClient } from '../lib/graphqlClient';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal'; // Import EditDealModal
