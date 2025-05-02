@@ -77,7 +77,7 @@ PIPECD/
     *   Backend GraphQL API (GraphiQL): `http://localhost:8888/.netlify/functions/graphql`.
     *   Local Email Catchall (Inbucket): `http://127.0.0.1:54324`.
     *   Local Supabase Studio: `http://127.0.0.1:54323`.
-    *   Inngest Dev Server UI (run separately): `npx inngest-cli dev` (view events at `http://localhost:8288`).
+    *   Inngest Dev Server UI: Run `npx inngest-cli dev` in a separate terminal. Access UI at `http://localhost:8288` to view locally sent events.
 
 8.  **(Optional) Configure Local OAuth Providers:** To test social logins (like GitHub) locally:
     *   **Create a separate OAuth App:** Go to the provider's developer settings (e.g., GitHub Settings -> Developer settings -> OAuth Apps) and create a *new* OAuth application specifically for local development (e.g., "PipeCD Dev"). **Do not reuse production credentials.**
@@ -120,10 +120,57 @@ PIPECD/
 *   **Inngest:**
     *   Event sending (`graphql.ts`) works locally and in prod.
     *   Event handling (`inngest.ts`) relies on `INNGEST_SIGNING_KEY` (local `.env` or Netlify env var).
-    *   Local function *execution* testing via `netlify dev` is unreliable; test full flow in prod or using dedicated test environments.
+    *   Local function *execution* testing via `netlify dev` is unreliable due to Netlify Dev proxy limitations. 
+    *   **Recommended Local Workflow:** Use `netlify dev` for general development. Run `npx inngest-cli dev` separately to monitor *sent* events via its UI (`http://localhost:8288`). Test the full event -> handler execution flow in deployed environments (e.g., Netlify deploy previews or production).
 *   **Netlify:**
     *   Build command handles frontend dependency installation.
     *   Functions runtime depends on environment variables set in Netlify UI.
 *   **TypeScript:** Used for both backend (`/lib`, `/netlify/functions`) and frontend (`/frontend`), configured via respective `tsconfig.json` files.
 
---- 
+## 6. Troubleshooting
+
+This section logs common issues encountered during development or deployment and their resolutions.
+
+**Local Development (`netlify dev`, Vite, Supabase Local):**
+
+1.  **Issue:** `netlify dev` build fails to resolve Inngest module (`Could not resolve "inngest/netlify"`).
+    *   **Resolution:** This seems benign and related to Inngest package exports. The build succeeds in production, and functions still load locally. Can be ignored for now.
+
+2.  **Issue:** `netlify dev` failed to inject `.env` variables into function context.
+    *   **Resolution:** Ensure `.env` file exists in the root and `netlify dev` is run from the root. If issues persist, consider adding explicit `dotenv.config()` at the start of function files (e.g., `lib/supabaseClient.ts`), although this shouldn't normally be needed.
+
+3.  **Issue:** Vite dev server (`npm run dev` in `frontend/`) failed to parse `index.html`.
+    *   **Resolution:** Clear the Vite cache: `rm -rf frontend/node_modules/.vite`.
+
+4.  **Issue:** RLS policy prevents data creation/modification (e.g., contact creation).
+    *   **Resolution:** Backend operations modifying data protected by RLS policies involving `auth.uid()` need to use an authenticated Supabase client. Pass the user's JWT from the frontend/GraphQL context to the backend service and create a temporary authenticated client instance for the operation (see `lib/contactService.ts` example using `getAuthenticatedClient`).
+
+5.  **Issue:** Inngest function execution not reliably testable locally with `netlify dev`.
+    *   **Resolution (Workaround):** Use `npx inngest-cli dev` to view *sent* events. Test full execution flow in deployed environments due to `netlify dev` proxy limitations.
+
+**Deployment (Netlify):**
+
+6.  **Issue:** Netlify build fails due to missing frontend dependencies (TypeScript errors like `Cannot find module...`).
+    *   **Resolution:** Ensure the `build.command` in `netlify.toml` includes `cd frontend && npm install && npm run build` to install frontend dependencies before building.
+
+7.  **Issue:** Netlify build fails due to TypeScript errors (e.g., `TS6133: '...' is declared but its value is never read`).
+    *   **Resolution:** Fix the specific TypeScript error in the frontend code (e.g., remove unused imports/variables). Ensure local `tsc` checks pass before pushing.
+
+8.  **Issue:** Deployed frontend shows errors: `Missing env variable: VITE_SUPABASE_URL` or `VITE_SUPABASE_ANON_KEY`.
+    *   **Resolution:** Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` environment variables (with **production** values) to the Netlify UI (**Site config -> Build & deploy -> Environment**). Trigger a redeploy.
+
+9.  **Issue:** GitHub (or other OAuth) login fails with redirect to provider sign-in and/or incorrect `state` URL mismatch.
+    *   **Resolution:** Ensure the **production** Supabase project has the correct OAuth Provider **Client ID/Secret** configured (**Authentication -> Providers**) AND the correct **Site URL** set (**Authentication -> URL Configuration**).
+
+10. **Issue:** OAuth login redirects back to app but doesn't log the user in (token not processed).
+    *   **Resolution:** Ensure the frontend Supabase client (`frontend/src/lib/supabase.ts`) is configured with `detectSessionInUrl: true` (which is the default, so ensure it's not explicitly set to `false`).
+
+11. **Issue:** Deployed frontend shows 502 Bad Gateway errors when calling GraphQL API.
+    *   **Resolution:** Add required **runtime** environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` using **production** values) to the Netlify UI (**Site config -> Build & deploy -> Environment**). Check Netlify Function logs for specific startup errors.
+
+12. **Issue:** Deployed API/pages fail with `relation "public.<table>" does not exist`.
+    *   **Resolution:** Apply local database migrations to the **production** Supabase database using the Supabase CLI: `supabase link --project-ref <prod-ref>` followed by `supabase migration up --linked`.
+
+---
+
+*This guide is a living document...* 

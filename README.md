@@ -71,7 +71,10 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
 ### Local Development Notes & Issues
 
 *   **Inngest Build Warning:** You may see `Could not resolve "inngest/netlify"` during `netlify dev` startup. This is currently benign; the functions load correctly.
-*   **Inngest Function Execution:** While `inngest.send()` works locally, testing the triggered *execution* of the Inngest function (`netlify/functions/inngest.ts`) within the `netlify dev` environment is unreliable due to proxy limitations. Use the Inngest Dev Server UI (`npx inngest-cli dev`) to view *sent* events locally, but rely on deployed environments (see below) for end-to-end workflow testing.
+*   **Inngest Local Workflow:** 
+    *   **Sending Events:** Works correctly from functions running within `netlify dev` (e.g., from the GraphQL API).
+    *   **Viewing Sent Events:** Run the Inngest Dev Server (`npx inngest-cli dev`) in a separate terminal. Access its web UI (usually `http://localhost:8288`) to see events as they are sent by your application.
+    *   **Testing Function Execution:** Reliably testing the *execution* of the Inngest handler function (`netlify/functions/inngest.ts`) triggered by the Dev Server is problematic when the handler is running inside `netlify dev` (due to proxy limitations). Rely on deployed environments (see below) for full end-to-end workflow testing.
 
 ## Deployment (Production)
 
