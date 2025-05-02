@@ -17,7 +17,6 @@ import {
   VStack,
   HStack,
   IconButton,
-  Spacer,
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import CreateContactForm from '../components/CreateContactForm';
