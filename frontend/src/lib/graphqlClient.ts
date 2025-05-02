@@ -8,6 +8,9 @@ const endpoint = import.meta.env.DEV
   ? 'http://localhost:8888/.netlify/functions/graphql' // Use the typical netlify dev port
   : '/.netlify/functions/graphql'; // Relative path for production
 
+console.log("GraphQL Endpoint determined:", endpoint); // ADDED FOR DEBUGGING
+console.log("Is DEV environment?", import.meta.env.DEV); // ADDED FOR DEBUGGING
+
 // Create and export the GraphQL client instance
 export const gqlClient = new GraphQLClient(endpoint, {
   // Dynamically set headers before each request
