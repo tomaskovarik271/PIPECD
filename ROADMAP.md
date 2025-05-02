@@ -65,9 +65,9 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Implement basic state management for **Contacts** page.
     *   [ ] Build UI components/integration for **Deals**.
 *   [ ] **Async Workflows (Inngest):**
-    *   [ ] Implement a simple async task for MVP (e.g., send a welcome email stub on user signup, or log deal creation).
-    *   [ ] Define and send events from Gateway/Logic.
-    *   [ ] Implement corresponding logic in the Inngest Handler.
+    *   [-] Implement a simple async task for MVP (e.g., send a welcome email stub on user signup, or log deal creation).
+    *   [x] Define and send events from Gateway/Logic (Implemented for `crm/contact.created`).
+    *   [-] Implement corresponding logic in the Inngest Handler (Basic handler defined; full local testing deferred).
 
 ## Phase 3: Testing & Deployment
 
@@ -105,7 +105,7 @@ This document outlines the development roadmap for the custom CRM system, based 
 This section tracks issues encountered during development and their status/resolution.
 
 1.  **Issue:** `netlify dev` build fails to resolve Inngest module.
-    *   **Status:** **Unresolved (Ignored for now).**
+    *   **Status:** **Unresolved (Ignored for now).** Build succeeds in production.
 
 2.  **Issue:** `netlify dev` failed to inject `.env` variables into function context.
     *   **Status:** **Resolved.**
@@ -118,6 +118,30 @@ This section tracks issues encountered during development and their status/resol
 
 5.  **Issue:** Generic error messages for Zod validation failures on frontend.
     *   **Status:** **Resolved.** Configured Yoga `maskedErrors` and updated frontend `catch` blocks to display specific validation messages.
+
+6.  **Issue:** Inngest function execution not reliably testable locally with `netlify dev`.
+    *   **Status:** **Workaround.** Event *sending* is verified. Local *execution* testing deferred due to `netlify dev` proxy limitations. Full workflow to be tested in deployed environments.
+
+7.  **Issue:** Netlify build failed due to missing frontend dependencies.
+    *   **Status:** **Resolved.** Updated `netlify.toml` build command to `cd frontend && npm install && npm run build`.
+
+8.  **Issue:** Netlify build failed due to unused variable (`Spacer`) causing TypeScript error.
+    *   **Status:** **Resolved.** Removed unused import from `ContactsPage.tsx`.
+
+9.  **Issue:** Deployed frontend showed errors: `Missing env variable: VITE_SUPABASE_URL`.
+    *   **Status:** **Resolved.** Added `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` environment variables to Netlify UI.
+
+10. **Issue:** GitHub OAuth login failed with redirect to GitHub sign-in and incorrect `state` URL.
+    *   **Status:** **Resolved.** Configured GitHub OAuth Provider Client ID/Secret and correct Site URL in production Supabase project dashboard.
+
+11. **Issue:** GitHub OAuth login redirected back to app but failed to establish session (token not in storage).
+    *   **Status:** **Resolved.** Removed `detectSessionInUrl: false` from frontend Supabase client options in `frontend/src/lib/supabase.ts`.
+
+12. **Issue:** Deployed frontend showed 502 Bad Gateway errors when calling GraphQL API.
+    *   **Status:** **Resolved.** Added required runtime environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`) to Netlify UI.
+
+13. **Issue:** Deployed Contacts page failed with `relation "public.contacts" does not exist`.
+    *   **Status:** **Resolved.** Applied database migrations to production Supabase project using `supabase link --project-ref <ref>` and `supabase migration up --linked`.
 
 ---
 
