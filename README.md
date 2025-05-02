@@ -77,9 +77,7 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
     *   **Sending Events:** Works correctly from functions running within `netlify dev`.
     *   **Viewing Sent Events:** Run the Inngest Dev Server (`npx inngest-cli dev`) in a separate terminal to verify events are sent.
     *   **Testing Function Execution:** Due to limitations with `netlify dev`, testing the *execution* logic within your Inngest functions (in `netlify/functions/inngest.ts`) requires deploying to Netlify (Preview or Prod) and checking logs there.
-*   **Testing:** Vitest is configured for both frontend and backend unit/integration tests.
-    *   Run frontend tests: `cd frontend && npm test`
-    *   Run backend tests: `npm test` (from project root)
+*   **Testing:** Unit/integration tests cover frontend components (Vitest/RTL), backend services (Vitest/mocks), and GraphQL resolvers (Vitest/mocks).
 
 ## Deployment (Production)
 

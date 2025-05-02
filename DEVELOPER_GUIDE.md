@@ -196,7 +196,7 @@ This section logs common issues encountered during development or deployment and
 
 This project uses [Vitest](https://vitest.dev/) as the primary framework for unit and integration testing.
 
-### Frontend Testing (`frontend/`)
+### Frontend Testing (`frontend/src/**/*.test.tsx`)
 
 *   **Location:** Tests for React components reside within the `frontend/src` directory, typically colocated with the component or in a `__tests__` subdirectory (e.g., `frontend/src/pages/DealsPage.test.tsx`).
 *   **Framework:** Vitest + React Testing Library (`@testing-library/react`).
@@ -215,6 +215,54 @@ This project uses [Vitest](https://vitest.dev/) as the primary framework for uni
     *   `npm test`: Run all tests (found via `include` pattern in config).
     *   `npm run test:ui`: Run tests in the interactive Vitest UI.
 *   **Mocks:** External dependencies like the `@supabase/supabase-js` client are mocked using `vi.mock()` at the top of the test file to isolate the unit under test (see `lib/dealService.test.ts` for an example).
+
+### Vitest for Backend Services (`lib/**/*.test.ts`)
+
+*   **Location:** Tests for backend services (`lib/`) should be placed alongside the service code (e.g., `lib/contactService.test.ts`).
+*   **Framework:** Vitest (running in Node.js environment).
+*   **Configuration:** `vitest.config.ts` in the project root configures the backend test runner.
+*   **Running Tests:** Run from the **project root** directory:
+    *   `npm test`: Run all tests (found via `include` pattern in config).
+    *   `npm run test:ui`: Run tests in the interactive Vitest UI.
+*   **Mocks:** External dependencies like the `@supabase/supabase-js` client are mocked using `vi.mock()` at the top of the test file to isolate the unit under test (see `lib/contactService.test.ts` for an example).
+
+### Vitest for GraphQL Resolvers (`netlify/functions/graphql.test.ts`)
+
+*   **Location:** Tests for GraphQL resolvers (`netlify/functions/graphql.ts`) should be placed alongside the resolver code (e.g., `netlify/functions/graphql.test.ts`).
+*   **Framework:** Vitest (running in Node.js environment).
+*   **Configuration:** `vitest.config.ts` in the project root configures the backend test runner.
+*   **Running Tests:** Run from the **project root** directory:
+    *   `npm test`: Run all tests (found via `include` pattern in config).
+    *   `npm run test:ui`: Run tests in the interactive Vitest UI.
+*   **Mocks:** External dependencies like the `@supabase/supabase-js` client are mocked using `vi.mock()` at the top of the test file to isolate the unit under test (see `netlify/functions/graphql.test.ts` for an example).
+
+## Deployment
+
+-   **Netlify:** Automatically deploys the `main` branch (Frontend + Functions).
+-   **Supabase:** Migrations need to be applied manually to the production database using `supabase migration up --linked` after linking the CLI (`supabase link --project-ref <your-prod-project-ref>`).
+
+## Key Concepts / Decisions
+
+*   **GraphQL (Yoga + `graphql-request`):**
+    *   Backend uses GraphQL Yoga for its performance in serverless environments.
+    *   Schema is defined directly in `graphql.ts` (could be moved to separate `.graphql` files later).
+    *   Resolvers call functions/services potentially located in `/lib`.
+    *   Authentication is handled via JWT in the `Authorization: Bearer` header, verified in the Yoga `context` factory using `supabase.auth.getUser()`.
+    *   Frontend uses `graphql-request` for simple, direct query/mutation execution. Middleware injects the auth token.
+*   **Supabase:**
+    *   **Auth:** Ensure Production Supabase has correct Provider keys and Site URL config.
+    *   **Migrations:** Emphasize manual application to production via linked CLI.
+    *   **RLS:** Policies defined in migrations apply to both local and prod (once migrated).
+    *   **Clients:** Backend uses root `.env` (local) or Netlify function env vars (prod). Frontend uses `VITE_` vars baked in at build time.
+*   **Inngest:**
+    *   Event sending (`graphql.ts` for `crm/contact.created`, `crm/deal.created`) works locally and in prod.
+    *   Event handling function definitions (`inngest.ts`) rely on `INNGEST_SIGNING_KEY` for security in deployed environments.
+    *   **Local Handler Execution:** Due to limitations with `netlify dev` proxying, reliably triggering and debugging the *execution* of Inngest functions locally is problematic. 
+    *   **Recommended Local Workflow:** Use `netlify dev` for general development. Run `npx inngest-cli dev` separately to monitor *sent* events via its UI (`http://localhost:8288`). **Verify event handler execution logic in deployed environments** (e.g., Netlify deploy previews or production) by checking Netlify Function logs or adding temporary detailed logging within the Inngest function itself.
+*   **Netlify:**
+    *   Build command handles frontend dependency installation.
+    *   Functions runtime depends on environment variables set in Netlify UI.
+*   **TypeScript:** Used for both backend (`/lib`, `/netlify/functions`) and frontend (`/frontend`), configured via respective `tsconfig.json` files.
 
 ---
 
