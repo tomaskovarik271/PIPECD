@@ -21,7 +21,7 @@ Build a custom CRM system leveraging a serverless architecture deployed on Netli
 7.  **Security by Default:** Implement authentication (Supabase JWT), authorization (Gateway checks + RLS), Row Level Security (default deny, specific grants), secure function defaults (`SECURITY INVOKER` where possible, controlled use of `service_role` or `SECURITY DEFINER` documented), rigorous input validation, and GraphQL security measures (depth/complexity limits, disable introspection in prod).
 8.  **Leverage Managed Services:** Use managed services (Supabase, Netlify, Inngest) where appropriate, but plan for potential exit strategies (See Risks & ADR-003).
 9.  **Data Integrity & Privacy:** Ensure data isolation and implement workflows for compliance (GDPR data erasure via Inngest, etc.).
-10. **Automated Testing & Deployment:** Implement a **prioritized testing strategy** (focusing on integration tests for resolvers/handlers, critical unit tests, and core E2E flows for MVP) and leverage Netlify CI/CD. Expand coverage iteratively.
+10. **Automated Testing & Deployment:** Implement a **prioritized testing strategy** (using Vitest for unit/integration tests, focusing on resolvers/handlers and critical logic; plus core E2E flows for MVP) and leverage Netlify CI/CD. Expand coverage iteratively.
 11. **Event-Driven Architecture:** Use asynchronous events (via Inngest - See ADR-003) for crucial cross-service/domain communication, decoupling, reliable background task execution (e.g., post-mutation workflows, data cleanup, compliance tasks), and future A2A communication.
 12. **Stable Dependencies:** Prioritize latest stable versions (LTS Node, non-RC libraries) and verify compatibility.
 13. **Future Extensibility:** Design architectural components (GraphQL schema, Backend Logic Modules, Events) to facilitate adding new features and business domains (See ADR-004).
@@ -129,28 +129,28 @@ sequenceDiagram
 
 **Future Expansion:** New domains (Accounting, etc.) added as backend logic modules/services (potentially transitioning to a `packages/` monorepo structure then), integrated into the GraphQL schema via the Gateway. Inngest handles async communication between domains.
 
-### 4.1 Conceptual Service Decomposition (Domain Modules)
+### 4.1 Conceptual Service Decomposition (Domain Modules)
 
 > **Purpose:** Provide a clear mapping between Pipedrive‑like business capabilities and our DDD‑aligned backend logic modules. During MVP, these will live in `/lib` as isolated folders (`/lib/deals`, `/lib/leads`, …). They may later graduate to separate services or packages.
 
-|  #  | Domain Module (Conceptual Microservice) | Core Responsibilities                                | Initial MVP Scope                           |
+|  #  | Domain Module (Conceptual Microservice) | Core Responsibilities                                | Initial MVP Scope                           |
 | :-: | --------------------------------------- | ---------------------------------------------------- | ------------------------------------------- |
-|  1  | **Lead Management**                     | Capture, store, qualify leads → promote to deals.    | ✅ *In* (basic lead inbox, convert to deal)  |
-|  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ *In* (CRUD implemented)                   |
-|  3  | **Pipeline Management**                 | Define pipelines & stages; validate deal stage flow. | ✅ *In* (single default pipeline)            |
-|  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ *In* (basic CRUD)                         |
-|  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ *In* (tasks & reminders only)             |
-|  6  | **Project (Post‑Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ *Later* (post‑MVP)                        |
-|  7  | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ *Later* (post‑MVP)                        |
-|  8  | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | ⬜ *Later* (phase 2)                         |
-|  9  | **Workflow Automation**                 | Rule‑based triggers/actions across modules.          | ⬜ *Later* (phase 2)                         |
-|  10 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ *Later* (phase 2)                         |
-|  11 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ *In* (basic user table via Supabase Auth) |
-|  12 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ *In* (owner / company‑wide)               |
-|  13 | **Integration Gateway**                 | Third‑party connectors, webhooks, API management.    | ⬜ *Later* (phase 2)                         |
-|  14 | **Document Management**                 | Files, proposals, e‑signature, attachment storage.   | ⬜ *Later* (phase 2)                         |
+|  1  | **Lead Management**                     | Capture, store, qualify leads → promote to deals.    | ✅ *In* (basic lead inbox, convert to deal)  |
+|  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ *In* (CRUD implemented)                   |
+|  3  | **Pipeline Management**                 | Define pipelines & stages; validate deal stage flow. | ✅ *In* (single default pipeline)            |
+|  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ *In* (basic CRUD)                         |
+|  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ *In* (tasks & reminders only)             |
+|  6  | **Project (Post-Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ *Later* (post-MVP)                        |
+|  7  | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ *Later* (post-MVP)                        |
+|  8  | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | ⬜ *Later* (phase 2)                         |
+|  9  | **Workflow Automation**                 | Rule-based triggers/actions across modules.          | ⬜ *Later* (phase 2)                         |
+|  10 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ *Later* (phase 2)                         |
+|  11 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ *In* (basic user table via Supabase Auth) |
+|  12 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ *In* (owner / company-wide)               |
+|  13 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ *Later* (phase 2)                         |
+|  14 | **Document Management**                 | Files, proposals, e-signature, attachment storage.   | ⬜ *Later* (phase 2)                         |
 
-*Legend: ✅ Included in MVP · ⬜ Deferred*
+*Legend: ✅ Included in MVP · ⬜ Deferred*
 
 ## 5. Key Technology Choices & Rationale
 
@@ -175,6 +175,11 @@ sequenceDiagram
 *   **UI Component Library: Chakra UI**
     *   **Rationale:** Accelerates development, accessible, composable. (Future consideration for RSC remains).
 *   **Dependency Versioning Strategy:** Use Node LTS. Use latest stable libraries, checking compatibility. Avoid RCs for critical dependencies.
+*   **Process:** Rigorous input validation in resolvers/logic modules (e.g., using `zod`). Document patterns in `DEVELOPER_GUIDE.md`.
+*   **Inngest Lock-in/Cost:** Dependency on a third-party SaaS. **Mitigation:**
+    *   Monitor usage/cost.
+    *   Abstract Inngest client calls.
+*   **Testing Complexity:** Ensuring adequate coverage requires effort. **Mitigation:** Implement a **prioritized testing strategy for MVP:** Use Vitest for integration tests (GraphQL resolvers, Inngest handlers connecting to a test DB or mocked services) and unit tests (critical/complex logic in `/lib`). Add core E2E tests (e.g., using Playwright/Cypress) for essential user flows. Automate selected tests in CI. Iteratively expand coverage post-MVP.
 
 ## 6. Key Architectural Risks & Considerations
 
@@ -186,7 +191,7 @@ sequenceDiagram
 *   **GraphQL Security:** Potential for DoS via complex queries. **Mitigation:**
     *   **Mandatory:** Implement query depth limiting (e.g., `graphql-depth-limit`), query complexity analysis (e.g., `graphql-validation-complexity`), disable introspection in production.
     *   **Recommended:** Consider APQ or Operation Whitelisting later for enhanced security.
-    *   **Process:** Rigorous input validation in resolvers/logic modules (e.g., using `zod`). Document patterns in `DEVELOPER_RUNBOOK.md`.
+    *   **Process:** Rigorous input validation in resolvers/logic modules (e.g., using `zod`). Document patterns in `DEVELOPER_GUIDE.md`.
 *   **Inngest Lock-in/Cost:** Dependency on a third-party SaaS. **Mitigation:**
     *   Monitor usage/cost.
     *   Abstract Inngest client calls.
@@ -196,6 +201,6 @@ sequenceDiagram
     *   Implement RLS/authorization correctly.
     *   Confirm Supabase/Netlify region choices meet data residency requirements.
 *   **Monorepo Build Times:** **Deferred Risk.** Starting with `/lib` simplifies initial builds. Re-evaluate if/when refactoring to a `packages/` monorepo structure; consider Nx/Turborepo at that time if build times (>10-15 mins) become problematic.
-*   **Testing Complexity:** Ensuring adequate coverage requires effort. **Mitigation:** Implement a **prioritized testing strategy for MVP:** Focus on integration tests (GraphQL resolvers, Inngest handlers connecting to a test DB), unit tests for critical/complex logic in `/lib`, and core E2E tests (e.g., using Playwright/Cypress) for essential user flows. Automate in CI. Iteratively expand coverage post-MVP.
+*   **Testing Complexity:** Ensuring adequate coverage requires effort. **Mitigation:** Implement a **prioritized testing strategy for MVP:** Use Vitest for integration tests (GraphQL resolvers, Inngest handlers connecting to a test DB or mocked services) and unit tests (critical/complex logic in `/lib`). Add core E2E tests (e.g., using Playwright/Cypress) for essential user flows. Automate selected tests in CI. Iteratively expand coverage post-MVP.
 
 ---

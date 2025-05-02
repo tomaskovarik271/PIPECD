@@ -72,16 +72,23 @@ This document outlines the development roadmap for the custom CRM system, based 
 
 ## Phase 3: Testing & Deployment
 
-*   [ ] **Testing Strategy (Initial Implementation):**
-    *   [ ] Setup Testing Framework (e.g., Vitest for unit/integration, Playwright/Cypress for E2E).
+*   [-] **Testing Strategy (Initial Implementation):**
+    *   [-] Setup Testing Framework (Vitest for unit/integration):
+        *   [x] Install Vitest & dependencies (Frontend - `frontend/`)
+        *   [x] Configure Vitest (Frontend - `vite.config.ts`, `setupTests.ts`)
+        *   [x] Add initial React component test (`DealsPage.test.tsx`)
+        *   [x] Install Vitest (Backend - Root)
+        *   [x] Configure Vitest (Backend - `vitest.config.ts`)
+        *   [x] Add initial service test (`dealService.test.ts` with mocks)
+    *   [ ] Setup Testing Framework (Playwright/Cypress for E2E).
     *   [ ] Write Integration tests for critical GraphQL Resolvers & Inngest Handlers.
-    *   [ ] Write Unit tests for key Backend Logic modules (`contactService`, `dealService`).
+    *   [-] Write Unit tests for key Backend Logic modules (`contactService`, `dealService` - *started*).
     *   [ ] Write core E2E tests for MVP user flows (login, create/edit/delete contact, create/edit/delete deal).
 *   [ ] **CI/CD:**
-    *   [ ] Configure Netlify Build pipeline.
-    *   [ ] Add automated testing step to CI.
+    *   [x] Configure Netlify Build pipeline (Basic setup done).
+    *   [ ] Add automated testing step to CI (Frontend & Backend tests).
     *   [ ] Setup preview deployments on Netlify.
-    *   [x] Perform initial Production Deployment. (Already live)
+    *   [x] Perform initial Production Deployment (Already live).
 *   [ ] **Security Hardening:**
     *   [ ] Implement GraphQL depth/complexity limiting.
     *   [ ] Disable GraphQL introspection in production.

@@ -192,6 +192,30 @@ This section logs common issues encountered during development or deployment and
 15. **Issue:** Deployed API/pages fail with `relation "public.<table>" does not exist`.
     *   **Resolution:** Apply local database migrations to the **production** Supabase database using the Supabase CLI: `supabase link --project-ref <prod-ref>` followed by `supabase migration up --linked`.
 
+## 7. Testing
+
+This project uses [Vitest](https://vitest.dev/) as the primary framework for unit and integration testing.
+
+### Frontend Testing (`frontend/`)
+
+*   **Location:** Tests for React components reside within the `frontend/src` directory, typically colocated with the component or in a `__tests__` subdirectory (e.g., `frontend/src/pages/DealsPage.test.tsx`).
+*   **Framework:** Vitest + React Testing Library (`@testing-library/react`).
+*   **Configuration:** `frontend/vite.config.ts` includes the `test` block. Global setup (like importing `@testing-library/jest-dom/vitest`) is done in `frontend/src/setupTests.ts`.
+*   **Running Tests:** Navigate to the `frontend` directory:
+    *   `npm test`: Run all tests in the console.
+    *   `npm run test:ui`: Run tests in the interactive Vitest UI.
+*   **Mocks:** Network requests (e.g., `gqlClient`) and potentially complex hooks/components (like `useToast`) are mocked using `vi.mock()` within test files.
+
+### Backend Testing (Root `/`)
+
+*   **Location:** Tests for shared library modules (`lib/`) and potentially Netlify function handlers (`netlify/functions/`) should be placed alongside the code they test (e.g., `lib/dealService.test.ts`).
+*   **Framework:** Vitest (running in Node.js environment).
+*   **Configuration:** `vitest.config.ts` in the project root configures the backend test runner.
+*   **Running Tests:** Run from the **project root** directory:
+    *   `npm test`: Run all tests (found via `include` pattern in config).
+    *   `npm run test:ui`: Run tests in the interactive Vitest UI.
+*   **Mocks:** External dependencies like the `@supabase/supabase-js` client are mocked using `vi.mock()` at the top of the test file to isolate the unit under test (see `lib/dealService.test.ts` for an example).
+
 ---
 
 *This guide is a living document...* 
