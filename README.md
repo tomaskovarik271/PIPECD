@@ -21,6 +21,8 @@ The system utilizes a serverless architecture based on:
 *   Deal CRUD implemented.
 *   Inngest event sending implemented for Contact & Deal creation (simple logging handlers).
 *   Basic UI (Chakra UI) implemented for Auth, Contacts, and Deals.
+*   Unit/Integration tests implemented for backend services and GraphQL resolvers (Vitest).
+*   Basic E2E testing setup (Playwright) with login test implemented.
 *   Production deployment is live.
 
 Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technical details, and `ROADMAP.md` for the development plan and issue log.
@@ -77,7 +79,9 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
     *   **Sending Events:** Works correctly from functions running within `netlify dev`.
     *   **Viewing Sent Events:** Run the Inngest Dev Server (`npx inngest-cli dev`) in a separate terminal to verify events are sent.
     *   **Testing Function Execution:** Due to limitations with `netlify dev`, testing the *execution* logic within your Inngest functions (in `netlify/functions/inngest.ts`) requires deploying to Netlify (Preview or Prod) and checking logs there.
-*   **Testing:** Unit/integration tests cover frontend components (Vitest/RTL), backend services (Vitest/mocks), and GraphQL resolvers (Vitest/mocks).
+*   **Testing:** 
+    *   Unit/integration tests cover frontend components (Vitest/RTL), backend services (Vitest/mocks), and GraphQL resolvers (Vitest/mocks). Run backend tests with `npm test` and frontend tests with `cd frontend && npm test`.
+    *   End-to-end tests are set up using Playwright. Run with `npm run test:e2e`. Currently, only a basic login test exists.
 
 ## Deployment (Production)
 

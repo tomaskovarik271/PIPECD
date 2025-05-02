@@ -194,9 +194,9 @@ This section logs common issues encountered during development or deployment and
 
 ## 7. Testing
 
-This project uses [Vitest](https://vitest.dev/) as the primary framework for unit and integration testing.
+This project uses a combination of [Vitest](https://vitest.dev/) for unit/integration testing and [Playwright](https://playwright.dev/) for end-to-end (E2E) testing.
 
-### Frontend Testing (`frontend/src/**/*.test.tsx`)
+### Frontend Unit/Integration Testing (`frontend/` using Vitest)
 
 *   **Location:** Tests for React components reside within the `frontend/src` directory, typically colocated with the component or in a `__tests__` subdirectory (e.g., `frontend/src/pages/DealsPage.test.tsx`).
 *   **Framework:** Vitest + React Testing Library (`@testing-library/react`).
@@ -206,7 +206,7 @@ This project uses [Vitest](https://vitest.dev/) as the primary framework for uni
     *   `npm run test:ui`: Run tests in the interactive Vitest UI.
 *   **Mocks:** Network requests (e.g., `gqlClient`) and potentially complex hooks/components (like `useToast`) are mocked using `vi.mock()` within test files.
 
-### Backend Testing (Root `/`)
+### Backend Unit/Integration Testing (Root `/` using Vitest)
 
 *   **Location:** Tests for shared library modules (`lib/`) and potentially Netlify function handlers (`netlify/functions/`) should be placed alongside the code they test (e.g., `lib/dealService.test.ts`).
 *   **Framework:** Vitest (running in Node.js environment).
@@ -216,25 +216,17 @@ This project uses [Vitest](https://vitest.dev/) as the primary framework for uni
     *   `npm run test:ui`: Run tests in the interactive Vitest UI.
 *   **Mocks:** External dependencies like the `@supabase/supabase-js` client are mocked using `vi.mock()` at the top of the test file to isolate the unit under test (see `lib/dealService.test.ts` for an example).
 
-### Vitest for Backend Services (`lib/**/*.test.ts`)
+### End-to-End Testing (Root `/` using Playwright)
 
-*   **Location:** Tests for backend services (`lib/`) should be placed alongside the service code (e.g., `lib/contactService.test.ts`).
-*   **Framework:** Vitest (running in Node.js environment).
-*   **Configuration:** `vitest.config.ts` in the project root configures the backend test runner.
+*   **Location:** E2E tests reside in the root `e2e/` directory (e.g., `e2e/auth.spec.ts`).
+*   **Framework:** Playwright (`@playwright/test`).
+*   **Configuration:** `playwright.config.ts` in the project root configures the test runner, browsers, and automatically starts the local development server (`netlify dev`) via the `webServer` option.
 *   **Running Tests:** Run from the **project root** directory:
-    *   `npm test`: Run all tests (found via `include` pattern in config).
-    *   `npm run test:ui`: Run tests in the interactive Vitest UI.
-*   **Mocks:** External dependencies like the `@supabase/supabase-js` client are mocked using `vi.mock()` at the top of the test file to isolate the unit under test (see `lib/contactService.test.ts` for an example).
-
-### Vitest for GraphQL Resolvers (`netlify/functions/graphql.test.ts`)
-
-*   **Location:** Tests for GraphQL resolvers (`netlify/functions/graphql.ts`) should be placed alongside the resolver code (e.g., `netlify/functions/graphql.test.ts`).
-*   **Framework:** Vitest (running in Node.js environment).
-*   **Configuration:** `vitest.config.ts` in the project root configures the backend test runner.
-*   **Running Tests:** Run from the **project root** directory:
-    *   `npm test`: Run all tests (found via `include` pattern in config).
-    *   `npm run test:ui`: Run tests in the interactive Vitest UI.
-*   **Mocks:** External dependencies like the `@supabase/supabase-js` client are mocked using `vi.mock()` at the top of the test file to isolate the unit under test (see `netlify/functions/graphql.test.ts` for an example).
+    *   `npm run test:e2e`: Run all E2E tests headless in the console (using Chromium by default).
+    *   `npm run test:e2e:ui`: Run tests in the interactive Playwright UI mode for debugging.
+    *   `npm run test:e2e:report`: Open the HTML report generated after a test run.
+*   **Current Scope:** As of now, only a basic authentication test (successful login) is implemented. Tests for signup, CRUD operations (Contacts, Deals), etc., are pending.
+*   **Prerequisites:** E2E tests often require specific data to exist (e.g., a login test needs a user account). Currently, this requires manual setup in the local Supabase instance (e.g., creating `test-e2e@example.com`). Future work should include automated database seeding.
 
 ## Deployment
 

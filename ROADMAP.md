@@ -80,10 +80,18 @@ This document outlines the development roadmap for the custom CRM system, based 
         *   [x] Install Vitest (Backend - Root)
         *   [x] Configure Vitest (Backend - `vitest.config.ts`)
         *   [x] Add initial service test (`dealService.test.ts` with mocks)
-    *   [ ] Setup Testing Framework (Playwright/Cypress for E2E).
-    *   [ ] Write Integration tests for critical GraphQL Resolvers & Inngest Handlers.
-    *   [-] Write Unit tests for key Backend Logic modules (`contactService`, `dealService` - *started*).
-    *   [ ] Write core E2E tests for MVP user flows (login, create/edit/delete contact, create/edit/delete deal).
+    *   [-] Setup Testing Framework (Playwright/Cypress for E2E):
+        *   [x] Install Playwright & dependencies
+        *   [x] Configure Playwright (`playwright.config.ts`)
+        *   [x] Add E2E test scripts to `package.json`
+    *   [x] Write Integration tests for critical GraphQL Resolvers & Inngest Handlers.
+    *   [-] Write Unit tests for key Backend Logic modules (`contactService`, `dealService` - *started*). 
+        *   Note: Basic component unit tests might still be missing.
+    *   [-] Write core E2E tests for MVP user flows: 
+        *   [x] Basic Auth Flow (Login)
+        *   [ ] Basic Auth Flow (Signup)
+        *   [ ] Contacts CRUD Flow
+        *   [ ] Deals CRUD Flow
 *   [ ] **CI/CD:**
     *   [x] Configure Netlify Build pipeline (Basic setup done).
     *   [ ] Add automated testing step to CI (Frontend & Backend tests).
