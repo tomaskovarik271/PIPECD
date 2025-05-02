@@ -79,6 +79,11 @@ PIPECD/
     *   Local Supabase Studio: `http://127.0.0.1:54323`.
     *   Inngest Dev Server UI (run separately): `npx inngest-cli dev` (view events at `http://localhost:8288`).
 
+8.  **(Optional) Configure Local OAuth Providers:** To test social logins (like GitHub) locally:
+    *   **Create a separate OAuth App:** Go to the provider's developer settings (e.g., GitHub Settings -> Developer settings -> OAuth Apps) and create a *new* OAuth application specifically for local development (e.g., "PipeCD Dev"). **Do not reuse production credentials.**
+    *   **Set Callback URL:** Configure the OAuth app's "Authorization callback URL" to point to your local Supabase instance's callback endpoint. Find this URL in your local Supabase Studio (**Authentication -> Providers -> GitHub/Google/etc.**) or construct it using the `Auth Callback URL` shown in `supabase status` (usually `http://127.0.0.1:54321/auth/v1/callback`).
+    *   **Configure Supabase Locally:** Open local Supabase Studio (`http://127.0.0.1:54323`). Navigate to **Authentication -> Providers**. Enable the desired provider (e.g., GitHub) and enter the **Client ID** and **Client Secret** obtained from the *development* OAuth app you created in the previous step. Save the provider settings.
+
 ## 4. Production Deployment Workflow
 
 1.  **Push to `main`:** Netlify automatically triggers a build and deploy from the `main` branch.
