@@ -19,7 +19,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     // Automatically refresh the token when expired
     autoRefreshToken: true,
-    // Supabase Auth UI or manual login handles session detection
-    detectSessionInUrl: false, 
+    // Let the client automatically detect the session in the URL (Default is true)
   },
 }); 
