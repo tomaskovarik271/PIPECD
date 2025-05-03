@@ -8,7 +8,7 @@ The system utilizes a serverless architecture based on:
 
 *   **Frontend:** React (Vite) SPA hosted on Netlify
 *   **API:** GraphQL Gateway (**GraphQL Yoga**) running as a Netlify Function (`netlify/functions/graphql.ts`)
-*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `contactService.ts`)
+*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`)
 *   **Database:** Supabase (PostgreSQL) with RLS
 *   **Authentication:** Supabase Auth (Email/Password, GitHub configured)
 *   **Async Tasks:** Inngest (`netlify/functions/inngest.ts`)
@@ -17,12 +17,14 @@ The system utilizes a serverless architecture based on:
 **Current Status:**
 *   Core infrastructure is set up (Supabase, Netlify, Inngest).
 *   Authentication (Email/Password, GitHub) is working.
-*   Contact CRUD implemented.
+*   Person CRUD implemented (Refactored from Contact, uses Apollo Client).
 *   Deal CRUD implemented.
-*   Inngest event sending implemented for Contact & Deal creation (simple logging handlers).
-*   Basic UI (Chakra UI) implemented for Auth, Contacts, and Deals.
-*   Unit/Integration tests implemented for backend services and GraphQL resolvers (Vitest).
-*   Basic E2E testing setup (Playwright) with login test implemented.
+*   Organization CRUD implemented.
+*   Lead CRUD implemented.
+*   Inngest event sending implemented for Person & Deal creation (simple logging handlers).
+*   Basic UI (Chakra UI) implemented for Auth, People, Organizations, Deals, and Leads.
+*   Unit/Integration tests implemented for backend services (`lib/`), frontend components (`DealsPage.tsx` partially), and GraphQL resolvers (`graphql.test.ts`).
+*   Basic E2E testing setup (Playwright) with login and basic CRUD navigation flows implemented.
 *   Production deployment is live.
 
 Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technical details, and `ROADMAP.md` for the development plan and issue log.
@@ -67,10 +69,12 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
 ### Verification (Local)
 
 1.  Open the frontend URL from `netlify dev` output.
-2.  Sign up/Log in using Email/Password or GitHub (GitHub requires local Supabase config).
-3.  Verify Home page shows `API Health: Ok` and correct user status.
-4.  Navigate to the Contacts page, create, edit, and delete a contact.
-5.  Navigate to the Deals page, create, edit, and delete a deal. (Requires manual addition of test data locally - see `DEVELOPER_GUIDE.md`)
+2.  Sign up/Log in using Email/Password or GitHub.
+3.  Verify Home page shows correct user status (API Health removed from default view).
+4.  Navigate to the People page, create, edit, and delete a person.
+5.  Navigate to the Organizations page, create, edit, and delete an organization.
+6.  Navigate to the Deals page, create, edit, and delete a deal.
+7.  Navigate to the Leads page, create, edit, and delete a lead.
 
 ### Local Development Notes & Issues
 
@@ -80,8 +84,8 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
     *   **Viewing Sent Events:** Run the Inngest Dev Server (`npx inngest-cli dev`) in a separate terminal to verify events are sent.
     *   **Testing Function Execution:** Due to limitations with `netlify dev`, testing the *execution* logic within your Inngest functions (in `netlify/functions/inngest.ts`) requires deploying to Netlify (Preview or Prod) and checking logs there.
 *   **Testing:** 
-    *   Unit/integration tests cover frontend components (Vitest/RTL), backend services (Vitest/mocks), and GraphQL resolvers (Vitest/mocks). Run backend tests with `npm test` and frontend tests with `cd frontend && npm test`.
-    *   End-to-end tests are set up using Playwright. Run with `npm run test:e2e`. Currently, only a basic login test exists.
+    *   Unit/integration tests cover frontend components (Vitest/RTL - DealsPage partially tested), backend services (Vitest/mocks), and GraphQL resolvers (Vitest/mocks). Run all Vitest tests with `npm test` (or `npm run test:lib`, `npm run test:frontend`, `npm run test:gql` for specific suites).
+    *   End-to-end tests are set up using Playwright. Run with `npm run test:e2e`. Currently covers basic login and CRUD navigation flows.
 
 ## Deployment (Production)
 

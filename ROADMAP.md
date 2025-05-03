@@ -5,7 +5,7 @@ This document outlines the development roadmap for the custom CRM system, based 
 **Legend:**
 *   [ ] To Do
 *   [x] Done
-*   [-] In Progress
+*   [-] In Progress / Partially Done
 
 ## Phase 0: Project Setup & Foundation (Completed)
 
@@ -68,7 +68,7 @@ This document outlines the development roadmap for the custom CRM system, based 
 
 ## Phase 3: Contact Model Enhancement (Completed)
 
-*   *(Enhance core contact management towards Pipedrive parity: People vs. Organizations)*
+*   *(Enhanced core contact management towards Pipedrive parity: People vs. Organizations. Refactoring, tests, and deployment completed.)*
 *   [x] **Database Schema:**
     *   [x] Define `organizations` table schema.
     *   [x] Modify `contacts` table (renamed to `people`, add `organization_id` FK).
@@ -85,30 +85,32 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Update Person forms and views to manage organization link.
     *   [x] Create UI components/pages for managing Organizations.
     *   [x] Update frontend GraphQL calls.
+    *   [x] Refactored `PeoplePage.tsx` for consistency (useQuery, Table).
 
 ## Phase 4: Testing, Deployment & Hardening (Ongoing)
 
 *   *(Testing and hardening efforts for existing and new features)*
 *   [-] **Testing Strategy Implementation:**
     *   [x] Setup Testing Framework (Vitest & Playwright setup).
-    *   [x] Write Integration tests for critical GraphQL Resolvers (MVP - needs recreation/update).
-    *   [x] Write Unit tests for key Backend Logic modules (`personService`, `dealService`, `organizationService`).
+    *   [x] Write Integration tests for critical GraphQL Resolvers.
+    *   [x] Write Unit tests for key Backend Logic modules (`personService`, `dealService`, `organizationService`, `leadService`).
     *   [-] Write Unit/Integration tests for key Frontend components: 
-        *   [x] `DealsPage.tsx` (initial render, loading, error, data display)
-        *   [ ] `PeoplePage.tsx` (needs creation/update)
-        *   [ ] `OrganizationsPage.tsx` (needs creation)
-        *   [ ] `CreateDealModal.tsx`
-        *   [ ] `EditDealModal.tsx`
-        *   [ ] `CreatePersonForm.tsx`
-        *   [ ] `EditPersonForm.tsx`
-        *   [ ] `CreateOrganizationModal.tsx`
-        *   [ ] `EditOrganizationModal.tsx`
+        *   [x] `DealsPage.tsx`
+        *   [ ] `PeoplePage.tsx` (Needs update after refactor)
+        *   [ ] `OrganizationsPage.tsx` (Needs creation)
+        *   [ ] `LeadsPage.tsx` (Needs creation)
+        *   [ ] `CreateDealModal.tsx` / `EditDealModal.tsx`
+        *   [ ] `CreatePersonForm.tsx` / `EditPersonForm.tsx`
+        *   [ ] `CreateOrganizationModal.tsx` / `EditOrganizationModal.tsx`
+        *   [ ] `CreateLeadModal.tsx` / `EditLeadModal.tsx` 
+        *   [ ] `GenericDeleteConfirmationDialog.tsx`
     *   [-] Write core E2E tests for user flows:
         *   [x] Basic Auth Flow (Login)
-        *   [ ] Basic Auth Flow (Signup)
-        *   [ ] People CRUD Flow
-        *   [ ] Deals CRUD Flow
-        *   [ ] Organization CRUD Flow
+        *   [x] People CRUD Flow
+        *   [x] Deals CRUD Flow
+        *   [x] Organization CRUD Flow
+        *   [ ] Lead CRUD Flow (Needs creation)
+        *   [ ] Basic Auth Flow (Signup - Needs test)
 *   [-] **CI/CD:**
     *   [x] Configure Netlify Build pipeline (Basic setup done).
     *   [ ] Add automated testing step to CI (Frontend & Backend tests).
@@ -117,25 +119,35 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [-] **Security Hardening:**
     *   [ ] Implement GraphQL depth/complexity limiting.
     *   [ ] Disable GraphQL introspection in production.
-    *   [x] Review RLS policies (Done for MVP/Phase 3 changes).
+    *   [x] Review RLS policies (Done for MVP/Phase 3/Phase 5 changes).
 *   [ ] **Monitoring:**
     *   [ ] Setup basic monitoring for Netlify Functions (latency, errors).
 *   [x] **Database Migrations (Production):**
     *   [x] Establish process for applying migrations manually/safely to production (via `supabase db push --linked`).
 
-## Phase 5: Pipedrive Feature Parity & Future Enhancements
+## Phase 5: Lead Management (Completed)
 
-*   *(Features to implement after Contact Model Enhancement)*
-*   [ ] **Lead Management:** Implement dedicated Lead entity, service, API, UI, and conversion logic.
+*   [x] Define and implement a `Lead` entity (database, service, GraphQL).
+*   [x] Create frontend UI for viewing, creating, editing, and deleting Leads.
+*   [ ] Implement Lead conversion functionality (e.g., to Deal/Person/Organization).
+
+## Phase 6: Pipedrive Feature Parity & Future Enhancements
+
+*   *(Features to implement after Lead Management)*
+*   [ ] Implement Lead conversion functionality (from Phase 5).
 *   [ ] **Activity Management:** Expand beyond basic logging (Calls, Meetings, linking, completion tracking).
 *   [ ] **Pipeline Management:** Implement customizable pipelines and stages.
-*   [ ] Achieve Full Feature Parity with Pipedrive (Iterative development based on priority - Products, Projects, Email Sync, Workflows, Reporting etc. as per ADR Sec 4.1).
-*   [ ] Expand Test Coverage comprehensively.
-*   [ ] Performance Optimization (address cold starts if necessary).
-*   [ ] Implement Compliance Workflows (GDPR Data Erasure via Inngest).
-*   [ ] Regularly review Inngest usage/cost and evaluate alternatives.
-*   [ ] Enhance Security (APQ, Operation Whitelisting, full RBAC).
-*   [ ] Potentially refactor to `packages/` monorepo (Nx/Turborepo) if complexity warrants.
+*   [ ] **Lead Management:** Implement dedicated Lead entity, service, API, UI, and conversion logic.
+*   [ ] **Email Sync:** Expand email integration capabilities.
+*   [ ] **Reporting:** Implement comprehensive reporting capabilities.
+*   [ ] **Workflows:** Expand workflow capabilities.
+*   [ ] **GDPR Compliance:** Implement GDPR compliance workflows.
+*   [ ] **Performance Optimization:** Address performance issues and optimize system performance.
+*   [ ] **Security:** Enhance security measures.
+*   [ ] **User Experience:** Improve user experience and interface.
+*   [ ] **Integration:** Expand system integration capabilities.
+*   [ ] **Regular Reviews:** Regularly review system performance and user feedback.
+*   [ ] **Future Features:** Identify and plan for future features and enhancements.
 
 ---
 

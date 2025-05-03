@@ -1,6 +1,6 @@
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import { useEffect, useState } from 'react'; // Import hooks
-// import { gql } from 'graphql-request'; // Removed unused gql
+import { gql, useQuery } from '@apollo/client'; // Keep gql import if needed elsewhere or remove if truly unused
 // import { gqlClient } from './lib/graphqlClient'; // Removed unused gqlClient
 import { supabase } from './lib/supabase'; // Import frontend supabase client
 import { Auth } from '@supabase/auth-ui-react';
@@ -9,6 +9,7 @@ import type { Session } from '@supabase/supabase-js';
 import DealsPage from './pages/DealsPage';
 import PeoplePage from './pages/PeoplePage';
 import OrganizationsPage from './pages/OrganizationsPage'; // Import the new page
+import LeadsPage from './pages/LeadsPage'; // Import the new LeadsPage
 import { 
   Box, 
   Heading, 
@@ -43,18 +44,27 @@ function AppContent() {
   // const handleSignOut = async () => { ... }; // Removed unused function definition
 
   return (
-    <>
-      <TempNav />
-      <Box p={4}>
+    <Flex height="100vh">
+      {/* Sidebar */}
+      <Box width="200px" bg="gray.100" p={4}>
+        <Heading size="md" mb={6}>PIPECD</Heading>
+        <Link as={RouterLink} to="/people" display="block" mb={3}>People</Link>
+        <Link as={RouterLink} to="/organizations" display="block" mb={3}>Organizations</Link>
+        <Link as={RouterLink} to="/deals" display="block" mb={3}>Deals</Link>
+        <Link as={RouterLink} to="/leads" display="block" mb={3}>Leads</Link>
+      </Box>
+
+      {/* Main Content */}
+      <Box flex="1" p={5} overflowY="auto">
         <Routes>
-          <Route path="/" element={<Heading size="lg">Home</Heading>} />
-          <Route path="/people" element={<PeoplePage />} />
-          <Route path="/deals" element={<DealsPage />} />
-          <Route path="/organizations" element={<OrganizationsPage />} />
-          <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
+           <Route path="/people" element={<PeoplePage />} />
+           <Route path="/organizations" element={<OrganizationsPage />} />
+           <Route path="/deals" element={<DealsPage />} />
+           <Route path="/leads" element={<LeadsPage />} />
+           <Route path="/" element={<PeoplePage />} />
         </Routes>
       </Box>
-    </>
+    </Flex>
   );
 }
 

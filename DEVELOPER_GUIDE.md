@@ -31,7 +31,8 @@ PIPECD/
 │   │   ├── pages/      # Top-level Page components
 │   │   │   ├── DealsPage.tsx
 │   │   │   ├── PeoplePage.tsx
-│   │   │   └── OrganizationsPage.tsx
+│   │   │   ├── OrganizationsPage.tsx
+│   │   │   └── LeadsPage.tsx
 │   │   ├── App.css
 │   │   ├── App.tsx     # Root UI component, routing
 │   │   ├── index.css
@@ -73,10 +74,10 @@ PIPECD/
 └── vitest.config.ts    # Vitest unit/integration test config (root)
 ```
 
-*   `lib/`: Shared Backend TypeScript Modules (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`).
+*   `lib/`: Shared Backend TypeScript Modules (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`, `leadService.ts`).
 *   `netlify/functions/`: Netlify serverless functions (`graphql.ts`, `inngest.ts`).
-*   `frontend/src/pages/`: Top-level page components (e.g., `PeoplePage.tsx`, `DealsPage.tsx`, `OrganizationsPage.tsx`).
-*   `frontend/src/components/`: Reusable UI components (e.g., `CreateDealModal.tsx`, `EditDealModal.tsx`, `CreatePersonForm.tsx`, etc.).
+*   `frontend/src/pages/`: Top-level page components (e.g., `PeoplePage.tsx`, `DealsPage.tsx`, `OrganizationsPage.tsx`, `LeadsPage.tsx`).
+*   `frontend/src/components/`: Reusable UI components (e.g., `CreateDealModal.tsx`, `EditDealModal.tsx`, `CreatePersonForm.tsx`, `CreateOrganizationModal.tsx`, `CreateLeadModal.tsx`, `GenericDeleteConfirmationDialog.tsx`, etc.).
 *   `e2e/`: Playwright E2E tests (`auth.spec.ts`, others to be added).
 
 ## 2. Key Files & Configuration
@@ -93,14 +94,18 @@ PIPECD/
 *   **`netlify/functions/graphql.ts`:** Defines the GraphQL schema (People, Organizations, Deals, etc.), implements resolvers (calling services in `/lib`), sets up the GraphQL Yoga server, and includes a context factory for JWT authentication.
 *   **`netlify/functions/inngest.ts`:** Initializes the Inngest client, defines Inngest functions/handlers (currently basic logging), and exports the Netlify serve handler.
 *   **`lib/supabaseClient.ts`:** Initializes and exports the *backend* Supabase client (uses root `.env`). Includes `dotenv.config()` workaround if needed for local dev.
-*   **`frontend/src/main.tsx`:** Frontend entry point, renders `App` within ChakraProvider and BrowserRouter.
-*   **`frontend/src/App.tsx`:** Root React component, manages Supabase auth state, renders Auth UI or `AppContent`, defines top-level routes.
+*   **`frontend/src/main.tsx`:** Frontend entry point, renders `App` within ChakraProvider, BrowserRouter, and **ApolloProvider**. Configures Apollo Client with authLink to inject JWT.
+*   **`frontend/src/App.tsx`:** Root React component, manages Supabase auth state, renders Auth UI or `AppContent`, defines top-level routes including `/leads`.
 *   **`frontend/src/lib/supabase.ts`:** Initializes and exports the *frontend* Supabase client (uses `VITE_` vars). Ensures `detectSessionInUrl` is enabled (default).
-*   **`frontend/src/lib/graphqlClient.ts`:** Initializes and exports the `graphql-request` client. Constructs an absolute URL for the endpoint (`/.netlify/functions/graphql`) based on `window.location.origin`. Includes middleware to inject the Supabase auth token.
+*   **`frontend/src/lib/graphqlClient.ts`:** Initializes and exports the `graphql-request` client. **NOTE: This is likely unused now as components should prefer Apollo Client hooks (`useQuery`, `useMutation`).**
 *   **`supabase/migrations/`:** Contains timestamped SQL files defining database schema changes. Managed via `supabase migration` commands.
 *   **`lib/personService.ts`, `lib/dealService.ts`, `lib/organizationService.ts`:** Service classes containing business logic and database interactions (via authenticated Supabase client) for respective domains.
 *   **`frontend/src/pages/PeoplePage.tsx`, `frontend/src/pages/DealsPage.tsx`, `frontend/src/pages/OrganizationsPage.tsx`:** Main UI components for managing entities, including data fetching, state management, and integration with modal/form components.
+*   **`frontend/src/pages/LeadsPage.tsx`:** Main UI component for managing Leads.
 *   **`frontend/src/components/CreateDealModal.tsx`, `frontend/src/components/EditDealModal.tsx`, `CreatePersonForm.tsx`, `EditPersonForm.tsx`, `CreateOrganizationModal.tsx`, `EditOrganizationModal.tsx`:** Modal/form components for creating and editing entities.
+*   **`frontend/src/components/CreateLeadModal.tsx`, `frontend/src/components/EditLeadModal.tsx`:** Modal/form components for creating/editing Leads.
+*   **`frontend/src/components/GenericDeleteConfirmationDialog.tsx`:** Reusable dialog for confirming delete actions.
+*   **`lib/leadService.ts`:** Service class containing business logic and database interactions for Leads.
 
 ## 3. Local Development Workflow
 
@@ -146,12 +151,13 @@ PIPECD/
 
 ## 5. Core Concepts & Implementation Notes
 
-*   **GraphQL (Yoga + `graphql-request`):**
-    *   Backend uses GraphQL Yoga for its performance in serverless environments.
+*   **GraphQL (Yoga + Apollo Client):**
+    *   Backend uses GraphQL Yoga.
     *   Schema is defined directly in `graphql.ts` (could be moved to separate `.graphql` files later).
     *   Resolvers call functions/services potentially located in `/lib`.
-    *   Authentication is handled via JWT in the `Authorization: Bearer` header, verified in the Yoga `context` factory using `supabase.auth.getUser()`.
-    *   Frontend uses `graphql-request` for simple, direct query/mutation execution. Middleware injects the auth token.
+    *   Authentication handled via JWT, verified in Yoga `context` factory.
+    *   Context factory now creates request-scoped Supabase clients with token headers for RLS.
+    *   Frontend uses **Apollo Client** (`useQuery`, `useMutation`) for GraphQL interaction. Configured in `main.tsx` with `authLink`.
 *   **Supabase:**
     *   **Auth:** Ensure Production Supabase has correct Provider keys and Site URL config.
     *   **Migrations:** Emphasize manual application to production via linked CLI.
@@ -166,7 +172,7 @@ PIPECD/
     *   Build command handles frontend dependency installation.
     *   Functions runtime depends on environment variables set in Netlify UI.
 *   **TypeScript:** Used for both backend (`/lib`, `/netlify/functions`) and frontend (`/frontend`), configured via respective `tsconfig.json` files.
-*   **Testing:** Uses Vitest (unit/integration for frontend/backend) and Playwright (E2E). Configuration is split between root `vitest.config.ts`, `frontend/src/setupTests.ts`, and `playwright.config.ts`. Frontend tests run in a `jsdom` environment.
+*   **Testing:** Uses Vitest (unit/integration) and Playwright (E2E). Configuration in root `vitest.config.ts`, `frontend/src/setupTests.ts`, `playwright.config.ts`. Frontend tests run in a `jsdom` environment.
 
 ## 6. Troubleshooting
 
@@ -234,72 +240,82 @@ This section logs common issues encountered during development or deployment and
     *   **Cause:** Mock data used in the test file (`*.test.tsx`) may be outdated after code refactoring (e.g., expecting `contact.first_name` when the code now uses `person.first_name`).
     *   **Resolution:** Update the mock data within the failing test file to match the current component props and GraphQL query structure.
 
+**Recent Issues (Solved):**
+
+18. **Issue:** Frontend GraphQL queries fail with "Not authenticated" errors, despite user being logged in.
+    *   **Cause:** Apollo Client was not configured to send the Supabase JWT in request headers.
+    *   **Resolution:** Updated Apollo Client setup in `frontend/src/main.tsx` using `createHttpLink` and `setContext` (`authLink`) to dynamically fetch the session token from `supabase.auth.getSession()` and add it to the `Authorization: Bearer <token>` header. 
+
+19. **Issue:** API requests (e.g., `/api/graphql`) return 404 during local development (`netlify dev`).
+    *   **Cause:** Missing or incorrect proxy/rewrite rule in `netlify.toml` to forward requests from the API path to the Netlify Function endpoint (`/.netlify/functions/graphql`). The SPA fallback rule (`/* /index.html 200`) was incorrectly catching the API request.
+    *   **Resolution:** Added a specific rewrite rule `[[redirects]] from = "/api/graphql" to = "/.netlify/functions/graphql" status = 200` (or the full URL `http://localhost:8888/...`) *before* the SPA fallback rule in `netlify.toml`. Alternatively, using `[dev.proxy]` might work but caused issues here initially. Restart `netlify dev` after changes.
+
+20. **Issue:** Supabase INSERT/UPDATE fails with RLS violation (`new row violates row-level security policy...`) even though the correct `user_id` is being passed.
+    *   **Cause:** The server-side Supabase client instance used for the database operation did not have the correct user session associated with it for RLS checks (`auth.uid()`). Calling `setSession()` on a shared client instance proved unreliable in the Netlify Function environment.
+    *   **Resolution:** Refactored the GraphQL `context` factory (`netlify/functions/graphql.ts`) to: 1) Validate the incoming JWT using the shared client (`supabase.auth.getUser(token)`). 2) If valid, create a *new request-scoped* Supabase client instance initialized with the user's JWT in the global headers (`createClient(url, key, { global: { headers: ... } })`). 3. Pass this request-scoped client via the context (`context.supabaseClient`) to be used by resolvers and service functions. Also ensured the shared client in `lib/supabaseClient.ts` has `auth: { persistSession: false }` set.
+
+21. **Issue:** GraphQL mutation fails with `Unknown type "<InputTypeName>".`
+    *   **Cause:** The input type (e.g., `LeadUpdateInput`) was defined as a TypeScript interface and/or Zod schema but was missing from the GraphQL schema definition string (`typeDefs`) in `graphql.ts`.
+    *   **Resolution:** Added the corresponding `input <InputTypeName> { ... }` definition within the `typeDefs` string. Ensured the mutation signature in `typeDefs` also used the correct input type name.
+
+22. **Issue:** React throws `Warning: validateDOMNesting(...)` for whitespace text nodes in `<tr>`.
+    *   **Cause:** Subtle whitespace (newlines, spaces) introduced in JSX between tags within table elements (`<thead>`, `<tbody>`, `<Tr>`), often due to formatting within loops (`map`) or conditionals.
+    *   **Resolution:** Adjusted JSX formatting within the relevant table section (e.g., `<tbody>` in `LeadsPage.tsx`, `OrganizationsPage.tsx`) to eliminate extraneous whitespace directly inside `<tr>` or between `</tr>` and surrounding code blocks/parentheses. Sometimes removing comments within table elements (`<Th>Comment</Th>`) can also help.
+
 ## 7. Testing
 
 This project uses a combination of [Vitest](https://vitest.dev/) for unit/integration testing and [Playwright](https://playwright.dev/) for end-to-end (E2E) testing.
 
-### Frontend Unit/Integration Testing (`frontend/` using Vitest)
+Testing is crucial for maintaining code quality and preventing regressions. Tests are configured to run in different environments and target specific parts of the application.
 
-*   **Location:** Tests for React components reside within the `frontend/src` directory, typically colocated with the component (e.g., `frontend/src/pages/DealsPage.test.tsx`).
-*   **Framework:** Vitest + React Testing Library (`@testing-library/react`).
-*   **Configuration:** Root `vitest.config.ts` includes `frontend/src/**/*.test.tsx` patterns. It sets `environment: 'jsdom'` and uses `frontend/src/setupTests.ts` for global setup (importing `@testing-library/jest-dom` matchers).
-*   **Running Tests:** Run from the **project root** directory (Vitest config includes frontend tests):
-    *   `npm test`: Run all unit/integration tests (backend + frontend).
-    *   `npm run test:ui`: Run tests in the interactive Vitest UI.
-*   **Mocks:** Network requests (e.g., `gqlClient`) and potentially complex hooks/components (like `useToast`) are mocked using `vi.mock()` within test files.
-*   **Current Status:** Basic tests exist for `DealsPage`. More component tests are needed (People, Orgs, Forms, Modals).
+### Test Suites & Commands
 
-### Backend Unit/Integration Testing (Root `/` using Vitest)
+*   **Backend Unit Tests (`/lib` using Vitest):**
+    *   **Location:** Tests reside within the `lib/` directory, colocated with the service (e.g., `lib/personService.test.ts`).
+    *   **Framework:** Vitest.
+    *   **Configuration:** Root `vitest.config.ts` includes `lib/**/*.test.ts` pattern.
+    *   **Command:** `npm run test:lib`
 
-*   **Location:** Tests for shared library modules (`lib/`) reside in `lib/` (e.g., `lib/dealService.test.ts`, `lib/personService.test.ts`). Tests for Netlify functions (`netlify/functions/`) are currently missing but should be added there.
-*   **Framework:** Vitest (running in Node.js environment).
-*   **Configuration:** `vitest.config.ts` in the project root configures the test runner (includes `lib/**/*.test.ts` patterns).
-*   **Running Tests:** Run from the **project root** directory:
-    *   `npm test`: Run all unit/integration tests (backend + frontend).
-    *   `npm run test:ui`: Run tests in the interactive Vitest UI.
-*   **Mocks:** External dependencies like the `@supabase/supabase-js` client are mocked using `vi.mock()` (see examples in `lib/*.test.ts`).
-*   **Current Status:** Tests exist for `dealService`, `personService`, `organizationService`. Tests for `netlify/functions/graphql.ts` resolvers need to be recreated.
+*   **Frontend Unit/Integration Tests (`frontend/` using Vitest):**
+    *   **Location:** Tests for React components reside within the `frontend/src` directory, typically colocated with the component (e.g., `frontend/src/pages/DealsPage.test.tsx`).
+    *   **Framework:** Vitest + React Testing Library (`@testing-library/react`).
+    *   **Configuration:** Root `vitest.config.ts` includes `frontend/src/**/*.test.tsx` patterns. It sets `environment: 'jsdom'` and uses `frontend/src/setupTests.ts` for global setup (importing `@testing-library/jest-dom` matchers).
+    *   **Mocks:** Network requests (`gqlClient`), hooks (`useToast`), etc., are mocked using `vi.mock()`.
+    *   **Command:** `npm run test:frontend`
 
-### End-to-End Testing (Root `/` using Playwright)
+*   **GraphQL Resolver Integration Tests (`netlify/functions/` using Vitest):**
+    *   **Location:** `netlify/functions/graphql.test.ts`
+    *   **Framework:** Vitest.
+    *   **Purpose:** Tests the integration between GraphQL resolvers and the underlying service layer by mocking the service functions (`personService`, `dealService`, etc.) and verifying resolver logic, including authentication checks, input validation, service calls, and event sending.
+    *   **Configuration:** Root `vitest.config.ts` includes `netlify/functions/**/*.test.ts` pattern.
+    *   **Command:** `npm run test:gql`
 
-*   **Location:** E2E tests reside in the root `e2e/` directory (e.g., `e2e/auth.spec.ts`).
-*   **Framework:** Playwright (`@playwright/test`).
-*   **Configuration:** `playwright.config.ts` in the project root configures the test runner, browsers, and automatically starts the local development server (`netlify dev`) via the `webServer` option.
-*   **Running Tests:** Run from the **project root** directory:
-    *   `npm run test:e2e`: Run all E2E tests headless in the console.
-    *   `npm run test:e2e:ui`: Run tests in the interactive Playwright UI mode.
-    *   `npm run test:e2e:report`: Open the HTML report generated after a test run.
-*   **Current Scope:** Basic authentication test (successful login) is implemented.
-*   **Prerequisites:** E2E tests require the local dev server (`netlify dev`) to be running (handled automatically by `playwright.config.ts`). They also require specific data, like the test user `test-e2e@example.com` / `password123`, to be manually created in the local Supabase instance after `supabase db reset`.
+*   **End-to-End Tests (`e2e/` using Playwright):**
+    *   **Location:** Tests reside within the `e2e/` directory (e.g., `e2e/auth.spec.ts`).
+    *   **Framework:** Playwright.
+    *   **Configuration:** Root `playwright.config.ts`. Configured to automatically start `netlify dev` using the `webServer` option.
+    *   **Purpose:** Simulates real user interactions across the full stack (frontend UI -> GraphQL API -> backend services -> database).
+    *   **Command:** `npm run test:e2e`
+    *   **Reporting:** Use `npx playwright show-report playwright-report` to view detailed HTML reports after a run.
+
+*   **Run All Tests:**
+    *   **Command:** `npm test` (Runs all Vitest tests: lib, frontend, gql).
+    *   **Command:** `npm run test:all` (Runs *all* tests including E2E - defined in `package.json`).
+
+*   **Interactive UI (Vitest):**
+    *   **Command:** `npm run test:ui` (Runs Vitest tests in an interactive browser UI).
+
+### Current Test Status
+
+*   **Backend (`lib/`):** Good coverage for core service functions (`person`, `deal`, `organization`, `lead`).
+*   **Frontend (`frontend/src/`):** Basic tests exist for `DealsPage`. More component tests are needed (People, Orgs, Leads, Forms, Modals - see `ROADMAP.md`).
+*   **GraphQL Resolvers (`graphql.test.ts`):** Good coverage for implemented queries/mutations.
+*   **E2E (`e2e/`):** Basic auth login and CRUD navigation flows are covered. Signup flow, Lead CRUD, and more detailed interaction tests are needed.
 
 ## Deployment
 
 -   **Netlify:** Automatically deploys the `main` branch (Frontend + Functions).
 -   **Supabase:** Migrations need to be applied manually to the production database using `supabase migration up --linked` after linking the CLI (`supabase link --project-ref <your-prod-project-ref>`).
-
-## Key Concepts / Decisions
-
-*   **GraphQL (Yoga + `graphql-request`):**
-    *   Backend uses GraphQL Yoga for its performance in serverless environments.
-    *   Schema is defined directly in `graphql.ts` (could be moved to separate `.graphql` files later).
-    *   Resolvers call functions/services potentially located in `/lib`.
-    *   Authentication is handled via JWT in the `Authorization: Bearer` header, verified in the Yoga `context` factory using `supabase.auth.getUser()`.
-    *   Frontend uses `graphql-request` for simple, direct query/mutation execution. Middleware injects the auth token.
-*   **Supabase:**
-    *   **Auth:** Ensure Production Supabase has correct Provider keys and Site URL config.
-    *   **Migrations:** Emphasize manual application to production via linked CLI.
-    *   **RLS:** Policies defined in migrations apply to both local and prod (once migrated).
-    *   **Clients:** Backend uses root `.env` (local) or Netlify function env vars (prod). Frontend uses `VITE_` vars baked in at build time.
-*   **Inngest:**
-    *   Event sending (`graphql.ts` for `crm/contact.created`, `crm/deal.created`) works locally and in prod.
-    *   Event handling function definitions (`inngest.ts`) rely on `INNGEST_SIGNING_KEY` for security in deployed environments.
-    *   **Local Handler Execution:** Due to limitations with `netlify dev` proxying, reliably triggering and debugging the *execution* of Inngest functions locally is problematic. 
-    *   **Recommended Local Workflow:** Use `netlify dev` for general development. Run `npx inngest-cli dev` separately to monitor *sent* events via its UI (`http://localhost:8288`). **Verify event handler execution logic in deployed environments** (e.g., Netlify deploy previews or production) by checking Netlify Function logs or adding temporary detailed logging within the Inngest function itself.
-*   **Netlify:**
-    *   Build command handles frontend dependency installation.
-    *   Functions runtime depends on environment variables set in Netlify UI.
-*   **TypeScript:** Used for both backend (`/lib`, `/netlify/functions`) and frontend (`/frontend`), configured via respective `tsconfig.json` files.
-*   **Testing:** Uses Vitest (unit/integration for frontend/backend) and Playwright (E2E). Configuration is split between root `vitest.config.ts`, `frontend/src/setupTests.ts`, and `playwright.config.ts`. Frontend tests run in a `jsdom` environment.
 
 ---
 

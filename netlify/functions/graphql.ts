@@ -1,24 +1,26 @@
-import { createYoga, createSchema } from 'graphql-yoga';
+import { createYoga, createSchema, YogaInitialContext } from 'graphql-yoga';
 import type { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
-import type { User } from '@supabase/supabase-js'; // Import User type
-import { supabase } from '../../lib/supabaseClient'; // Import Supabase client
-import { GraphQLError } from 'graphql'; // Import GraphQLError
-import { personService } from '../../lib/personService'; // Import the person service
-import { organizationService } from '../../lib/organizationService'; // Import the organization service
-import { dealService } from '../../lib/dealService'; // Import the deal service
-import { z, ZodError } from 'zod'; // Import Zod and ZodError
-import { inngest } from './inngest'; // Import the Inngest client
+import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
+import { supabase } from '../../lib/supabaseClient';
+import { GraphQLError } from 'graphql';
+import { personService } from '../../lib/personService';
+import { organizationService } from '../../lib/organizationService';
+import { dealService } from '../../lib/dealService';
+import * as leadService from '../../lib/leadService';
+import { z, ZodError } from 'zod';
+import { inngest } from './inngest';
 
 // Define GraphQL types related to User
-type GraphQLContext = {
+interface Context {
   currentUser: User | null;
-  request: Request; // Add the original request object to context for header access
+  request: Request;
   event: HandlerEvent;
   context: HandlerContext;
-};
+  supabaseClient: typeof supabase;
+}
 
 // Helper to get token from context (or request headers)
-function getAccessToken(context: GraphQLContext): string | null {
+function getAccessToken(context: Context): string | null {
   const authHeader = context.request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.substring(7);
@@ -99,6 +101,35 @@ const DealBaseSchema = z.object({ // Renamed to Base
 const DealCreateSchema = DealBaseSchema; // Create uses the base currently
 const DealUpdateSchema = DealBaseSchema.partial(); // Update allows partial fields
 
+// Zod schema for LeadInput validation
+const LeadInputBaseSchema = z.object({
+    name: z.string().trim().min(1, { message: "Lead name cannot be empty" }).optional().nullable(),
+    email: z.string().trim().email({ message: "Invalid email address" }).optional().nullable(),
+    phone: z.string().trim().optional().nullable(), // Add more specific phone validation if needed
+    company_name: z.string().trim().optional().nullable(),
+    source: z.string().trim().optional().nullable(),
+    status: z.string().trim().min(1, { message: "Status cannot be empty if provided" }).optional(), // Default is 'New'
+    notes: z.string().trim().optional().nullable(),
+});
+
+const LeadInputSchema = LeadInputBaseSchema.refine(data => data.name || data.email || data.company_name, {
+    message: "At least a name, email, or company name is required for a lead",
+    path: ["name"], // Assign error broadly
+});
+
+const LeadUpdateSchema = LeadInputBaseSchema.partial().refine(data => {
+    // If any of the required fields are present (even if null/undefined in partial), the refinement applies
+    // This ensures that if you *try* to update to an invalid state (e.g., remove name, email, company), it fails.
+    // However, if none of these fields are part of the partial update, the refinement passes.
+    const hasRequiredFieldsInUpdate = ['name', 'email', 'company_name'].some(key => key in data);
+    if (!hasRequiredFieldsInUpdate) return true; // Pass if none of the refined fields are being updated
+    // If one of the refined fields *is* being updated, check the condition
+    return data.name || data.email || data.company_name;
+}, {
+    message: "Cannot update lead to have no name, email, or company name",
+    path: ["name"], 
+});
+
 // Placeholder service functions (REMOVED)
 // const contactService = { ... };
 // const dealService = { ... };
@@ -122,6 +153,9 @@ const typeDefs = /* GraphQL */ `
     # Deals
     deals: [Deal!]!            
     deal(id: ID!): Deal        
+    # Leads
+    leads: [Lead!]!
+    lead(id: ID!): Lead
   }
 
   type Mutation {
@@ -137,6 +171,10 @@ const typeDefs = /* GraphQL */ `
     createDeal(input: DealInput!): Deal!
     updateDeal(id: ID!, input: DealInput!): Deal
     deleteDeal(id: ID!): Boolean
+    # Leads
+    createLead(input: LeadInput!): Lead!
+    updateLead(id: ID!, input: LeadUpdateInput!): Lead
+    deleteLead(id: ID!): Boolean
   }
 
   type UserInfo {
@@ -182,6 +220,20 @@ const typeDefs = /* GraphQL */ `
     person: Person # Associated person (updated from contact)
   }
 
+  type Lead {
+      id: ID!
+      created_at: DateTime!
+      updated_at: DateTime!
+      user_id: ID!
+      name: String
+      email: String
+      phone: String
+      company_name: String
+      source: String
+      status: String! # Non-nullable, defaults to 'New'
+      notes: String
+  }
+
   # Simplified type for person dropdowns
   type PersonListItem {
     id: ID!
@@ -200,7 +252,7 @@ const typeDefs = /* GraphQL */ `
   input OrganizationInput {
       name: String!
       address: String
-      notes: String
+    notes: String
   }
 
   input DealInput {
@@ -209,10 +261,31 @@ const typeDefs = /* GraphQL */ `
     amount: Float
     person_id: ID # FK referencing people table (Renamed from contact_id)
   }
+
+  input LeadInput {
+      name: String
+      email: String
+      phone: String
+      company_name: String
+      source: String
+      status: String # Optional on input, service/DB sets default
+      notes: String
+  }
+
+  # Define the missing LeadUpdateInput type
+  input LeadUpdateInput {
+      name: String
+      email: String
+      phone: String
+      company_name: String
+      source: String
+      status: String 
+      notes: String
+  }
 `;
 
 // Export context type for testing
-export type { GraphQLContext };
+export type { Context };
 
 // Export resolvers for testing
 export const resolvers = {
@@ -238,458 +311,595 @@ export const resolvers = {
       }
     },
     // Resolver for the 'me' query
-    me: (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+    me: (_parent: unknown, _args: unknown, context: Context) => {
       // Return minimal user info from context
-      if (!context.currentUser) {
-        return null; // Or throw an AuthenticationError
-      }
+      requireAuthentication(context); // Use helper
+      // Now we know currentUser is not null due to requireAuthentication
+      const currentUser = context.currentUser!;
       return {
-        id: context.currentUser.id,
-        email: context.currentUser.email,
+        id: currentUser.id,
+        email: currentUser.email,
         // Map other fields if needed
       };
     },
 
     // --- Person Resolvers ---
-    people: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
-      if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      const token = getAccessToken(context);
-      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-      return personService.getPeople(context.currentUser.id, token);
+    people: async (_parent: unknown, _args: unknown, context: Context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+      try {
+        // Assuming personService handles filtering by user ID internally based on context/token
+        return await personService.getPeople(context.currentUser!.id, accessToken);
+      } catch (e) {
+         throw processZodError(e, 'fetching people list');
+      }
     },
-    person: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
-      if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      const token = getAccessToken(context);
-      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-      return personService.getPersonById(context.currentUser.id, args.id, token);
+    person: async (_parent: unknown, { id }: { id: string }, context: Context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+      try {
+        return await personService.getPersonById(context.currentUser!.id, id, accessToken);
+      } catch (e) {
+         throw processZodError(e, 'fetching person by ID');
+      }
     },
-    personList: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
-        if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-        const token = getAccessToken(context);
-        if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-        const people = await personService.getPeople(context.currentUser.id, token);
-        return people.map(p => ({ 
-            id: p.id, 
-            name: `${p.last_name || ''}, ${p.first_name || ''}`.trim() || p.email || 'Unnamed' 
+    personList: async (_parent: unknown, _args: unknown, context: Context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+      try {
+        const people = await personService.getPeople(context.currentUser!.id, accessToken); 
+        // Map PersonRecord to PersonListItem
+        return people.map(p => ({
+            id: p.id,
+            // Combine first and last name, handling nulls gracefully
+            name: [p.first_name, p.last_name].filter(Boolean).join(' ') || p.email || 'Unnamed Person'
         }));
+      } catch (e) {
+         throw processZodError(e, 'fetching person list for dropdown');
+      }
     },
 
     // --- Organization Resolvers ---
-    organizations: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
-        if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-        const token = getAccessToken(context);
-        if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-        return organizationService.getOrganizations(context.currentUser.id, token);
+    organizations: async (_parent: unknown, _args: unknown, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       try {
+         return await organizationService.getOrganizations(context.currentUser!.id, accessToken);
+       } catch (e) {
+          throw processZodError(e, 'fetching organizations list');
+       }
     },
-    organization: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
-        if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-        const token = getAccessToken(context);
-        if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-        return organizationService.getOrganizationById(context.currentUser.id, args.id, token);
+    organization: async (_parent: unknown, { id }: { id: string }, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       try {
+          return await organizationService.getOrganizationById(context.currentUser!.id, id, accessToken);
+       } catch (e) {
+           throw processZodError(e, 'fetching organization by ID');
+       }
     },
 
     // --- Deal Resolvers ---
-    deals: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
-        if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-        const token = getAccessToken(context);
-        if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-        // Call deal service (currently returns placeholder)
-        return dealService.getDeals(context.currentUser.id, token);
+    deals: async (_parent: unknown, _args: unknown, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       try {
+           return await dealService.getDeals(context.currentUser!.id, accessToken);
+       } catch (e) {
+           throw processZodError(e, 'fetching deals list');
+       }
     },
-    deal: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
-        if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-        const token = getAccessToken(context);
-        if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-         // Call deal service (currently returns placeholder)
-        return dealService.getDealById(context.currentUser.id, args.id, token);
+    deal: async (_parent: unknown, { id }: { id: string }, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       try {
+           return await dealService.getDealById(context.currentUser!.id, id, accessToken);
+       } catch (e) {
+           throw processZodError(e, 'fetching deal by ID');
+       }
+    },
+
+    // --- Lead Resolvers ---
+    leads: async (_parent: unknown, _args: unknown, context: Context) => {
+      if (!context.currentUser) {
+        throw new GraphQLError('Not authenticated');
+      }
+      try {
+        // Call with client and user ID
+        return await leadService.getLeads(context.supabaseClient, context.currentUser.id);
+      } catch (error: any) {
+        // Use processZodError helper for consistent error handling
+        throw processZodError(error, 'fetching leads list');
+      }
+    },
+    lead: async (_parent: unknown, { id }: { id: string }, context: Context) => {
+      if (!context.currentUser) {
+        throw new GraphQLError('Not authenticated');
+      }
+      try {
+        // Call with client, user ID, and lead ID
+        const lead = await leadService.getLeadById(context.supabaseClient, context.currentUser.id, id);
+        // Service call now ensures ownership via user ID filter or RLS
+        // If lead is null, it means not found *for this user*
+        if (!lead) {
+            throw new GraphQLError('Lead not found'); // Changed error message
+        }
+        return lead;
+      } catch (error: any) {
+         // Use processZodError helper
+        throw processZodError(error, 'fetching lead by ID');
+      }
     },
   },
 
   Mutation: {
     // --- Person Mutations ---
-    createPerson: async (_parent: unknown, args: { input: any }, context: GraphQLContext) => {
-      if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      const token = getAccessToken(context);
-      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-      
-      // Validate input FIRST, outside the main try-catch for service errors
-      let validatedInput;
+    createPerson: async (_parent: unknown, { input }: { input: any }, context: Context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+      const currentUser = context.currentUser!;
+
       try {
-          validatedInput = PersonCreateSchema.parse(args.input);
-      } catch (error) {
-          // Let Zod validation errors be processed specifically
-          throw processZodError(error, 'create person validation'); 
-      }
+        const validatedInput = PersonCreateSchema.parse(input);
+        const newPerson = await personService.createPerson(currentUser.id, validatedInput, accessToken);
+        
+        // Send Inngest event non-blocking
+        inngest.send({
+          name: 'crm/person.created',
+          user: { id: currentUser.id, email: currentUser.email }, // Pass user info
+          data: { // Pass relevant data for the event handler
+            personId: newPerson.id,
+            userId: currentUser.id,
+            firstName: newPerson.first_name,
+            lastName: newPerson.last_name,
+            email: newPerson.email,
+            organizationId: newPerson.organization_id,
+          }
+        }).catch(err => console.error('Failed to send Inngest event crm/person.created:', err));
+        console.log(`Sent 'crm/person.created' event for person ID: ${newPerson.id}`);
 
-      try { // Wrap service call and Inngest send
-        // Now pass validatedInput to the service
-        const newPerson = await personService.createPerson(context.currentUser.id, validatedInput, token);
-
-        // Send event to Inngest AFTER successful creation
-        // Use await, but don't necessarily block the GraphQL response if sending fails
-        // Note: Keep inngest send separate try...catch if we don't want its failure to roll back the GQL response
-        try {
-          await inngest.send({
-            name: 'crm/person.created',
-            user: { id: context.currentUser.id, email: context.currentUser.email },
-            data: { // Updated payload structure
-              personId: newPerson.id,
-              userId: context.currentUser.id,
-              firstName: validatedInput.first_name,
-              lastName: validatedInput.last_name,
-              email: validatedInput.email,
-              organizationId: validatedInput.organization_id
-            }
-          });
-          console.log(`Sent 'crm/person.created' event for person ID: ${newPerson.id}`);
-        } catch (inngestError) {
-          console.error(`Failed to send Inngest event: crm/person.created`, inngestError);
-          // Log the error, but don't fail the mutation
-        }
-
-        return newPerson; // Return the created person
-      } catch (error) { // Catch errors from personService.createPerson 
-            // Use processZodError, which will handle non-Zod errors as INTERNAL_SERVER_ERROR
-            throw processZodError(error, 'create person service call');
+        return newPerson;
+      } catch (e) {
+        // Use the helper to process Zod errors or other errors
+        throw processZodError(e, 'create person'); 
       }
     },
-    updatePerson: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext) => {
-      if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      const token = getAccessToken(context);
-      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-        try {
-            // Validate partial input using the update schema
-            const validatedInput = PersonUpdateSchema.parse(args.input);
-             // Filter out undefined values after validation if necessary
-             const cleanInput = Object.fromEntries(Object.entries(validatedInput).filter(([_, v]) => v !== undefined));
-             if (Object.keys(cleanInput).length === 0) {
-                throw new GraphQLError('No valid fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
-            }
-
-            return personService.updatePerson(context.currentUser.id, args.id, cleanInput, token);
-        } catch (error) {
-            throw processZodError(error, 'update person');
-        }
+    updatePerson: async (_parent: unknown, { id, input }: { id: string, input: any }, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       const currentUser = context.currentUser!;
+       
+       try {
+          const validatedInput = PersonUpdateSchema.parse(input);
+          // Ensure at least one field is provided for update
+          if (Object.keys(validatedInput).length === 0) {
+            throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
+          }
+          const updatedPerson = await personService.updatePerson(currentUser.id, id, validatedInput, accessToken);
+          // TODO: Send Inngest event crm/person.updated if needed
+          return updatedPerson;
+       } catch (e) {
+          throw processZodError(e, 'update person'); // Use generic error processor
+       }
     },
-    deletePerson: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
-      if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      const token = getAccessToken(context);
-      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-      // Note: Service layer handles not found/permissions
-      return personService.deletePerson(context.currentUser.id, args.id, token);
+    deletePerson: async (_parent: unknown, { id }: { id: string }, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       const currentUser = context.currentUser!;
+       
+       try {
+          const success = await personService.deletePerson(currentUser.id, id, accessToken);
+           // TODO: Send Inngest event crm/person.deleted if needed
+          return success;
+       } catch (e) {
+           throw processZodError(e, 'delete person'); // Use generic error processor
+       }
     },
 
     // --- Organization Mutations ---
-    createOrganization: async (_parent: unknown, args: { input: any }, context: GraphQLContext) => {
-        if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-        const token = getAccessToken(context);
-        if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-        try {
-            const validatedInput = OrganizationInputSchema.parse(args.input);
-            const newOrganization = await organizationService.createOrganization(context.currentUser.id, validatedInput, token);
+    createOrganization: async (_parent: unknown, { input }: { input: any }, context: Context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+      const currentUser = context.currentUser!;
 
-            // Send Inngest event asynchronously (don't block response)
-            inngest.send({
-                name: 'crm/organization.created',
-                user: { id: context.currentUser.id, email: context.currentUser.email },
-                data: {
-                    organizationId: newOrganization.id,
-                    userId: context.currentUser.id,
-                    input: validatedInput // Send validated input
-                }
-            }).catch(error => {
-                console.error('Failed to send Inngest event: crm/organization.created', error);
-                // Log the error, but don't fail the mutation
-            });
-
-            return newOrganization;
-        } catch (error) {
-            throw processZodError(error, 'create organization');
-        }
-    },
-    updateOrganization: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext) => {
-        if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-        const token = getAccessToken(context);
-        if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-        try {
-            // Validate partial input
-            const validatedInput = OrganizationInputSchema.partial().parse(args.input);
-            const cleanInput = Object.fromEntries(Object.entries(validatedInput).filter(([_, v]) => v !== undefined));
-             if (Object.keys(cleanInput).length === 0) {
-                throw new GraphQLError('No valid fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
-            }
-            return organizationService.updateOrganization(context.currentUser.id, args.id, cleanInput, token);
-        } catch (error) {
-            throw processZodError(error, 'update organization');
-        }
-    },
-    deleteOrganization: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
-        if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-        const token = getAccessToken(context);
-        if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-        return organizationService.deleteOrganization(context.currentUser.id, args.id, token);
-    },
-
-    // --- Deal Mutations ---
-    createDeal: async (_parent: unknown, args: { input: any }, context: GraphQLContext) => {
-      if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      const token = getAccessToken(context);
-      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
-        try {
-            // Use create schema
-            const validatedInput = DealCreateSchema.parse(args.input);
-            const newDeal = await dealService.createDeal(context.currentUser.id, validatedInput, token);
-
-            // Send Inngest event asynchronously (don't block response)
-            inngest.send({
-                name: 'crm/deal.created',
-                user: { id: context.currentUser.id, email: context.currentUser.email }, // Add user info
-                data: {
-                    dealId: newDeal.id,
-                    userId: context.currentUser.id, // Add userId for consistency
-                    personId: validatedInput.person_id, // Send person_id from validated input
-                    input: validatedInput // Send validated input
-                }
-            }).catch(error => {
-                console.error('Failed to send Inngest event: crm/deal.created', error); // Updated log message
-                // Log the error, but don't fail the mutation
-            });
-
-            return newDeal;
-        } catch (error) {
-            throw processZodError(error, 'create deal');
-        }
-    },
-    updateDeal: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext) => {
-      if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-      const token = getAccessToken(context);
-      if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
       try {
-          // Use update schema
-          const validatedInput = DealUpdateSchema.parse(args.input);
-          // Filter out undefined values after validation if necessary
-          const cleanInput = Object.fromEntries(Object.entries(validatedInput).filter(([_, v]) => v !== undefined));
-           if (Object.keys(cleanInput).length === 0) {
-                throw new GraphQLError('No valid fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
-            }
-          // Now pass cleanInput to the service
-          // Explicitly await the promise (though it should be awaited implicitly)
-          const result = await dealService.updateDeal(context.currentUser.id, args.id, cleanInput, token);
-          return result; // Return the awaited result
-      } catch (error) {
-            throw processZodError(error, 'update deal');
+        const validatedInput = OrganizationInputSchema.parse(input);
+        // Use await here and wrap potential service error
+        const newOrganization = await organizationService.createOrganization(currentUser.id, validatedInput, accessToken);
+        // TODO: Send Inngest event crm/organization.created if needed
+        return newOrganization;
+      } catch (e) {
+        throw processZodError(e, 'create organization'); // Use generic error processor
       }
     },
-    deleteDeal: async (_parent: unknown, args: { id: string }, context: GraphQLContext) => {
-        if (!context.currentUser) throw new GraphQLError('Not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-        const token = getAccessToken(context);
-        if (!token) throw new GraphQLError('Auth token missing', { extensions: { code: 'UNAUTHENTICATED' } });
+    updateOrganization: async (_parent: unknown, { id, input }: { id: string, input: any }, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       const currentUser = context.currentUser!;
 
-        // Call deal service (currently returns placeholder)
-        const success = await dealService.deleteDeal(context.currentUser.id, args.id, token);
+       try {
+         const validatedInput = OrganizationInputSchema.partial().parse(input);
+          // Ensure at least one field is provided for update
+         if (Object.keys(validatedInput).length === 0) {
+            throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
+         }
+         const updatedOrganization = await organizationService.updateOrganization(currentUser.id, id, validatedInput, accessToken);
+          // TODO: Send Inngest event crm/organization.updated if needed
+         return updatedOrganization;
+       } catch (e) {
+          throw processZodError(e, 'update organization'); // Use generic error processor
+       }
+    },
+    deleteOrganization: async (_parent: unknown, { id }: { id: string }, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       const currentUser = context.currentUser!;
 
-        // TODO: Optionally send crm/deal.deleted event here (if success)
+       try {
+         const success = await organizationService.deleteOrganization(currentUser.id, id, accessToken);
+         // TODO: Send Inngest event crm/organization.deleted if needed
+      return success;
+       } catch (e) {
+          throw processZodError(e, 'delete organization'); // Use generic error processor
+       }
+    },
 
-        return success; // Return boolean
+     // --- Deal Mutations ---
+    createDeal: async (_parent: unknown, { input }: { input: any }, context: Context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+      const currentUser = context.currentUser!;
+
+      try {
+         // Map personId from input to person_id for validation/service
+        const rawInput = input as { personId?: string }; // Type assertion
+        const serviceInput = { 
+            ...rawInput, 
+            person_id: rawInput.personId 
+        };
+        delete serviceInput.personId; // Remove the original field
+
+        const validatedInput = DealCreateSchema.parse(serviceInput);
+        const newDeal = await dealService.createDeal(currentUser.id, validatedInput, accessToken);
+        
+         // Send Inngest event non-blocking
+        inngest.send({
+          name: 'crm/deal.created',
+          user: { id: currentUser.id, email: currentUser.email }, 
+          data: { 
+                dealId: newDeal.id,
+            userId: currentUser.id, 
+                name: newDeal.name,
+                amount: newDeal.amount,
+            personId: newDeal.person_id // Send person_id back as personId?
+          }
+        }).catch(err => console.error('Failed to send Inngest event crm/deal.created:', err));
+            console.log(`Sent 'crm/deal.created' event for deal ID: ${newDeal.id}`);
+
+        return newDeal;
+      } catch (e) {
+        throw processZodError(e, 'create deal');
+      }
+    },
+    updateDeal: async (_parent: unknown, { id, input }: { id: string, input: any }, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       const currentUser = context.currentUser!;
+
+       try {
+          // Map personId from input to person_id if present
+          const rawInput = input as { personId?: string }; 
+          const serviceInput = { 
+              ...rawInput, 
+              person_id: rawInput.personId !== undefined ? rawInput.personId : undefined // Map if exists
+          };
+          if (rawInput.personId !== undefined) {
+             delete serviceInput.personId; // Remove original if mapped
+          }
+
+          const validatedInput = DealUpdateSchema.parse(serviceInput);
+          // Ensure at least one field is provided for update
+          if (Object.keys(validatedInput).length === 0) {
+            throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
+          }
+          const updatedDeal = await dealService.updateDeal(currentUser.id, id, validatedInput, accessToken);
+           // TODO: Send Inngest event crm/deal.updated if needed
+          return updatedDeal;
+       } catch (e) {
+           throw processZodError(e, 'update deal'); // Use generic error processor
+       }
+    },
+    deleteDeal: async (_parent: unknown, { id }: { id: string }, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       const currentUser = context.currentUser!;
+
+       try {
+         const success = await dealService.deleteDeal(currentUser.id, id, accessToken);
+         // TODO: Send Inngest event crm/deal.deleted if needed
+         return success;
+       } catch (e) {
+          throw processZodError(e, 'delete deal'); // Use generic error processor
+       }
+    },
+
+    // --- Lead Mutations ---
+    createLead: async (_parent: unknown, { input }: { input: leadService.LeadInput }, context: Context) => {
+       if (!context.currentUser) {
+        throw new GraphQLError('Not authenticated');
+       }
+       try {
+          const validatedInput = LeadInputSchema.parse(input);
+          // Call with client, user ID, and input
+          const newLead = await leadService.createLead(context.supabaseClient, context.currentUser.id, validatedInput);
+          // TODO: Send Inngest event crm/lead.created
+          return newLead;
+       } catch (error: any) {
+           throw processZodError(error, 'create lead');
+       }
+    },
+    updateLead: async (_parent: unknown, { id, input }: { id: string, input: leadService.LeadUpdateInput }, context: Context) => {
+        if (!context.currentUser) {
+          throw new GraphQLError('Not authenticated');
+        }
+        try {
+            const validatedInput = LeadUpdateSchema.parse(input);
+             if (Object.keys(validatedInput).length === 0) {
+                throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
+            }
+            // Call service function directly (ownership check can be done via RLS or requires pre-fetch)
+            // For consistency with other services, let's assume updateLead relies on RLS + userId check
+            // Pre-fetching for specific error message:
+            const existingLead = await leadService.getLeadById(context.supabaseClient, context.currentUser.id, id);
+             if (!existingLead) {
+                 throw new GraphQLError('Lead not found or not authorized to update');
+             }
+            // Call updateLead with client, id, and input
+            const updatedLead = await leadService.updateLead(context.supabaseClient, id, validatedInput);
+             // TODO: Send Inngest event crm/lead.updated
+            return updatedLead;
+        } catch (error: any) {
+            throw processZodError(error, 'update lead');
+        }
+    },
+    deleteLead: async (_parent: unknown, { id }: { id: string }, context: Context) => {
+       if (!context.currentUser) {
+          throw new GraphQLError('Not authenticated');
+        }
+        try {
+            // Pre-fetching for specific error message:
+            const existingLead = await leadService.getLeadById(context.supabaseClient, context.currentUser.id, id);
+             if (!existingLead) {
+                 throw new GraphQLError('Lead not found or not authorized to delete');
+             }
+            // Call deleteLead with client and id
+            const success = await leadService.deleteLead(context.supabaseClient, id);
+            // TODO: Send Inngest event crm/lead.deleted
+            
+            // Return boolean as per schema
+            if (success) {
+                return true; // Return true on successful deletion
+            } else {
+                // If service returns false, it means 0 rows were affected.
+                // This *shouldn't* happen if existingLead check passed, but handle defensively.
+                console.warn(`deleteLead service returned false for lead ID: ${id} after existence check passed.`);
+                throw new GraphQLError('Failed to delete lead, record might have been deleted already.');
+            }
+        } catch (error: any) {
+            throw processZodError(error, 'delete lead');
+        }
     },
   },
   
   // --- Add Resolver for Person type ---
   Person: {
     // Resolver for the nested 'organization' field within Person
-    organization: async (parentPerson: { organization_id: string | null, user_id: string }, _args: unknown, context: GraphQLContext) => {
-        // Check if there is an organization_id on the parent Person object
-        if (!parentPerson.organization_id) {
-            return null; // No organization linked
-        }
-        // Ensure user context exists
-        if (!context.currentUser) {
-             console.warn('Attempted to fetch Person.organization without user context');
-             return null;
-        }
-        // Get access token
-        const token = getAccessToken(context);
-        if (!token) {
-             console.warn('Attempted to fetch Person.organization without access token');
-             return null;
-        }
-        
-        // Fetch the organization using the organizationService
-        try {
-            // Use the context user ID for consistency and rely on RLS on the organizations table.
-            return await organizationService.getOrganizationById(context.currentUser.id, parentPerson.organization_id, token);
-        } catch (error) {
-            console.error(`Error fetching organization ${parentPerson.organization_id} for person:`, error);
-            // Don't fail the whole query, just return null for this field if fetch fails
-            return null;
-        }
+    organization: async (parent: { organization_id?: string | null }, _args: unknown, context: Context) => {
+      if (!context.currentUser) {
+           throw new GraphQLError('Not authenticated');
+      }
+      if (!parent.organization_id) {
+          return null;
+      }
+      try {
+          // Fetch the organization using the organization_id from the parent Person object
+          // Pass user context for RLS
+          return await organizationService.getOrganizationById(context.currentUser!.id, parent.organization_id);
+      } catch (e) {
+          // Don't throw here, just return null if org fetch fails (e.g., RLS denies)
+          console.error('Error fetching Person.organization:', e);
+          return null; 
+          // Alternatively, re-throw using processServiceError if we want errors shown?
+          // throw processServiceError(e, 'fetching Person.organization');
+      }
     },
-    // TODO: Add resolver for Person.deals if needed
-    // deals: async (parentPerson, _args, context) => { ... }
+    // Placeholder for deals linked to a person (requires dealService update)
+    deals: async (parent: { id: string }, _args: unknown, context: Context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       console.warn(`Resolver Person.deals not fully implemented - needs service update`);
+       // TODO: Implement dealService.getDealsByPersonId(userId, personId, accessToken)
+       // try {
+       //   return await dealService.getDealsByPersonId(context.currentUser!.id, parent.id, accessToken);
+       // } catch (e) {
+       //   throw processServiceError(e, 'fetching Person.deals');
+       // }
+       return []; // Return empty array for now
+    }
   },
   
   // Add resolver for nested Deal.person field
   Deal: {
-    person: async (parentDeal: { person_id: string | null, user_id: string }, _args: unknown, context: GraphQLContext) => {
-        // Check if there is a person_id on the parent Deal object
-        if (!parentDeal.person_id) {
-            return null; // No person linked
-        }
-        // Ensure user context exists (should generally be true if they fetched the parent Deal)
-        if (!context.currentUser) {
-             console.warn('Attempted to fetch Deal.person without user context');
-             return null; // Or throw error
-        }
-        // Get access token
-        const token = getAccessToken(context);
-        if (!token) {
-             console.warn('Attempted to fetch Deal.person without access token');
-             return null; // Or throw error
-        }
-        
-        // Fetch the person using the personService
-        // We pass the parentDeal.user_id to ensure RLS check uses the *deal owner's* ID
-        // Although, RLS on contacts table itself should handle this fine as well.
-        try {
-            // Note: Using parentDeal.user_id might be slightly less secure if ownership differs,
-            // relying on context.currentUser.id and RLS policy is generally better.
-            // Let's use the context user ID for consistency and rely on RLS.
-            return await personService.getPersonById(context.currentUser.id, parentDeal.person_id, token);
-        } catch (error) {
-            console.error(`Error fetching person ${parentDeal.person_id} for deal:`, error);
-            // Don't fail the whole query, just return null for this field
+    person: async (parent: { person_id?: string | null }, _args: unknown, context: Context) => {
+      if (!context.currentUser) {
+          throw new GraphQLError('Not authenticated');
+      }
+      if (!parent.person_id) {
             return null;
-        }
+      }
+       try {
+        // Fetch the person using the person_id from the parent Deal object
+        // Pass user context for RLS
+        return await personService.getPersonById(context.currentUser!.id, parent.person_id);
+       } catch (e) {
+          // Don't throw here, just return null if person fetch fails
+          console.error('Error fetching Deal.person:', e);
+          return null;
+          // throw processServiceError(e, 'fetching Deal.person');
+       }
     }
-  }
-  // TODO: Add resolver for Contact.deals if needed (would involve calling dealService.getDealsByContactId)
+  },
+  Organization: {
+    // Placeholder for people linked to an organization (requires personService update)
+    people: async (parent: { id: string }, _args: unknown, context: Context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context);
+       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+       console.warn(`Resolver Organization.people not fully implemented - needs service update`);
+       // TODO: Implement personService.getPeopleByOrganizationId(userId, orgId, accessToken)
+       // try {
+       //    return await personService.getPeopleByOrganizationId(context.currentUser!.id, parent.id, accessToken);
+       // } catch (e) {
+       //    throw processServiceError(e, 'fetching Organization.people');
+       // }
+       return []; // Return empty array for now
+    }
+  },
 };
 
-// Define the expected shape of the context passed *into* the factory by Yoga
-// Typically includes the Request object and potentially others based on environment
-interface YogaInitialParams {
-  request: Request;
-  // Include other params Yoga might pass, like the ones from server adapters
-  event?: HandlerEvent; // Netlify specific
-  context?: HandlerContext; // Netlify specific
+// Helper function for authentication check
+function requireAuthentication(context: Context) {
+  if (!context.currentUser) {
+    // Log the attempt
+    console.warn('Authentication required but currentUser is null.'); // Added logging
+    throw new GraphQLError('Not authenticated', {
+      extensions: { code: 'UNAUTHENTICATED' },
+    });
+  }
+  // If authenticated, proceed
 }
 
-// Define the final shape of the context object *returned* by the factory
-// This is what resolvers will receive
-interface ResolverContext extends YogaInitialParams { // Inherit initial params
-  currentUser: User | null;
-  // Add any other derived context properties here
-}
-
-// Create GraphQL Yoga instance with context factory
-const yoga = createYoga<ResolverContext>({
+// Create the Yoga instance
+const yoga = createYoga<Context>({
   schema: createSchema({
     typeDefs,
     resolvers,
   }),
-  // Context factory: receives initial params, returns the final ResolverContext
-  context: async (initialContext: YogaInitialParams): Promise<ResolverContext> => {
+  // Define the context factory (Refactored for Request-Scoped Client)
+  context: async (initialContext): Promise<Context> => {
     let currentUser: User | null = null;
-    const authHeader = initialContext.request.headers.get('authorization');
-    let token: string | null = null;
+    let requestScopedSupabaseClient: SupabaseClient = supabase; // Default to shared client
 
-    if (authHeader?.startsWith('Bearer ')) {
-      token = authHeader.substring(7);
+    // Get URL and Key from process.env for creating scoped client
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    // Basic check - should be caught earlier, but good defense
+    if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('Supabase URL or Anon Key missing in function environment!');
+        // Return context with null user and default client, or throw?
+        // Returning default might mask issues, but throwing breaks the request.
+        // Let's log and return default for now.
+        return {
+            currentUser: null,
+            event: initialContext.event as HandlerEvent,
+            context: initialContext.context as HandlerContext,
+            request: initialContext.request,
+            supabaseClient: requestScopedSupabaseClient
+        };
+    }
+
+    const token = getAccessToken({
+        request: initialContext.request, 
+        event: initialContext.event as HandlerEvent, 
+        context: initialContext.context as HandlerContext, 
+        currentUser: null,
+        supabaseClient: requestScopedSupabaseClient // Pass initial client
+    });
+
+    if (token) {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        if (error) {
-          console.warn('JWT verification error:', error.message);
-        } else {
+        // 1. Validate the token using the shared client
+        const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+        
+        if (userError) {
+          console.warn('Error validating token:', userError.message);
+        } else if (user) {
+          console.log(`Token validated for user: ${user.id}`);
           currentUser = user;
+          
+          // 2. Create a NEW client instance scoped to this request/user
+          requestScopedSupabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+            auth: { persistSession: false }, // Keep server-side setting
+            global: {
+              headers: { Authorization: `Bearer ${token}` }
+            }
+          });
+          console.log(`Created request-scoped Supabase client for user: ${currentUser.id}`);
+          
+          // No need to call setSession on the new client, as it's initialized with the token header
         }
-      } catch (err) {
-        console.error('Unexpected error during token verification:', err);
+      } catch (err) { 
+        console.error('Unexpected error during Supabase auth token validation:', err);
       }
     }
 
-    // Return the full context object, explicitly merging initial params and derived values
+    // 3. Return context with the (potentially null) user and the appropriate client instance
     return {
-      ...initialContext, // Pass through initial params like request, event, context
-      currentUser,       // Add the derived user
+      currentUser,
+      event: initialContext.event as HandlerEvent,
+      context: initialContext.context as HandlerContext,
+      request: initialContext.request,
+      supabaseClient: requestScopedSupabaseClient // Return shared or request-scoped client
     };
   },
-  // Configure error masking
-  maskedErrors: {
-    maskError: (error, message, isDev) => {
-      // Allow GraphQLErrors (like authentication errors) to pass through
-      if (error instanceof GraphQLError) {
-        return error;
-      }
-      // Handle Zod validation errors
-      if (error instanceof ZodError) {
-        // Combine Zod issues into a user-friendly message
-        const validationMessage = error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ');
-        // Return a specific GraphQLError for validation issues
-        return new GraphQLError(`Validation Error: ${validationMessage}`, {
-          extensions: { code: 'BAD_USER_INPUT', validationErrors: error.flatten() }
-        });
-      }
-      // Mask other unexpected errors in production
-      if (!isDev) {
-        console.error('Unexpected error in GraphQL resolver:', error); // Log the original error server-side
-        return new GraphQLError('Internal Server Error', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
-      }
-      // In development, return the original error for easier debugging
-      return error as Error;
-    },
-  },
-  // Enable/disable GraphiQL interface
-  graphiql: process.env.NODE_ENV !== 'production', // Disable in production
-  // Set the endpoint path for the GraphQL server
+  // GraphQL endpoint path
   graphqlEndpoint: '/.netlify/functions/graphql',
+  // Health check endpoint
+  healthCheckEndpoint: '/.netlify/functions/graphql/health',
+  landingPage: false, // Disable GraphiQL landing page for now
 });
 
-// Netlify Function Handler
+// Netlify Function handler
 export const handler: Handler = async (event, context) => {
-  // Construct the URL for the Request object
-  // Use x-forwarded-host/proto or fallback to Netlify env vars or defaults
-  const protocol = event.headers['x-forwarded-proto'] || 'http';
-  const host = event.headers['x-forwarded-host'] || event.headers.host || 'localhost';
-  const url = new URL(yoga.graphqlEndpoint, `${protocol}://${host}`);
-
-  // Create a standard Request object from the Netlify event
-  const request = new Request(url.toString(), {
-    method: event.httpMethod,
-    headers: event.headers as HeadersInit, // Type assertion might be needed
-    body: event.body ? Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8') : undefined,
-  });
-
-  // Use yoga.fetch to handle the request
+  // Use Yoga's Fetch API integration for Netlify
   const response = await yoga.fetch(
-    request,
-    // Pass Netlify event/context here; context factory might access them if needed
-    // Note: Yoga's context factory primarily uses the standard Request object
+    // Construct the URL for Yoga (needed for routing inside Yoga)
+    event.path, 
     {
-      event,
-      context,
-    }
+      method: event.httpMethod,
+      headers: event.headers as HeadersInit,
+      body: event.body ? Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8') : undefined,
+    },
+    // Pass Netlify context and event for potential use in Yoga context factory
+    { event, context }
   );
 
-  // Prepare Netlify response headers
-  const headers: { [key: string]: string } = {};
-  const multiValueHeaders: { [key: string]: string[] } = {};
-
+  // Convert Fetch API Response back to Netlify Handler Response
+  const responseHeaders: { [key: string]: string } = {};
   response.headers.forEach((value, key) => {
-    const lowerCaseKey = key.toLowerCase();
-    if (lowerCaseKey === 'set-cookie') {
-      // Use getSetCookie to handle multiple Set-Cookie headers correctly
-      multiValueHeaders[key] = response.headers.getSetCookie();
-    } else {
-      // Assign single value headers
-      headers[key] = value;
-    }
+    responseHeaders[key] = value;
   });
 
-  // Convert Response back to Netlify format
   return {
     statusCode: response.status,
+    headers: responseHeaders,
     body: await response.text(),
-    headers: headers, // Use the single-value headers
-    multiValueHeaders: multiValueHeaders, // Use the multi-value headers
   };
 }; 

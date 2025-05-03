@@ -35,6 +35,15 @@
 
 # Redirects and rewrites (Essential for SPAs)
 [[redirects]]
+  from = "/api/graphql"
+  # Use the full URL for the function endpoint
+  to = "http://localhost:8888/.netlify/functions/graphql"
+  status = 200
+  # Force this rule to apply even if a file exists at the 'from' path (optional, but can help)
+  # force = true
+
+# SPA fallback: Handle client-side routing
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200 
