@@ -7,8 +7,7 @@ CREATE TABLE organizations (
   name TEXT NOT NULL,
   address TEXT,
   -- Add other relevant organization fields here (e.g., website, industry)
-  notes TEXT,
-  CONSTRAINT organizations_user_id_name_key UNIQUE (user_id, name)
+  notes TEXT
 );
 
 -- Add index for user lookup

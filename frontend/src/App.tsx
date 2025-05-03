@@ -1,6 +1,6 @@
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import { useEffect, useState } from 'react'; // Import hooks
-// import { gql, useQuery } from '@apollo/client'; // Removed unused gql
+// import { gql } from 'graphql-request'; // Removed unused gql
 // import { gqlClient } from './lib/graphqlClient'; // Removed unused gqlClient
 import { supabase } from './lib/supabase'; // Import frontend supabase client
 import { Auth } from '@supabase/auth-ui-react';
@@ -9,12 +9,12 @@ import type { Session } from '@supabase/supabase-js';
 import DealsPage from './pages/DealsPage';
 import PeoplePage from './pages/PeoplePage';
 import OrganizationsPage from './pages/OrganizationsPage'; // Import the new page
-import LeadsPage from './pages/LeadsPage'; // Import the new LeadsPage
 import { 
   Box, 
   Heading, 
   Link, // Use Chakra Link
   Button, 
+  HStack, 
   Flex,
   useToast,
   VStack,
@@ -40,53 +40,21 @@ import {
 
 // --- Component for Logged-In State (using Chakra UI) ---
 function AppContent() {
-  // Add sign out handler here
-  const handleSignOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) console.error('Error signing out:', error);
-    // Session state should update via onAuthStateChange listener in App
-  };
+  // const handleSignOut = async () => { ... }; // Removed unused function definition
 
   return (
-    <Flex height="100vh" direction="column"> {/* Change direction to column */}
-       {/* Top Bar with Logout */}
-       <Flex 
-         as="header" 
-         align="center" 
-         justify="space-between" 
-         p={4} 
-         borderBottomWidth="1px"
-         bg="gray.50"
-       >
-         <Heading size="md">PIPECD CRM</Heading>
-         <Button size="sm" onClick={handleSignOut}>Sign Out</Button>
-       </Flex>
-
-      <Flex flex="1"> {/* Inner flex for sidebar + content */}
-          {/* Sidebar */}
-          <Box width="200px" bg="gray.100" p={4}>
-            {/* <Heading size="md" mb={6}>PIPECD</Heading> -- Removed redundant heading */}
-            <VStack align="stretch" spacing={3}>
-              <Link as={RouterLink} to="/people" >People</Link>
-              <Link as={RouterLink} to="/organizations">Organizations</Link>
-              <Link as={RouterLink} to="/deals">Deals</Link>
-              <Link as={RouterLink} to="/leads">Leads</Link>
-            </VStack>
-          </Box>
-
-          {/* Main Content */}
-          <Box flex="1" p={5} overflowY="auto">
-            <Routes>
-               <Route path="/people" element={<PeoplePage />} />
-               <Route path="/organizations" element={<OrganizationsPage />} />
-               <Route path="/deals" element={<DealsPage />} />
-               <Route path="/leads" element={<LeadsPage />} />
-               {/* Redirect root to people page */}
-               <Route path="/" element={<PeoplePage />} /> 
-            </Routes>
-          </Box>
-      </Flex>
-    </Flex>
+    <>
+      <TempNav />
+      <Box p={4}>
+        <Routes>
+          <Route path="/" element={<Heading size="lg">Home</Heading>} />
+          <Route path="/people" element={<PeoplePage />} />
+          <Route path="/deals" element={<DealsPage />} />
+          <Route path="/organizations" element={<OrganizationsPage />} />
+          <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
+        </Routes>
+      </Box>
+    </>
   );
 }
 
@@ -132,6 +100,24 @@ function App() {
 }
 
 // Temporary simple navigation
-// function TempNav() { ... }
+function TempNav() {
+    const handleSignOut = async () => {
+        const { error } = await supabase.auth.signOut();
+        if (error) console.error('Error signing out:', error);
+    };
+    return (
+        <Box as="nav" bg="gray.100" p={4} mb={4}>
+            <HStack spacing={4} justify="space-between">
+                <HStack spacing={4}>
+                    <Link as={RouterLink} to="/">Home (Placeholder)</Link>
+                    <Link as={RouterLink} to="/people">People</Link>
+                    <Link as={RouterLink} to="/deals">Deals</Link>
+                    <Link as={RouterLink} to="/organizations">Organizations</Link>
+                </HStack>
+                <Button size="sm" onClick={handleSignOut}>Sign Out</Button>
+            </HStack>
+      </Box>
+    );
+}
 
 export default App;

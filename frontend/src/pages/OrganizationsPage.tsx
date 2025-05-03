@@ -218,27 +218,41 @@ function OrganizationsPage() {
               </Tr>
             </Thead>
             <Tbody>
-              {organizations.length === 0 
-                ? (
-                    <Tr>
-                      <Td colSpan={5} textAlign="center">No organizations found.</Td>
-                    </Tr>
-                  )
-                : organizations.map((org) => (
-                    <Tr key={org.id}>
-                      <Td>{org.name}</Td>
-                      <Td>{org.address || '-'}</Td>
-                      <Td maxW="200px" whiteSpace="normal" overflow="hidden" textOverflow="ellipsis">{org.notes || '-'}</Td>
-                      <Td>{formatDate(org.created_at)}</Td>
-                      <Td>
-                        <HStack spacing={2}>
-                          <IconButton aria-label="Edit organization" icon={<EditIcon />} size="sm" colorScheme="yellow" onClick={() => handleEditClick(org)} isDisabled={isDeleting === org.id} />
-                          <IconButton aria-label="Delete organization" icon={<DeleteIcon />} size="sm" colorScheme="red" onClick={() => handleDeleteClick(org.id)} isLoading={isDeleting === org.id} isDisabled={!!isDeleting && isDeleting !== org.id} />
-                        </HStack>
-                      </Td>
-                    </Tr>
-                  ))
-              }
+              {organizations.length === 0 ? (
+                <Tr>
+                  <Td colSpan={5} textAlign="center">No organizations found.</Td>
+                </Tr>
+              ) : (
+                organizations.map((org) => (
+                  <Tr key={org.id}>
+                    <Td>{org.name}</Td>
+                    <Td>{org.address || '-'}</Td>
+                    <Td maxW="200px" whiteSpace="normal" overflow="hidden" textOverflow="ellipsis">{org.notes || '-'}</Td> {/* Truncate notes */}
+                    <Td>{formatDate(org.created_at)}</Td>
+                    <Td>
+                      <HStack spacing={2}>
+                        <IconButton
+                          aria-label="Edit organization"
+                          icon={<EditIcon />}
+                          size="sm"
+                          colorScheme="yellow"
+                          onClick={() => handleEditClick(org)}
+                          isDisabled={isDeleting === org.id} // Disable if this item is being deleted
+                        />
+                        <IconButton
+                          aria-label="Delete organization"
+                          icon={<DeleteIcon />}
+                          size="sm"
+                          colorScheme="red"
+                          onClick={() => handleDeleteClick(org.id)}
+                          isLoading={isDeleting === org.id} // Show spinner for this item
+                          isDisabled={!!isDeleting && isDeleting !== org.id} // Disable if another item is being deleted
+                        />
+                      </HStack>
+                    </Td>
+                  </Tr>
+                ))
+              )}
             </Tbody>
           </Table>
         </TableContainer>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { gql } from 'graphql-request';
+import { gql } from '@apollo/client';
 import { gqlClient } from '../lib/graphqlClient';
 import {
   Button,

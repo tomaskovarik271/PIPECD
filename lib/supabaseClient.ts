@@ -20,12 +20,12 @@ if (!supabaseAnonKey) {
 // We use the anon key here, assuming RLS will handle authorization.
 // For admin tasks, a separate client using the service_role key might be needed.
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  // Explicitly configure auth for server-side usage
-  auth: {
-    // autoRefreshToken: true, // Keep default or set as needed
-    persistSession: false, // Set to false for server-side/stateless environments
-    // detectSessionInUrl: false, // Keep default (false)
-  },
+  // Optional settings:
+  // auth: {
+  //   autoRefreshToken: true,
+  //   persistSession: false, // Important for server-side usage
+  //   detectSessionInUrl: false,
+  // },
 });
 
 // Optional: For operations requiring elevated privileges (use with extreme caution!)

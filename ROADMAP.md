@@ -85,31 +85,29 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Update Person forms and views to manage organization link.
     *   [x] Create UI components/pages for managing Organizations.
     *   [x] Update frontend GraphQL calls.
-    *   [x] Refactored `PeoplePage.tsx` for consistency (useQuery, Table).
 
 ## Phase 4: Testing, Deployment & Hardening (Ongoing)
 
 *   *(Testing and hardening efforts for existing and new features)*
 *   [-] **Testing Strategy Implementation:**
     *   [x] Setup Testing Framework (Vitest & Playwright setup).
-    *   [x] Write Integration tests for critical GraphQL Resolvers.
-    *   [x] Write Unit tests for key Backend Logic modules (`personService`, `dealService`, `organizationService`, `leadService`).
+    *   [x] Write Integration tests for critical GraphQL Resolvers (Basic coverage complete).
+    *   [x] Write Unit tests for key Backend Logic modules (`personService`, `dealService`, `organizationService`).
     *   [-] Write Unit/Integration tests for key Frontend components: 
-        *   [x] `DealsPage.tsx`
-        *   [ ] `PeoplePage.tsx` (Needs update after refactor)
-        *   [ ] `OrganizationsPage.tsx` (Needs creation)
-        *   [ ] `LeadsPage.tsx` (Needs creation)
-        *   [ ] `CreateDealModal.tsx` / `EditDealModal.tsx`
-        *   [ ] `CreatePersonForm.tsx` / `EditPersonForm.tsx`
-        *   [ ] `CreateOrganizationModal.tsx` / `EditOrganizationModal.tsx`
-        *   [ ] `CreateLeadModal.tsx` / `EditLeadModal.tsx` 
-        *   [ ] `GenericDeleteConfirmationDialog.tsx`
+        *   [x] `DealsPage.tsx` (initial render, loading, error, data display)
+        *   [ ] `PeoplePage.tsx` (needs creation/update)
+        *   [ ] `OrganizationsPage.tsx` (needs creation)
+        *   [ ] `CreateDealModal.tsx`
+        *   [ ] `EditDealModal.tsx`
+        *   [ ] `CreatePersonForm.tsx`
+        *   [ ] `EditPersonForm.tsx`
+        *   [ ] `CreateOrganizationModal.tsx`
+        *   [ ] `EditOrganizationModal.tsx`
     *   [-] Write core E2E tests for user flows:
         *   [x] Basic Auth Flow (Login)
-        *   [x] People CRUD Flow
-        *   [x] Deals CRUD Flow
-        *   [x] Organization CRUD Flow
-        *   [ ] Lead CRUD Flow (Needs creation)
+        *   [x] People CRUD Flow (Basic navigation/creation check via current tests)
+        *   [x] Deals CRUD Flow (Basic navigation/creation check via current tests)
+        *   [x] Organization CRUD Flow (Basic navigation/creation check via current tests)
         *   [ ] Basic Auth Flow (Signup - Needs test)
 *   [-] **CI/CD:**
     *   [x] Configure Netlify Build pipeline (Basic setup done).
@@ -119,65 +117,25 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [-] **Security Hardening:**
     *   [ ] Implement GraphQL depth/complexity limiting.
     *   [ ] Disable GraphQL introspection in production.
-    *   [x] Review RLS policies (Done for MVP/Phase 3/Phase 5 changes).
+    *   [x] Review RLS policies (Done for MVP/Phase 3 changes).
 *   [ ] **Monitoring:**
     *   [ ] Setup basic monitoring for Netlify Functions (latency, errors).
 *   [x] **Database Migrations (Production):**
     *   [x] Establish process for applying migrations manually/safely to production (via `supabase db push --linked`).
 
-## Phase 5: Lead Management (Completed)
+## Phase 5: Pipedrive Feature Parity & Future Enhancements
 
-*   [x] Define and implement a `Lead` entity (database, service, GraphQL).
-*   [x] Create frontend UI for viewing, creating, editing, and deleting Leads.
-*   [ ] Implement Lead conversion functionality (e.g., to Deal/Person/Organization).
-
-## Phase 6: Lead Conversion & Pipedrive Feature Parity
-
-*   *(Features to implement after Lead Management)*
-*   [ ] Implement Lead conversion functionality (from Phase 5).
+*   *(Features to implement after Contact Model Enhancement)*
+*   [ ] **Lead Management:** Implement dedicated Lead entity, service, API, UI, and conversion logic.
 *   [ ] **Activity Management:** Expand beyond basic logging (Calls, Meetings, linking, completion tracking).
 *   [ ] **Pipeline Management:** Implement customizable pipelines and stages.
-*   [ ] **Email Sync:** Expand email integration capabilities.
-*   [ ] **Reporting:** Implement comprehensive reporting capabilities.
-*   [ ] **Workflows:** Expand workflow capabilities.
-*   [ ] **GDPR Compliance:** Implement GDPR compliance workflows.
-*   [ ] **Performance Optimization:** Address performance issues and optimize system performance.
-*   [ ] **Security:** Enhance security measures.
-*   [ ] **User Experience:** Improve user experience and interface.
-*   [ ] **Integration:** Expand system integration capabilities.
-*   [ ] **Regular Reviews:** Regularly review system performance and user feedback.
-*   [ ] **Future Features:** Identify and plan for future features and enhancements.
-
-## Phase 7: Code Refactoring & Consistency Audit (Planned)
-
-*   *(Addressing findings from the consistency audit to improve maintainability, reduce duplication, and enforce standards across the codebase.)*
-
-*   [-] **Phase A: Backend Authentication & Service Layer Consolidation**
-    *   [x] **Standardize Service Signatures:** Refactor `personService`, `organizationService`, `dealService` to accept `supabaseClient`, remove `userId`/`accessToken`.
-    *   [x] **Update Service Implementations:** Rely solely on passed `supabaseClient` for RLS, remove internal auth checks.
-    *   [x] **Refactor GraphQL Resolvers (Queries/Mutations):** Update resolvers to pass `context.supabaseClient` instead of `userId`/`accessToken`.
-    *   [x] **Refactor Nested GraphQL Resolvers:** Ensure nested resolvers (`Person.organization`, `Deal.person`, etc.) also use `context.supabaseClient` consistently.
-    *   [x] **Update Backend Unit Tests:** Align `*Service.test.ts` files with new signatures (pass client, adjust auth mocks).
-    *   [x] **Update Resolver Integration Tests:** Align `graphql.test.ts` with new service call patterns.
-
-*   [-] **Phase B: Backend Error Handling & Schema Consistency**
-    *   [x] **Standardize Resolver Error Handling:** Implement consistent error processing (e.g., enhance `processZodError` or new helper) for all resolvers.
-    *   [x] **Standardize "Not Found" Handling:** Decide and implement consistent return (`null` or specific error) for `get*ById` resolvers.
-    *   [x] **Refine Zod Update Schemas:** Add `.refine()` to `Person`/`Org`/`Deal` update schemas if needed to prevent invalid states.
-    *   [x] **Review Inngest Event Strategy:** Define and implement consistent event sending logic (Create/Update/Delete?) across entities.
-
-*   [-] **Phase C: Frontend Consolidation & Type Safety**
-    *   [ ] **Consolidate Frontend Data Fetching:** Remove all `graphql-request` usage, refactor to Apollo Client hooks, uninstall dependency.
-    *   [ ] **Implement GraphQL Code Generation:** Setup `graphql-code-generator`, generate types/hooks, replace manual frontend types.
-    *   [ ] **Standardize Frontend Component Naming:** Choose standard (e.g., `*Modal` vs. `*Form`) and rename components/files.
-
-*   [-] **Phase D: Testing & Cleanup**
-    *   [ ] **Review Supabase Test Mocks:** Evaluate complexity, investigate simplification options.
-    *   [ ] **Expand Test Coverage:** Add remaining Frontend component tests (People, Orgs, Leads pages/modals). Add E2E Lead CRUD flow, Signup flow. (Tracked under Phase 4 ToDo items).
-    *   [ ] **Dependency Audit:** Prune unused dependencies after refactoring.
-
-*   [-] **Phase E: Documentation Update**
-    *   [ ] **Update Documentation:** Review and update `README.md` and `DEVELOPER_GUIDE.md` to reflect all refactoring changes (auth, services, data fetching, testing, etc.).
+*   [ ] Achieve Full Feature Parity with Pipedrive (Iterative development based on priority - Products, Projects, Email Sync, Workflows, Reporting etc. as per ADR Sec 4.1).
+*   [ ] Expand Test Coverage comprehensively.
+*   [ ] Performance Optimization (address cold starts if necessary).
+*   [ ] Implement Compliance Workflows (GDPR Data Erasure via Inngest).
+*   [ ] Regularly review Inngest usage/cost and evaluate alternatives.
+*   [ ] Enhance Security (APQ, Operation Whitelisting, full RBAC).
+*   [ ] Potentially refactor to `packages/` monorepo (Nx/Turborepo) if complexity warrants.
 
 ---
 

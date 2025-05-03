@@ -9,7 +9,7 @@ import {
   Button,
   useToast,
 } from '@chakra-ui/react';
-import { gql } from 'graphql-request';
+import { gql } from '@apollo/client';
 import { gqlClient } from '../lib/graphqlClient';
 
 // Define the mutation for deleting a Person

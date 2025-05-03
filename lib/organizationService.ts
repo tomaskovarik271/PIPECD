@@ -28,10 +28,20 @@ function getAuthenticatedClient(accessToken: string): SupabaseClient {
   });
 }
 
+function handleSupabaseError(error: PostgrestError | null, context: string) {
+  if (error) {
+    console.error(`Supabase error in ${context}:`, error.message);
+    // Consider mapping specific error codes (e.g., unique constraints) if needed
+    throw new GraphQLError(`Database error during ${context}`, {
+      extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: error.message },
+    });
+  }
+}
+
 // --- Organization Data Shape ---
 
 // Input for creating/updating organizations
-export interface OrganizationInput {
+interface OrganizationInput {
   name: string; // Assuming name is required
   address?: string | null;
   notes?: string | null;
@@ -39,43 +49,11 @@ export interface OrganizationInput {
 }
 
 // Shape returned by the database (includes id, timestamps, user_id)
-export interface OrganizationRecord extends OrganizationInput {
+interface OrganizationRecord extends OrganizationInput {
   id: string;
   created_at: string;
   updated_at: string;
   user_id: string;
-}
-
-export type OrganizationUpdateInput = Partial<OrganizationInput>;
-
-// Re-add handleSupabaseError locally until shared util is confirmed/created
-function handleSupabaseError(error: PostgrestError | null, operation: string): void {
-    if (error) {
-        console.error(`Supabase error during ${operation}:`, error);
-        let errorCode = 'INTERNAL_SERVER_ERROR'; // Default code
-        let errorMessage = `Database operation failed in ${operation}: ${error.message}`;
-
-        // Customize message and code based on common error codes
-        if (error.code === '23505') { // Unique constraint violation
-            errorCode = 'CONFLICT';
-            errorMessage = `Database operation failed in ${operation}: Duplicate value detected.`;
-        }
-        if (error.code === '42501') { // RLS violation
-            errorCode = 'FORBIDDEN';
-             // For deletes, we might just want to return false instead of throwing
-            if (operation === 'deleteOrganization') { // Check specific operation name
-                 console.warn(`RLS prevented delete operation for organization.`);
-                 // Keep returning void here for deleteOrganization RLS
-                 return;
-            }
-             errorMessage = `Database operation failed in ${operation}: Permission denied (RLS). ${error.message}`;
-        }
-
-        // Throw an error with a code property
-        const customError = new Error(errorMessage);
-        (customError as any).code = errorCode; // Add code property
-        throw customError;
-    }
 }
 
 // --- Organization Service ---
@@ -83,92 +61,89 @@ function handleSupabaseError(error: PostgrestError | null, operation: string): v
 export const organizationService = {
 
   // Get all organizations for the authenticated user (RLS handles filtering)
-  async getOrganizations(supabaseClient: SupabaseClient): Promise<OrganizationRecord[]> {
-    const { data, error } = await supabaseClient
+  async getOrganizations(userId: string, accessToken: string): Promise<OrganizationRecord[]> {
+    console.log('[organizationService.getOrganizations] called for user:', userId);
+    const supabase = getAuthenticatedClient(accessToken);
+    const { data, error } = await supabase
       .from('organizations')
-      .select('*')
-      // .eq('user_id', userId) // Rely on RLS
+      .select('*') // RLS filters by user_id
       .order('name', { ascending: true });
 
-    if (error) handleSupabaseError(error, 'getOrganizations');
+    handleSupabaseError(error, 'fetching organizations');
     return data || [];
   },
 
   // Get a single organization by ID (RLS handles filtering)
-  async getOrganizationById(supabaseClient: SupabaseClient, organizationId: string): Promise<OrganizationRecord | null> {
-    if (!organizationId) {
-      console.warn('getOrganizationById called with null or undefined id');
-      return null;
-    }
-    const { data, error } = await supabaseClient
+  async getOrganizationById(userId: string, id: string, accessToken: string): Promise<OrganizationRecord | null> {
+    console.log('[organizationService.getOrganizationById] called for user:', userId, 'id:', id);
+    const supabase = getAuthenticatedClient(accessToken);
+    const { data, error } = await supabase
       .from('organizations')
       .select('*')
-      // .eq('user_id', userId) // Rely on RLS
-      .eq('id', organizationId)
-      .maybeSingle();
+      .eq('id', id) // Filter by specific ID (RLS ensures user access)
+      .single();
 
-    if (error) handleSupabaseError(error, 'getOrganizationById');
+    // Ignore 'PGRST116' error (No rows found), return null in that case
+    if (error && error.code !== 'PGRST116') {
+      handleSupabaseError(error, 'fetching organization by ID');
+    }
     return data;
   },
 
   // Create a new organization (RLS requires authenticated client)
-  async createOrganization(supabaseClient: SupabaseClient, userId: string, input: OrganizationInput): Promise<OrganizationRecord> {
-    const orgData = {
-      ...input,
-      user_id: userId,
-    };
-    const { data, error } = await supabaseClient
+  async createOrganization(userId: string, input: OrganizationInput, accessToken: string): Promise<OrganizationRecord> {
+    console.log('[organizationService.createOrganization] called for user:', userId, 'input:', input);
+    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
+    const { data, error } = await supabase
       .from('organizations')
-      .insert(orgData)
+      .insert({ ...input, user_id: userId }) // RLS CHECK (auth.uid() = user_id)
       .select()
       .single();
 
-    if (error) handleSupabaseError(error, 'createOrganization');
-    if (!data) throw new Error('Failed to create organization, no data returned.');
-
+    handleSupabaseError(error, 'creating organization');
+    if (!data) {
+      // This case might indicate a different issue if no DB error occurred
+      throw new GraphQLError('Failed to create organization, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+    }
     return data;
   },
 
   // Update an existing organization (RLS requires authenticated client)
-  async updateOrganization(supabaseClient: SupabaseClient, organizationId: string, input: Partial<OrganizationInput>): Promise<OrganizationRecord | null> {
-    if (Object.keys(input).length === 0) {
-      // throw new Error("Update input cannot be empty.");
-      console.warn('updateOrganization called with empty input, returning current record.');
-      const existing = await this.getOrganizationById(supabaseClient, organizationId);
-      if (!existing) {
-        throw new Error('Organization not found or access denied for update check.');
-      }
-      return existing;
-    }
-
-    const { data, error } = await supabaseClient
+  async updateOrganization(userId: string, id: string, input: Partial<OrganizationInput>, accessToken: string): Promise<OrganizationRecord> {
+    console.log('[organizationService.updateOrganization] called for user:', userId, 'id:', id, 'input:', input);
+    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
+    const { data, error } = await supabase
       .from('organizations')
-      .update(input)
-      // .eq('user_id', userId) // Rely on RLS
-      .eq('id', organizationId)
+      .update(input) // Pass partial input for update
+      .eq('id', id) // Target the specific organization ID (RLS checks user_id)
       .select()
       .single();
 
-    if (error) handleSupabaseError(error, 'updateOrganization');
-    if (!data) {
-      console.warn(`updateOrganization query succeeded but returned no data for id: ${organizationId}. Might be RLS or not found.`);
-      return null;
+    // Handle not found error specifically
+    if (error && error.code === 'PGRST116') { // 'PGRST116' No rows found
+      throw new GraphQLError('Organization not found', { extensions: { code: 'NOT_FOUND' } });
+    }
+    handleSupabaseError(error, 'updating organization');
+    if (!data) { // Should be redundant if error handling is correct, but good failsafe
+      throw new GraphQLError('Organization update failed, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
     }
     return data;
   },
 
   // Delete an organization (RLS requires authenticated client)
-  async deleteOrganization(supabaseClient: SupabaseClient, organizationId: string): Promise<boolean> {
-    const { error, count } = await supabaseClient
+  async deleteOrganization(userId: string, id: string, accessToken: string): Promise<boolean> {
+    console.log('[organizationService.deleteOrganization] called for user:', userId, 'id:', id);
+    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
+    // Note: Deleting an organization might fail if people still reference it, unless ON DELETE is configured differently
+    // Current setup for people.organization_id is ON DELETE SET NULL, so deletion should proceed.
+    const { error, count } = await supabase
       .from('organizations')
-      .delete({ count: 'exact' })
-      // .eq('user_id', userId) // Rely on RLS
-      .eq('id', organizationId);
+      .delete()
+      .eq('id', id); // Target the specific organization ID (RLS checks user_id)
 
-    if (error && error.code !== '42501') { // Ignore RLS error for return value
-      handleSupabaseError(error, 'deleteOrganization');
-    }
+    handleSupabaseError(error, 'deleting organization');
 
-    return count !== 0; // Return true if deleted (or RLS stopped it without DB error)
+    console.log('[organizationService.deleteOrganization] Deleted count (informational):', count);
+    return !error; // Return true if no database error occurred
   },
 }; 
