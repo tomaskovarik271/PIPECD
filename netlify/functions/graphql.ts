@@ -763,53 +763,16 @@ export const resolvers = {
 
       try {
           console.log(`[Person.organization] Calling organizationService.getOrganizationById for ID: ${parent.organization_id}`); // Added Log
-          // Fetch the organization using the organization_id from the parent Person object
-          // Pass client and orgId
           const organization = await organizationService.getOrganizationById(context.supabaseClient, parent.organization_id);
-           console.log(`[Person.organization] organizationService.getOrganizationById returned: ${organization ? `Org ID ${organization.id}` : 'null'}`); // Added Log
+           console.log(`[Person.organization] organizationService.getOrganizationById returned: ${organization ? `Org ID ${organization.id}` : 'null'}`);
           
-          // Stringify check (keep for now)
-          if (organization) {
-              try {
-                  console.log(`[Person.organization] Attempting to stringify organization ID: ${organization.id}`);
-                  JSON.stringify(organization);
-                  console.log(`[Person.organization] Successfully stringified organization ID: ${organization.id}`);
-              } catch (stringifyError) {
-                  console.error(`[Person.organization] FAILED TO STRINGIFY organization ID: ${organization.id}`, stringifyError);
-                  // Throw a specific error if stringify fails
-                  throw new GraphQLError('Failed to serialize organization data. Check function logs.', {
-                      extensions: { code: 'INTERNAL_SERVER_ERROR' }
-                  });
-              }
-          } else {
-              // If org is null, return null from resolver
-              console.log(`[Person.organization] Original organization was null, returning null.`);
-              return null;
-          }
-          
-          // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
-          console.log(`[Person.organization] SKIPPING actual data, returning simplified object for Org ID: ${parent.organization_id}`);
-          return {
-              id: parent.organization_id, // Must match parent request
-              created_at: new Date().toISOString(), // Provide valid required fields
-              updated_at: new Date().toISOString(),
-              user_id: context.currentUser!.id,
-              name: "Test Organization Name", // Provide valid required fields
-              address: null,
-              notes: null,
-              people: [] // Add empty array for related field if required by schema non-null
-          };
+          return organization; // Original return restored
       } catch (e) {
-          // Log the error thoroughly
-          console.error('[Person.organization] Caught error (likely from service call or stringify attempt): ', e); 
+          // Restore original catch block logic (re-throw a GraphQLError)
+          console.error('[Person.organization] Caught error: ', e); 
           console.error(`[Person.organization] Error message: ${e instanceof Error ? e.message : String(e)}`); 
           console.error(`[Person.organization] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); 
-          // Throw a new GraphQLError for potentially better handling/logging by Yoga
-          // If it's already a GraphQLError from the stringify check, re-throw it, otherwise wrap
-          if (e instanceof GraphQLError && e.message.includes('Failed to serialize')) {
-             throw e;
-          } 
-          throw new GraphQLError('Error fetching or processing Person.organization. Check function logs.', {
+          throw new GraphQLError('Error fetching Person.organization. Check function logs.', {
               extensions: { 
                   code: 'INTERNAL_SERVER_ERROR', 
                   originalMessage: e instanceof Error ? e.message : String(e) 
@@ -842,57 +805,16 @@ export const resolvers = {
  
        try {
         console.log(`[Deal.person] Calling personService.getPersonById for ID: ${parent.person_id}`); // Added Log
-        // Fetch the person using the person_id from the parent Deal object
-        // Pass client and personId
         const person = await personService.getPersonById(context.supabaseClient, parent.person_id);
         console.log(`[Deal.person] personService.getPersonById returned: ${person ? `Person ID ${person.id}` : 'null'}`);
         
-        // Stringify check (keep for now)
-        if (person) {
-            try {
-                console.log(`[Deal.person] Attempting to stringify person ID: ${person.id}`);
-                JSON.stringify(person);
-                console.log(`[Deal.person] Successfully stringified person ID: ${person.id}`);
-            } catch (stringifyError) {
-                console.error(`[Deal.person] FAILED TO STRINGIFY person ID: ${person.id}`, stringifyError);
-                // Throw a specific error if stringify fails
-                throw new GraphQLError('Failed to serialize person data. Check function logs.', {
-                    extensions: { code: 'INTERNAL_SERVER_ERROR' }
-                });
-            }
-        } else {
-           // If person is null, return null from resolver
-           console.log(`[Deal.person] Original person was null, returning null.`);
-           return null; 
-        }
-
-        // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
-        console.log(`[Deal.person] SKIPPING actual data, returning simplified object for Person ID: ${parent.person_id}`);
-        return {
-            id: parent.person_id, // Must match parent request
-            created_at: new Date().toISOString(), // Provide valid required fields
-            updated_at: new Date().toISOString(),
-            user_id: context.currentUser!.id,
-            first_name: "Test",
-            last_name: "Person",
-            email: null,
-            phone: null,
-            notes: null,
-            organization_id: null,
-            organization: null, // Add null for related object if needed
-            deals: [] // Add empty array for related field if required by schema non-null
-        };
+        return person; // Original return restored
        } catch (e) {
-          // Log the error thoroughly
-          console.error('[Deal.person] Caught error (likely from service call or stringify attempt): ', e);
+          // Restore original catch block logic (re-throw a GraphQLError)
+          console.error('[Deal.person] Caught error: ', e);
           console.error(`[Deal.person] Error message: ${e instanceof Error ? e.message : String(e)}`); 
           console.error(`[Deal.person] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); 
-          // Throw a new GraphQLError for potentially better handling/logging by Yoga
-          // If it's already a GraphQLError from the stringify check, re-throw it, otherwise wrap
-          if (e instanceof GraphQLError && e.message.includes('Failed to serialize')) {
-             throw e;
-          }
-          throw new GraphQLError('Error fetching or processing Deal.person. Check function logs.', {
+          throw new GraphQLError('Error fetching Deal.person. Check function logs.', {
               extensions: { 
                   code: 'INTERNAL_SERVER_ERROR', 
                   originalMessage: e instanceof Error ? e.message : String(e) 
@@ -934,8 +856,7 @@ const yoga = createYoga<Context>({
     typeDefs,
     resolvers,
   }),
-  // Explicitly disable error masking for debugging in production
-  maskedErrors: false, 
+  // maskedErrors: false, // Removed explicit disabling
   // Define the context factory (Refactored for Request-Scoped Client)
   context: async (initialContext): Promise<Context> => {
     let currentUser: User | null = null;
