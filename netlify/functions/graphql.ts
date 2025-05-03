@@ -914,28 +914,54 @@ const yoga = createYoga<Context>({
 
 // Netlify Function handler
 export const handler: Handler = async (event, context) => {
-  // Use Yoga's Fetch API integration for Netlify
-  const response = await yoga.fetch(
-    // Construct the URL for Yoga (needed for routing inside Yoga)
-    event.path, 
-    {
-      method: event.httpMethod,
-      headers: event.headers as HeadersInit,
-      body: event.body ? Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8') : undefined,
-    },
-    // Pass Netlify context and event for potential use in Yoga context factory
-    { event, context }
-  );
+  // <<< ADD LOG AT VERY START >>>
+  console.info(`[graphql handler] START execution. Path: ${event.path}, Method: ${event.httpMethod}`); 
+  if (event.body) {
+      try {
+          const parsedBody = JSON.parse(event.body);
+          console.info(`[graphql handler] Request Body (parsed): OperationName=${parsedBody?.operationName}`);
+      } catch (e) {
+          console.info(`[graphql handler] Request Body (raw): ${event.body.substring(0, 200)}...`); // Log raw if not JSON
+      }
+  } else {
+      console.info(`[graphql handler] No request body.`);
+  }
+  
+  try { // <<< ADD TRY/CATCH AROUND YOGA FETCH >>>
+    // Use Yoga's Fetch API integration for Netlify
+    const response = await yoga.fetch(
+      // Construct the URL for Yoga (needed for routing inside Yoga)
+      event.path, 
+      {
+        method: event.httpMethod,
+        headers: event.headers as HeadersInit,
+        body: event.body ? Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8') : undefined,
+      },
+      // Pass Netlify context and event for potential use in Yoga context factory
+      { event, context }
+    );
+    console.info(`[graphql handler] yoga.fetch completed. Status: ${response.status}`); // <<< ADD LOG
 
-  // Convert Fetch API Response back to Netlify Handler Response
-  const responseHeaders: { [key: string]: string } = {};
-  response.headers.forEach((value, key) => {
-    responseHeaders[key] = value;
-  });
+    // Convert Fetch API Response back to Netlify Handler Response
+    const responseHeaders: { [key: string]: string } = {};
+    response.headers.forEach((value, key) => {
+      responseHeaders[key] = value;
+    });
 
-  return {
-    statusCode: response.status,
-    headers: responseHeaders,
-    body: await response.text(),
-  };
+    const responseBody = await response.text();
+    console.info(`[graphql handler] END execution. Status: ${response.status}, Body: ${responseBody.substring(0, 200)}...`); // <<< ADD LOG
+
+    return {
+      statusCode: response.status,
+      headers: responseHeaders,
+      body: responseBody, // Use already read body
+    };
+  } catch (err) {
+      console.error('[graphql handler] UNEXPECTED ERROR during yoga.fetch or response processing:', err); // <<< ADD LOG
+      return {
+          statusCode: 500,
+          body: JSON.stringify({ message: 'Internal Handler Error' }),
+          headers: { 'Content-Type': 'application/json' }
+      };
+  }
 }; 
