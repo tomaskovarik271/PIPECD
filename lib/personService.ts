@@ -3,28 +3,16 @@ import { supabase } from './supabaseClient'; // Import the shared client for typ
 import { GraphQLError } from 'graphql'; // Needed for handleSupabaseError
 import { createClient, type SupabaseClient, type PostgrestError } from '@supabase/supabase-js'; 
 
-// Load env vars (Refactor Candidate: Move to shared config)
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-if (!supabaseUrl) {
-  throw new Error('SUPABASE_URL environment variable is not set.');
-}
-if (!supabaseAnonKey) {
-    console.warn('SUPABASE_ANON_KEY environment variable is not set. Client creation might fail.');
-}
-
 // --- Helper Functions (Refactor Candidate: Move to shared lib/utils/supabaseHelpers.ts) ---
 
-function getAuthenticatedClient(accessToken: string): SupabaseClient {
-  if (!supabaseUrl || !supabaseAnonKey) {
-    throw new Error('Supabase URL or Anon Key is not configured.');
-  }
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    // auth: { persistSession: false }
-  });
-}
+// REMOVED: Top-level environment variable checks
+// const supabaseUrl = process.env.SUPABASE_URL;
+// const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+// if (!supabaseUrl) { ... }
+// if (!supabaseAnonKey) { ... }
+
+// REMOVED: Unused helper function
+// function getAuthenticatedClient(accessToken: string): SupabaseClient { ... }
 
 // --- Person Data Shape ---
 

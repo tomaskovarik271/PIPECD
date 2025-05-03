@@ -6,7 +6,7 @@ import { GraphQLError } from 'graphql';
 import { personService } from '../../lib/personService';
 import { organizationService } from '../../lib/organizationService';
 import { dealService } from '../../lib/dealService';
-import { leadService } from '../../lib/leadService';
+import { leadService, type LeadInput, type LeadUpdateInput } from '../../lib/leadService';
 import { z, ZodError } from 'zod';
 import { inngest } from './inngest';
 
@@ -648,42 +648,38 @@ export const resolvers = {
     },
 
     // --- Lead Mutations ---
-    createLead: async (_parent: unknown, { input }: { input: any }, context: Context) => { // Use 'any' for now
-       console.info('[Mutation.createLead] Resolver START (Temporarily Disabled)');
+    createLead: async (_parent: unknown, { input }: { input: LeadInput }, context: Context) => {
        requireAuthentication(context);
-       // try {
-       //    const validatedInput = LeadInputSchema.parse(input);
-       //    // Call with client, user ID, and input
-       //    const newLead = await leadService.createLead(context.supabaseClient, context.currentUser!.id, validatedInput);
-       //    // ... inngest ...
-       //    return newLead;
-       // } catch (error: any) {
-       //     throw processZodError(error, 'create lead');
-       // }
-       throw new Error('createLead temporarily disabled'); // Placeholder
+       try {
+          const validatedInput = LeadInputSchema.parse(input);
+          // Call with client, user ID, and input
+          const newLead = await leadService.createLead(context.supabaseClient, context.currentUser!.id, validatedInput);
+          // ... inngest ...
+          return newLead;
+       } catch (error: any) {
+           throw processZodError(error, 'create lead');
+       }
     },
-    updateLead: async (_parent: unknown, args: { id: string, input: any }, context: Context) => { // Use 'any' for now
-        console.info('[Mutation.updateLead] Resolver START (Temporarily Disabled)');
-        requireAuthentication(context); 
-        // const parsedInput = LeadUpdateSchema.parse(args.input);
-        // const existingLead = await leadService.getLeadById(context.supabaseClient, context.currentUser!.id, args.id);
-        // if (!existingLead) {
-        //     throw new GraphQLError('Lead not found', { extensions: { code: 'NOT_FOUND' } });
-        // }
-        // try {
-        //     const updatedLead = await leadService.updateLead(context.supabaseClient, context.currentUser!.id, args.id, parsedInput);
-        //     if (!updatedLead) {
-        //          throw new GraphQLError('Lead update failed', { extensions: { code: 'FORBIDDEN' } });
-        //     }
-        //     return updatedLead;
-        // } catch (error) {
-        //      console.error('Unexpected error during update lead:', error);
-        //      throw new GraphQLError('An unexpected error occurred during update lead.', { 
-        //          extensions: { code: 'INTERNAL_SERVER_ERROR' }, 
-        //          originalError: error instanceof Error ? error : undefined
-        //      });
-        // }
-        return null; // Placeholder
+    updateLead: async (_parent: unknown, args: { id: string, input: LeadUpdateInput }, context: Context) => {
+        requireAuthentication(context);
+        const parsedInput = LeadUpdateSchema.parse(args.input);
+        const existingLead = await leadService.getLeadById(context.supabaseClient, context.currentUser!.id, args.id);
+        if (!existingLead) {
+            throw new GraphQLError('Lead not found', { extensions: { code: 'NOT_FOUND' } });
+        }
+        try {
+            const updatedLead = await leadService.updateLead(context.supabaseClient, context.currentUser!.id, args.id, parsedInput);
+            if (!updatedLead) {
+                 throw new GraphQLError('Lead update failed', { extensions: { code: 'FORBIDDEN' } });
+            }
+            return updatedLead;
+        } catch (error) {
+             console.error('Unexpected error during update lead:', error);
+             throw new GraphQLError('An unexpected error occurred during update lead.', { 
+                 extensions: { code: 'INTERNAL_SERVER_ERROR' }, 
+                 originalError: error instanceof Error ? error : undefined
+             });
+        }
     },
     deleteLead: async (_parent: unknown, args: { id: string }, context: Context) => {
         console.info('[Mutation.deleteLead] Resolver START (Temporarily Disabled)');
