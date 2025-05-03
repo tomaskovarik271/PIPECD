@@ -30,8 +30,8 @@ interface DealToEdit {
   name: string;
   stage: string;
   amount?: number | null;
-  contact_id?: string | null; // Add contact_id here
-  // Add other fields if they are editable (e.g., contact_id)
+  person_id?: string | null; // Renamed from contact_id
+  // Add other fields if they are editable
 }
 
 // Define GraphQL Mutation for Update
@@ -43,29 +43,30 @@ const UPDATE_DEAL_MUTATION = gql`
       stage
       amount
       updated_at # Get updated timestamp
+      person_id # Also fetch person_id after update
     }
   }
 `;
 
-// Add query for contact list (can be shared with Create modal)
-const GET_CONTACT_LIST_QUERY = gql`
-  query GetContactList {
-    contactList {
+// Rename query for person list (can be shared with Create modal)
+const GET_PERSON_LIST_QUERY = gql`
+  query GetPersonList {
+    personList {
       id
       name
     }
   }
 `;
 
-// Type for contact list items
-interface ContactListItem {
+// Type for person list items
+interface PersonListItem {
   id: string;
   name: string;
 }
 
-// Type for contact list query result
-interface GetContactListQueryResult {
-  contactList: ContactListItem[];
+// Type for person list query result
+interface GetPersonListQueryResult {
+  personList: PersonListItem[];
 }
 
 interface EditDealModalProps {
@@ -83,30 +84,30 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   const [name, setName] = useState('');
   const [stage, setStage] = useState(dealStages[0]);
   const [amount, setAmount] = useState<string>('');
-  const [contactId, setContactId] = useState<string>(''); // State for selected contact ID
-  // Contact list state
-  const [contacts, setContacts] = useState<ContactListItem[]>([]); 
-  const [isContactsLoading, setIsContactsLoading] = useState(false);
-  const [contactsError, setContactsError] = useState<string | null>(null);
+  const [personId, setPersonId] = useState<string>(''); // Renamed state variable
+  // Person list state
+  const [people, setPeople] = useState<PersonListItem[]>([]); // Renamed state variable
+  const [isPeopleLoading, setIsPeopleLoading] = useState(false); // Renamed state variable
+  const [peopleError, setPeopleError] = useState<string | null>(null); // Renamed state variable
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Effect to fetch contacts when modal opens
+  // Effect to fetch people when modal opens
   useEffect(() => {
     if (isOpen) {
-      setIsContactsLoading(true);
-      setContactsError(null);
-      gqlClient.request<GetContactListQueryResult>(GET_CONTACT_LIST_QUERY)
+      setIsPeopleLoading(true); // Use renamed setter
+      setPeopleError(null); // Use renamed setter
+      gqlClient.request<GetPersonListQueryResult>(GET_PERSON_LIST_QUERY)
         .then(data => {
-          setContacts(data.contactList || []);
+          setPeople(data.personList || []); // Use renamed setter and data field
         })
         .catch(err => {
-          console.error("Error fetching contacts for dropdown:", err);
+          console.error("Error fetching people for dropdown:", err);
           const gqlError = err.response?.errors?.[0]?.message;
-          setContactsError(gqlError || err.message || 'Failed to load contacts');
+          setPeopleError(gqlError || err.message || 'Failed to load people'); // Use renamed setter
         })
         .finally(() => {
-          setIsContactsLoading(false);
+          setIsPeopleLoading(false); // Use renamed setter
         });
     }
   }, [isOpen]); // Only depends on isOpen
@@ -117,7 +118,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       setName(deal.name || '');
       setStage(deal.stage || dealStages[0]);
       setAmount(deal.amount != null ? String(deal.amount) : '');
-      setContactId(deal.contact_id || ''); // Initialize contactId from deal
+      setPersonId(deal.person_id || ''); // Use renamed deal prop field and setter
       setError(null); // Clear previous errors when opening
       setIsLoading(false); // Reset loading state
     } else {
@@ -125,7 +126,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
         setName('');
         setStage(dealStages[0]);
         setAmount('');
-        setContactId(''); // Reset contactId too
+        setPersonId(''); // Use renamed setter
     }
   }, [deal]); // Dependency array ensures this runs when `deal` changes
 
@@ -149,7 +150,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
           name: name.trim(),
           stage: stage,
           amount: amount ? parseFloat(amount) : null,
-          contact_id: contactId || null, // Include contact_id
+          person_id: personId || null, // Use renamed state variable for mutation input field
           // Add other fields if they become editable
         },
       };
@@ -192,10 +193,10 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                 {error}
             </Alert>
           )}
-          {contactsError && (
+          {peopleError && ( // Use renamed state variable
              <Alert status="warning" mb={4}>
                 <AlertIcon />
-                {contactsError}
+                {peopleError} {/* Use renamed state variable */}
             </Alert>
           )}
           <VStack spacing={4}>
@@ -228,22 +229,25 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
             </FormControl>
 
             <FormControl>
-              <FormLabel>Link to Contact (Optional)</FormLabel>
-              <Select 
-                placeholder={isContactsLoading ? 'Loading contacts...' : 'Select contact'}
-                value={contactId}
-                onChange={(e) => setContactId(e.target.value)}
-                isDisabled={isContactsLoading || !!contactsError}
+              <FormLabel>Link to Person (Optional)</FormLabel> {/* Renamed label */}
+              <Select
+                placeholder={isPeopleLoading ? 'Loading people...' : 'Select person'} /* Renamed placeholder */
+                value={personId} /* Use renamed state variable */
+                onChange={(e) => setPersonId(e.target.value)} /* Use renamed state setter */
+                isDisabled={isPeopleLoading || !!peopleError} /* Use renamed state variable */
               >
-                 {!isContactsLoading && !contactsError && contacts.map(contact => (
-                    <option key={contact.id} value={contact.id}>
-                        {contact.name}
+                 {/* Add an option for 'None' or empty selection */}
+                 <option value="">-- None --</option>
+                 {/* Iterate over people state */}
+                 {!isPeopleLoading && !peopleError && people.map(person => (
+                    <option key={person.id} value={person.id}>
+                        {person.name}
                     </option>
                 ))}
               </Select>
             </FormControl>
 
-             {/* TODO: Add Contact Selection Field Later */}
+             {/* Removed outdated TODO */}
           </VStack>
         </ModalBody>
 
@@ -255,7 +259,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
             isLoading={isLoading}
             leftIcon={isLoading ? <Spinner size="sm" /> : undefined}
           >
-            Update Deal
+            Save Changes
           </Button>
           <Button variant='ghost' onClick={onClose} isDisabled={isLoading}>
             Cancel

@@ -48,17 +48,18 @@ interface DealInput {
   name?: string | null;
   stage?: string | null; // e.g., 'Lead', 'Proposal', 'Closed Won', 'Closed Lost'
   amount?: number | null;
-  contact_id?: string | null; // Foreign key to contacts table
+  person_id?: string | null; // Foreign key to people table (Renamed from contact_id)
   // Add other relevant fields like close_date, notes etc.
 }
 
 // Define the shape returned by the database (includes id, timestamps, user_id)
 // Ideally, generate this from schema or use a shared type
-interface DealRecord extends DealInput {
+interface DealRecord extends Omit<DealInput, 'person_id'> { // Use Omit if DealInput includes person_id
     id: string;
     created_at: string;
     updated_at: string;
     user_id: string;
+    person_id?: string | null; // Ensure person_id is here too
 }
 
 // --- Deal Service ---

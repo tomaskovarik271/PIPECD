@@ -97,8 +97,8 @@ describe('DealsPage', () => {
         amount: 5000,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        contact_id: 'contact-1',
-        contact: { id: 'contact-1', first_name: 'John', last_name: 'Doe', email: 'john@example.com' },
+        person_id: 'person-1',
+        person: { id: 'person-1', first_name: 'John', last_name: 'Doe', email: 'john@example.com' },
       },
       {
         id: 'deal-2',
@@ -107,8 +107,8 @@ describe('DealsPage', () => {
         amount: 15000,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        contact_id: 'contact-2',
-        contact: { id: 'contact-2', first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com' },
+        person_id: 'person-2',
+        person: { id: 'person-2', first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com' },
       },
     ];
 

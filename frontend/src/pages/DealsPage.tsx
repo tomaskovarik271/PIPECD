@@ -27,7 +27,7 @@ import EditDealModal from '../components/EditDealModal'; // Import EditDealModal
 // Import icons
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 
-// Update the query to fetch contact_id and nested contact info
+// Update the query to fetch person_id and nested person info
 const GET_DEALS_QUERY = gql`
   query GetDeals {
     deals {
@@ -37,8 +37,8 @@ const GET_DEALS_QUERY = gql`
       amount
       created_at
       updated_at
-      contact_id # Fetch the ID for the Edit Modal
-      contact {    # Fetch nested contact info for display
+      person_id # Renamed from contact_id
+      person {    # Renamed from contact
         id
         first_name
         last_name
@@ -48,8 +48,8 @@ const GET_DEALS_QUERY = gql`
   }
 `;
 
-// Update the Deal interface to include nested contact and contact_id
-interface DealContact {
+// Update the Deal interface to include nested person and person_id
+interface DealPerson { // Renamed from DealContact
     id: string;
     first_name?: string | null;
     last_name?: string | null;
@@ -63,8 +63,8 @@ interface Deal {
   amount?: number | null;
   created_at: string;
   updated_at: string;
-  contact_id?: string | null; // Add contact_id
-  contact?: DealContact | null; // Add nested contact (optional)
+  person_id?: string | null; // Renamed from contact_id
+  person?: DealPerson | null; // Renamed from contact
 }
 
 // Interface for the expected shape of the query result
@@ -179,17 +179,17 @@ function DealsPage() {
     }
   };
 
-  // Helper function to format contact name for display
-  const formatContactName = (contact: DealContact | null | undefined): string => {
-    if (!contact) return '-'; // No contact linked
+  // Helper function to format person name for display
+  const formatPersonName = (person: DealPerson | null | undefined): string => { // Renamed from formatContactName
+    if (!person) return '- '; // No person linked // Renamed variable
     return (
-      contact.last_name && contact.first_name
-      ? `${contact.last_name}, ${contact.first_name}`
-      : contact.first_name
-      ? contact.first_name
-      : contact.last_name
-      ? contact.last_name
-      : contact.email || 'Unnamed Contact'
+      person.last_name && person.first_name // Renamed variable
+      ? `${person.last_name}, ${person.first_name}` // Renamed variable
+      : person.first_name // Renamed variable
+      ? person.first_name // Renamed variable
+      : person.last_name // Renamed variable
+      ? person.last_name // Renamed variable
+      : person.email || 'Unnamed Person' // Renamed variable and text
     );
   };
 
@@ -243,7 +243,7 @@ function DealsPage() {
             <Thead>
               <Tr>
                 <Th>Name</Th>
-                <Th>Contact</Th>
+                <Th>Person</Th>
                 <Th>Stage</Th>
                 <Th isNumeric>Amount</Th>
                 <Th>Created</Th>
@@ -259,7 +259,7 @@ function DealsPage() {
                 deals.map((deal) => (
                   <Tr key={deal.id}>
                     <Td>{deal.name}</Td>
-                    <Td>{String(formatContactName(deal.contact))}</Td>
+                    <Td>{formatPersonName(deal.person)}</Td>
                     <Td>{deal.stage}</Td>
                     <Td isNumeric>{formatCurrency(deal.amount)}</Td>
                     <Td>{formatDate(deal.created_at)}</Td>

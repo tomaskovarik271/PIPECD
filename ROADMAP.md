@@ -1,13 +1,13 @@
 # Project Roadmap: Custom CRM System
 
-This document outlines the development roadmap for the custom CRM system, based on the decisions in `ADR.md`. The focus is on delivering the Minimum Viable Product (MVP) first.
+This document outlines the development roadmap for the custom CRM system, based on the decisions in `ADR.md`. The focus is on delivering the Minimum Viable Product (MVP) first, followed by enhancements towards Pipedrive feature parity.
 
 **Legend:**
 *   [ ] To Do
 *   [x] Done
 *   [-] In Progress
 
-## Phase 0: Project Setup & Foundation (Current)
+## Phase 0: Project Setup & Foundation (Completed)
 
 *   [x] Review and Finalize ADR (`ADR.md`)
 *   [x] Initialize Git Repository
@@ -19,7 +19,7 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [x] Setup Netlify Site (link to Git repo later)
 *   [x] Setup Inngest Account/Project
 
-## Phase 1: Core Architecture Implementation (Current)
+## Phase 1: Core Architecture Implementation (Completed)
 
 *   [-] **Backend (`/lib`, Netlify Functions):**
     *   [x] Implement Basic GraphQL Gateway (Netlify Function `/graphql` with **GraphQL Yoga**)
@@ -43,55 +43,68 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Configure `netlify.toml` for functions, redirects, build settings.
     *   [x] Setup environment variables (local `.env`, Netlify UI).
 
-## Phase 2: MVP Feature Development (Core CRM) (Current)
+## Phase 2: MVP Feature Development (Core CRUD - Completed)
 
-*   *(Define specific MVP features here - e.g., Contact Management, Basic Deal Tracking)*
+*   *(Initial MVP focused on basic Contact and Deal CRUD)*
 *   [-] **Database Schema:**
-    *   [x] Define initial Supabase schema (e.g., `users`, `contacts`, `deals`).
+    *   [x] Define initial Supabase schema (basic `contacts`, `deals`).
     *   [x] Create initial Supabase Migrations.
-    *   [x] Define initial Row Level Security (RLS) policies (default deny, grant specific access).
+    *   [x] Define initial Row Level Security (RLS) policies (owner-only access).
 *   [-] **Backend Logic (`/lib`):**
-    *   [x] Implement logic for MVP features (CRUD operations for **Contacts**).
-    *   [x] Implement logic for MVP features (CRUD operations for **Deals**).
+    *   [x] Implement logic for basic CRUD operations for **Contacts**.
+    *   [x] Implement logic for basic CRUD operations for **Deals**.
 *   [-] **GraphQL API (Gateway):**
-    *   [x] Define GraphQL schema (Types, Queries, Mutations) for **Contacts**.
-    *   [x] Implement Resolvers connecting to Backend Logic for **Contacts**.
-    *   [x] Implement authorization checks within resolvers (via JWT context).
-    *   [x] Implement basic input validation (e.g., using Zod) for **Contacts**.
-    *   [x] Define GraphQL schema/resolvers for **Deals**.
+    *   [x] Define GraphQL schema/resolvers for basic **Contacts** CRUD.
+    *   [x] Implement basic input validation (Zod) for **Contacts**.
+    *   [x] Define GraphQL schema/resolvers for basic **Deals** CRUD.
     *   [x] Implement input validation (Zod) for **Deals**.
 *   [-] **Frontend (UI):**
-    *   [x] Build UI components (using Chakra UI) for **Contacts CRUD**.
-    *   [x] Integrate UI with GraphQL API (Queries/Mutations) for **Contacts**.
-    *   [x] Implement basic state management for **Contacts** page.
-    *   [x] Build UI components/integration for **Deals CRUD** (Table, Create/Edit Modals).
-*   [ ] **Async Workflows (Inngest):**
+    *   [x] Build UI components (Chakra UI) for **Contacts CRUD**.
+    *   [x] Integrate UI with GraphQL API for **Contacts**.
+    *   [x] Build UI components/integration for **Deals CRUD**.
+*   [-] **Async Workflows (Inngest):**
     *   [x] Define and send events from Gateway/Logic (`crm/contact.created`, `crm/deal.created`).
-    *   [-] Implement corresponding logic in the Inngest Handler (`logContactCreation`, `logDealCreation`). 
-        *   Note: Full E2E testing of handler *execution* requires deployment; local testing limited to verifying event *sending* via `npx inngest-cli dev`.
+    *   [x] Implement basic logging logic in the Inngest Handler (`logContactCreation`, `logDealCreation`).
 
-## Phase 3: Testing & Deployment
+## Phase 3: Contact Model Enhancement (Current Focus)
 
-*   [-] **Testing Strategy (Initial Implementation):**
-    *   [-] Setup Testing Framework (Vitest for unit/integration):
-        *   [x] Install Vitest & dependencies (Frontend - `frontend/`)
-        *   [x] Configure Vitest (Frontend - `vite.config.ts`, `setupTests.ts`)
-        *   [x] Add initial React component test (`DealsPage.test.tsx`)
-        *   [x] Install Vitest (Backend - Root)
-        *   [x] Configure Vitest (Backend - `vitest.config.ts`)
-        *   [x] Add initial service test (`dealService.test.ts` with mocks)
-    *   [-] Setup Testing Framework (Playwright/Cypress for E2E):
-        *   [x] Install Playwright & dependencies
-        *   [x] Configure Playwright (`playwright.config.ts`)
-        *   [x] Add E2E test scripts to `package.json`
-    *   [x] Write Integration tests for critical GraphQL Resolvers & Inngest Handlers.
-    *   [-] Write Unit tests for key Backend Logic modules (`contactService`, `dealService` - *started*). 
-        *   Note: Basic component unit tests might still be missing.
-    *   [-] Write core E2E tests for MVP user flows: 
+*   *(Enhance core contact management towards Pipedrive parity: People vs. Organizations)*
+*   [ ] **Database Schema:**
+    *   [ ] Define `organizations` table schema.
+    *   [ ] Modify `contacts` table (rename to `people`?, add `organization_id` FK).
+    *   [ ] Define/Update RLS policies for `organizations` and modified `people` table.
+    *   [ ] Create Supabase Migration file for schema changes.
+*   [ ] **Backend Logic (`/lib`):**
+    *   [ ] Implement `organizationService.ts` (CRUD for Organizations).
+    *   [ ] Update `contactService.ts` (rename to `personService.ts`?) to handle relationships.
+*   [ ] **GraphQL API (Gateway):**
+    *   [ ] Add `Organization` type, input, queries, mutations.
+    *   [ ] Update `Contact` type (rename to `Person`?) to include `organization` field/resolver.
+    *   [ ] Update relevant contact/person queries/mutations.
+*   [ ] **Frontend (UI):**
+    *   [ ] Update Contact/Person forms and views to manage organization link.
+    *   [ ] Create UI components/pages for managing Organizations.
+    *   [ ] Update frontend GraphQL calls.
+
+## Phase 4: Testing, Deployment & Hardening (Ongoing)
+
+*   *(Testing and hardening efforts for existing and new features)*
+*   [-] **Testing Strategy Implementation:**
+    *   [-] Setup Testing Framework (Vitest & Playwright setup already done - [x])
+    *   [x] Write Integration tests for critical GraphQL Resolvers (MVP).
+    *   [x] Write Unit tests for key Backend Logic modules (MVP - `contactService`, `dealService`).
+    *   [-] Write Unit/Integration tests for key Frontend components: 
+        *   [x] `DealsPage.tsx` (initial render, loading, error, data display)
+        *   [ ] `ContactsPage.tsx` (needs review/update after contact enhancement)
+        *   [ ] `CreateDealModal.tsx`
+        *   [ ] `EditDealModal.tsx`
+        *   [ ] Contact/Person/Organization related components (TBD after Phase 3)
+    *   [-] Write core E2E tests for user flows:
         *   [x] Basic Auth Flow (Login)
         *   [ ] Basic Auth Flow (Signup)
-        *   [ ] Contacts CRUD Flow
+        *   [ ] Contacts/People CRUD Flow (needs update after Phase 3)
         *   [ ] Deals CRUD Flow
+        *   [ ] Organization CRUD Flow (TBD after Phase 3)
 *   [ ] **CI/CD:**
     *   [x] Configure Netlify Build pipeline (Basic setup done).
     *   [ ] Add automated testing step to CI (Frontend & Backend tests).
@@ -100,21 +113,25 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [ ] **Security Hardening:**
     *   [ ] Implement GraphQL depth/complexity limiting.
     *   [ ] Disable GraphQL introspection in production.
-    *   [x] Review RLS policies (Done for Contacts & Deals).
+    *   [x] Review RLS policies (Done for MVP Contacts & Deals, needs review for Phase 3 changes).
 *   [ ] **Monitoring:**
     *   [ ] Setup basic monitoring for Netlify Functions (latency, errors).
+*   [ ] **Database Migrations (Production):**
+    *   [-] Establish process for applying migrations manually/safely to production.
 
-## Phase 4: Post-MVP & Future Enhancements
+## Phase 5: Pipedrive Feature Parity & Future Enhancements
 
-*   [ ] Achieve Full Feature Parity with Pipedrive (Iterative development based on priority).
-*   [ ] Expand Test Coverage.
-*   [ ] Performance Optimization (address cold starts if necessary, potentially switch Gateway to Yoga).
-*   [ ] Implement Advanced Features (Reporting, Custom Fields, etc.).
-*   [ ] Explore adding new Business Domains (Accounting, Logistics) as per DDD.
-    *   [ ] Potentially refactor to `packages/` monorepo (Nx/Turborepo) if complexity warrants.
-*   [ ] Implement Compliance Workflows (GDPR Data Erasure).
+*   *(Features to implement after Contact Model Enhancement)*
+*   [ ] **Lead Management:** Implement dedicated Lead entity, service, API, UI, and conversion logic.
+*   [ ] **Activity Management:** Expand beyond basic logging (Calls, Meetings, linking, completion tracking).
+*   [ ] **Pipeline Management:** Implement customizable pipelines and stages.
+*   [ ] Achieve Full Feature Parity with Pipedrive (Iterative development based on priority - Products, Projects, Email Sync, Workflows, Reporting etc. as per ADR Sec 4.1).
+*   [ ] Expand Test Coverage comprehensively.
+*   [ ] Performance Optimization (address cold starts if necessary).
+*   [ ] Implement Compliance Workflows (GDPR Data Erasure via Inngest).
 *   [ ] Regularly review Inngest usage/cost and evaluate alternatives.
-*   [ ] Enhance Security (APQ, Operation Whitelisting).
+*   [ ] Enhance Security (APQ, Operation Whitelisting, full RBAC).
+*   [ ] Potentially refactor to `packages/` monorepo (Nx/Turborepo) if complexity warrants.
 
 ---
 

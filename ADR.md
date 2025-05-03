@@ -133,24 +133,26 @@ sequenceDiagram
 
 > **Purpose:** Provide a clear mapping between Pipedrive‑like business capabilities and our DDD‑aligned backend logic modules. During MVP, these will live in `/lib` as isolated folders (`/lib/deals`, `/lib/leads`, …). They may later graduate to separate services or packages.
 
-|  #  | Domain Module (Conceptual Microservice) | Core Responsibilities                                | Initial MVP Scope                           |
-| :-: | --------------------------------------- | ---------------------------------------------------- | ------------------------------------------- |
-|  1  | **Lead Management**                     | Capture, store, qualify leads → promote to deals.    | ✅ *In* (basic lead inbox, convert to deal)  |
-|  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ *In* (CRUD implemented)                   |
-|  3  | **Pipeline Management**                 | Define pipelines & stages; validate deal stage flow. | ✅ *In* (single default pipeline)            |
-|  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ *In* (basic CRUD)                         |
-|  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ *In* (tasks & reminders only)             |
-|  6  | **Project (Post-Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ *Later* (post-MVP)                        |
-|  7  | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ *Later* (post-MVP)                        |
-|  8  | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | ⬜ *Later* (phase 2)                         |
-|  9  | **Workflow Automation**                 | Rule-based triggers/actions across modules.          | ⬜ *Later* (phase 2)                         |
-|  10 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ *Later* (phase 2)                         |
-|  11 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ *In* (basic user table via Supabase Auth) |
-|  12 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ *In* (owner / company-wide)               |
-|  13 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ *Later* (phase 2)                         |
-|  14 | **Document Management**                 | Files, proposals, e-signature, attachment storage.   | ⬜ *Later* (phase 2)                         |
+|  #  | Domain Module (Conceptual Microservice) | Core Responsibilities                                | Initial MVP Scope                           | Status / Notes                                       |
+| :-: | --------------------------------------- | ---------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
+|  1  | **Lead Management**                     | Capture, store, qualify leads → promote to deals.    | ✅ *In* (basic lead inbox, convert to deal)  | ⬜ *Later* (Requires dedicated implementation)        |
+|  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ *In* (CRUD implemented)                   | ✅ Done (Core CRUD)                                  |
+|  3  | **Pipeline Management**                 | Define pipelines & stages; validate deal stage flow. | ✅ *In* (single default pipeline)            | ⬜ *Later* (Requires implementation beyond stages)    |
+|  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ *In* (basic CRUD)                         | ✅ Done (Basic Person CRUD), 🟡 *Enhancing* (Adding Orgs) |
+|  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ *In* (tasks & reminders only)             | ⬜ *Later* (Requires significant expansion)         |
+|  6  | **Project (Post-Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ *Later* (post-MVP)                        | ⬜ Not Started                                       |
+|  7  | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ *Later* (post-MVP)                        | ⬜ Not Started                                       |
+|  8  | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
+|  9  | **Workflow Automation**                 | Rule-based triggers/actions across modules.          | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
+|  10 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
+|  11 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ *In* (basic user table via Supabase Auth) | ✅ Done (Basic via Auth)                             |
+|  12 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ *In* (owner / company-wide)               | ✅ *In* (Basic RLS via `auth.uid()`), ⬜ *Later* (RBAC) |
+|  13 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
+|  14 | **Document Management**                 | Files, proposals, e-signature, attachment storage.   | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
 
-*Legend: ✅ Included in MVP · ⬜ Deferred*
+*Legend: ✅ Implemented (Basic/Core) · 🟡 In Progress/Enhancing · ⬜ Deferred/Not Started*
+
+*Note:* Initial Contact Management MVP is complete. The current focus (Roadmap Phase 3) is enhancing this by introducing **Organizations** alongside People (currently `contacts`) for better Pipedrive parity.
 
 ## 5. Key Technology Choices & Rationale
 

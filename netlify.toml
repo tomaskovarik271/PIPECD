@@ -26,7 +26,7 @@
 [dev]
   # Explicitly run the dev script from the frontend directory
   command = "npm run dev --prefix frontend"
-  # framework = "vite" # Commented out
+  framework = "vite"
   # viteProjectDirectory = "frontend" # Commented out
   # Port the frontend dev server (Vite) runs on
   targetPort = 5173 # Use default Vite port

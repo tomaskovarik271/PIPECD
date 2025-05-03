@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { gql } from 'graphql-request';
 import { gqlClient } from '../lib/graphqlClient';
 import {
@@ -8,52 +8,93 @@ import {
   Input,
   ModalBody,
   ModalFooter,
+  Select,
   Stack,
   Textarea,
-  useToast, // For showing success/error messages
-} from '@chakra-ui/react'; // Assuming Chakra UI is installed as per ADR
+  useToast,
+  Spinner,
+  Alert,
+  AlertIcon
+} from '@chakra-ui/react';
 
-// Define the mutation
-const CREATE_CONTACT_MUTATION = gql`
-  mutation CreateContact($input: ContactInput!) {
-    createContact(input: $input) {
+// Define the mutation for creating a Person
+const CREATE_PERSON_MUTATION = gql`
+  mutation CreatePerson($input: PersonInput!) {
+    createPerson(input: $input) {
       id
       first_name
       last_name
       email
+      organization_id
     }
   }
 `;
 
-// Define the input type (mirroring GraphQL schema)
-interface ContactInput {
+// Define the query to fetch organizations for the dropdown
+const GET_ORGANIZATIONS_QUERY = gql`
+  query GetOrganizations {
+    organizations {
+      id
+      name
+    }
+  }
+`;
+
+// Define the input type (Person)
+interface PersonInput {
   first_name?: string | null;
   last_name?: string | null;
   email?: string | null;
   phone?: string | null;
-  company?: string | null;
   notes?: string | null;
+  organization_id?: string | null;
+}
+
+// Define the type for the Organization query result
+interface OrganizationListItem {
+    id: string;
+    name: string;
 }
 
 // Prop definition for the component
-interface CreateContactFormProps {
-  onClose: () => void; // Function to close the modal
-  onSuccess: () => void; // Function to call after successful creation (e.g., refresh list)
+interface CreatePersonFormProps {
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
-function CreateContactForm({ onClose, onSuccess }: CreateContactFormProps) {
-  const [formData, setFormData] = useState<ContactInput>({
+function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
+  const [formData, setFormData] = useState<PersonInput>({
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
-    company: '',
     notes: '',
+    organization_id: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [organizations, setOrganizations] = useState<OrganizationListItem[]>([]);
+  const [orgLoading, setOrgLoading] = useState(true);
+  const [orgError, setOrgError] = useState<string | null>(null);
   const toast = useToast();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Fetch organizations on component mount
+  useEffect(() => {
+    setOrgLoading(true);
+    setOrgError(null);
+    gqlClient.request<{ organizations: OrganizationListItem[] }>(GET_ORGANIZATIONS_QUERY)
+      .then(data => {
+        setOrganizations(data.organizations || []);
+      })
+      .catch(err => {
+        console.error("Failed to fetch organizations:", err);
+        setOrgError("Failed to load organizations list.");
+      })
+      .finally(() => {
+        setOrgLoading(false);
+      });
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -62,7 +103,7 @@ function CreateContactForm({ onClose, onSuccess }: CreateContactFormProps) {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simple validation (can be expanded)
+    // Basic validation (already present)
     if (!formData.first_name && !formData.last_name && !formData.email) {
       toast({
         title: 'Error',
@@ -75,46 +116,38 @@ function CreateContactForm({ onClose, onSuccess }: CreateContactFormProps) {
       return;
     }
 
-    try {
-      await gqlClient.request(CREATE_CONTACT_MUTATION, {
-        input: {
+    // Prepare input, ensuring empty string for org becomes null
+    const mutationInput: PersonInput = {
           first_name: formData.first_name || null,
           last_name: formData.last_name || null,
           email: formData.email || null,
           phone: formData.phone || null,
-          company: formData.company || null,
           notes: formData.notes || null,
-        },
+        organization_id: formData.organization_id || null,
+    };
+
+    try {
+      await gqlClient.request(CREATE_PERSON_MUTATION, {
+        input: mutationInput,
       });
 
       toast({
-        title: 'Contact Created',
+        title: 'Person Created',
         status: 'success',
         duration: 3000,
         isClosable: true,
       });
-      onSuccess(); // Call the success callback (e.g., refetch contacts)
-      onClose(); // Close the modal
+      onSuccess();
+      onClose();
 
     } catch (error: any) {
-      console.error("Failed to create contact:", error);
-      // Extract a user-friendly message from the GraphQL error response
+      console.error("Failed to create person:", error);
       let errorMessage = 'An unexpected error occurred.';
       if (error.response?.errors?.[0]?.message) {
-        // Attempt to use the message from the first GraphQL error
         errorMessage = error.response.errors[0].message;
-        // If it looks like stringified JSON from Zod, try to parse and format
-        if (errorMessage.startsWith('[') && errorMessage.endsWith(']')) {
-          try {
-            const zodErrors = JSON.parse(errorMessage);
-            if (Array.isArray(zodErrors) && zodErrors[0]?.message) {
-              // Use the message from the first Zod issue
-              errorMessage = zodErrors[0].message;
-            }
-          } catch (parseError) {
-            // Ignore if parsing fails, stick with the raw stringified JSON
-            console.warn('Could not parse error message JSON:', parseError);
-          }
+        // Attempt to parse Zod errors (already present)
+         if (errorMessage.startsWith('Validation Error: ')) {
+           errorMessage = errorMessage.substring('Validation Error: '.length);
         }
       } else if (error.message) {
         errorMessage = error.message;
@@ -122,7 +155,7 @@ function CreateContactForm({ onClose, onSuccess }: CreateContactFormProps) {
 
       toast({
         title: 'Creation Failed',
-        description: errorMessage, // Use the extracted message
+        description: errorMessage,
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -153,8 +186,26 @@ function CreateContactForm({ onClose, onSuccess }: CreateContactFormProps) {
             <Input type="tel" name="phone" value={formData.phone || ''} onChange={handleChange} />
           </FormControl>
           <FormControl>
-            <FormLabel>Company</FormLabel>
-            <Input name="company" value={formData.company || ''} onChange={handleChange} />
+            <FormLabel>Organization</FormLabel>
+            {orgLoading && <Spinner size="sm" />}
+            {orgError && (
+                <Alert status="error" size="sm">
+                    <AlertIcon />
+                    {orgError}
+                </Alert>
+            )}
+            {!orgLoading && !orgError && (
+                <Select 
+                    name="organization_id" 
+                    value={formData.organization_id || ''} 
+                    onChange={handleChange}
+                    placeholder="Select organization (optional)"
+                >
+                    {organizations.map(org => (
+                        <option key={org.id} value={org.id}>{org.name}</option>
+                    ))}
+                </Select>
+            )}
           </FormControl>
           <FormControl>
             <FormLabel>Notes</FormLabel>
@@ -167,11 +218,11 @@ function CreateContactForm({ onClose, onSuccess }: CreateContactFormProps) {
           Cancel
         </Button>
         <Button colorScheme="blue" type="submit" isLoading={isLoading}>
-          Save Contact
+          Save Person
         </Button>
       </ModalFooter>
     </form>
   );
 }
 
-export default CreateContactForm; 
+export default CreatePersonForm; 
