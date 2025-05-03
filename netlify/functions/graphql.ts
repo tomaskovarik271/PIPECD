@@ -767,14 +767,34 @@ export const resolvers = {
           // Pass client and orgId
           const organization = await organizationService.getOrganizationById(context.supabaseClient, parent.organization_id);
            console.log(`[Person.organization] organizationService.getOrganizationById returned: ${organization ? `Org ID ${organization.id}` : 'null'}`); // Added Log
+          
+          // Attempt to stringify before returning to check for serialization issues
+          if (organization) {
+              try {
+                  console.log(`[Person.organization] Attempting to stringify organization ID: ${organization.id}`);
+                  JSON.stringify(organization); // Test serialization
+                  console.log(`[Person.organization] Successfully stringified organization ID: ${organization.id}`);
+              } catch (stringifyError) {
+                  console.error(`[Person.organization] FAILED TO STRINGIFY organization ID: ${organization.id}`, stringifyError);
+                  // Throw a specific error if stringify fails
+                  throw new GraphQLError('Failed to serialize organization data. Check function logs.', {
+                      extensions: { code: 'INTERNAL_SERVER_ERROR' }
+                  });
+              }
+          }
+          
           return organization;
       } catch (e) {
           // Log the error thoroughly
-          console.error('[Person.organization] Caught error:', e); 
+          console.error('[Person.organization] Caught error (likely from service call or stringify attempt): ', e); 
           console.error(`[Person.organization] Error message: ${e instanceof Error ? e.message : String(e)}`); 
           console.error(`[Person.organization] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); 
           // Throw a new GraphQLError for potentially better handling/logging by Yoga
-          throw new GraphQLError('Error fetching Person.organization. Check function logs.', {
+          // If it's already a GraphQLError from the stringify check, re-throw it, otherwise wrap
+          if (e instanceof GraphQLError && e.message.includes('Failed to serialize')) {
+             throw e;
+          } 
+          throw new GraphQLError('Error fetching or processing Person.organization. Check function logs.', {
               extensions: { 
                   code: 'INTERNAL_SERVER_ERROR', 
                   originalMessage: e instanceof Error ? e.message : String(e) 
@@ -811,14 +831,34 @@ export const resolvers = {
         // Pass client and personId
         const person = await personService.getPersonById(context.supabaseClient, parent.person_id);
         console.log(`[Deal.person] personService.getPersonById returned: ${person ? `Person ID ${person.id}` : 'null'}`); // Added Log
+        
+        // Attempt to stringify before returning to check for serialization issues
+        if (person) {
+            try {
+                console.log(`[Deal.person] Attempting to stringify person ID: ${person.id}`);
+                JSON.stringify(person); // Test serialization
+                console.log(`[Deal.person] Successfully stringified person ID: ${person.id}`);
+            } catch (stringifyError) {
+                console.error(`[Deal.person] FAILED TO STRINGIFY person ID: ${person.id}`, stringifyError);
+                // Throw a specific error if stringify fails
+                throw new GraphQLError('Failed to serialize person data. Check function logs.', {
+                    extensions: { code: 'INTERNAL_SERVER_ERROR' }
+                });
+            }
+        }
+
         return person;
        } catch (e) {
           // Log the error thoroughly
-          console.error('[Deal.person] Caught error:', e); 
+          console.error('[Deal.person] Caught error (likely from service call or stringify attempt): ', e);
           console.error(`[Deal.person] Error message: ${e instanceof Error ? e.message : String(e)}`); 
           console.error(`[Deal.person] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); 
           // Throw a new GraphQLError for potentially better handling/logging by Yoga
-          throw new GraphQLError('Error fetching Deal.person. Check function logs.', {
+          // If it's already a GraphQLError from the stringify check, re-throw it, otherwise wrap
+          if (e instanceof GraphQLError && e.message.includes('Failed to serialize')) {
+             throw e;
+          }
+          throw new GraphQLError('Error fetching or processing Deal.person. Check function logs.', {
               extensions: { 
                   code: 'INTERNAL_SERVER_ERROR', 
                   originalMessage: e instanceof Error ? e.message : String(e) 
