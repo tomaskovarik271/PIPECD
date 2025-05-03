@@ -74,7 +74,7 @@ PIPECD/
 └── vitest.config.ts    # Vitest unit/integration test config (root)
 ```
 
-*   `lib/`: Shared Backend TypeScript Modules (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`, `leadService.ts`).
+*   `lib/`: Shared Backend TypeScript Modules (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`, `leadService.ts`). **Note:** Service functions now primarily accept the request-scoped `SupabaseClient` from the GraphQL context for authorization via RLS, rather than explicit `userId`/`accessToken`.
 *   `netlify/functions/`: Netlify serverless functions (`graphql.ts`, `inngest.ts`).
 *   `frontend/src/pages/`: Top-level page components (e.g., `PeoplePage.tsx`, `DealsPage.tsx`, `OrganizationsPage.tsx`, `LeadsPage.tsx`).
 *   `frontend/src/components/`: Reusable UI components (e.g., `CreateDealModal.tsx`, `EditDealModal.tsx`, `CreatePersonForm.tsx`, `CreateOrganizationModal.tsx`, `CreateLeadModal.tsx`, `GenericDeleteConfirmationDialog.tsx`, etc.).
@@ -156,13 +156,13 @@ PIPECD/
     *   Schema is defined directly in `graphql.ts` (could be moved to separate `.graphql` files later).
     *   Resolvers call functions/services potentially located in `/lib`.
     *   Authentication handled via JWT, verified in Yoga `context` factory.
-    *   Context factory now creates request-scoped Supabase clients with token headers for RLS.
+    *   Context factory now creates **request-scoped Supabase clients** initialized with the user's token in headers for RLS enforcement. Resolvers pass this client (`context.supabaseClient`) to service functions.
     *   Frontend uses **Apollo Client** (`useQuery`, `useMutation`) for GraphQL interaction. Configured in `main.tsx` with `authLink`.
 *   **Supabase:**
     *   **Auth:** Ensure Production Supabase has correct Provider keys and Site URL config.
     *   **Migrations:** Emphasize manual application to production via linked CLI.
-    *   **RLS:** Policies defined in migrations apply to both local and prod (once migrated).
-    *   **Clients:** Backend uses root `.env` (local) or Netlify function env vars (prod). Frontend uses `VITE_` vars baked in at build time.
+    *   **RLS:** Policies defined in migrations apply to both local and prod (once migrated). Backend service operations rely on the authenticated, request-scoped client passed from the GraphQL context to enforce these policies.
+    *   **Clients:** Backend uses root `.env` (local) or Netlify function env vars (prod). Frontend uses `VITE_` vars baked in at build time. The backend *no longer* creates authenticated clients on the fly within service functions; it uses the one provided via context.
 *   **Inngest:**
     *   Event sending (`graphql.ts` for `crm/contact.created`, `crm/deal.created`) works locally and in prod.
     *   Event handling function definitions (`inngest.ts`) rely on `INNGEST_SIGNING_KEY` for security in deployed environments.
@@ -189,8 +189,8 @@ This section logs common issues encountered during development or deployment and
 3.  **Issue:** Vite dev server (`npm run dev` in `frontend/`) failed to parse `index.html`.
     *   **Resolution:** Clear the Vite cache: `rm -rf frontend/node_modules/.vite`.
 
-4.  **Issue:** RLS policy prevents data creation/modification (e.g., contact creation).
-    *   **Resolution:** Backend operations modifying data protected by RLS policies involving `auth.uid()` need to use an authenticated Supabase client. Pass the user's JWT from the frontend/GraphQL context to the backend service and create a temporary authenticated client instance for the operation (see `lib/contactService.ts` example using `getAuthenticatedClient`).
+4.  **Issue:** RLS policy prevents data creation/modification (e.g., `INSERT` fails with RLS violation).
+    *   **Resolution:** Backend operations modifying data protected by RLS policies involving `auth.uid()` must use an authenticated Supabase client. The GraphQL context factory now provides a request-scoped client initialized with the user's token. Ensure resolvers pass this client (`context.supabaseClient`) to the service layer. For `INSERT` operations, the service function also needs the `userId` explicitly passed (usually from `context.currentUser.id`) to include in the data being inserted, which the RLS `WITH CHECK` clause will verify against `auth.uid()`.
 
 5.  **Issue:** Inngest function (e.g., `logDealCreation`) doesn't seem to run locally, but events appear in `npx inngest-cli dev` UI.
     *   **Cause:** Known limitation of testing Inngest function *execution* within `netlify dev` due to proxy/discovery issues.
@@ -275,6 +275,7 @@ Testing is crucial for maintaining code quality and preventing regressions. Test
     *   **Framework:** Vitest.
     *   **Configuration:** Root `vitest.config.ts` includes `lib/**/*.test.ts` pattern.
     *   **Command:** `npm run test:lib`
+    *   **Note:** Tests updated to reflect service functions accepting the `supabaseClient` instance.
 
 *   **Frontend Unit/Integration Tests (`frontend/` using Vitest):**
     *   **Location:** Tests for React components reside within the `frontend/src` directory, typically colocated with the component (e.g., `frontend/src/pages/DealsPage.test.tsx`).
@@ -289,6 +290,7 @@ Testing is crucial for maintaining code quality and preventing regressions. Test
     *   **Purpose:** Tests the integration between GraphQL resolvers and the underlying service layer by mocking the service functions (`personService`, `dealService`, etc.) and verifying resolver logic, including authentication checks, input validation, service calls, and event sending.
     *   **Configuration:** Root `vitest.config.ts` includes `netlify/functions/**/*.test.ts` pattern.
     *   **Command:** `npm run test:gql`
+    *   **Note:** Tests updated to reflect resolvers passing `context.supabaseClient` to services.
 
 *   **End-to-End Tests (`e2e/` using Playwright):**
     *   **Location:** Tests reside within the `e2e/` directory (e.g., `e2e/auth.spec.ts`).

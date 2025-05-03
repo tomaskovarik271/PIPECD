@@ -131,13 +131,12 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [x] Create frontend UI for viewing, creating, editing, and deleting Leads.
 *   [ ] Implement Lead conversion functionality (e.g., to Deal/Person/Organization).
 
-## Phase 6: Pipedrive Feature Parity & Future Enhancements
+## Phase 6: Lead Conversion & Pipedrive Feature Parity
 
 *   *(Features to implement after Lead Management)*
 *   [ ] Implement Lead conversion functionality (from Phase 5).
 *   [ ] **Activity Management:** Expand beyond basic logging (Calls, Meetings, linking, completion tracking).
 *   [ ] **Pipeline Management:** Implement customizable pipelines and stages.
-*   [ ] **Lead Management:** Implement dedicated Lead entity, service, API, UI, and conversion logic.
 *   [ ] **Email Sync:** Expand email integration capabilities.
 *   [ ] **Reporting:** Implement comprehensive reporting capabilities.
 *   [ ] **Workflows:** Expand workflow capabilities.
@@ -148,6 +147,37 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [ ] **Integration:** Expand system integration capabilities.
 *   [ ] **Regular Reviews:** Regularly review system performance and user feedback.
 *   [ ] **Future Features:** Identify and plan for future features and enhancements.
+
+## Phase 7: Code Refactoring & Consistency Audit (Planned)
+
+*   *(Addressing findings from the consistency audit to improve maintainability, reduce duplication, and enforce standards across the codebase.)*
+
+*   [-] **Phase A: Backend Authentication & Service Layer Consolidation**
+    *   [x] **Standardize Service Signatures:** Refactor `personService`, `organizationService`, `dealService` to accept `supabaseClient`, remove `userId`/`accessToken`.
+    *   [x] **Update Service Implementations:** Rely solely on passed `supabaseClient` for RLS, remove internal auth checks.
+    *   [x] **Refactor GraphQL Resolvers (Queries/Mutations):** Update resolvers to pass `context.supabaseClient` instead of `userId`/`accessToken`.
+    *   [x] **Refactor Nested GraphQL Resolvers:** Ensure nested resolvers (`Person.organization`, `Deal.person`, etc.) also use `context.supabaseClient` consistently.
+    *   [x] **Update Backend Unit Tests:** Align `*Service.test.ts` files with new signatures (pass client, adjust auth mocks).
+    *   [x] **Update Resolver Integration Tests:** Align `graphql.test.ts` with new service call patterns.
+
+*   [-] **Phase B: Backend Error Handling & Schema Consistency**
+    *   [x] **Standardize Resolver Error Handling:** Implement consistent error processing (e.g., enhance `processZodError` or new helper) for all resolvers.
+    *   [x] **Standardize "Not Found" Handling:** Decide and implement consistent return (`null` or specific error) for `get*ById` resolvers.
+    *   [x] **Refine Zod Update Schemas:** Add `.refine()` to `Person`/`Org`/`Deal` update schemas if needed to prevent invalid states.
+    *   [x] **Review Inngest Event Strategy:** Define and implement consistent event sending logic (Create/Update/Delete?) across entities.
+
+*   [-] **Phase C: Frontend Consolidation & Type Safety**
+    *   [ ] **Consolidate Frontend Data Fetching:** Remove all `graphql-request` usage, refactor to Apollo Client hooks, uninstall dependency.
+    *   [ ] **Implement GraphQL Code Generation:** Setup `graphql-code-generator`, generate types/hooks, replace manual frontend types.
+    *   [ ] **Standardize Frontend Component Naming:** Choose standard (e.g., `*Modal` vs. `*Form`) and rename components/files.
+
+*   [-] **Phase D: Testing & Cleanup**
+    *   [ ] **Review Supabase Test Mocks:** Evaluate complexity, investigate simplification options.
+    *   [ ] **Expand Test Coverage:** Add remaining Frontend component tests (People, Orgs, Leads pages/modals). Add E2E Lead CRUD flow, Signup flow. (Tracked under Phase 4 ToDo items).
+    *   [ ] **Dependency Audit:** Prune unused dependencies after refactoring.
+
+*   [-] **Phase E: Documentation Update**
+    *   [ ] **Update Documentation:** Review and update `README.md` and `DEVELOPER_GUIDE.md` to reflect all refactoring changes (auth, services, data fetching, testing, etc.).
 
 ---
 

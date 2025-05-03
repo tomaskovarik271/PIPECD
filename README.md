@@ -8,7 +8,7 @@ The system utilizes a serverless architecture based on:
 
 *   **Frontend:** React (Vite) SPA hosted on Netlify
 *   **API:** GraphQL Gateway (**GraphQL Yoga**) running as a Netlify Function (`netlify/functions/graphql.ts`)
-*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`)
+*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`). Logic relies on request-scoped Supabase client from GraphQL context for RLS enforcement.
 *   **Database:** Supabase (PostgreSQL) with RLS
 *   **Authentication:** Supabase Auth (Email/Password, GitHub configured)
 *   **Async Tasks:** Inngest (`netlify/functions/inngest.ts`)

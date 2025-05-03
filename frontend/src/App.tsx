@@ -19,6 +19,7 @@ import {
   Flex,
   useToast,
   VStack,
+  Spacer, // Import Spacer
 } from '@chakra-ui/react';
 
 // Define the health query
@@ -41,29 +42,52 @@ import {
 
 // --- Component for Logged-In State (using Chakra UI) ---
 function AppContent() {
-  // const handleSignOut = async () => { ... }; // Removed unused function definition
+  // Add sign out handler here
+  const handleSignOut = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error('Error signing out:', error);
+    // Session state should update via onAuthStateChange listener in App
+  };
 
   return (
-    <Flex height="100vh">
-      {/* Sidebar */}
-      <Box width="200px" bg="gray.100" p={4}>
-        <Heading size="md" mb={6}>PIPECD</Heading>
-        <Link as={RouterLink} to="/people" display="block" mb={3}>People</Link>
-        <Link as={RouterLink} to="/organizations" display="block" mb={3}>Organizations</Link>
-        <Link as={RouterLink} to="/deals" display="block" mb={3}>Deals</Link>
-        <Link as={RouterLink} to="/leads" display="block" mb={3}>Leads</Link>
-      </Box>
+    <Flex height="100vh" direction="column"> {/* Change direction to column */}
+       {/* Top Bar with Logout */}
+       <Flex 
+         as="header" 
+         align="center" 
+         justify="space-between" 
+         p={4} 
+         borderBottomWidth="1px"
+         bg="gray.50"
+       >
+         <Heading size="md">PIPECD CRM</Heading>
+         <Button size="sm" onClick={handleSignOut}>Sign Out</Button>
+       </Flex>
 
-      {/* Main Content */}
-      <Box flex="1" p={5} overflowY="auto">
-        <Routes>
-           <Route path="/people" element={<PeoplePage />} />
-           <Route path="/organizations" element={<OrganizationsPage />} />
-           <Route path="/deals" element={<DealsPage />} />
-           <Route path="/leads" element={<LeadsPage />} />
-           <Route path="/" element={<PeoplePage />} />
-        </Routes>
-      </Box>
+      <Flex flex="1"> {/* Inner flex for sidebar + content */}
+          {/* Sidebar */}
+          <Box width="200px" bg="gray.100" p={4}>
+            {/* <Heading size="md" mb={6}>PIPECD</Heading> -- Removed redundant heading */}
+            <VStack align="stretch" spacing={3}>
+              <Link as={RouterLink} to="/people" >People</Link>
+              <Link as={RouterLink} to="/organizations">Organizations</Link>
+              <Link as={RouterLink} to="/deals">Deals</Link>
+              <Link as={RouterLink} to="/leads">Leads</Link>
+            </VStack>
+          </Box>
+
+          {/* Main Content */}
+          <Box flex="1" p={5} overflowY="auto">
+            <Routes>
+               <Route path="/people" element={<PeoplePage />} />
+               <Route path="/organizations" element={<OrganizationsPage />} />
+               <Route path="/deals" element={<DealsPage />} />
+               <Route path="/leads" element={<LeadsPage />} />
+               {/* Redirect root to people page */}
+               <Route path="/" element={<PeoplePage />} /> 
+            </Routes>
+          </Box>
+      </Flex>
     </Flex>
   );
 }
@@ -110,24 +134,6 @@ function App() {
 }
 
 // Temporary simple navigation
-function TempNav() {
-    const handleSignOut = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) console.error('Error signing out:', error);
-    };
-    return (
-        <Box as="nav" bg="gray.100" p={4} mb={4}>
-            <HStack spacing={4} justify="space-between">
-                <HStack spacing={4}>
-                    <Link as={RouterLink} to="/">Home (Placeholder)</Link>
-                    <Link as={RouterLink} to="/people">People</Link>
-                    <Link as={RouterLink} to="/deals">Deals</Link>
-                    <Link as={RouterLink} to="/organizations">Organizations</Link>
-                </HStack>
-                <Button size="sm" onClick={handleSignOut}>Sign Out</Button>
-            </HStack>
-      </Box>
-    );
-}
+// function TempNav() { ... }
 
 export default App;

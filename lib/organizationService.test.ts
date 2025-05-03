@@ -1,211 +1,343 @@
-import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
-import { organizationService } from './organizationService'; // Import the service
-import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js';
-import { GraphQLError } from 'graphql';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import {
+  organizationService, // Import the service object
+  type OrganizationRecord, // Import types from the service file
+  type OrganizationInput,
+  type OrganizationUpdateInput
+} from './organizationService';
 
-// --- Mock Setup (Same pattern) ---
-const mockPostgrestBuilderMethods = {
-    select: vi.fn().mockReturnThis(),
-    insert: vi.fn().mockReturnThis(),
-    update: vi.fn().mockReturnThis(),
-    delete: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    single: vi.fn(),
-    order: vi.fn().mockReturnThis(),
+// Define mockUserId (assuming services implicitly use RLS via client)
+// const mockUserId = 'user-test-org-123'; // Not needed for calling service functions anymore
+
+// --- Standardized Mock Supabase Client ---
+const mockSupabaseClient = {
+  from: vi.fn(),
+  select: vi.fn(),
+  insert: vi.fn(),
+  update: vi.fn(),
+  delete: vi.fn(),
+  eq: vi.fn(),
+  order: vi.fn(),
+  single: vi.fn(),
+  maybeSingle: vi.fn(),
 };
-vi.mock('@supabase/supabase-js', () => {
-  const mockClient = { from: vi.fn(() => mockPostgrestBuilderMethods), auth: {} };
-  return { createClient: vi.fn(() => mockClient) };
+
+// Reset and configure mocks before each test
+beforeEach(() => {
+  vi.resetAllMocks();
+
+  // Configure chainable methods (excluding select/delete) to return `this`
+  mockSupabaseClient.from.mockReturnThis();
+  mockSupabaseClient.insert.mockReturnThis();
+  mockSupabaseClient.update.mockReturnThis();
+  mockSupabaseClient.eq.mockReturnThis();
+  mockSupabaseClient.order.mockReturnThis();
+
+  // Clear mocks for terminal/potentially-terminal methods.
+  mockSupabaseClient.select = vi.fn(); // Clear default
+  mockSupabaseClient.delete = vi.fn(); // Clear default
+  mockSupabaseClient.single = vi.fn();
+  mockSupabaseClient.maybeSingle = vi.fn();
 });
 
-// --- Helper Types ---
-interface MockUser { id: string; }
-type MockedBuilderMethods = { [K in keyof typeof mockPostgrestBuilderMethods]: MockedFunction<any>; };
-
-// --- Test Suite --- 
 describe('organizationService', () => {
-  let mockedCreateClient: MockedFunction<typeof createClient>;
-  let mockBuilderMethods: MockedBuilderMethods; 
-  const mockUser: MockUser = { id: 'user-org-789' };
-  const mockAccessToken = 'mock-org-access-token';
-
-  beforeEach(async () => { 
-    vi.clearAllMocks();
-    const { createClient: actualMockedCreateClient } = await import('@supabase/supabase-js');
-    mockedCreateClient = actualMockedCreateClient as MockedFunction<typeof createClient>;
-    mockBuilderMethods = mockPostgrestBuilderMethods as MockedBuilderMethods;
-    Object.values(mockBuilderMethods).forEach(mockFn => {
-        mockFn.mockClear();
-        if (mockFn !== mockBuilderMethods.single) { mockFn.mockReturnThis(); }
-    });
-  });
-
-  // --- Test Cases --- 
+  // Use OrganizationRecord type
+  const mockOrganization: OrganizationRecord = {
+    id: 'org1',
+    user_id: 'user-dummy', // user_id exists on the record
+    name: 'Test Org 1',
+    address: '123 Main St',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  // Use OrganizationRecord[] type
+  const mockOrganizationList: OrganizationRecord[] = [
+    mockOrganization,
+    {
+      id: 'org2',
+      user_id: 'user-dummy',
+      name: 'Test Org 2',
+      address: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ];
 
   describe('getOrganizations', () => {
-    it('should fetch organizations for a given user', async () => {
-      const mockOrgsData = [
-        { id: 'org-1', name: 'Org Alpha', user_id: mockUser.id },
-        { id: 'org-2', name: 'Org Beta', user_id: mockUser.id },
-      ];
-      mockBuilderMethods.order.mockResolvedValueOnce({ data: mockOrgsData, error: null });
+    it('should return a list of organizations', async () => {
+      // Arrange
+      mockSupabaseClient.select.mockReturnThis(); // Make select chainable
+      // Mock the final terminal method (.order resolves the promise)
+      mockSupabaseClient.order.mockResolvedValue({ data: mockOrganizationList, error: null });
 
-      const orgs = await organizationService.getOrganizations(mockUser.id, mockAccessToken);
+      // Act
+      const result = await organizationService.getOrganizations(mockSupabaseClient as any);
 
-      expect(mockedCreateClient).toHaveBeenCalledWith(
-          process.env.SUPABASE_URL, 
-          process.env.SUPABASE_ANON_KEY, 
-          { global: { headers: { Authorization: `Bearer ${mockAccessToken}` } } }
-      );
-      const clientInstance = mockedCreateClient.mock.results[0]!.value;
-      expect(clientInstance.from).toHaveBeenCalledWith('organizations');
-      expect(mockBuilderMethods.select).toHaveBeenCalledWith('*');
-      expect(mockBuilderMethods.order).toHaveBeenCalledWith('name', { ascending: true }); 
-      expect(orgs).toEqual(mockOrgsData);
+      // Assert
+      expect(result).toEqual(mockOrganizationList);
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+      expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+      expect(mockSupabaseClient.order).toHaveBeenCalledWith('name', { ascending: true });
     });
 
-    it('should throw GraphQLError if Supabase fails', async () => {
-      const mockDbError: Partial<PostgrestError> = { message: 'Org Select failed' };
-      mockBuilderMethods.order.mockResolvedValueOnce({ data: null, error: mockDbError as PostgrestError });
-      await expect(organizationService.getOrganizations(mockUser.id, mockAccessToken))
-        .rejects.toThrow(new GraphQLError('Database error during fetching organizations', {
-            extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Org Select failed' }
-        }));
+    it('should throw an error if Supabase query fails', async () => {
+      // Arrange
+      const error = { message: 'DB error', code: '500', details: '', hint: '' };
+      mockSupabaseClient.select.mockReturnThis();
+       mockSupabaseClient.order.mockResolvedValue({ data: null, error });
+
+      // Act & Assert
+      await expect(organizationService.getOrganizations(mockSupabaseClient as any)).rejects.toThrow(
+        'Database operation failed in getOrganizations: DB error'
+      );
+       expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+       expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+       expect(mockSupabaseClient.order).toHaveBeenCalledWith('name', { ascending: true });
     });
   });
 
   describe('getOrganizationById', () => {
-    const orgId = 'org-def';
-    it('should fetch a single organization by ID', async () => {
-      const mockOrgData = { id: orgId, name: 'Specific Org', user_id: mockUser.id };
-      mockBuilderMethods.single.mockResolvedValueOnce({ data: mockOrgData, error: null });
+    it('should return an organization if found', async () => {
+      // Arrange
+      mockSupabaseClient.select.mockReturnThis();
+      mockSupabaseClient.eq.mockReturnThis();
+      mockSupabaseClient.maybeSingle.mockResolvedValue({ data: mockOrganization, error: null });
 
-      const org = await organizationService.getOrganizationById(mockUser.id, orgId, mockAccessToken);
+      // Act
+      const result = await organizationService.getOrganizationById(mockSupabaseClient as any, 'org1');
 
-      const clientInstance = mockedCreateClient.mock.results[0]!.value;
-      expect(clientInstance.from).toHaveBeenCalledWith('organizations');
-      expect(mockBuilderMethods.select).toHaveBeenCalledWith('*');
-      expect(mockBuilderMethods.eq).toHaveBeenCalledWith('id', orgId);
-      expect(mockBuilderMethods.single).toHaveBeenCalled();
-      expect(org).toEqual(mockOrgData);
+      // Assert
+      expect(result).toEqual(mockOrganization);
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+      expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+      expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'org1');
+      expect(mockSupabaseClient.maybeSingle).toHaveBeenCalled();
     });
 
-     it('should return null if organization not found (PGRST116)', async () => {
-        const notFoundError: Partial<PostgrestError> = { code: 'PGRST116' };
-        mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: notFoundError as PostgrestError });
-        const org = await organizationService.getOrganizationById(mockUser.id, orgId, mockAccessToken);
-        expect(org).toBeNull();
+    it('should return null if organization not found', async () => {
+        // Arrange
+        mockSupabaseClient.select.mockReturnThis();
+        mockSupabaseClient.eq.mockReturnThis();
+        mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
+
+        // Act
+        const result = await organizationService.getOrganizationById(mockSupabaseClient as any, 'nonexistent');
+
+        // Assert
+        expect(result).toBeNull();
+        expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+        expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+        expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'nonexistent');
+        expect(mockSupabaseClient.maybeSingle).toHaveBeenCalled();
     });
 
-    it('should throw GraphQLError for other errors', async () => {
-        const dbError: Partial<PostgrestError> = { message: 'DB org error' };
-        mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
-        await expect(organizationService.getOrganizationById(mockUser.id, orgId, mockAccessToken))
-            .rejects.toThrow(new GraphQLError('Database error during fetching organization by ID', {
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'DB org error' }
-            }));
+    it('should throw an error if Supabase query fails', async () => {
+      // Arrange
+      const error = { message: 'DB error', code: '500', details: '', hint: '' };
+      mockSupabaseClient.select.mockReturnThis();
+      mockSupabaseClient.eq.mockReturnThis();
+      mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error });
+
+      // Act & Assert
+      await expect(organizationService.getOrganizationById(mockSupabaseClient as any, 'org1')).rejects.toThrow(
+        'Database operation failed in getOrganizationById: DB error'
+      );
+       expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+       expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+       expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'org1');
+       expect(mockSupabaseClient.maybeSingle).toHaveBeenCalled();
     });
   });
 
   describe('createOrganization', () => {
-    const orgInput = { name: 'New Org', address: '123 Main St' };
-    const expectedRecord = { ...orgInput, id: 'new-org-uuid', user_id: mockUser.id }; 
+    const orgInput: OrganizationInput = { name: 'New Org', address: '456 Side St' };
+    // createOrganization requires user_id
+    const mockUserId = 'user-create-test';
+    const expectedDbInput = { ...orgInput, user_id: mockUserId };
+    const createdOrg: OrganizationRecord = {
+      id: 'org3',
+      user_id: mockUserId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      name: orgInput.name,
+      address: orgInput.address ?? null,
+    };
 
-    it('should create an organization and return the record', async () => {
-        mockBuilderMethods.single.mockResolvedValueOnce({ data: expectedRecord, error: null });
-        const newOrg = await organizationService.createOrganization(mockUser.id, orgInput, mockAccessToken);
+    it('should create and return a new organization', async () => {
+      // Arrange
+      mockSupabaseClient.insert.mockReturnThis();
+      mockSupabaseClient.select.mockReturnThis();
+      mockSupabaseClient.single.mockResolvedValue({ data: createdOrg, error: null });
 
-        const clientInstance = mockedCreateClient.mock.results[0]!.value;
-        expect(clientInstance.from).toHaveBeenCalledWith('organizations');
-        expect(mockBuilderMethods.insert).toHaveBeenCalledWith({ ...orgInput, user_id: mockUser.id });
-        expect(mockBuilderMethods.select).toHaveBeenCalled(); 
-        expect(mockBuilderMethods.single).toHaveBeenCalled();
-        expect(newOrg).toEqual(expectedRecord);
+      // Act
+      // Pass userId
+      const result = await organizationService.createOrganization(mockSupabaseClient as any, mockUserId, orgInput);
+
+      // Assert
+      expect(result).toEqual(createdOrg);
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+      expect(mockSupabaseClient.insert).toHaveBeenCalledWith(expectedDbInput); // Check userId is included
+      expect(mockSupabaseClient.select).toHaveBeenCalledWith();
+      expect(mockSupabaseClient.single).toHaveBeenCalled();
     });
 
-    it('should throw GraphQLError if insert fails', async () => {
-        const dbError: Partial<PostgrestError> = { message: 'Org Insert failed' };
-        mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
-        await expect(organizationService.createOrganization(mockUser.id, orgInput, mockAccessToken))
-            .rejects.toThrow(new GraphQLError('Database error during creating organization', {
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Org Insert failed' }
-            }));
+    it('should throw an error if Supabase insert fails', async () => {
+      // Arrange
+      const error = { message: 'Insert failed', code: '500', details: '', hint: '' };
+      mockSupabaseClient.insert.mockReturnThis();
+      mockSupabaseClient.select.mockReturnThis();
+      mockSupabaseClient.single.mockResolvedValue({ data: null, error });
+
+      // Act & Assert
+      await expect(organizationService.createOrganization(mockSupabaseClient as any, mockUserId, orgInput)).rejects.toThrow(
+        'Database operation failed in createOrganization: Insert failed'
+      );
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+      expect(mockSupabaseClient.insert).toHaveBeenCalledWith(expectedDbInput);
+      expect(mockSupabaseClient.select).toHaveBeenCalledWith();
+      expect(mockSupabaseClient.single).toHaveBeenCalled();
     });
 
-     it('should throw GraphQLError if insert returns no data', async () => {
-        mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: null });
-        await expect(organizationService.createOrganization(mockUser.id, orgInput, mockAccessToken))
-            .rejects.toThrow(new GraphQLError('Failed to create organization, no data returned', {
-                 extensions: { code: 'INTERNAL_SERVER_ERROR' }
-            }));
-    });
+     it('should throw an error if Supabase returns no data after insert', async () => {
+         // Arrange
+         mockSupabaseClient.insert.mockReturnThis();
+         mockSupabaseClient.select.mockReturnThis();
+         mockSupabaseClient.single.mockResolvedValue({ data: null, error: null });
+
+         // Act & Assert
+         await expect(organizationService.createOrganization(mockSupabaseClient as any, mockUserId, orgInput)).rejects.toThrow(
+             'Failed to create organization, no data returned.'
+         );
+         expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+         expect(mockSupabaseClient.insert).toHaveBeenCalledWith(expectedDbInput);
+         expect(mockSupabaseClient.select).toHaveBeenCalledWith();
+         expect(mockSupabaseClient.single).toHaveBeenCalled();
+     });
   });
 
   describe('updateOrganization', () => {
-    const orgId = 'org-to-update';
-    const updateInput = { name: 'Updated Org Name' };
-    const expectedRecord = { id: orgId, user_id: mockUser.id, ...updateInput };
+    const orgUpdate: OrganizationUpdateInput = { name: 'Updated Org Name' };
+    const updatedOrg: OrganizationRecord = { ...mockOrganization, ...orgUpdate, updated_at: new Date().toISOString() };
 
-    it('should update an organization and return the record', async () => {
-      mockBuilderMethods.single.mockResolvedValueOnce({ data: expectedRecord, error: null });
-      const updatedOrg = await organizationService.updateOrganization(mockUser.id, orgId, updateInput, mockAccessToken);
+    it('should update and return the organization', async () => {
+      // Arrange
+      mockSupabaseClient.update.mockReturnThis();
+      mockSupabaseClient.eq.mockReturnThis();
+      mockSupabaseClient.select.mockReturnThis();
+      mockSupabaseClient.single.mockResolvedValue({ data: updatedOrg, error: null });
 
-      const clientInstance = mockedCreateClient.mock.results[0]!.value;
-      expect(clientInstance.from).toHaveBeenCalledWith('organizations');
-      expect(mockBuilderMethods.update).toHaveBeenCalledWith(updateInput);
-      expect(mockBuilderMethods.eq).toHaveBeenCalledWith('id', orgId);
-      expect(mockBuilderMethods.select).toHaveBeenCalled();
-      expect(mockBuilderMethods.single).toHaveBeenCalled();
-      expect(updatedOrg).toEqual(expectedRecord);
+      // Act
+      const result = await organizationService.updateOrganization(mockSupabaseClient as any, 'org1', orgUpdate);
+
+      // Assert
+      expect(result).toEqual(updatedOrg);
+      expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+      expect(mockSupabaseClient.update).toHaveBeenCalledWith(orgUpdate);
+      expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'org1');
+       expect(mockSupabaseClient.select).toHaveBeenCalledWith();
+      expect(mockSupabaseClient.single).toHaveBeenCalled();
     });
 
-    it('should throw GraphQLError if organization not found (PGRST116)', async () => {
-        const notFoundError: Partial<PostgrestError> = { code: 'PGRST116' };
-        mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: notFoundError as PostgrestError });
-        await expect(organizationService.updateOrganization(mockUser.id, orgId, updateInput, mockAccessToken))
-            .rejects.toThrow(new GraphQLError('Organization not found', {
-                extensions: { code: 'NOT_FOUND' }
-            }));
+    it('should return null if org to update is not found or RLS prevents', async () => {
+        // Arrange
+        mockSupabaseClient.update.mockReturnThis();
+        mockSupabaseClient.eq.mockReturnThis();
+        mockSupabaseClient.select.mockReturnThis();
+        mockSupabaseClient.single.mockResolvedValue({ data: null, error: null });
+
+        // Act
+        const result = await organizationService.updateOrganization(mockSupabaseClient as any, 'nonexistent', orgUpdate);
+
+        // Assert
+        expect(result).toBeNull(); // Service returns null
+        expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+        expect(mockSupabaseClient.update).toHaveBeenCalledWith(orgUpdate);
+        expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'nonexistent');
+        expect(mockSupabaseClient.select).toHaveBeenCalledWith();
+        expect(mockSupabaseClient.single).toHaveBeenCalled();
     });
 
-     it('should throw GraphQLError for other errors', async () => {
-        const dbError: Partial<PostgrestError> = { message: 'Org Update failed' };
-        mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
-        await expect(organizationService.updateOrganization(mockUser.id, orgId, updateInput, mockAccessToken))
-            .rejects.toThrow(new GraphQLError('Database error during updating organization', {
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Org Update failed' }
-            }));
+    it('should throw an error if Supabase update fails', async () => {
+      // Arrange
+      const error = { message: 'Update failed', code: '500', details: '', hint: '' };
+      mockSupabaseClient.update.mockReturnThis();
+      mockSupabaseClient.eq.mockReturnThis();
+      mockSupabaseClient.select.mockReturnThis();
+      mockSupabaseClient.single.mockResolvedValue({ data: null, error });
+
+      // Act & Assert
+      await expect(organizationService.updateOrganization(mockSupabaseClient as any, 'org1', orgUpdate)).rejects.toThrow(
+        'Database operation failed in updateOrganization: Update failed'
+      );
+       expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+       expect(mockSupabaseClient.update).toHaveBeenCalledWith(orgUpdate);
+       expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'org1');
+       expect(mockSupabaseClient.select).toHaveBeenCalledWith();
+       expect(mockSupabaseClient.single).toHaveBeenCalled();
     });
   });
 
   describe('deleteOrganization', () => {
-    const orgId = 'org-to-delete';
-    it('should return true on successful deletion', async () => {
-      mockBuilderMethods.eq.mockResolvedValueOnce({ error: null, count: 1 });
-      const result = await organizationService.deleteOrganization(mockUser.id, orgId, mockAccessToken);
+    it('should delete the organization and return true if count > 0', async () => {
+       // Arrange
+       mockSupabaseClient.delete.mockReturnThis(); // delete returns this
+       mockSupabaseClient.eq.mockResolvedValue({ error: null, count: 1 }); // eq resolves
 
-      expect(result).toBe(true);
-      const clientInstance = mockedCreateClient.mock.results[0]!.value;
-      expect(clientInstance.from).toHaveBeenCalledWith('organizations');
-      expect(mockBuilderMethods.eq).toHaveBeenCalledWith('id', orgId);
+       // Act
+       const result = await organizationService.deleteOrganization(mockSupabaseClient as any, 'org1');
+
+       // Assert
+       expect(result).toBe(true);
+       expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+       expect(mockSupabaseClient.delete).toHaveBeenCalledWith({ count: 'exact' }); // delete first
+       expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'org1'); // eq second
     });
 
-     it('should return true even if count is 0 or null', async () => {
-      mockBuilderMethods.eq.mockResolvedValueOnce({ error: null, count: 0 });
-      const result1 = await organizationService.deleteOrganization(mockUser.id, orgId, mockAccessToken);
-      expect(result1).toBe(true);
-      mockBuilderMethods.eq.mockResolvedValueOnce({ error: null, count: null });
-      const result2 = await organizationService.deleteOrganization(mockUser.id, orgId, mockAccessToken);
-       expect(result2).toBe(true);
+    it('should return false if organization to delete is not found (count is 0)', async () => {
+        // Arrange
+        mockSupabaseClient.delete.mockReturnThis(); // delete returns this
+        mockSupabaseClient.eq.mockResolvedValue({ error: null, count: 0 }); // eq resolves
+
+        // Act
+        const result = await organizationService.deleteOrganization(mockSupabaseClient as any, 'nonexistent');
+
+        // Assert
+        expect(result).toBe(false); // Service returns false
+        expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+        expect(mockSupabaseClient.delete).toHaveBeenCalledWith({ count: 'exact' });
+        expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'nonexistent');
     });
 
-    it('should throw GraphQLError if delete fails', async () => {
-      const dbError: Partial<PostgrestError> = { message: 'Org Delete failed' };
-      mockBuilderMethods.eq.mockResolvedValueOnce({ error: dbError as PostgrestError, count: null });
-      await expect(organizationService.deleteOrganization(mockUser.id, orgId, mockAccessToken))
-        .rejects.toThrow(new GraphQLError('Database error during deleting organization', {
-            extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Org Delete failed' }
-        }));
+     it('should return true if RLS prevents delete (error code 42501)', async () => {
+       // Arrange
+       const rlsError = { message: 'RLS violation', code: '42501', details: '', hint: '' };
+       mockSupabaseClient.delete.mockReturnThis(); // delete returns this
+       mockSupabaseClient.eq.mockResolvedValue({ error: rlsError, count: 0 }); // eq resolves
+
+       // Act
+       const result = await organizationService.deleteOrganization(mockSupabaseClient as any, 'org1');
+
+       // Assert
+        // Service returns false on RLS error
+       expect(result).toBe(false);
+       expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+       expect(mockSupabaseClient.delete).toHaveBeenCalledWith({ count: 'exact' });
+       expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'org1');
+   });
+
+    it('should throw an error if Supabase delete fails with non-RLS error', async () => {
+      // Arrange
+      const deleteError = { message: 'Delete failed', code: '500', details: '', hint: '' };
+      mockSupabaseClient.delete.mockReturnThis(); // delete returns this
+      mockSupabaseClient.eq.mockResolvedValue({ error: deleteError, count: null }); // eq resolves
+
+      // Act & Assert
+      await expect(organizationService.deleteOrganization(mockSupabaseClient as any, 'org1')).rejects.toThrow(
+        'Database operation failed in deleteOrganization: Delete failed'
+      );
+       expect(mockSupabaseClient.from).toHaveBeenCalledWith('organizations');
+       expect(mockSupabaseClient.delete).toHaveBeenCalledWith({ count: 'exact' });
+       expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'org1');
     });
   });
 }); 

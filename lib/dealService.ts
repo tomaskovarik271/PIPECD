@@ -1,156 +1,168 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { User } from '@supabase/supabase-js'; // Keep User type if needed later
-import { GraphQLError } from 'graphql';
-
-// Load env vars
-import dotenv from 'dotenv';
-dotenv.config();
-const supabaseUrl = process.env.SUPABASE_URL;
-if (!supabaseUrl) {
-  throw new Error('SUPABASE_URL environment variable is not set.');
-}
-// It's generally better to have the anon key available for client creation
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-if (!supabaseAnonKey) {
-    console.warn('SUPABASE_ANON_KEY environment variable is not set. Client creation might fail for some operations.');
-    // Depending on Supabase config, client creation might still work for auth header usage,
-    // but it's safer to have it. Throw error if strictly required.
-    // throw new Error('SUPABASE_ANON_KEY environment variable is not set.');
-}
+import { supabase } from './supabaseClient';
+// import { handleSupabaseError } from './utils/handleSupabaseError'; // Assume shared util exists
+import type { SupabaseClient, PostgrestError } from '@supabase/supabase-js';
+import { GraphQLError } from 'graphql'; // Might be needed if handleSupabaseError throws it
 
 
-// --- Helper Functions (Consider refactoring to a shared file later) ---
-
-// Helper to get a request-specific Supabase client instance authenticated with JWT
-function getAuthenticatedClient(accessToken: string): SupabaseClient {
-  if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase URL or Anon Key is not configured.');
-  }
-  // Use the user's access token to make the request, RLS policies using auth.uid() will work
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    // auth: { persistSession: false } // Ensure no session persistence on server
-  });
-}
-
-// Helper function to handle Supabase errors
-function handleSupabaseError(error: any, context: string) {
-  if (error) {
-    console.error(`Supabase error in ${context}:`, error.message);
-    throw new GraphQLError(`Database error during ${context}`, {
-      extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: error.message },
-    });
-  }
-}
-
-// --- Deal Data Shape (Placeholder - Define more accurately with schema) ---
-interface DealInput {
-  name?: string | null;
-  stage?: string | null; // e.g., 'Lead', 'Proposal', 'Closed Won', 'Closed Lost'
-  amount?: number | null;
-  person_id?: string | null; // Foreign key to people table (Renamed from contact_id)
-  // Add other relevant fields like close_date, notes etc.
-}
-
-// Define the shape returned by the database (includes id, timestamps, user_id)
-// Ideally, generate this from schema or use a shared type
-interface DealRecord extends Omit<DealInput, 'person_id'> { // Use Omit if DealInput includes person_id
+// --- Deal Data Shape ---
+export interface DealRecord {
     id: string;
     created_at: string;
     updated_at: string;
     user_id: string;
-    person_id?: string | null; // Ensure person_id is here too
+    name: string;
+    stage: string;
+    amount: number | null;
+    person_id: string | null; // Renamed from contact_id
 }
+
+export interface DealInput {
+    name: string;
+    stage: string;
+    amount?: number | null;
+    person_id?: string | null; // Renamed from contact_id
+}
+
+export type DealUpdateInput = Partial<DealInput>;
+
+// Re-add handleSupabaseError locally until shared util is confirmed/created
+function handleSupabaseError(error: PostgrestError | null, operation: string): void {
+    if (error) {
+        console.error(`Supabase error during ${operation}:`, error);
+        let errorCode = 'INTERNAL_SERVER_ERROR'; // Default code
+        let errorMessage = `Database operation failed in ${operation}: ${error.message}`;
+
+        // Customize message and code based on common error codes
+        if (error.code === '23505') { // Unique constraint violation
+            errorCode = 'CONFLICT';
+            errorMessage = `Database operation failed in ${operation}: Duplicate value detected.`;
+        }
+        if (error.code === '42501') { // RLS violation
+            errorCode = 'FORBIDDEN';
+             // For deletes, we might just want to return false instead of throwing
+            if (operation === 'deleteDeal') { // Check specific operation name
+                 console.warn(`RLS prevented delete operation for deal.`);
+                 // Keep returning void here for deleteDeal RLS
+                 return;
+            }
+             errorMessage = `Database operation failed in ${operation}: Permission denied (RLS). ${error.message}`;
+        }
+
+        // Throw an error with a code property
+        const customError = new Error(errorMessage);
+        (customError as any).code = errorCode; // Add code property
+        throw customError;
+    }
+}
+
 
 // --- Deal Service ---
 export const dealService = {
+    /**
+     * Retrieves all deals for the authenticated user.
+     * Relies on RLS.
+     */
+    async getDeals(supabaseClient: SupabaseClient): Promise<DealRecord[]> {
+        const { data, error } = await supabaseClient
+            .from('deals')
+            .select('*')
+            // .eq('user_id', userId) // Rely on RLS
+            .order('created_at', { ascending: false });
 
-  // Get all deals for the authenticated user (RLS handles filtering)
-  async getDeals(userId: string, accessToken: string): Promise<DealRecord[]> {
-    console.log('[dealService.getDeals] called for user:', userId);
-    const supabase = getAuthenticatedClient(accessToken);
-    const { data, error } = await supabase
-      .from('deals')
-      .select('*') // RLS filters by user_id
-      .order('created_at', { ascending: false });
+        if (error) handleSupabaseError(error, 'getDeals');
+        return data || [];
+    },
 
-    handleSupabaseError(error, 'fetching deals');
-    return data || [];
-  },
+    /**
+     * Retrieves a specific deal by ID.
+     * Relies on RLS.
+     */
+    async getDealById(supabaseClient: SupabaseClient, dealId: string): Promise<DealRecord | null> {
+         if (!dealId) {
+            console.warn('getDealById called with null or undefined id');
+            return null;
+        }
+        const { data, error } = await supabaseClient
+            .from('deals')
+            .select('*')
+            // .eq('user_id', userId) // Rely on RLS
+            .eq('id', dealId)
+            .maybeSingle();
 
-  // Get a single deal by ID (RLS handles filtering)
-  async getDealById(userId: string, id: string, accessToken:string): Promise<DealRecord | null> {
-    console.log('[dealService.getDealById] called for user:', userId, 'id:', id);
-    const supabase = getAuthenticatedClient(accessToken);
-    const { data, error } = await supabase
-      .from('deals')
-      .select('*')
-      .eq('id', id) // Filter by specific ID (RLS ensures user access)
-      .single();
+        if (error) handleSupabaseError(error, 'getDealById');
+        return data;
+    },
 
-    // Ignore 'PGRST116' error (No rows found), return null in that case
-    if (error && error.code !== 'PGRST116') { 
-       handleSupabaseError(error, 'fetching deal by ID');
-    }
-    return data;
-  },
+    /**
+     * Creates a new deal.
+     * RLS policy enforces ownership.
+     */
+    async createDeal(supabaseClient: SupabaseClient, userId: string, input: DealInput): Promise<DealRecord> {
+        const dealData = {
+            ...input,
+            user_id: userId,
+        };
+        const { data, error } = await supabaseClient
+            .from('deals')
+            .insert(dealData)
+            .select()
+            .single();
 
-  // Create a new deal (RLS requires authenticated client)
-  async createDeal(userId: string, input: DealInput, accessToken: string): Promise<DealRecord> {
-    console.log('[dealService.createDeal] called for user:', userId, 'input:', input);
-    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
-    const { data, error } = await supabase
-      .from('deals')
-      .insert({ ...input, user_id: userId }) // RLS CHECK (auth.uid() = user_id)
-      .select() 
-      .single();
+        if (error) handleSupabaseError(error, 'createDeal');
+        if (!data) throw new Error('Failed to create deal, no data returned.');
 
-    handleSupabaseError(error, 'creating deal');
-    if (!data) {
-        throw new GraphQLError('Failed to create deal, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
-    }
-    return data;
-  },
+        return data;
+    },
 
-  // Update an existing deal (RLS requires authenticated client)
-  async updateDeal(userId: string, id: string, input: DealInput, accessToken: string): Promise<DealRecord> {
-    console.log('[dealService.updateDeal] called for user:', userId, 'id:', id, 'input:', input);
-    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
-    const { data, error } = await supabase
-      .from('deals')
-      .update(input) 
-      .eq('id', id) // Target the specific deal ID (RLS checks user_id)
-      .select() 
-      .single();
+    /**
+     * Updates an existing deal.
+     * Relies on RLS.
+     */
+    async updateDeal(supabaseClient: SupabaseClient, dealId: string, input: DealUpdateInput): Promise<DealRecord | null> {
+         if (Object.keys(input).length === 0) {
+            // throw new Error("Update input cannot be empty.");
+            console.warn('updateDeal called with empty input, returning current record.');
+            const existing = await this.getDealById(supabaseClient, dealId);
+            if (!existing) {
+               throw new Error('Deal not found or access denied for update check.');
+            }
+            return existing;
+        }
 
-    // Handle not found error specifically
-     if (error && error.code === 'PGRST116') { // 'PGRST116' No rows found
-         throw new GraphQLError('Deal not found', { extensions: { code: 'NOT_FOUND' } });
-    }
-    handleSupabaseError(error, 'updating deal');
-     if (!data) { // Should be redundant if error handling is correct, but good failsafe
-        throw new GraphQLError('Deal update failed, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
-    }
-    return data;
-  },
+        const { data, error } = await supabaseClient
+            .from('deals')
+            .update(input)
+            // .eq('user_id', userId) // Rely on RLS
+            .eq('id', dealId)
+            .select()
+            .single();
 
-  // Delete a deal (RLS requires authenticated client)
-  async deleteDeal(userId: string, id: string, accessToken: string): Promise<boolean> {
-    console.log('[dealService.deleteDeal] called for user:', userId, 'id:', id);
-    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
-    // Note: We capture error here but let handleSupabaseError throw if it's significant
-    const { error, count } = await supabase
-      .from('deals')
-      .delete()
-      .eq('id', id); // Target the specific deal ID (RLS checks user_id)
+        if (error) handleSupabaseError(error, 'updateDeal');
+         if (!data) {
+             console.warn(`updateDeal query succeeded but returned no data for id: ${dealId}. Might be RLS or not found.`);
+             return null;
+        }
+        return data;
+    },
 
-    // handleSupabaseError will throw if there's a real DB/RLS issue
-    handleSupabaseError(error, 'deleting deal'); 
-    
-    // If handleSupabaseError did NOT throw, we consider the delete successful 
-    // from the database perspective, even if count might be 0 or null 
-    // (e.g., if the row was already deleted by another request).
-    console.log('Deleted count (informational):', count);
-    return !error; // Return true if no error was passed to handleSupabaseError
-  },
+    /**
+     * Deletes a deal.
+     * Relies on RLS.
+     */
+    async deleteDeal(supabaseClient: SupabaseClient, dealId: string): Promise<boolean> {
+        const { error, count } = await supabaseClient
+            .from('deals')
+            .delete({ count: 'exact' })
+            // .eq('user_id', userId) // Rely on RLS
+            .eq('id', dealId);
+
+         if (error && error.code !== '42501') { // Ignore RLS error for return value
+            handleSupabaseError(error, 'deleteDeal');
+        }
+
+        return count !== 0;
+    },
+
+    // TODO: Implement getDealsByPersonId(supabaseClient: SupabaseClient, personId: string)
+    // async getDealsByPersonId(supabaseClient: SupabaseClient, personId: string): Promise<DealRecord[]> { ... }
 }; 

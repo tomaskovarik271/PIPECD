@@ -1,19 +1,50 @@
 import { describe, it, expect, vi, beforeEach, beforeAll } from 'vitest';
 import { supabase } from './supabaseClient'; // The actual client
-import { leadService } from './leadService';
-import type { LeadRecord, LeadInput, LeadUpdateInput } from './leadService';
+// Import named service functions and types directly
+import { 
+    getLeads, 
+    getLeadById, 
+    createLead, 
+    updateLead, 
+    deleteLead, 
+    type LeadRecord, 
+    type LeadInput, 
+    type LeadUpdateInput 
+} from './leadService'; 
+// Re-add Supabase User import if needed for mockUser type safety
 import type { User } from '@supabase/supabase-js';
 
 // --- Mock Supabase Client ---
 vi.mock('./supabaseClient');
 
-// Declare variables for mocks - will be assigned in beforeAll
-let mockedSupabase: any; // Use a single variable for the mocked client
+// --- Standardized Mock Supabase Client ---
+const mockSupabaseClient = {
+    from: vi.fn(),
+    select: vi.fn(),
+    insert: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    eq: vi.fn(),
+    order: vi.fn(),
+    single: vi.fn(),
+    maybeSingle: vi.fn(),
+    auth: {
+        getUser: vi.fn()
+    }
+};
 
 // --- Test Data ---
 const mockUserId = 'user-test-123';
-const mockAccessToken = 'mock-token';
-const mockUser: User = { id: mockUserId, app_metadata: {}, user_metadata: {}, aud: 'authenticated', created_at: '' }; // Minimal mock User
+// Use the imported User type for mockUser
+const mockUser: User = { 
+    id: mockUserId, 
+    email: 'test@example.com', 
+    app_metadata: {}, 
+    user_metadata: {}, 
+    aud: 'authenticated', 
+    created_at: new Date().toISOString(),
+    phone: '' 
+};
 
 const mockLead1: LeadRecord = {
     id: 'lead-uuid-1',
@@ -47,49 +78,21 @@ const mockLead2: LeadRecord = {
 describe('leadService', () => {
 
     beforeEach(() => {
-        // Reset mocks before each test
+        // Reset and configure mocks before each test
         vi.resetAllMocks();
 
-        // Get a fresh mocked instance before each test
-        mockedSupabase = vi.mocked(supabase, true); // Deep mock
+        // Configure chainable methods (excluding select/delete) to return `this`
+        mockSupabaseClient.from.mockReturnThis();
+        mockSupabaseClient.insert.mockReturnThis();
+        mockSupabaseClient.update.mockReturnThis();
+        mockSupabaseClient.eq.mockReturnThis();
+        mockSupabaseClient.order.mockReturnThis();
 
-        // Default successful auth mock for most tests
-        mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: mockUser }, error: null });
-
-        // Mock the query builder chain structure
-        const queryBuilderMock = {
-            // Methods that return the builder for further chaining
-            select: vi.fn().mockReturnThis(),
-            insert: vi.fn().mockReturnThis(),
-            update: vi.fn().mockReturnThis(),
-            delete: vi.fn().mockReturnThis(),
-            eq: vi.fn().mockReturnThis(),
-            order: vi.fn().mockReturnThis(),
-            // Methods that execute the query and return a result (promise)
-            maybeSingle: vi.fn(),
-            single: vi.fn(),
-            // For `select()` without single/maybeSingle, it implicitly resolves.
-            // We can mock the resolution by configuring the mock function itself.
-            // For `delete()`, it resolves with count/error after the chain.
-            // We configure the `delete` function itself to resolve.
-        };
-
-        // Make `supabase.from()` return our mock query builder
-        mockedSupabase.from.mockReturnValue(queryBuilderMock);
-
-        // Make chainable methods on the query builder return the builder itself
-        // This allows chaining like .select().eq().order()
-        queryBuilderMock.select.mockReturnThis();
-        queryBuilderMock.insert.mockReturnThis(); // .insert(...).select().single()
-        queryBuilderMock.update.mockReturnThis(); // .update(...).eq().select().single()
-        queryBuilderMock.delete.mockReturnThis(); // .delete(...).eq().eq() -> resolves promise
-        queryBuilderMock.eq.mockReturnThis();
-        queryBuilderMock.order.mockReturnThis();
-
-        // Now, individual tests can configure the final method in the chain
-        // e.g., queryBuilderMock.maybeSingle.mockResolvedValue(...)
-        // or queryBuilderMock.select.mockResolvedValue(...) for simple selects
-        // or queryBuilderMock.delete.mockResolvedValue(...) for delete operations
+        // Clear mocks for terminal/potentially-terminal methods.
+        mockSupabaseClient.select = vi.fn(); // Clear default
+        mockSupabaseClient.delete = vi.fn(); // Clear default
+        mockSupabaseClient.single = vi.fn();
+        mockSupabaseClient.maybeSingle = vi.fn();
     });
 
     // --- getLeads Tests ---
@@ -97,65 +100,57 @@ describe('leadService', () => {
         it('should fetch leads for a user successfully', async () => {
             // Arrange
             const mockLeads = [mockLead1, mockLead2];
-            vi.mocked(mockedSupabase.from('leads').select).mockResolvedValue({ data: mockLeads, error: null });
+            mockSupabaseClient.select.mockReturnThis(); // Make select chainable
+            mockSupabaseClient.eq.mockReturnThis(); // Make eq chainable
+            // Mock the terminal method (.order resolves the promise)
+            mockSupabaseClient.order.mockResolvedValue({ data: mockLeads, error: null });
 
             // Act
-            const result = await leadService.getLeads(mockUserId, mockAccessToken);
+            // Call the imported function directly
+            const result = await getLeads(mockSupabaseClient as any, mockUserId);
 
             // Assert
             expect(result).toEqual(mockLeads);
-            expect(mockedSupabase.auth.getUser).toHaveBeenCalledWith(mockAccessToken);
-            expect(mockedSupabase.from).toHaveBeenCalledWith('leads');
-            expect(mockedSupabase.from('leads').select).toHaveBeenCalledWith('*');
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('user_id', mockUserId);
-            expect(mockedSupabase.from('leads').order).toHaveBeenCalledWith('created_at', { ascending: false });
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.order).toHaveBeenCalledWith('created_at', { ascending: false });
         });
 
         it('should return an empty array if no leads are found', async () => {
             // Arrange
-            vi.mocked(mockedSupabase.from('leads').select).mockResolvedValue({ data: [], error: null });
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.order.mockResolvedValue({ data: [], error: null });
 
             // Act
-            const result = await leadService.getLeads(mockUserId, mockAccessToken);
+            const result = await getLeads(mockSupabaseClient as any, mockUserId);
 
             // Assert
             expect(result).toEqual([]);
-            expect(mockedSupabase.from).toHaveBeenCalledWith('leads');
-            expect(mockedSupabase.from('leads').select).toHaveBeenCalledWith('*');
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.order).toHaveBeenCalledWith('created_at', { ascending: false });
         });
 
         it('should throw an error if Supabase select fails', async () => {
             // Arrange
             const dbError = { message: 'Select failed', code: '500', details: '', hint: '' };
-            vi.mocked(mockedSupabase.from('leads').select).mockResolvedValue({ data: null, error: dbError });
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.order.mockResolvedValue({ data: null, error: dbError });
 
             // Act & Assert
-            await expect(leadService.getLeads(mockUserId, mockAccessToken))
+            await expect(getLeads(mockSupabaseClient as any, mockUserId))
                 .rejects.toThrow(/Database operation failed in getLeads: Select failed/);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.order).toHaveBeenCalledWith('created_at', { ascending: false });
         });
 
-        it('should throw an error if auth fails', async () => {
-             // Arrange
-             const authError = { message: 'Invalid token', status: 401 };
-             mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: authError as any });
-
-             // Act & Assert
-             await expect(leadService.getLeads(mockUserId, mockAccessToken))
-                 .rejects.toThrow('Invalid user or access token');
-             expect(mockedSupabase.from).not.toHaveBeenCalled(); // Ensure DB wasn't queried
-        });
-
-         it('should throw an error if auth user ID does not match requested user ID', async () => {
-             // Arrange
-             const differentUser = { ...mockUser, id: 'other-user-id' };
-             mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: differentUser }, error: null });
-
-             // Act & Assert
-             await expect(leadService.getLeads(mockUserId, mockAccessToken)) // Requesting for mockUserId
-                 .rejects.toThrow('Invalid user or access token');
-             expect(mockedSupabase.from).not.toHaveBeenCalled();
-        });
+        // Auth tests removed as auth is handled by context/RLS now
     });
 
     // --- getLeadById Tests ---
@@ -164,55 +159,61 @@ describe('leadService', () => {
 
         it('should fetch a single lead by ID successfully', async () => {
             // Arrange
-            mockedSupabase.from('leads').maybeSingle.mockResolvedValue({ data: mockLead1, error: null });
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis(); // First eq
+            mockSupabaseClient.eq.mockReturnThis(); // Second eq
+            mockSupabaseClient.maybeSingle.mockResolvedValue({ data: mockLead1, error: null });
 
             // Act
-            const result = await leadService.getLeadById(mockUserId, leadId, mockAccessToken);
+            const result = await getLeadById(mockSupabaseClient as any, mockUserId, leadId);
 
             // Assert
             expect(result).toEqual(mockLead1);
-            expect(mockedSupabase.auth.getUser).toHaveBeenCalledWith(mockAccessToken);
-            expect(mockedSupabase.from).toHaveBeenCalledWith('leads');
-            expect(mockedSupabase.from('leads').select).toHaveBeenCalledWith('*');
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('user_id', mockUserId);
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('id', leadId);
-            expect(mockedSupabase.from('leads').maybeSingle).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.maybeSingle).toHaveBeenCalledTimes(1);
         });
 
         it('should return null if lead is not found', async () => {
-             // Arrange
-             mockedSupabase.from('leads').maybeSingle.mockResolvedValue({ data: null, error: null });
+            // Arrange
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: null });
 
             // Act
-            const result = await leadService.getLeadById(mockUserId, 'non-existent-id', mockAccessToken);
+            const result = await getLeadById(mockSupabaseClient as any, mockUserId, 'non-existent-id');
 
             // Assert
             expect(result).toBeNull();
-            expect(mockedSupabase.from).toHaveBeenCalledWith('leads');
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('id', 'non-existent-id');
-            expect(mockedSupabase.from('leads').maybeSingle).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', 'non-existent-id');
+            expect(mockSupabaseClient.maybeSingle).toHaveBeenCalledTimes(1);
         });
 
         it('should throw an error if Supabase maybeSingle fails', async () => {
-             // Arrange
+            // Arrange
             const dbError = { message: 'maybeSingle failed', code: '500', details: '', hint: '' };
-            mockedSupabase.from('leads').maybeSingle.mockResolvedValue({ data: null, error: dbError });
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.maybeSingle.mockResolvedValue({ data: null, error: dbError });
 
             // Act & Assert
-            await expect(leadService.getLeadById(mockUserId, leadId, mockAccessToken))
+            await expect(getLeadById(mockSupabaseClient as any, mockUserId, leadId))
                 .rejects.toThrow(/Database operation failed in getLeadById: maybeSingle failed/);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.select).toHaveBeenCalledWith('*');
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.maybeSingle).toHaveBeenCalledTimes(1);
         });
 
-         it('should throw an error if auth fails', async () => {
-             // Arrange
-             const authError = { message: 'Invalid token', status: 401 };
-             mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: authError as any });
-
-             // Act & Assert
-             await expect(leadService.getLeadById(mockUserId, leadId, mockAccessToken))
-                 .rejects.toThrow('Invalid user or access token');
-             expect(mockedSupabase.from).not.toHaveBeenCalled();
-        });
+        // Auth tests removed
     });
 
     // --- createLead Tests ---
@@ -242,26 +243,25 @@ describe('leadService', () => {
 
         it('should create a lead successfully', async () => {
             // Arrange
-            mockedSupabase.from('leads').single.mockResolvedValue({ data: createdLeadRecord, error: null });
+            mockSupabaseClient.insert.mockReturnThis();
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.single.mockResolvedValue({ data: createdLeadRecord, error: null });
 
             // Act
-            const result = await leadService.createLead(mockUserId, leadInput, mockAccessToken);
+            const result = await createLead(mockSupabaseClient as any, mockUserId, leadInput);
 
             // Assert
             expect(result).toEqual(createdLeadRecord);
-            expect(mockedSupabase.auth.getUser).toHaveBeenCalledWith(mockAccessToken);
-            expect(mockedSupabase.from).toHaveBeenCalledWith('leads');
-            expect(mockedSupabase.from('leads').insert).toHaveBeenCalledWith(expectedDbInput);
-            expect(mockedSupabase.from('leads').select).toHaveBeenCalledTimes(1);
-            expect(mockedSupabase.from('leads').single).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.insert).toHaveBeenCalledWith(expectedDbInput);
+            expect(mockSupabaseClient.select).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.single).toHaveBeenCalledTimes(1);
         });
 
          it('should default status to \'New\' if not provided', async () => {
             // Arrange
             const inputWithoutStatus = { name: 'Another New Lead' };
             const expectedInputWithDefaultStatus = { ...inputWithoutStatus, user_id: mockUserId, status: 'New' };
-            // Ensure the mock result has the correct, non-nullable status
-            // Explicitly construct the result record to satisfy LeadRecord type
             const resultRecord: LeadRecord = {
                 id: 'new-lead-uuid',
                 created_at: new Date().toISOString(),
@@ -275,44 +275,52 @@ describe('leadService', () => {
                 source: null,
                 notes: null,
             };
-            mockedSupabase.from('leads').single.mockResolvedValue({ data: resultRecord, error: null });
+            mockSupabaseClient.insert.mockReturnThis();
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.single.mockResolvedValue({ data: resultRecord, error: null });
 
             // Act
-            await leadService.createLead(mockUserId, inputWithoutStatus, mockAccessToken);
+            await createLead(mockSupabaseClient as any, mockUserId, inputWithoutStatus);
 
             // Assert
-            expect(mockedSupabase.from('leads').insert).toHaveBeenCalledWith(expectedInputWithDefaultStatus);
+            expect(mockSupabaseClient.insert).toHaveBeenCalledWith(expectedInputWithDefaultStatus);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.select).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.single).toHaveBeenCalledTimes(1);
         });
 
         it('should throw an error if Supabase insert fails', async () => {
             // Arrange
-            const dbError = { message: 'Insert failed', code: '23505', details: '', hint: '' }; // Example unique violation
-            mockedSupabase.from('leads').single.mockResolvedValue({ data: null, error: dbError });
+            const dbError = { message: 'Insert failed', code: '23505', details: '', hint: '' };
+            mockSupabaseClient.insert.mockReturnThis();
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.single.mockResolvedValue({ data: null, error: dbError });
 
             // Act & Assert
-            await expect(leadService.createLead(mockUserId, leadInput, mockAccessToken))
-                .rejects.toThrow(/Database operation failed in createLead: Insert failed/);
+            await expect(createLead(mockSupabaseClient as any, mockUserId, leadInput))
+                .rejects.toThrow(/Database operation failed in createLead: Duplicate value detected./);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.insert).toHaveBeenCalledWith(expectedDbInput);
+            expect(mockSupabaseClient.select).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.single).toHaveBeenCalledTimes(1);
         });
 
         it('should throw an error if Supabase returns no data after insert', async () => {
             // Arrange
-            mockedSupabase.from('leads').single.mockResolvedValue({ data: null, error: null }); // Unexpected null data
+            mockSupabaseClient.insert.mockReturnThis();
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.single.mockResolvedValue({ data: null, error: null });
 
             // Act & Assert
-            await expect(leadService.createLead(mockUserId, leadInput, mockAccessToken))
+            await expect(createLead(mockSupabaseClient as any, mockUserId, leadInput))
                 .rejects.toThrow('Failed to create lead, no data returned.');
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.insert).toHaveBeenCalledWith(expectedDbInput);
+            expect(mockSupabaseClient.select).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.single).toHaveBeenCalledTimes(1);
         });
 
-        it('should throw an error if auth fails', async () => {
-            // Arrange
-            const authError = { message: 'Invalid token', status: 401 };
-            mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: authError as any });
-
-            // Act & Assert
-            await expect(leadService.createLead(mockUserId, leadInput, mockAccessToken))
-                .rejects.toThrow('Invalid user or access token');
-            expect(mockedSupabase.from).not.toHaveBeenCalled();
-       });
+       // Auth tests removed
     });
 
     // --- updateLead Tests ---
@@ -325,82 +333,83 @@ describe('leadService', () => {
         const updatedLeadRecord: LeadRecord = {
             ...mockLead1,
             ...updateInput,
-            updated_at: new Date().toISOString(), // Should be updated
+            updated_at: new Date().toISOString(),
         };
 
         it('should update a lead successfully', async () => {
             // Arrange
-            mockedSupabase.from('leads').single.mockResolvedValue({ data: updatedLeadRecord, error: null });
+            mockSupabaseClient.update.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis(); // First eq
+            mockSupabaseClient.eq.mockReturnThis(); // Second eq
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.single.mockResolvedValue({ data: updatedLeadRecord, error: null });
 
             // Act
-            const result = await leadService.updateLead(mockUserId, leadId, updateInput, mockAccessToken);
+            const result = await updateLead(mockSupabaseClient as any, mockUserId, leadId, updateInput);
 
             // Assert
             expect(result).toEqual(updatedLeadRecord);
-            expect(mockedSupabase.auth.getUser).toHaveBeenCalledWith(mockAccessToken);
-            expect(mockedSupabase.from).toHaveBeenCalledWith('leads');
-            expect(mockedSupabase.from('leads').update).toHaveBeenCalledWith(updateInput);
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('user_id', mockUserId);
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('id', leadId);
-            expect(mockedSupabase.from('leads').select).toHaveBeenCalledTimes(1);
-            expect(mockedSupabase.from('leads').single).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.update).toHaveBeenCalledWith(updateInput);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.select).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.single).toHaveBeenCalledTimes(1);
         });
 
-        it('should return current lead if update input is empty', async () => {
-            // Arrange: Mock getLeadById for the check
-            mockedSupabase.from('leads').maybeSingle.mockResolvedValue({ data: mockLead1, error: null }); 
-
-            // Act
-            const result = await leadService.updateLead(mockUserId, leadId, {}, mockAccessToken);
-
-            // Assert
-            expect(result).toEqual(mockLead1);
-            expect(mockedSupabase.from('leads').update).not.toHaveBeenCalled();
-            // Ensure getLeadById was called internally
-            expect(mockedSupabase.from('leads').maybeSingle).toHaveBeenCalledTimes(1);
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('id', leadId); // Check getLeadById call args
-        });
-
-        it('should throw error if lead not found when checking empty update', async () => {
-            // Arrange: Mock getLeadById return null
-            mockedSupabase.from('leads').maybeSingle.mockResolvedValue({ data: null, error: null });
+        it('should throw error if lead not found during update (or RLS prevents)', async () => {
+            // Arrange
+            mockSupabaseClient.update.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.single.mockResolvedValue({ data: null, error: null });
+            const testUpdateInput: LeadUpdateInput = { name: 'Should not matter' }; // Use a specific input for this test
 
             // Act & Assert
-            await expect(leadService.updateLead(mockUserId, leadId, {}, mockAccessToken))
-                 .rejects.toThrow('Lead not found or access denied for update check.');
-            expect(mockedSupabase.from('leads').update).not.toHaveBeenCalled();
+            await expect(updateLead(mockSupabaseClient as any, mockUserId, leadId, testUpdateInput))
+                 .rejects.toThrow('Failed to update lead or lead not found.');
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            // Verify update was still CALLED with the input object, even if it failed later
+            expect(mockSupabaseClient.update).toHaveBeenCalledWith(testUpdateInput);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.select).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.single).toHaveBeenCalledTimes(1);
         });
 
+         it('should throw an error if update input is empty', async () => {
+            // Act & Assert
+            // Ensure NO supabase methods are called due to the service's input validation
+            await expect(updateLead(mockSupabaseClient as any, mockUserId, leadId, {}))
+                 .rejects.toThrow('Update input cannot be empty.');
+            expect(mockSupabaseClient.from).not.toHaveBeenCalled();
+            expect(mockSupabaseClient.update).not.toHaveBeenCalled();
+        });
 
         it('should throw an error if Supabase update fails', async () => {
             // Arrange
             const dbError = { message: 'Update failed', code: '500', details: '', hint: '' };
-            mockedSupabase.from('leads').single.mockResolvedValue({ data: null, error: dbError });
+            mockSupabaseClient.update.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.eq.mockReturnThis();
+            mockSupabaseClient.select.mockReturnThis();
+            mockSupabaseClient.single.mockResolvedValue({ data: null, error: dbError });
+            const specificUpdateInput = { notes: "Trying failed update" }; // Use specific input
 
             // Act & Assert
-            await expect(leadService.updateLead(mockUserId, leadId, updateInput, mockAccessToken))
+            await expect(updateLead(mockSupabaseClient as any, mockUserId, leadId, specificUpdateInput))
                 .rejects.toThrow(/Database operation failed in updateLead: Update failed/);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            // Verify update was called with the input object
+            expect(mockSupabaseClient.update).toHaveBeenCalledWith(specificUpdateInput);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('user_id', mockUserId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.select).toHaveBeenCalledTimes(1);
+            expect(mockSupabaseClient.single).toHaveBeenCalledTimes(1);
         });
 
-        it('should throw an error if Supabase returns no data after update (e.g., RLS/not found)', async () => {
-            // Arrange
-            mockedSupabase.from('leads').single.mockResolvedValue({ data: null, error: null }); // Update succeeded but returned null
-
-            // Act & Assert
-            await expect(leadService.updateLead(mockUserId, leadId, updateInput, mockAccessToken))
-                .rejects.toThrow('Failed to update lead or lead not found.');
-        });
-
-         it('should throw an error if auth fails', async () => {
-             // Arrange
-             const authError = { message: 'Invalid token', status: 401 };
-             mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: authError as any });
-
-             // Act & Assert
-             await expect(leadService.updateLead(mockUserId, leadId, updateInput, mockAccessToken))
-                 .rejects.toThrow('Invalid user or access token');
-             expect(mockedSupabase.from).not.toHaveBeenCalled();
-        });
+         // Auth tests removed
     });
 
     // --- deleteLead Tests ---
@@ -409,65 +418,74 @@ describe('leadService', () => {
 
         it('should delete a lead successfully and return true', async () => {
             // Arrange
-            mockedSupabase.from('leads').delete.mockResolvedValue({ error: null, count: 1 });
+            mockSupabaseClient.delete.mockReturnThis(); // delete returns this
+            // eq('id', ...) resolves the value
+             mockSupabaseClient.eq.mockResolvedValueOnce({ error: null, count: 1 });
 
             // Act
-            const result = await leadService.deleteLead(mockUserId, leadId, mockAccessToken);
+            const result = await deleteLead(mockSupabaseClient as any, leadId);
 
             // Assert
             expect(result).toBe(true);
-            expect(mockedSupabase.auth.getUser).toHaveBeenCalledWith(mockAccessToken);
-            expect(mockedSupabase.from).toHaveBeenCalledWith('leads');
-            expect(mockedSupabase.from('leads').delete).toHaveBeenCalledWith({ count: 'exact' });
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('user_id', mockUserId);
-            expect(mockedSupabase.from('leads').eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.delete).toHaveBeenCalledWith({ count: 'exact' });
+            // Only expect eq for id
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledTimes(1); // Ensure only called once
         });
 
-        it('should return true if lead was not found (count 0)', async () => {
+        it('should return false if lead was not found (count 0)', async () => {
             // Arrange
-            mockedSupabase.from('leads').delete.mockResolvedValue({ error: null, count: 0 });
+            mockSupabaseClient.delete.mockReturnThis();
+            mockSupabaseClient.eq.mockResolvedValueOnce({ error: null, count: 0 });
 
             // Act
-            const result = await leadService.deleteLead(mockUserId, leadId, mockAccessToken);
+            const result = await deleteLead(mockSupabaseClient as any, leadId);
 
             // Assert
-            expect(result).toBe(true);
-            expect(mockedSupabase.from).toHaveBeenCalledWith('leads');
-            expect(mockedSupabase.from('leads').delete).toHaveBeenCalledTimes(1);
+            expect(result).toBe(false);
+            expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+            expect(mockSupabaseClient.delete).toHaveBeenCalledWith({ count: 'exact' });
+            // Only expect eq for id
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledTimes(1);
         });
 
-        it('should return true even if RLS prevents delete (specific error message)', async () => {
+        it('should return false if RLS prevents delete', async () => {
              // Arrange
              const rlsError = { message: 'Row level security policy violation', code: '42501', details: '', hint: '' };
-             mockedSupabase.from('leads').delete.mockResolvedValue({ error: rlsError, count: 0 });
-
+             mockSupabaseClient.delete.mockReturnThis();
+             mockSupabaseClient.eq.mockResolvedValueOnce({ error: rlsError, count: 0 }); // RLS error, count is 0
              // Act
-             const result = await leadService.deleteLead(mockUserId, leadId, mockAccessToken);
+             const result = await deleteLead(mockSupabaseClient as any, leadId);
 
-             // Assert
-             expect(result).toBe(true); // Consider RLS violation as non-fatal for this return value
-             expect(mockedSupabase.from('leads').delete).toHaveBeenCalledTimes(1);
+             // Assert: Expect false because the service function returns count === 1
+             expect(result).toBe(false);
+             expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+             expect(mockSupabaseClient.delete).toHaveBeenCalledWith({ count: 'exact' });
+             // Only expect eq for id
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledTimes(1);
+            // DO NOT expect handleSupabaseError to have thrown
         });
 
         it('should throw an error if Supabase delete fails with other error', async () => {
             // Arrange
             const dbError = { message: 'Delete failed unexpectedly', code: '500', details: '', hint: '' };
-            mockedSupabase.from('leads').delete.mockResolvedValue({ error: dbError, count: null });
-
+            mockSupabaseClient.delete.mockReturnThis();
+            // eq resolves with the error
+            mockSupabaseClient.eq.mockResolvedValueOnce({ error: dbError, count: null });
             // Act & Assert
-            await expect(leadService.deleteLead(mockUserId, leadId, mockAccessToken))
-                .rejects.toThrow(/Database operation failed in deleteLead: Delete failed unexpectedly/);
+            // Expect the service's handleSupabaseError to throw
+            await expect(deleteLead(mockSupabaseClient as any, leadId))
+                .rejects.toThrow('Database operation failed in deleteLead: Delete failed unexpectedly');
+             expect(mockSupabaseClient.from).toHaveBeenCalledWith('leads');
+             expect(mockSupabaseClient.delete).toHaveBeenCalledWith({ count: 'exact' });
+             // Only expect eq for id
+            expect(mockSupabaseClient.eq).toHaveBeenCalledWith('id', leadId);
+            expect(mockSupabaseClient.eq).toHaveBeenCalledTimes(1);
         });
 
-        it('should throw an error if auth fails', async () => {
-            // Arrange
-            const authError = { message: 'Invalid token', status: 401 };
-            mockedSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: authError as any });
-
-            // Act & Assert
-            await expect(leadService.deleteLead(mockUserId, leadId, mockAccessToken))
-                .rejects.toThrow('Invalid user or access token');
-            expect(mockedSupabase.from).not.toHaveBeenCalled();
-        });
+        // Auth tests removed
     });
 }); 

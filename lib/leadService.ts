@@ -31,11 +31,41 @@ export interface LeadInput {
 // Define the structure for updating a lead (all fields optional)
 export type LeadUpdateInput = Partial<LeadInput>;
 
-// Helper function to handle Supabase errors
-function handleSupabaseError(error: PostgrestError | null, context: string): void {
+/**
+ * Handles Supabase errors by logging them and throwing a standardized error.
+ * @param {PostgrestError | null} error - The error object from Supabase.
+ * @param {string} operation - The name of the service operation where the error occurred.
+ * @throws {Error} Throws a standardized error message.
+ */
+function handleSupabaseError(error: PostgrestError | null, operation: string): void {
     if (error) {
-        console.error(`Supabase error in ${context}:`, error);
-        throw new Error(`Database operation failed in ${context}: ${error.message}`);
+        console.error(`Supabase error during ${operation}:`, error);
+        let errorCode = 'INTERNAL_SERVER_ERROR'; // Default code
+        let errorMessage = `Database operation failed in ${operation}: ${error.message}`;
+
+        // Customize message and code based on common error codes
+        if (error.code === '23505') { // Unique constraint violation
+            errorCode = 'CONFLICT';
+            errorMessage = `Database operation failed in ${operation}: Duplicate value detected.`;
+        }
+        if (error.code === '42501') { // RLS violation
+            errorCode = 'FORBIDDEN';
+             // For deletes, we might just want to return false instead of throwing
+            if (operation === 'deleteLead') {
+                 console.warn(`RLS prevented delete operation for lead.`);
+                 // Don't throw for delete RLS, let the caller handle 'false' return
+                 // Instead, we throw a specific error that the caller can check
+                 // throw new Error(errorMessage); // Original throw
+                 // Let's keep returning void here for deleteLead RLS, as the service expects it
+                 return;
+            }
+             errorMessage = `Database operation failed in ${operation}: Permission denied (RLS). ${error.message}`;
+        }
+
+        // Throw an error with a code property
+        const customError = new Error(errorMessage);
+        (customError as any).code = errorCode; // Add code property
+        throw customError;
     }
 }
 
@@ -104,34 +134,43 @@ async function createLead(supabaseClient: SupabaseClient, userId: string, input:
 }
 
 /**
- * Updates an existing lead.
+ * Updates an existing lead for a specific user.
+ * Input object should contain only the fields to be updated.
+ * Performs validation on the input object.
  * Authorization (ensuring user owns the lead) should be done in the resolver.
  * Accepts supabaseClient instance.
+ * @throws {Error} Throws an error if the database operation fails or input is invalid.
  */
-async function updateLead(supabaseClient: SupabaseClient, leadId: string, input: LeadUpdateInput): Promise<LeadRecord> {
-    // Removed accessToken check - ownership check done in resolver
+async function updateLead(
+  client: SupabaseClient, // Use the SupabaseClient type
+  userId: string, // Add userId parameter
+  leadId: string,
+  input: LeadUpdateInput
+): Promise<LeadRecord> { // Return the updated record
+   if (Object.keys(input).length === 0) {
+    throw new Error('Update input cannot be empty.');
+  }
 
-    // Prevent updating user_id (safety measure)
-    const { user_id, ...updateData } = input as any; 
+  // Input validation is now handled by the GraphQL resolver's Zod schema
 
-    if (Object.keys(updateData).length === 0) {
-        throw new Error('No fields provided for update'); // Or fetch/return current if preferred
+  const { data, error } = await client
+    .from('leads')
+    .update(input) // Pass the input object directly
+    .eq('user_id', userId) // Add user_id check for RLS/security
+    .eq('id', leadId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Supabase error in updateLead:', error); // Log the specific Supabase error
+    handleSupabaseError(error, 'updateLead'); // Throw standardized error
+  }
+
+  if (!data) {
+      throw new Error('Failed to update lead or lead not found.');
     }
-
-    const { data: updatedLead, error: updateError } = await supabaseClient // Use passed client
-        .from('leads')
-        .update(updateData)
-        // Rely on RLS for authorization, checked in resolver before calling this
-        .eq('id', leadId)
-        .select()
-        .single();
-
-    handleSupabaseError(updateError, 'updateLead');
-    if (!updatedLead) {
-        throw new Error('Failed to update lead or lead not found.');
-    }
-    return updatedLead;
-}
+   return data;
+  }
 
 /**
  * Deletes a lead.
