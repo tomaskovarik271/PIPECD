@@ -1,6 +1,7 @@
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import { useEffect, useState } from 'react'; // Import hooks
-import { gql } from 'graphql-request'; // Import gql
+// import { gql } from 'graphql-request'; // Removed unused gql
+// import { gqlClient } from './lib/graphqlClient'; // Removed unused gqlClient
 import { supabase } from './lib/supabase'; // Import frontend supabase client
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
