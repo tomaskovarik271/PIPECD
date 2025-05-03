@@ -1,6 +1,6 @@
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import { useEffect, useState } from 'react'; // Import hooks
-import { gql, useQuery } from '@apollo/client'; // Keep gql import if needed elsewhere or remove if truly unused
+// import { gql, useQuery } from '@apollo/client'; // Removed unused gql
 // import { gqlClient } from './lib/graphqlClient'; // Removed unused gqlClient
 import { supabase } from './lib/supabase'; // Import frontend supabase client
 import { Auth } from '@supabase/auth-ui-react';
@@ -15,11 +15,9 @@ import {
   Heading, 
   Link, // Use Chakra Link
   Button, 
-  HStack, 
   Flex,
   useToast,
   VStack,
-  Spacer, // Import Spacer
 } from '@chakra-ui/react';
 
 // Define the health query

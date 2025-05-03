@@ -67,7 +67,7 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose, onLe
         reset // Function to reset form fields
     } = useForm<LeadFormData>();
     const toast = useToast();
-    const [createLead, { loading, error }] = useMutation(CREATE_LEAD);
+    const [createLead, { loading }] = useMutation(CREATE_LEAD);
 
     const onSubmit = async (values: LeadFormData) => {
         // Filter out empty strings for optional fields before sending
