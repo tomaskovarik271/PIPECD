@@ -138,7 +138,7 @@ sequenceDiagram
 |  1  | **Lead Management**                     | Capture, store, qualify leads → promote to deals.    | ✅ *In* (basic lead inbox, convert to deal)  | ⬜ *Later* (Requires dedicated implementation)        |
 |  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ *In* (CRUD implemented)                   | ✅ Done (Core CRUD)                                  |
 |  3  | **Pipeline Management**                 | Define pipelines & stages; validate deal stage flow. | ✅ *In* (single default pipeline)            | ⬜ *Later* (Requires implementation beyond stages)    |
-|  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ *In* (basic CRUD)                         | ✅ Done (Basic Person CRUD), 🟡 *Enhancing* (Adding Orgs) |
+|  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ *In* (basic CRUD)                         | ✅ Done (Person/Org CRUD)                             |
 |  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ *In* (tasks & reminders only)             | ⬜ *Later* (Requires significant expansion)         |
 |  6  | **Project (Post-Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ *Later* (post-MVP)                        | ⬜ Not Started                                       |
 |  7  | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ *Later* (post-MVP)                        | ⬜ Not Started                                       |
@@ -152,7 +152,7 @@ sequenceDiagram
 
 *Legend: ✅ Implemented (Basic/Core) · 🟡 In Progress/Enhancing · ⬜ Deferred/Not Started*
 
-*Note:* Initial Contact Management MVP is complete. The current focus (Roadmap Phase 3) is enhancing this by introducing **Organizations** alongside People (currently `contacts`) for better Pipedrive parity.
+*Note:* Contact Management (People/Organizations) is now implemented.
 
 ## 5. Key Technology Choices & Rationale
 

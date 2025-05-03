@@ -66,58 +66,62 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Define and send events from Gateway/Logic (`crm/contact.created`, `crm/deal.created`).
     *   [x] Implement basic logging logic in the Inngest Handler (`logContactCreation`, `logDealCreation`).
 
-## Phase 3: Contact Model Enhancement (Current Focus)
+## Phase 3: Contact Model Enhancement (Completed)
 
 *   *(Enhance core contact management towards Pipedrive parity: People vs. Organizations)*
-*   [ ] **Database Schema:**
-    *   [ ] Define `organizations` table schema.
-    *   [ ] Modify `contacts` table (rename to `people`?, add `organization_id` FK).
-    *   [ ] Define/Update RLS policies for `organizations` and modified `people` table.
-    *   [ ] Create Supabase Migration file for schema changes.
-*   [ ] **Backend Logic (`/lib`):**
-    *   [ ] Implement `organizationService.ts` (CRUD for Organizations).
-    *   [ ] Update `contactService.ts` (rename to `personService.ts`?) to handle relationships.
-*   [ ] **GraphQL API (Gateway):**
-    *   [ ] Add `Organization` type, input, queries, mutations.
-    *   [ ] Update `Contact` type (rename to `Person`?) to include `organization` field/resolver.
-    *   [ ] Update relevant contact/person queries/mutations.
-*   [ ] **Frontend (UI):**
-    *   [ ] Update Contact/Person forms and views to manage organization link.
-    *   [ ] Create UI components/pages for managing Organizations.
-    *   [ ] Update frontend GraphQL calls.
+*   [x] **Database Schema:**
+    *   [x] Define `organizations` table schema.
+    *   [x] Modify `contacts` table (renamed to `people`, add `organization_id` FK).
+    *   [x] Define/Update RLS policies for `organizations` and `people` table.
+    *   [x] Create Supabase Migration file for schema changes.
+*   [x] **Backend Logic (`/lib`):**
+    *   [x] Implement `organizationService.ts` (CRUD for Organizations).
+    *   [x] Update `contactService.ts` (renamed to `personService.ts`) to handle relationships.
+*   [x] **GraphQL API (Gateway):**
+    *   [x] Add `Organization` type, input, queries, mutations.
+    *   [x] Update `Contact` type (renamed to `Person`) to include `organization` field/resolver.
+    *   [x] Update relevant person queries/mutations.
+*   [x] **Frontend (UI):**
+    *   [x] Update Person forms and views to manage organization link.
+    *   [x] Create UI components/pages for managing Organizations.
+    *   [x] Update frontend GraphQL calls.
 
 ## Phase 4: Testing, Deployment & Hardening (Ongoing)
 
 *   *(Testing and hardening efforts for existing and new features)*
 *   [-] **Testing Strategy Implementation:**
-    *   [-] Setup Testing Framework (Vitest & Playwright setup already done - [x])
-    *   [x] Write Integration tests for critical GraphQL Resolvers (MVP).
-    *   [x] Write Unit tests for key Backend Logic modules (MVP - `contactService`, `dealService`).
+    *   [x] Setup Testing Framework (Vitest & Playwright setup).
+    *   [x] Write Integration tests for critical GraphQL Resolvers (MVP - needs recreation/update).
+    *   [x] Write Unit tests for key Backend Logic modules (`personService`, `dealService`, `organizationService`).
     *   [-] Write Unit/Integration tests for key Frontend components: 
         *   [x] `DealsPage.tsx` (initial render, loading, error, data display)
-        *   [ ] `ContactsPage.tsx` (needs review/update after contact enhancement)
+        *   [ ] `PeoplePage.tsx` (needs creation/update)
+        *   [ ] `OrganizationsPage.tsx` (needs creation)
         *   [ ] `CreateDealModal.tsx`
         *   [ ] `EditDealModal.tsx`
-        *   [ ] Contact/Person/Organization related components (TBD after Phase 3)
+        *   [ ] `CreatePersonForm.tsx`
+        *   [ ] `EditPersonForm.tsx`
+        *   [ ] `CreateOrganizationModal.tsx`
+        *   [ ] `EditOrganizationModal.tsx`
     *   [-] Write core E2E tests for user flows:
         *   [x] Basic Auth Flow (Login)
         *   [ ] Basic Auth Flow (Signup)
-        *   [ ] Contacts/People CRUD Flow (needs update after Phase 3)
+        *   [ ] People CRUD Flow
         *   [ ] Deals CRUD Flow
-        *   [ ] Organization CRUD Flow (TBD after Phase 3)
-*   [ ] **CI/CD:**
+        *   [ ] Organization CRUD Flow
+*   [-] **CI/CD:**
     *   [x] Configure Netlify Build pipeline (Basic setup done).
     *   [ ] Add automated testing step to CI (Frontend & Backend tests).
-    *   [ ] Setup preview deployments on Netlify.
-    *   [x] Perform initial Production Deployment (Already live).
-*   [ ] **Security Hardening:**
+    *   [x] Setup preview deployments on Netlify.
+    *   [x] Perform initial Production Deployment (App is live).
+*   [-] **Security Hardening:**
     *   [ ] Implement GraphQL depth/complexity limiting.
     *   [ ] Disable GraphQL introspection in production.
-    *   [x] Review RLS policies (Done for MVP Contacts & Deals, needs review for Phase 3 changes).
+    *   [x] Review RLS policies (Done for MVP/Phase 3 changes).
 *   [ ] **Monitoring:**
     *   [ ] Setup basic monitoring for Netlify Functions (latency, errors).
-*   [ ] **Database Migrations (Production):**
-    *   [-] Establish process for applying migrations manually/safely to production.
+*   [x] **Database Migrations (Production):**
+    *   [x] Establish process for applying migrations manually/safely to production (via `supabase db push --linked`).
 
 ## Phase 5: Pipedrive Feature Parity & Future Enhancements
 
