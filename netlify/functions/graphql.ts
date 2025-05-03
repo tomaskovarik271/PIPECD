@@ -765,8 +765,8 @@ export const resolvers = {
           return await organizationService.getOrganizationById(context.supabaseClient, parent.organization_id);
       } catch (e) {
           // Don't throw here, just return null if org fetch fails (e.g., RLS denies)
-          console.error('Error fetching Person.organization:', e);
-          return null; 
+          console.error('Error fetching Person.organization (will be processed):', e); // Keep log for now
+          throw processZodError(e, 'fetching Person.organization');
       }
     },
     // Placeholder for deals linked to a person (requires dealService update)
@@ -796,8 +796,8 @@ export const resolvers = {
         return await personService.getPersonById(context.supabaseClient, parent.person_id);
        } catch (e) {
           // Don't throw here, just return null if person fetch fails
-          console.error('Error fetching Deal.person:', e);
-            return null;
+          console.error('Error fetching Deal.person (will be processed):', e); // Keep log for now
+          throw processZodError(e, 'fetching Deal.person');
         }
     }
   },
