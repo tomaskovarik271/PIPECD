@@ -26,15 +26,16 @@
 [dev]
   # Explicitly run the dev script from the frontend directory
   command = "npm run dev --prefix frontend"
-  # framework = "vite" # Commented out
-  # viteProjectDirectory = "frontend" # Commented out
+  # framework = "vite"
+  # viteProjectDirectory = "frontend"
   # Port the frontend dev server (Vite) runs on
   targetPort = 5173 # Use default Vite port
   # Serve static assets from build output if needed (can sometimes help)
-  publish = "frontend/dist"
+  # publish = "frontend/dist"
 
 # Redirects and rewrites (Essential for SPAs)
-[[redirects]]
+# Apply this only in production contexts
+[context.production.redirects]
   from = "/*"
   to = "/index.html"
   status = 200 
