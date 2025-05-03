@@ -46,14 +46,14 @@ function AppContent() {
     <>
       <TempNav />
       <Box p={4}>
-        <Routes>
+          <Routes>
           <Route path="/" element={<Heading size="lg">Home</Heading>} />
           <Route path="/people" element={<PeoplePage />} />
-          <Route path="/deals" element={<DealsPage />} />
+            <Route path="/deals" element={<DealsPage />} />
           <Route path="/organizations" element={<OrganizationsPage />} />
           <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
-        </Routes>
-      </Box>
+          </Routes>
+    </Box>
     </>
   );
 }
@@ -69,7 +69,7 @@ function App() {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
+        setSession(session);
       // Optionally show toast on login/logout
       if (_event === 'SIGNED_IN') {
           toast({ title: "Signed In", status: "success", duration: 3000, isClosable: true });

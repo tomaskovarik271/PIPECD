@@ -335,203 +335,280 @@ export const resolvers = {
   },
 
   Mutation: {
-    // --- Person Mutations ---
-    createPerson: async (_parent: unknown, { input }: { input: any }, context: GraphQLContext) => {
-      requireAuthentication(context);
-      const accessToken = getAccessToken(context);
-      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-      const currentUser = context.currentUser!;
-
+    // --- Person Mutations (formerly Contact) ---
+    createPerson: async (_parent: unknown, args: { input: any }, context: GraphQLContext): Promise<any> => {
+      console.log('[Mutation.createPerson] received input:', args.input);
+      const action = 'creating person';
       try {
-        const validatedInput = PersonCreateSchema.parse(input);
-        const newPerson = await personService.createPerson(currentUser.id, validatedInput, accessToken);
+          requireAuthentication(context);
+          const userId = context.currentUser!.id;
+          const accessToken = getAccessToken(context);
+          if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
 
-        // Send Inngest event non-blocking
-        inngest.send({
-          name: 'crm/person.created',
-          user: { id: currentUser.id, email: currentUser.email }, // Pass user info
-          data: { // Pass relevant data for the event handler
-            personId: newPerson.id,
-            userId: currentUser.id,
-            firstName: newPerson.first_name,
-            lastName: newPerson.last_name,
-            email: newPerson.email,
-            organizationId: newPerson.organization_id,
-          }
-        }).catch(err => console.error('Failed to send Inngest event crm/person.created:', err));
-        console.log(`Sent 'crm/person.created' event for person ID: ${newPerson.id}`);
+          // Validate input using Zod
+          const validatedInput = PersonCreateSchema.parse(args.input);
+          console.log('[Mutation.createPerson] validated input:', validatedInput);
 
-        return newPerson;
-      } catch (e) {
-        // Use the helper to process Zod errors or other errors
-        throw processZodError(e, 'create person'); 
+          // Call service with validated input
+          const newPerson = await personService.createPerson(userId, validatedInput, accessToken);
+          console.log('[Mutation.createPerson] successfully created:', newPerson.id);
+
+          // Send event to Inngest
+          inngest.send({
+            name: 'crm/person.created',
+            data: { person: newPerson },
+            user: { id: userId, email: context.currentUser!.email }
+          }).catch(err => console.error('Failed to send person.created event to Inngest:', err));
+          
+          return newPerson;
+      } catch (error) {
+          throw processZodError(error, action);
       }
     },
-    updatePerson: async (_parent: unknown, { id, input }: { id: string, input: any }, context: GraphQLContext) => {
-       requireAuthentication(context);
-       const accessToken = getAccessToken(context);
-       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-       const currentUser = context.currentUser!;
-       
-       try {
-          const validatedInput = PersonUpdateSchema.parse(input);
-          // Ensure at least one field is provided for update
+    updatePerson: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext): Promise<any> => {
+      console.log('[Mutation.updatePerson] received id:', args.id, 'input:', args.input);
+      const action = 'updating person';
+      try {
+          requireAuthentication(context);
+          const userId = context.currentUser!.id;
+          const accessToken = getAccessToken(context);
+          if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+
+          // Validate input using Zod (using partial schema for updates)
+          const validatedInput = PersonUpdateSchema.parse(args.input);
+          console.log('[Mutation.updatePerson] validated input:', validatedInput);
+          
+          // Ensure at least one field is provided for update (after parsing)
           if (Object.keys(validatedInput).length === 0) {
-            throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
+             throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
           }
-          const updatedPerson = await personService.updatePerson(currentUser.id, id, validatedInput, accessToken);
-          // TODO: Send Inngest event crm/person.updated if needed
+
+          // Call service with validated input
+          const updatedPerson = await personService.updatePerson(userId, args.id, validatedInput, accessToken);
+          console.log('[Mutation.updatePerson] successfully updated:', updatedPerson.id);
+
+          // Send event to Inngest
+          inngest.send({ 
+            name: 'crm/person.updated',
+            data: { person: updatedPerson },
+            user: { id: userId, email: context.currentUser!.email }
+          }).catch(err => console.error('Failed to send person.updated event to Inngest:', err));
+          
           return updatedPerson;
-       } catch (e) {
-          throw processZodError(e, 'update person'); // Use generic error processor
-       }
+      } catch (error) {
+          throw processZodError(error, action);
+      }
     },
-    deletePerson: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
-       requireAuthentication(context);
-       const accessToken = getAccessToken(context);
-       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-       const currentUser = context.currentUser!;
-       
-       try {
-          const success = await personService.deletePerson(currentUser.id, id, accessToken);
-           // TODO: Send Inngest event crm/person.deleted if needed
+    deletePerson: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext): Promise<boolean> => {
+      console.log('[Mutation.deletePerson] received id:', id);
+      const action = 'deleting person';
+      try {
+          requireAuthentication(context);
+          const userId = context.currentUser!.id;
+          const accessToken = getAccessToken(context);
+          if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+          
+          // ID itself is validated by GraphQL schema type ID!
+          
+          const success = await personService.deletePerson(userId, id, accessToken);
+          console.log('[Mutation.deletePerson] success status:', success);
+          
+          // Send event to Inngest
+          if (success) {
+            inngest.send({ 
+              name: 'crm/person.deleted',
+              data: { personId: id },
+              user: { id: userId, email: context.currentUser!.email }
+            }).catch(err => console.error('Failed to send person.deleted event to Inngest:', err));
+          }
+          
           return success;
-       } catch (e) {
-           throw processZodError(e, 'delete person'); // Use generic error processor
-       }
+      } catch (error) {
+          throw processZodError(error, action);
+      }
     },
 
     // --- Organization Mutations ---
-    createOrganization: async (_parent: unknown, { input }: { input: any }, context: GraphQLContext) => {
-      requireAuthentication(context);
-      const accessToken = getAccessToken(context);
-      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-      const currentUser = context.currentUser!;
-
+    createOrganization: async (_parent: unknown, args: { input: any }, context: GraphQLContext): Promise<any> => {
+      console.log('[Mutation.createOrganization] received input:', args.input);
+      const action = 'creating organization'; // Action context for error handling
       try {
-        const validatedInput = OrganizationInputSchema.parse(input);
-        // Use await here and wrap potential service error
-        const newOrganization = await organizationService.createOrganization(currentUser.id, validatedInput, accessToken);
-        // TODO: Send Inngest event crm/organization.created if needed
-        return newOrganization;
-      } catch (e) {
-        throw processZodError(e, 'create organization'); // Use generic error processor
+          requireAuthentication(context);
+          const userId = context.currentUser!.id;
+          const accessToken = getAccessToken(context);
+          if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+
+          // Validate input using Zod
+          const validatedInput = OrganizationInputSchema.parse(args.input);
+          console.log('[Mutation.createOrganization] validated input:', validatedInput);
+
+          // Call service with validated input
+          const newOrganization = await organizationService.createOrganization(userId, validatedInput, accessToken);
+          console.log('[Mutation.createOrganization] successfully created:', newOrganization.id);
+
+          // Send event to Inngest (fire and forget)
+          inngest.send({ 
+            name: 'crm/organization.created',
+            data: { organization: newOrganization },
+            user: { id: userId, email: context.currentUser!.email } // Send user info too
+          }).catch(err => console.error('Failed to send organization.created event to Inngest:', err));
+          
+          return newOrganization;
+      } catch (error) {
+          // Process Zod errors or other errors into a GraphQLError
+          throw processZodError(error, action);
       }
     },
-    updateOrganization: async (_parent: unknown, { id, input }: { id: string, input: any }, context: GraphQLContext) => {
-       requireAuthentication(context);
-       const accessToken = getAccessToken(context);
-       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-       const currentUser = context.currentUser!;
+    updateOrganization: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext): Promise<any> => {
+      console.log('[Mutation.updateOrganization] received id:', args.id, 'input:', args.input);
+      const action = 'updating organization';
+      try {
+          requireAuthentication(context);
+          const userId = context.currentUser!.id;
+          const accessToken = getAccessToken(context);
+          if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+          
+          // Validate input using Zod (using partial schema for updates)
+          const validatedInput = OrganizationInputSchema.partial().parse(args.input);
+          console.log('[Mutation.updateOrganization] validated input:', validatedInput);
+          
+          // Call service with validated input
+          const updatedOrganization = await organizationService.updateOrganization(userId, args.id, validatedInput, accessToken);
+          console.log('[Mutation.updateOrganization] successfully updated:', updatedOrganization.id);
 
-       try {
-         const validatedInput = OrganizationInputSchema.partial().parse(input);
-          // Ensure at least one field is provided for update
-         if (Object.keys(validatedInput).length === 0) {
-            throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
-         }
-         const updatedOrganization = await organizationService.updateOrganization(currentUser.id, id, validatedInput, accessToken);
-          // TODO: Send Inngest event crm/organization.updated if needed
-         return updatedOrganization;
-       } catch (e) {
-          throw processZodError(e, 'update organization'); // Use generic error processor
-       }
+          // Send event to Inngest (fire and forget)
+          inngest.send({ 
+            name: 'crm/organization.updated',
+            data: { organization: updatedOrganization },
+            user: { id: userId, email: context.currentUser!.email }
+          }).catch(err => console.error('Failed to send organization.updated event to Inngest:', err));
+          
+          return updatedOrganization;
+      } catch (error) {
+          throw processZodError(error, action);
+      }
     },
-    deleteOrganization: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
-       requireAuthentication(context);
-       const accessToken = getAccessToken(context);
-       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-       const currentUser = context.currentUser!;
+    deleteOrganization: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext): Promise<boolean> => {
+      console.log('[Mutation.deleteOrganization] received id:', id);
+      const action = 'deleting organization';
+      try {
+          requireAuthentication(context);
+          const userId = context.currentUser!.id;
+          const accessToken = getAccessToken(context);
+          if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+          
+          // ID itself is validated by GraphQL schema type ID! (which maps to string)
+          // No specific Zod validation needed for just the ID here
+          
+          const success = await organizationService.deleteOrganization(userId, id, accessToken);
+          console.log('[Mutation.deleteOrganization] success status:', success);
 
-       try {
-         const success = await organizationService.deleteOrganization(currentUser.id, id, accessToken);
-         // TODO: Send Inngest event crm/organization.deleted if needed
-      return success;
-       } catch (e) {
-          throw processZodError(e, 'delete organization'); // Use generic error processor
-       }
+          // Send event to Inngest (fire and forget)
+          if (success) {
+            inngest.send({ 
+              name: 'crm/organization.deleted',
+              data: { organizationId: id },
+              user: { id: userId, email: context.currentUser!.email }
+            }).catch(err => console.error('Failed to send organization.deleted event to Inngest:', err));
+          }
+
+          return success;
+      } catch (error) {
+          throw processZodError(error, action);
+      }
     },
 
      // --- Deal Mutations ---
-    createDeal: async (_parent: unknown, { input }: { input: any }, context: GraphQLContext) => {
-      requireAuthentication(context);
-      const accessToken = getAccessToken(context);
-      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-      const currentUser = context.currentUser!;
-
+    createDeal: async (_parent: unknown, args: { input: any }, context: GraphQLContext): Promise<any> => {
+      console.log('[Mutation.createDeal] received input:', args.input);
+      const action = 'creating deal';
       try {
-         // Map personId from input to person_id for validation/service
-        const rawInput = input as { personId?: string }; // Type assertion
-        const serviceInput = { 
-            ...rawInput, 
-            person_id: rawInput.personId 
-        };
-        delete serviceInput.personId; // Remove the original field
+        requireAuthentication(context);
+        const userId = context.currentUser!.id;
+        const accessToken = getAccessToken(context);
+        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
 
-        const validatedInput = DealCreateSchema.parse(serviceInput);
-        const newDeal = await dealService.createDeal(currentUser.id, validatedInput, accessToken);
+        // Validate input using Zod
+        const validatedInput = DealCreateSchema.parse(args.input);
+        console.log('[Mutation.createDeal] validated input:', validatedInput);
 
-         // Send Inngest event non-blocking
-        inngest.send({
+        // Call service with validated input
+        const newDeal = await dealService.createDeal(userId, validatedInput, accessToken);
+        console.log('[Mutation.createDeal] successfully created:', newDeal.id);
+
+        // Send event to Inngest
+        inngest.send({ 
           name: 'crm/deal.created',
-          user: { id: currentUser.id, email: currentUser.email }, 
-          data: { 
-                dealId: newDeal.id,
-            userId: currentUser.id, 
-                name: newDeal.name,
-                amount: newDeal.amount,
-            personId: newDeal.person_id // Send person_id back as personId?
-          }
-        }).catch(err => console.error('Failed to send Inngest event crm/deal.created:', err));
-            console.log(`Sent 'crm/deal.created' event for deal ID: ${newDeal.id}`);
+          data: { deal: newDeal },
+          user: { id: userId, email: context.currentUser!.email }
+        }).catch(err => console.error('Failed to send deal.created event to Inngest:', err));
 
         return newDeal;
-      } catch (e) {
-        throw processZodError(e, 'create deal');
+      } catch (error) {
+        throw processZodError(error, action);
       }
     },
-    updateDeal: async (_parent: unknown, { id, input }: { id: string, input: any }, context: GraphQLContext) => {
-       requireAuthentication(context);
-       const accessToken = getAccessToken(context);
-       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-       const currentUser = context.currentUser!;
+    updateDeal: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext): Promise<any> => {
+      console.log('[Mutation.updateDeal] received id:', args.id, 'input:', args.input);
+      const action = 'updating deal';
+      try {
+        requireAuthentication(context);
+        const userId = context.currentUser!.id;
+        const accessToken = getAccessToken(context);
+        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
 
-       try {
-          // Map personId from input to person_id if present
-          const rawInput = input as { personId?: string }; 
-          const serviceInput = { 
-              ...rawInput, 
-              person_id: rawInput.personId !== undefined ? rawInput.personId : undefined // Map if exists
-          };
-          if (rawInput.personId !== undefined) {
-             delete serviceInput.personId; // Remove original if mapped
-          }
+        // Validate input using Zod (using partial schema for updates)
+        const validatedInput = DealUpdateSchema.parse(args.input);
+        console.log('[Mutation.updateDeal] validated input:', validatedInput);
 
-          const validatedInput = DealUpdateSchema.parse(serviceInput);
-          // Ensure at least one field is provided for update
-          if (Object.keys(validatedInput).length === 0) {
-            throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
-          }
-          const updatedDeal = await dealService.updateDeal(currentUser.id, id, validatedInput, accessToken);
-           // TODO: Send Inngest event crm/deal.updated if needed
-          return updatedDeal;
-       } catch (e) {
-           throw processZodError(e, 'update deal'); // Use generic error processor
-       }
+        // Ensure at least one field is provided for update (after parsing)
+        if (Object.keys(validatedInput).length === 0) {
+          throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
+        }
+
+        // Call service with validated input
+        const updatedDeal = await dealService.updateDeal(userId, args.id, validatedInput, accessToken);
+        console.log('[Mutation.updateDeal] successfully updated:', updatedDeal.id);
+
+        // Send event to Inngest
+        inngest.send({ 
+          name: 'crm/deal.updated',
+          data: { deal: updatedDeal },
+          user: { id: userId, email: context.currentUser!.email }
+        }).catch(err => console.error('Failed to send deal.updated event to Inngest:', err));
+
+        return updatedDeal;
+      } catch (error) {
+        throw processZodError(error, action);
+      }
     },
-    deleteDeal: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
-       requireAuthentication(context);
-       const accessToken = getAccessToken(context);
-       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-       const currentUser = context.currentUser!;
+    deleteDeal: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext): Promise<boolean> => {
+      console.log('[Mutation.deleteDeal] received id:', id);
+      const action = 'deleting deal';
+      try {
+        requireAuthentication(context);
+        const userId = context.currentUser!.id;
+        const accessToken = getAccessToken(context);
+        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
 
-       try {
-         const success = await dealService.deleteDeal(currentUser.id, id, accessToken);
-         // TODO: Send Inngest event crm/deal.deleted if needed
-         return success;
-       } catch (e) {
-          throw processZodError(e, 'delete deal'); // Use generic error processor
-       }
+        // ID itself is validated by GraphQL schema type ID!
+
+        const success = await dealService.deleteDeal(userId, id, accessToken);
+        console.log('[Mutation.deleteDeal] success status:', success);
+
+        // Send event to Inngest
+        if (success) {
+          inngest.send({ 
+            name: 'crm/deal.deleted',
+            data: { dealId: id },
+            user: { id: userId, email: context.currentUser!.email }
+          }).catch(err => console.error('Failed to send deal.deleted event to Inngest:', err));
+        }
+
+        return success;
+      } catch (error) {
+        throw processZodError(error, action);
+      }
     },
   },
   
@@ -559,7 +636,7 @@ export const resolvers = {
       }
     },
     // Placeholder for deals linked to a person (requires dealService update)
-    deals: async (parent: { id: string }, _args: unknown, context: GraphQLContext) => {
+    deals: async (_parent: { id: string }, _args: unknown, context: GraphQLContext) => {
       requireAuthentication(context);
       const accessToken = getAccessToken(context);
       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
@@ -598,7 +675,7 @@ export const resolvers = {
   },
   Organization: {
     // Placeholder for people linked to an organization (requires personService update)
-    people: async (parent: { id: string }, _args: unknown, context: GraphQLContext) => {
+    people: async (_parent: { id: string }, _args: unknown, context: GraphQLContext) => {
        requireAuthentication(context);
        const accessToken = getAccessToken(context);
        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });

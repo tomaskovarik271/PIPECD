@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js';
-import type { User } from '@supabase/supabase-js';
+// import type { User } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 
 // Load env vars (consider moving to a shared config loader later)

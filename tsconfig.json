@@ -13,6 +13,8 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
 
     /* Bundled projects */
     "lib": ["esnext"], // Add esnext lib

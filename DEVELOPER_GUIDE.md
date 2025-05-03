@@ -250,7 +250,7 @@ Testing is crucial for maintaining code quality and preventing regressions. Test
 
 *   **Frontend Unit/Integration Tests (`frontend/` using Vitest):**
     *   **Location:** Tests for React components reside within the `frontend/src` directory, typically colocated with the component (e.g., `frontend/src/pages/DealsPage.test.tsx`).
-    *   **Framework:** Vitest + React Testing Library (`@testing-library/react`).
+*   **Framework:** Vitest + React Testing Library (`@testing-library/react`).
     *   **Configuration:** Root `vitest.config.ts` includes `frontend/src/**/*.test.tsx` patterns. It sets `environment: 'jsdom'` and uses `frontend/src/setupTests.ts` for global setup (importing `@testing-library/jest-dom` matchers).
     *   **Mocks:** Network requests (`gqlClient`), hooks (`useToast`), etc., are mocked using `vi.mock()`.
     *   **Command:** `npm run test:frontend`

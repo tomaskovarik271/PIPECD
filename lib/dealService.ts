@@ -1,5 +1,5 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { User } from '@supabase/supabase-js'; // Keep User type if needed later
+import { createClient, SupabaseClient/* , PostgrestError */ } from '@supabase/supabase-js';
+// import type { User } from '@supabase/supabase-js'; // Keep User type if needed later (Commented out)
 import { GraphQLError } from 'graphql';
 
 // Load env vars

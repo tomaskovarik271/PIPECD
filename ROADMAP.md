@@ -42,6 +42,9 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [-] **Configuration:**
     *   [x] Configure `netlify.toml` for functions, redirects, build settings.
     *   [x] Setup environment variables (local `.env`, Netlify UI).
+    *   [x] Add `.env` to the project's root `.gitignore` file. (Note: Already present and correctly configured).
+    *   [x] Review `tsconfig.json` - enable/enforce `strict`, `noUnusedLocals`, `noUnusedParameters`, `noImplicitAny`. Address any resulting TypeScript errors.
+    *   [ ] Clarify project structure: Decide if it's a monorepo (configure workspaces) or separate projects (ensure clear separation). For now, assume separate `frontend` and `netlify/functions` + `lib` backend structure.
 
 ## Phase 2: MVP Feature Development (Core CRUD - Completed)
 
@@ -136,6 +139,74 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [ ] Regularly review Inngest usage/cost and evaluate alternatives.
 *   [ ] Enhance Security (APQ, Operation Whitelisting, full RBAC).
 *   [ ] Potentially refactor to `packages/` monorepo (Nx/Turborepo) if complexity warrants.
+
+---
+
+## Post-Refactor Hardening & Cleanup Plan (Generated from Code Review May 3rd, 2025)
+
+**Phase 1: Foundational Hardening & Security**
+
+1.  **Security Audit & Remediation (Highest Priority):**
+    *   [x] Thoroughly review Row-Level Security (RLS) policies in `supabase/migrations/` for `people`, `organizations`, and `deals` tables. (Findings: Policies exist, cover CRUD, use correct `auth.uid()` logic for ownership).
+    *   [x] Ensure policies cover `SELECT`, `INSERT`, `UPDATE`, `DELETE` for all tables.
+    *   [x] Verify policies correctly restrict access based on `auth.uid()`.
+    *   [x] Check for authorization logic misplaced in services/resolvers. (Findings: Service layer correctly inserts `user_id`).
+    *   [ ] Implement missing/incorrect policies via migrations. (Note: None currently required, but review if requirements change, e.g., for team access).
+    *   ~~[ ] Add comments to RLS policies explaining their intent.~~ (Skipped as per user request).
+2.  **Input Validation (Backend):**
+    *   [x] Choose and integrate a runtime validation library (e.g., `zod`) into `netlify/functions/graphql.ts`.
+    *   [x] Define validation schemas for all mutation inputs (`createPerson`, `updatePerson`, `createOrganization`, etc.).
+    *   [x] Apply validation within the resolvers *before* calling service functions (`lib/`).
+    *   [x] Ensure validation errors return user-friendly messages via GraphQL errors.
+3.  **Configuration & Environment:**
+    *   [x] Add `.env` to the project's root `.gitignore` file. (Note: Already present and correctly configured).
+    *   [x] Review `tsconfig.json` - enable/enforce `strict`, `noUnusedLocals`, `noUnusedParameters`, `noImplicitAny`. Address any resulting TypeScript errors.
+    *   [ ] Clarify project structure: Decide if it's a monorepo (configure workspaces) or separate projects (ensure clear separation). For now, assume separate `frontend` and `netlify/functions` + `lib` backend structure.
+    *   [ ] Review `netlify.toml` for any optimizations (e.g., command caching if applicable).
+4.  **Secrets Management:**
+    *   [ ] Confirm NO secrets are hardcoded anywhere.
+    *   [ ] Ensure all necessary environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are documented in `env.example.txt` and configured correctly in Netlify build/function settings (not committed).
+
+**Phase 2: Testing & Refinement**
+
+5.  **GraphQL Resolver Testing:**
+    *   [ ] Set up a testing environment for Netlify functions/GraphQL resolvers (e.g., using `msw` or similar to mock services/DB).
+    *   [ ] Write tests for all queries and mutations in `graphql.ts`.
+    *   [ ] Test successful data fetching/mutation.
+    *   [ ] Test input validation logic (ensure invalid input is rejected).
+    *   [ ] Test authorization (ensure unauthorized access attempts fail - may require mocking auth context).
+6.  **Frontend Data Fetching Refactor:**
+    *   [ ] Centralize GraphQL query/mutation definitions (e.g., in `.graphql` files).
+    *   [ ] Consider using GraphQL Code Generator to create typed hooks/SDK.
+    *   [ ] Refactor components (`DealsPage`, `PeoplePage`, `OrganizationsPage`, modals) to use generated hooks or custom data-fetching hooks.
+    *   [ ] Ensure consistent loading and error state handling across all data-fetching components.
+7.  **Component Testing (Frontend):**
+    *   [ ] Increase test coverage for key UI components (e.g., `Create*Modal`, `Edit*Modal`, complex table rendering).
+    *   [ ] Focus on testing component logic, rendering based on props/state, and basic user interactions.
+    *   [ ] Refactor existing tests (`DealsPage.test.tsx`) to use more stable selectors (e.g., `data-testid`) if needed.
+8.  **Database Enhancements:**
+    *   [ ] Review database schema for potential indexing opportunities on frequently queried/filtered columns (e.g., `name`, `email`, foreign keys). Add indexes via migrations.
+    *   [ ] Institute a mandatory peer-review process for all new database migration scripts before merging.
+
+**Phase 3: DX & Future-Proofing**
+
+9.  **State Management (Frontend):**
+    *   [ ] Evaluate options (Zustand, Jotai, Redux Toolkit) based on anticipated application complexity.
+    *   [ ] Select and integrate a state management library.
+    *   [ ] Refactor components relying heavily on prop drilling or complex local state to use the chosen library.
+10. **Error Handling Standardization:**
+    *   [ ] Define specific, typed error classes in `lib/` services.
+    *   [ ] Ensure services throw these specific errors.
+    *   [ ] Ensure the GraphQL layer catches these errors and maps them to appropriate GraphQL errors for the client.
+    *   [ ] Implement a consistent strategy for displaying errors to the user in the frontend.
+11. **N+1 Problem Mitigation:**
+    *   [ ] Identify potential N+1 query issues (e.g., fetching lists with nested relations like `Person.organization`).
+    *   [ ] Implement the DataLoader pattern within the GraphQL resolvers to batch database requests.
+12. **Documentation & Cleanup:**
+    *   [ ] Update `README.md` and `DEVELOPER_GUIDE.md` to reflect all changes, chosen libraries, and setup procedures.
+    *   [ ] Add code comments explaining complex logic or non-obvious decisions.
+    *   [ ] Run `npm audit` (or equivalent) and address critical/high vulnerabilities.
+    *   [ ] Create ADRs (`ADR.md` or `/docs/adr/`) for key decisions (validation library, state management, data fetching strategy).
 
 ---
 

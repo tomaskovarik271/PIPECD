@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
-import { personService } from './personService'; // Updated import
-import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js';
+import { createClient, /* SupabaseClient, */ PostgrestError } from '@supabase/supabase-js'; // Comment out SupabaseClient
+import { personService } from './personService';
 import { GraphQLError } from 'graphql';
 
 // --- Mock Setup (Same as dealService.test.ts) ---

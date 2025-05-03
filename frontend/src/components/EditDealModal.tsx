@@ -230,7 +230,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
 
             <FormControl>
               <FormLabel>Link to Person (Optional)</FormLabel> {/* Renamed label */}
-              <Select
+              <Select 
                 placeholder={isPeopleLoading ? 'Loading people...' : 'Select person'} /* Renamed placeholder */
                 value={personId} /* Use renamed state variable */
                 onChange={(e) => setPersonId(e.target.value)} /* Use renamed state setter */
