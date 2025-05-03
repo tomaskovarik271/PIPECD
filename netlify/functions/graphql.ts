@@ -934,6 +934,8 @@ const yoga = createYoga<Context>({
     typeDefs,
     resolvers,
   }),
+  // Explicitly disable error masking for debugging in production
+  maskedErrors: false, 
   // Define the context factory (Refactored for Request-Scoped Client)
   context: async (initialContext): Promise<Context> => {
     let currentUser: User | null = null;
