@@ -768,11 +768,11 @@ export const resolvers = {
           const organization = await organizationService.getOrganizationById(context.supabaseClient, parent.organization_id);
            console.log(`[Person.organization] organizationService.getOrganizationById returned: ${organization ? `Org ID ${organization.id}` : 'null'}`); // Added Log
           
-          // Attempt to stringify before returning to check for serialization issues
+          // Stringify check (keep for now)
           if (organization) {
               try {
                   console.log(`[Person.organization] Attempting to stringify organization ID: ${organization.id}`);
-                  JSON.stringify(organization); // Test serialization
+                  JSON.stringify(organization);
                   console.log(`[Person.organization] Successfully stringified organization ID: ${organization.id}`);
               } catch (stringifyError) {
                   console.error(`[Person.organization] FAILED TO STRINGIFY organization ID: ${organization.id}`, stringifyError);
@@ -781,9 +781,24 @@ export const resolvers = {
                       extensions: { code: 'INTERNAL_SERVER_ERROR' }
                   });
               }
+          } else {
+              // If org is null, return null from resolver
+              console.log(`[Person.organization] Original organization was null, returning null.`);
+              return null;
           }
           
-          return organization;
+          // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
+          console.log(`[Person.organization] SKIPPING actual data, returning simplified object for Org ID: ${parent.organization_id}`);
+          return {
+              id: parent.organization_id, // Must match parent request
+              created_at: new Date().toISOString(), // Provide valid required fields
+              updated_at: new Date().toISOString(),
+              user_id: context.currentUser!.id,
+              name: "Test Organization Name", // Provide valid required fields
+              address: null,
+              notes: null,
+              people: [] // Add empty array for related field if required by schema non-null
+          };
       } catch (e) {
           // Log the error thoroughly
           console.error('[Person.organization] Caught error (likely from service call or stringify attempt): ', e); 
@@ -830,13 +845,13 @@ export const resolvers = {
         // Fetch the person using the person_id from the parent Deal object
         // Pass client and personId
         const person = await personService.getPersonById(context.supabaseClient, parent.person_id);
-        console.log(`[Deal.person] personService.getPersonById returned: ${person ? `Person ID ${person.id}` : 'null'}`); // Added Log
+        console.log(`[Deal.person] personService.getPersonById returned: ${person ? `Person ID ${person.id}` : 'null'}`);
         
-        // Attempt to stringify before returning to check for serialization issues
+        // Stringify check (keep for now)
         if (person) {
             try {
                 console.log(`[Deal.person] Attempting to stringify person ID: ${person.id}`);
-                JSON.stringify(person); // Test serialization
+                JSON.stringify(person);
                 console.log(`[Deal.person] Successfully stringified person ID: ${person.id}`);
             } catch (stringifyError) {
                 console.error(`[Deal.person] FAILED TO STRINGIFY person ID: ${person.id}`, stringifyError);
@@ -845,9 +860,28 @@ export const resolvers = {
                     extensions: { code: 'INTERNAL_SERVER_ERROR' }
                 });
             }
+        } else {
+           // If person is null, return null from resolver
+           console.log(`[Deal.person] Original person was null, returning null.`);
+           return null; 
         }
 
-        return person;
+        // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
+        console.log(`[Deal.person] SKIPPING actual data, returning simplified object for Person ID: ${parent.person_id}`);
+        return {
+            id: parent.person_id, // Must match parent request
+            created_at: new Date().toISOString(), // Provide valid required fields
+            updated_at: new Date().toISOString(),
+            user_id: context.currentUser!.id,
+            first_name: "Test",
+            last_name: "Person",
+            email: null,
+            phone: null,
+            notes: null,
+            organization_id: null,
+            organization: null, // Add null for related object if needed
+            deals: [] // Add empty array for related field if required by schema non-null
+        };
        } catch (e) {
           // Log the error thoroughly
           console.error('[Deal.person] Caught error (likely from service call or stringify attempt): ', e);
