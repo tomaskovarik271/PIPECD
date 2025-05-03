@@ -346,15 +346,13 @@ export const resolvers = {
 
     // --- Person Resolvers ---
     people: async (_parent: unknown, _args: unknown, context: Context) => {
+      console.info('[Query.people] Attempting to fetch people list.');
       requireAuthentication(context);
       try {
-        console.log('[Query.people] Attempting to fetch people list.'); // Added Log
         // Pass client instead of userId/token
-        const people = await personService.getPeople(context.supabaseClient); // Original call restored
-        console.log(`[Query.people] Fetched ${people.length} people.`); // Updated Log
-        return people;
+        return await personService.getPeople(context.supabaseClient);
       } catch (e) {
-         console.error('[Query.people] Caught error:', e);
+         console.error('[Query.people] Error caught:', e);
          throw processZodError(e, 'fetching people list');
       }
     },
@@ -407,13 +405,9 @@ export const resolvers = {
     deals: async (_parent: unknown, _args: unknown, context: Context) => {
        requireAuthentication(context);
        try {
-           console.log('[Query.deals] Attempting to fetch deals list.'); // Added Log
            // Pass client
-           const deals = await dealService.getDeals(context.supabaseClient); // Original call restored
-           console.log(`[Query.deals] Fetched ${deals.length} deals.`); // Updated Log
-           return deals;
+           return await dealService.getDeals(context.supabaseClient);
        } catch (e) {
-           console.error('[Query.deals] Caught error:', e);
            throw processZodError(e, 'fetching deals list');
        }
     },
@@ -429,15 +423,13 @@ export const resolvers = {
 
     // --- Lead Resolvers ---
     leads: async (_parent: unknown, _args: unknown, context: Context) => {
+      console.info('[Query.leads] Attempting to fetch leads list.');
       requireAuthentication(context);
       try {
-        console.log('[Query.leads] Attempting to fetch leads list.'); // Added Log
         // Call with client and user ID
-        const leads = await leadService.getLeads(context.supabaseClient, context.currentUser!.id); // Original call restored
-        console.log(`[Query.leads] Fetched ${leads.length} leads.`); // Updated Log
-        return leads;
+        return await leadService.getLeads(context.supabaseClient, context.currentUser!.id);
       } catch (error: any) {
-        console.error('[Query.leads] Caught error:', error);
+        console.error('[Query.leads] Error caught:', error);
         // Use processZodError helper for consistent error handling
         throw processZodError(error, 'fetching leads list');
       }
@@ -767,29 +759,18 @@ export const resolvers = {
     // Resolver for the nested 'organization' field within Person
     organization: async (parent: { organization_id?: string | null }, _args: unknown, context: Context) => {
       requireAuthentication(context);
-      console.log(`[Person.organization] Attempting to fetch organization for person. Org ID: ${parent.organization_id}`); // Added Log
       if (!parent.organization_id) {
-          console.log('[Person.organization] organization_id is null or undefined.'); // Added Log
           return null;
       }
 
       try {
-          console.log(`[Person.organization] Calling organizationService.getOrganizationById for ID: ${parent.organization_id}`); // Added Log
-          const organization = await organizationService.getOrganizationById(context.supabaseClient, parent.organization_id);
-           console.log(`[Person.organization] organizationService.getOrganizationById returned: ${organization ? `Org ID ${organization.id}` : 'null'}`);
-          
-          return organization; // Original return restored
+          // Fetch the organization using the organization_id from the parent Person object
+          // Pass client and orgId
+          return await organizationService.getOrganizationById(context.supabaseClient, parent.organization_id);
       } catch (e) {
-          // Restore original catch block logic (re-throw a GraphQLError)
-          console.error('[Person.organization] Caught error: ', e); 
-          console.error(`[Person.organization] Error message: ${e instanceof Error ? e.message : String(e)}`); 
-          console.error(`[Person.organization] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); 
-          throw new GraphQLError('Error fetching Person.organization. Check function logs.', {
-              extensions: { 
-                  code: 'INTERNAL_SERVER_ERROR', 
-                  originalMessage: e instanceof Error ? e.message : String(e) 
-              }
-          });
+          // Don't throw here, just return null if org fetch fails (e.g., RLS denies)
+          console.error('Error fetching Person.organization:', e);
+          return null; 
       }
     },
     // Placeholder for deals linked to a person (requires dealService update)
@@ -809,29 +790,18 @@ export const resolvers = {
   Deal: {
     person: async (parent: { person_id?: string | null }, _args: unknown, context: Context) => {
        requireAuthentication(context);
-      console.log(`[Deal.person] Attempting to fetch person for deal. Person ID: ${parent.person_id}`); // Added Log
       if (!parent.person_id) {
-            console.log('[Deal.person] person_id is null or undefined.'); // Added Log
             return null;
       }
  
        try {
-        console.log(`[Deal.person] Calling personService.getPersonById for ID: ${parent.person_id}`); // Added Log
-        const person = await personService.getPersonById(context.supabaseClient, parent.person_id);
-        console.log(`[Deal.person] personService.getPersonById returned: ${person ? `Person ID ${person.id}` : 'null'}`);
-        
-        return person; // Original return restored
+        // Fetch the person using the person_id from the parent Deal object
+        // Pass client and personId
+        return await personService.getPersonById(context.supabaseClient, parent.person_id);
        } catch (e) {
-          // Restore original catch block logic (re-throw a GraphQLError)
-          console.error('[Deal.person] Caught error: ', e);
-          console.error(`[Deal.person] Error message: ${e instanceof Error ? e.message : String(e)}`); 
-          console.error(`[Deal.person] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); 
-          throw new GraphQLError('Error fetching Deal.person. Check function logs.', {
-              extensions: { 
-                  code: 'INTERNAL_SERVER_ERROR', 
-                  originalMessage: e instanceof Error ? e.message : String(e) 
-              }
-          });
+          // Don't throw here, just return null if person fetch fails
+          console.error('Error fetching Deal.person:', e);
+            return null;
         }
     }
   },
@@ -868,7 +838,6 @@ const yoga = createYoga<Context>({
     typeDefs,
     resolvers,
   }),
-  // maskedErrors: false, // Removed explicit disabling
   // Define the context factory (Refactored for Request-Scoped Client)
   context: async (initialContext): Promise<Context> => {
     let currentUser: User | null = null;

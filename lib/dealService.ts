@@ -63,24 +63,13 @@ export const dealService = {
      * Relies on RLS.
      */
     async getDeals(supabaseClient: SupabaseClient): Promise<DealRecord[]> {
-        console.log('[dealService.getDeals] Attempting to fetch deals...'); // Log Start
         const { data, error } = await supabaseClient
             .from('deals')
             .select('*')
             // .eq('user_id', userId) // Rely on RLS
             .order('created_at', { ascending: false });
 
-        if (error) {
-             console.error('[dealService.getDeals] Supabase error occurred:', error); // Log Error
-             handleSupabaseError(error, 'getDeals');
-             // handleSupabaseError throws, so this part is unreachable if error occurs
-             return []; // Return empty array on error (though unreachable)
-        }
-        
-        console.log(`[dealService.getDeals] Successfully fetched ${data?.length ?? 0} deals.`); // Log Success
-        // Optional: Log the actual data if needed for deep debugging (can be verbose)
-        // console.log('[dealService.getDeals] Fetched data:', JSON.stringify(data)); 
-        
+        if (error) handleSupabaseError(error, 'getDeals');
         return data || [];
     },
 

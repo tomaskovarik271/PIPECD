@@ -97,14 +97,19 @@ export const personService = {
      * Relies on RLS policy for user filtering.
      */
     async getPeople(supabaseClient: SupabaseClient): Promise<PersonRecord[]> {
+        console.info('[personService.getPeople] Attempting to fetch people...');
+        console.info('[personService.getPeople] Calling Supabase select...');
         const { data, error } = await supabaseClient
             .from('people')
             .select('*')
             // .eq('user_id', userId) // Rely on RLS
             .order('created_at', { ascending: false });
+        console.info('[personService.getPeople] Supabase select returned.');
 
         if (error) handleSupabaseError(error, 'getPeople');
-        return data || []; // Return empty array if data is null
+        const resultData = data || []; // Return empty array if data is null
+        console.info(`[personService.getPeople] Successfully fetched ${resultData.length} people.`);
+        return resultData;
     },
 
     /**

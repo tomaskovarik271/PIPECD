@@ -76,16 +76,21 @@ function handleSupabaseError(error: PostgrestError | null, operation: string): v
  * Accepts supabaseClient instance.
  */
 async function getLeads(supabaseClient: SupabaseClient, userId: string): Promise<LeadRecord[]> {
+    console.info('[leadService.getLeads] Attempting to fetch leads...');
     // Removed accessToken check - should be done in resolver
 
+    console.info('[leadService.getLeads] Calling Supabase select...');
     const { data: leads, error: selectError } = await supabaseClient // Use passed client
         .from('leads')
         .select('*')
         .eq('user_id', userId) // RLS should also enforce this
         .order('created_at', { ascending: false });
+    console.info('[leadService.getLeads] Supabase select returned.');
 
     handleSupabaseError(selectError, 'getLeads');
-    return leads || [];
+    const resultData = leads || [];
+    console.info(`[leadService.getLeads] Successfully fetched ${resultData.length} leads.`);
+    return resultData;
 }
 
 /**
