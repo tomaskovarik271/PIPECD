@@ -1,7 +1,6 @@
-import { BrowserRouter, Routes, Route, Link as RouterLink } from 'react-router-dom';
+import { Routes, Route, Link as RouterLink } from 'react-router-dom';
 import { useEffect, useState } from 'react'; // Import hooks
 import { gql } from 'graphql-request'; // Import gql
-import { gqlClient } from './lib/graphqlClient'; // Import client
 import { supabase } from './lib/supabase'; // Import frontend supabase client
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
@@ -12,7 +11,6 @@ import OrganizationsPage from './pages/OrganizationsPage'; // Import the new pag
 import { 
   Box, 
   Heading, 
-  Text, 
   Link, // Use Chakra Link
   Button, 
   HStack, 
@@ -22,28 +20,12 @@ import {
 } from '@chakra-ui/react';
 
 // Define the health query
-const HEALTH_QUERY = gql`
-  query {
-    health
-  }
-`;
+// const HEALTH_QUERY = gql` ... `; // Removed unused HEALTH_QUERY
 
-const ME_QUERY = gql`
-  query {
-    me {
-      id
-      email
-    }
-  }
-`;
+// const ME_QUERY = gql` ... `; // Removed unused ME_QUERY
 
 // Interface for the 'me' query result
-interface MeQueryResult {
-  me: {
-    id: string;
-    email?: string; // Email might be null depending on Supabase settings
-  } | null;
-}
+// interface MeQueryResult { ... } // Removed unused MeQueryResult
 
 // --- Page Components (using Chakra UI) ---
 // NOTE: HomePage, AboutPage, NotFoundPage are unused and can be removed or kept for future use.
