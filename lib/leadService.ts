@@ -201,8 +201,8 @@ async function deleteLead(supabaseClient: SupabaseClient, leadId: string): Promi
     return count === 1;
 }
 
-// Export the service functions individually or as an object
-export {
+// Export the service functions as a single object
+export const leadService = {
     getLeads,
     getLeadById,
     createLead,

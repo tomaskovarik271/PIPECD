@@ -6,7 +6,7 @@ import { GraphQLError } from 'graphql';
 import { personService } from '../../lib/personService';
 import { organizationService } from '../../lib/organizationService';
 import { dealService } from '../../lib/dealService';
-import * as leadService from '../../lib/leadService';
+import { leadService } from '../../lib/leadService';
 import { z, ZodError } from 'zod';
 import { inngest } from './inngest';
 
@@ -933,9 +933,9 @@ export const handler: Handler = async (event, context) => {
       // Construct the URL for Yoga (needed for routing inside Yoga)
       event.path, 
       {
-        method: event.httpMethod,
+    method: event.httpMethod,
         headers: event.headers as HeadersInit,
-        body: event.body ? Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8') : undefined,
+    body: event.body ? Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8') : undefined,
       },
       // Pass Netlify context and event for potential use in Yoga context factory
       { event, context }
@@ -944,15 +944,15 @@ export const handler: Handler = async (event, context) => {
 
     // Convert Fetch API Response back to Netlify Handler Response
     const responseHeaders: { [key: string]: string } = {};
-    response.headers.forEach((value, key) => {
+  response.headers.forEach((value, key) => {
       responseHeaders[key] = value;
     });
 
     const responseBody = await response.text();
     console.info(`[graphql handler] END execution. Status: ${response.status}, Body: ${responseBody.substring(0, 200)}...`); // <<< ADD LOG
 
-    return {
-      statusCode: response.status,
+  return {
+    statusCode: response.status,
       headers: responseHeaders,
       body: responseBody, // Use already read body
     };
