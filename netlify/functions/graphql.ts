@@ -769,13 +769,17 @@ export const resolvers = {
            console.log(`[Person.organization] organizationService.getOrganizationById returned: ${organization ? `Org ID ${organization.id}` : 'null'}`); // Added Log
           return organization;
       } catch (e) {
-          // Don't throw here, just return null if org fetch fails (e.g., RLS denies)
-          console.error('[Person.organization] Caught error:', e); // Added Log
-          console.error(`[Person.organization] Error message: ${e instanceof Error ? e.message : String(e)}`); // Added Log
-          console.error(`[Person.organization] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); // Added Log
-          // console.error('Error fetching Person.organization (will be processed):', e); // Keep log for now
-          // throw processZodError(e, 'fetching Person.organization'); // Reverting this for now
-          throw e; // Re-throw the original error
+          // Log the error thoroughly
+          console.error('[Person.organization] Caught error:', e); 
+          console.error(`[Person.organization] Error message: ${e instanceof Error ? e.message : String(e)}`); 
+          console.error(`[Person.organization] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); 
+          // Throw a new GraphQLError for potentially better handling/logging by Yoga
+          throw new GraphQLError('Error fetching Person.organization. Check function logs.', {
+              extensions: { 
+                  code: 'INTERNAL_SERVER_ERROR', 
+                  originalMessage: e instanceof Error ? e.message : String(e) 
+              }
+          });
       }
     },
     // Placeholder for deals linked to a person (requires dealService update)
@@ -809,13 +813,17 @@ export const resolvers = {
         console.log(`[Deal.person] personService.getPersonById returned: ${person ? `Person ID ${person.id}` : 'null'}`); // Added Log
         return person;
        } catch (e) {
-          // Don't throw here, just return null if person fetch fails
-          console.error('[Deal.person] Caught error:', e); // Added Log
-          console.error(`[Deal.person] Error message: ${e instanceof Error ? e.message : String(e)}`); // Added Log
-          console.error(`[Deal.person] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); // Added Log
-          // console.error('Error fetching Deal.person (will be processed):', e); // Keep log for now
-          // throw processZodError(e, 'fetching Deal.person'); // Reverting this for now to see raw logs
-          throw e; // Re-throw the original error to see if Netlify logs it better
+          // Log the error thoroughly
+          console.error('[Deal.person] Caught error:', e); 
+          console.error(`[Deal.person] Error message: ${e instanceof Error ? e.message : String(e)}`); 
+          console.error(`[Deal.person] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); 
+          // Throw a new GraphQLError for potentially better handling/logging by Yoga
+          throw new GraphQLError('Error fetching Deal.person. Check function logs.', {
+              extensions: { 
+                  code: 'INTERNAL_SERVER_ERROR', 
+                  originalMessage: e instanceof Error ? e.message : String(e) 
+              }
+          });
         }
     }
   },
