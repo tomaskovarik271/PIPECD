@@ -350,11 +350,11 @@ export const resolvers = {
       try {
         console.log('[Query.people] Attempting to fetch people list.'); // Added Log
         // Pass client instead of userId/token
-        // const people = await personService.getPeople(context.supabaseClient); // Original call commented out
-        console.log('[Query.people] SKIPPING actual data fetch, returning [].'); // Added Log
-        return []; // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
+        const people = await personService.getPeople(context.supabaseClient); // Original call restored
+        console.log(`[Query.people] Fetched ${people.length} people.`); // Updated Log
+        return people;
       } catch (e) {
-         console.error('[Query.people] Caught error:', e); // Added Log
+         console.error('[Query.people] Caught error:', e);
          throw processZodError(e, 'fetching people list');
       }
     },
@@ -409,11 +409,11 @@ export const resolvers = {
        try {
            console.log('[Query.deals] Attempting to fetch deals list.'); // Added Log
            // Pass client
-           // const deals = await dealService.getDeals(context.supabaseClient); // Original call commented out
-           console.log('[Query.deals] SKIPPING actual data fetch, returning [].'); // Added Log
-           return []; // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
+           const deals = await dealService.getDeals(context.supabaseClient); // Original call restored
+           console.log(`[Query.deals] Fetched ${deals.length} deals.`); // Updated Log
+           return deals;
        } catch (e) {
-           console.error('[Query.deals] Caught error:', e); // Added Log
+           console.error('[Query.deals] Caught error:', e);
            throw processZodError(e, 'fetching deals list');
        }
     },
@@ -433,11 +433,11 @@ export const resolvers = {
       try {
         console.log('[Query.leads] Attempting to fetch leads list.'); // Added Log
         // Call with client and user ID
-        // const leads = await leadService.getLeads(context.supabaseClient, context.currentUser!.id); // Original call commented out
-        console.log('[Query.leads] SKIPPING actual data fetch, returning [].'); // Added Log
-        return []; // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
+        const leads = await leadService.getLeads(context.supabaseClient, context.currentUser!.id); // Original call restored
+        console.log(`[Query.leads] Fetched ${leads.length} leads.`); // Updated Log
+        return leads;
       } catch (error: any) {
-        console.error('[Query.leads] Caught error:', error); // Added Log
+        console.error('[Query.leads] Caught error:', error);
         // Use processZodError helper for consistent error handling
         throw processZodError(error, 'fetching leads list');
       }
