@@ -348,9 +348,13 @@ export const resolvers = {
     people: async (_parent: unknown, _args: unknown, context: Context) => {
       requireAuthentication(context);
       try {
+        console.log('[Query.people] Attempting to fetch people list.'); // Added Log
         // Pass client instead of userId/token
-        return await personService.getPeople(context.supabaseClient);
+        // const people = await personService.getPeople(context.supabaseClient); // Original call commented out
+        console.log('[Query.people] SKIPPING actual data fetch, returning [].'); // Added Log
+        return []; // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
       } catch (e) {
+         console.error('[Query.people] Caught error:', e); // Added Log
          throw processZodError(e, 'fetching people list');
       }
     },
@@ -403,9 +407,13 @@ export const resolvers = {
     deals: async (_parent: unknown, _args: unknown, context: Context) => {
        requireAuthentication(context);
        try {
+           console.log('[Query.deals] Attempting to fetch deals list.'); // Added Log
            // Pass client
-           return await dealService.getDeals(context.supabaseClient);
+           // const deals = await dealService.getDeals(context.supabaseClient); // Original call commented out
+           console.log('[Query.deals] SKIPPING actual data fetch, returning [].'); // Added Log
+           return []; // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
        } catch (e) {
+           console.error('[Query.deals] Caught error:', e); // Added Log
            throw processZodError(e, 'fetching deals list');
        }
     },
@@ -423,9 +431,13 @@ export const resolvers = {
     leads: async (_parent: unknown, _args: unknown, context: Context) => {
       requireAuthentication(context);
       try {
+        console.log('[Query.leads] Attempting to fetch leads list.'); // Added Log
         // Call with client and user ID
-        return await leadService.getLeads(context.supabaseClient, context.currentUser!.id);
+        // const leads = await leadService.getLeads(context.supabaseClient, context.currentUser!.id); // Original call commented out
+        console.log('[Query.leads] SKIPPING actual data fetch, returning [].'); // Added Log
+        return []; // *** SIMPLIFIED RETURN VALUE FOR TESTING ***
       } catch (error: any) {
+        console.error('[Query.leads] Caught error:', error); // Added Log
         // Use processZodError helper for consistent error handling
         throw processZodError(error, 'fetching leads list');
       }
