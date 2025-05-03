@@ -4,8 +4,6 @@ import { GraphQLError } from 'graphql'; // Needed for handleSupabaseError
 import { createClient, type SupabaseClient, type PostgrestError } from '@supabase/supabase-js'; 
 
 // Load env vars (Refactor Candidate: Move to shared config)
-import dotenv from 'dotenv';
-dotenv.config();
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
