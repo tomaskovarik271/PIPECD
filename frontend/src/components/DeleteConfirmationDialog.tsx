@@ -9,52 +9,79 @@ import {
   Button,
   useToast,
 } from '@chakra-ui/react';
-import { gql } from 'graphql-request';
+import { gql } from '@apollo/client';
 import { gqlClient } from '../lib/graphqlClient';
 
-// Define the mutation
-const DELETE_CONTACT_MUTATION = gql`
-  mutation DeleteContact($id: ID!) {
-    deleteContact(id: $id)
+// Define the mutation for deleting a Person
+const DELETE_PERSON_MUTATION = gql`
+  mutation DeletePerson($id: ID!) {
+    deletePerson(id: $id)
   }
 `;
 
-// Define the contact type prop
-interface Contact {
+// Define the Person type prop (matching the one used in PeoplePage/EditPersonForm)
+interface Person {
   id: string;
   first_name?: string | null;
   last_name?: string | null;
+  // Add other fields if needed for display, but only id, first/last name used here
 }
 
+// Update prop definition
 interface DeleteConfirmationDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  contact: Contact | null;
+  person: Person | null; // Changed from contact
   onSuccess: () => void;
 }
 
-function DeleteConfirmationDialog({ isOpen, onClose, contact, onSuccess }: DeleteConfirmationDialogProps) {
+function DeleteConfirmationDialog({ isOpen, onClose, person, onSuccess }: DeleteConfirmationDialogProps) {
   const cancelRef = React.useRef<HTMLButtonElement>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const toast = useToast();
 
   const handleDelete = async () => {
-    if (!contact) return;
+    if (!person) return; // Check for person
     setIsLoading(true);
     try {
-      await gqlClient.request(DELETE_CONTACT_MUTATION, { id: contact.id });
-      toast({ title: 'Contact Deleted', status: 'success' });
+      // Use the updated mutation and person ID
+      await gqlClient.request(DELETE_PERSON_MUTATION, { id: person.id });
+      toast({ 
+        title: 'Person Deleted', // Updated title
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+       });
       onSuccess();
       onClose();
     } catch (error: any) {
-      console.error("Failed to delete contact:", error);
-      toast({ title: 'Deletion Failed', description: error.message, status: 'error' });
+      console.error("Failed to delete person:", error);
+      // Extract more specific error message if available
+      let errorMessage = 'An unexpected error occurred.';
+       if (error.response?.errors?.[0]?.message) {
+         errorMessage = error.response.errors[0].message;
+       } else if (error.message) {
+         errorMessage = error.message;
+       }
+      toast({ 
+        title: 'Deletion Failed', 
+        description: errorMessage, 
+        status: 'error',
+        duration: 5000,
+        isClosable: true, 
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (!contact) return null; // Don't render if no contact selected
+  if (!person) return null; // Don't render if no person selected
+
+  // Construct name for display, handling potential nulls
+  const personName = [
+      person.first_name,
+      person.last_name
+  ].filter(Boolean).join(' ') || 'this person';
 
   return (
     <AlertDialog
@@ -65,11 +92,11 @@ function DeleteConfirmationDialog({ isOpen, onClose, contact, onSuccess }: Delet
       <AlertDialogOverlay>
         <AlertDialogContent>
           <AlertDialogHeader fontSize="lg" fontWeight="bold">
-            Delete Contact
+            Delete Person
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            Are you sure you want to delete {contact.first_name} {contact.last_name}? 
+            Are you sure you want to delete {personName}? 
             This action cannot be undone.
           </AlertDialogBody>
 

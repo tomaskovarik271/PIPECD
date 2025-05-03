@@ -41,7 +41,7 @@ export const gqlClient = new GraphQLClient(endpoint, {
 
 // Example usage (can be removed later):
 /*
-import { gql } from 'graphql-request';
+import { gql } from '@apollo/client';
 
 const query = gql`
   query {

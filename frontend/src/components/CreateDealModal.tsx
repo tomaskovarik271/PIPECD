@@ -44,25 +44,25 @@ interface CreateDealMutationResult {
     };
 }
 
-// Add query for contact list
-const GET_CONTACT_LIST_QUERY = gql`
-  query GetContactList {
-    contactList {
+// Rename query for person list
+const GET_PERSON_LIST_QUERY = gql`
+  query GetPersonList {
+    personList {
       id
       name
     }
   }
 `;
 
-// Type for contact list items
-interface ContactListItem {
+// Type for person list items
+interface PersonListItem {
   id: string;
   name: string;
 }
 
-// Type for contact list query result
-interface GetContactListQueryResult {
-  contactList: ContactListItem[];
+// Type for person list query result
+interface GetPersonListQueryResult {
+  personList: PersonListItem[];
 }
 
 interface CreateDealModalProps {
@@ -78,37 +78,37 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [name, setName] = useState('');
   const [stage, setStage] = useState(dealStages[0]); // Default to first stage
   const [amount, setAmount] = useState<string>(''); // Store as string for input
-  const [contactId, setContactId] = useState<string>(''); // State for selected contact ID (empty string for 'none')
-  const [contacts, setContacts] = useState<ContactListItem[]>([]); // State for contact list
-  const [isContactsLoading, setIsContactsLoading] = useState(false);
-  const [contactsError, setContactsError] = useState<string | null>(null);
+  const [personId, setPersonId] = useState<string>(''); // Renamed from contactId
+  const [people, setPeople] = useState<PersonListItem[]>([]); // Renamed from contacts
+  const [isPeopleLoading, setIsPeopleLoading] = useState(false); // Renamed from isContactsLoading
+  const [peopleError, setPeopleError] = useState<string | null>(null); // Renamed from contactsError
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Effect to fetch contacts when the modal opens
+  // Effect to fetch people when the modal opens
   useEffect(() => {
     if (isOpen) {
       // Reset form state when opening
       setName('');
       setStage(dealStages[0]);
       setAmount('');
-      setContactId('');
+      setPersonId('');
       setError(null);
       setIsLoading(false);
-      // Fetch contacts
-      setIsContactsLoading(true);
-      setContactsError(null);
-      gqlClient.request<GetContactListQueryResult>(GET_CONTACT_LIST_QUERY)
+      // Fetch people
+      setIsPeopleLoading(true);
+      setPeopleError(null);
+      gqlClient.request<GetPersonListQueryResult>(GET_PERSON_LIST_QUERY)
         .then(data => {
-          setContacts(data.contactList || []);
+          setPeople(data.personList || []);
         })
         .catch(err => {
-          console.error("Error fetching contacts for dropdown:", err);
+          console.error("Error fetching people for dropdown:", err);
           const gqlError = err.response?.errors?.[0]?.message;
-          setContactsError(gqlError || err.message || 'Failed to load contacts');
+          setPeopleError(gqlError || err.message || 'Failed to load people');
         })
         .finally(() => {
-          setIsContactsLoading(false);
+          setIsPeopleLoading(false);
         });
     }
   }, [isOpen]); // Re-run when isOpen changes
@@ -132,7 +132,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
                 stage: stage,
                 // Parse amount only if it's a valid number string
                 amount: amount ? parseFloat(amount) : null,
-                contact_id: contactId || null, // Send null if empty string selected
+                person_id: personId || null, // Send person_id, renamed variable
             },
         };
 
@@ -152,7 +152,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         setName('');
         setStage(dealStages[0]);
         setAmount('');
-        setContactId('');
+        setPersonId('');
 
     } catch (err: any) {
       console.error('Error creating deal:', err);
@@ -178,10 +178,10 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
                 {error}
             </Alert>
           )}
-          {contactsError && (
+          {peopleError && (
              <Alert status="warning" mb={4}>
                 <AlertIcon />
-                {contactsError}
+                {peopleError}
             </Alert>
           )}
           <VStack spacing={4}>
@@ -212,16 +212,16 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
             </FormControl>
 
             <FormControl>
-              <FormLabel>Link to Contact (Optional)</FormLabel>
+              <FormLabel>Link to Person (Optional)</FormLabel>
               <Select 
-                placeholder={isContactsLoading ? 'Loading contacts...' : 'Select contact'}
-                value={contactId}
-                onChange={(e) => setContactId(e.target.value)}
-                isDisabled={isContactsLoading || !!contactsError}
+                placeholder={isPeopleLoading ? 'Loading people...' : 'Select person'}
+                value={personId}
+                onChange={(e) => setPersonId(e.target.value)}
+                isDisabled={isPeopleLoading || !!peopleError}
               >
-                 {!isContactsLoading && !contactsError && contacts.map(contact => (
-                    <option key={contact.id} value={contact.id}>
-                        {contact.name}
+                 {!isPeopleLoading && !peopleError && people.map(person => (
+                    <option key={person.id} value={person.id}>
+                        {person.name}
                     </option>
                 ))}
               </Select>

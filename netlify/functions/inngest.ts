@@ -93,8 +93,10 @@ export const functions = [helloWorld, logContactCreation, logDealCreation];
 
 // Add back the minimal handler export to satisfy Netlify Dev
 // The Inngest Dev Server + Plugin should handle the actual serving.
-export const handler: Handler = async (event, context) => {
+export const handler: Handler = async (_event, _context) => {
   console.warn('[inngest.ts handler] Invoked directly by Netlify Dev - this should ideally be handled by Inngest infrastructure (Plugin/Dev Server).');
+  // Allow all origins for local development/testing
+  // TODO: Restrict this more in production if needed
   // Return a simple response to avoid crashing Netlify Dev
   return {
     statusCode: 200,
