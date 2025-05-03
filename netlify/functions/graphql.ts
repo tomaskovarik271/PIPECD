@@ -755,18 +755,27 @@ export const resolvers = {
     // Resolver for the nested 'organization' field within Person
     organization: async (parent: { organization_id?: string | null }, _args: unknown, context: Context) => {
       requireAuthentication(context);
+      console.log(`[Person.organization] Attempting to fetch organization for person. Org ID: ${parent.organization_id}`); // Added Log
       if (!parent.organization_id) {
+          console.log('[Person.organization] organization_id is null or undefined.'); // Added Log
           return null;
       }
 
       try {
+          console.log(`[Person.organization] Calling organizationService.getOrganizationById for ID: ${parent.organization_id}`); // Added Log
           // Fetch the organization using the organization_id from the parent Person object
           // Pass client and orgId
-          return await organizationService.getOrganizationById(context.supabaseClient, parent.organization_id);
+          const organization = await organizationService.getOrganizationById(context.supabaseClient, parent.organization_id);
+           console.log(`[Person.organization] organizationService.getOrganizationById returned: ${organization ? `Org ID ${organization.id}` : 'null'}`); // Added Log
+          return organization;
       } catch (e) {
           // Don't throw here, just return null if org fetch fails (e.g., RLS denies)
-          console.error('Error fetching Person.organization (will be processed):', e); // Keep log for now
-          throw processZodError(e, 'fetching Person.organization');
+          console.error('[Person.organization] Caught error:', e); // Added Log
+          console.error(`[Person.organization] Error message: ${e instanceof Error ? e.message : String(e)}`); // Added Log
+          console.error(`[Person.organization] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); // Added Log
+          // console.error('Error fetching Person.organization (will be processed):', e); // Keep log for now
+          // throw processZodError(e, 'fetching Person.organization'); // Reverting this for now
+          throw e; // Re-throw the original error
       }
     },
     // Placeholder for deals linked to a person (requires dealService update)
@@ -786,18 +795,27 @@ export const resolvers = {
   Deal: {
     person: async (parent: { person_id?: string | null }, _args: unknown, context: Context) => {
        requireAuthentication(context);
+      console.log(`[Deal.person] Attempting to fetch person for deal. Person ID: ${parent.person_id}`); // Added Log
       if (!parent.person_id) {
+            console.log('[Deal.person] person_id is null or undefined.'); // Added Log
             return null;
       }
  
        try {
+        console.log(`[Deal.person] Calling personService.getPersonById for ID: ${parent.person_id}`); // Added Log
         // Fetch the person using the person_id from the parent Deal object
         // Pass client and personId
-        return await personService.getPersonById(context.supabaseClient, parent.person_id);
+        const person = await personService.getPersonById(context.supabaseClient, parent.person_id);
+        console.log(`[Deal.person] personService.getPersonById returned: ${person ? `Person ID ${person.id}` : 'null'}`); // Added Log
+        return person;
        } catch (e) {
           // Don't throw here, just return null if person fetch fails
-          console.error('Error fetching Deal.person (will be processed):', e); // Keep log for now
-          throw processZodError(e, 'fetching Deal.person');
+          console.error('[Deal.person] Caught error:', e); // Added Log
+          console.error(`[Deal.person] Error message: ${e instanceof Error ? e.message : String(e)}`); // Added Log
+          console.error(`[Deal.person] Error stack: ${e instanceof Error ? e.stack : 'N/A'}`); // Added Log
+          // console.error('Error fetching Deal.person (will be processed):', e); // Keep log for now
+          // throw processZodError(e, 'fetching Deal.person'); // Reverting this for now to see raw logs
+          throw e; // Re-throw the original error to see if Netlify logs it better
         }
     }
   },
