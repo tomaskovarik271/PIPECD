@@ -3,10 +3,10 @@ import type { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabaseClient';
 import { GraphQLError } from 'graphql';
-import { personService } from '../../lib/personService';
+// import { personService } from '../../lib/personService'; // <<< Temporarily comment out
 import { organizationService } from '../../lib/organizationService';
 import { dealService } from '../../lib/dealService';
-import { leadService, type LeadInput, type LeadUpdateInput } from '../../lib/leadService';
+// import { leadService, type LeadInput, type LeadUpdateInput } from '../../lib/leadService'; // <<< Temporarily comment out
 import { z, ZodError } from 'zod';
 import { inngest } from './inngest';
 
