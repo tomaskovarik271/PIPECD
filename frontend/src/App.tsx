@@ -7,6 +7,8 @@ import { ThemeSupa } from '@supabase/auth-ui-shared';
 import DealsPage from './pages/DealsPage';
 import PeoplePage from './pages/PeoplePage';
 import OrganizationsPage from './pages/OrganizationsPage'; 
+import PipelinesPage from './pages/PipelinesPage'; // Import the new page
+import StagesPage from './pages/StagesPage'; // Import the Stages page
 import { 
   Box, 
   Heading, 
@@ -45,6 +47,8 @@ function AppContent() {
           <Route path="/people" element={<PeoplePage />} />
           <Route path="/deals" element={<DealsPage />} />
           <Route path="/organizations" element={<OrganizationsPage />} />
+          <Route path="/pipelines" element={<PipelinesPage />} /> {/* Add route for pipelines */}
+          <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} /> {/* Add route for stages */}
           <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
           </Routes>
     </Box>
@@ -131,6 +135,7 @@ function TempNav() {
                     <Link as={RouterLink} to="/people">People</Link>
                     <Link as={RouterLink} to="/deals">Deals</Link>
                     <Link as={RouterLink} to="/organizations">Organizations</Link>
+                    <Link as={RouterLink} to="/pipelines">Pipelines</Link> {/* Add link for pipelines */}
                 </HStack>
                 <Button 
                   size="sm" 

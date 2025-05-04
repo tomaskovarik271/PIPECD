@@ -19,19 +19,26 @@ import {
   Alert, 
   AlertIcon,
   Spinner,
+  useToast,
 } from '@chakra-ui/react';
 import { gql } from 'graphql-request';
 import { gqlClient } from '../lib/graphqlClient';
+import { useAppStore } from '../stores/useAppStore'; // Import the store
 
-// TODO: Define GraphQL Mutation
+// Define GraphQL Mutation (using stage_id in input)
 const CREATE_DEAL_MUTATION = gql`
-  mutation CreateDeal($input: DealInput!) {
+  mutation CreateDeal($input: DealInput!) { # DealInput expects stage_id
     createDeal(input: $input) {
       id # Request fields needed after creation
       name
-      stage
+      stage { # Request nested stage info
+        id
+        name
+      }
+      stage_id
       amount
-      # Potentially add user_id, created_at if needed immediately
+      person_id
+      person { id first_name last_name } # Request first/last name instead of name
     }
   }
 `;
@@ -40,6 +47,9 @@ const CREATE_DEAL_MUTATION = gql`
 interface CreateDealMutationResult {
     createDeal: {
         id: string;
+        name: string;
+        stage_id: string; // Expect stage_id back
+        stage: { id: string; name: string }; // Expect nested stage back
         // Include other fields returned by mutation if needed
     };
 }
@@ -71,47 +81,73 @@ interface CreateDealModalProps {
   onDealCreated: () => void; // Callback to refresh list
 }
 
-// Basic stage options
-const dealStages = ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
+// Explicit Person type based on store data
+interface Person {
+  id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  // Add other fields if needed by component
+}
 
 function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProps) {
+  // Form State
   const [name, setName] = useState('');
-  const [stage, setStage] = useState(dealStages[0]); // Default to first stage
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
+  const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [amount, setAmount] = useState<string>(''); // Store as string for input
   const [personId, setPersonId] = useState<string>(''); // Renamed from contactId
-  const [people, setPeople] = useState<PersonListItem[]>([]); // Renamed from contacts
-  const [isPeopleLoading, setIsPeopleLoading] = useState(false); // Renamed from isContactsLoading
-  const [peopleError, setPeopleError] = useState<string | null>(null); // Renamed from contactsError
+  
+  // Store State & Actions (Selected individually)
+  const people = useAppStore((state) => state.people);
+  const pipelines = useAppStore((state) => state.pipelines);
+  const stages = useAppStore((state) => state.stages);
+  const fetchPeople = useAppStore((state) => state.fetchPeople);
+  const fetchPipelines = useAppStore((state) => state.fetchPipelines);
+  const fetchStages = useAppStore((state) => state.fetchStages);
+  const peopleLoading = useAppStore((state) => state.peopleLoading);
+  const peopleError = useAppStore((state) => state.peopleError);
+  const pipelinesLoading = useAppStore((state) => state.pipelinesLoading);
+  const pipelinesError = useAppStore((state) => state.pipelinesError);
+  const stagesLoading = useAppStore((state) => state.stagesLoading);
+  const stagesError = useAppStore((state) => state.stagesError);
+  const createDealAction = useAppStore((state) => state.createDeal);
+
+  // Component State
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const toast = useToast(); // Initialize toast
 
-  // Effect to fetch people when the modal opens
+  // Effect to fetch initial data (people & pipelines) when modal opens
   useEffect(() => {
     if (isOpen) {
       // Reset form state when opening
       setName('');
-      setStage(dealStages[0]);
+      setSelectedPipelineId('');
+      setSelectedStageId('');
       setAmount('');
       setPersonId('');
       setError(null);
       setIsLoading(false);
-      // Fetch people
-      setIsPeopleLoading(true);
-      setPeopleError(null);
-      gqlClient.request<GetPersonListQueryResult>(GET_PERSON_LIST_QUERY)
-        .then(data => {
-          setPeople(data.personList || []);
-        })
-        .catch(err => {
-          console.error("Error fetching people for dropdown:", err);
-          const gqlError = err.response?.errors?.[0]?.message;
-          setPeopleError(gqlError || err.message || 'Failed to load people');
-        })
-        .finally(() => {
-          setIsPeopleLoading(false);
-        });
+      
+      // Fetch people and pipelines
+      fetchPeople(); 
+      fetchPipelines(); 
+      // Clear stages from previous selections
+      useAppStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
-  }, [isOpen]); // Re-run when isOpen changes
+  }, [isOpen, fetchPeople, fetchPipelines]);
+
+  // Effect to fetch stages when a pipeline is selected
+  useEffect(() => {
+    if (selectedPipelineId) {
+        setSelectedStageId(''); // Reset stage selection when pipeline changes
+        fetchStages(selectedPipelineId);
+    } else {
+        // Clear stages if no pipeline is selected
+        useAppStore.setState({ stages: [], stagesError: null, stagesLoading: false });
+    }
+  }, [selectedPipelineId, fetchStages]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -124,42 +160,49 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         setIsLoading(false);
         return;
     }
+    if (!selectedStageId) {
+        setError('Stage selection is required.');
+        setIsLoading(false);
+        return;
+    }
 
     try {
-        const variables = {
-            input: {
-                name: name.trim(),
-                stage: stage,
-                // Parse amount only if it's a valid number string
-                amount: amount ? parseFloat(amount) : null,
-                person_id: personId || null, // Send person_id, renamed variable
-            },
-        };
+      // Prepare input for the store action
+      const dealInput = {
+        name: name.trim(),
+        stage_id: selectedStageId,
+        amount: amount ? parseFloat(amount) : null,
+        person_id: personId || null,
+      };
 
-        console.log('Submitting variables:', variables);
+      console.log('Calling createDealAction with input:', dealInput);
 
-        // Call the mutation using gqlClient
-        const result = await gqlClient.request<CreateDealMutationResult>(
-            CREATE_DEAL_MUTATION, 
-            variables
-        );
-        console.log('Deal created:', result); // Log success
+      // Use the store action
+      const createdDeal = await createDealAction(dealInput);
 
+      if (createdDeal) {
+        console.log('Deal created via store action:', createdDeal);
         // Success
+        toast({ // Use toast for success message
+          title: "Deal Created",
+          description: `Deal "${createdDeal.name}" created in stage "${createdDeal.stage.name}".`,
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
         onDealCreated(); // Trigger refresh on the parent page
         onClose();       // Close the modal
-        // Reset form fields (optional, as modal unmounts/remounts)
-        setName('');
-        setStage(dealStages[0]);
-        setAmount('');
-        setPersonId('');
+      } else {
+        // Error is handled by the store action, potentially setting dealsError
+        // We can pull the error from the store or use a generic message
+        const storeError = useAppStore.getState().dealsError;
+        setError(storeError || 'Failed to create deal. Please check store errors.');
+      }
 
     } catch (err: any) {
-      console.error('Error creating deal:', err);
-      const gqlError = err.response?.errors?.[0]?.message; // Try to get GraphQL error message
-      // Check for Zod validation error message from the backend
-      const validationError = err.response?.errors?.[0]?.extensions?.originalError?.message;
-      setError(validationError || gqlError || err.message || 'Failed to create deal');
+      // Catch unexpected errors during the action call itself (less likely)
+      console.error('Unexpected error during handleSubmit:', err);
+      setError(err.message || 'An unexpected error occurred.');
     } finally {
       setIsLoading(false);
     }
@@ -192,16 +235,44 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              {!name.trim() && error?.includes('name') && <FormErrorMessage>{error}</FormErrorMessage>}
+              {error?.toLowerCase().includes('name') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
-            <FormControl isRequired>
-              <FormLabel>Stage</FormLabel>
-              <Select value={stage} onChange={(e) => setStage(e.target.value)}>
-                {dealStages.map(s => (
-                    <option key={s} value={s}>{s}</option>
+            <FormControl isRequired isInvalid={!selectedPipelineId && error?.toLowerCase().includes('pipeline')}>
+              <FormLabel>Pipeline</FormLabel>
+              <Select 
+                placeholder={pipelinesLoading ? 'Loading pipelines...' : 'Select pipeline'}
+                value={selectedPipelineId}
+                onChange={(e) => setSelectedPipelineId(e.target.value)}
+                isDisabled={pipelinesLoading || !!pipelinesError}
+              >
+                 {!pipelinesLoading && !pipelinesError && pipelines.map(pipeline => (
+                    <option key={pipeline.id} value={pipeline.id}>
+                        {pipeline.name}
+                    </option>
                 ))}
               </Select>
+              {pipelinesError && <FormErrorMessage>Error loading pipelines: {pipelinesError}</FormErrorMessage>}
+              {!selectedPipelineId && error?.toLowerCase().includes('pipeline') && <FormErrorMessage>{error}</FormErrorMessage>}
+            </FormControl>
+
+            <FormControl isRequired isInvalid={!selectedStageId && error?.toLowerCase().includes('stage')}>
+              <FormLabel>Stage</FormLabel>
+              <Select 
+                placeholder={stagesLoading ? 'Loading stages...' : (selectedPipelineId ? 'Select stage' : 'Select pipeline first') }
+                value={selectedStageId}
+                onChange={(e) => setSelectedStageId(e.target.value)}
+                isDisabled={!selectedPipelineId || stagesLoading || !!stagesError || stages.length === 0}
+              >
+                 {!stagesLoading && !stagesError && stages.map(stage => (
+                    <option key={stage.id} value={stage.id}>
+                        {stage.name} (Order: {stage.order})
+                    </option>
+                ))}
+              </Select>
+              {stagesError && <FormErrorMessage>Error loading stages: {stagesError}</FormErrorMessage>}
+              {!selectedPipelineId && stages.length === 0 && <FormErrorMessage>Select a pipeline to see stages.</FormErrorMessage>}
+              {!selectedStageId && error?.toLowerCase().includes('stage') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
             <FormControl>
@@ -214,14 +285,14 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
             <FormControl>
               <FormLabel>Link to Person (Optional)</FormLabel>
               <Select 
-                placeholder={isPeopleLoading ? 'Loading people...' : 'Select person'}
+                placeholder={peopleLoading ? 'Loading people...' : 'Select person'}
                 value={personId}
                 onChange={(e) => setPersonId(e.target.value)}
-                isDisabled={isPeopleLoading || !!peopleError}
+                isDisabled={peopleLoading || !!peopleError}
               >
-                 {!isPeopleLoading && !peopleError && people.map(person => (
+                 {!peopleLoading && !peopleError && (people as Person[]).map(person => (
                     <option key={person.id} value={person.id}>
-                        {person.name}
+                        {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email || `Person ID: ${person.id}`}
                     </option>
                 ))}
               </Select>

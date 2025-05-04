@@ -8,6 +8,9 @@ import { organizationService } from '../../lib/organizationService'; // Import t
 import { dealService } from '../../lib/dealService'; // Import the deal service
 import { z, ZodError } from 'zod'; // Import Zod and ZodError
 import { inngest } from './inngest'; // Import the Inngest client
+import * as pipelineService from '../../lib/pipelineService';
+import * as stageService from '../../lib/stageService';
+import { GraphQLScalarType, Kind } from 'graphql';
 
 // Define GraphQL types related to User
 type GraphQLContext = {
@@ -88,16 +91,32 @@ const OrganizationInputSchema = z.object({
     notes: z.string().trim().optional().nullable(),
 });
 
-// Zod schema for DealInput validation
-const DealBaseSchema = z.object({ // Renamed to Base
+// Zod schema for Deal validation
+const DealBaseSchema = z.object({
     name: z.string().trim().min(1, { message: "Deal name cannot be empty" }),
-    stage: z.string().trim().min(1, { message: "Deal stage cannot be empty" }), // Consider enum later
+    stage_id: z.string().uuid({ message: "Invalid Stage ID format" }),
     amount: z.number().positive({ message: "Amount must be a positive number"}).optional().nullable(),
-    person_id: z.string().uuid({ message: "Invalid Person ID format" }).optional().nullable(), // Renamed from contact_id
+    person_id: z.string().uuid({ message: "Invalid Person ID format" }).optional().nullable(),
 });
 
-const DealCreateSchema = DealBaseSchema; // Create uses the base currently
-const DealUpdateSchema = DealBaseSchema.partial(); // Update allows partial fields
+const DealCreateSchema = DealBaseSchema;
+const DealUpdateSchema = DealBaseSchema.partial();
+
+// Zod schema for PipelineInput validation
+const PipelineInputSchema = z.object({
+    name: z.string().trim().min(1, { message: "Pipeline name cannot be empty" }),
+});
+
+// Zod schema for StageInput validation
+const StageBaseSchema = z.object({
+    name: z.string().trim().min(1, { message: "Stage name cannot be empty" }),
+    order: z.number().int().nonnegative({ message: "Order must be a non-negative integer"}),
+    pipeline_id: z.string().uuid({ message: "Invalid Pipeline ID format" }),
+    deal_probability: z.number().min(0).max(100, { message: "Probability must be between 0 and 100" }).optional().nullable(),
+});
+
+const StageCreateSchema = StageBaseSchema;
+const StageUpdateSchema = StageBaseSchema.partial().omit({ pipeline_id: true });
 
 // Placeholder service functions (REMOVED)
 // const contactService = { ... };
@@ -122,6 +141,10 @@ const typeDefs = /* GraphQL */ `
     # Deals
     deals: [Deal!]!            
     deal(id: ID!): Deal        
+    # Pipelines
+    pipelines: [Pipeline!]!
+    # Stages
+    stages(pipelineId: ID!): [Stage!]!
   }
 
   type Mutation {
@@ -137,6 +160,14 @@ const typeDefs = /* GraphQL */ `
     createDeal(input: DealInput!): Deal!
     updateDeal(id: ID!, input: DealInput!): Deal
     deleteDeal(id: ID!): Boolean
+    # Pipelines
+    createPipeline(input: PipelineInput!): Pipeline!
+    updatePipeline(id: ID!, input: PipelineInput!): Pipeline
+    deletePipeline(id: ID!): Boolean
+    # Stages
+    createStage(input: StageInput!): Stage!
+    updateStage(id: ID!, input: StageUpdateInput!): Stage # Use specific update input
+    deleteStage(id: ID!): Boolean
   }
 
   type UserInfo {
@@ -176,7 +207,8 @@ const typeDefs = /* GraphQL */ `
     updated_at: DateTime!
     user_id: ID! 
     name: String!
-    stage: String! 
+    stage_id: ID! # ADDED FK
+    stage: Stage! # ADDED nested object
     amount: Float
     person_id: ID # FK referencing people table (Renamed from contact_id)
     person: Person # Associated person (updated from contact)
@@ -205,14 +237,65 @@ const typeDefs = /* GraphQL */ `
 
   input DealInput {
     name: String!
-    stage: String!
+    stage_id: ID! # ADDED stage_id
     amount: Float
     person_id: ID # FK referencing people table (Renamed from contact_id)
+  }
+
+  # ADDED Pipeline type
+  type Pipeline {
+    id: ID!
+    user_id: ID!
+    name: String!
+    created_at: DateTime!
+    updated_at: DateTime!
+    # stages: [Stage!] # Could add nested stages later if needed
+  }
+
+  # ADDED Stage type
+  type Stage {
+    id: ID!
+    user_id: ID!
+    pipeline_id: ID!
+    name: String!
+    order: Int!
+    deal_probability: Float # Nullable (0-100)
+    created_at: DateTime!
+    updated_at: DateTime!
+    # deals: [Deal!] # Could add nested deals later if needed
+  }
+
+  # ADDED Pipeline Input
+  input PipelineInput {
+    name: String!
+  }
+
+  # ADDED Stage Input (for creation)
+  input StageInput {
+    name: String!
+    order: Int!
+    pipeline_id: ID!
+    deal_probability: Float # Nullable
+  }
+
+  # ADDED Stage Update Input (for updates, pipeline_id omitted)
+  input StageUpdateInput {
+    name: String
+    order: Int
+    deal_probability: Float # Nullable
   }
 `;
 
 // Export context type for testing
 export type { GraphQLContext };
+
+// Define a type for the parent object in nested Deal resolvers
+// Moved outside the resolvers object
+type ParentDeal = {
+  id: string;
+  person_id?: string | null;
+  stage_id?: string | null;
+};
 
 // Export resolvers for testing
 export const resolvers = {
@@ -331,6 +414,28 @@ export const resolvers = {
        } catch (e) {
            throw processZodError(e, 'fetching deal by ID');
        }
+    },
+    // Pipeline Resolvers
+    pipelines: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
+        const accessToken = requireAuthentication(context);
+        try {
+            return await pipelineService.getPipelines(accessToken);
+        } catch (error) { throw processZodError(error, 'fetching pipelines'); }
+    },
+    // Stage Resolvers
+    stages: async (_parent: unknown, { pipelineId }: { pipelineId: string }, context: GraphQLContext) => {
+        const accessToken = requireAuthentication(context);
+        if (!pipelineId) throw new GraphQLError("pipelineId is required", { extensions: { code: 'BAD_USER_INPUT' } });
+        try {
+            // Optional: Verify pipelineId belongs to user first?
+            // The RLS policy on stages indirectly verifies this via user_id check on insert/update/delete
+            // and the getStagesByPipeline service function filters by pipeline_id which is linked to user_id.
+            // Adding an explicit check here might be redundant but could provide earlier feedback.
+            // const pipeline = await pipelineService.getPipelineById(accessToken, pipelineId);
+            // if (!pipeline) throw new GraphQLError("Pipeline not found or not accessible", { extensions: { code: 'NOT_FOUND' } });
+
+            return await stageService.getStagesByPipeline(accessToken, pipelineId);
+        } catch (error) { throw processZodError(error, 'fetching stages'); }
     },
   },
 
@@ -520,66 +625,45 @@ export const resolvers = {
 
      // --- Deal Mutations ---
     createDeal: async (_parent: unknown, args: { input: any }, context: GraphQLContext): Promise<any> => {
-      console.log('[Mutation.createDeal] received input:', args.input);
       const action = 'creating deal';
       try {
-        requireAuthentication(context);
-        const userId = context.currentUser!.id;
-        const accessToken = getAccessToken(context);
-        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-
-        // Validate input using Zod
-        const validatedInput = DealCreateSchema.parse(args.input);
-        console.log('[Mutation.createDeal] validated input:', validatedInput);
-
-        // Call service with validated input
-        const newDeal = await dealService.createDeal(userId, validatedInput, accessToken);
-        console.log('[Mutation.createDeal] successfully created:', newDeal.id);
-
-        // Send event to Inngest
-        inngest.send({ 
-          name: 'crm/deal.created',
-          data: { deal: newDeal },
-          user: { id: userId, email: context.currentUser!.email }
-        }).catch(err => console.error('Failed to send deal.created event to Inngest:', err));
-
-        return newDeal;
+          const accessToken = requireAuthentication(context);
+          // Validate input using Zod
+          const validatedInput = DealCreateSchema.parse(args.input); // Uses updated schema
+          // Call service with validated input
+          const newDeal = await dealService.createDeal(context.currentUser!.id, validatedInput, accessToken);
+          // Send event (consider adding stage_id?)
+          inngest.send({
+            name: 'crm/deal.created',
+            data: { deal: newDeal },
+            user: { id: context.currentUser!.id, email: context.currentUser!.email }
+          }).catch(err => console.error('Failed to send deal.created event to Inngest:', err));
+          return newDeal;
       } catch (error) {
-        throw processZodError(error, action);
+          throw processZodError(error, action);
       }
     },
     updateDeal: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext): Promise<any> => {
-      console.log('[Mutation.updateDeal] received id:', args.id, 'input:', args.input);
       const action = 'updating deal';
       try {
-        requireAuthentication(context);
-        const userId = context.currentUser!.id;
-        const accessToken = getAccessToken(context);
-        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-
-        // Validate input using Zod (using partial schema for updates)
-        const validatedInput = DealUpdateSchema.parse(args.input);
-        console.log('[Mutation.updateDeal] validated input:', validatedInput);
-
-        // Ensure at least one field is provided for update (after parsing)
-        if (Object.keys(validatedInput).length === 0) {
-          throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
-        }
-
-        // Call service with validated input
-        const updatedDeal = await dealService.updateDeal(userId, args.id, validatedInput, accessToken);
-        console.log('[Mutation.updateDeal] successfully updated:', updatedDeal.id);
-
-        // Send event to Inngest
-        inngest.send({ 
-          name: 'crm/deal.updated',
-          data: { deal: updatedDeal },
-          user: { id: userId, email: context.currentUser!.email }
-        }).catch(err => console.error('Failed to send deal.updated event to Inngest:', err));
-
-        return updatedDeal;
+          const accessToken = requireAuthentication(context);
+          // Validate input using Zod
+          const validatedInput = DealUpdateSchema.parse(args.input); // Uses updated schema
+          // Ensure at least one field is provided
+          if (Object.keys(validatedInput).length === 0) {
+             throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
+          }
+          // Call service with validated input
+          const updatedDeal = await dealService.updateDeal(context.currentUser!.id, args.id, validatedInput, accessToken);
+          // Send event (consider adding stage_id?)
+          inngest.send({
+            name: 'crm/deal.updated',
+            data: { deal: updatedDeal },
+            user: { id: context.currentUser!.id, email: context.currentUser!.email }
+          }).catch(err => console.error('Failed to send deal.updated event to Inngest:', err));
+          return updatedDeal;
       } catch (error) {
-        throw processZodError(error, action);
+          throw processZodError(error, action);
       }
     },
     deleteDeal: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext): Promise<boolean> => {
@@ -609,6 +693,110 @@ export const resolvers = {
       } catch (error) {
         throw processZodError(error, action);
       }
+    },
+    // Pipeline Mutations
+    createPipeline: async (_parent: unknown, { input }: { input: pipelineService.CreatePipelineInput }, context: GraphQLContext) => {
+        const accessToken = requireAuthentication(context);
+        const action = 'creating pipeline';
+        try {
+            const validatedInput = PipelineInputSchema.parse(input);
+            const pipeline = await pipelineService.createPipeline(accessToken, validatedInput);
+            // Optional: Inngest event?
+            // await inngest.send({ name: 'crm/pipeline.created', data: { pipelineId: pipeline.id }, user: context.currentUser! });
+            return pipeline;
+        } catch (error) { throw processZodError(error, action); }
+    },
+    updatePipeline: async (_parent: unknown, { id, input }: { id: string; input: pipelineService.UpdatePipelineInput }, context: GraphQLContext) => {
+        const accessToken = requireAuthentication(context);
+        const action = 'updating pipeline';
+        if (!input || Object.keys(input).length === 0) {
+            throw new GraphQLError("Update input cannot be empty", { extensions: { code: 'BAD_USER_INPUT' } });
+        }
+        try {
+            // Validate the input. PipelineInputSchema only has 'name', so it works for updates too.
+            const validatedInput = PipelineInputSchema.parse(input);
+            const pipeline = await pipelineService.updatePipeline(accessToken, id, validatedInput);
+            // Optional: Inngest event?
+            // await inngest.send({ name: 'crm/pipeline.updated', data: { pipelineId: id, changes: validatedInput }, user: context.currentUser! });
+            return pipeline;
+        } catch (error) { throw processZodError(error, action); }
+    },
+    deletePipeline: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
+        const accessToken = requireAuthentication(context);
+        const action = 'deleting pipeline';
+        try {
+            // Check for existing stages before deleting pipeline?
+            // The ON DELETE CASCADE on stages.pipeline_id handles this in the DB.
+            // If we wanted to prevent deletion if stages exist, we'd query stages first.
+            // const stages = await stageService.getStagesByPipeline(accessToken, id);
+            // if (stages && stages.length > 0) {
+            //     throw new GraphQLError(`Cannot delete pipeline: Pipeline still contains ${stages.length} stage(s). Delete or move stages first.`, { extensions: { code: 'FAILED_PRECONDITION', reason: 'PIPELINE_NOT_EMPTY' } });
+            // }
+            const success = await pipelineService.deletePipeline(accessToken, id);
+            // Optional: Inngest event?
+            // if (success) {
+            //     await inngest.send({ name: 'crm/pipeline.deleted', data: { pipelineId: id }, user: context.currentUser! });
+            // }
+            return success;
+        } catch (error) { throw processZodError(error, action); }
+    },
+     // Stage Mutations
+    createStage: async (_parent: unknown, { input }: { input: stageService.CreateStageInput }, context: GraphQLContext) => {
+        const accessToken = requireAuthentication(context);
+        const action = 'creating stage';
+        try {
+            const validatedInput = StageCreateSchema.parse(input);
+            // Verify pipeline exists and belongs to user (RLS handles this implicitly on insert)
+            // but checking explicitly gives better error message.
+            const pipeline = await pipelineService.getPipelineById(accessToken, validatedInput.pipeline_id);
+            if (!pipeline) {
+                 throw new GraphQLError(`Pipeline with id ${validatedInput.pipeline_id} not found or not accessible.`, { extensions: { code: 'BAD_USER_INPUT' } });
+            }
+            const stage = await stageService.createStage(accessToken, validatedInput);
+            // Optional: Inngest event?
+            // await inngest.send({ name: 'crm/stage.created', data: { stageId: stage.id, pipelineId: stage.pipeline_id }, user: context.currentUser! });
+            return stage;
+        } catch (error) { throw processZodError(error, action); }
+    },
+    updateStage: async (_parent: unknown, { id, input }: { id: string; input: stageService.UpdateStageInput }, context: GraphQLContext) => {
+        const accessToken = requireAuthentication(context);
+        const action = 'updating stage';
+        if (!input || Object.keys(input).length === 0) {
+            throw new GraphQLError("Update input cannot be empty", { extensions: { code: 'BAD_USER_INPUT' } });
+        }
+        try {
+            // Validate using the specific update schema
+            const validatedInput = StageUpdateSchema.parse(input);
+             // Check if stage exists and belongs to user (implicitly via RLS on update)
+             // Optional: Explicit check first?
+             // const existingStage = await stageService.getStageById(accessToken, id);
+             // if (!existingStage) {
+             //     throw new GraphQLError(`Stage with id ${id} not found or not accessible.`, { extensions: { code: 'NOT_FOUND' } });
+             // }
+            const stage = await stageService.updateStage(accessToken, id, validatedInput);
+            // Optional: Inngest event?
+            // await inngest.send({ name: 'crm/stage.updated', data: { stageId: id, changes: validatedInput }, user: context.currentUser! });
+            return stage;
+        } catch (error) { throw processZodError(error, action); }
+    },
+    deleteStage: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
+        const accessToken = requireAuthentication(context);
+        const action = 'deleting stage';
+        try {
+             // Check for existing deals in this stage before deleting?
+             // DB constraint `ON DELETE SET NULL` on deals.stage_id handles this.
+             // If we wanted to prevent deletion, we'd check deals first.
+             // const dealsInStage = await dealService.getDealsByStageId(accessToken, id); // Need this service method
+             // if (dealsInStage && dealsInStage.length > 0) {
+             //      throw new GraphQLError(`Cannot delete stage: Stage still contains ${dealsInStage.length} deal(s). Move deals first.`, { extensions: { code: 'FAILED_PRECONDITION', reason: 'STAGE_NOT_EMPTY' } });
+             // }
+            const success = await stageService.deleteStage(accessToken, id);
+            // Optional: Inngest event?
+            // if (success) {
+            //    await inngest.send({ name: 'crm/stage.deleted', data: { stageId: id }, user: context.currentUser! });
+            // }
+            return success;
+        } catch (error) { throw processZodError(error, action); }
     },
   },
   
@@ -653,29 +841,54 @@ export const resolvers = {
   
   // Add resolver for nested Deal.person field
   Deal: {
-    person: async (parent: { person_id?: string | null }, _args: unknown, context: GraphQLContext) => {
-      requireAuthentication(context); // Added Auth Check
+    // Resolver for the 'person' field on Deal
+    person: async (parent: ParentDeal, _args: unknown, context: GraphQLContext) => {
+      if (!parent.person_id) return null;
+      requireAuthentication(context);
       const accessToken = getAccessToken(context);
-       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-      
-      if (!parent.person_id) {
-            return null;
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+      try {
+         // Use personService to fetch the person
+         return await personService.getPersonById(context.currentUser!.id, parent.person_id, accessToken);
+      } catch (e) {
+          console.error(`Error fetching person ${parent.person_id} for deal ${parent.id}:`, e);
+          // Avoid throwing full error which might fail the whole deal query
+          // Return null or a minimal error object if preferred
+          return null; 
+      }
+    },
+    // ADDED: Resolver for the 'stage' field on Deal
+    stage: async (parent: ParentDeal, _args: unknown, context: GraphQLContext) => {
+        if (!parent.stage_id) {
+            // This shouldn't happen if stage_id is non-nullable in DB/schema
+            console.error(`Deal ${parent.id} is missing stage_id.`);
+            throw new GraphQLError('Internal Error: Deal is missing stage information.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
         }
-       try {
-        // Fetch the person using the person_id from the parent Deal object
-        // Pass user context for RLS
-        return await personService.getPersonById(context.currentUser!.id, parent.person_id, accessToken);
-       } catch (e) {
-          // Don't throw here, just return null if person fetch fails
-          console.error('Error fetching Deal.person:', e);
-          return null;
-          // throw processServiceError(e, 'fetching Deal.person');
-       }
+        const accessToken = requireAuthentication(context); // Ensure user is authenticated
+        try {
+            // Assuming stageService has a method like getStageById
+            // Note: Stage RLS might need checking if it's not implicitly handled by user_id on pipeline
+            const stage = await stageService.getStageById(accessToken, parent.stage_id);
+            if (!stage) {
+                console.error(`Stage ${parent.stage_id} not found for deal ${parent.id}.`);
+                // Handle case where stage might have been deleted but deal wasn't updated
+                 throw new GraphQLError('Stage associated with this deal not found.', { extensions: { code: 'NOT_FOUND' } });
+            }
+            return stage;
+        } catch (e) {
+            console.error(`Error fetching stage ${parent.stage_id} for deal ${parent.id}:`, e);
+            // Process error: Check if it's a standard not found or other issue
+             if (e instanceof GraphQLError && e.extensions?.code === 'NOT_FOUND') {
+                 throw e; // Re-throw known errors
+             }
+             // Log unexpected errors but return a generic error to client
+             throw processZodError(e, `fetching stage ${parent.stage_id}`);
+        }
     }
   },
   Organization: {
-    // Placeholder for people linked to an organization (requires personService update)
-    people: async (_parent: { id: string }, _args: unknown, context: GraphQLContext) => {
+    // Resolver for the 'people' field on Organization
+    people: async (parent: { id: string }, _args: unknown, context: GraphQLContext) => {
        requireAuthentication(context);
        const accessToken = getAccessToken(context);
        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
@@ -692,7 +905,7 @@ export const resolvers = {
 };
 
 // Helper function for authentication check
-function requireAuthentication(context: GraphQLContext) {
+function requireAuthentication(context: GraphQLContext): string /* Returns access token */ {
   if (!context.currentUser) {
     // Log the attempt
     console.warn('Authentication required but currentUser is null.'); // Added logging
@@ -700,7 +913,16 @@ function requireAuthentication(context: GraphQLContext) {
       extensions: { code: 'UNAUTHENTICATED' },
     });
   }
-  // If authenticated, proceed
+  const token = getAccessToken(context);
+   if (!token) {
+    // This case should ideally not happen if currentUser is set, but check defensively
+    console.error('Authentication check passed (currentUser exists), but failed to extract token.');
+    throw new GraphQLError('Authentication token is missing or invalid.', {
+      extensions: { code: 'UNAUTHENTICATED' },
+    });
+  }
+  // If authenticated, return the token
+  return token;
 }
 
 // Create the Yoga instance

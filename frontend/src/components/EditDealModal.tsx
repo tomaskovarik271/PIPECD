@@ -22,28 +22,34 @@ import {
 } from '@chakra-ui/react';
 import { gql } from 'graphql-request';
 import { gqlClient } from '../lib/graphqlClient';
+import { useAppStore, UpdateDealInput } from '../stores/useAppStore'; // Import store and input type
 
-// Interface for the Deal data passed to the modal
-// Match the fields fetched in DealsPage query
+// Updated interface for the Deal data passed to the modal
 interface DealToEdit {
   id: string;
   name: string;
-  stage: string;
+  // stage: string; // Old
+  stage: { id: string; name: string; pipeline_id: string; }; // Need pipeline_id here!
+  stage_id?: string | null; // Keep existing stage_id if available
   amount?: number | null;
-  person_id?: string | null; // Renamed from contact_id
-  // Add other fields if they are editable
+  person_id?: string | null;
 }
 
-// Define GraphQL Mutation for Update
+// Define GraphQL Mutation for Update (using stage_id)
 const UPDATE_DEAL_MUTATION = gql`
-  mutation UpdateDeal($id: ID!, $input: DealInput!) {
+  mutation UpdateDeal($id: ID!, $input: DealInput!) { # DealInput expects stage_id
     updateDeal(id: $id, input: $input) {
       id # Request fields needed after update
       name
-      stage
+      stage { # Get updated stage info
+        id
+        name
+        pipeline_id # Maybe needed?
+      }
+      stage_id
       amount
       updated_at # Get updated timestamp
-      person_id # Also fetch person_id after update
+      person_id
     }
   }
 `;
@@ -69,6 +75,10 @@ interface GetPersonListQueryResult {
   personList: PersonListItem[];
 }
 
+// Add Pipeline/Stage types locally if needed (or rely on store types)
+// interface Pipeline { id: string; name: string; }
+// interface Stage { id: string; name: string; order: number; pipeline_id: string; }
+
 interface EditDealModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -76,63 +86,116 @@ interface EditDealModalProps {
   deal: DealToEdit | null; // The deal data to edit
 }
 
-// Re-use stages from Create modal or define centrally later
-const dealStages = ['Lead', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
+// Explicit Person type (matching store)
+interface Person {
+  id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+}
 
 function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalProps) {
-  // Form state, initialized from the deal prop when modal opens
+  // Form state
   const [name, setName] = useState('');
-  const [stage, setStage] = useState(dealStages[0]);
+  // const [stage, setStage] = useState(dealStages[0]); // REMOVED old stage
+  const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
+  const [selectedStageId, setSelectedStageId] = useState<string>('');
+  const [initialPipelineId, setInitialPipelineId] = useState<string | null>(null);
+  const [initialStageId, setInitialStageId] = useState<string | null>(null);
   const [amount, setAmount] = useState<string>('');
-  const [personId, setPersonId] = useState<string>(''); // Renamed state variable
-  // Person list state
-  const [people, setPeople] = useState<PersonListItem[]>([]); // Renamed state variable
-  const [isPeopleLoading, setIsPeopleLoading] = useState(false); // Renamed state variable
-  const [peopleError, setPeopleError] = useState<string | null>(null); // Renamed state variable
+  const [personId, setPersonId] = useState<string>(''); 
+
+  // Store State & Actions (Selected individually)
+  const people = useAppStore((state) => state.people);
+  const pipelines = useAppStore((state) => state.pipelines);
+  const stages = useAppStore((state) => state.stages);
+  const fetchPeople = useAppStore((state) => state.fetchPeople);
+  const fetchPipelines = useAppStore((state) => state.fetchPipelines);
+  const fetchStages = useAppStore((state) => state.fetchStages);
+  const peopleLoading = useAppStore((state) => state.peopleLoading);
+  const peopleError = useAppStore((state) => state.peopleError);
+  const pipelinesLoading = useAppStore((state) => state.pipelinesLoading);
+  const pipelinesError = useAppStore((state) => state.pipelinesError);
+  const stagesLoading = useAppStore((state) => state.stagesLoading);
+  const stagesError = useAppStore((state) => state.stagesError);
+  const updateDealAction = useAppStore((state) => state.updateDeal); // Use store action
+
+  // Component State
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Effect to fetch people when modal opens
+  // Effect to fetch people & pipelines when modal opens
   useEffect(() => {
     if (isOpen) {
-      setIsPeopleLoading(true); // Use renamed setter
-      setPeopleError(null); // Use renamed setter
-      gqlClient.request<GetPersonListQueryResult>(GET_PERSON_LIST_QUERY)
-        .then(data => {
-          setPeople(data.personList || []); // Use renamed setter and data field
-        })
-        .catch(err => {
-          console.error("Error fetching people for dropdown:", err);
-          const gqlError = err.response?.errors?.[0]?.message;
-          setPeopleError(gqlError || err.message || 'Failed to load people'); // Use renamed setter
-        })
-        .finally(() => {
-          setIsPeopleLoading(false); // Use renamed setter
-        });
+      fetchPeople(); 
+      fetchPipelines();
+      // Clear stages? Or wait for pipeline selection?
+      useAppStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
-  }, [isOpen]); // Only depends on isOpen
+  }, [isOpen, fetchPeople, fetchPipelines]); 
 
-  // Effect to update form state when the deal prop changes (modal opens with new data)
+  // Effect to update form state & initial IDs when the deal prop changes
   useEffect(() => {
     if (deal) {
       setName(deal.name || '');
-      setStage(deal.stage || dealStages[0]);
       setAmount(deal.amount != null ? String(deal.amount) : '');
-      setPersonId(deal.person_id || ''); // Use renamed deal prop field and setter
-      setError(null); // Clear previous errors when opening
-      setIsLoading(false); // Reset loading state
+      setPersonId(deal.person_id || '');
+      setError(null);
+      setIsLoading(false);
+      
+      // Extract initial pipeline and stage IDs from the deal
+      const pipelineIdFromDeal = deal.stage?.pipeline_id;
+      const stageIdFromDeal = deal.stage_id || deal.stage?.id;
+      
+      setInitialPipelineId(pipelineIdFromDeal || null);
+      setInitialStageId(stageIdFromDeal || null);
+      setSelectedPipelineId(pipelineIdFromDeal || '');
+      // Stage will be set by the next effect after stages load
+      setSelectedStageId(''); // Reset stage initially
+      
     } else {
         // Reset form if deal becomes null (e.g., modal closes)
         setName('');
-        setStage(dealStages[0]);
         setAmount('');
-        setPersonId(''); // Use renamed setter
+        setPersonId('');
+        setSelectedPipelineId('');
+        setSelectedStageId('');
+        setInitialPipelineId(null);
+        setInitialStageId(null);
     }
-  }, [deal]); // Dependency array ensures this runs when `deal` changes
+  }, [deal]);
+
+  // Effect to fetch stages when a pipeline is selected OR initial pipeline ID is set
+  useEffect(() => {
+    const targetPipelineId = selectedPipelineId || initialPipelineId;
+    if (targetPipelineId) {
+        fetchStages(targetPipelineId);
+    } else {
+        useAppStore.setState({ stages: [], stagesError: null, stagesLoading: false });
+    }
+  }, [selectedPipelineId, initialPipelineId, fetchStages]);
+
+  // Effect to set the initial stage once stages have loaded for the initial pipeline
+  useEffect(() => {
+    if (initialStageId && initialPipelineId && selectedPipelineId === initialPipelineId && stages.length > 0) {
+       // Check if initial stage exists in the loaded stages
+       const stageExists = stages.some(s => s.id === initialStageId);
+       if (stageExists) {
+           setSelectedStageId(initialStageId);
+           setInitialStageId(null); // Prevent re-setting if stages reload
+       } else {
+           console.warn(`Initial stage ID ${initialStageId} not found in loaded stages for pipeline ${initialPipelineId}`);
+           // Optionally clear selection or show an error
+           // setSelectedStageId(''); 
+           setInitialStageId(null); // Still mark as processed
+       }
+    }
+  }, [stages, initialStageId, initialPipelineId, selectedPipelineId]);
+
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!deal) return; // Should not happen if modal is open with a deal
+    if (!deal) return; 
 
     setIsLoading(true);
     setError(null);
@@ -142,34 +205,46 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       setIsLoading(false);
       return;
     }
+    if (!selectedPipelineId) {
+        setError('Pipeline selection is required.');
+        setIsLoading(false);
+        return;
+    }
+    if (!selectedStageId) {
+        setError('Stage selection is required.');
+        setIsLoading(false);
+        return;
+    }
 
     try {
-      const variables = {
-        id: deal.id,
-        input: {
-          name: name.trim(),
-          stage: stage,
-          amount: amount ? parseFloat(amount) : null,
-          person_id: personId || null, // Use renamed state variable for mutation input field
-          // Add other fields if they become editable
-        },
+      // Prepare input for the store action
+      const updateInput: UpdateDealInput = {
+        name: name.trim(),
+        stage_id: selectedStageId,
+        amount: amount ? parseFloat(amount) : null,
+        person_id: personId || null,
       };
 
-      console.log('Submitting update variables:', variables);
+      console.log('Calling updateDealAction with ID:', deal.id, 'Input:', updateInput);
 
-      // Call the update mutation
-      const result = await gqlClient.request(UPDATE_DEAL_MUTATION, variables);
-      console.log('Deal updated:', result);
+      // Call the store action
+      const updatedDeal = await updateDealAction(deal.id, updateInput);
 
-      // Success
-      onDealUpdated(); // Trigger refresh
-      onClose();       // Close modal
+      if (updatedDeal) {
+          console.log('Deal updated via store action:', updatedDeal);
+          // Success
+          onDealUpdated(); // Trigger refresh
+          onClose();       // Close modal
+      } else {
+          // Error is handled by the store action, potentially setting dealsError
+          const storeError = useAppStore.getState().dealsError;
+          setError(storeError || 'Failed to update deal. Please check store errors.');
+      }
 
     } catch (err: any) {
-      console.error('Error updating deal:', err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      const validationError = err.response?.errors?.[0]?.extensions?.originalError?.message;
-      setError(validationError || gqlError || err.message || 'Failed to update deal');
+      // Catch unexpected errors during the action call itself
+      console.error('Unexpected error during handleSubmit:', err);
+      setError(err.message || 'An unexpected error occurred while updating deal.');
     } finally {
       setIsLoading(false);
     }
@@ -208,17 +283,46 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              {!name.trim() && error?.includes('name') && <FormErrorMessage>{error}</FormErrorMessage>}
+              {error?.toLowerCase().includes('name') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
-            <FormControl isRequired>
-              <FormLabel>Stage</FormLabel>
-              <Select value={stage} onChange={(e) => setStage(e.target.value)}>
-                 {/* Ensure deal.stage is included if it's somehow not in dealStages */}
-                 {[...new Set([...dealStages, stage])].map(s => (
-                    <option key={s} value={s}>{s}</option>
+            {/* Pipeline Selection */} 
+            <FormControl isRequired isInvalid={!selectedPipelineId && error?.toLowerCase().includes('pipeline')}> 
+              <FormLabel>Pipeline</FormLabel>
+              <Select 
+                placeholder={pipelinesLoading ? 'Loading pipelines...' : 'Select pipeline'}
+                value={selectedPipelineId}
+                onChange={(e) => setSelectedPipelineId(e.target.value)}
+                isDisabled={pipelinesLoading || !!pipelinesError}
+              >
+                 {!pipelinesLoading && !pipelinesError && pipelines.map(pipeline => (
+                    <option key={pipeline.id} value={pipeline.id}>
+                        {pipeline.name}
+                    </option>
                 ))}
               </Select>
+              {pipelinesError && <FormErrorMessage>Error loading pipelines: {pipelinesError}</FormErrorMessage>}
+              {!selectedPipelineId && error?.toLowerCase().includes('pipeline') && <FormErrorMessage>{error}</FormErrorMessage>} 
+            </FormControl>
+
+            {/* Stage Selection */} 
+            <FormControl isRequired isInvalid={!selectedStageId && error?.toLowerCase().includes('stage')}> 
+              <FormLabel>Stage</FormLabel>
+              <Select 
+                placeholder={stagesLoading ? 'Loading stages...' : (selectedPipelineId ? 'Select stage' : 'Select pipeline first') }
+                value={selectedStageId}
+                onChange={(e) => setSelectedStageId(e.target.value)}
+                isDisabled={!selectedPipelineId || stagesLoading || !!stagesError || stages.length === 0}
+              >
+                 {!stagesLoading && !stagesError && stages.map(stage => (
+                    <option key={stage.id} value={stage.id}>
+                        {stage.name} (Order: {stage.order})
+                    </option>
+                ))}
+              </Select>
+              {stagesError && <FormErrorMessage>Error loading stages: {stagesError}</FormErrorMessage>}
+              {!selectedPipelineId && stages.length === 0 && <FormErrorMessage>Select a pipeline to see stages.</FormErrorMessage>}
+              {!selectedStageId && error?.toLowerCase().includes('stage') && <FormErrorMessage>{error}</FormErrorMessage>} 
             </FormControl>
 
             <FormControl>
@@ -231,17 +335,17 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
             <FormControl>
               <FormLabel>Link to Person (Optional)</FormLabel> {/* Renamed label */}
               <Select 
-                placeholder={isPeopleLoading ? 'Loading people...' : 'Select person'} /* Renamed placeholder */
+                placeholder={peopleLoading ? 'Loading people...' : 'Select person'} /* Renamed placeholder */
                 value={personId} /* Use renamed state variable */
                 onChange={(e) => setPersonId(e.target.value)} /* Use renamed state setter */
-                isDisabled={isPeopleLoading || !!peopleError} /* Use renamed state variable */
+                isDisabled={peopleLoading || !!peopleError} /* Use renamed state variable */
               >
                  {/* Add an option for 'None' or empty selection */}
                  <option value="">-- None --</option>
                  {/* Iterate over people state */}
-                 {!isPeopleLoading && !peopleError && people.map(person => (
+                 {!peopleLoading && !peopleError && (people as Person[]).map(person => ( // Cast to explicit Person type
                     <option key={person.id} value={person.id}>
-                        {person.name}
+                         {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email || `Person ID: ${person.id}`}
                     </option>
                 ))}
               </Select>
@@ -259,7 +363,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
             isLoading={isLoading}
             leftIcon={isLoading ? <Spinner size="sm" /> : undefined}
           >
-            Save Changes
+            Update Deal
           </Button>
           <Button variant='ghost' onClick={onClose} isDisabled={isLoading}>
             Cancel

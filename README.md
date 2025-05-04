@@ -10,7 +10,7 @@ The system utilizes a serverless architecture based on:
 *   **Frontend State:** Zustand (`frontend/src/stores/useAppStore.ts`)
 *   **UI Library:** Chakra UI
 *   **API:** GraphQL Gateway (**GraphQL Yoga**) running as a Netlify Function (`netlify/functions/graphql.ts`)
-*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`), utilities in `lib/serviceUtils.ts`
+*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`, `pipelineService.ts`), utilities in `lib/serviceUtils.ts`
 *   **Database:** Supabase (PostgreSQL) with RLS
 *   **Authentication:** Supabase Auth (Email/Password, GitHub configured)
 *   **Async Tasks:** Inngest (`netlify/functions/inngest.ts`)
@@ -24,6 +24,8 @@ The system utilizes a serverless architecture based on:
 *   Deal CRUD implemented (Data fetching managed via Zustand store).
 *   Organization CRUD implemented.
 *   Backend service layer refactored with shared utilities (`lib/serviceUtils.ts`).
+*   [-] Pipeline/Stage database schema defined and migrated locally (`pipelines`, `stages` tables, `deals.stage_id`).
+*   [-] Basic Pipeline/Stage CRUD service implemented (`pipelineService.ts`).
 *   Inngest event sending implemented for Person & Deal creation (simple logging handlers).
 *   Basic UI (Chakra UI) implemented for Auth, People, Organizations, and Deals.
 *   Unit/Integration tests implemented for backend services (`lib/`), frontend components (`frontend/src/`), and GraphQL resolvers (`netlify/functions/`).
@@ -61,46 +63,8 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
 3.  **Initialize Local Database:** Apply existing schema migrations:
     ```bash
     # Ensure Supabase is running locally first!
-    supabase db reset 
+    supabase db reset
+    # This applies all migrations in supabase/migrations/, including the one for pipelines/stages.
     ```
 4.  **Start Development Server:**
-    ```bash
-    netlify dev
     ```
-    *   This reads `netlify.toml`, loads `.env`, serves functions (e.g., GraphQL API at `http://localhost:8888/.netlify/functions/graphql`), and runs the frontend dev server (check output for frontend URL, e.g., `http://localhost:8888` or maybe `http://localhost:5173`).
-    *   Access local Supabase Studio: `http://127.0.0.1:54323`
-    *   Access local email catch-all (Inbucket): `http://127.0.0.1:54324`
-
-### Verification (Local)
-
-1.  Open the frontend URL from `netlify dev` output.
-2.  Sign up/Log in using Email/Password or GitHub (GitHub requires local Supabase config).
-3.  Verify you are redirected to the main app content after login.
-4.  Navigate to the People page, create, edit, and delete a person.
-5.  Navigate to the Organizations page, create, edit, and delete an organization.
-6.  Navigate to the Deals page, create, edit, and delete a deal. (May require existing People/Organizations).
-7.  Sign out using the button in the navigation bar and verify you are redirected to the Sign In page without needing a refresh.
-
-### Local Development Notes & Issues
-
-*   **Inngest Build Warning:** You may see `Could not resolve "inngest/netlify"` during `netlify dev` startup. This is currently benign; the functions load correctly.
-*   **Inngest Local Workflow:** 
-    *   **Sending Events:** Works correctly from functions running within `netlify dev`.
-    *   **Viewing Sent Events:** Run the Inngest Dev Server (`npx inngest-cli dev`) in a separate terminal to verify events are sent.
-    *   **Testing Function Execution:** Due to limitations with `netlify dev`, testing the *execution* logic within your Inngest functions (in `netlify/functions/inngest.ts`) requires deploying to Netlify (Preview or Prod) and checking logs there.
-*   **Testing:** 
-    *   Unit/integration tests cover frontend components (Vitest/RTL), backend services (Vitest/mocks), and GraphQL resolvers (Vitest/mocks). Run all Vitest tests with `npm test` (or `npm run test:lib`, `npm run test:frontend`, `npm run test:gql` for specific suites).
-    *   End-to-end tests are set up using Playwright. Run with `npm run test:e2e`. Currently covers basic login and CRUD navigation flows.
-
-## Deployment (Production)
-
-*   **Live Site:** [`https://sprightly-macaron-c20bb0.netlify.app/`](https://sprightly-macaron-c20bb0.netlify.app/)
-*   **Deployment:** Handled automatically by Netlify on pushes to the `main` branch.
-*   **Environment Variables:** Requires specific variables set in the Netlify UI (**Site config -> Build & deploy -> Environment**):
-    *   **Frontend Build:** `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (using *production* Supabase project URL & Anon key).
-    *   **Function Runtime:** `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` (using *production* Supabase & Inngest keys).
-*   **Supabase Config:** Requires GitHub OAuth provider keys and correct Site URL (`https://sprightly-macaron-c20bb0.netlify.app`) configured in the *production* Supabase project dashboard (**Authentication -> Providers** and **Authentication -> URL Configuration**).
-*   **Database Migrations:** **Must be applied manually** to the production database from your local machine after linking the CLI. See `DEVELOPER_GUIDE.md`.
-
----
-*This README reflects the current state and will be updated as the project evolves.* 

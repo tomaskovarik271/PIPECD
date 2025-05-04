@@ -88,7 +88,7 @@ function OrganizationsPage() {
 
         if (success) {
             toast({ title: 'Organization deleted.', status: 'success', duration: 3000, isClosable: true });
-        } else {
+            } else {
             toast({
                 title: 'Error Deleting Organization',
                 description: error || 'An unknown error occurred', // Display store error
@@ -190,17 +190,17 @@ function OrganizationsPage() {
 
       {/* Render Modals */} 
       {isCreateModalOpen && (
-        <CreateOrganizationModal 
-            isOpen={isCreateModalOpen} 
-            onClose={onCreateModalClose} 
+      <CreateOrganizationModal 
+        isOpen={isCreateModalOpen} 
+        onClose={onCreateModalClose} 
             onOrganizationCreated={handleDataChanged}
-        />
+      />
       )}
 
       {orgToEdit && (
-        <EditOrganizationModal 
+      <EditOrganizationModal 
             organization={orgToEdit} 
-            isOpen={isEditModalOpen} 
+        isOpen={isEditModalOpen} 
             onClose={() => { 
                 onEditModalClose(); 
                 setOrgToEdit(null); 
@@ -210,7 +210,7 @@ function OrganizationsPage() {
                 onEditModalClose(); 
                 setOrgToEdit(null); 
             }} 
-        />
+      />
       )}
 
     </Box>

@@ -123,7 +123,7 @@ function PeoplePage() {
                 <ListItem key={person.id} borderWidth="1px" borderRadius="md" p={3} display="flex" alignItems="center">
                   <Box flexGrow={1}>
                     <Text fontWeight="bold">
-                      {person.first_name} {person.last_name} 
+                      {person.first_name} {person.last_name}
                       ({person.organization?.name || 'No organization'})
                     </Text>
                     <Text fontSize="sm">{person.email || '-'} | {person.phone || '-'}</Text>

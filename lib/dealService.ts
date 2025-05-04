@@ -19,9 +19,10 @@ import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils'; //
 // --- Deal Data Shape (Placeholder - Define more accurately with schema) ---
 interface DealInput {
   name?: string | null;
-  stage?: string | null; // e.g., 'Lead', 'Proposal', 'Closed Won', 'Closed Lost'
+  // REMOVED: stage?: string | null; // Replaced by stage_id
   amount?: number | null;
-  person_id?: string | null; // Foreign key to people table (Renamed from contact_id)
+  person_id?: string | null; // Foreign key to people table
+  stage_id?: string | null;  // Foreign key to stages table
   // Add other relevant fields like close_date, notes etc.
 }
 
@@ -33,6 +34,7 @@ interface DealRecord extends Omit<DealInput, 'person_id'> { // Use Omit if DealI
     updated_at: string;
     user_id: string;
     person_id?: string | null; // Ensure person_id is here too
+    stage_id?: string | null;  // Ensure stage_id is here too
 }
 
 // --- Deal Service ---
@@ -44,7 +46,7 @@ export const dealService = {
     const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
       .from('deals')
-      .select('*') // RLS filters by user_id
+      .select('*') // Selects all columns, including stage_id
       .order('created_at', { ascending: false });
 
     handleSupabaseError(error, 'fetching deals'); // USE IMPORTED HELPER
@@ -57,7 +59,7 @@ export const dealService = {
     const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
       .from('deals')
-      .select('*')
+      .select('*') // Selects all columns, including stage_id
       .eq('id', id) // Filter by specific ID (RLS ensures user access)
       .single();
 
@@ -72,6 +74,7 @@ export const dealService = {
   async createDeal(userId: string, input: DealInput, accessToken: string): Promise<DealRecord> {
     console.log('[dealService.createDeal] called for user:', userId, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
+    // Note: Input already includes stage_id? if provided
     const { data, error } = await supabase
       .from('deals')
       .insert({ ...input, user_id: userId }) // RLS CHECK (auth.uid() = user_id)
@@ -89,6 +92,7 @@ export const dealService = {
   async updateDeal(userId: string, id: string, input: DealInput, accessToken: string): Promise<DealRecord> {
     console.log('[dealService.updateDeal] called for user:', userId, 'id:', id, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
+    // Note: Input may or may not include stage_id for update
     const { data, error } = await supabase
       .from('deals')
       .update(input) 

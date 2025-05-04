@@ -131,7 +131,13 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   *(Features to implement after Contact Model Enhancement)*
 *   [ ] **Lead Management:** Implement dedicated Lead entity, service, API, UI, and conversion logic.
 *   [ ] **Activity Management:** Expand beyond basic logging (Calls, Meetings, linking, completion tracking).
-*   [ ] **Pipeline Management:** Implement customizable pipelines and stages.
+*   [-] **Pipeline Management:** Implement customizable pipelines and stages.
+    *   [x] Define `pipelines` and `stages` database schema.
+    *   [x] Create Supabase migration for schema changes.
+    *   [x] Implement `pipelineService.ts` (CRUD for Pipelines and Stages).
+    *   [ ] Define GraphQL schema/resolvers for Pipelines/Stages.
+    *   [ ] Build UI components/integration for Pipelines/Stages.
+    *   [ ] Update `deals` table/service/API/UI to link to `stages`.
 *   [ ] Achieve Full Feature Parity with Pipedrive (Iterative development based on priority - Products, Projects, Email Sync, Workflows, Reporting etc. as per ADR Sec 4.1).
 *   [ ] Expand Test Coverage comprehensively.
 *   [ ] Performance Optimization (address cold starts if necessary).

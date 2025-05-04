@@ -33,10 +33,21 @@ interface DealPerson {
     email?: string | null;
 }
 
+// Add nested Stage type for Deal (matching store definition)
+interface DealStage { 
+    id: string;
+    name: string;
+    pipeline_id: string;
+    // Add other fields if needed by UI
+}
+
+// Update local Deal interface
 interface Deal {
   id: string;
   name: string;
-  stage: string;
+  // stage: string; // Old definition
+  stage: DealStage; // Use nested stage object
+  stage_id?: string | null; // Keep if useful
   amount?: number | null;
   created_at: string;
   updated_at: string;
@@ -176,7 +187,7 @@ function DealsPage() {
                 <Tr key={deal.id}>
                   <Td>{deal.name}</Td>
                   <Td>{formatPersonName(deal.person)}</Td> 
-                  <Td>{deal.stage}</Td>
+                  <Td>{deal.stage.name}</Td>
                   <Td isNumeric>{formatCurrency(deal.amount)}</Td>
                   <Td>{formatDate(deal.created_at)}</Td>
                   <Td>
