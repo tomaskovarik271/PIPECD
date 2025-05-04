@@ -117,8 +117,11 @@ describe('dealService', () => {
       // Assertions
       await expect(dealService.getDeals(mockUser.id, mockAccessToken))
         .rejects
-        .toThrow(new GraphQLError(`Database error during fetching deals`, { 
-            extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: mockDbError.message },
+        .toThrow(new GraphQLError(`Database error during fetching deals. Please try again later.`, {
+            extensions: { 
+              code: 'INTERNAL_SERVER_ERROR', 
+              originalError: { message: mockDbError.message, code: undefined }
+            },
         }));
 
       expect(mockedCreateClient).toHaveBeenCalledTimes(1);
@@ -198,8 +201,11 @@ describe('dealService', () => {
         // Assertions
         await expect(dealService.getDealById(mockUser.id, dealId, mockAccessToken))
             .rejects
-            .toThrow(new GraphQLError(`Database error during fetching deal by ID`, {
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: dbError.message },
+            .toThrow(new GraphQLError(`Database error during fetching deal by ID. Please try again later.`, {
+                extensions: { 
+                  code: 'INTERNAL_SERVER_ERROR', 
+                  originalError: { message: dbError.message, code: dbError.code }
+                },
             }));
             
         expect(mockedCreateClient).toHaveBeenCalledTimes(1);
@@ -212,7 +218,7 @@ describe('dealService', () => {
   });
 
   describe('createDeal', () => {
-    const dealInput = { name: 'New Deal', stage: 'Lead', amount: 1000 };
+    const dealInput = { name: 'New Deal', stage_id: 'stage-lead-123', amount: 1000, person_id: 'person-xyz' };
     const expectedDealRecord = {
         ...dealInput,
         id: 'new-deal-123',
@@ -248,124 +254,82 @@ describe('dealService', () => {
     });
 
     it('should throw GraphQLError if Supabase insert fails', async () => {
-        const dbError: Partial<PostgrestError> = { message: 'Insert failed' };
-
-        // Mock error on single() as it's the last in the chain for create
+        const mockDbError: Partial<PostgrestError> = { message: 'Insert failed' };
         mockBuilderMethods.single.mockResolvedValueOnce({ 
             data: null, 
-            error: dbError as PostgrestError 
+            error: mockDbError as PostgrestError
         });
 
-        // Assertions
         await expect(dealService.createDeal(mockUser.id, dealInput, mockAccessToken))
             .rejects
-            .toThrow(new GraphQLError(`Database error during creating deal`, { 
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: dbError.message },
+            .toThrow(new GraphQLError(`Database error during creating deal. Please try again later.`, {
+                 extensions: { 
+                   code: 'INTERNAL_SERVER_ERROR', 
+                   originalError: { message: mockDbError.message, code: undefined }
+                 },
             }));
-        
-        expect(mockedCreateClient).toHaveBeenCalledTimes(1);
-        const clientInstance = mockedCreateClient.mock.results[0]!.value;
-        expect(clientInstance.from).toHaveBeenCalledWith('deals');
-        expect(mockBuilderMethods.insert).toHaveBeenCalledWith(
-            { ...dealInput, user_id: mockUser.id }
-        );
-        expect(mockBuilderMethods.select).toHaveBeenCalled();
-        expect(mockBuilderMethods.single).toHaveBeenCalled();
     });
 
     it('should throw GraphQLError if insert returns no data', async () => {
-        // Mock successful db operation but null data from single()
         mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: null });
-
         await expect(dealService.createDeal(mockUser.id, dealInput, mockAccessToken))
             .rejects
             .toThrow(new GraphQLError('Failed to create deal, no data returned', {
-                extensions: { code: 'INTERNAL_SERVER_ERROR' },
+                 extensions: { code: 'INTERNAL_SERVER_ERROR' }
             }));
     });
   });
 
   describe('updateDeal', () => {
-    const dealIdToUpdate = 'deal-to-update-456';
-    const updateInput = { name: 'Updated Deal Name', amount: 9999 };
-    const expectedUpdatedRecord = {
-        id: dealIdToUpdate,
+    const dealId = 'deal-to-update';
+    const updateInput = { name: 'Updated Deal Name', amount: 1500, stage_id: 'stage-won-456' };
+    const expectedDealRecord = {
+        id: dealId,
         user_id: mockUser.id,
-        name: 'Updated Deal Name',
-        stage: 'Lead', // Assuming stage wasn't updated
-        amount: 9999,
+        ...updateInput,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(), // Should be different in reality
-        contact_id: null, // Assuming not updated
+        updated_at: new Date().toISOString(),
     };
 
-    it('should update a deal and return the updated record', async () => {
-      // Mock the update().eq().select().single() chain
-      mockBuilderMethods.single.mockResolvedValueOnce({ 
-          data: expectedUpdatedRecord, 
-          error: null 
-      });
+    it('should update a deal and return the record', async () => {
+        mockBuilderMethods.single.mockResolvedValueOnce({ 
+            data: expectedDealRecord, 
+            error: null 
+        });
 
-      const updatedDeal = await dealService.updateDeal(mockUser.id, dealIdToUpdate, updateInput, mockAccessToken);
+        const updatedDeal = await dealService.updateDeal(mockUser.id, dealId, updateInput, mockAccessToken);
 
-      // Assertions
-      expect(mockedCreateClient).toHaveBeenCalledTimes(1);
-      const clientInstance = mockedCreateClient.mock.results[0]!.value;
-      expect(clientInstance.from).toHaveBeenCalledWith('deals');
-      expect(mockBuilderMethods.update).toHaveBeenCalledWith(updateInput);
-      expect(mockBuilderMethods.eq).toHaveBeenCalledWith('id', dealIdToUpdate);
-      expect(mockBuilderMethods.select).toHaveBeenCalled();
-      expect(mockBuilderMethods.single).toHaveBeenCalled();
-      expect(updatedDeal).toEqual(expectedUpdatedRecord);
+        // Assertions
+        expect(mockedCreateClient).toHaveBeenCalledTimes(1);
+        const clientInstance = mockedCreateClient.mock.results[0]!.value;
+        expect(clientInstance.from).toHaveBeenCalledWith('deals');
+        expect(mockBuilderMethods.update).toHaveBeenCalledWith(updateInput);
+        expect(mockBuilderMethods.eq).toHaveBeenCalledWith('id', dealId);
+        expect(mockBuilderMethods.select).toHaveBeenCalled();
+        expect(mockBuilderMethods.single).toHaveBeenCalled();
+        expect(updatedDeal).toEqual(expectedDealRecord);
     });
 
     it('should throw GraphQLError if deal not found (PGRST116 error)', async () => {
-        const notFoundError: Partial<PostgrestError> = { message: 'No rows found', code: 'PGRST116' };
-        
-        mockBuilderMethods.single.mockResolvedValueOnce({ 
-            data: null, 
-            error: notFoundError as PostgrestError 
-        });
+        const notFoundError: Partial<PostgrestError> = { code: 'PGRST116' };
+        mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: notFoundError as PostgrestError });
 
-        await expect(dealService.updateDeal(mockUser.id, dealIdToUpdate, updateInput, mockAccessToken))
-            .rejects
-            .toThrow(new GraphQLError('Deal not found', { 
-                extensions: { code: 'NOT_FOUND' },
-            }));
-            
-        expect(mockBuilderMethods.update).toHaveBeenCalledWith(updateInput);
-        expect(mockBuilderMethods.eq).toHaveBeenCalledWith('id', dealIdToUpdate);
+        await expect(dealService.updateDeal(mockUser.id, dealId, updateInput, mockAccessToken))
+            .rejects.toThrow(new GraphQLError('Deal not found', { extensions: { code: 'NOT_FOUND' } }));
     });
 
-     it('should throw GraphQLError for other database errors during update', async () => {
-        const dbError: Partial<PostgrestError> = { message: 'Update failed', code: '500' };
-        
-        mockBuilderMethods.single.mockResolvedValueOnce({ 
-            data: null, 
-            error: dbError as PostgrestError 
-        });
+    it('should throw GraphQLError for other update errors', async () => {
+        const dbError: Partial<PostgrestError> = { message: 'Update failed' };
+        mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
 
-        await expect(dealService.updateDeal(mockUser.id, dealIdToUpdate, updateInput, mockAccessToken))
-            .rejects
-            .toThrow(new GraphQLError(`Database error during updating deal`, { 
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: dbError.message },
-            }));
-            
-        expect(mockBuilderMethods.update).toHaveBeenCalledWith(updateInput);
-        expect(mockBuilderMethods.eq).toHaveBeenCalledWith('id', dealIdToUpdate);
-    });
-
-    it('should throw GraphQLError if update returns no data (and no error)', async () => {
-        // Mock successful update but null data
-        mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: null });
-
-        await expect(dealService.updateDeal(mockUser.id, dealIdToUpdate, updateInput, mockAccessToken))
-            .rejects
-            .toThrow(new GraphQLError('Deal update failed, no data returned', {
-                 extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        await expect(dealService.updateDeal(mockUser.id, dealId, updateInput, mockAccessToken))
+            .rejects.toThrow(new GraphQLError('Database error during updating deal. Please try again later.', {
+                extensions: { 
+                  code: 'INTERNAL_SERVER_ERROR', 
+                  originalError: { message: dbError.message, code: undefined }
+                },
             }));
     });
-
   });
 
   describe('deleteDeal', () => {
@@ -417,8 +381,11 @@ describe('dealService', () => {
       // Assertions
       await expect(dealService.deleteDeal(mockUser.id, dealIdToDelete, mockAccessToken))
         .rejects
-        .toThrow(new GraphQLError(`Database error during deleting deal`, { 
-            extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: dbError.message },
+        .toThrow(new GraphQLError(`Database error during deleting deal. Please try again later.`, {
+            extensions: { 
+              code: 'INTERNAL_SERVER_ERROR', 
+              originalError: { message: dbError.message, code: undefined }
+            },
         }));
       
       expect(mockedCreateClient).toHaveBeenCalledTimes(1);

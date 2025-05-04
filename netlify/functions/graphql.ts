@@ -118,28 +118,28 @@ const yoga = createYoga<GraphQLContext>({
 // Netlify Function handler
 export const handler: Handler = async (event, context) => {
   try {
-    const response = await yoga.fetch(
+  const response = await yoga.fetch(
       // Ensure the path is correctly passed for Yoga routing
-      event.path, 
-      {
-        method: event.httpMethod,
-        headers: event.headers as HeadersInit,
-        body: event.body ? Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8') : undefined,
-      },
+    event.path, 
+    {
+      method: event.httpMethod,
+      headers: event.headers as HeadersInit,
+      body: event.body ? Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8') : undefined,
+    },
       // Pass Netlify context and event for use in the Yoga context factory
-      { event, context }
-    );
+    { event, context }
+  );
 
     // Convert Fetch API Response back to Netlify Handler Response format
-    const responseHeaders: { [key: string]: string } = {};
-    response.headers.forEach((value, key) => {
-      responseHeaders[key] = value;
-    });
+  const responseHeaders: { [key: string]: string } = {};
+  response.headers.forEach((value, key) => {
+    responseHeaders[key] = value;
+  });
 
-    return {
-      statusCode: response.status,
-      headers: responseHeaders,
-      body: await response.text(),
+  return {
+    statusCode: response.status,
+    headers: responseHeaders,
+    body: await response.text(),
       isBase64Encoded: false, // Assuming text response
     };
   } catch (error) {

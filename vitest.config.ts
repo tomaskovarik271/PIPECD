@@ -1,4 +1,9 @@
 import { defineConfig } from 'vitest/config'
+import { resolve } from 'path'
+import dotenv from 'dotenv'
+
+// Load environment variables from .env file in the root
+dotenv.config({ path: resolve(__dirname, '.env') })
 
 export default defineConfig({
   test: {
@@ -15,6 +20,12 @@ export default defineConfig({
     //       '**/*.test.ts',
     //       '**/*.d.ts'
     //   ],
+    // },
+  },
+  resolve: {
+    // Add aliases if needed for imports
+    // alias: {
+    //   '@/': resolve(__dirname, './frontend/src'),
     // },
   },
 }); 

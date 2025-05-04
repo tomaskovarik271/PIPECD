@@ -8,29 +8,29 @@ The system utilizes a serverless architecture based on:
 
 *   **Frontend:** React (Vite) SPA hosted on Netlify
 *   **Frontend State:** Zustand (`frontend/src/stores/useAppStore.ts`)
+*   **Frontend API Client:** `graphql-request` (`frontend/src/lib/graphqlClient.ts`)
 *   **UI Library:** Chakra UI
 *   **API:** GraphQL Gateway (**GraphQL Yoga**) running as a Netlify Function (`netlify/functions/graphql.ts`); Schema defined in `.graphql` files within `netlify/functions/graphql/schema/`.
-*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`, `pipelineService.ts`), utilities in `lib/serviceUtils.ts`
+*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `pipelineService.ts`), utilities in `lib/serviceUtils.ts`, shared types in `lib/types.ts`.
 *   **Database:** Supabase (PostgreSQL) with RLS
 *   **Authentication:** Supabase Auth (Email/Password, GitHub configured)
 *   **Async Tasks:** Inngest (`netlify/functions/inngest.ts`)
 *   **Testing:** Vitest (Unit/Integration), Playwright (E2E)
 *   **Hosting/Deployment:** Netlify (`netlify.toml`)
 
-**Current Status:**
+**Current Status (As of GraphQL Refactor & Pipeline/Stage Implementation):**
+
 *   Core infrastructure is set up (Supabase, Netlify, Inngest).
 *   Authentication (Email/Password, GitHub) is working, managed via Zustand store.
-*   Person CRUD implemented.
-*   Deal CRUD implemented (Data fetching managed via Zustand store).
-*   Organization CRUD implemented.
+*   Full CRUD implemented for **People**, **Organizations**, **Deals**, **Pipelines**, and **Stages** (Backend services, GraphQL API, Frontend Zustand store, Frontend UI Pages/Modals).
 *   Backend service layer refactored with shared utilities (`lib/serviceUtils.ts`).
-*   [-] Pipeline/Stage database schema defined and migrated locally (`pipelines`, `stages` tables, `deals.stage_id`).
-*   [-] Basic Pipeline/Stage CRUD service implemented (`pipelineService.ts`).
+*   GraphQL API layer refactored: Resolvers moved into modular files (`netlify/functions/graphql/resolvers/`).
 *   Inngest event sending implemented for Person & Deal creation (simple logging handlers).
-*   Basic UI (Chakra UI) implemented for Auth, People, Organizations, and Deals.
-*   Unit/Integration tests implemented for backend services (`lib/`), frontend components (`frontend/src/`), and GraphQL resolvers (`netlify/functions/`).
-*   Basic E2E testing setup (Playwright) with login and basic CRUD flows implemented.
-*   Production deployment is live.
+*   Basic UI (Chakra UI) implemented for Auth and all core CRUD entities.
+*   Unit/Integration tests implemented for backend services (`lib/`).
+*   Basic E2E testing setup (Playwright) with login flow.
+*   Production deployment is live on Netlify.
+*   Build process fixed (removed `tsc -b` from frontend build script).
 
 Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technical details, and `ROADMAP.md` for the development plan and issue log.
 
@@ -39,7 +39,7 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
 ### Prerequisites
 
 *   Node.js (LTS version recommended)
-*   npm (v9.5.0 or compatible)
+*   npm (Bundled with Node.js)
 *   Netlify CLI (`npm install -g netlify-cli`)
 *   Supabase CLI (`npm install -g supabase`)
 *   Docker (for running Supabase locally)
@@ -50,21 +50,43 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
     ```bash
     git clone https://github.com/tomaskovarik271/PIPECD.git
     cd PIPECD
-    npm install # Installs root dependencies
+    npm install # Installs root dependencies (backend, testing, etc.)
     cd frontend && npm install # Installs frontend dependencies (React, Zustand, etc.)
+    cd .. # Return to root directory
     ```
 2.  **Setup Local Environment:**
-    *   Start Docker Desktop.
-    *   Start local Supabase: `supabase start`. This may take a minute.
-    *   Copy local keys to `.env` (in project root): Create a `.env` file and add `SUPABASE_URL` and `SUPABASE_ANON_KEY` from the `supabase status` output.
-    *   Add local Inngest keys (from your Inngest Dev environment dashboard) to root `.env`: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`.
-    *   **(Optional)** Add `SUPABASE_SERVICE_ROLE_KEY` to root `.env` if needed.
-    *   **(NOTE)** Frontend variables (`VITE_*`) are not needed in a separate `.env` file for local dev when using `netlify dev`, as Netlify CLI makes them available via the root `.env` during development.
+    *   Ensure Docker Desktop is running.
+    *   Start local Supabase: `supabase start`. This may take a minute. Note the API URL and Anon Key output.
+    *   Create a `.env` file in the project root (copy from `env.example.txt` if it exists).
+    *   Add Supabase credentials to `.env`: `SUPABASE_URL` and `SUPABASE_ANON_KEY` (use values from `supabase status`).
+    *   Add local Inngest keys (from your Inngest Dev environment dashboard) to `.env`: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`.
+    *   **(NOTE)** Frontend variables (`VITE_*`) are automatically sourced from this root `.env` file by `netlify dev`.
 3.  **Initialize Local Database:** Apply existing schema migrations:
     ```bash
     # Ensure Supabase is running locally first!
     supabase db reset
-    # This applies all migrations in supabase/migrations/, including the one for pipelines/stages.
+    # This applies all migrations in supabase/migrations/.
     ```
 4.  **Start Development Server:**
+    ```bash
+    netlify dev
     ```
+    *   Access the frontend app at the URL provided (usually `http://localhost:8888`).
+    *   Access the GraphiQL IDE (if enabled in `graphql.ts`) at `http://localhost:8888/.netlify/functions/graphql`.
+
+### Creating a Test User
+
+If needed for testing login or specific features, you can create a user in your local Supabase instance:
+
+*   Navigate to the local Supabase Studio (URL from `supabase status`, usually `http://127.0.0.1:54323`).
+*   Go to the **Authentication** section.
+*   Click **Add User** and create a user (e.g., using Email provider).
+
+## Deployment
+
+*   **Automatic:** Pushing to the `main` branch triggers an automatic build and deployment on Netlify.
+*   **Manual Steps:**
+    *   **Environment Variables:** Production keys (`SUPABASE_*`, `INNGEST_*`, `VITE_*`) must be configured in the Netlify UI (**Site settings > Build & deploy > Environment**).
+    *   **Database Migrations:** Apply schema changes to the production Supabase database manually using the Supabase CLI (see `DEVELOPER_GUIDE.md` for details).
+
+Refer to `DEVELOPER_GUIDE.md` for more detailed deployment instructions and architecture information.

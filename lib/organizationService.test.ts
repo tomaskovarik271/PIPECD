@@ -68,8 +68,11 @@ describe('organizationService', () => {
       const mockDbError: Partial<PostgrestError> = { message: 'Org Select failed' };
       mockBuilderMethods.order.mockResolvedValueOnce({ data: null, error: mockDbError as PostgrestError });
       await expect(organizationService.getOrganizations(mockUser.id, mockAccessToken))
-        .rejects.toThrow(new GraphQLError('Database error during fetching organizations', {
-            extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Org Select failed' }
+        .rejects.toThrow(new GraphQLError('Database error during fetching organizations. Please try again later.', {
+            extensions: { 
+              code: 'INTERNAL_SERVER_ERROR', 
+              originalError: { message: mockDbError.message, code: undefined }
+            }
         }));
     });
   });
@@ -101,8 +104,11 @@ describe('organizationService', () => {
         const dbError: Partial<PostgrestError> = { message: 'DB org error' };
         mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
         await expect(organizationService.getOrganizationById(mockUser.id, orgId, mockAccessToken))
-            .rejects.toThrow(new GraphQLError('Database error during fetching organization by ID', {
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'DB org error' }
+            .rejects.toThrow(new GraphQLError('Database error during fetching organization by ID. Please try again later.', {
+                extensions: { 
+                  code: 'INTERNAL_SERVER_ERROR', 
+                  originalError: { message: dbError.message, code: undefined }
+                }
             }));
     });
   });
@@ -127,8 +133,11 @@ describe('organizationService', () => {
         const dbError: Partial<PostgrestError> = { message: 'Org Insert failed' };
         mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
         await expect(organizationService.createOrganization(mockUser.id, orgInput, mockAccessToken))
-            .rejects.toThrow(new GraphQLError('Database error during creating organization', {
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Org Insert failed' }
+            .rejects.toThrow(new GraphQLError('Database error during creating organization. Please try again later.', {
+                extensions: { 
+                  code: 'INTERNAL_SERVER_ERROR', 
+                  originalError: { message: dbError.message, code: undefined }
+                }
             }));
     });
 
@@ -172,8 +181,11 @@ describe('organizationService', () => {
         const dbError: Partial<PostgrestError> = { message: 'Org Update failed' };
         mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
         await expect(organizationService.updateOrganization(mockUser.id, orgId, updateInput, mockAccessToken))
-            .rejects.toThrow(new GraphQLError('Database error during updating organization', {
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Org Update failed' }
+            .rejects.toThrow(new GraphQLError('Database error during updating organization. Please try again later.', {
+                extensions: { 
+                  code: 'INTERNAL_SERVER_ERROR', 
+                  originalError: { message: dbError.message, code: undefined }
+                }
             }));
     });
   });
@@ -203,8 +215,11 @@ describe('organizationService', () => {
       const dbError: Partial<PostgrestError> = { message: 'Org Delete failed' };
       mockBuilderMethods.eq.mockResolvedValueOnce({ error: dbError as PostgrestError, count: null });
       await expect(organizationService.deleteOrganization(mockUser.id, orgId, mockAccessToken))
-        .rejects.toThrow(new GraphQLError('Database error during deleting organization', {
-            extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Org Delete failed' }
+        .rejects.toThrow(new GraphQLError('Database error during deleting organization. Please try again later.', {
+            extensions: { 
+              code: 'INTERNAL_SERVER_ERROR', 
+              originalError: { message: dbError.message, code: undefined }
+            }
         }));
     });
   });

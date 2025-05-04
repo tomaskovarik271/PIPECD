@@ -69,8 +69,11 @@ describe('personService', () => { // Updated describe block
 
       await expect(personService.getPeople(mockUser.id, mockAccessToken))
         .rejects
-        .toThrow(new GraphQLError('Database error during fetching people', {
-          extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Select failed' }
+        .toThrow(new GraphQLError('Database error during fetching people. Please try again later.', {
+          extensions: { 
+            code: 'INTERNAL_SERVER_ERROR', 
+            originalError: { message: mockDbError.message, code: undefined }
+          }
         }));
     });
   });
@@ -103,8 +106,11 @@ describe('personService', () => { // Updated describe block
         mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
         await expect(personService.getPersonById(mockUser.id, personId, mockAccessToken))
             .rejects
-            .toThrow(new GraphQLError('Database error during fetching person by ID', {
-                extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'DB error' }
+            .toThrow(new GraphQLError('Database error during fetching person by ID. Please try again later.', {
+                extensions: { 
+                  code: 'INTERNAL_SERVER_ERROR', 
+                  originalError: { message: dbError.message, code: undefined }
+                }
             }));
     });
   });
@@ -130,8 +136,11 @@ describe('personService', () => { // Updated describe block
         mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
         await expect(personService.createPerson(mockUser.id, personInput, mockAccessToken))
             .rejects
-            .toThrow(new GraphQLError('Database error during creating person', {
-                 extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Insert failed' }
+            .toThrow(new GraphQLError('Database error during creating person. Please try again later.', {
+                 extensions: { 
+                   code: 'INTERNAL_SERVER_ERROR', 
+                   originalError: { message: dbError.message, code: undefined }
+                 }
             }));
     });
 
@@ -178,8 +187,11 @@ describe('personService', () => { // Updated describe block
         mockBuilderMethods.single.mockResolvedValueOnce({ data: null, error: dbError as PostgrestError });
         await expect(personService.updatePerson(mockUser.id, personId, updateInput, mockAccessToken))
             .rejects
-            .toThrow(new GraphQLError('Database error during updating person', {
-                 extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Update failed' }
+            .toThrow(new GraphQLError('Database error during updating person. Please try again later.', {
+                 extensions: { 
+                   code: 'INTERNAL_SERVER_ERROR', 
+                   originalError: { message: dbError.message, code: undefined }
+                 }
             }));
     });
   });
@@ -210,8 +222,11 @@ describe('personService', () => { // Updated describe block
         mockBuilderMethods.eq.mockResolvedValueOnce({ error: dbError as PostgrestError, count: null });
       await expect(personService.deletePerson(mockUser.id, personId, mockAccessToken))
         .rejects
-        .toThrow(new GraphQLError('Database error during deleting person', {
-            extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: 'Delete failed' }
+        .toThrow(new GraphQLError('Database error during deleting person. Please try again later.', {
+            extensions: { 
+              code: 'INTERNAL_SERVER_ERROR', 
+              originalError: { message: dbError.message, code: undefined }
+            }
         }));
     });
   });
