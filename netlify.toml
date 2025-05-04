@@ -21,6 +21,11 @@
 # This might help resolve module issues like the one with inngest/netlify
 [functions]
   node_bundler = "esbuild"
+  # ADDED: Explicitly include the schema files directory for the graphql function
+  # Use a specific function entry if only needed for graphql, or keep global if needed elsewhere
+  # included_files = ["netlify/functions/graphql/schema/**"]
+  # Trying global inclusion first:
+  included_files = ["netlify/functions/graphql/schema/**"]
 
 # Development server settings for Vite
 [dev]
