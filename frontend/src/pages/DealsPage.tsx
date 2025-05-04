@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useState } from 'react';
-import { gql } from 'graphql-request';
 import {
   Box,
   Heading,
@@ -21,35 +20,13 @@ import {
   HStack,
   useToast,
 } from '@chakra-ui/react';
-import { gqlClient } from '../lib/graphqlClient';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 
-// Update the query to fetch person_id and nested person info
-const GET_DEALS_QUERY = gql`
-  query GetDeals {
-    deals {
-      id
-      name
-      stage
-      amount
-      created_at
-      updated_at
-      person_id # Renamed from contact_id
-      person {    # Renamed from contact
-        id
-        first_name
-        last_name
-        email
-      }
-    }
-  }
-`;
-
-// Update the Deal interface to include nested person and person_id
-interface DealPerson { // Renamed from DealContact
+// Keep Deal/DealPerson types for component use
+interface DealPerson {
     id: string;
     first_name?: string | null;
     last_name?: string | null;
@@ -63,25 +40,8 @@ interface Deal {
   amount?: number | null;
   created_at: string;
   updated_at: string;
-  person_id?: string | null; // Renamed from contact_id
-  person?: DealPerson | null; // Renamed from contact
-}
-
-// Interface for the expected shape of the query result
-interface GetDealsQueryResult {
-  deals: Deal[];
-}
-
-// Define DELETE_DEAL_MUTATION
-const DELETE_DEAL_MUTATION = gql`
-  mutation DeleteDeal($id: ID!) {
-    deleteDeal(id: $id)
-  }
-`;
-
-// Interface for the expected shape of the delete mutation result
-interface DeleteDealMutationResult {
-  deleteDeal: boolean;
+  person_id?: string | null;
+  person?: DealPerson | null;
 }
 
 function DealsPage() {
@@ -90,7 +50,7 @@ function DealsPage() {
   const loading = useAppStore((state) => state.dealsLoading);
   const error = useAppStore((state) => state.dealsError);
   const fetchDeals = useAppStore((state) => state.fetchDeals);
-  const deleteDealAction = useAppStore((state) => state.deleteDeal); // Renamed action accessor
+  const deleteDealAction = useAppStore((state) => state.deleteDeal);
   
   // --- Local UI State ---
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
@@ -147,16 +107,16 @@ function DealsPage() {
   };
 
   // Helper function to format person name for display
-  const formatPersonName = (person: DealPerson | null | undefined): string => { // Renamed from formatContactName
-    if (!person) return '- '; // No person linked // Renamed variable
+  const formatPersonName = (person: DealPerson | null | undefined): string => {
+    if (!person) return '- ';
     return (
-      person.last_name && person.first_name // Renamed variable
-      ? `${person.last_name}, ${person.first_name}` // Renamed variable
-      : person.first_name // Renamed variable
-      ? person.first_name // Renamed variable
-      : person.last_name // Renamed variable
-      ? person.last_name // Renamed variable
-      : person.email || 'Unnamed Person' // Renamed variable and text
+      person.last_name && person.first_name
+      ? `${person.last_name}, ${person.first_name}`
+      : person.first_name
+      ? person.first_name
+      : person.last_name
+      ? person.last_name
+      : person.email || 'Unnamed Person'
     );
   };
 
@@ -191,13 +151,13 @@ function DealsPage() {
 
       {/* Error state from store */}
       {error && (
-        <Alert status="error" mt={4} mb={4}> {/* Added mb={4} */}
+        <Alert status="error" mt={4} mb={4}>
           <AlertIcon />
           Error loading deals: {error}
         </Alert>
       )}
 
-      {!loading && /* Removed !error check here, show table even if delete failed */ (
+      {!loading && (
         <TableContainer>
           <Table variant='simple' size='sm'>
             <TableCaption>List of current deals</TableCaption>
@@ -226,7 +186,7 @@ function DealsPage() {
                             icon={<EditIcon />}
                             size="sm"
                             onClick={() => handleEditClick(deal)}
-                            isDisabled={!!isDeletingId} // Disable if any delete is in progress
+                            isDisabled={!!isDeletingId}
                         />
                         <IconButton
                             aria-label="Delete deal"
@@ -234,8 +194,8 @@ function DealsPage() {
                             size="sm"
                             colorScheme="red"
                             onClick={() => handleDeleteClick(deal.id)}
-                            isLoading={isDeletingId === deal.id} // Show spinner only on this button
-                            isDisabled={!!isDeletingId && isDeletingId !== deal.id} // Disable others during delete
+                            isLoading={isDeletingId === deal.id}
+                            isDisabled={!!isDeletingId && isDeletingId !== deal.id}
                         />
                     </HStack>
                   </Td>

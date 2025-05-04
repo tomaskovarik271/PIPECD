@@ -170,7 +170,7 @@ interface AppState {
 }
 
 // --- Zustand Store Implementation ---
-export const useAppStore = create<AppState>((set, get) => ({
+export const useAppStore = create<AppState>((set /*, get */) => ({
   // --- Initial state ---
   session: null,
   user: null,
