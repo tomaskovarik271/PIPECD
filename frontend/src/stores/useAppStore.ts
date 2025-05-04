@@ -78,6 +78,28 @@ export interface Stage {
     deal_probability?: number | null;
 }
 
+// Activity Type
+// Define based on GraphQL schema, including potential nested objects if needed by UI
+// For now, keep it relatively flat, matching lib/types.ts initially.
+export interface Activity {
+  id: string; 
+  user_id: string; 
+  created_at: string; 
+  updated_at: string; 
+  type: string; // Consider ActivityType enum if needed client-side
+  subject: string;
+  due_date: string | null; 
+  is_done: boolean;
+  notes: string | null;
+  deal_id: string | null; 
+  person_id: string | null; 
+  organization_id: string | null; 
+  // Add nested Deal/Person/Org if fetched and needed by UI components
+  deal?: { id: string; name: string } | null;
+  person?: { id: string; first_name?: string | null, last_name?: string | null } | null;
+  organization?: { id: string; name: string } | null;
+}
+
 // --- GraphQL Queries/Mutations --- 
 
 // Deals
@@ -300,6 +322,113 @@ const UPDATE_DEAL_MUTATION = gql`
   }
 `;
 
+// Activities
+// Define fields needed by the UI (including nested links for display)
+const GET_ACTIVITIES_QUERY = gql`
+  query GetActivities($filter: ActivityFilterInput) {
+    activities(filter: $filter) {
+      id
+      user_id
+      created_at
+      updated_at
+      type
+      subject
+      due_date
+      is_done
+      notes
+      deal_id
+      person_id
+      organization_id
+      # Include linked objects for display
+      deal {
+        id
+        name
+      }
+      person {
+        id
+        first_name
+        last_name
+      }
+      organization {
+        id
+        name
+      }
+    }
+  }
+`;
+
+const CREATE_ACTIVITY_MUTATION = gql`
+  mutation CreateActivity($input: CreateActivityInput!) {
+    createActivity(input: $input) {
+      # Return the full activity object needed after creation
+      id
+      user_id
+      created_at
+      updated_at
+      type
+      subject
+      due_date
+      is_done
+      notes
+      deal_id
+      person_id
+      organization_id
+      deal {
+        id
+        name
+      }
+      person {
+        id
+        first_name
+        last_name
+      }
+      organization {
+        id
+        name
+      }
+    }
+  }
+`;
+
+const UPDATE_ACTIVITY_MUTATION = gql`
+  mutation UpdateActivity($id: ID!, $input: UpdateActivityInput!) {
+    updateActivity(id: $id, input: $input) {
+      # Return the updated activity object
+      id
+      user_id
+      created_at
+      updated_at
+      type
+      subject
+      due_date
+      is_done
+      notes
+      deal_id
+      person_id
+      organization_id
+      deal {
+        id
+        name
+      }
+      person {
+        id
+        first_name
+        last_name
+      }
+      organization {
+        id
+        name
+      }
+    }
+  }
+`;
+
+const DELETE_ACTIVITY_MUTATION = gql`
+  mutation DeleteActivity($id: ID!) {
+    deleteActivity(id: $id)
+  }
+`;
+
 // --- Result Types ---
 interface GetDealsQueryResult { deals: Deal[]; }
 interface DeleteDealMutationResult { deleteDeal: boolean; }
@@ -323,6 +452,48 @@ interface DeletePipelineMutationResult { deletePipeline: boolean; }
 // TODO: Add other mutation results later if needed
 // interface UpdatePipelineMutationResult { updatePipeline: Pipeline; }
 // ... etc
+
+// --- GQL Result Type Definitions (Add for Activities) ---
+
+// ... existing GQL result types ...
+interface GetActivitiesQueryResult { activities: Activity[]; }
+interface CreateActivityMutationResult { createActivity: Activity; }
+interface UpdateActivityMutationResult { updateActivity: Activity; }
+interface DeleteActivityMutationResult { deleteActivity: string; } // Changed ID! to string
+
+// --- Input Type Definitions (Add for Activities) ---
+
+// ... existing input types ...
+
+export interface CreateActivityInput { // Matches GraphQL input
+  type: string; // Use string for simplicity, map to enum later if needed
+  subject: string;
+  due_date?: string | null;
+  notes?: string | null;
+  is_done?: boolean; 
+  deal_id?: string | null;
+  person_id?: string | null;
+  organization_id?: string | null;
+}
+
+export interface UpdateActivityInput { // Matches GraphQL input
+  type?: string;
+  subject?: string;
+  due_date?: string | null;
+  notes?: string | null;
+  is_done?: boolean;
+  deal_id?: string | null;
+  person_id?: string | null;
+  organization_id?: string | null;
+}
+
+// Add filter type if needed for fetchActivities action
+export interface ActivityFilterInput {
+  dealId?: string;
+  personId?: string;
+  organizationId?: string;
+  isDone?: boolean;
+}
 
 // --- App State Interface ---
 interface AppState {
@@ -376,6 +547,15 @@ interface AppState {
   // Deal Actions
   createDeal: (input: CreateDealInput) => Promise<Deal | null>;
   updateDeal: (id: string, input: UpdateDealInput) => Promise<Deal | null>;
+
+  // Activities
+  activities: Activity[];
+  activitiesLoading: boolean;
+  activitiesError: string | null;
+  fetchActivities: (filter?: ActivityFilterInput) => Promise<void>; // Add optional filter
+  createActivity: (input: CreateActivityInput) => Promise<Activity | null>;
+  updateActivity: (id: string, input: UpdateActivityInput) => Promise<Activity | null>;
+  deleteActivity: (id: string) => Promise<boolean>;
 }
 
 // Define types for Stage create/update inputs
@@ -437,6 +617,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   stagesLoading: false,
   stagesError: null,
   selectedPipelineId: null, // Initialize
+  activities: [],
+  activitiesLoading: false,
+  activitiesError: null,
 
   // --- Actions ---
   
@@ -947,6 +1130,160 @@ export const useAppStore = create<AppState>((set, get) => ({
             const errorMsg = error.response?.errors?.[0]?.message || error.message || 'Failed to update deal';
             set({ dealsLoading: false, dealsError: errorMsg });
             return null;
+        }
+    },
+
+    // Activities
+    fetchActivities: async (filter?: ActivityFilterInput) => {
+        set({ activitiesLoading: true, activitiesError: null });
+        try {
+            const session = get().session;
+            if (!session) throw new Error("Not authenticated");
+
+            const data = await gqlClient.request<GetActivitiesQueryResult>(
+                GET_ACTIVITIES_QUERY,
+                { filter },
+                { Authorization: `Bearer ${session.access_token}` }
+            );
+            set({ activities: data.activities, activitiesLoading: false });
+        } catch (err: any) {
+            console.error("Error fetching activities:", err);
+            const gqlError = err.response?.errors?.[0]?.message;
+            const errorMsg = gqlError || err.message || 'Failed to fetch activities';
+            set({ activitiesError: errorMsg, activitiesLoading: false, activities: [] }); // Clear activities on error
+        }
+    },
+
+    createActivity: async (input: CreateActivityInput): Promise<Activity | null> => {
+        try {
+          const session = get().session;
+          if (!session) throw new Error("Not authenticated");
+
+          const data = await gqlClient.request<CreateActivityMutationResult>(
+            CREATE_ACTIVITY_MUTATION,
+            { input },
+            { Authorization: `Bearer ${session.access_token}` }
+          );
+          const newActivity = data.createActivity;
+          if (newActivity) {
+            set((state) => ({
+              activities: [...state.activities, newActivity].sort((a, b) => { 
+                // Corrected sort logic
+                const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+                const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+                if (aDate !== bDate) return aDate - bDate;
+                // Sort by created_at descending if due dates are equal/null
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); 
+              }),
+              activitiesError: null 
+            }));
+            return newActivity;
+          } else {
+            throw new Error('Create activity mutation did not return an activity.');
+          }
+        } catch (err: any) {
+          console.error("Error creating activity:", err);
+          const gqlError = err.response?.errors?.[0]?.message;
+          const errorMsg = gqlError || err.message || 'Failed to create activity';
+          set({ activitiesError: errorMsg });
+          return null;
+        }
+    },
+
+    updateActivity: async (id: string, input: UpdateActivityInput): Promise<Activity | null> => {
+        const originalActivities = get().activities;
+        const originalActivity = originalActivities.find(a => a.id === id);
+        let optimisticActivity = null;
+
+        // Optimistic update
+        if (originalActivity) {
+            optimisticActivity = { ...originalActivity, ...input }; // Store optimistic version
+            set(state => ({
+                activities: state.activities.map(a => (a.id === id ? optimisticActivity! : a))
+                               .sort((a, b) => { // Corrected sort logic
+                                    const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+                                    const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+                                    if (aDate !== bDate) return aDate - bDate;
+                                    // Sort by created_at descending if due dates are equal/null
+                                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); 
+                                }),
+                activitiesError: null // Clear error during attempt
+            }));
+        } else {
+             console.warn(`Activity ${id} not found for optimistic update.`);
+             // If not found locally, we probably can't update anyway, but let the mutation try
+        }
+
+        try {
+          const session = get().session;
+          if (!session) throw new Error("Not authenticated");
+
+          const data = await gqlClient.request<UpdateActivityMutationResult>(
+            UPDATE_ACTIVITY_MUTATION,
+            { id, input },
+            { Authorization: `Bearer ${session.access_token}` }
+          );
+          const updatedActivity = data.updateActivity;
+          if (updatedActivity) {
+            // Replace optimistic update with actual data (even if optimistic didn't run)
+            set((state) => ({
+              activities: state.activities.map(a => a.id === id ? updatedActivity : a)
+                             .sort((a, b) => { // Corrected sort logic
+                                    const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+                                    const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+                                    if (aDate !== bDate) return aDate - bDate;
+                                    // Sort by created_at descending if due dates are equal/null
+                                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); 
+                                }),
+              activitiesError: null
+            }));
+            return updatedActivity;
+          } else {
+            // This case implies the mutation succeeded but returned null - treat as error
+            throw new Error("Update activity mutation returned null");
+          }
+        } catch (err: any) {
+          console.error(`Error updating activity ${id}:`, err);
+          const gqlError = err.response?.errors?.[0]?.message;
+          const errorMsg = gqlError || err.message || 'Failed to update activity';
+          // Revert optimistic update on error only if optimistic update occurred
+          if (optimisticActivity) {
+              set({ activities: originalActivities, activitiesError: errorMsg });
+          } else {
+              // If no optimistic update, just set the error
+              set({ activitiesError: errorMsg });
+          }
+          return null; // Ensure return null on error
+        }
+    },
+
+    deleteActivity: async (id: string): Promise<boolean> => {
+        const originalActivities = get().activities;
+        // Optimistic update: remove the activity immediately
+        set(state => ({
+          activities: state.activities.filter(a => a.id !== id),
+          activitiesError: null // Clear error during attempt
+        }));
+
+        try {
+          const session = get().session;
+          if (!session) throw new Error("Not authenticated");
+
+          await gqlClient.request<DeleteActivityMutationResult>(
+            DELETE_ACTIVITY_MUTATION,
+            { id },
+            { Authorization: `Bearer ${session.access_token}` }
+          );
+
+          // Success: Optimistic update holds, ensure error state is clear
+          set({ activitiesError: null });
+          return true;
+        } catch (error: any) {
+          console.error(`Error deleting activity ${id}:`, error);
+          const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to delete activity ${id}`;
+          // Revert optimistic update on error
+          set({ activities: originalActivities, activitiesError: errorMessage });
+          return false;
         }
     },
 

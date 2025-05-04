@@ -1,74 +1,62 @@
-import type { HandlerEvent, HandlerContext } from '@netlify/functions';
-import type { User } from '@supabase/supabase-js';
+import { YogaInitialContext } from 'graphql-yoga';
+import { SupabaseClient, User, createClient } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 import { ZodError } from 'zod';
 
-// Define and export GraphQL Context type
-export type GraphQLContext = {
+// Environment variables (ensure they are loaded, e.g., via netlify dev)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase URL or Anon Key is missing from environment variables.');
+}
+
+// Define context extending Yoga's base
+export interface GraphQLContext extends YogaInitialContext {
   currentUser: User | null;
-  request: Request;
-  event: HandlerEvent;
-  context: HandlerContext;
-};
+  token: string | null;
+  request: Request; // Made non-optional to match YogaInitialContext
+  // Add other potential context fields if needed (e.g., event, context from Netlify func?)
+}
 
-// Helper to get token from context (or request headers)
-// Exported for potential use elsewhere, though requireAuthentication uses it locally.
+/**
+ * Middleware or helper to extract JWT from Authorization header.
+ */
 export function getAccessToken(context: GraphQLContext): string | null {
-  const authHeader = context.request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    return authHeader.substring(7);
-  }
-  return null;
+    return context.token;
 }
 
-// Helper function to process ZodErrors into GraphQLErrors
-export function processZodError(error: unknown, action: string): GraphQLError {
+/**
+ * Checks if the user is authenticated. Throws GraphQLError if not.
+ */
+export function requireAuthentication(context: GraphQLContext): void {
+  if (!context.currentUser || !context.token) {
+    throw new GraphQLError('Authentication required', { extensions: { code: 'UNAUTHENTICATED' } });
+  }
+}
+
+/**
+ * Processes Zod validation errors and other errors into a GraphQLError.
+ */
+export function processZodError(error: unknown, actionDescription: string): GraphQLError {
+  console.error(`Error during ${actionDescription}:`, error); 
+
   if (error instanceof ZodError) {
-    console.error(`Zod validation error during ${action}:`, error.errors);
-    const message = error.errors.map(e => `${e.path.join('.') || 'input'}: ${e.message}`).join(', ');
-    return new GraphQLError(`Validation Error: ${message}`, {
-      extensions: {
-        code: 'BAD_USER_INPUT',
-        zodErrors: error.errors
-      }
+    // Combine Zod issues into a single message
+    const message = `Input validation failed: ${error.errors.map(e => `${e.path.join('.')} (${e.message})`).join(', ')}`;
+    return new GraphQLError(message, {
+      originalError: error,
+      extensions: { code: 'BAD_USER_INPUT', validationErrors: error.flatten() },
     });
   }
-
   if (error instanceof GraphQLError) {
-    console.error(`GraphQLError during ${action}:`, error.message, error.extensions?.originalError);
-    if (error.message.startsWith('An unexpected error occurred')) {
-        return error;
-    }
-    // Return existing GraphQLErrors as they might be already processed
-    return error;
+      // If it's already a GraphQLError (e.g., from handleSupabaseError or auth), re-throw it
+      return error;
   }
-
-  // Handle generic Errors or other unknown throwables
-  console.error(`Unexpected error during ${action}:`, error);
-  const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-  return new GraphQLError(`An unexpected error occurred during ${action}.`, {
-      extensions: {
-          code: 'INTERNAL_SERVER_ERROR',
-          originalError: errorMessage
-      }
+  
+  // Handle other unexpected errors
+  return new GraphQLError(`An unexpected error occurred while ${actionDescription}.`, {
+    originalError: error instanceof Error ? error : undefined,
+    extensions: { code: 'INTERNAL_SERVER_ERROR' },
   });
-}
-
-// Helper function for authentication check
-export function requireAuthentication(context: GraphQLContext): string /* Returns access token */ {
-  if (!context.currentUser) {
-    console.warn('Authentication required but currentUser is null.');
-    throw new GraphQLError('Not authenticated', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  // Use the local getAccessToken function defined above
-  const token = getAccessToken(context);
-  if (!token) {
-    console.error('Authentication check passed (currentUser exists), but failed to extract token.');
-    throw new GraphQLError('Authentication token is missing or invalid.', {
-      extensions: { code: 'UNAUTHENTICATED' },
-    });
-  }
-  return token;
 } 

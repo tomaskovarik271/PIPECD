@@ -12,6 +12,7 @@ import { GraphQLError } from 'graphql';
  * @throws Error if SUPABASE_URL or SUPABASE_ANON_KEY are not set.
  */
 export function getAuthenticatedClient(accessToken: string): SupabaseClient {
+  console.log('[getAuthenticatedClient] AccessToken:', accessToken); // DEBUG LOG
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 

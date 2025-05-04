@@ -25,6 +25,7 @@ The system utilizes a serverless architecture based on:
 *   Full CRUD implemented for **People**, **Organizations**, **Deals**, **Pipelines**, and **Stages** (Backend services, GraphQL API, Frontend Zustand store, Frontend UI Pages/Modals).
 *   Backend service layer refactored with shared utilities (`lib/serviceUtils.ts`).
 *   GraphQL API layer refactored: Resolvers moved into modular files (`netlify/functions/graphql/resolvers/`).
+*   Full CRUD implemented for **Activities** (Backend service, GraphQL API, Frontend Zustand store, Frontend UI Page/Modals).
 *   Inngest event sending implemented for Person & Deal creation (simple logging handlers).
 *   Basic UI (Chakra UI) implemented for Auth and all core CRUD entities.
 *   Unit/Integration tests implemented for backend services (`lib/`).

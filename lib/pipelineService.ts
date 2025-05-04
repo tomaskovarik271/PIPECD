@@ -27,6 +27,7 @@ export type UpdatePipelineInput = Partial<Pick<Pipeline, 'name'>>;
  * @returns A promise that resolves to an array of Pipelines.
  */
 export async function getPipelines(accessToken: string): Promise<Pipeline[]> {
+    console.log('[pipelineService.getPipelines] AccessToken:', accessToken); // DEBUG LOG
     const supabase = getAuthenticatedClient(accessToken);
     const { data, error } = await supabase
         .from('pipelines')

@@ -28,12 +28,18 @@ import {
 } from './graphql/validators'; // Consider moving validator imports to respective resolver files
 
 // Import Resolver Modules
-import { Query } from './graphql/resolvers/query';
-import { Mutation } from './graphql/resolvers/mutation';
+import { Query as BaseQuery } from './graphql/resolvers/query';
+import { Mutation as BaseMutation } from './graphql/resolvers/mutation';
 import { Person } from './graphql/resolvers/person';
 import { Deal } from './graphql/resolvers/deal';
 import { Organization } from './graphql/resolvers/organization';
 import { Stage } from './graphql/resolvers/stage';
+// Import Activity resolvers (using aliases for Query/Mutation)
+import {
+  Activity,
+  Query as ActivityQuery,
+  Mutation as ActivityMutation
+} from './graphql/resolvers/activity';
 
 // --- Load Schema from Files ---
 const loadTypeDefs = (): string => {
@@ -60,12 +66,22 @@ export type { GraphQLContext };
 
 // Export combined resolvers object
 export const resolvers = {
-  Query,
-  Mutation,
+  // Merge Query fields from base and activity resolvers
+  Query: {
+    ...BaseQuery,
+    ...ActivityQuery,
+  },
+  // Merge Mutation fields from base and activity resolvers
+  Mutation: {
+    ...BaseMutation,
+    ...ActivityMutation,
+  },
+  // Include type resolvers
   Person,
   Deal,
   Organization,
   Stage,
+  Activity, // Add Activity type resolver
 }; 
 
 // Create the Yoga instance
@@ -77,37 +93,33 @@ const yoga = createYoga<GraphQLContext>({
   // Define the context factory
   context: async (initialContext): Promise<GraphQLContext> => {
     let currentUser: User | null = null;
-    // Use getAccessToken helper from './graphql/helpers'
-    const token = getAccessToken({ 
-        request: initialContext.request, 
-        event: initialContext.event as HandlerEvent, 
-        context: initialContext.context as HandlerContext, 
-        currentUser: null // Placeholder, will be replaced
-    });
+    let token: string | null = null;
+    
+    // Extract token from Authorization header (common pattern)
+    const authHeader = initialContext.request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
 
     if (token) {
       try {
         const { data: { user }, error } = await supabase.auth.getUser(token);
         if (error) {
-          // Consider more robust error handling or logging
           console.warn('Error fetching user from token:', error.message);
         } else {
           currentUser = user;
         }
       } catch (err) {
         console.error('Unexpected error during supabase.auth.getUser:', err);
-        // Potentially throw or handle this error more gracefully
       }
     }
 
     // Return the context object for GraphQL resolvers
+    // Spread initialContext to include base Yoga properties like request
     return {
+      ...initialContext, 
       currentUser,
-      event: initialContext.event as HandlerEvent,
-      context: initialContext.context as HandlerContext,
-      request: initialContext.request,
-      // Optionally include inngest client if needed globally
-      // inngest, 
+      token,
     };
   },
   graphqlEndpoint: '/.netlify/functions/graphql',
@@ -118,16 +130,16 @@ const yoga = createYoga<GraphQLContext>({
 // Netlify Function handler
 export const handler: Handler = async (event, context) => {
   try {
+    // Construct a URL object for yoga.fetch
+    const url = new URL(event.path, `http://${event.headers.host || 'localhost'}`);
+
   const response = await yoga.fetch(
-      // Ensure the path is correctly passed for Yoga routing
-    event.path, 
+      url, // Pass the URL object directly
     {
       method: event.httpMethod,
       headers: event.headers as HeadersInit,
       body: event.body ? Buffer.from(event.body, event.isBase64Encoded ? 'base64' : 'utf8') : undefined,
-    },
-      // Pass Netlify context and event for use in the Yoga context factory
-    { event, context }
+      }
   );
 
     // Convert Fetch API Response back to Netlify Handler Response format
@@ -143,11 +155,11 @@ export const handler: Handler = async (event, context) => {
       isBase64Encoded: false, // Assuming text response
     };
   } catch (error) {
-      console.error("Error in GraphQL handler:", error);
-      return {
-          statusCode: 500,
-          body: JSON.stringify({ message: "Internal Server Error" }),
-          headers: { "Content-Type": "application/json" },
-      };
+    console.error("Error in GraphQL handler:", error);
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: "Internal Server Error" }),
+      headers: { "Content-Type": "application/json" },
+    };
   }
 }; 

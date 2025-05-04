@@ -9,6 +9,7 @@ import PeoplePage from './pages/PeoplePage';
 import OrganizationsPage from './pages/OrganizationsPage'; 
 import PipelinesPage from './pages/PipelinesPage'; // Import the new page
 import StagesPage from './pages/StagesPage'; // Import the Stages page
+import ActivitiesPage from './pages/ActivitiesPage'; // Import the new Activities page
 import { 
   Box, 
   Heading, 
@@ -49,6 +50,7 @@ function AppContent() {
           <Route path="/organizations" element={<OrganizationsPage />} />
           <Route path="/pipelines" element={<PipelinesPage />} /> {/* Add route for pipelines */}
           <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} /> {/* Add route for stages */}
+          <Route path="/activities" element={<ActivitiesPage />} /> {/* Add route for activities */}
           <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
           </Routes>
     </Box>
@@ -135,7 +137,8 @@ function TempNav() {
                     <Link as={RouterLink} to="/people">People</Link>
                     <Link as={RouterLink} to="/deals">Deals</Link>
                     <Link as={RouterLink} to="/organizations">Organizations</Link>
-                    <Link as={RouterLink} to="/pipelines">Pipelines</Link> {/* Add link for pipelines */}
+                    <Link as={RouterLink} to="/pipelines">Pipelines</Link>
+                    <Link as={RouterLink} to="/activities">Activities</Link> {/* Add link for activities */}
                 </HStack>
                 <Button 
                   size="sm" 

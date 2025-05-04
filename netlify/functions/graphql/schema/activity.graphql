@@ -1,0 +1,89 @@
+"""
+Defines the GraphQL schema for Activities.
+"""
+
+enum ActivityType {
+  TASK
+  MEETING
+  CALL
+  EMAIL
+  DEADLINE
+  # Add other common types like LUNCH if needed
+}
+
+type Activity {
+  id: ID!
+  user_id: ID! # Included for potential direct filtering/reference
+  created_at: DateTime!
+  updated_at: DateTime!
+  type: ActivityType!
+  subject: String!
+  due_date: DateTime # Nullable ISO 8601 DateTime string
+  is_done: Boolean!
+  notes: String
+
+  # Linked Objects (Resolved)
+  deal: Deal
+  person: Person
+  organization: Organization
+
+  # Linked Object IDs (Directly from DB - useful sometimes)
+  deal_id: ID
+  person_id: ID
+  organization_id: ID
+}
+
+input CreateActivityInput {
+  type: ActivityType!
+  subject: String!
+  due_date: DateTime
+  notes: String
+  is_done: Boolean # Default: false
+
+  # Links (Validation requires at least one)
+  deal_id: ID
+  person_id: ID
+  organization_id: ID
+}
+
+input UpdateActivityInput {
+  type: ActivityType
+  subject: String
+  due_date: DateTime
+  notes: String # Use null to clear notes if desired
+  is_done: Boolean
+
+  # Links (Allow changing/setting to null)
+  deal_id: ID
+  person_id: ID
+  organization_id: ID
+}
+
+input ActivityFilterInput {
+  dealId: ID
+  personId: ID
+  organizationId: ID
+  isDone: Boolean
+  # Potential future filters: date range (dueDateFrom, dueDateTo), type
+}
+
+# Extend Query and Mutation types defined elsewhere
+
+type Query {
+  # Fetches activities based on optional filters.
+  activities(filter: ActivityFilterInput): [Activity!]!
+  
+  # Fetches a single activity by ID.
+  activity(id: ID!): Activity # Returns null or Activity
+}
+
+type Mutation {
+  # Creates a new activity.
+  createActivity(input: CreateActivityInput!): Activity!
+
+  # Updates an existing activity.
+  updateActivity(id: ID!, input: UpdateActivityInput!): Activity!
+
+  # Deletes an activity.
+  deleteActivity(id: ID!): ID! # Returns the ID of the deleted activity
+} 

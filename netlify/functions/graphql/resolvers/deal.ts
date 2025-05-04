@@ -35,7 +35,9 @@ export const Deal = {
             console.error(`Deal ${parent.id} is missing stage_id.`);
             throw new GraphQLError('Internal Error: Deal is missing stage information.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
         }
-        const accessToken = requireAuthentication(context); // Ensure user is authenticated
+        requireAuthentication(context); // Check first
+        const accessToken = getAccessToken(context)!; // Then get token
+        
         try {
             // Assuming stageService has a method like getStageById
             // Note: Stage RLS might need checking if it's not implicitly handled by user_id on pipeline

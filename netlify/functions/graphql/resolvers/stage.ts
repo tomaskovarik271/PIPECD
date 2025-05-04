@@ -1,11 +1,13 @@
 import type { GraphQLContext } from '../helpers';
-import { requireAuthentication, processZodError } from '../helpers';
+import { requireAuthentication, processZodError, getAccessToken } from '../helpers';
 import { GraphQLError } from 'graphql';
 import * as pipelineService from '../../../../lib/pipelineService';
 
 export const Stage = {
   pipeline: async (parent: { pipeline_id: string }, _args: unknown, context: GraphQLContext) => {
-    const accessToken = requireAuthentication(context);
+    requireAuthentication(context); // Check auth first
+    const accessToken = getAccessToken(context)!; // Then get token
+    
     try {
       // Fetch the pipeline using the pipeline_id from the parent Stage object
       const pipeline = await pipelineService.getPipelineById(accessToken, parent.pipeline_id);
@@ -14,7 +16,7 @@ export const Stage = {
          // but handle it defensively.
          console.error(`Pipeline ${parent.pipeline_id} not found for stage.`);
          throw new GraphQLError(`Pipeline associated with this stage not found.`, { extensions: { code: 'NOT_FOUND' } });
-}
+      }
       return pipeline;
     } catch (e) {
       // Log and re-throw errors, processing them consistently

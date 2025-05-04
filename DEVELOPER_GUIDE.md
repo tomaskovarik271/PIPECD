@@ -172,6 +172,12 @@ PIPECD/
     *   **GraphQL:** Schema (`pipeline.graphql`, `stage.graphql`) defines types, inputs, queries, mutations. Resolvers implemented in `resolvers/` directory.
     *   **Frontend Store:** `useAppStore.ts` includes state (`pipelines`, `stages`, `selectedPipelineId`, loading/error states) and actions (`fetchPipelines`, `fetchStages`, CRUD operations) calling the GraphQL API.
     *   **Frontend UI:** `PipelinesPage.tsx` and `StagesPage.tsx` display data. Modals in `components/pipelines/` and `components/stages/` handle create/edit/delete operations.
+*   **Activities:**
+    *   **Database:** `activities` table defined in migrations, with columns for type, subject, due date, notes, status, and optional FKs to `deals`, `persons`, `organizations`.
+    *   **Backend:** `activityService.ts` in `/lib` handles CRUD logic.
+    *   **GraphQL:** Schema (`activity.graphql`) defines `Activity` type, inputs (`CreateActivityInput`, `UpdateActivityInput`, `ActivityFilterInput`), queries (`activities`, `activity`), and mutations (`createActivity`, `updateActivity`, `deleteActivity`). `Deal`, `Person`, `Organization` types updated to include `activities` field. Resolvers implemented in `resolvers/activity.ts`. Input validation using Zod in `validators.ts`.
+    *   **Frontend Store:** `useAppStore.ts` includes state (`activities`, loading/error states) and actions (`fetchActivities`, `createActivity`, `updateActivity`, `deleteActivity`) calling the GraphQL API. Includes optimistic updates for create/update/delete.
+    *   **Frontend UI:** `ActivitiesPage.tsx` displays a list of activities. `ActivityListItem.tsx` renders individual activities with toggle done/delete actions. Modals (`CreateActivityModal`, `EditActivityModal`) wrapping forms (`CreateActivityForm`, `EditActivityForm`) in `components/activities/` handle create/edit operations.
 *   **Inngest:**
     *   Event sending in GraphQL mutations.
     *   Event handling definitions in `inngest.ts`.

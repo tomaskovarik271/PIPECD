@@ -206,7 +206,8 @@ export const Mutation = {
     createDeal: async (_parent: unknown, args: { input: any }, context: GraphQLContext): Promise<any> => {
       const action = 'creating deal';
       try {
-          const accessToken = requireAuthentication(context);
+          requireAuthentication(context); // Check auth first
+          const accessToken = getAccessToken(context)!; // Then get token
           // Validate input using Zod
           const validatedInput = DealCreateSchema.parse(args.input); // Uses updated schema
           // Call service with validated input
@@ -225,7 +226,8 @@ export const Mutation = {
     updateDeal: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext): Promise<any> => {
       const action = 'updating deal';
       try {
-          const accessToken = requireAuthentication(context);
+          requireAuthentication(context); // Check auth first
+          const accessToken = getAccessToken(context)!; // Then get token
           // Validate input using Zod
           const validatedInput = DealUpdateSchema.parse(args.input); // Uses updated schema
           // Ensure at least one field is provided
@@ -275,40 +277,45 @@ export const Mutation = {
     },
     // Pipeline Mutations
     createPipeline: async (_parent: unknown, { input }: { input: pipelineService.CreatePipelineInput }, context: GraphQLContext) => {
-        const accessToken = requireAuthentication(context);
         const action = 'creating pipeline';
         try {
+            requireAuthentication(context); // Check auth first
+            const accessToken = getAccessToken(context)!; // Then get token
             const validatedInput = PipelineInputSchema.parse(input);
             const pipeline = await pipelineService.createPipeline(accessToken, validatedInput);
             return pipeline;
         } catch (error) { throw processZodError(error, action); }
     },
     updatePipeline: async (_parent: unknown, { id, input }: { id: string; input: pipelineService.UpdatePipelineInput }, context: GraphQLContext) => {
-        const accessToken = requireAuthentication(context);
         const action = 'updating pipeline';
         if (!input || Object.keys(input).length === 0) {
             throw new GraphQLError("Update input cannot be empty", { extensions: { code: 'BAD_USER_INPUT' } });
         }
         try {
+            requireAuthentication(context);
+            const accessToken = getAccessToken(context)!;
             const validatedInput = PipelineInputSchema.parse(input);
             const pipeline = await pipelineService.updatePipeline(accessToken, id, validatedInput);
             return pipeline;
         } catch (error) { throw processZodError(error, action); }
     },
     deletePipeline: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
-        const accessToken = requireAuthentication(context);
         const action = 'deleting pipeline';
         try {
+            requireAuthentication(context);
+            const accessToken = getAccessToken(context)!;
             const success = await pipelineService.deletePipeline(accessToken, id);
             return success;
         } catch (error) { throw processZodError(error, action); }
     },
      // Stage Mutations
     createStage: async (_parent: unknown, { input }: { input: stageService.CreateStageInput }, context: GraphQLContext) => {
-        const accessToken = requireAuthentication(context);
         const action = 'creating stage';
         try {
+            requireAuthentication(context);
+            const accessToken = getAccessToken(context)!;
             const validatedInput = StageCreateSchema.parse(input);
+            // Check pipeline access *before* creating stage
             const pipeline = await pipelineService.getPipelineById(accessToken, validatedInput.pipeline_id);
             if (!pipeline) {
                  throw new GraphQLError(`Pipeline with id ${validatedInput.pipeline_id} not found or not accessible.`, { extensions: { code: 'BAD_USER_INPUT' } });
@@ -318,21 +325,27 @@ export const Mutation = {
         } catch (error) { throw processZodError(error, action); }
     },
     updateStage: async (_parent: unknown, { id, input }: { id: string; input: stageService.UpdateStageInput }, context: GraphQLContext) => {
-        const accessToken = requireAuthentication(context);
         const action = 'updating stage';
         if (!input || Object.keys(input).length === 0) {
             throw new GraphQLError("Update input cannot be empty", { extensions: { code: 'BAD_USER_INPUT' } });
         }
         try {
+            requireAuthentication(context);
+            const accessToken = getAccessToken(context)!;
             const validatedInput = StageUpdateSchema.parse(input);
+            // We might want to check if the stage exists and belongs to the user first?
+            // stageService.updateStage should handle this via RLS check based on pipeline ownership implicitly
             const stage = await stageService.updateStage(accessToken, id, validatedInput);
             return stage;
         } catch (error) { throw processZodError(error, action); }
     },
     deleteStage: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
-        const accessToken = requireAuthentication(context);
         const action = 'deleting stage';
         try {
+            requireAuthentication(context);
+            const accessToken = getAccessToken(context)!;
+            // We might want to check if the stage exists and belongs to the user first?
+            // stageService.deleteStage should handle this via RLS check based on pipeline ownership implicitly
             const success = await stageService.deleteStage(accessToken, id);
             return success;
         } catch (error) { throw processZodError(error, action); }

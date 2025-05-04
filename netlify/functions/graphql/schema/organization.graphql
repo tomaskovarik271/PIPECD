@@ -1,3 +1,7 @@
+"""
+Defines the Organization type and related queries/mutations.
+"""
+
 type Organization {
     id: ID!
     created_at: DateTime!
@@ -7,6 +11,8 @@ type Organization {
     address: String
     notes: String
     people: [Person!] # People belonging to this organization
+    deals: [Deal!]! # List of associated deals
+    activities: [Activity!]! # ADDED list of related activities
 }
 
 input OrganizationInput {

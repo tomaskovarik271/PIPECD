@@ -9,6 +9,7 @@ type Deal {
   amount: Float
   person_id: ID # FK referencing people table (Renamed from contact_id)
   person: Person # Associated person (updated from contact)
+  activities: [Activity!]! # ADDED list of related activities
 }
 
 input DealInput {

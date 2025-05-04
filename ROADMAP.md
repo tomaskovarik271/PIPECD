@@ -21,7 +21,7 @@ This document outlines the development roadmap for the custom CRM system, based 
 
 ## Phase 1: Core Architecture Implementation (Completed)
 
-*   [-] **Backend (`/lib`, Netlify Functions):**
+*   [x] **Backend (`/lib`, Netlify Functions):**
     *   [x] Implement Basic GraphQL Gateway (Netlify Function `/graphql` with **GraphQL Yoga**)
         *   [x] Basic schema definition
         *   [x] Health check query
@@ -30,12 +30,12 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Establish `/lib` structure for backend logic modules.
     *   [x] Setup Supabase Client library and configuration.
     *   [x] Implement basic Supabase connection test from a logic module.
-*   [-] **Frontend (React/Vite):**
+*   [x] **Frontend (React/Vite):**
     *   [x] Initialize React project using Vite (`frontend/` directory).
     *   [x] Setup Basic Routing.
     *   [x] Setup GraphQL Client (e.g., `graphql-request`).
     *   [x] Implement basic connection test to GraphQL Gateway.
-*   [-] **Authentication:**
+*   [x] **Authentication:**
     *   [x] Integrate Supabase Auth on the Frontend (Login/Signup UI).
     *   [x] Implement JWT verification in the GraphQL Gateway.
     *   [x] Pass user context from Gateway to Backend Logic modules.
@@ -44,28 +44,29 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Setup environment variables (local `.env`, Netlify UI).
     *   [x] Add `.env` to the project's root `.gitignore` file. (Note: Already present and correctly configured).
     *   [x] Review `tsconfig.json` - enable/enforce `strict`, `noUnusedLocals`, `noUnusedParameters`, `noImplicitAny`. Address any resulting TypeScript errors.
+    *   [x] Update frontend build command (`package.json`) to fix build issues.
     *   [ ] Clarify project structure: Decide if it's a monorepo (configure workspaces) or separate projects (ensure clear separation). For now, assume separate `frontend` and `netlify/functions` + `lib` backend structure.
 
 ## Phase 2: MVP Feature Development (Core CRUD - Completed)
 
 *   *(Initial MVP focused on basic Contact and Deal CRUD)*
-*   [-] **Database Schema:**
+*   [x] **Database Schema:**
     *   [x] Define initial Supabase schema (basic `contacts`, `deals`).
     *   [x] Create initial Supabase Migrations.
     *   [x] Define initial Row Level Security (RLS) policies (owner-only access).
-*   [-] **Backend Logic (`/lib`):**
+*   [x] **Backend Logic (`/lib`):**
     *   [x] Implement logic for basic CRUD operations for **Contacts**.
     *   [x] Implement logic for basic CRUD operations for **Deals**.
-*   [-] **GraphQL API (Gateway):**
+*   [x] **GraphQL API (Gateway):**
     *   [x] Define GraphQL schema/resolvers for basic **Contacts** CRUD.
     *   [x] Implement basic input validation (Zod) for **Contacts**.
     *   [x] Define GraphQL schema/resolvers for basic **Deals** CRUD.
     *   [x] Implement input validation (Zod) for **Deals**.
-*   [-] **Frontend (UI):**
+*   [x] **Frontend (UI):**
     *   [x] Build UI components (Chakra UI) for **Contacts CRUD**.
     *   [x] Integrate UI with GraphQL API for **Contacts**.
     *   [x] Build UI components/integration for **Deals CRUD**.
-*   [-] **Async Workflows (Inngest):**
+*   [x] **Async Workflows (Inngest):**
     *   [x] Define and send events from Gateway/Logic (`crm/contact.created`, `crm/deal.created`).
     *   [x] Implement basic logging logic in the Inngest Handler (`logContactCreation`, `logDealCreation`).
 
@@ -95,22 +96,27 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [-] **Testing Strategy Implementation:**
     *   [x] Setup Testing Framework (Vitest & Playwright setup).
     *   [x] Write Integration tests for critical GraphQL Resolvers (Basic coverage complete).
-    *   [x] Write Unit tests for key Backend Logic modules (`personService`, `dealService`, `organizationService`).
-    *   [-] Write Unit/Integration tests for key Frontend components: 
-        *   [x] `DealsPage.tsx` (initial render, loading, error, data display)
-        *   [ ] `PeoplePage.tsx` (needs creation/update)
-        *   [ ] `OrganizationsPage.tsx` (needs creation)
-        *   [ ] `CreateDealModal.tsx`
-        *   [ ] `EditDealModal.tsx`
-        *   [ ] `CreatePersonForm.tsx`
-        *   [ ] `EditPersonForm.tsx`
-        *   [ ] `CreateOrganizationModal.tsx`
-        *   [ ] `EditOrganizationModal.tsx`
+    *   [x] Write Unit tests for key Backend Logic modules (`personService`, `dealService`, `organizationService`, `pipelineService`, `stageService`).
+    *   [-] Write Unit/Integration tests for key Frontend code: 
+        *   [x] `useAppStore.ts` (Fetch/Delete/Pipeline CRUD Actions)
+        *   [ ] `useAppStore.ts` (Stage/Deal CRUD Actions)
+        *   [ ] `useAppStore.ts` (Person/Org CRUD Actions)
+        *   [ ] `DealsPage.tsx` (Needs update/creation)
+        *   [ ] `PeoplePage.tsx` (Needs creation/update)
+        *   [ ] `OrganizationsPage.tsx` (Needs creation)
+        *   [ ] `PipelinesPage.tsx` (Needs creation)
+        *   [ ] `StagesPage.tsx` (Needs creation)
+        *   [ ] `CreateDealModal.tsx` / `EditDealModal.tsx`
+        *   [ ] `CreatePersonForm.tsx` / `EditPersonForm.tsx`
+        *   [ ] `CreateOrganizationModal.tsx` / `EditOrganizationModal.tsx`
+        *   [ ] `CreatePipelineModal.tsx` / `EditPipelineModal.tsx`
+        *   [ ] `CreateStageModal.tsx` / `EditStageModal.tsx`
     *   [-] Write core E2E tests for user flows:
         *   [x] Basic Auth Flow (Login)
         *   [x] People CRUD Flow (Basic navigation/creation check via current tests)
         *   [x] Deals CRUD Flow (Basic navigation/creation check via current tests)
         *   [x] Organization CRUD Flow (Basic navigation/creation check via current tests)
+        *   [x] Pipeline/Stage CRUD Flow (Needs creation)
         *   [ ] Basic Auth Flow (Signup - Needs test)
 *   [-] **CI/CD:**
     *   [x] Configure Netlify Build pipeline (Basic setup done).
@@ -131,10 +137,11 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   *(Features to implement after Contact Model Enhancement)*
 *   [ ] **Lead Management:** Implement dedicated Lead entity, service, API, UI, and conversion logic.
 *   [ ] **Activity Management:** Expand beyond basic logging (Calls, Meetings, linking, completion tracking).
-*   [-] **Pipeline Management:** Implement customizable pipelines and stages.
+*   [x] **Pipeline Management:** Implement customizable pipelines and stages.
     *   [x] Define `pipelines` and `stages` database schema.
     *   [x] Create Supabase migration for schema changes.
-    *   [x] Implement `pipelineService.ts` (CRUD for Pipelines and Stages).
+    *   [x] Implement `pipelineService.ts` (CRUD for Pipelines).
+    *   [x] Implement `stageService.ts` (CRUD for Stages).
     *   [x] Define GraphQL schema/resolvers for Pipelines/Stages.
     *   [x] Build UI components/integration for Pipelines/Stages.
     *   [x] Update `deals` table/service/API/UI to link to `stages`.
@@ -182,12 +189,12 @@ This document outlines the development roadmap for the custom CRM system, based 
 6.  **Frontend Data Fetching Refactor:**
     *   [x] Centralize GraphQL query/mutation definitions (e.g., in Zustand store `useAppStore.ts`).
     *   [ ] Consider using GraphQL Code Generator to create typed hooks/SDK.
-    *   [-] Refactor components (`DealsPage` done; `PeoplePage`, `OrganizationsPage`, modals pending) to use Zustand store actions/state.
+    *   [-] Refactor components (`DealsPage`, `PeoplePage`, `OrganizationsPage`, `PipelinesPage`, `StagesPage` done; Modals pending) to use Zustand store actions/state.
     *   [ ] Ensure consistent loading and error state handling across all data-fetching components.
 7.  **Component Testing (Frontend):**
     *   [ ] Increase test coverage for key UI components (e.g., `Create*Modal`, `Edit*Modal`, complex table rendering), including interaction with Zustand store.
     *   [ ] Focus on testing component logic, rendering based on props/state, and basic user interactions.
-    *   [ ] Refactor existing tests (`DealsPage.test.tsx`) to use more stable selectors (e.g., `data-testid`) if needed and adapt to Zustand.
+    *   [ ] Re-implement tests for page components (`DealsPage.tsx`, `PeoplePage.tsx`, etc.) using Zustand store mocks.
 8.  **Database Enhancements:**
     *   [ ] Review database schema for potential indexing opportunities on frequently queried/filtered columns (e.g., `name`, `email`, foreign keys). Add indexes via migrations.
     *   [ ] Institute a mandatory peer-review process for all new database migration scripts before merging.
@@ -197,12 +204,12 @@ This document outlines the development roadmap for the custom CRM system, based 
 9.  **State Management (Frontend):**
     *   [x] Evaluate options (Zustand, Jotai, Redux Toolkit) based on anticipated application complexity.
     *   [x] Select and integrate a state management library (Zustand chosen).
-    *   [-] Refactor components relying heavily on prop drilling or complex local state to use the chosen library (`DealsPage` refactored, others pending).
+    *   [-] Refactor components relying heavily on prop drilling or complex local state to use the chosen library (`DealsPage`, `PeoplePage`, `OrganizationsPage`, `PipelinesPage`, `StagesPage` refactored; Modals pending).
 10. **Error Handling Standardization:**
     *   [ ] Define specific, typed error classes in `lib/` services.
     *   [x] Ensure services throw these specific errors (Current `handleSupabaseError` throws `GraphQLError`).
     *   [x] Ensure the GraphQL layer catches these errors and maps them to appropriate GraphQL errors for the client (Current `processZodError` handles this).
-    *   [-] Implement a consistent strategy for displaying errors to the user in the frontend (Partially done with Zustand `dealsError` state).
+    *   [-] Implement a consistent strategy for displaying errors to the user in the frontend (Partially done with Zustand error states).
 11. **N+1 Problem Mitigation:**
     *   [ ] Identify potential N+1 query issues (e.g., fetching lists with nested relations like `Person.organization`).
     *   [ ] Implement the DataLoader pattern within the GraphQL resolvers to batch database requests.
@@ -210,14 +217,16 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Update `README.md` and `DEVELOPER_GUIDE.md` to reflect all changes, chosen libraries, and setup procedures.
     *   [ ] Add code comments explaining complex logic or non-obvious decisions.
     *   [ ] Run `npm audit` (or equivalent) and address critical/high vulnerabilities.
-    *   [x] Create ADRs (`ADR.md` or `/docs/adr/`) for key decisions (validation library, **state management (Zustand)**, data fetching strategy).
+    *   [x] Create/Update ADRs (`ADR.md` or `/docs/adr/`) for key decisions (validation library, **state management (Zustand)**, data fetching strategy).
 13. **GraphQL Structure Refactoring:**
     *   [x] Refactor GraphQL schema definitions from `graphql.ts` into separate `.graphql` files in `netlify/functions/graphql/schema/`.
-    *   [ ] Refactor GraphQL resolvers from `graphql.ts` into separate files (e.g., `netlify/functions/graphql/resolvers/`).
-    *   [ ] Consider refactoring Zod schemas out of `graphql.ts`.
+    *   [x] Refactor GraphQL resolvers from `graphql.ts` into separate files (`netlify/functions/graphql/resolvers/`).
+    *   [x] Refactor Zod schemas out of `graphql.ts` (`netlify/functions/graphql/validators.ts`).
+    *   [x] Refactor GraphQL helpers out of `graphql.ts` (`netlify/functions/graphql/helpers.ts`).
 
 **Other Implicit Tasks:**
 *   [x] Refactor duplicated backend service helpers (`getAuthenticatedClient`, `handleSupabaseError`) into `lib/serviceUtils.ts`.
+*   [x] Setup Vitest to load `.env` for backend service tests.
 
 ---
 

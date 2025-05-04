@@ -11,9 +11,14 @@ test.describe('Authentication Flow', () => {
   });
 
   test('should allow login with valid credentials', async ({ page }) => {
-    // Assumption: A user test-e2e@example.com with password 'password123' exists
-    const userEmail = 'test-e2e@example.com';
-    const userPassword = 'password123'; // Replace with your actual test user password
+    // Load credentials from environment variables
+    const userEmail = process.env.TEST_USER_EMAIL;
+    const userPassword = process.env.TEST_USER_PASSWORD;
+
+    // Basic check to ensure env vars are loaded
+    if (!userEmail || !userPassword) {
+      throw new Error('TEST_USER_EMAIL or TEST_USER_PASSWORD environment variables not set.');
+    }
 
     // Start from the login page (or base URL, assuming it redirects to login if not authenticated)
     await page.goto('/');
@@ -33,7 +38,9 @@ test.describe('Authentication Flow', () => {
 
     // Option 2: Check for a specific element indicating login
     // For example, check if the "Sign Out" button is now visible (updated text)
-    await expect(page.getByRole('button', { name: /Sign Out/i })).toBeVisible();
+    // Give more time for the async auth flow and re-render to complete
+    await expect(page.getByRole('button', { name: /Sign Out/i }))
+      .toBeVisible({ timeout: 10000 }); // Increased timeout to 10 seconds
 
     // You could also check if the user's email is displayed somewhere
     // await expect(page.getByText(userEmail)).toBeVisible();

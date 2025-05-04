@@ -119,17 +119,29 @@ export const Query = {
     },
     // Pipeline Resolvers
     pipelines: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
-        const accessToken = requireAuthentication(context);
+        const action = 'fetching pipelines';
         try {
+            requireAuthentication(context);
+            const accessToken = getAccessToken(context)!;
+            console.log('[Query.pipelines] AccessToken:', accessToken);
             return await pipelineService.getPipelines(accessToken);
-        } catch (error) { throw processZodError(error, 'fetching pipelines'); }
+        } catch (error) { 
+            console.error(`[Query.pipelines] Error during ${action}:`, error);
+            throw processZodError(error, action); 
+        }
     },
     // Stage Resolvers
     stages: async (_parent: unknown, { pipelineId }: { pipelineId: string }, context: GraphQLContext) => {
-        const accessToken = requireAuthentication(context);
-        if (!pipelineId) throw new GraphQLError("pipelineId is required", { extensions: { code: 'BAD_USER_INPUT' } });
+        const action = `fetching stages for pipeline ${pipelineId}`;
         try {
+            requireAuthentication(context);
+            const accessToken = getAccessToken(context)!;
+            if (!pipelineId) throw new GraphQLError("pipelineId is required", { extensions: { code: 'BAD_USER_INPUT' } });
+            console.log(`[Query.stages] AccessToken for pipeline ${pipelineId}:`, accessToken);
             return await stageService.getStagesByPipelineId(accessToken, pipelineId);
-        } catch (error) { throw processZodError(error, 'fetching stages'); }
+        } catch (error) { 
+            console.error(`[Query.stages] Error during ${action}:`, error);
+            throw processZodError(error, action); 
+        }
     },
 }; 

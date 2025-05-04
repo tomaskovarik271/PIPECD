@@ -1,3 +1,7 @@
+"""
+Defines the Person type and related queries/mutations.
+"""
+
 type Person { # Renamed from Contact
   id: ID!
   created_at: DateTime!
@@ -11,6 +15,7 @@ type Person { # Renamed from Contact
   organization_id: ID # Foreign key
   organization: Organization # Associated organization
   deals: [Deal!] # Associated deals 
+  activities: [Activity!]! # ADDED list of related activities
 }
 
 # Simplified type for person dropdowns
