@@ -23,7 +23,6 @@ import {
   SliderTrack,
   SliderFilledTrack,
   SliderThumb,
-  Box,
   Text,
   HStack,
 } from '@chakra-ui/react';

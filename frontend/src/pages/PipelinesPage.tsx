@@ -30,10 +30,6 @@ const PipelinesPage: React.FC = () => {
     fetchPipelines();
   }, [fetchPipelines]);
 
-  const handleAddPipeline = () => {
-    onCreateOpen();
-  };
-
   const handleEditPipeline = (pipeline: Pipeline) => {
     setPipelineToEdit(pipeline);
     onEditOpen();

@@ -21,7 +21,6 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { gql } from 'graphql-request';
-import { gqlClient } from '../lib/graphqlClient';
 import { useAppStore, UpdateDealInput } from '../stores/useAppStore'; // Import store and input type
 
 // Updated interface for the Deal data passed to the modal
@@ -33,46 +32,6 @@ interface DealToEdit {
   stage_id?: string | null; // Keep existing stage_id if available
   amount?: number | null;
   person_id?: string | null;
-}
-
-// Define GraphQL Mutation for Update (using stage_id)
-const UPDATE_DEAL_MUTATION = gql`
-  mutation UpdateDeal($id: ID!, $input: DealInput!) { # DealInput expects stage_id
-    updateDeal(id: $id, input: $input) {
-      id # Request fields needed after update
-      name
-      stage { # Get updated stage info
-        id
-        name
-        pipeline_id # Maybe needed?
-      }
-      stage_id
-      amount
-      updated_at # Get updated timestamp
-      person_id
-    }
-  }
-`;
-
-// Rename query for person list (can be shared with Create modal)
-const GET_PERSON_LIST_QUERY = gql`
-  query GetPersonList {
-    personList {
-      id
-      name
-    }
-  }
-`;
-
-// Type for person list items
-interface PersonListItem {
-  id: string;
-  name: string;
-}
-
-// Type for person list query result
-interface GetPersonListQueryResult {
-  personList: PersonListItem[];
 }
 
 // Add Pipeline/Stage types locally if needed (or rely on store types)

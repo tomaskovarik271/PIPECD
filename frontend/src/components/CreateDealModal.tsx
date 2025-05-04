@@ -22,37 +22,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { gql } from 'graphql-request';
-import { gqlClient } from '../lib/graphqlClient';
 import { useAppStore } from '../stores/useAppStore'; // Import the store
-
-// Define GraphQL Mutation (using stage_id in input)
-const CREATE_DEAL_MUTATION = gql`
-  mutation CreateDeal($input: DealInput!) { # DealInput expects stage_id
-    createDeal(input: $input) {
-      id # Request fields needed after creation
-      name
-      stage { # Request nested stage info
-        id
-        name
-      }
-      stage_id
-      amount
-      person_id
-      person { id first_name last_name } # Request first/last name instead of name
-    }
-  }
-`;
-
-// Define the expected shape of the mutation result
-interface CreateDealMutationResult {
-    createDeal: {
-        id: string;
-        name: string;
-        stage_id: string; // Expect stage_id back
-        stage: { id: string; name: string }; // Expect nested stage back
-        // Include other fields returned by mutation if needed
-    };
-}
 
 // Rename query for person list
 const GET_PERSON_LIST_QUERY = gql`
