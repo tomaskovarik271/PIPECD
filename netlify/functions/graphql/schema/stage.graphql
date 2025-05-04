@@ -1,0 +1,27 @@
+# ADDED Stage type
+type Stage {
+  id: ID!
+  user_id: ID!
+  pipeline_id: ID!
+  name: String!
+  order: Int!
+  deal_probability: Float # Nullable (0-100)
+  created_at: DateTime!
+  updated_at: DateTime!
+  # deals: [Deal!] # Could add nested deals later if needed
+}
+
+# ADDED Stage Input (for creation)
+input StageInput {
+  name: String!
+  order: Int!
+  pipeline_id: ID!
+  deal_probability: Float # Nullable
+}
+
+# ADDED Stage Update Input (for updates, pipeline_id omitted)
+input StageUpdateInput {
+  name: String
+  order: Int
+  deal_probability: Float # Nullable
+} 

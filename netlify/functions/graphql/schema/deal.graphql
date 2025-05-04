@@ -1,0 +1,19 @@
+type Deal {
+  id: ID!
+  created_at: DateTime!
+  updated_at: DateTime!
+  user_id: ID! 
+  name: String!
+  stage_id: ID! # ADDED FK
+  stage: Stage! # ADDED nested object
+  amount: Float
+  person_id: ID # FK referencing people table (Renamed from contact_id)
+  person: Person # Associated person (updated from contact)
+}
+
+input DealInput {
+  name: String!
+  stage_id: ID! # ADDED stage_id
+  amount: Float
+  person_id: ID # FK referencing people table (Renamed from contact_id)
+} 

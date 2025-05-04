@@ -1,0 +1,16 @@
+type Organization {
+    id: ID!
+    created_at: DateTime!
+    updated_at: DateTime!
+    user_id: ID!
+    name: String!
+    address: String
+    notes: String
+    people: [Person!] # People belonging to this organization
+}
+
+input OrganizationInput {
+    name: String!
+    address: String
+    notes: String
+} 

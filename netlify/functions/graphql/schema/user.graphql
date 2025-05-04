@@ -1,0 +1,4 @@
+type UserInfo {
+  id: ID!
+  email: String
+} 

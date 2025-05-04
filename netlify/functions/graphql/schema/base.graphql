@@ -1,0 +1,45 @@
+scalar DateTime
+scalar Float # Ensure Float is available if using it
+
+type Query {
+  health: String!
+  supabaseConnectionTest: String!
+  me: UserInfo
+  # People (formerly Contacts)
+  people: [Person!]!          # Get all people for the user
+  person(id: ID!): Person      # Get a specific person by ID
+  personList: [PersonListItem!]! # Simplified list for dropdowns
+  # Organizations
+  organizations: [Organization!]!
+  organization(id: ID!): Organization
+  # Deals
+  deals: [Deal!]!            
+  deal(id: ID!): Deal        
+  # Pipelines
+  pipelines: [Pipeline!]!
+  # Stages
+  stages(pipelineId: ID!): [Stage!]!
+}
+
+type Mutation {
+  # People (formerly Contacts)
+  createPerson(input: PersonInput!): Person!
+  updatePerson(id: ID!, input: PersonInput!): Person
+  deletePerson(id: ID!): Boolean
+  # Organizations
+  createOrganization(input: OrganizationInput!): Organization!
+  updateOrganization(id: ID!, input: OrganizationInput!): Organization
+  deleteOrganization(id: ID!): Boolean
+  # Deals
+  createDeal(input: DealInput!): Deal!
+  updateDeal(id: ID!, input: DealInput!): Deal
+  deleteDeal(id: ID!): Boolean
+  # Pipelines
+  createPipeline(input: PipelineInput!): Pipeline!
+  updatePipeline(id: ID!, input: PipelineInput!): Pipeline
+  deletePipeline(id: ID!): Boolean
+  # Stages
+  createStage(input: StageInput!): Stage!
+  updateStage(id: ID!, input: StageUpdateInput!): Stage # Use specific update input
+  deleteStage(id: ID!): Boolean
+} 

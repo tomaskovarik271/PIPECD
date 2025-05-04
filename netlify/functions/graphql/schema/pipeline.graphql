@@ -1,0 +1,14 @@
+# ADDED Pipeline type
+type Pipeline {
+  id: ID!
+  user_id: ID!
+  name: String!
+  created_at: DateTime!
+  updated_at: DateTime!
+  # stages: [Stage!] # Could add nested stages later if needed
+}
+
+# ADDED Pipeline Input
+input PipelineInput {
+  name: String!
+} 
