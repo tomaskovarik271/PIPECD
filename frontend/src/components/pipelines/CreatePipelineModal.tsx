@@ -37,7 +37,8 @@ const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({ isOpen, onClo
     }
     setIsLoading(true);
     try {
-      const newPipeline = await createPipeline({ name: pipelineName.trim() });
+      const pipelineInput: { name: string } = { name: pipelineName.trim() };
+      const newPipeline = await createPipeline(pipelineInput);
       if (newPipeline) {
         toast({ title: "Pipeline created successfully.", status: 'success', duration: 3000, isClosable: true });
         setPipelineName(''); // Reset form

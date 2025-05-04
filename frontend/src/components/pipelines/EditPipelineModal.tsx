@@ -66,7 +66,9 @@ const EditPipelineModal: React.FC<EditPipelineModalProps> = ({ isOpen, onClose, 
     
     setIsLoading(true);
     try {
-      const updatedPipeline = await updatePipeline(pipeline.id, { name: pipelineName.trim() });
+      // Explicitly define the input type to match the expected store signature
+      const pipelineInput: { name: string } = { name: pipelineName.trim() };
+      const updatedPipeline = await updatePipeline(pipeline.id, pipelineInput);
       if (updatedPipeline) {
         toast({ title: "Pipeline updated successfully.", status: 'success', duration: 3000, isClosable: true });
         onSuccess?.(updatedPipeline.id);
