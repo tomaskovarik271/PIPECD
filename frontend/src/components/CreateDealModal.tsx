@@ -24,33 +24,6 @@ import {
 import { gql } from 'graphql-request';
 import { useAppStore } from '../stores/useAppStore'; // Import the store
 
-// Rename query for person list
-const GET_PERSON_LIST_QUERY = gql`
-  query GetPersonList {
-    personList {
-      id
-      name
-    }
-  }
-`;
-
-// Type for person list items
-interface PersonListItem {
-  id: string;
-  name: string;
-}
-
-// Type for person list query result
-interface GetPersonListQueryResult {
-  personList: PersonListItem[];
-}
-
-interface CreateDealModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onDealCreated: () => void; // Callback to refresh list
-}
-
 // Explicit Person type based on store data
 interface Person {
   id: string;
@@ -58,6 +31,12 @@ interface Person {
   last_name?: string | null;
   email?: string | null;
   // Add other fields if needed by component
+}
+
+interface CreateDealModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onDealCreated: () => void; // Callback to refresh list
 }
 
 function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProps) {

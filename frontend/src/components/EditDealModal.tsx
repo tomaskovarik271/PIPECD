@@ -20,7 +20,6 @@ import {
   AlertIcon,
   Spinner,
 } from '@chakra-ui/react';
-import { gql } from 'graphql-request';
 import { useAppStore, UpdateDealInput } from '../stores/useAppStore'; // Import store and input type
 
 // Updated interface for the Deal data passed to the modal
