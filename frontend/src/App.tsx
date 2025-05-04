@@ -45,7 +45,7 @@ function AppContent() {
           <Routes>
           <Route path="/" element={<Heading size="lg">Home</Heading>} />
           <Route path="/people" element={<PeoplePage />} />
-          <Route path="/deals" element={<DealsPage />} />
+            <Route path="/deals" element={<DealsPage />} />
           <Route path="/organizations" element={<OrganizationsPage />} />
           <Route path="/pipelines" element={<PipelinesPage />} /> {/* Add route for pipelines */}
           <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} /> {/* Add route for stages */}
@@ -73,13 +73,13 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         console.log('Auth state changed:', _event, session ? 'Session exists' : 'No session');
         setSession(session); // Update store state
-        // Optionally show toast on login/logout
-        if (_event === 'SIGNED_IN') {
-            toast({ title: "Signed In", status: "success", duration: 3000, isClosable: true });
-        }
-        if (_event === 'SIGNED_OUT') {
-            toast({ title: "Signed Out", status: "info", duration: 3000, isClosable: true });
-        }
+      // Optionally show toast on login/logout
+      if (_event === 'SIGNED_IN') {
+          toast({ title: "Signed In", status: "success", duration: 3000, isClosable: true });
+      }
+      if (_event === 'SIGNED_OUT') {
+          toast({ title: "Signed Out", status: "info", duration: 3000, isClosable: true });
+      }
     });
 
     return () => {

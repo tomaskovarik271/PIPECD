@@ -3,25 +3,38 @@ type Stage {
   id: ID!
   user_id: ID!
   pipeline_id: ID!
+  pipeline: Pipeline!
   name: String!
   order: Int!
-  deal_probability: Float # Nullable (0-100)
-  created_at: DateTime!
-  updated_at: DateTime!
+  deal_probability: Float # Maps to 'real' in DB, nullable
+  created_at: String! # Consider DateTime scalar
+  updated_at: String! # Consider DateTime scalar
   # deals: [Deal!] # Could add nested deals later if needed
 }
 
 # ADDED Stage Input (for creation)
-input StageInput {
+input CreateStageInput {
+  pipeline_id: ID!
   name: String!
   order: Int!
-  pipeline_id: ID!
-  deal_probability: Float # Nullable
+  deal_probability: Float # Optional, null allowed
 }
 
 # ADDED Stage Update Input (for updates, pipeline_id omitted)
-input StageUpdateInput {
+input UpdateStageInput {
   name: String
   order: Int
-  deal_probability: Float # Nullable
+  deal_probability: Float # Allow setting to null via absence or explicit null?
+}
+
+# Add queries and mutations related to Stages
+extend type Query {
+  # Fetch stages for a specific pipeline
+  stages(pipelineId: ID!): [Stage!]!
+}
+
+extend type Mutation {
+  createStage(input: CreateStageInput!): Stage!
+  updateStage(id: ID!, input: UpdateStageInput!): Stage!
+  deleteStage(id: ID!): Boolean!
 } 

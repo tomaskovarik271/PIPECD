@@ -28,7 +28,7 @@ interface PersonInput {
 }
 
 // Define the shape returned by the database
-interface PersonRecord extends PersonInput {
+export interface PersonRecord extends PersonInput {
     id: string;
     created_at: string;
     updated_at: string;

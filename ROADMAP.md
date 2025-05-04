@@ -211,6 +211,10 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [ ] Add code comments explaining complex logic or non-obvious decisions.
     *   [ ] Run `npm audit` (or equivalent) and address critical/high vulnerabilities.
     *   [x] Create ADRs (`ADR.md` or `/docs/adr/`) for key decisions (validation library, **state management (Zustand)**, data fetching strategy).
+13. **GraphQL Structure Refactoring:**
+    *   [x] Refactor GraphQL schema definitions from `graphql.ts` into separate `.graphql` files in `netlify/functions/graphql/schema/`.
+    *   [ ] Refactor GraphQL resolvers from `graphql.ts` into separate files (e.g., `netlify/functions/graphql/resolvers/`).
+    *   [ ] Consider refactoring Zod schemas out of `graphql.ts`.
 
 **Other Implicit Tasks:**
 *   [x] Refactor duplicated backend service helpers (`getAuthenticatedClient`, `handleSupabaseError`) into `lib/serviceUtils.ts`.

@@ -57,7 +57,16 @@ PIPECD/
 │   └── pipelineService.test.ts # Placeholder/TODO
 ├── netlify/
 │   └── functions/      # Netlify serverless functions
-│       ├── graphql.ts  # GraphQL Yoga API endpoint
+│       ├── graphql.ts  # GraphQL Yoga API endpoint (loads schema, resolvers)
+│       ├── graphql/    # GraphQL specific files
+│       │   └── schema/ # GraphQL schema definition files
+│       │       ├── base.graphql
+│       │       ├── user.graphql
+│       │       ├── person.graphql
+│       │       ├── organization.graphql
+│       │       ├── deal.graphql
+│       │       ├── pipeline.graphql
+│       │       └── stage.graphql
 │       └── inngest.ts  # Inngest event handler endpoint
 ├── playwright-report/  # Playwright HTML report output (gitignored)
 ├── supabase/
@@ -96,7 +105,8 @@ PIPECD/
 *   **`vitest.config.ts` (Root):** Configures Vitest test runner for *both* backend (`lib/`) and frontend (`frontend/src/`) tests. Sets up `jsdom` environment and points to `frontend/src/setupTests.ts` for frontend tests.
 *   **`frontend/src/setupTests.ts`:** Vitest setup file for frontend tests, imports `@testing-library/jest-dom` matchers.
 *   **`playwright.config.ts` (Root):** Configures Playwright E2E test runner, including browser settings and starting the `netlify dev` server automatically (`webServer` option).
-*   **`netlify/functions/graphql.ts`:** Defines the GraphQL schema (People, Organizations, Deals, etc.), implements resolvers (calling services in `/lib`), sets up the GraphQL Yoga server, and includes a context factory for JWT authentication.
+*   **`netlify/functions/graphql.ts`:** Implements resolvers (calling services in `/lib`), sets up the GraphQL Yoga server, loads schema definitions from `.graphql` files in `./graphql/schema/`, and includes a context factory for JWT authentication.
+*   **`netlify/functions/graphql/schema/*.graphql`:** Contains GraphQL Schema Definition Language (SDL) files defining types, inputs, queries, mutations, and scalars. Loaded dynamically by `graphql.ts`.
 *   **`netlify/functions/inngest.ts`:** Initializes the Inngest client, defines Inngest functions/handlers (currently basic logging), and exports the Netlify serve handler.
 *   **`lib/supabaseClient.ts`:** Initializes and exports the *backend* Supabase client (uses root `.env`). Includes `dotenv.config()` workaround if needed for local dev.
 *   **`lib/serviceUtils.ts`:** Contains shared helper functions for backend services, such as `getAuthenticatedClient` (for creating request-specific authenticated Supabase clients) and `handleSupabaseError`.
@@ -156,8 +166,8 @@ PIPECD/
 
 *   **GraphQL (Yoga + `graphql-request`):**
     *   Backend uses GraphQL Yoga for its performance in serverless environments.
-    *   Schema is defined directly in `graphql.ts` (could be moved to separate `.graphql` files later).
-    *   Resolvers call functions/services located in `/lib`, using helpers from `lib/serviceUtils.ts` for auth/errors.
+    *   Schema is defined in separate `.graphql` files within `netlify/functions/graphql/schema/` and loaded dynamically by `graphql.ts` using Node.js `fs` and `path` modules.
+    *   Resolvers remain within `graphql.ts` for now (potential future refactor), calling functions/services located in `/lib`.
     *   Authentication is handled via JWT in the `Authorization: Bearer` header, verified in the Yoga `context` factory using `supabase.auth.getUser()`.
     *   Frontend uses `graphql-request` via the configured `gqlClient` in `lib/graphqlClient.ts`. Middleware injects the auth token. Data fetching logic is primarily encapsulated within Zustand store actions (`stores/useAppStore.ts`).
 *   **Supabase:**
@@ -310,8 +320,8 @@ Testing is crucial for maintaining code quality and preventing regressions. Test
 
 *   **GraphQL (Yoga + `graphql-request`):**
     *   Backend uses GraphQL Yoga for its performance in serverless environments.
-    *   Schema is defined directly in `graphql.ts` (could be moved to separate `.graphql` files later).
-    *   Resolvers call functions/services located in `/lib`, using helpers from `lib/serviceUtils.ts` for auth/errors.
+    *   Schema is defined in separate `.graphql` files within `netlify/functions/graphql/schema/` and loaded dynamically by `graphql.ts` using Node.js `fs` and `path` modules.
+    *   Resolvers remain within `graphql.ts` for now (potential future refactor), calling functions/services located in `/lib`.
     *   Authentication is handled via JWT in the `Authorization: Bearer` header, verified in the Yoga `context` factory using `supabase.auth.getUser()`.
     *   Frontend uses `graphql-request` via the configured `gqlClient` in `lib/graphqlClient.ts`. Middleware injects the auth token. Data fetching logic is primarily encapsulated within Zustand store actions (`stores/useAppStore.ts`).
 *   **Supabase:**

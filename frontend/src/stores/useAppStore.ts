@@ -46,6 +46,10 @@ interface DealStage {
     id: string;
     name: string;
     pipeline_id: string;
+    pipeline: { // Add nested pipeline info
+        id: string;
+        name: string;
+    };
     // Add order or other fields if needed by UI
 }
 interface Deal {
@@ -86,6 +90,10 @@ const GET_DEALS_QUERY = gql`
         id
         name
         pipeline_id
+        pipeline {
+          id
+          name
+        }
       }
       stage_id
       amount
@@ -219,21 +227,20 @@ const CREATE_DEAL_MUTATION = gql`
 
 // Add Create Stage Mutation
 const CREATE_STAGE_MUTATION = gql`
-  mutation CreateStage($input: StageInput!) {
+  mutation CreateStage($input: CreateStageInput!) {
     createStage(input: $input) {
       id
       name
       order
       deal_probability
       pipeline_id
-      # Add created_at, updated_at if needed
     }
   }
 `;
 
 // Add Update Stage Mutation
 const UPDATE_STAGE_MUTATION = gql`
-  mutation UpdateStage($id: ID!, $input: StageUpdateInput!) {
+  mutation UpdateStage($id: ID!, $input: UpdateStageInput!) {
     updateStage(id: $id, input: $input) {
       id
       name
@@ -257,7 +264,6 @@ const UPDATE_PIPELINE_MUTATION = gql`
     updatePipeline(id: $id, input: $input) {
       id
       name
-      # Add other fields if needed
     }
   }
 `;
@@ -356,11 +362,12 @@ interface AppState {
   pipelinesError: string | null;
   stagesLoading: boolean;
   stagesError: string | null;
+  selectedPipelineId: string | null; // Track which pipeline's stages are loaded
   fetchPipelines: () => Promise<void>;
   fetchStages: (pipelineId: string) => Promise<void>; // Fetch stages for a specific pipeline
   // Add CRUD actions
-  createPipeline: (name: string) => Promise<Pipeline | null>;
-  updatePipeline: (id: string, input: UpdatePipelineInput) => Promise<Pipeline | null>;
+  createPipeline: (input: { name: string }) => Promise<Pipeline | null>;
+  updatePipeline: (id: string, input: { name: string }) => Promise<Pipeline | null>;
   deletePipeline: (id: string) => Promise<boolean>;
   createStage: (input: CreateStageInput) => Promise<Stage | null>;
   updateStage: (id: string, input: UpdateStageInput) => Promise<Stage | null>;
@@ -373,9 +380,9 @@ interface AppState {
 
 // Define types for Stage create/update inputs
 export interface CreateStageInput {
+    pipeline_id: string;
     name: string;
     order: number;
-    pipeline_id: string;
     deal_probability?: number | null;
 }
 export interface UpdateStageInput { // Export Update Input Type
@@ -409,7 +416,7 @@ export interface UpdateDealInput {
 interface UpdateDealMutationResult { updateDeal: Deal | null; }
 
 // --- Zustand Store Implementation ---
-export const useAppStore = create<AppState>((set /*, get */) => ({
+export const useAppStore = create<AppState>((set, get) => ({
   // --- Initial state ---
   session: null,
   user: null,
@@ -429,6 +436,7 @@ export const useAppStore = create<AppState>((set /*, get */) => ({
   pipelinesError: null,
   stagesLoading: false,
   stagesError: null,
+  selectedPipelineId: null, // Initialize
 
   // --- Actions ---
   
@@ -593,75 +601,71 @@ export const useAppStore = create<AppState>((set /*, get */) => ({
 
   // Pipelines & Stages Actions
   fetchPipelines: async () => {
-      set({ pipelinesLoading: true, pipelinesError: null });
-      try {
-          const data = await gqlClient.request<GetPipelinesQueryResult>(GET_PIPELINES_QUERY);
-          set({ pipelines: data.pipelines || [], pipelinesLoading: false });
-      } catch (err: any) {
-          console.error("Error fetching pipelines:", err);
-          const gqlError = err.response?.errors?.[0]?.message;
-          const errorMsg = gqlError || err.message || 'Failed to fetch pipelines';
-          set({ pipelinesError: errorMsg, pipelinesLoading: false, pipelines: [] });
-      }
+    set({ pipelinesLoading: true, pipelinesError: null });
+    try {
+      const session = get().session;
+      if (!session) throw new Error("Not authenticated");
+      
+      const data = await gqlClient.request<GetPipelinesQueryResult>(
+        GET_PIPELINES_QUERY,
+        {},
+        { Authorization: `Bearer ${session.access_token}` }
+      );
+      set({ pipelines: data.pipelines, pipelinesLoading: false });
+    } catch (error: any) {
+      console.error("Error fetching pipelines:", error);
+      const errorMessage = error.response?.errors?.[0]?.message || error.message || "Failed to fetch pipelines";
+      set({ pipelinesError: errorMessage, pipelinesLoading: false });
+    }
   },
 
   fetchStages: async (pipelineId: string) => {
-      if (!pipelineId) {
-          console.warn("fetchStages called without pipelineId");
-          set({ stages: [], stagesLoading: false, stagesError: "Pipeline ID is required"});
-          return;
-      }
-      set({ stagesLoading: true, stagesError: null });
-      try {
-          const variables = { pipelineId };
-          const data = await gqlClient.request<GetStagesQueryResult>(GET_STAGES_QUERY, variables);
-          // Replace existing stages with the ones for the fetched pipeline
-          set({ stages: data.stages || [], stagesLoading: false });
-      } catch (err: any) {
-          console.error(`Error fetching stages for pipeline ${pipelineId}:`, err);
-          const gqlError = err.response?.errors?.[0]?.message;
-          const errorMsg = gqlError || err.message || 'Failed to fetch stages';
-           // Clear stages on error for this pipeline
-          set({ stagesError: errorMsg, stagesLoading: false, stages: [] });
-      }
+    set({ stagesLoading: true, stagesError: null, selectedPipelineId: pipelineId });
+    try {
+      const session = get().session;
+      if (!session) throw new Error("Not authenticated");
+
+      const data = await gqlClient.request<GetStagesQueryResult>(
+        GET_STAGES_QUERY,
+        { pipelineId },
+        { Authorization: `Bearer ${session.access_token}` }
+      );
+      set({ stages: data.stages, stagesLoading: false });
+    } catch (error: any) {
+      console.error(`Error fetching stages for pipeline ${pipelineId}:`, error);
+       const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to fetch stages for pipeline ${pipelineId}`;
+      set({ stagesError: errorMessage, stagesLoading: false });
+    }
   },
 
   // Pipeline Actions
-  createPipeline: async (name: string): Promise<Pipeline | null> => {
-        if (!name || name.trim() === '') {
-            console.error("Pipeline name cannot be empty");
-            set({ pipelinesError: "Pipeline name cannot be empty" });
-            return null;
-        }
-        // We don't set loading state specific to creation, 
-        // rely on fetchPipelines loading state if needed after creation.
-        set({ pipelinesError: null }); // Clear previous errors
-        try {
-            const variables = { input: { name: name.trim() } };
-            const data = await gqlClient.request<CreatePipelineMutationResult>(
-                CREATE_PIPELINE_MUTATION, 
-                variables
-            );
-            const newPipeline = data.createPipeline;
-            if (newPipeline) {
-                // Add the new pipeline to the local state
-                set((state) => ({ 
-                    pipelines: [...state.pipelines, newPipeline],
-                    pipelinesError: null 
-                }));
-                return newPipeline;
-            } else {
-                // Should be caught by gqlClient error handling, but good defensive check
-                throw new Error('Create pipeline mutation did not return a pipeline.');
-            }
-        } catch (err: any) {
-            console.error("Error creating pipeline:", err);
-            const gqlError = err.response?.errors?.[0]?.message;
-            const errorMsg = gqlError || err.message || 'Failed to create pipeline';
-            set({ pipelinesError: errorMsg });
-            return null;
-        }
-    },
+  createPipeline: async (input: { name: string }): Promise<Pipeline | null> => {
+    set({ pipelinesLoading: true }); // Indicate activity
+    try {
+      const session = get().session;
+      if (!session) throw new Error("Not authenticated");
+
+      const result = await gqlClient.request<CreatePipelineMutationResult>(
+        CREATE_PIPELINE_MUTATION,
+        { input },
+        { Authorization: `Bearer ${session.access_token}` }
+      );
+      
+      const newPipeline = result.createPipeline;
+      // Add to state
+      set(state => ({ 
+        pipelines: [...state.pipelines, newPipeline],
+        pipelinesLoading: false,
+        pipelinesError: null 
+      }));
+      return newPipeline;
+    } catch (error: any) {
+      console.error("Error creating pipeline:", error);
+      const errorMessage = error.response?.errors?.[0]?.message || error.message || "Failed to create pipeline";
+      set({ pipelinesError: errorMessage, pipelinesLoading: false });
+      return null;
+    }
+  },
 
     // Deal Actions
     createDeal: async (input: CreateDealInput): Promise<Deal | null> => {
@@ -700,198 +704,158 @@ export const useAppStore = create<AppState>((set /*, get */) => ({
 
     // Stage Actions
     createStage: async (input: CreateStageInput): Promise<Stage | null> => {
-        // Basic input validation (could be more robust)
-        if (!input || !input.name || input.order === undefined || !input.pipeline_id) {
-            console.error("Invalid input for createStage:", input);
-            set({ stagesError: "Stage name, order, and pipeline ID are required." });
-            return null;
-        }
-        set({ stagesError: null }); // Clear previous errors
+        set({ stagesLoading: true }); // Indicate stage list activity
         try {
-            const variables = { input: {
-                 ...input,
-                 // Ensure probability is number or null
-                 deal_probability: input.deal_probability === undefined ? null : Number(input.deal_probability)
-            } }; 
-            const data = await gqlClient.request<CreateStageMutationResult>(
-                CREATE_STAGE_MUTATION,
-                variables
-            );
-            const newStage = data.createStage;
-            if (newStage) {
-                // Add the new stage to the local state, maintaining order
-                set((state) => { 
-                    const updatedStages = [...state.stages, newStage]
-                        .sort((a, b) => a.order - b.order); // Ensure sorted by order
-                    return {
-                        stages: updatedStages,
-                        stagesError: null 
-                    }
-                });
-                return newStage;
-            } else {
-                throw new Error('Create stage mutation did not return a stage.');
-            }
-        } catch (err: any) {
-            console.error("Error creating stage:", err);
-            const gqlError = err.response?.errors?.[0]?.message;
-            const errorMsg = gqlError || err.message || 'Failed to create stage';
-            set({ stagesError: errorMsg });
-            return null;
+          const session = get().session;
+          if (!session) throw new Error("Not authenticated");
+          
+          // Ensure the pipelineId matches the currently selected one for consistency
+          if (input.pipeline_id !== get().selectedPipelineId) {
+            console.warn('Attempting to create stage for a pipeline different from the one currently viewed in the store.');
+            // Potentially throw error or just proceed?
+            // Let's proceed, but this indicates a potential UI/logic mismatch.
+          }
+
+          const result = await gqlClient.request<CreateStageMutationResult>(
+            CREATE_STAGE_MUTATION,
+            { input },
+            { Authorization: `Bearer ${session.access_token}` }
+          );
+          
+          const newStage = result.createStage;
+          // Add to state and re-sort by order
+          set(state => ({
+            stages: [...state.stages, newStage].sort((a, b) => a.order - b.order),
+            stagesLoading: false,
+            stagesError: null
+          }));
+          return newStage;
+        } catch (error: any) {
+          console.error("Error creating stage:", error);
+          const errorMessage = error.response?.errors?.[0]?.message || error.message || "Failed to create stage";
+          set({ stagesError: errorMessage, stagesLoading: false });
+          return null;
         }
     },
 
     updateStage: async (id: string, input: UpdateStageInput): Promise<Stage | null> => {
-        if (!id || !input || Object.keys(input).length === 0) {
-            console.error("Invalid input for updateStage");
-            set({ stagesError: "Stage ID and update data are required."});
-            return null;
-        }
-        // Add validation for specific fields if needed (e.g., range checks)
-        set({ stagesError: null });
+        set({ stagesLoading: true }); // Indicate stage list activity
         try {
-            const variables = { 
-                id,
-                input: {
-                    ...input,
-                    // Ensure probability is number or null if provided
-                    deal_probability: input.deal_probability === undefined ? undefined : (input.deal_probability === null ? null : Number(input.deal_probability))
-                } 
-            }; 
-            const data = await gqlClient.request<UpdateStageMutationResult>(
-                UPDATE_STAGE_MUTATION,
-                variables
-            );
-            const updatedStage = data.updateStage;
-            if (updatedStage) {
-                 // Update the stage in the local state, maintaining order
-                set((state) => { 
-                    const updatedStages = state.stages
-                        .map(s => s.id === id ? updatedStage : s)
-                        .sort((a, b) => a.order - b.order); 
-                    return {
-                        stages: updatedStages,
-                        stagesError: null 
-                    }
-                });
-                return updatedStage;
-            } else {
-                throw new Error('Update stage mutation did not return a stage.');
-            }
-        } catch (err: any) {
-            console.error(`Error updating stage ${id}:`, err);
-            const gqlError = err.response?.errors?.[0]?.message;
-            const errorMsg = gqlError || err.message || 'Failed to update stage';
-            set({ stagesError: errorMsg });
-            return null;
+          const session = get().session;
+          if (!session) throw new Error("Not authenticated");
+
+          const result = await gqlClient.request<UpdateStageMutationResult>(
+            UPDATE_STAGE_MUTATION,
+            { id, input },
+            { Authorization: `Bearer ${session.access_token}` }
+          );
+          
+          const updatedStage = result.updateStage;
+          // Update in state and re-sort by order
+          set(state => ({
+            stages: state.stages.map(s => s.id === id ? updatedStage : s).sort((a, b) => a.order - b.order),
+            stagesLoading: false,
+            stagesError: null
+          }));
+          return updatedStage;
+        } catch (error: any) {
+          console.error(`Error updating stage ${id}:`, error);
+          const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to update stage ${id}`;
+          set({ stagesError: errorMessage, stagesLoading: false });
+          return null;
         }
     },
 
     deleteStage: async (id: string): Promise<boolean> => {
-        if (!id) {
-            console.error("Stage ID is required for deletion");
-            set({ stagesError: "Stage ID is required for deletion."});
-            return false;
-        }
-        set({ stagesError: null });
+        const originalStages = get().stages;
+        // Optimistic update
+        set(state => ({
+            stages: state.stages.filter(s => s.id !== id),
+            stagesLoading: true
+        }));
         try {
-            const variables = { id };
-            const data = await gqlClient.request<DeleteStageMutationResult>(
-                DELETE_STAGE_MUTATION,
-                variables
-            );
-             if (data.deleteStage) {
-                // Remove the stage from local state
-                set((state) => ({ 
-                    stages: state.stages.filter(s => s.id !== id),
-                    stagesError: null 
-                }));
-                return true;
-            } else {
-                throw new Error('Delete stage mutation returned false.'); // Should be caught by gqlClient
-            }
-        } catch (err: any) {
-            console.error(`Error deleting stage ${id}:`, err);
-            const gqlError = err.response?.errors?.[0]?.message;
-             // Check for specific DB errors like FK constraint if needed
-             // if (error?.code === '23503') { ... }
-            const errorMsg = gqlError || err.message || 'Failed to delete stage';
-            set({ stagesError: errorMsg });
-            return false;
+          const session = get().session;
+          if (!session) throw new Error("Not authenticated");
+
+          await gqlClient.request<DeleteStageMutationResult>(
+            DELETE_STAGE_MUTATION,
+            { id },
+            { Authorization: `Bearer ${session.access_token}` }
+          );
+          
+          set({ stagesLoading: false, stagesError: null }); // Clear loading/error on success
+          return true;
+        } catch (error: any) {
+          console.error(`Error deleting stage ${id}:`, error);
+          const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to delete stage ${id}`;
+          // Revert optimistic update
+          set({ stages: originalStages, stagesError: errorMessage, stagesLoading: false });
+          return false;
         }
     },
 
-    updatePipeline: async (id: string, input: UpdatePipelineInput): Promise<Pipeline | null> => {
-        if (!id || !input || !input.name || input.name.trim() === '') {
-            console.error("Invalid input for updatePipeline");
-            set({ pipelinesError: "Pipeline ID and a non-empty name are required.", pipelinesLoading: false });
-            return null;
-        }
-        set({ pipelinesError: null }); // Clear previous errors
+    updatePipeline: async (id: string, input: { name: string }): Promise<Pipeline | null> => {
+        set({ pipelinesLoading: true }); // Indicate activity
         try {
-             const variables = { id, input: { name: input.name.trim() } };
-             const data = await gqlClient.request<UpdatePipelineMutationResult>(
-                UPDATE_PIPELINE_MUTATION,
-                variables
-            );
-            const updatedPipeline = data.updatePipeline;
-            if (updatedPipeline) {
-                // Update pipeline in the local state
-                set((state) => ({ 
-                    pipelines: state.pipelines.map(p => p.id === id ? updatedPipeline : p),
-                    pipelinesError: null 
-                }));
-                return updatedPipeline;
-            } else {
-                 throw new Error('Update pipeline mutation did not return a pipeline.');
-            }
-        } catch (err: any) {
-            console.error(`Error updating pipeline ${id}:`, err);
-            const gqlError = err.response?.errors?.[0]?.message;
-            const errorMsg = gqlError || err.message || 'Failed to update pipeline';
-            set({ pipelinesError: errorMsg });
-            return null;
+          const session = get().session;
+          if (!session) throw new Error("Not authenticated");
+
+          const result = await gqlClient.request<UpdatePipelineMutationResult>(
+            UPDATE_PIPELINE_MUTATION,
+            { id, input },
+            { Authorization: `Bearer ${session.access_token}` }
+          );
+          
+          const updatedPipeline = result.updatePipeline;
+          // Update in state
+          set(state => ({ 
+            pipelines: state.pipelines.map(p => p.id === id ? updatedPipeline : p),
+            pipelinesLoading: false,
+            pipelinesError: null 
+          }));
+          return updatedPipeline;
+        } catch (error: any) {
+          console.error(`Error updating pipeline ${id}:`, error);
+          const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to update pipeline ${id}`;
+          set({ pipelinesError: errorMessage, pipelinesLoading: false });
+          return null;
         }
     },
 
     deletePipeline: async (id: string): Promise<boolean> => {
-        if (!id) {
-            console.error("Pipeline ID is required for deletion");
-            set({ pipelinesError: "Pipeline ID is required for deletion.", pipelinesLoading: false });
-            return false;
-        }
-        set({ pipelinesError: null });
+        // Keep original list in case of error
+        const originalPipelines = get().pipelines;
+        // Optimistic update
+        set(state => ({ 
+            pipelines: state.pipelines.filter(p => p.id !== id),
+            pipelinesLoading: true // Indicate activity
+        }));
         try {
-            const variables = { id };
-            // Optional: Check for stages within the pipeline before deleting?
-            // The DB cascade handles this, but UI check prevents unexpected data loss view.
-            // const associatedStages = get().stages.filter(s => s.pipeline_id === id);
-            // if (associatedStages.length > 0) { ... throw error ... }
-            
-            const data = await gqlClient.request<DeletePipelineMutationResult>(
-                DELETE_PIPELINE_MUTATION,
-                variables
-            );
-             if (data.deletePipeline) {
-                // Remove pipeline from local state
-                set((state) => ({ 
-                    pipelines: state.pipelines.filter(p => p.id !== id),
-                    pipelinesError: null 
-                }));
-                // Also clear stages if they belonged to the deleted pipeline?
-                // Not strictly necessary as they won't be fetched again via UI,
-                // but good practice for store hygiene.
-                // set((state) => ({ stages: state.stages.filter(s => s.pipeline_id !== id) }));
-                return true;
-            } else {
-                 throw new Error('Delete pipeline mutation returned false.');
-            }
-        } catch (err: any) {
-             console.error(`Error deleting pipeline ${id}:`, err);
-            const gqlError = err.response?.errors?.[0]?.message;
-            const errorMsg = gqlError || err.message || 'Failed to delete pipeline. Check if it contains stages.';
-            set({ pipelinesError: errorMsg });
-            return false;
+          const session = get().session;
+          if (!session) throw new Error("Not authenticated");
+
+          await gqlClient.request<DeletePipelineMutationResult>(
+            DELETE_PIPELINE_MUTATION,
+            { id },
+            { Authorization: `Bearer ${session.access_token}` }
+          );
+          
+          set({ pipelinesLoading: false, pipelinesError: null }); // Clear loading/error on success
+          // If the deleted pipeline was selected, clear stages
+          if (get().selectedPipelineId === id) {
+             set({ stages: [], selectedPipelineId: null });
+          }
+          return true;
+        } catch (error: any) {
+          console.error(`Error deleting pipeline ${id}:`, error);
+           const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to delete pipeline ${id}`;
+          // Revert optimistic update on error
+          set({ 
+              pipelines: originalPipelines, 
+              pipelinesError: errorMessage, 
+              pipelinesLoading: false 
+          });
+          return false;
         }
     },
 

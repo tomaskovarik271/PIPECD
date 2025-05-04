@@ -1,46 +1,68 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useAppStore, Stage } from '../stores/useAppStore';
-import { Box, Heading, Button, Text, Spinner, Alert, AlertIcon, VStack, HStack, useDisclosure, IconButton } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
-import CreateStageModal from '../components/CreateStageModal';
-import EditStageModal from '../components/EditStageModal';
-import DeleteStageConfirmationDialog from '../components/DeleteStageConfirmationDialog';
+import { 
+  Box, 
+  Heading, 
+  Text, 
+  Button, 
+  HStack, 
+  VStack, 
+  Spinner, 
+  Alert, 
+  AlertIcon,
+  List, 
+  ListItem,
+  IconButton,
+  Link,
+  Flex,
+  useDisclosure
+} from '@chakra-ui/react';
+import { AddIcon, EditIcon, DeleteIcon, ArrowBackIcon } from '@chakra-ui/icons';
 
-// TODO: Add Create/Edit Stage Modals later
+// Import the stage modal components
+import CreateStageModal from '../components/stages/CreateStageModal';
+import EditStageModal from '../components/stages/EditStageModal';
+import DeleteStageConfirmationDialog from '../components/stages/DeleteStageConfirmationDialog';
+
+// TODO: Import/create Modals for Create/Edit/Delete Stages later
 
 const StagesPage: React.FC = () => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
-  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
-  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   
-  const [stageToEdit, setStageToEdit] = useState<Stage | null>(null);
-  const [stageToDelete, setStageToDelete] = useState<Stage | null>(null);
-
+  // Select state slices from Zustand
   const stages = useAppStore((state) => state.stages);
   const fetchStages = useAppStore((state) => state.fetchStages);
   const stagesLoading = useAppStore((state) => state.stagesLoading);
   const stagesError = useAppStore((state) => state.stagesError);
+  const selectedPipelineId = useAppStore((state) => state.selectedPipelineId);
+  // Also get pipeline name for context (assuming pipelines are already fetched)
   const pipeline = useAppStore((state) => 
     state.pipelines.find(p => p.id === pipelineId)
   );
-  const fetchPipelines = useAppStore((state) => state.fetchPipelines);
-  const pipelinesLoading = useAppStore((state) => state.pipelinesLoading);
+
+  // State for modals
+  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const [stageToEdit, setStageToEdit] = useState<Stage | null>(null);
+  const [stageToDelete, setStageToDelete] = useState<Stage | null>(null);
 
   useEffect(() => {
     if (pipelineId) {
-        // Fetch stages for this specific pipeline
-        fetchStages(pipelineId);
-    } 
-    // Fetch pipelines if the specific one isn't found (e.g., direct navigation)
-    if (!pipeline && !pipelinesLoading) {
-        fetchPipelines();
+      // Fetch stages only if the pipelineId is available and different from the currently selected one
+      // or if stages haven't been loaded for this pipeline yet.
+      if (pipelineId !== selectedPipelineId || stages.length === 0) {
+          fetchStages(pipelineId);
+      } 
+      // Note: If pipelines haven't loaded yet, the pipeline name might not appear initially.
+      // Consider fetching the specific pipeline if not found in the store list for robustness.
     }
-  }, [pipelineId, fetchStages, pipeline, pipelinesLoading, fetchPipelines]);
+  }, [pipelineId, fetchStages, selectedPipelineId, stages.length]); // Add dependencies
 
+  // --- Modal Handlers ---
   const handleAddStage = () => {
-    onCreateOpen(); // Open the create modal
+    onCreateOpen();
   };
 
   const handleEditStage = (stage: Stage) => {
@@ -52,114 +74,134 @@ const StagesPage: React.FC = () => {
     setStageToDelete(stage);
     onDeleteOpen();
   };
-
+  
   const handleSuccess = () => {
-     // Optionally refetch stages here if needed, though store should update
-     // if (pipelineId) fetchStages(pipelineId);
-  }
+    console.log('Stage action successful');
+    // Store handles state updates, no refetch needed here typically
+  };
+  
+  const handleEditClose = () => {
+      onEditClose();
+      setStageToEdit(null);
+  };
 
-  if (pipelinesLoading) {
-    return <Spinner />;
-  }
-
-  if (!pipeline) {
-     return (
-        <Box p={4}>
-             <Alert status="error">
-                <AlertIcon />
-                Pipeline not found.
-             </Alert>
-             <Button as={RouterLink} to="/pipelines" mt={4}>Back to Pipelines</Button>
-        </Box>
-     );
-  }
+  const handleDeleteClose = () => {
+      onDeleteClose();
+      setStageToDelete(null);
+  };
 
   return (
     <Box p={4}>
-      <VStack align="stretch" spacing={4}>
-        <HStack justify="space-between">
-            <Heading size="lg">Stages for Pipeline: {pipeline?.name || 'Loading...'}</Heading>
-             <Button colorScheme="blue" leftIcon={<AddIcon boxSize={3} />} onClick={handleAddStage}>
-                Add Stage
-             </Button>
-        </HStack>
-        
-        <Text>Manage the stages within the "{pipeline.name}" pipeline.</Text>
-
-        {stagesLoading && <Spinner />}
-        {stagesError && (
-            <Alert status="error">
-                <AlertIcon />
-                Error loading stages: {stagesError}
-            </Alert>
+       <Link as={RouterLink} to="/pipelines" mb={4} display="inline-block">
+         <ArrowBackIcon mr={1} /> Back to Pipelines
+       </Link>
+      <Flex justify="space-between" align="center" mb={4}>
+        <Heading size="lg">
+          Stages for Pipeline: {pipeline ? pipeline.name : (pipelineId ? `(${pipelineId.substring(0, 8)}...)` : 'Loading...')}
+        </Heading>
+        {/* Only show Add Stage button if pipelineId is valid */}
+        {pipelineId && (
+          <Button onClick={handleAddStage} colorScheme="teal" leftIcon={<AddIcon boxSize={3} />}>
+            Add Stage
+          </Button>
         )}
+      </Flex>
 
-        {!stagesLoading && !stagesError && (
-             stages.length === 0 ? (
-                <Text>No stages found in this pipeline. Add one to get started!</Text>
-             ) : (
-                <VStack align="stretch" spacing={3} borderWidth="1px" borderRadius="md" p={4}>
-                    {stages.map((stage) => (
-                        <HStack key={stage.id} justify="space-between" p={2} _hover={{ bg: 'gray.50' }}>
-                            <Box>
-                               <Text fontWeight="medium">{stage.name}</Text>
-                               <Text fontSize="sm" color="gray.500">Order: {stage.order} {stage.deal_probability ? ` | Probability: ${stage.deal_probability}%` : ''}</Text>
-                            </Box>
-                            <HStack>
-                                <IconButton
-                                    aria-label="Edit stage"
-                                    icon={<EditIcon />}
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => handleEditStage(stage)}
-                                />
-                                <IconButton
-                                    aria-label="Delete stage"
-                                    icon={<DeleteIcon />}
-                                    size="sm"
-                                    variant="ghost"
-                                    colorScheme="red"
-                                    onClick={() => handleDeleteStage(stage)}
-                                />
-                            </HStack>
-                        </HStack>
-                    ))}
-                </VStack>
-             )
-        )}
-         <Button as={RouterLink} to="/pipelines" mt={4} variant="outline">Back to Pipelines</Button>
-      </VStack>
-
-      {/* Render the Create Stage Modal */}
-      {pipelineId && (
-         <CreateStageModal 
-            isOpen={isCreateOpen} 
-            onClose={onCreateClose} 
-            pipelineId={pipelineId} 
-            onSuccess={handleSuccess}
-         />
+      {stagesLoading && (
+        <Flex justify="center" align="center" minH="200px">
+          <Spinner size="xl" />
+        </Flex>
       )}
 
-      {/* Render the Edit Stage Modal */}
-      <EditStageModal 
-         isOpen={isEditOpen}
-         onClose={() => {
-            onEditClose();
-            setStageToEdit(null); // Clear selection on close
-         }}
-         stage={stageToEdit}
-         onSuccess={handleSuccess}
-      />
+      {stagesError && (
+        <Alert status="error" mb={4}>
+          <AlertIcon />
+          Error fetching stages: {stagesError}
+        </Alert>
+      )}
 
-      {/* Render the Delete Stage Confirmation */} 
-       <DeleteStageConfirmationDialog 
-         isOpen={isDeleteOpen}
-         onClose={() => {
-            onDeleteClose();
-            setStageToDelete(null); // Clear selection on close
-         }}
-         stage={stageToDelete}
-         onSuccess={handleSuccess}
+      {!pipelineId && !stagesLoading && (
+          <Alert status="warning" mb={4}>
+            <AlertIcon />
+            No Pipeline ID found in URL.
+          </Alert>
+      )}
+
+      {!stagesLoading && !stagesError && pipelineId && (
+        <VStack spacing={4} align="stretch">
+          {stages.length === 0 ? (
+            <Text>No stages found for this pipeline. Create one to get started!</Text>
+          ) : (
+             // TODO: Implement drag-and-drop reordering later if desired
+            <List spacing={3}>
+              {stages.map((stage) => (
+                <ListItem 
+                  key={stage.id} 
+                  p={4} 
+                  borderWidth="1px" 
+                  borderRadius="md" 
+                  bg="white" 
+                  shadow="sm"
+                  _hover={{ shadow: 'md' }}
+                >
+                  <Flex justify="space-between" align="center">
+                    <Box flexGrow={1} mr={4}>
+                      <Heading size="sm">{stage.name}</Heading>
+                      <Text fontSize="sm" color="gray.500">
+                        Order: {stage.order}
+                        {stage.deal_probability !== null && stage.deal_probability !== undefined && 
+                          // Multiply by 100 and format as percentage
+                          ` | Probability: ${Math.round(stage.deal_probability * 100)}%` 
+                        }
+                      </Text>
+                    </Box>
+                    <HStack spacing={2}>
+                      <IconButton
+                        aria-label="Edit stage"
+                        icon={<EditIcon />}
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditStage(stage)}
+                      />
+                      <IconButton
+                        aria-label="Delete stage"
+                        icon={<DeleteIcon />}
+                        size="sm"
+                        variant="ghost"
+                        colorScheme="red"
+                        onClick={() => handleDeleteStage(stage)}
+                      />
+                    </HStack>
+                  </Flex>
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </VStack>
+      )}
+      
+      {/* Render Stage Modals */} 
+      {pipelineId && (
+        <CreateStageModal 
+          isOpen={isCreateOpen} 
+          onClose={onCreateClose} 
+          pipelineId={pipelineId} 
+          onSuccess={handleSuccess} 
+        />
+      )}
+      
+      <EditStageModal 
+        isOpen={isEditOpen} 
+        onClose={handleEditClose} 
+        stage={stageToEdit} 
+        onSuccess={handleSuccess} 
+      />
+      
+      <DeleteStageConfirmationDialog 
+        isOpen={isDeleteOpen} 
+        onClose={handleDeleteClose} 
+        stage={stageToDelete} 
+        onSuccess={handleSuccess} 
       />
 
     </Box>

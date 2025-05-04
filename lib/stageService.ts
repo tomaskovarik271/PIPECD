@@ -1,34 +1,23 @@
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils';
-
-// Define the interface for a Stage based on the DB schema
-export interface Stage {
-    id: string;                 // uuid, primary key
-    name: string;               // text, not null
-    order: number;              // integer, not null
-    pipeline_id: string;        // uuid, foreign key to pipelines
-    deal_probability?: number | null; // numeric (percentage, 0-100?)
-    created_at: string;         // timestamptz, default now()
-    updated_at: string;         // timestamptz, default now()
-    user_id: string;            // uuid, foreign key to auth.users
-}
+import { Stage } from './types'; // Import the Stage interface
 
 // Define the type for data needed to create a stage
-// user_id will be inferred.
-export type CreateStageInput = Pick<Stage, 'name' | 'order' | 'pipeline_id' | 'deal_probability'>;
+// user_id and pipeline_id are required, name and order are essential. deal_probability is optional.
+export type CreateStageInput = Pick<Stage, 'pipeline_id' | 'name' | 'order'> & Partial<Pick<Stage, 'deal_probability'>>;
 
 // Define the type for data needed to update a stage
-// Only 'name', 'order', 'deal_probability' are expected to be updatable.
-// pipeline_id should generally not be changed directly.
+// Allow updating name, order, and deal_probability. pipeline_id and user_id should not be changed here.
 export type UpdateStageInput = Partial<Pick<Stage, 'name' | 'order' | 'deal_probability'>>;
 
+
 /**
- * Fetches all stages for a specific pipeline belonging to the authenticated user.
- * Orders stages by the 'order' field.
+ * Fetches all stages belonging to a specific pipeline for the authenticated user.
+ * Assumes RLS on stages table enforces user ownership via the pipeline.
  * @param accessToken - The user's JWT.
  * @param pipelineId - The UUID of the pipeline whose stages are to be fetched.
- * @returns A promise that resolves to an array of Stages.
+ * @returns A promise that resolves to an array of Stages, ordered by their 'order' field.
  */
-export async function getStagesByPipeline(accessToken: string, pipelineId: string): Promise<Stage[]> {
+export async function getStagesByPipelineId(accessToken: string, pipelineId: string): Promise<Stage[]> {
     if (!pipelineId) {
         throw new Error("Pipeline ID is required to fetch stages.");
     }
@@ -37,21 +26,22 @@ export async function getStagesByPipeline(accessToken: string, pipelineId: strin
         .from('stages')
         .select('*')
         .eq('pipeline_id', pipelineId)
-        .order('order', { ascending: true }); // Ensure stages are ordered
+        .order('order', { ascending: true }); // Order stages by their 'order' field
 
     handleSupabaseError(error, `fetching stages for pipeline ${pipelineId}`);
 
+    // Ensure data is not null before returning; default to empty array if null
     return data || [];
 }
 
 /**
- * Fetches a single stage by its ID, ensuring it belongs to the authenticated user (implicitly via pipeline RLS).
+ * Fetches a single stage by its ID, ensuring it belongs to the authenticated user (via RLS).
  * @param accessToken - The user's JWT.
  * @param id - The UUID of the stage to fetch.
- * @returns A promise that resolves to the Stage object or null if not found.
+ * @returns A promise that resolves to the Stage object or null if not found/accessible.
  */
 export async function getStageById(accessToken: string, id: string): Promise<Stage | null> {
-    if (!id) {
+     if (!id) {
         throw new Error("Stage ID is required.");
     }
     const supabase = getAuthenticatedClient(accessToken);
@@ -59,7 +49,7 @@ export async function getStageById(accessToken: string, id: string): Promise<Sta
         .from('stages')
         .select('*')
         .eq('id', id)
-        .maybeSingle();
+        .maybeSingle(); // Use maybeSingle() to return null instead of error if not found
 
     handleSupabaseError(error, `fetching stage with id ${id}`);
 
@@ -67,69 +57,48 @@ export async function getStageById(accessToken: string, id: string): Promise<Sta
 }
 
 /**
- * Creates a new stage within a specific pipeline for the authenticated user.
+ * Creates a new stage for the authenticated user within a specific pipeline.
+ * user_id is automatically derived. pipeline_id, name, and order are required from input.
  * @param accessToken - The user's JWT.
- * @param stageData - An object containing the details for the new stage ('name', 'order', 'pipeline_id', 'deal_probability').
+ * @param stageData - An object containing the details for the new stage.
  * @returns A promise that resolves to the newly created Stage object.
  */
 export async function createStage(accessToken: string, stageData: CreateStageInput): Promise<Stage> {
-    if (!stageData || !stageData.name || stageData.order === undefined || !stageData.pipeline_id) {
-        throw new Error("Stage name, order, and pipeline ID are required for creation.");
+    if (!stageData || !stageData.pipeline_id || !stageData.name || stageData.order === undefined || stageData.order === null) {
+        throw new Error("Pipeline ID, stage name, and order are required for creation.");
     }
-    // Basic validation
-    if (typeof stageData.name !== 'string' || stageData.name.trim() === '') {
-        throw new Error("Invalid stage name.");
-    }
-    if (typeof stageData.order !== 'number' || !Number.isInteger(stageData.order) || stageData.order < 0) {
-         throw new Error("Stage order must be a non-negative integer.");
-    }
-    if (typeof stageData.pipeline_id !== 'string') {
-         throw new Error("Invalid pipeline ID.");
-    }
-     if (stageData.deal_probability !== undefined && stageData.deal_probability !== null) {
-        if (typeof stageData.deal_probability !== 'number' || stageData.deal_probability < 0 || stageData.deal_probability > 100) {
-            throw new Error("Deal probability must be a number between 0 and 100.");
-        }
+     // Validate deal_probability if provided
+    if (stageData.deal_probability !== undefined && stageData.deal_probability !== null && (stageData.deal_probability < 0 || stageData.deal_probability > 1)) {
+        throw new Error("Deal probability must be between 0 and 1.");
     }
 
     const supabase = getAuthenticatedClient(accessToken);
 
     // Get the authenticated user's ID
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+
     if (userError || !user) {
         console.error('Error fetching user for createStage:', userError);
         throw new Error("Could not get authenticated user to create stage.");
     }
-    const userId = user.id;
 
-    // Optional: Verify the pipeline belongs to the user before inserting stage?
-    // This is technically enforced by the RLS policy check constraint, but an early check
-    // could provide a clearer error message if the pipeline doesn't exist or isn't accessible.
-    // const { data: pipelineData, error: pipelineError } = await supabase
-    //     .from('pipelines')
-    //     .select('id')
-    //     .eq('id', stageData.pipeline_id)
-    //     .eq('user_id', userId)
-    //     .maybeSingle();
-    // if (pipelineError || !pipelineData) {
-    //     console.error('Error verifying pipeline ownership:', pipelineError);
-    //     throw new Error(`Pipeline not found or not accessible (ID: ${stageData.pipeline_id}).`);
-    // }
+    const userId = user.id;
 
     const { data, error } = await supabase
         .from('stages')
         .insert([
             {
-                name: stageData.name,
-                order: stageData.order,
                 pipeline_id: stageData.pipeline_id,
-                deal_probability: stageData.deal_probability, // Use null if not provided or explicitly null
+                name: stageData.name,
+                order: stageData.order, // Supabase client handles JS 'order' mapping to DB '"order"' if needed, but explicit quoting is safer if issues arise
+                deal_probability: stageData.deal_probability, // Include if provided, else DB default/null
                 user_id: userId // Explicitly set the user_id
-            }
+            },
         ])
-        .select()
-        .single();
+        .select() // Return the created record
+        .single(); // Expecting a single record to be created
 
+    // Handle potential errors during insertion
     handleSupabaseError(error, 'creating stage');
 
     if (!data) {
@@ -141,7 +110,7 @@ export async function createStage(accessToken: string, stageData: CreateStageInp
 
 /**
  * Updates an existing stage identified by its ID.
- * Allows updating 'name', 'order', 'deal_probability'.
+ * Allows updating fields specified in UpdateStageInput (name, order, deal_probability).
  * Ensures the stage belongs to the authenticated user via RLS.
  * @param accessToken - The user's JWT.
  * @param id - The UUID of the stage to update.
@@ -155,34 +124,45 @@ export async function updateStage(accessToken: string, id: string, updates: Upda
     if (!updates || Object.keys(updates).length === 0) {
         throw new Error("No update data provided for stage.");
     }
-    // Add validation for update fields
-    if (updates.name !== undefined && (typeof updates.name !== 'string' || updates.name.trim() === '')) {
-        throw new Error("Invalid stage name update.");
+     // Validate deal_probability if provided
+    if (updates.deal_probability !== undefined && updates.deal_probability !== null && (updates.deal_probability < 0 || updates.deal_probability > 1)) {
+        throw new Error("Deal probability must be between 0 and 1.");
     }
-     if (updates.order !== undefined && (typeof updates.order !== 'number' || !Number.isInteger(updates.order) || updates.order < 0)) {
-         throw new Error("Stage order update must be a non-negative integer.");
+    // Add validation for other fields if necessary (e.g., non-empty name, integer order)
+     if (updates.name !== undefined && typeof updates.name !== 'string') {
+        throw new Error("Invalid type for stage name update.");
     }
-    if (updates.deal_probability !== undefined && updates.deal_probability !== null) {
-        if (typeof updates.deal_probability !== 'number' || updates.deal_probability < 0 || updates.deal_probability > 100) {
-            throw new Error("Deal probability update must be a number between 0 and 100.");
-        }
-    } else if (updates.deal_probability === null) {
-        // Allow setting probability to null explicitly
-        updates.deal_probability = null;
+    if (updates.order !== undefined && !Number.isInteger(updates.order)) {
+         throw new Error("Invalid type for stage order update, must be an integer.");
     }
-
 
     const supabase = getAuthenticatedClient(accessToken);
+
+    // Fetch user ID for potential use in complex RLS checks if needed, though standard RLS should handle it
+     const { data: { user }, error: userError } = await supabase.auth.getUser();
+     if (userError || !user) {
+        console.error('Error fetching user for updateStage:', userError);
+        throw new Error("Could not get authenticated user to update stage.");
+    }
+    // const userId = user.id; // Not strictly needed for the update query itself due to RLS
+
+    const updatePayload: { [key: string]: any } = { ...updates };
+
+    // Map JS 'order' to DB '"order"' if necessary - Supabase client often handles this, but check during testing
+    // If there's an issue, use: if ('order' in updatePayload) { updatePayload['"order"'] = updatePayload.order; delete updatePayload.order; }
+
     const { data, error } = await supabase
         .from('stages')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .update(updatePayload)
+        .eq('id', id) // Match the specific stage
+        // RLS policy ensures the user can only update stages in pipelines they own
+        .select() // Return the updated record
+        .single(); // Expecting a single record to be updated
 
     handleSupabaseError(error, `updating stage with id ${id}`);
 
     if (!data) {
+       // This might happen if the ID doesn't exist or RLS prevents access
         throw new Error(`Stage with id ${id} not found or update failed.`);
     }
 
@@ -192,11 +172,11 @@ export async function updateStage(accessToken: string, id: string, updates: Upda
 /**
  * Deletes a stage identified by its ID.
  * Ensures the stage belongs to the authenticated user via RLS.
- * Note: Consider implications if deals are currently associated with this stage.
- * The foreign key constraint on deals might prevent deletion unless handled (e.g., ON DELETE SET NULL/RESTRICT).
+ * Deals associated with this stage will have their stage_id set to NULL due to `ON DELETE SET NULL`.
  * @param accessToken - The user's JWT.
  * @param id - The UUID of the stage to delete.
  * @returns A promise that resolves to true if deletion was successful.
+ * @throws Error if deletion fails.
  */
 export async function deleteStage(accessToken: string, id: string): Promise<boolean> {
     if (!id) {
@@ -206,17 +186,15 @@ export async function deleteStage(accessToken: string, id: string): Promise<bool
     const supabase = getAuthenticatedClient(accessToken);
     const { error, count } = await supabase
         .from('stages')
-        .delete({ count: 'exact' })
-        .eq('id', id);
+        .delete({ count: 'exact' }) // Request count for verification
+        .eq('id', id); // Match the specific stage
+        // RLS policy ensures the user can only delete stages in pipelines they own
 
-     // Handle potential foreign key violation errors specifically if deals depend on this stage
-    // if (error && error.code === '23503') { // Foreign key violation
-    //     console.warn(`Attempted to delete stage ${id} which might still have associated deals.`);
-    //     throw new Error(`Cannot delete stage: It may still contain deals. Consider moving deals first.`);
-    // }
-
+    // handleSupabaseError will throw if there's a DB error (other than not found)
     handleSupabaseError(error, `deleting stage with id ${id}`);
 
+    // Deletion is successful if there's no error.
+    // count will be 0 if the stage didn't exist or RLS prevented access, which is fine.
     console.log(`Stage delete operation for id ${id}: count=${count}`);
     return true; // Indicate success
 } 

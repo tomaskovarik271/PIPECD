@@ -19,6 +19,7 @@ import {
   IconButton,
   HStack,
   useToast,
+  VStack,
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
@@ -92,7 +93,7 @@ function DealsPage() {
   const handleDeleteClick = async (dealId: string) => {
     // Prevent double clicks
     if (isDeletingId === dealId) return;
-
+    
     if (window.confirm('Are you sure you want to delete this deal?')) {
         setIsDeletingId(dealId); // Show spinner on this specific button
         const success = await deleteDealAction(dealId); // Call store action
@@ -101,16 +102,16 @@ function DealsPage() {
         if (success) {
             toast({ title: 'Deal deleted.', status: 'success', duration: 3000, isClosable: true });
             // No need to call fetchDeals, store updates itself
-        } else {
+            } else {
             // Error toast is shown based on dealsError state from the store
             // Optional: Show specific toast here if needed, but might be redundant
-             toast({
+            toast({
                  title: 'Error Deleting Deal',
                  description: error || 'An unknown error occurred', // Display the store error
-                 status: 'error',
-                 duration: 5000,
-                 isClosable: true,
-             });
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+            });
         }
     } else {
         console.log('Delete cancelled');
@@ -184,33 +185,38 @@ function DealsPage() {
             </Thead>
             <Tbody>
               {deals.map((deal) => (
-                <Tr key={deal.id}>
-                  <Td>{deal.name}</Td>
-                  <Td>{formatPersonName(deal.person)}</Td> 
-                  <Td>{deal.stage.name}</Td>
-                  <Td isNumeric>{formatCurrency(deal.amount)}</Td>
-                  <Td>{formatDate(deal.created_at)}</Td>
-                  <Td>
-                    <HStack spacing={2}>
+                  <Tr key={deal.id}>
+                    <Td>{deal.name}</Td>
+                    <Td>{formatPersonName(deal.person)}</Td>
+                    <Td>
+                      <VStack align="start" spacing={0}>
+                        <Text fontWeight="medium">{deal.stage?.name || '-'}</Text>
+                        <Text fontSize="xs" color="gray.500">{deal.stage?.pipeline?.name || 'Pipeline N/A'}</Text>
+                      </VStack>
+                    </Td>
+                    <Td isNumeric>{formatCurrency(deal.amount)}</Td>
+                    <Td>{formatDate(deal.created_at)}</Td>
+                    <Td>
+                      <HStack spacing={2}>
                         <IconButton
-                            aria-label="Edit deal"
-                            icon={<EditIcon />}
-                            size="sm"
-                            onClick={() => handleEditClick(deal)}
+                          aria-label="Edit deal"
+                          icon={<EditIcon />}
+                          size="sm"
+                          onClick={() => handleEditClick(deal)}
                             isDisabled={!!isDeletingId}
                         />
                         <IconButton
-                            aria-label="Delete deal"
-                            icon={<DeleteIcon />}
-                            size="sm"
-                            colorScheme="red"
-                            onClick={() => handleDeleteClick(deal.id)}
+                          aria-label="Delete deal"
+                          icon={<DeleteIcon />}
+                          size="sm"
+                          colorScheme="red"
+                          onClick={() => handleDeleteClick(deal.id)}
                             isLoading={isDeletingId === deal.id}
                             isDisabled={!!isDeletingId && isDeletingId !== deal.id}
                         />
-                    </HStack>
-                  </Td>
-                </Tr>
+                      </HStack>
+                    </Td>
+                  </Tr>
               ))}
             </Tbody>
           </Table>
@@ -219,22 +225,22 @@ function DealsPage() {
 
       {/* Render Modals */} 
       {isCreateModalOpen && (
-          <CreateDealModal 
-              isOpen={isCreateModalOpen} 
-              onClose={onCreateModalClose} 
+      <CreateDealModal 
+        isOpen={isCreateModalOpen} 
+        onClose={onCreateModalClose} 
               onDealCreated={handleDataChanged}
-          />
+      />
       )}
       {dealToEdit && (
-          <EditDealModal 
+      <EditDealModal 
               deal={dealToEdit}
-              isOpen={isEditModalOpen} 
-              onClose={() => {
-                onEditModalClose();
-                setDealToEdit(null);
-              }}
+        isOpen={isEditModalOpen} 
+        onClose={() => {
+            onEditModalClose();
+            setDealToEdit(null);
+        }} 
               onDealUpdated={handleDataChanged}
-          />
+      />
       )}
 
     </Box>
