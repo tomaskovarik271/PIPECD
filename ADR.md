@@ -176,6 +176,8 @@ sequenceDiagram
     *   **Rationale:** Strong ecosystem, typing. Vite provides superior DX/performance over CRA.
 *   **UI Component Library: Chakra UI**
     *   **Rationale:** Accelerates development, accessible, composable. (Future consideration for RSC remains).
+*   **Frontend State Management: Zustand**
+    *   **Rationale:** Chosen for its simplicity, minimal boilerplate, and good performance characteristics for managing global state (like authentication) and server cache state (like fetched data lists) in the React frontend. Alternatives like Redux Toolkit or Jotai were considered but Zustand offered the best balance for the current project scale.
 *   **Dependency Versioning Strategy:** Use Node LTS. Use latest stable libraries, checking compatibility. Avoid RCs for critical dependencies.
 *   **Process:** Rigorous input validation in resolvers/logic modules (e.g., using `zod`). Document patterns in `DEVELOPER_GUIDE.md`.
 *   **Inngest Lock-in/Cost:** Dependency on a third-party SaaS. **Mitigation:**

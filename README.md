@@ -7,19 +7,23 @@ This repository contains the source code for the custom CRM system designed to r
 The system utilizes a serverless architecture based on:
 
 *   **Frontend:** React (Vite) SPA hosted on Netlify
+*   **Frontend State:** Zustand (`frontend/src/stores/useAppStore.ts`)
+*   **UI Library:** Chakra UI
 *   **API:** GraphQL Gateway (**GraphQL Yoga**) running as a Netlify Function (`netlify/functions/graphql.ts`)
-*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`)
+*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`), utilities in `lib/serviceUtils.ts`
 *   **Database:** Supabase (PostgreSQL) with RLS
 *   **Authentication:** Supabase Auth (Email/Password, GitHub configured)
 *   **Async Tasks:** Inngest (`netlify/functions/inngest.ts`)
+*   **Testing:** Vitest (Unit/Integration), Playwright (E2E)
 *   **Hosting/Deployment:** Netlify (`netlify.toml`)
 
 **Current Status:**
 *   Core infrastructure is set up (Supabase, Netlify, Inngest).
-*   Authentication (Email/Password, GitHub) is working.
+*   Authentication (Email/Password, GitHub) is working, managed via Zustand store.
 *   Person CRUD implemented.
-*   Deal CRUD implemented.
+*   Deal CRUD implemented (Data fetching managed via Zustand store).
 *   Organization CRUD implemented.
+*   Backend service layer refactored with shared utilities (`lib/serviceUtils.ts`).
 *   Inngest event sending implemented for Person & Deal creation (simple logging handlers).
 *   Basic UI (Chakra UI) implemented for Auth, People, Organizations, and Deals.
 *   Unit/Integration tests implemented for backend services (`lib/`), frontend components (`frontend/src/`), and GraphQL resolvers (`netlify/functions/`).
@@ -45,13 +49,15 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
     git clone https://github.com/tomaskovarik271/PIPECD.git
     cd PIPECD
     npm install # Installs root dependencies
+    cd frontend && npm install # Installs frontend dependencies (React, Zustand, etc.)
     ```
 2.  **Setup Local Environment:**
     *   Start Docker Desktop.
     *   Start local Supabase: `supabase start`. This may take a minute.
-    *   Copy local keys to `.env`: Create a `.env` file in the root and add `SUPABASE_URL` and `SUPABASE_ANON_KEY` from the `supabase status` output.
-    *   Add local Inngest keys (from your Inngest Dev environment dashboard) to `.env`: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`.
-    *   **(Optional)** Add `SUPABASE_SERVICE_ROLE_KEY` to `.env` if needed.
+    *   Copy local keys to `.env` (in project root): Create a `.env` file and add `SUPABASE_URL` and `SUPABASE_ANON_KEY` from the `supabase status` output.
+    *   Add local Inngest keys (from your Inngest Dev environment dashboard) to root `.env`: `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`.
+    *   **(Optional)** Add `SUPABASE_SERVICE_ROLE_KEY` to root `.env` if needed.
+    *   **(NOTE)** Frontend variables (`VITE_*`) are not needed in a separate `.env` file for local dev when using `netlify dev`, as Netlify CLI makes them available via the root `.env` during development.
 3.  **Initialize Local Database:** Apply existing schema migrations:
     ```bash
     # Ensure Supabase is running locally first!
@@ -61,7 +67,7 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
     ```bash
     netlify dev
     ```
-    *   This reads `netlify.toml`, loads `.env`, serves functions (e.g., GraphQL API at `http://localhost:8888/.netlify/functions/graphql`), and runs the frontend dev server (check output for frontend URL, e.g., `http://localhost:5173`).
+    *   This reads `netlify.toml`, loads `.env`, serves functions (e.g., GraphQL API at `http://localhost:8888/.netlify/functions/graphql`), and runs the frontend dev server (check output for frontend URL, e.g., `http://localhost:8888` or maybe `http://localhost:5173`).
     *   Access local Supabase Studio: `http://127.0.0.1:54323`
     *   Access local email catch-all (Inbucket): `http://127.0.0.1:54324`
 
@@ -69,10 +75,11 @@ Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technica
 
 1.  Open the frontend URL from `netlify dev` output.
 2.  Sign up/Log in using Email/Password or GitHub (GitHub requires local Supabase config).
-3.  Verify Home page shows `API Health: Ok` and correct user status.
+3.  Verify you are redirected to the main app content after login.
 4.  Navigate to the People page, create, edit, and delete a person.
 5.  Navigate to the Organizations page, create, edit, and delete an organization.
 6.  Navigate to the Deals page, create, edit, and delete a deal. (May require existing People/Organizations).
+7.  Sign out using the button in the navigation bar and verify you are redirected to the Sign In page without needing a refresh.
 
 ### Local Development Notes & Issues
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { gql } from 'graphql-request';
 import {
   Box,
@@ -23,9 +23,9 @@ import {
 } from '@chakra-ui/react';
 import { gqlClient } from '../lib/graphqlClient';
 import CreateDealModal from '../components/CreateDealModal';
-import EditDealModal from '../components/EditDealModal'; // Import EditDealModal
-// Import icons
+import EditDealModal from '../components/EditDealModal';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { useAppStore } from '../stores/useAppStore';
 
 // Update the query to fetch person_id and nested person info
 const GET_DEALS_QUERY = gql`
@@ -85,31 +85,21 @@ interface DeleteDealMutationResult {
 }
 
 function DealsPage() {
-  const [deals, setDeals] = useState<Deal[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // --- State from Zustand Store ---
+  const deals = useAppStore((state) => state.deals);
+  const loading = useAppStore((state) => state.dealsLoading);
+  const error = useAppStore((state) => state.dealsError);
+  const fetchDeals = useAppStore((state) => state.fetchDeals);
+  const deleteDealAction = useAppStore((state) => state.deleteDeal); // Renamed action accessor
+  
+  // --- Local UI State ---
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure();
   const [dealToEdit, setDealToEdit] = useState<Deal | null>(null);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const toast = useToast();
 
-  const fetchDeals = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await gqlClient.request<GetDealsQueryResult>(GET_DEALS_QUERY);
-      setDeals(data.deals || []);
-    } catch (err: any) {
-      console.error("Error fetching deals:", err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      setError(gqlError || err.message || 'Failed to fetch deals');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Fetch deals on mount
   useEffect(() => {
     fetchDeals();
   }, [fetchDeals]);
@@ -118,61 +108,38 @@ function DealsPage() {
     onCreateModalOpen();
   };
 
-  const handleDealCreated = () => {
+  // Callback for modals: Refetch deals
+  const handleDataChanged = useCallback(() => {
     fetchDeals();
-  };
+  }, [fetchDeals]);
 
   const handleEditClick = (deal: Deal) => {
     setDealToEdit(deal);
     onEditModalOpen();
   };
 
-  const handleDealUpdated = () => {
-    fetchDeals();
-  };
-
   const handleDeleteClick = async (dealId: string) => {
-    // Check if already deleting this item
-    if (isDeleting === dealId) return;
+    // Prevent double clicks
+    if (isDeletingId === dealId) return;
 
-    setDeleteError(null); // Clear previous delete errors
-    
     if (window.confirm('Are you sure you want to delete this deal?')) {
-        setIsDeleting(dealId); // Set loading state for this specific item
-        try {
-            const variables = { id: dealId };
-            const result = await gqlClient.request<DeleteDealMutationResult>(
-                DELETE_DEAL_MUTATION, 
-                variables
-            );
+        setIsDeletingId(dealId); // Show spinner on this specific button
+        const success = await deleteDealAction(dealId); // Call store action
+        setIsDeletingId(null); // Hide spinner
 
-            if (result.deleteDeal) {
-                toast({
-                    title: 'Deal deleted.',
-                    status: 'success',
-                    duration: 3000,
-                    isClosable: true,
-                });
-                fetchDeals(); // Refresh the list
-            } else {
-                 // Should ideally not happen if mutation throws error on failure
-                 throw new Error('Delete operation returned false.');
-            }
-
-        } catch (err: any) {
-            console.error('Error deleting deal:', err);
-            const gqlError = err.response?.errors?.[0]?.message;
-            const errorMsg = gqlError || err.message || 'Failed to delete deal';
-            setDeleteError(errorMsg); // Set general delete error state
-            toast({
-                title: 'Error deleting deal',
-                description: errorMsg,
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
-            });
-        } finally {
-             setIsDeleting(null); // Clear loading state regardless of success/failure
+        if (success) {
+            toast({ title: 'Deal deleted.', status: 'success', duration: 3000, isClosable: true });
+            // No need to call fetchDeals, store updates itself
+        } else {
+            // Error toast is shown based on dealsError state from the store
+            // Optional: Show specific toast here if needed, but might be redundant
+             toast({
+                 title: 'Error Deleting Deal',
+                 description: error || 'An unknown error occurred', // Display the store error
+                 status: 'error',
+                 duration: 5000,
+                 isClosable: true,
+             });
         }
     } else {
         console.log('Delete cancelled');
@@ -214,6 +181,7 @@ function DealsPage() {
         Create New Deal
       </Button>
 
+      {/* Loading state from store */}
       {loading && (
         <Box textAlign="center" mt={10}>
           <Spinner size="xl" />
@@ -221,22 +189,15 @@ function DealsPage() {
         </Box>
       )}
 
+      {/* Error state from store */}
       {error && (
-        <Alert status="error" mt={4}>
+        <Alert status="error" mt={4} mb={4}> {/* Added mb={4} */}
           <AlertIcon />
           Error loading deals: {error}
         </Alert>
       )}
 
-      {/* Display general delete error if any */}
-       {deleteError && !loading && (
-         <Alert status="error" mt={4} mb={4}>
-           <AlertIcon />
-           {deleteError}
-         </Alert>
-       )}
-
-      {!loading && !error && (
+      {!loading && /* Removed !error check here, show table even if delete failed */ (
         <TableContainer>
           <Table variant='simple' size='sm'>
             <TableCaption>List of current deals</TableCaption>
@@ -251,62 +212,60 @@ function DealsPage() {
               </Tr>
             </Thead>
             <Tbody>
-              {deals.length === 0 ? (
-                <Tr>
-                  <Td colSpan={6} textAlign="center">No deals found.</Td>
+              {deals.map((deal) => (
+                <Tr key={deal.id}>
+                  <Td>{deal.name}</Td>
+                  <Td>{formatPersonName(deal.person)}</Td> 
+                  <Td>{deal.stage}</Td>
+                  <Td isNumeric>{formatCurrency(deal.amount)}</Td>
+                  <Td>{formatDate(deal.created_at)}</Td>
+                  <Td>
+                    <HStack spacing={2}>
+                        <IconButton
+                            aria-label="Edit deal"
+                            icon={<EditIcon />}
+                            size="sm"
+                            onClick={() => handleEditClick(deal)}
+                            isDisabled={!!isDeletingId} // Disable if any delete is in progress
+                        />
+                        <IconButton
+                            aria-label="Delete deal"
+                            icon={<DeleteIcon />}
+                            size="sm"
+                            colorScheme="red"
+                            onClick={() => handleDeleteClick(deal.id)}
+                            isLoading={isDeletingId === deal.id} // Show spinner only on this button
+                            isDisabled={!!isDeletingId && isDeletingId !== deal.id} // Disable others during delete
+                        />
+                    </HStack>
+                  </Td>
                 </Tr>
-              ) : (
-                deals.map((deal) => (
-                  <Tr key={deal.id}>
-                    <Td>{deal.name}</Td>
-                    <Td>{formatPersonName(deal.person)}</Td>
-                    <Td>{deal.stage}</Td>
-                    <Td isNumeric>{formatCurrency(deal.amount)}</Td>
-                    <Td>{formatDate(deal.created_at)}</Td>
-                    <Td>
-                      <HStack spacing={2}>
-                        <IconButton
-                          aria-label="Edit deal"
-                          icon={<EditIcon />}
-                          size="sm"
-                          colorScheme="yellow"
-                          onClick={() => handleEditClick(deal)}
-                          isDisabled={isDeleting === deal.id}
-                        />
-                        <IconButton
-                          aria-label="Delete deal"
-                          icon={<DeleteIcon />}
-                          size="sm"
-                          colorScheme="red"
-                          onClick={() => handleDeleteClick(deal.id)}
-                          isLoading={isDeleting === deal.id}
-                          isDisabled={!!isDeleting && isDeleting !== deal.id}
-                        />
-                      </HStack>
-                    </Td>
-                  </Tr>
-                ))
-              )}
+              ))}
             </Tbody>
           </Table>
         </TableContainer>
       )}
 
-      <CreateDealModal 
-        isOpen={isCreateModalOpen} 
-        onClose={onCreateModalClose} 
-        onDealCreated={handleDealCreated}
-      />
+      {/* Render Modals */} 
+      {isCreateModalOpen && (
+          <CreateDealModal 
+              isOpen={isCreateModalOpen} 
+              onClose={onCreateModalClose} 
+              onDealCreated={handleDataChanged}
+          />
+      )}
+      {dealToEdit && (
+          <EditDealModal 
+              deal={dealToEdit}
+              isOpen={isEditModalOpen} 
+              onClose={() => {
+                onEditModalClose();
+                setDealToEdit(null);
+              }}
+              onDealUpdated={handleDataChanged}
+          />
+      )}
 
-      <EditDealModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => {
-            onEditModalClose();
-            setDealToEdit(null);
-        }} 
-        onDealUpdated={handleDealUpdated}
-        deal={dealToEdit}
-      />
     </Box>
   );
 }

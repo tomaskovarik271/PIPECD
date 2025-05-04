@@ -140,8 +140,6 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [ ] Enhance Security (APQ, Operation Whitelisting, full RBAC).
 *   [ ] Potentially refactor to `packages/` monorepo (Nx/Turborepo) if complexity warrants.
 
----
-
 ## Post-Refactor Hardening & Cleanup Plan (Generated from Code Review May 3rd, 2025)
 
 **Phase 1: Foundational Hardening & Security**
@@ -164,8 +162,8 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [ ] Clarify project structure: Decide if it's a monorepo (configure workspaces) or separate projects (ensure clear separation). For now, assume separate `frontend` and `netlify/functions` + `lib` backend structure.
     *   [ ] Review `netlify.toml` for any optimizations (e.g., command caching if applicable).
 4.  **Secrets Management:**
-    *   [ ] Confirm NO secrets are hardcoded anywhere.
-    *   [ ] Ensure all necessary environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are documented in `env.example.txt` and configured correctly in Netlify build/function settings (not committed).
+    *   [x] Confirm NO secrets are hardcoded anywhere.
+    *   [x] Ensure all necessary environment variables (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) are documented in `env.example.txt` and configured correctly in Netlify build/function settings (not committed).
 
 **Phase 2: Testing & Refinement**
 
@@ -176,14 +174,14 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [ ] Test input validation logic (ensure invalid input is rejected).
     *   [ ] Test authorization (ensure unauthorized access attempts fail - may require mocking auth context).
 6.  **Frontend Data Fetching Refactor:**
-    *   [ ] Centralize GraphQL query/mutation definitions (e.g., in `.graphql` files).
+    *   [x] Centralize GraphQL query/mutation definitions (e.g., in Zustand store `useAppStore.ts`).
     *   [ ] Consider using GraphQL Code Generator to create typed hooks/SDK.
-    *   [ ] Refactor components (`DealsPage`, `PeoplePage`, `OrganizationsPage`, modals) to use generated hooks or custom data-fetching hooks.
+    *   [-] Refactor components (`DealsPage` done; `PeoplePage`, `OrganizationsPage`, modals pending) to use Zustand store actions/state.
     *   [ ] Ensure consistent loading and error state handling across all data-fetching components.
 7.  **Component Testing (Frontend):**
-    *   [ ] Increase test coverage for key UI components (e.g., `Create*Modal`, `Edit*Modal`, complex table rendering).
+    *   [ ] Increase test coverage for key UI components (e.g., `Create*Modal`, `Edit*Modal`, complex table rendering), including interaction with Zustand store.
     *   [ ] Focus on testing component logic, rendering based on props/state, and basic user interactions.
-    *   [ ] Refactor existing tests (`DealsPage.test.tsx`) to use more stable selectors (e.g., `data-testid`) if needed.
+    *   [ ] Refactor existing tests (`DealsPage.test.tsx`) to use more stable selectors (e.g., `data-testid`) if needed and adapt to Zustand.
 8.  **Database Enhancements:**
     *   [ ] Review database schema for potential indexing opportunities on frequently queried/filtered columns (e.g., `name`, `email`, foreign keys). Add indexes via migrations.
     *   [ ] Institute a mandatory peer-review process for all new database migration scripts before merging.
@@ -191,22 +189,25 @@ This document outlines the development roadmap for the custom CRM system, based 
 **Phase 3: DX & Future-Proofing**
 
 9.  **State Management (Frontend):**
-    *   [ ] Evaluate options (Zustand, Jotai, Redux Toolkit) based on anticipated application complexity.
-    *   [ ] Select and integrate a state management library.
-    *   [ ] Refactor components relying heavily on prop drilling or complex local state to use the chosen library.
+    *   [x] Evaluate options (Zustand, Jotai, Redux Toolkit) based on anticipated application complexity.
+    *   [x] Select and integrate a state management library (Zustand chosen).
+    *   [-] Refactor components relying heavily on prop drilling or complex local state to use the chosen library (`DealsPage` refactored, others pending).
 10. **Error Handling Standardization:**
     *   [ ] Define specific, typed error classes in `lib/` services.
-    *   [ ] Ensure services throw these specific errors.
-    *   [ ] Ensure the GraphQL layer catches these errors and maps them to appropriate GraphQL errors for the client.
-    *   [ ] Implement a consistent strategy for displaying errors to the user in the frontend.
+    *   [x] Ensure services throw these specific errors (Current `handleSupabaseError` throws `GraphQLError`).
+    *   [x] Ensure the GraphQL layer catches these errors and maps them to appropriate GraphQL errors for the client (Current `processZodError` handles this).
+    *   [-] Implement a consistent strategy for displaying errors to the user in the frontend (Partially done with Zustand `dealsError` state).
 11. **N+1 Problem Mitigation:**
     *   [ ] Identify potential N+1 query issues (e.g., fetching lists with nested relations like `Person.organization`).
     *   [ ] Implement the DataLoader pattern within the GraphQL resolvers to batch database requests.
 12. **Documentation & Cleanup:**
-    *   [ ] Update `README.md` and `DEVELOPER_GUIDE.md` to reflect all changes, chosen libraries, and setup procedures.
+    *   [x] Update `README.md` and `DEVELOPER_GUIDE.md` to reflect all changes, chosen libraries, and setup procedures.
     *   [ ] Add code comments explaining complex logic or non-obvious decisions.
     *   [ ] Run `npm audit` (or equivalent) and address critical/high vulnerabilities.
-    *   [ ] Create ADRs (`ADR.md` or `/docs/adr/`) for key decisions (validation library, state management, data fetching strategy).
+    *   [x] Create ADRs (`ADR.md` or `/docs/adr/`) for key decisions (validation library, **state management (Zustand)**, data fetching strategy).
+
+**Other Implicit Tasks:**
+*   [x] Refactor duplicated backend service helpers (`getAuthenticatedClient`, `handleSupabaseError`) into `lib/serviceUtils.ts`.
 
 ---
 

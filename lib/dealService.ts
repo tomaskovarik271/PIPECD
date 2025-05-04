@@ -1,47 +1,20 @@
-import { createClient, SupabaseClient/* , PostgrestError */ } from '@supabase/supabase-js';
+import { /* createClient, SupabaseClient, PostgrestError */ } from '@supabase/supabase-js';
 // import type { User } from '@supabase/supabase-js'; // Keep User type if needed later (Commented out)
 import { GraphQLError } from 'graphql';
+import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils'; // Import shared helpers
 
-// Load env vars
-import dotenv from 'dotenv';
-dotenv.config();
-const supabaseUrl = process.env.SUPABASE_URL;
-if (!supabaseUrl) {
-  throw new Error('SUPABASE_URL environment variable is not set.');
-}
-// It's generally better to have the anon key available for client creation
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-if (!supabaseAnonKey) {
-    console.warn('SUPABASE_ANON_KEY environment variable is not set. Client creation might fail for some operations.');
-    // Depending on Supabase config, client creation might still work for auth header usage,
-    // but it's safer to have it. Throw error if strictly required.
-    // throw new Error('SUPABASE_ANON_KEY environment variable is not set.');
-}
+// REMOVED: Redundant env var loading
+// import dotenv from 'dotenv';
+// dotenv.config();
+// const supabaseUrl = process.env.SUPABASE_URL;
+// ... etc ...
+// if (!supabaseUrl) { ... }
+// if (!supabaseAnonKey) { ... }
 
 
-// --- Helper Functions (Consider refactoring to a shared file later) ---
-
-// Helper to get a request-specific Supabase client instance authenticated with JWT
-function getAuthenticatedClient(accessToken: string): SupabaseClient {
-  if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Supabase URL or Anon Key is not configured.');
-  }
-  // Use the user's access token to make the request, RLS policies using auth.uid() will work
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    // auth: { persistSession: false } // Ensure no session persistence on server
-  });
-}
-
-// Helper function to handle Supabase errors
-function handleSupabaseError(error: any, context: string) {
-  if (error) {
-    console.error(`Supabase error in ${context}:`, error.message);
-    throw new GraphQLError(`Database error during ${context}`, {
-      extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: error.message },
-    });
-  }
-}
+// REMOVED: Helper Functions (now in serviceUtils.ts)
+// function getAuthenticatedClient(accessToken: string): SupabaseClient { ... }
+// function handleSupabaseError(error: any, context: string) { ... }
 
 // --- Deal Data Shape (Placeholder - Define more accurately with schema) ---
 interface DealInput {
@@ -68,20 +41,20 @@ export const dealService = {
   // Get all deals for the authenticated user (RLS handles filtering)
   async getDeals(userId: string, accessToken: string): Promise<DealRecord[]> {
     console.log('[dealService.getDeals] called for user:', userId);
-    const supabase = getAuthenticatedClient(accessToken);
+    const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
       .from('deals')
       .select('*') // RLS filters by user_id
       .order('created_at', { ascending: false });
 
-    handleSupabaseError(error, 'fetching deals');
+    handleSupabaseError(error, 'fetching deals'); // USE IMPORTED HELPER
     return data || [];
   },
 
   // Get a single deal by ID (RLS handles filtering)
   async getDealById(userId: string, id: string, accessToken:string): Promise<DealRecord | null> {
     console.log('[dealService.getDealById] called for user:', userId, 'id:', id);
-    const supabase = getAuthenticatedClient(accessToken);
+    const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
       .from('deals')
       .select('*')
@@ -90,7 +63,7 @@ export const dealService = {
 
     // Ignore 'PGRST116' error (No rows found), return null in that case
     if (error && error.code !== 'PGRST116') { 
-       handleSupabaseError(error, 'fetching deal by ID');
+       handleSupabaseError(error, 'fetching deal by ID'); // USE IMPORTED HELPER
     }
     return data;
   },
@@ -98,14 +71,14 @@ export const dealService = {
   // Create a new deal (RLS requires authenticated client)
   async createDeal(userId: string, input: DealInput, accessToken: string): Promise<DealRecord> {
     console.log('[dealService.createDeal] called for user:', userId, 'input:', input);
-    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
+    const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
       .from('deals')
       .insert({ ...input, user_id: userId }) // RLS CHECK (auth.uid() = user_id)
       .select() 
       .single();
 
-    handleSupabaseError(error, 'creating deal');
+    handleSupabaseError(error, 'creating deal'); // USE IMPORTED HELPER
     if (!data) {
         throw new GraphQLError('Failed to create deal, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
     }
@@ -115,7 +88,7 @@ export const dealService = {
   // Update an existing deal (RLS requires authenticated client)
   async updateDeal(userId: string, id: string, input: DealInput, accessToken: string): Promise<DealRecord> {
     console.log('[dealService.updateDeal] called for user:', userId, 'id:', id, 'input:', input);
-    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
+    const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
       .from('deals')
       .update(input) 
@@ -127,7 +100,7 @@ export const dealService = {
      if (error && error.code === 'PGRST116') { // 'PGRST116' No rows found
          throw new GraphQLError('Deal not found', { extensions: { code: 'NOT_FOUND' } });
     }
-    handleSupabaseError(error, 'updating deal');
+    handleSupabaseError(error, 'updating deal'); // USE IMPORTED HELPER
      if (!data) { // Should be redundant if error handling is correct, but good failsafe
         throw new GraphQLError('Deal update failed, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
     }
@@ -137,7 +110,7 @@ export const dealService = {
   // Delete a deal (RLS requires authenticated client)
   async deleteDeal(userId: string, id: string, accessToken: string): Promise<boolean> {
     console.log('[dealService.deleteDeal] called for user:', userId, 'id:', id);
-    const supabase = getAuthenticatedClient(accessToken); // Use authenticated client
+    const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     // Note: We capture error here but let handleSupabaseError throw if it's significant
     const { error, count } = await supabase
       .from('deals')
@@ -145,7 +118,7 @@ export const dealService = {
       .eq('id', id); // Target the specific deal ID (RLS checks user_id)
 
     // handleSupabaseError will throw if there's a real DB/RLS issue
-    handleSupabaseError(error, 'deleting deal'); 
+    handleSupabaseError(error, 'deleting deal'); // USE IMPORTED HELPER
     
     // If handleSupabaseError did NOT throw, we consider the delete successful 
     // from the database perspective, even if count might be 0 or null 

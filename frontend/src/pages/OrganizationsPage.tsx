@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { gql } from 'graphql-request';
+import { useEffect, useState, useCallback } from 'react';
+// import { gql } from 'graphql-request'; // No longer needed
+// import { gqlClient } from '../lib/graphqlClient'; // No longer needed
 import {
   Box,
   Heading,
@@ -21,27 +22,14 @@ import {
   useToast,
   useDisclosure,
 } from '@chakra-ui/react';
-import { gqlClient } from '../lib/graphqlClient';
 import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
-import { EditIcon, DeleteIcon } from '@chakra-ui/icons'; // Assuming reuse
+import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { useAppStore } from '../stores/useAppStore'; // Import store
 
-// GraphQL Query to fetch organizations
-const GET_ORGANIZATIONS_QUERY = gql`
-  query GetOrganizations {
-    organizations {
-      id
-      name
-      address
-      notes
-      created_at
-      updated_at
-      # Add other fields if needed, e.g., user_id
-    }
-  }
-`;
+// REMOVED: GET_ORGANIZATIONS_QUERY (in store)
 
-// Interface for Organization data
+// --- Type Definition (Keep for component use) ---
 interface Organization {
   id: string;
   name: string;
@@ -49,53 +37,28 @@ interface Organization {
   notes?: string | null;
   created_at: string;
   updated_at: string;
-  // user_id: string; // Uncomment if needed
 }
+// --- End Type Definition ---
 
-// Interface for the query result
-interface GetOrganizationsQueryResult {
-  organizations: Organization[];
-}
-
-// Define DELETE_ORGANIZATION_MUTATION
-const DELETE_ORGANIZATION_MUTATION = gql`
-  mutation DeleteOrganization($id: ID!) {
-    deleteOrganization(id: $id)
-  }
-`;
-
-// Interface for the delete mutation result
-interface DeleteOrganizationMutationResult {
-  deleteOrganization: boolean;
-}
+// REMOVED: GetOrganizationsQueryResult (in store)
+// REMOVED: DELETE_ORGANIZATION_MUTATION and result type (in store)
 
 function OrganizationsPage() {
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // --- State from Zustand Store ---
+  const organizations = useAppStore((state) => state.organizations);
+  const loading = useAppStore((state) => state.organizationsLoading);
+  const error = useAppStore((state) => state.organizationsError);
+  const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
+  const deleteOrganizationAction = useAppStore((state) => state.deleteOrganization);
+
+  // --- Local UI State ---
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure();
   const [orgToEdit, setOrgToEdit] = useState<Organization | null>(null);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null); // For button spinner
   const toast = useToast();
 
   // --- Fetching Logic ---
-  const fetchOrganizations = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await gqlClient.request<GetOrganizationsQueryResult>(GET_ORGANIZATIONS_QUERY);
-      setOrganizations(data.organizations || []);
-    } catch (err: any) {
-      console.error("Error fetching organizations:", err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      setError(gqlError || err.message || 'Failed to fetch organizations');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
     fetchOrganizations();
   }, [fetchOrganizations]);
@@ -105,65 +68,35 @@ function OrganizationsPage() {
     onCreateModalOpen();
   };
 
-  const handleOrgCreated = () => {
-    fetchOrganizations(); // Refresh list after creation
-  };
+  // Callback for modals to refresh data
+  const handleDataChanged = useCallback(() => {
+    fetchOrganizations(); 
+  }, [fetchOrganizations]);
 
   const handleEditClick = (org: Organization) => {
     setOrgToEdit(org);
     onEditModalOpen();
   };
 
-  const handleOrgUpdated = () => {
-    fetchOrganizations(); // Refresh list after update
-  };
-
   const handleDeleteClick = async (orgId: string) => {
-    // console.log("Delete Organization clicked - Not implemented yet", orgId); // Remove log
-    // Check if already deleting this item
-    if (isDeleting === orgId) return;
+    if (isDeletingId === orgId) return; // Prevent double clicks
 
-    setDeleteError(null); // Clear previous delete errors
+    if (window.confirm('Are you sure you want to delete this organization? Associated people will have their organization link removed.')) {
+        setIsDeletingId(orgId); // Show spinner
+        const success = await deleteOrganizationAction(orgId);
+        setIsDeletingId(null); // Hide spinner
 
-    if (window.confirm('Are you sure you want to delete this organization? Note: Associated people will not be deleted.')) {
-        setIsDeleting(orgId); // Set loading state for this specific item
-        try {
-            const variables = { id: orgId };
-            const result = await gqlClient.request<DeleteOrganizationMutationResult>(
-                DELETE_ORGANIZATION_MUTATION, 
-                variables
-            );
-
-            if (result.deleteOrganization) {
-                toast({
-                    title: 'Organization deleted.',
-                    status: 'success',
-                    duration: 3000,
-                    isClosable: true,
-                });
-                fetchOrganizations(); // Refresh the list
-            } else {
-                 // Should ideally not happen if mutation throws error on failure
-                 throw new Error('Delete operation returned false.');
-            }
-
-        } catch (err: any) {
-            console.error('Error deleting organization:', err);
-            const gqlError = err.response?.errors?.[0]?.message;
-            const errorMsg = gqlError || err.message || 'Failed to delete organization';
-            setDeleteError(errorMsg); // Set general delete error state
+        if (success) {
+            toast({ title: 'Organization deleted.', status: 'success', duration: 3000, isClosable: true });
+        } else {
             toast({
-                title: 'Error deleting organization',
-                description: errorMsg,
+                title: 'Error Deleting Organization',
+                description: error || 'An unknown error occurred', // Display store error
                 status: 'error',
                 duration: 5000,
                 isClosable: true,
             });
-        } finally {
-             setIsDeleting(null); // Clear loading state regardless of success/failure
         }
-    } else {
-        console.log('Delete cancelled');
     }
   };
 
@@ -183,6 +116,7 @@ function OrganizationsPage() {
         Create New Organization
       </Button>
 
+      {/* Loading state from store */}
       {loading && (
         <Box textAlign="center" mt={10}>
           <Spinner size="xl" />
@@ -190,21 +124,17 @@ function OrganizationsPage() {
         </Box>
       )}
 
+      {/* Error state from store */}
       {error && (
-        <Alert status="error" mt={4}>
+        <Alert status="error" mt={4} mb={4}>
           <AlertIcon />
           Error loading organizations: {error}
         </Alert>
       )}
       
-      {deleteError && !loading && (
-        <Alert status="error" mt={4} mb={4}>
-           <AlertIcon />
-           {deleteError}
-         </Alert>
-       )}
+      {/* REMOVED: deleteError state */}
 
-      {!loading && !error && (
+      {!loading && (
         <TableContainer>
           <Table variant='simple' size='sm'>
             <TableCaption>List of organizations</TableCaption>
@@ -227,7 +157,7 @@ function OrganizationsPage() {
                   <Tr key={org.id}>
                     <Td>{org.name}</Td>
                     <Td>{org.address || '-'}</Td>
-                    <Td maxW="200px" whiteSpace="normal" overflow="hidden" textOverflow="ellipsis">{org.notes || '-'}</Td> {/* Truncate notes */}
+                    <Td maxW="200px" whiteSpace="normal" overflow="hidden" textOverflow="ellipsis">{org.notes || '-'}</Td>
                     <Td>{formatDate(org.created_at)}</Td>
                     <Td>
                       <HStack spacing={2}>
@@ -235,9 +165,9 @@ function OrganizationsPage() {
                           aria-label="Edit organization"
                           icon={<EditIcon />}
                           size="sm"
-                          colorScheme="yellow"
+                          // colorScheme="yellow" // Removed color scheme for consistency
                           onClick={() => handleEditClick(org)}
-                          isDisabled={isDeleting === org.id} // Disable if this item is being deleted
+                          isDisabled={!!isDeletingId} // Disable if any delete is in progress
                         />
                         <IconButton
                           aria-label="Delete organization"
@@ -245,8 +175,8 @@ function OrganizationsPage() {
                           size="sm"
                           colorScheme="red"
                           onClick={() => handleDeleteClick(org.id)}
-                          isLoading={isDeleting === org.id} // Show spinner for this item
-                          isDisabled={!!isDeleting && isDeleting !== org.id} // Disable if another item is being deleted
+                          isLoading={isDeletingId === org.id} // Show spinner for this item
+                          isDisabled={!!isDeletingId && isDeletingId !== org.id} // Disable if another item is being deleted
                         />
                       </HStack>
                     </Td>
@@ -258,17 +188,31 @@ function OrganizationsPage() {
         </TableContainer>
       )}
 
-      <CreateOrganizationModal 
-        isOpen={isCreateModalOpen} 
-        onClose={onCreateModalClose} 
-        onOrganizationCreated={handleOrgCreated} 
-      />
-      <EditOrganizationModal 
-        isOpen={isEditModalOpen} 
-        onClose={() => { onEditModalClose(); setOrgToEdit(null); }}
-        onOrganizationUpdated={handleOrgUpdated} 
-        organization={orgToEdit}
-      />
+      {/* Render Modals */} 
+      {isCreateModalOpen && (
+        <CreateOrganizationModal 
+            isOpen={isCreateModalOpen} 
+            onClose={onCreateModalClose} 
+            onOrganizationCreated={handleDataChanged}
+        />
+      )}
+
+      {orgToEdit && (
+        <EditOrganizationModal 
+            organization={orgToEdit} 
+            isOpen={isEditModalOpen} 
+            onClose={() => { 
+                onEditModalClose(); 
+                setOrgToEdit(null); 
+            }} 
+            onOrganizationUpdated={() => {
+                handleDataChanged(); 
+                onEditModalClose(); 
+                setOrgToEdit(null); 
+            }} 
+        />
+      )}
+
     </Box>
   );
 }

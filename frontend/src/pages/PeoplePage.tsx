@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
-import { gql } from 'graphql-request';
-import { gqlClient } from '../lib/graphqlClient';
+// import { gql } from 'graphql-request'; // No longer needed
+// import { gqlClient } from '../lib/graphqlClient'; // No longer needed
 import {
   Button,
   Box,
@@ -17,108 +17,88 @@ import {
   VStack,
   HStack,
   IconButton,
+  useToast, // Import useToast
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import CreatePersonForm from '../components/CreatePersonForm';
 import EditPersonForm from '../components/EditPersonForm';
-import DeleteConfirmationDialog from '../components/DeleteConfirmationDialog';
+// import DeleteConfirmationDialog from '../components/DeleteConfirmationDialog'; // Using inline confirmation for now
+import { useAppStore } from '../stores/useAppStore'; // Import store
 
-// Define the query to fetch people and their organization
-const GET_PEOPLE_QUERY = gql`
-  query GetPeople {
-    people {
-      id
-      first_name
-      last_name
-      email
-      phone
-      notes
-      created_at
-      updated_at
-      organization_id # Keep if needed by edit form
-      organization {  # Fetch nested organization
-          id
-          name
-      }
-    }
-  }
-`;
+// REMOVED: GET_PEOPLE_QUERY (now in store)
 
-// Define the shape of Organization (nested)
+// --- Type definitions (Keep for component use) ---
 interface Organization {
     id: string;
     name: string;
 }
-
-// Define the expected shape of a Person (formerly Contact)
 interface Person {
   id: string;
   first_name?: string | null;
   last_name?: string | null;
   email?: string | null;
   phone?: string | null;
-  // company?: string | null; // Removed, using organization now
   notes?: string | null;
   created_at: string;
   updated_at: string;
-  organization_id?: string | null; // Keep if needed by edit form
-  organization?: Organization | null; // Nested organization data
+  organization_id?: string | null; 
+  organization?: Organization | null; 
 }
+// --- End Type definitions ---
 
 function PeoplePage() {
-  const [people, setPeople] = useState<Person[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  // --- State from Zustand Store ---
+  const people = useAppStore((state) => state.people);
+  const loading = useAppStore((state) => state.peopleLoading);
+  const error = useAppStore((state) => state.peopleError);
+  const fetchPeople = useAppStore((state) => state.fetchPeople);
+  const deletePersonAction = useAppStore((state) => state.deletePerson);
+
+  // --- Local UI State ---
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
   const [personToEdit, setPersonToEdit] = useState<Person | null>(null);
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
-  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  // const [personToDelete, setPersonToDelete] = useState<Person | null>(null);
+  // const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null); // For button spinner
+  const toast = useToast();
 
-  const fetchPeople = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await gqlClient.request<{ people: Person[] }>(GET_PEOPLE_QUERY);
-      setPeople(data.people || []);
-    } catch (err: any) {
-      console.error("Error fetching people:", err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      setError(gqlError || err.message || "Failed to load people.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Fetch people on mount
   useEffect(() => {
     fetchPeople();
   }, [fetchPeople]);
 
-  const handleCreateSuccess = () => {
+  // Callback for modals to refresh data
+  const handleDataChanged = useCallback(() => {
     fetchPeople();
-    onCreateClose();
-  };
+  }, [fetchPeople]);
 
   const handleEditClick = (person: Person) => {
     setPersonToEdit(person);
     onEditOpen();
   };
 
-  const handleEditSuccess = () => {
-    fetchPeople();
-    onEditClose();
-    setPersonToEdit(null);
-  };
+  const handleDeleteClick = async (personId: string) => {
+    if (isDeletingId === personId) return; // Prevent double clicks
 
-  const handleDeleteClick = (person: Person) => {
-    setPersonToDelete(person);
-    onDeleteOpen();
-  };
+    if (window.confirm('Are you sure you want to delete this person? Related deals might be affected.')) {
+        setIsDeletingId(personId); // Show spinner on button
+        const success = await deletePersonAction(personId);
+        setIsDeletingId(null); // Hide spinner
 
-  const handleDeleteSuccess = () => {
-    fetchPeople();
-    onDeleteClose();
-    setPersonToDelete(null);
+        if (success) {
+            toast({ title: 'Person deleted.', status: 'success', duration: 3000, isClosable: true });
+        } else {
+            // Error state is managed by the store, show toast here
+            toast({
+                title: 'Error Deleting Person',
+                description: error || 'An unknown error occurred', // Display store error
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+            });
+        }
+    }
   };
 
   return (
@@ -131,9 +111,9 @@ function PeoplePage() {
       </Box>
 
       {loading && <Spinner size="xl" />}
-      {error && <Text color="red.500">{error}</Text>}
+      {error && <Text color="red.500">Error loading people: {error}</Text>}
 
-      {!loading && !error && (
+      {!loading && (
         <Box borderWidth="1px" borderRadius="lg" p={4}>
           {people.length === 0 ? (
             <Text>No people found.</Text>
@@ -143,11 +123,10 @@ function PeoplePage() {
                 <ListItem key={person.id} borderWidth="1px" borderRadius="md" p={3} display="flex" alignItems="center">
                   <Box flexGrow={1}>
                     <Text fontWeight="bold">
-                      {person.first_name} {person.last_name}
+                      {person.first_name} {person.last_name} 
+                      ({person.organization?.name || 'No organization'})
                     </Text>
-                    <Text fontSize="sm">{person.email || 'No email'}</Text>
-                    <Text fontSize="sm">{person.phone || 'No phone'}</Text>
-                    <Text fontSize="sm">{person.organization?.name || 'No organization'}</Text>
+                    <Text fontSize="sm">{person.email || '-'} | {person.phone || '-'}</Text>
                   </Box>
                   <HStack spacing={2}>
                     <IconButton
@@ -155,13 +134,16 @@ function PeoplePage() {
                       icon={<EditIcon />}
                       size="sm"
                       onClick={() => handleEditClick(person)}
+                      isDisabled={!!isDeletingId} // Disable edits during delete
                     />
                     <IconButton
                       aria-label="Delete person"
                       icon={<DeleteIcon />}
                       colorScheme="red"
                       size="sm"
-                      onClick={() => handleDeleteClick(person)}
+                      onClick={() => handleDeleteClick(person.id)}
+                      isLoading={isDeletingId === person.id}
+                      isDisabled={!!isDeletingId && isDeletingId !== person.id}
                     />
                   </HStack>
                 </ListItem>
@@ -176,7 +158,7 @@ function PeoplePage() {
         <ModalContent>
           <ModalHeader>Create New Person</ModalHeader>
           <ModalCloseButton />
-          <CreatePersonForm onClose={onCreateClose} onSuccess={handleCreateSuccess} />
+          <CreatePersonForm onClose={onCreateClose} onSuccess={handleDataChanged} />
         </ModalContent>
       </Modal>
 
@@ -189,20 +171,14 @@ function PeoplePage() {
             <EditPersonForm 
               person={personToEdit}
               onClose={() => { setPersonToEdit(null); onEditClose(); }} 
-              onSuccess={handleEditSuccess} 
+              onSuccess={() => { handleDataChanged(); onEditClose(); setPersonToEdit(null); }} // Chain callbacks
             />
           </ModalContent>
         </Modal>
       )}
 
-      {personToDelete && (
-        <DeleteConfirmationDialog
-          isOpen={isDeleteOpen}
-          onClose={() => { setPersonToDelete(null); onDeleteClose(); }}
-          person={personToDelete}
-          onSuccess={handleDeleteSuccess}
-        />
-      )}
+      {/* REMOVED DeleteConfirmationDialog - using window.confirm for simplicity */}
+      {/* {personToDelete && (...) } */}
     </VStack>
   );
 }

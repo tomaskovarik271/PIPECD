@@ -1,47 +1,41 @@
 import { Routes, Route, Link as RouterLink } from 'react-router-dom';
-import { useEffect, useState } from 'react'; // Import hooks
-// import { gql } from 'graphql-request'; // Removed unused gql
-// import { gqlClient } from './lib/graphqlClient'; // Removed unused gqlClient
-import { supabase } from './lib/supabase'; // Import frontend supabase client
+import { useEffect /* , useState */ } from 'react'; // Removed useState
+import { supabase } from './lib/supabase'; 
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import type { Session } from '@supabase/supabase-js';
+// import type { Session } from '@supabase/supabase-js'; // No longer needed here
 import DealsPage from './pages/DealsPage';
 import PeoplePage from './pages/PeoplePage';
-import OrganizationsPage from './pages/OrganizationsPage'; // Import the new page
+import OrganizationsPage from './pages/OrganizationsPage'; 
 import { 
   Box, 
   Heading, 
-  Link, // Use Chakra Link
+  Link, 
   Button, 
   HStack, 
   Flex,
   useToast,
   VStack,
+  Spinner, // Added Spinner
 } from '@chakra-ui/react';
+import { useAppStore } from './stores/useAppStore'; // Import the store
 
-// Define the health query
-// const HEALTH_QUERY = gql` ... `; // Removed unused HEALTH_QUERY
+// REMOVED unused HEALTH_QUERY
+// const HEALTH_QUERY = gql` ... `;
 
-// const ME_QUERY = gql` ... `; // Removed unused ME_QUERY
+// REMOVED unused ME_QUERY
+// const ME_QUERY = gql` ... `;
 
-// Interface for the 'me' query result
-// interface MeQueryResult { ... } // Removed unused MeQueryResult
+// REMOVED unused MeQueryResult
+// interface MeQueryResult { ... }
 
-// --- Page Components (using Chakra UI) ---
-// NOTE: HomePage, AboutPage, NotFoundPage are unused and can be removed or kept for future use.
-// For now, just removing the references causing build errors.
+// REMOVED unused page components
+// function HomePage() { ... }
+// function AboutPage() { ... }
+// function NotFoundPage() { ... }
 
-// function HomePage() { ... } // Removed reference
-
-// function AboutPage() { ... } // Removed reference
-
-// function NotFoundPage() { ... } // Removed reference
-
-// --- Component for Logged-In State (using Chakra UI) ---
+// --- Component for Logged-In State --- 
 function AppContent() {
-  // const handleSignOut = async () => { ... }; // Removed unused function definition
-
   return (
     <>
       <TempNav />
@@ -49,7 +43,7 @@ function AppContent() {
           <Routes>
           <Route path="/" element={<Heading size="lg">Home</Heading>} />
           <Route path="/people" element={<PeoplePage />} />
-            <Route path="/deals" element={<DealsPage />} />
+          <Route path="/deals" element={<DealsPage />} />
           <Route path="/organizations" element={<OrganizationsPage />} />
           <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
           </Routes>
@@ -58,30 +52,48 @@ function AppContent() {
   );
 }
 
-// --- Main App Component with Auth Logic (Auth UI uses Chakra theme via ThemeSupa) ---
+// --- Main App Component with Auth Logic --- 
 function App() {
-  const [session, setSession] = useState<Session | null>(null);
+  // Use state from Zustand store
+  const session = useAppStore((state) => state.session);
+  const isLoadingAuth = useAppStore((state) => state.isLoadingAuth);
+  const setSession = useAppStore((state) => state.setSession);
+  const checkAuth = useAppStore((state) => state.checkAuth);
   const toast = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    // Initial check
+    checkAuth();
 
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-      // Optionally show toast on login/logout
-      if (_event === 'SIGNED_IN') {
-          toast({ title: "Signed In", status: "success", duration: 3000, isClosable: true });
-      }
-      if (_event === 'SIGNED_OUT') {
-          toast({ title: "Signed Out", status: "info", duration: 3000, isClosable: true });
-      }
+        console.log('Auth state changed:', _event, session ? 'Session exists' : 'No session');
+        setSession(session); // Update store state
+        // Optionally show toast on login/logout
+        if (_event === 'SIGNED_IN') {
+            toast({ title: "Signed In", status: "success", duration: 3000, isClosable: true });
+        }
+        if (_event === 'SIGNED_OUT') {
+            toast({ title: "Signed Out", status: "info", duration: 3000, isClosable: true });
+        }
     });
 
-    return () => subscription.unsubscribe();
-  }, [toast]);
+    return () => {
+        console.log('Unsubscribing from auth changes.');
+        subscription.unsubscribe();
+    }
+  }, [checkAuth, setSession, toast]); // Add dependencies
 
+  // Show loading spinner during initial auth check
+  if (isLoadingAuth) {
+    return (
+      <Flex minH="100vh" align="center" justify="center">
+        <Spinner size="xl" />
+      </Flex>
+    );
+  }
+
+  // Show Auth UI if not logged in
   if (!session) {
     return (
       <Flex minH="100vh" align="center" justify="center" bg="gray.50">
@@ -95,16 +107,22 @@ function App() {
     );
   }
   else {
+    // Show main app content if logged in
     return <AppContent />;
   }
 }
 
 // Temporary simple navigation
 function TempNav() {
-    const handleSignOut = async () => {
-        const { error } = await supabase.auth.signOut();
-        if (error) console.error('Error signing out:', error);
+    // Get signout action from the store
+    const handleSignOutAction = useAppStore((state) => state.handleSignOut);
+    // Optional: Get loading state for signout button visual feedback
+    // const isSigningOut = useAppStore((state) => state.isLoadingAuth); // Reusing isLoadingAuth temporarily
+
+    const handleSignOutClick = () => {
+        handleSignOutAction(); // Call the action from the store
     };
+    
     return (
         <Box as="nav" bg="gray.100" p={4} mb={4}>
             <HStack spacing={4} justify="space-between">
@@ -114,7 +132,13 @@ function TempNav() {
                     <Link as={RouterLink} to="/deals">Deals</Link>
                     <Link as={RouterLink} to="/organizations">Organizations</Link>
                 </HStack>
-                <Button size="sm" onClick={handleSignOut}>Sign Out</Button>
+                <Button 
+                  size="sm" 
+                  onClick={handleSignOutClick} 
+                  // isLoading={isSigningOut} // Optional visual feedback
+                >
+                    Sign Out
+                </Button>
             </HStack>
       </Box>
     );

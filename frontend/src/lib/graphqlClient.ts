@@ -2,14 +2,14 @@ import { GraphQLClient } from 'graphql-request';
 import { supabase } from './supabase'; // Import the frontend Supabase client
 
 // Determine the API endpoint URL based on the environment
-// In local development, Netlify functions are usually served at /.netlify/functions/
-// In production, the same path relative to the site origin should work.
+// REMOVED: Previous endpoint logic attempts
 // const endpoint = import.meta.env.DEV
 //   ? 'http://localhost:8888/.netlify/functions/graphql' // Use the typical netlify dev port
 //   : '/.netlify/functions/graphql'; // Relative path for production
 
-// console.log("GraphQL Endpoint determined:", endpoint); // REMOVED DEBUGGING
-// console.log("Is DEV environment?", import.meta.env.DEV); // REMOVED DEBUGGING
+// REMOVED DEBUGGING
+// console.log("GraphQL Endpoint determined:", endpoint);
+// console.log("Is DEV environment?", import.meta.env.DEV);
 
 // Construct absolute URL: Use relative path in prod, prefixing with origin.
 const relativeEndpoint = '/.netlify/functions/graphql';
@@ -39,7 +39,7 @@ export const gqlClient = new GraphQLClient(endpoint, {
   },
 });
 
-// Example usage (can be removed later):
+// REMOVED: Example usage
 /*
 import { gql } from '@apollo/client';
 

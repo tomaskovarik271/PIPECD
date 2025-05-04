@@ -32,18 +32,21 @@ PIPECD/
 │   │   │   ├── DealsPage.tsx
 │   │   │   ├── PeoplePage.tsx
 │   │   │   └── OrganizationsPage.tsx
+│   │   ├── stores/     # Zustand state management store(s)
+│   │   │   └── useAppStore.ts
 │   │   ├── App.css
-│   │   ├── App.tsx     # Root UI component, routing
+│   │   ├── App.tsx     # Root UI component, routing, auth listener
 │   │   ├── index.css
 │   │   ├── main.tsx    # App entry point
 │   │   └── setupTests.ts # Vitest setup for frontend
 │   ├── .env            # Frontend env vars (VITE_*) (gitignored)
 │   ├── index.html      # HTML entry point
-│   ├── package.json    # Frontend dependencies/scripts
+│   ├── package.json    # Frontend dependencies/scripts (includes Zustand)
 │   ├── tsconfig.json   # Frontend TS config
 │   └── vite.config.ts  # Vite configuration
 ├── lib/                # Shared Backend TypeScript Modules
 │   ├── supabaseClient.ts # Backend Supabase client init
+│   ├── serviceUtils.ts   # Shared service helpers (auth client, error handler)
 │   ├── dealService.ts
 │   ├── dealService.test.ts
 │   ├── personService.ts
@@ -73,8 +76,9 @@ PIPECD/
 └── vitest.config.ts    # Vitest unit/integration test config (root)
 ```
 
-*   `lib/`: Shared Backend TypeScript Modules (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`).
+*   `lib/`: Shared Backend TypeScript Modules (e.g., `personService.ts`, `dealService.ts`, `organizationService.ts`) and utilities (`serviceUtils.ts`).
 *   `netlify/functions/`: Netlify serverless functions (`graphql.ts`, `inngest.ts`).
+*   `frontend/src/stores/`: Zustand state management stores (`useAppStore.ts`).
 *   `frontend/src/pages/`: Top-level page components (e.g., `PeoplePage.tsx`, `DealsPage.tsx`, `OrganizationsPage.tsx`).
 *   `frontend/src/components/`: Reusable UI components (e.g., `CreateDealModal.tsx`, `EditDealModal.tsx`, `CreatePersonForm.tsx`, etc.).
 *   `e2e/`: Playwright E2E tests (`auth.spec.ts`, others to be added).
@@ -85,7 +89,7 @@ PIPECD/
 *   **`package.json` (Root):** Manages backend/shared/testing dependencies and root-level scripts (`test`, `test:e2e`).
 *   **`tsconfig.json` (Root):** Configures TypeScript for the backend functions and shared library (`/lib`).
 *   **`.env` (Root):** Stores *local* environment variables for backend/Netlify functions (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY`). **Gitignored.**
-*   **`frontend/package.json`:** Manages frontend dependencies and scripts (`npm run dev`, `npm run build`).
+*   **`frontend/package.json`:** Manages frontend dependencies (including `zustand`) and scripts (`npm run dev`, `npm run build`).
 *   **`frontend/.env`:** Stores *local* environment variables accessible by Vite (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`). **Gitignored.**
 *   **`vitest.config.ts` (Root):** Configures Vitest test runner for *both* backend (`lib/`) and frontend (`frontend/src/`) tests. Sets up `jsdom` environment and points to `frontend/src/setupTests.ts` for frontend tests.
 *   **`frontend/src/setupTests.ts`:** Vitest setup file for frontend tests, imports `@testing-library/jest-dom` matchers.
@@ -93,21 +97,23 @@ PIPECD/
 *   **`netlify/functions/graphql.ts`:** Defines the GraphQL schema (People, Organizations, Deals, etc.), implements resolvers (calling services in `/lib`), sets up the GraphQL Yoga server, and includes a context factory for JWT authentication.
 *   **`netlify/functions/inngest.ts`:** Initializes the Inngest client, defines Inngest functions/handlers (currently basic logging), and exports the Netlify serve handler.
 *   **`lib/supabaseClient.ts`:** Initializes and exports the *backend* Supabase client (uses root `.env`). Includes `dotenv.config()` workaround if needed for local dev.
+*   **`lib/serviceUtils.ts`:** Contains shared helper functions for backend services, such as `getAuthenticatedClient` (for creating request-specific authenticated Supabase clients) and `handleSupabaseError`.
 *   **`frontend/src/main.tsx`:** Frontend entry point, renders `App` within ChakraProvider and BrowserRouter.
-*   **`frontend/src/App.tsx`:** Root React component, manages Supabase auth state, renders Auth UI or `AppContent`, defines top-level routes.
+*   **`frontend/src/App.tsx`:** Root React component, subscribes to Supabase auth changes via `useEffect`, updates the Zustand store (`useAppStore`), renders Auth UI or `AppContent` based on store state, defines top-level routes.
 *   **`frontend/src/lib/supabase.ts`:** Initializes and exports the *frontend* Supabase client (uses `VITE_` vars). Ensures `detectSessionInUrl` is enabled (default).
 *   **`frontend/src/lib/graphqlClient.ts`:** Initializes and exports the `graphql-request` client. Constructs an absolute URL for the endpoint (`/.netlify/functions/graphql`) based on `window.location.origin`. Includes middleware to inject the Supabase auth token.
+*   **`frontend/src/stores/useAppStore.ts`:** Defines the Zustand store, holding application state (auth session, deals list, loading/error states) and actions (fetching/mutating data, auth management).
 *   **`supabase/migrations/`:** Contains timestamped SQL files defining database schema changes. Managed via `supabase migration` commands.
-*   **`lib/personService.ts`, `lib/dealService.ts`, `lib/organizationService.ts`:** Service classes containing business logic and database interactions (via authenticated Supabase client) for respective domains.
-*   **`frontend/src/pages/PeoplePage.tsx`, `frontend/src/pages/DealsPage.tsx`, `frontend/src/pages/OrganizationsPage.tsx`:** Main UI components for managing entities, including data fetching, state management, and integration with modal/form components.
-*   **`frontend/src/components/CreateDealModal.tsx`, `frontend/src/components/EditDealModal.tsx`, `CreatePersonForm.tsx`, `EditPersonForm.tsx`, `CreateOrganizationModal.tsx`, `EditOrganizationModal.tsx`:** Modal/form components for creating and editing entities.
+*   **`lib/personService.ts`, `lib/dealService.ts`, `lib/organizationService.ts`:** Service classes containing business logic and database interactions (via authenticated Supabase client from `serviceUtils`) for respective domains.
+*   **`frontend/src/pages/PeoplePage.tsx`, `frontend/src/pages/DealsPage.tsx`, `frontend/src/pages/OrganizationsPage.tsx`:** Main UI components for managing entities, fetching data via Zustand store actions, displaying store state (data, loading, errors), and integrating with modal/form components.
+*   **`frontend/src/components/CreateDealModal.tsx`, `frontend/src/components/EditDealModal.tsx`, `CreatePersonForm.tsx`, `EditPersonForm.tsx`, `CreateOrganizationModal.tsx`, `EditOrganizationModal.tsx`:** Modal/form components for creating and editing entities, typically managing their own form input state locally.
 
 ## 3. Local Development Workflow
 
 (Refer to `README.md` for simplified steps)
 
 1.  **Prerequisites:** Ensure Node.js, npm, Netlify CLI, Supabase CLI, and Docker are installed.
-2.  **Clone & Install:** `git clone ...`, `cd PIPECD`, `npm install`.
+2.  **Clone & Install:** `git clone ...`, `cd PIPECD`, `npm install`, `cd frontend && npm install`.
 3.  **Local Supabase:** Start Docker. Run `supabase start`.
 4.  **Environment:** Create root `.env` file. Add `SUPABASE_URL`, `SUPABASE_ANON_KEY` from `supabase status`. Add `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` from Inngest Dev dashboard.
 5.  **Local DB Schema:** Run `supabase db reset` to apply migrations locally.
@@ -149,18 +155,23 @@ PIPECD/
 *   **GraphQL (Yoga + `graphql-request`):**
     *   Backend uses GraphQL Yoga for its performance in serverless environments.
     *   Schema is defined directly in `graphql.ts` (could be moved to separate `.graphql` files later).
-    *   Resolvers call functions/services potentially located in `/lib`.
+    *   Resolvers call functions/services located in `/lib`, using helpers from `lib/serviceUtils.ts` for auth/errors.
     *   Authentication is handled via JWT in the `Authorization: Bearer` header, verified in the Yoga `context` factory using `supabase.auth.getUser()`.
-    *   Frontend uses `graphql-request` for simple, direct query/mutation execution. Middleware injects the auth token.
+    *   Frontend uses `graphql-request` via the configured `gqlClient` in `lib/graphqlClient.ts`. Middleware injects the auth token. Data fetching logic is primarily encapsulated within Zustand store actions (`stores/useAppStore.ts`).
 *   **Supabase:**
-    *   **Auth:** Ensure Production Supabase has correct Provider keys and Site URL config.
+    *   **Auth:** Frontend auth state changes are monitored in `App.tsx` and synced to the Zustand store (`useAppStore`). Production Supabase requires correct Provider keys and Site URL config.
     *   **Migrations:** Emphasize manual application to production via linked CLI.
-    *   **RLS:** Policies defined in migrations apply to both local and prod (once migrated).
+    *   **RLS:** Policies defined in migrations apply to both local and prod (once migrated). Backend service calls use authenticated clients (via `getAuthenticatedClient` in `lib/serviceUtils.ts`) to ensure RLS policies are enforced based on the user's JWT.
     *   **Clients:** Backend uses root `.env` (local) or Netlify function env vars (prod). Frontend uses `VITE_` vars baked in at build time.
+*   **State Management (Frontend - Zustand):**
+    *   Uses Zustand (`stores/useAppStore.ts`) for managing global application state.
+    *   Currently manages authentication state (session, user, loading) and server cache state for Deals (list, loading, error).
+    *   Page components (e.g., `DealsPage`) select state from the store and call actions (e.g., `fetchDeals`, `deleteDeal`) defined in the store.
+    *   The store encapsulates data fetching logic using the `gqlClient`.
 *   **Inngest:**
     *   Event sending (`graphql.ts` for `crm/contact.created`, `crm/deal.created`) works locally and in prod.
     *   Event handling function definitions (`inngest.ts`) rely on `INNGEST_SIGNING_KEY` for security in deployed environments.
-    *   **Local Handler Execution:** Due to limitations with `netlify dev` proxying, reliably triggering and debugging the *execution* of Inngest functions locally is problematic. 
+    *   **Local Handler Execution:** Due to limitations with `netlify dev` proxying, reliably triggering and debugging the *execution* of Inngest functions locally is problematic.
     *   **Recommended Local Workflow:** Use `netlify dev` for general development. Run `npx inngest-cli dev` separately to monitor *sent* events via its UI (`http://localhost:8288`). **Verify event handler execution logic in deployed environments** (e.g., Netlify deploy previews or production) by checking Netlify Function logs or adding temporary detailed logging within the Inngest function itself.
 *   **Netlify:**
     *   Build command handles frontend dependency installation.
@@ -294,18 +305,18 @@ Testing is crucial for maintaining code quality and preventing regressions. Test
 *   **GraphQL (Yoga + `graphql-request`):**
     *   Backend uses GraphQL Yoga for its performance in serverless environments.
     *   Schema is defined directly in `graphql.ts` (could be moved to separate `.graphql` files later).
-    *   Resolvers call functions/services potentially located in `/lib`.
+    *   Resolvers call functions/services located in `/lib`, using helpers from `lib/serviceUtils.ts` for auth/errors.
     *   Authentication is handled via JWT in the `Authorization: Bearer` header, verified in the Yoga `context` factory using `supabase.auth.getUser()`.
-    *   Frontend uses `graphql-request` for simple, direct query/mutation execution. Middleware injects the auth token.
+    *   Frontend uses `graphql-request` via the configured `gqlClient` in `lib/graphqlClient.ts`. Middleware injects the auth token. Data fetching logic is primarily encapsulated within Zustand store actions (`stores/useAppStore.ts`).
 *   **Supabase:**
-    *   **Auth:** Ensure Production Supabase has correct Provider keys and Site URL config.
+    *   **Auth:** Frontend auth state changes are monitored in `App.tsx` and synced to the Zustand store (`useAppStore`). Production Supabase requires correct Provider keys and Site URL config.
     *   **Migrations:** Emphasize manual application to production via linked CLI.
-    *   **RLS:** Policies defined in migrations apply to both local and prod (once migrated).
+    *   **RLS:** Policies defined in migrations apply to both local and prod (once migrated). Backend service calls use authenticated clients (via `getAuthenticatedClient` in `lib/serviceUtils.ts`) to ensure RLS policies are enforced based on the user's JWT.
     *   **Clients:** Backend uses root `.env` (local) or Netlify function env vars (prod). Frontend uses `VITE_` vars baked in at build time.
 *   **Inngest:**
     *   Event sending (`graphql.ts` for `crm/contact.created`, `crm/deal.created`) works locally and in prod.
     *   Event handling function definitions (`inngest.ts`) rely on `INNGEST_SIGNING_KEY` for security in deployed environments.
-    *   **Local Handler Execution:** Due to limitations with `netlify dev` proxying, reliably triggering and debugging the *execution* of Inngest functions locally is problematic. 
+    *   **Local Handler Execution:** Due to limitations with `netlify dev` proxying, reliably triggering and debugging the *execution* of Inngest functions locally is problematic.
     *   **Recommended Local Workflow:** Use `netlify dev` for general development. Run `npx inngest-cli dev` separately to monitor *sent* events via its UI (`http://localhost:8288`). **Verify event handler execution logic in deployed environments** (e.g., Netlify deploy previews or production) by checking Netlify Function logs or adding temporary detailed logging within the Inngest function itself.
 *   **Netlify:**
     *   Build command handles frontend dependency installation.
