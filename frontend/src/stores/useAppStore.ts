@@ -7,7 +7,7 @@ import { gql } from 'graphql-request';
 // --- Interface Definitions ---
 
 // Organization
-interface Organization {
+export interface Organization {
     id: string;
     name: string;
     address?: string | null;
@@ -19,7 +19,7 @@ interface Organization {
 }
 
 // Person
-interface Person {
+export interface Person {
     id: string;
     first_name?: string | null;
     last_name?: string | null;
@@ -35,14 +35,14 @@ interface Person {
 }
 
 // Deal (Simplified, keep fields relevant to store/pages)
-interface DealPerson { 
+export interface DealPerson { 
     id: string;
     first_name?: string | null;
     last_name?: string | null;
     email?: string | null;
 }
 // Add nested Stage type for Deal
-interface DealStage { 
+export interface DealStage { 
     id: string;
     name: string;
     pipeline_id: string;
@@ -52,7 +52,7 @@ interface DealStage {
     };
     // Add order or other fields if needed by UI
 }
-interface Deal {
+export interface Deal {
   id: string;
   name: string;
   // stage: string; // REMOVED old string stage
@@ -503,21 +503,31 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteDeal: async (id: string): Promise<boolean> => {
-    // Note: We don't set a specific deleting state here,
-    // the component can handle temporary UI feedback if needed.
-    // We focus on updating the main deals list/error state.
+    // Add explicit auth check
+    const session = get().session;
+    if (!session) {
+      set({ dealsError: 'Not authenticated' });
+      return false;
+    }
+
+    // Keep original list for potential rollback (though not implemented currently)
+    const originalDeals = get().deals;
+    // Optimistic Update
+    set((state) => ({
+        deals: state.deals.filter(deal => deal.id !== id),
+        dealsError: null // Clear previous errors during attempt
+    }));
+
     try {
       const variables = { id };
       const result = await gqlClient.request<DeleteDealMutationResult>(
           DELETE_DEAL_MUTATION, 
-          variables
+          variables,
+          { Authorization: `Bearer ${session.access_token}` } // Pass token
       );
       if (result.deleteDeal) {
-          // Success: Remove the deal from the local state
-          set((state) => ({
-              deals: state.deals.filter(deal => deal.id !== id),
-              dealsError: null // Clear previous errors
-          }));
+          // Success: Optimistic update already applied
+           set({ dealsError: null }); // Ensure error is cleared on success
           return true;
       } else {
           // This path might not be reached if the backend throws on failure
@@ -527,8 +537,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         console.error('Error deleting deal:', err);
         const gqlError = err.response?.errors?.[0]?.message;
         const errorMsg = gqlError || err.message || 'Failed to delete deal';
-        // Update the error state, keep existing deals
-        set({ dealsError: `Failed to delete deal (${id}): ${errorMsg}` });
+        // Revert optimistic update (or just set error)
+        set({ deals: originalDeals, dealsError: `Failed to delete deal (${id}): ${errorMsg}` });
         return false;
     }
   },
@@ -537,7 +547,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchPeople: async () => {
     set({ peopleLoading: true, peopleError: null });
     try {
-        const data = await gqlClient.request<GetPeopleQueryResult>(GET_PEOPLE_QUERY);
+        // Add Auth check for consistency, though API might handle it
+        const session = get().session;
+        if (!session) throw new Error("Not authenticated");
+
+        const data = await gqlClient.request<GetPeopleQueryResult>(
+            GET_PEOPLE_QUERY,
+            {},
+            { Authorization: `Bearer ${session.access_token}` }
+        );
         set({ people: data.people || [], peopleLoading: false });
     } catch (err: any) {
         console.error("Error fetching people:", err);
@@ -547,15 +565,28 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   deletePerson: async (id: string): Promise<boolean> => {
+    // Add explicit auth check
+    const session = get().session;
+    if (!session) {
+      set({ peopleError: 'Not authenticated' });
+      return false;
+    }
+    const originalPeople = get().people;
+    // Optimistic Update
+    set((state) => ({
+        people: state.people.filter(p => p.id !== id),
+        peopleError: null // Clear error during attempt
+    }));
+
     try {
       const result = await gqlClient.request<DeletePersonMutationResult>(
-          DELETE_PERSON_MUTATION, { id }
+          DELETE_PERSON_MUTATION, 
+          { id },
+          { Authorization: `Bearer ${session.access_token}` } // Pass token
       );
       if (result.deletePerson) {
-          set((state) => ({
-              people: state.people.filter(p => p.id !== id),
-              peopleError: null 
-          }));
+          // Success: Optimistic update already applied
+          set({ peopleError: null }); // Clear error on success
           return true;
       } else {
           throw new Error('Delete operation returned false from API.');
@@ -564,7 +595,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         console.error('Error deleting person:', err);
         const gqlError = err.response?.errors?.[0]?.message;
         const errorMsg = gqlError || err.message || 'Failed to delete person';
-        set({ peopleError: `Failed to delete person (${id}): ${errorMsg}` });
+        // Revert or just set error
+        set({ people: originalPeople, peopleError: `Failed to delete person (${id}): ${errorMsg}` });
         return false;
     }
   },
@@ -573,7 +605,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchOrganizations: async () => {
     set({ organizationsLoading: true, organizationsError: null });
     try {
-        const data = await gqlClient.request<GetOrganizationsQueryResult>(GET_ORGANIZATIONS_QUERY);
+        // Add Auth check for consistency
+        const session = get().session;
+        if (!session) throw new Error("Not authenticated");
+
+        const data = await gqlClient.request<GetOrganizationsQueryResult>(
+            GET_ORGANIZATIONS_QUERY,
+            {},
+            { Authorization: `Bearer ${session.access_token}` }
+        );
         set({ organizations: data.organizations || [], organizationsLoading: false });
     } catch (err: any) {
         console.error("Error fetching organizations:", err);
@@ -583,18 +623,33 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
   deleteOrganization: async (id: string): Promise<boolean> => {
-    set({ organizationsLoading: true, organizationsError: null });
-    try {
-      await gqlClient.request<DeleteOrganizationMutationResult>(DELETE_ORGANIZATION_MUTATION, { id });
-      set((state) => ({ 
+    // Add explicit auth check
+    const session = get().session;
+    if (!session) {
+      set({ organizationsError: 'Not authenticated' });
+      return false;
+    }
+    const originalOrganizations = get().organizations;
+    // Optimistic Update
+    // Remove loading set here - let component handle UI
+    set((state) => ({ 
         organizations: state.organizations.filter(org => org.id !== id),
-        organizationsLoading: false 
-      }));
+        organizationsError: null // Clear error during attempt
+     }));
+    try {
+      await gqlClient.request<DeleteOrganizationMutationResult>(
+          DELETE_ORGANIZATION_MUTATION, 
+          { id },
+          { Authorization: `Bearer ${session.access_token}` } // Pass token
+      );
+      // Success: Optimistic update done
+      set({ organizationsLoading: false, organizationsError: null }); // Clear loading/error only on actual success
       return true;
     } catch (error: any) {
       console.error("Error deleting organization:", error);
       const errorMsg = error.response?.errors?.[0]?.message || error.message || 'Failed to delete organization';
-      set({ organizationsLoading: false, organizationsError: errorMsg });
+      // Revert or just set error
+      set({ organizations: originalOrganizations, organizationsLoading: false, organizationsError: errorMsg });
       return false;
     }
   },
@@ -620,7 +675,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   fetchStages: async (pipelineId: string) => {
-    set({ stagesLoading: true, stagesError: null, selectedPipelineId: pipelineId });
+    // Clear stages when fetching for a new pipeline ID starts
+    set({ stages: [], stagesLoading: true, stagesError: null, selectedPipelineId: pipelineId });
     try {
       const session = get().session;
       if (!session) throw new Error("Not authenticated");
@@ -634,7 +690,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     } catch (error: any) {
       console.error(`Error fetching stages for pipeline ${pipelineId}:`, error);
        const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to fetch stages for pipeline ${pipelineId}`;
-      set({ stagesError: errorMessage, stagesLoading: false });
+      // Clear stages on error too
+      set({ stages: [], stagesError: errorMessage, stagesLoading: false });
     }
   },
 
@@ -768,10 +825,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
     deleteStage: async (id: string): Promise<boolean> => {
         const originalStages = get().stages;
-        // Optimistic update
+        // Optimistic update - Remove loading set here
         set(state => ({
             stages: state.stages.filter(s => s.id !== id),
-            stagesLoading: true
+            // stagesLoading: true // Remove loading state set here
+            stagesError: null // Clear error during attempt
         }));
         try {
           const session = get().session;
@@ -831,10 +889,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     deletePipeline: async (id: string): Promise<boolean> => {
         // Keep original list in case of error
         const originalPipelines = get().pipelines;
-        // Optimistic update
+        // Optimistic update - Remove loading set here
         set(state => ({ 
             pipelines: state.pipelines.filter(p => p.id !== id),
-            pipelinesLoading: true // Indicate activity
+            // pipelinesLoading: true // Remove loading state set here
+            pipelinesError: null // Clear error during attempt
         }));
         try {
           const session = get().session;
