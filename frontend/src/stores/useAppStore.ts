@@ -367,7 +367,7 @@ interface AppState {
   fetchStages: (pipelineId: string) => Promise<void>; // Fetch stages for a specific pipeline
   // Add CRUD actions
   createPipeline: (input: { name: string }) => Promise<Pipeline | null>;
-  updatePipeline: (id: string, input: { name: string }) => Promise<Pipeline | null>;
+  updatePipeline: (id: string, input: UpdatePipelineInput) => Promise<Pipeline | null>;
   deletePipeline: (id: string) => Promise<boolean>;
   createStage: (input: CreateStageInput) => Promise<Stage | null>;
   updateStage: (id: string, input: UpdateStageInput) => Promise<Stage | null>;
@@ -794,29 +794,35 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
     },
 
-    updatePipeline: async (id: string, input: { name: string }): Promise<Pipeline | null> => {
-        set({ pipelinesLoading: true }); // Indicate activity
+    updatePipeline: async (id: string, input: UpdatePipelineInput): Promise<Pipeline | null> => {
+        const session = get().session;
+        if (!session?.access_token) {
+          set({ pipelinesError: "Authentication required" });
+          return null;
+        }
+        // Add check for name existence, though UI should prevent empty submission
+        if (!input.name) {
+            console.warn("UpdatePipeline called without a name in input.");
+            set({ pipelinesError: "Pipeline name cannot be empty." }); // Or handle differently
+            return null;
+        }
+        
+        set({ pipelinesLoading: true, pipelinesError: null });
         try {
-          const session = get().session;
-          if (!session) throw new Error("Not authenticated");
-
-          const result = await gqlClient.request<UpdatePipelineMutationResult>(
+          const data: UpdatePipelineMutationResult = await gqlClient.request(
             UPDATE_PIPELINE_MUTATION,
-            { id, input },
+            { id, input: { name: input.name } }, // Pass explicitly structured input
             { Authorization: `Bearer ${session.access_token}` }
           );
-          
-          const updatedPipeline = result.updatePipeline;
-          // Update in state
-          set(state => ({ 
+          const updatedPipeline = data.updatePipeline;
+          set((state) => ({ 
             pipelines: state.pipelines.map(p => p.id === id ? updatedPipeline : p),
-            pipelinesLoading: false,
-            pipelinesError: null 
+            pipelinesLoading: false 
           }));
           return updatedPipeline;
         } catch (error: any) {
-          console.error(`Error updating pipeline ${id}:`, error);
-          const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to update pipeline ${id}`;
+          console.error("Error updating pipeline:", error);
+          const errorMessage = error.response?.errors?.[0]?.message || error.message || "Failed to update pipeline";
           set({ pipelinesError: errorMessage, pipelinesLoading: false });
           return null;
         }
