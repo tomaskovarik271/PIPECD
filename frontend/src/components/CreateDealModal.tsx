@@ -21,7 +21,6 @@ import {
   Spinner,
   useToast,
 } from '@chakra-ui/react';
-import { gql } from 'graphql-request';
 import { useAppStore } from '../stores/useAppStore'; // Import the store
 
 // Explicit Person type based on store data
