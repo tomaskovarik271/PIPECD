@@ -63,6 +63,10 @@ function DealsPage() {
   const error = useAppStore((state) => state.dealsError);
   const fetchDeals = useAppStore((state) => state.fetchDeals);
   const deleteDealAction = useAppStore((state) => state.deleteDeal);
+  // Fetch permissions
+  const userPermissions = useAppStore((state) => state.userPermissions);
+  // Fetch current user ID
+  const currentUserId = useAppStore((state) => state.session?.user.id);
   
   // --- Local UI State ---
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
@@ -149,7 +153,12 @@ function DealsPage() {
         Deals Management
       </Heading>
 
-      <Button colorScheme="teal" onClick={handleCreateDealClick} mb={4}>
+      <Button 
+        colorScheme="teal" 
+        onClick={handleCreateDealClick} 
+        mb={4}
+        isDisabled={!userPermissions?.includes('deal:create')}
+      >
         Create New Deal
       </Button>
 
@@ -203,16 +212,28 @@ function DealsPage() {
                           icon={<EditIcon />}
                           size="sm"
                           onClick={() => handleEditClick(deal)}
-                            isDisabled={!!isDeletingId}
+                          isDisabled={
+                            !!isDeletingId || // Still disable if any delete is in progress
+                            !(
+                              userPermissions?.includes('deal:update_any') || // Enable if has _any perm
+                              (userPermissions?.includes('deal:update_own') && deal.user_id === currentUserId) // OR (has _own perm AND is owner)
+                            )
+                          }
                         />
                         <IconButton
                           aria-label="Delete deal"
                           icon={<DeleteIcon />}
-                          size="sm"
                           colorScheme="red"
+                          size="sm"
                           onClick={() => handleDeleteClick(deal.id)}
-                            isLoading={isDeletingId === deal.id}
-                            isDisabled={!!isDeletingId && isDeletingId !== deal.id}
+                          isLoading={isDeletingId === deal.id}
+                          isDisabled={
+                            (!!isDeletingId && isDeletingId !== deal.id) || // New RBAC logic
+                            !(
+                              userPermissions?.includes('deal:delete_any') || // Enable if has _any perm
+                              (userPermissions?.includes('deal:delete_own') && deal.user_id === currentUserId) // OR (has _own perm AND is owner)
+                            )
+                          }
                         />
                       </HStack>
                     </Td>

@@ -14,7 +14,7 @@ import {
 } from '../helpers';
 
 export const Query = {
-    health: () => 'Ok',
+    health: () => 'OK',
     supabaseConnectionTest: async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -40,23 +40,27 @@ export const Query = {
 
     // --- Person Resolvers ---
     people: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
-      requireAuthentication(context);
-      const accessToken = getAccessToken(context);
-      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+      const action = 'fetching people list';
       try {
-        return await personService.getPeople(context.currentUser!.id, accessToken);
+          requireAuthentication(context);
+          const accessToken = getAccessToken(context);
+          if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+          // Use the service function which handles auth
+          return await personService.getPeople(context.currentUser!.id, accessToken);
       } catch (e) {
-         throw processZodError(e, 'fetching people list');
+         throw processZodError(e, action);
       }
     },
     person: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
-      requireAuthentication(context);
-      const accessToken = getAccessToken(context);
-      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+      const action = 'fetching person by ID';
       try {
-        return await personService.getPersonById(context.currentUser!.id, id, accessToken);
+          requireAuthentication(context);
+          const accessToken = getAccessToken(context);
+          if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+          // Use the service function which handles auth
+          return await personService.getPersonById(context.currentUser!.id, id, accessToken);
       } catch (e) {
-         throw processZodError(e, 'fetching person by ID');
+         throw processZodError(e, action);
       }
     },
     personList: async (_parent: unknown, _args: unknown, context: GraphQLContext) => {
@@ -80,6 +84,7 @@ export const Query = {
        const accessToken = getAccessToken(context);
        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
        try {
+         // Use the service function which handles auth
          return await organizationService.getOrganizations(context.currentUser!.id, accessToken);
        } catch (e) {
           throw processZodError(e, 'fetching organizations list');
@@ -90,6 +95,7 @@ export const Query = {
        const accessToken = getAccessToken(context);
        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
        try {
+          // Use the service function which handles auth
           return await organizationService.getOrganizationById(context.currentUser!.id, id, accessToken);
        } catch (e) {
            throw processZodError(e, 'fetching organization by ID');
@@ -102,6 +108,7 @@ export const Query = {
        const accessToken = getAccessToken(context);
        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
        try {
+           // Use the service function which handles auth and includes nested selects
            return await dealService.getDeals(context.currentUser!.id, accessToken);
        } catch (e) {
            throw processZodError(e, 'fetching deals list');
@@ -112,6 +119,7 @@ export const Query = {
        const accessToken = getAccessToken(context);
        if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
        try {
+           // Use the service function which handles auth and includes nested selects
            return await dealService.getDealById(context.currentUser!.id, id, accessToken);
        } catch (e) {
            throw processZodError(e, 'fetching deal by ID');
@@ -123,10 +131,22 @@ export const Query = {
         try {
             requireAuthentication(context);
             const accessToken = getAccessToken(context)!;
-            console.log('[Query.pipelines] AccessToken:', accessToken);
+            // Use the service function which handles auth
             return await pipelineService.getPipelines(accessToken);
         } catch (error) { 
             console.error(`[Query.pipelines] Error during ${action}:`, error);
+            throw processZodError(error, action); 
+        }
+    },
+    pipeline: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
+        const action = `fetching pipeline ${id}`;
+        try {
+            requireAuthentication(context);
+            const accessToken = getAccessToken(context)!;
+            // Use the service function which handles auth
+            return await pipelineService.getPipelineById(accessToken, id);
+        } catch (error) {
+            console.error(`[Query.pipeline] Error during ${action}:`, error);
             throw processZodError(error, action); 
         }
     },
@@ -137,11 +157,29 @@ export const Query = {
             requireAuthentication(context);
             const accessToken = getAccessToken(context)!;
             if (!pipelineId) throw new GraphQLError("pipelineId is required", { extensions: { code: 'BAD_USER_INPUT' } });
-            console.log(`[Query.stages] AccessToken for pipeline ${pipelineId}:`, accessToken);
+            // Use the service function which handles auth
             return await stageService.getStagesByPipelineId(accessToken, pipelineId);
         } catch (error) { 
             console.error(`[Query.stages] Error during ${action}:`, error);
             throw processZodError(error, action); 
         }
+    },
+    stage: async (_parent: unknown, { id }: { id: string }, context: GraphQLContext) => {
+        const action = `fetching stage ${id}`;
+        try {
+            requireAuthentication(context);
+            const accessToken = getAccessToken(context)!;
+             // Use the service function which handles auth
+            return await stageService.getStageById(accessToken, id);
+        } catch (error) {
+            console.error(`[Query.stage] Error during ${action}:`, error);
+            throw processZodError(error, action);
+        }
+    },
+    // --- My Permissions Query ---
+    myPermissions: (_: any, __: any, context: GraphQLContext): string[] => {
+        requireAuthentication(context); // Ensure user is logged in
+        // Permissions are already fetched in the context factory
+        return context.userPermissions ?? []; // Return fetched permissions or empty array
     },
 }; 

@@ -23,27 +23,13 @@ import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import CreatePersonForm from '../components/CreatePersonForm';
 import EditPersonForm from '../components/EditPersonForm';
 // import DeleteConfirmationDialog from '../components/DeleteConfirmationDialog'; // Using inline confirmation for now
-import { useAppStore } from '../stores/useAppStore'; // Import store
+import { useAppStore, Person } from '../stores/useAppStore'; // Import store and Person type
 
 // REMOVED: GET_PEOPLE_QUERY (now in store)
 
 // --- Type definitions (Keep for component use) ---
-interface Organization {
-    id: string;
-    name: string;
-}
-interface Person {
-  id: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  email?: string | null;
-  phone?: string | null;
-  notes?: string | null;
-  created_at: string;
-  updated_at: string;
-  organization_id?: string | null; 
-  organization?: Organization | null; 
-}
+// interface Organization { ... } // Defined elsewhere if needed
+// interface Person { ... } // Defined in store
 // --- End Type definitions ---
 
 function PeoplePage() {
@@ -53,6 +39,8 @@ function PeoplePage() {
   const error = useAppStore((state) => state.peopleError);
   const fetchPeople = useAppStore((state) => state.fetchPeople);
   const deletePersonAction = useAppStore((state) => state.deletePerson);
+  // Fetch permissions
+  const userPermissions = useAppStore((state) => state.userPermissions);
 
   // --- Local UI State ---
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
@@ -105,7 +93,11 @@ function PeoplePage() {
     <VStack spacing={4} align="stretch">
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Heading as="h2" size="lg">People</Heading>
-        <Button colorScheme="blue" onClick={onCreateOpen}>
+        <Button 
+            colorScheme="blue" 
+            onClick={onCreateOpen}
+            isDisabled={!userPermissions?.includes('person:create')}
+        >
           Add Person
         </Button>
       </Box>
@@ -134,7 +126,7 @@ function PeoplePage() {
                       icon={<EditIcon />}
                       size="sm"
                       onClick={() => handleEditClick(person)}
-                      isDisabled={!!isDeletingId} // Disable edits during delete
+                      isDisabled={!!isDeletingId || !userPermissions?.includes('person:update_any')}
                     />
                     <IconButton
                       aria-label="Delete person"
@@ -143,7 +135,7 @@ function PeoplePage() {
                       size="sm"
                       onClick={() => handleDeleteClick(person.id)}
                       isLoading={isDeletingId === person.id}
-                      isDisabled={!!isDeletingId && isDeletingId !== person.id}
+                      isDisabled={!!isDeletingId && isDeletingId !== person.id || !userPermissions?.includes('person:delete_any')}
                     />
                   </HStack>
                 </ListItem>

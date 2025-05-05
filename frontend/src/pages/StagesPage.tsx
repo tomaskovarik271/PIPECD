@@ -36,6 +36,8 @@ const StagesPage: React.FC = () => {
   const stagesLoading = useAppStore((state) => state.stagesLoading);
   const stagesError = useAppStore((state) => state.stagesError);
   const selectedPipelineId = useAppStore((state) => state.selectedPipelineId);
+  // Fetch permissions
+  const userPermissions = useAppStore((state) => state.userPermissions);
   // Also get pipeline name for context (assuming pipelines are already fetched)
   const pipeline = useAppStore((state) => 
     state.pipelines.find(p => p.id === pipelineId)
@@ -99,9 +101,14 @@ const StagesPage: React.FC = () => {
         <Heading size="lg">
           Stages for Pipeline: {pipeline ? pipeline.name : (pipelineId ? `(${pipelineId.substring(0, 8)}...)` : 'Loading...')}
         </Heading>
-        {/* Only show Add Stage button if pipelineId is valid */}
+        {/* Only show Add Stage button if pipelineId is valid and user has permission */}
         {pipelineId && (
-          <Button onClick={handleAddStage} colorScheme="teal" leftIcon={<AddIcon boxSize={3} />}>
+          <Button 
+            onClick={handleAddStage} 
+            colorScheme="teal" 
+            leftIcon={<AddIcon boxSize={3} />}
+            isDisabled={!userPermissions?.includes('stage:create')}
+          >
             Add Stage
           </Button>
         )}
@@ -162,6 +169,7 @@ const StagesPage: React.FC = () => {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleEditStage(stage)}
+                        isDisabled={!userPermissions?.includes('stage:update_any')}
                       />
                       <IconButton
                         aria-label="Delete stage"
@@ -170,6 +178,7 @@ const StagesPage: React.FC = () => {
                         variant="ghost"
                         colorScheme="red"
                         onClick={() => handleDeleteStage(stage)}
+                        isDisabled={!userPermissions?.includes('stage:delete_any')}
                       />
                     </HStack>
                   </Flex>

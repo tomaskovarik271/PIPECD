@@ -153,6 +153,134 @@ This document outlines the development roadmap for the custom CRM system, based 
 *   [ ] Enhance Security (APQ, Operation Whitelisting, full RBAC).
 *   [ ] Potentially refactor to `packages/` monorepo (Nx/Turborepo) if complexity warrants.
 
+## Phase 6: Role-Based Access Control (RBAC) Implementation (Database-Driven)
+
+*   [-] **Define Roles & Permissions:**
+    *   [x] Define initial roles (e.g., `admin`, `member`).
+    *   [x] Define granular permissions (e.g., `create_deal`, `read_any_deal`, `update_own_deal`, `delete_own_deal`, `read_pipeline`, `create_pipeline`, etc.) for each relevant resource (`deal`, `person`, `organization`, `pipeline`, `stage`, `activity`).
+    *   [x] Document the mapping between roles and permissions.
+*   [x] **Database Schema (New Migration):**
+    *   [x] Create `roles` table (`id`, `name UNIQUE`, `description`).
+    *   [x] Create `permissions` table (`id`, `resource`, `action`, `description`, `UNIQUE(resource, action)`).
+    *   [x] Create `role_permissions` linking table (`role_id`, `permission_id`, `PRIMARY KEY(role_id, permission_id)`).
+    *   [x] Create `user_roles` linking table (`user_id`, `role_id`, `PRIMARY KEY(user_id, role_id)`).
+    *   [x] Populate `roles` and `permissions` tables with initial definitions.
+    *   [x] Populate `role_permissions` table based on the defined role-permission mapping.
+    *   [x] Define SQL function `check_permission(p_user_id uuid, p_action text, p_resource text) returns boolean` (Consider `SECURITY DEFINER`). This function checks if the user has the permission via their assigned roles.
+*   [x] **RLS Policy Updates (In Same Migration):**
+    *   [x] `DROP` existing RLS policies for `people`, `organizations`, `deals`, `pipelines`, `stages`, `activities`.
+    *   [x] `CREATE` new RLS policies for each table using `check_permission(auth.uid(), 'action', 'resource')` function.
+        *   Example `deals` SELECT: `USING (check_permission(auth.uid(), 'read_own', 'deal') AND auth.uid() = user_id) OR (check_permission(auth.uid(), 'read_any', 'deal'))`
+        *   Example `deals` UPDATE: `USING (...) WITH CHECK (...)` using relevant `update_own`/`update_any` permissions.
+    *   [x] Ensure `SECURITY INVOKER` is used where appropriate (e.g., SELECT policies accessing `user_id`).
+*   [-] **Backend Changes (GraphQL):**
+    *   [ ] *Optional:* Update GraphQL context to include the user's effective permissions list (queried via a helper function) for faster checks in resolvers.
+    *   [x] Update GraphQL resolvers (e.g., `deletePipeline`, `pipelines`, `stages`, `people`, `person`, `deals`, `organizations`) to perform checks using service layer functions which implicitly use the authenticated client (and thus RLS), complementing RLS.
+*   [-] **Frontend Changes:**
+    *   [x] *Option 1 (Permissions List):* Add `userPermissions: string[] | null` to Zustand store. Fetch permissions via a dedicated GraphQL query after login. Update auth actions.
+    *   [ ] *Option 2 (Role Only):* Keep fetching only the role(s) in the store if UI logic primarily depends on broad roles (`admin` vs `member`).
+    *   [-] Update UI components/pages to conditionally render/disable elements based on fetched permissions (`userPermissions.includes('create_pipeline')`). (Pipelines, Stages, Deals, People, Orgs, Activities pages/items done).
+*   [x] **Initial Data Seeding:**
+    *   [x] Manually assign initial roles (e.g., your user as `admin`) to users via `user_roles` table (SQL or Supabase Studio).
+*   [-] **Testing:**
+    *   [ ] Update/add Vitest tests focusing on the `check_permission` SQL function logic (if possible) and GraphQL resolver authorization checks.
+    *   [x] Update/add Playwright E2E tests verifying UI restrictions based on `admin` vs `member` permissions. (Manual testing confirmed success).
+*   [-] **Documentation:**
+    *   [ ] Update `DEVELOPER_GUIDE.md`/`README.md` detailing the new RBAC tables, helper function, RLS strategy, and manual role assignment.
+
+## Phase 7: RBAC Management UI (Admin Settings)
+
+*   **Goal:** Create a dedicated settings section accessible by administrators to manage users and roles within the application.
+
+*   [ ] **Database (New Migration):**
+    *   [ ] Define New Permissions:
+        *   `permission:read_any` (View all available permissions)
+        *   `role:read_any` (View all roles)
+        *   `user:read_any` (View all users)
+        *   `user:assign_role` (Assign/remove roles from users)
+        *   `settings:access` (Grant access to the Settings UI section)
+        *   *(Future Scope): Consider `role:create`, `role:update`, `role:delete`, `permission:assign_to_role`.*
+    *   [ ] Assign New Permissions: Add entries to `role_permissions` linking the new permissions (`permission:read_any`, `role:read_any`, `user:read_any`, `user:assign_role`, `settings:access`) to the `admin` role.
+    *   [ ] Apply the migration locally and commit.
+
+*   [ ] **Backend Service (`/lib`):**
+    *   [ ] Create `userService.ts`:
+        *   [ ] `getAllUsers()`: Fetches basic user info (id, email, created_at) from `auth.users`. Requires Supabase Admin client/key.
+        *   [ ] `getUserRoles(userId)`: Fetches role IDs/names assigned to a specific user from `user_roles`.
+        *   [ ] `assignRoleToUser(adminUserId, targetUserId, roleId)`: Adds an entry to `user_roles`.
+        *   [ ] `removeRoleFromUser(adminUserId, targetUserId, roleId)`: Removes an entry from `user_roles`.
+    *   [ ] Create `roleService.ts` (or add to `userService`):
+        *   [ ] `getAllRoles()`: Fetches all defined roles (`id`, `name`) from `roles`.
+        *   [ ] `getPermissionsForRole(roleId)`: Fetches all permission details (`id`, `action`, `resource`, `description`) linked to a specific role via `role_permissions` and `permissions`.
+    *   [ ] Add necessary types (`User`, `Role`, `Permission`) to `lib/types.ts`.
+    *   [ ] Ensure service functions use the authenticated Supabase client where appropriate and potentially the Admin client for fetching all users.
+
+*   [ ] **GraphQL API (`/netlify/functions/graphql`):**
+    *   [ ] **Schema (`schema/`):**
+        *   [ ] Define `User` type (e.g., `id`, `email`, `createdAt`, `roles: [Role!]!`).
+        *   [ ] Define `Role` type (e.g., `id`, `name`, `permissions: [Permission!]!`).
+        *   [ ] Define `Permission` type (e.g., `id`, `action`, `resource`, `description`).
+        *   [ ] Define `Query.allUsers: [User!]!`.
+        *   [ ] Define `Query.allRoles: [Role!]!`.
+        *   [ ] Define `Mutation.assignRole(userId: ID!, roleId: ID!): User!`.
+        *   [ ] Define `Mutation.removeRole(userId: ID!, roleId: ID!): User!`.
+        *   [ ] Update `graphql.ts` to load new schemas.
+    *   [ ] **Resolvers (`resolvers/`):**
+        *   [ ] Implement `Query.allUsers` resolver:
+            *   Check context for `user:read_any` permission.
+            *   Call `userService.getAllUsers()`.
+            *   Call `userService.getUserRoles()` for each user to populate the `roles` field.
+        *   [ ] Implement `Query.allRoles` resolver:
+            *   Check context for `role:read_any` permission.
+            *   Call `roleService.getAllRoles()`.
+            *   Call `roleService.getPermissionsForRole()` for each role to populate `permissions`.
+        *   [ ] Implement `Mutation.assignRole` resolver:
+            *   Check context for `user:assign_role` permission.
+            *   Call `userService.assignRoleToUser()`.
+            *   Return the updated User object (fetching roles again).
+        *   [ ] Implement `Mutation.removeRole` resolver:
+            *   Check context for `user:assign_role` permission.
+            *   Call `userService.removeRoleFromUser()`.
+            *   Return the updated User object (fetching roles again).
+        *   [ ] Update `graphql.ts` to merge new resolvers.
+
+*   [ ] **Frontend Store (`useAppStore.ts`):**
+    *   [ ] Define `User`, `Role`, `Permission` interfaces mirroring GraphQL types.
+    *   [ ] Add new state slices: `allUsers: User[]`, `allRoles: Role[]`, `usersLoading`, `usersError`, `rolesLoading`, `rolesError`.
+    *   [ ] Add new GQL query/mutation definitions (`GET_ALL_USERS`, `GET_ALL_ROLES`, `ASSIGN_ROLE_MUTATION`, `REMOVE_ROLE_MUTATION`).
+    *   [ ] Add new store actions:
+        *   `fetchAllUsers()`: Fetches users, handles loading/error.
+        *   `fetchAllRoles()`: Fetches roles, handles loading/error.
+        *   `assignRole(userId, roleId)`: Calls mutation, updates `allUsers` state optimistically or on success.
+        *   `removeRole(userId, roleId)`: Calls mutation, updates `allUsers` state optimistically or on success.
+
+*   [ ] **Frontend UI (`/frontend/src`):**
+    *   [ ] **Routing (`App.tsx`):** Add a new route for `/settings`, potentially nested under an `AdminLayout` component that checks for `settings:access` permission.
+    *   [ ] **Navigation (`App.tsx`/Layout):** Add a "Settings" link/button to the main navigation/header, visible only if `userPermissions.includes('settings:access')`.
+    *   [ ] **Settings Layout (`components/settings/SettingsLayout.tsx`):** Create a layout component for settings pages (e.g., with a title, maybe sidebar/tabs for Users/Roles).
+    *   [ ] **Users Page (`pages/settings/UsersSettingsPage.tsx`):**
+        *   Wrap with `SettingsLayout`.
+        *   Call `fetchAllUsers` on mount.
+        *   Display users in a `Table` (id, email, roles).
+        *   Implement UI (e.g., multi-select, buttons in each row) to select a user and call `assignRole`/`removeRole`. Will need `fetchAllRoles` to populate role options.
+        *   Handle loading and error states.
+    *   [ ] **Roles Page (`pages/settings/RolesSettingsPage.tsx`):**
+        *   Wrap with `SettingsLayout`.
+        *   Call `fetchAllRoles` on mount.
+        *   Display roles and their associated permissions (read-only list/tags for now).
+        *   Handle loading and error states.
+
+*   [ ] **Testing:**
+    *   [ ] **Backend:** Write unit tests for new `userService` and `roleService` functions. Write integration tests for the new GraphQL queries/mutations (mocking services).
+    *   [ ] **Frontend:** Write unit tests for the new `useAppStore` actions/slices related to users/roles. Write component tests for `UsersSettingsPage` and `RolesSettingsPage`.
+    *   [ ] **E2E:** Create tests simulating an admin logging in, navigating to Settings, viewing users, changing a user's role, and verifying the change.
+
+*   [ ] **Documentation:**
+    *   [ ] Update `README.md` and `DEVELOPER_GUIDE.md`:
+        *   Document the new permissions.
+        *   Explain the purpose and usage of the Settings UI.
+        *   Detail the new backend services and GraphQL endpoints related to user/role management.
+
 ## Post-Refactor Hardening & Cleanup Plan (Generated from Code Review May 3rd, 2025)
 
 **Phase 1: Foundational Hardening & Security**

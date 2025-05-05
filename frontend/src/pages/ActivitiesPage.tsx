@@ -27,6 +27,8 @@ function ActivitiesPage() {
   const loading = useAppStore((state) => state.activitiesLoading);
   const error = useAppStore((state) => state.activitiesError);
   const fetchActivities = useAppStore((state) => state.fetchActivities);
+  // Fetch permissions
+  const userPermissions = useAppStore((state) => state.userPermissions);
 
   // Modal state (for create form later)
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
@@ -49,7 +51,11 @@ function ActivitiesPage() {
     <VStack spacing={4} align="stretch">
       <Box display="flex" justifyContent="space-between" alignItems="center">
         <Heading as="h2" size="lg">Activities</Heading>
-        <Button colorScheme="blue" onClick={onCreateOpen}>
+        <Button 
+          colorScheme="blue" 
+          onClick={onCreateOpen}
+          isDisabled={!userPermissions?.includes('activity:create')} // Add permission check
+        >
           Add Activity
         </Button>
       </Box>

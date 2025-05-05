@@ -20,6 +20,7 @@ import {
   useToast,
   VStack,
   Spinner, // Added Spinner
+  Text, // Import Text component
 } from '@chakra-ui/react';
 import { useAppStore } from './stores/useAppStore'; // Import the store
 
@@ -120,8 +121,10 @@ function App() {
 
 // Temporary simple navigation
 function TempNav() {
-    // Get signout action from the store
+    // Get signout action and user state from the store
     const handleSignOutAction = useAppStore((state) => state.handleSignOut);
+    const user = useAppStore((state) => state.user);
+
     // Optional: Get loading state for signout button visual feedback
     // const isSigningOut = useAppStore((state) => state.isLoadingAuth); // Reusing isLoadingAuth temporarily
 
@@ -140,13 +143,20 @@ function TempNav() {
                     <Link as={RouterLink} to="/pipelines">Pipelines</Link>
                     <Link as={RouterLink} to="/activities">Activities</Link> {/* Add link for activities */}
                 </HStack>
-                <Button 
-                  size="sm" 
-                  onClick={handleSignOutClick} 
-                  // isLoading={isSigningOut} // Optional visual feedback
-                >
-                    Sign Out
-                </Button>
+                <HStack spacing={3}>
+                    {user && (
+                        <Text fontSize="sm" color="gray.600">
+                            Signed in as: {user.email}
+                        </Text>
+                    )}
+                    <Button 
+                      size="sm" 
+                      onClick={handleSignOutClick} 
+                      // isLoading={isSigningOut} // Optional visual feedback
+                    >
+                        Sign Out
+                    </Button>
+                </HStack>
             </HStack>
       </Box>
     );

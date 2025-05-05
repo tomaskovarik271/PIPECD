@@ -55,6 +55,7 @@ export interface DealStage {
 export interface Deal {
   id: string;
   name: string;
+  user_id: string;
   // stage: string; // REMOVED old string stage
   stage: DealStage; // ADDED nested stage object
   stage_id?: string | null; // Keep stage_id if useful
@@ -102,6 +103,13 @@ export interface Activity {
 
 // --- GraphQL Queries/Mutations --- 
 
+// My Permissions
+const GET_MY_PERMISSIONS_QUERY = gql`
+  query GetMyPermissions {
+    myPermissions
+  }
+`;
+
 // Deals
 const GET_DEALS_QUERY = gql`
   query GetDeals {
@@ -128,6 +136,7 @@ const GET_DEALS_QUERY = gql`
         last_name
         email
       }
+      user_id
     }
   }
 `;
@@ -430,6 +439,11 @@ const DELETE_ACTIVITY_MUTATION = gql`
 `;
 
 // --- Result Types ---
+
+// My Permissions
+interface GetMyPermissionsQueryResult { myPermissions: string[]; }
+
+// Deals
 interface GetDealsQueryResult { deals: Deal[]; }
 interface DeleteDealMutationResult { deleteDeal: boolean; }
 interface GetPeopleQueryResult { people: Person[]; }
@@ -452,8 +466,6 @@ interface DeletePipelineMutationResult { deletePipeline: boolean; }
 // TODO: Add other mutation results later if needed
 // interface UpdatePipelineMutationResult { updatePipeline: Pipeline; }
 // ... etc
-
-// --- GQL Result Type Definitions (Add for Activities) ---
 
 // ... existing GQL result types ...
 interface GetActivitiesQueryResult { activities: Activity[]; }
@@ -501,9 +513,12 @@ interface AppState {
   session: Session | null;
   user: User | null;
   isLoadingAuth: boolean;
+  userPermissions: string[] | null; // Added permissions
+  permissionsLoading: boolean; // Added loading state for permissions
   setSession: (session: Session | null) => void;
   checkAuth: () => Promise<void>;
   handleSignOut: () => Promise<void>;
+  fetchUserPermissions: () => Promise<void>; // Added action to fetch permissions
   
   // Deals
   deals: Deal[];
@@ -601,6 +616,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   session: null,
   user: null,
   isLoadingAuth: true, 
+  userPermissions: null, // Initial permissions state
+  permissionsLoading: false, // Initial permissions loading state
   deals: [],
   dealsLoading: false,
   dealsError: null,
@@ -628,47 +645,64 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ session: session, user: session?.user ?? null });
   },
 
+  // Action to fetch permissions
+  fetchUserPermissions: async () => {
+    set({ permissionsLoading: true });
+    const token = get().session?.access_token;
+    if (!token) {
+        console.warn('fetchUserPermissions called without an active session.');
+        set({ userPermissions: null, permissionsLoading: false });
+        return;
+    }
+    try {
+        // Use the client configured with the auth token
+        const data = await gqlClient.request<GetMyPermissionsQueryResult>(
+            GET_MY_PERMISSIONS_QUERY
+        );
+        console.log('Fetched permissions:', data.myPermissions);
+        set({ userPermissions: data.myPermissions || [], permissionsLoading: false });
+    } catch (error: any) {
+        console.error('Error fetching user permissions:', error);
+        set({ userPermissions: null, permissionsLoading: false });
+        // Optional: Set a specific permissions error state if needed
+    }
+  },
+
   checkAuth: async () => {
     set({ isLoadingAuth: true });
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
       if (error) {
-        console.error('Error fetching session:', error);
-        set({ session: null, user: null }); // Clear session on error
+        console.error('Error getting session:', error.message);
+        set({ session: null, user: null, userPermissions: null }); // Clear permissions on error
       } else {
-        set({ session: session, user: session?.user ?? null });
+        set({ session, user: session?.user ?? null });
+        if (session) {
+            // If session exists, fetch permissions
+            await get().fetchUserPermissions(); 
+        }
       }
-    } catch (err) {
-        console.error('Unexpected error during checkAuth:', err);
-        set({ session: null, user: null });
+    } catch (error) {
+      console.error('Unexpected error during checkAuth:', error);
+      set({ session: null, user: null, userPermissions: null });
     } finally {
-        set({ isLoadingAuth: false });
+      set({ isLoadingAuth: false });
     }
   },
 
   handleSignOut: async () => {
-    // Don't necessarily need isLoadingAuth here unless we add specific UI feedback
-    // set({ isLoadingAuth: true }); 
-    try {
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            console.error('Error signing out:', error);
-            // Clear session in store even if signout API failed, 
-            // as user intent was to sign out.
-            set({ session: null, user: null, isLoadingAuth: false }); 
-        } else {
-            // SUCCESS: Explicitly clear the session state immediately 
-            // in addition to relying on the listener.
-            console.log('Sign out successful, explicitly clearing session in store.');
-            set({ session: null, user: null, isLoadingAuth: false }); 
-        }
-    } catch (err) {
-        console.error('Unexpected error during signout:', err);
-        // Also clear session on unexpected errors
-        set({ session: null, user: null, isLoadingAuth: false }); 
-    } finally {
-        // Redundant isLoadingAuth set removed as it's handled in try/catch
+    set({ isLoadingAuth: true }); // Optional: indicate loading during sign out
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Error signing out:', error.message);
+      // Handle error appropriately, maybe show a toast
+    } else {
+      // Clear session, user, and permissions state
+      set({ session: null, user: null, userPermissions: null, isLoadingAuth: false });
+      // Clear GQL client cache/headers if necessary (depends on client setup)
+      gqlClient.setHeaders({}); // Clear auth header
     }
+     set({ isLoadingAuth: false }); // Ensure loading is stopped
   },
 
   // Deals Actions
@@ -1291,3 +1325,20 @@ export const useAppStore = create<AppState>((set, get) => ({
 
 // Initialize auth check (optional, App.tsx also listens)
 // useAppStore.getState().checkAuth(); 
+
+// Subscribe to auth changes (handle SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
+supabase.auth.onAuthStateChange((event, session) => {
+    console.log('[Supabase Auth Listener] Event:', event, 'Session:', session ? 'Exists' : 'Null');
+    // Update session state in the store
+    useAppStore.getState().setSession(session);
+    
+    // Fetch permissions on sign-in or token refresh
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        useAppStore.getState().fetchUserPermissions();
+    }
+    
+    // Clear permissions on sign-out (already handled in handleSignOut, but good belt-and-suspenders)
+    if (event === 'SIGNED_OUT') {
+        useAppStore.setState({ userPermissions: null }); 
+    }
+}); 

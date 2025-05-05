@@ -49,6 +49,10 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
   // Select actions individually to prevent re-renders caused by shallow comparison
   const updateActivity = useAppStore((state) => state.updateActivity);
   const deleteActivity = useAppStore((state) => state.deleteActivity);
+  // Fetch permissions
+  const userPermissions = useAppStore((state) => state.userPermissions);
+  // Fetch current user ID
+  const currentUserId = useAppStore((state) => state.session?.user.id);
 
   const toast = useToast();
   // Add loading state if needed for async actions (mark done, delete)
@@ -112,6 +116,12 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
           mr={4} 
           // isDisabled={isTogglingDone || isDeleting} 
           aria-label="Mark activity as done"
+          isDisabled={ // New RBAC logic
+            !(
+              userPermissions?.includes('activity:update_any') ||
+              (userPermissions?.includes('activity:update_own') && activity.user_id === currentUserId)
+            )
+          }
         />
         <Box flexGrow={1} opacity={activity.is_done ? 0.6 : 1}>
           <HStack mb={1}>
@@ -131,6 +141,12 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
             variant="ghost"
             onClick={handleEditClick}
             // isDisabled={isDeleting || isTogglingDone}
+            isDisabled={ // New RBAC logic
+                !(
+                  userPermissions?.includes('activity:update_any') ||
+                  (userPermissions?.includes('activity:update_own') && activity.user_id === currentUserId)
+                )
+            }
           />
           <IconButton
             aria-label="Delete activity"
@@ -141,6 +157,12 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
             onClick={handleDeleteClick}
             // isLoading={isDeleting}
             // isDisabled={isTogglingDone}
+            isDisabled={ // New RBAC logic
+                !(
+                    userPermissions?.includes('activity:delete_any') ||
+                    (userPermissions?.includes('activity:delete_own') && activity.user_id === currentUserId)
+                )
+            }
           />
         </HStack>
       </Flex>

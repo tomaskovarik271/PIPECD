@@ -30,6 +30,8 @@ const PipelinesPage: React.FC = () => {
   const fetchPipelines = useAppStore((state) => state.fetchPipelines);
   const pipelinesLoading = useAppStore((state) => state.pipelinesLoading);
   const pipelinesError = useAppStore((state) => state.pipelinesError);
+  // Fetch permissions
+  const userPermissions = useAppStore((state) => state.userPermissions);
   
   // Disclosure hooks for the modals
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
@@ -86,7 +88,12 @@ const PipelinesPage: React.FC = () => {
     <Box p={4}>
       <Flex justify="space-between" align="center" mb={4}>
         <Heading size="lg">Pipelines</Heading>
-        <Button onClick={handleAddPipeline} colorScheme="blue" leftIcon={<AddIcon boxSize={3} />}>
+        <Button 
+            onClick={handleAddPipeline} 
+            colorScheme="blue" 
+            leftIcon={<AddIcon boxSize={3} />}
+            isDisabled={!userPermissions?.includes('pipeline:create')}
+        >
           Add Pipeline
         </Button>
       </Flex>
@@ -140,6 +147,7 @@ const PipelinesPage: React.FC = () => {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleEditPipeline(pipeline)}
+                        isDisabled={!userPermissions?.includes('pipeline:update_any')}
                       />
                       <IconButton
                         aria-label="Delete pipeline"
@@ -148,6 +156,7 @@ const PipelinesPage: React.FC = () => {
                         variant="ghost"
                         colorScheme="red"
                         onClick={() => handleDeletePipeline(pipeline)}
+                        isDisabled={!userPermissions?.includes('pipeline:delete_any')}
                       />
                     </HStack>
                   </Flex>

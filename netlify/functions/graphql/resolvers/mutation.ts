@@ -9,7 +9,9 @@ import {
   DealUpdateSchema,
   PipelineInputSchema,
   StageCreateSchema,
-  StageUpdateSchema
+  StageUpdateSchema,
+  CreateActivityInputSchema,
+  UpdateActivityInputSchema
 } from '../validators';
 import { inngest } from '../../inngest';
 import { personService } from '../../../../lib/personService';
@@ -32,6 +34,11 @@ export const Mutation = {
           // Validate input using Zod
           const validatedInput = PersonCreateSchema.parse(args.input);
           console.log('[Mutation.createPerson] validated input:', validatedInput);
+
+          // Check permission - Assuming 'person:create' exists
+          if (!context.userPermissions?.includes('person:create')) {
+              throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          }
 
           // Call service with validated input
           const newPerson = await personService.createPerson(userId, validatedInput, accessToken);
@@ -62,9 +69,15 @@ export const Mutation = {
           const validatedInput = PersonUpdateSchema.parse(args.input);
           console.log('[Mutation.updatePerson] validated input:', validatedInput);
           
+          // Check permission - Assuming 'person:update_any' permission for simplicity now
+          // More granular checks (update_own) would require checking ownership via service layer
+          if (!context.userPermissions?.includes('person:update_any')) {
+               throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          }
+          
           // Ensure at least one field is provided for update (after parsing)
           if (Object.keys(validatedInput).length === 0) {
-             throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
+             throw new GraphQLError('Update input cannot be empty.', { extensions: { code: 'BAD_USER_INPUT' } });
           }
 
           // Call service with validated input
@@ -91,6 +104,11 @@ export const Mutation = {
           const userId = context.currentUser!.id;
           const accessToken = getAccessToken(context);
           if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+          
+          // Check permission - Assuming 'person:delete_any'
+          if (!context.userPermissions?.includes('person:delete_any')) {
+              throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          }
           
           // ID itself is validated by GraphQL schema type ID!
           
@@ -126,6 +144,11 @@ export const Mutation = {
           const validatedInput = OrganizationInputSchema.parse(args.input);
           console.log('[Mutation.createOrganization] validated input:', validatedInput);
 
+          // Check permission - Assuming 'organization:create'
+          if (!context.userPermissions?.includes('organization:create')) {
+               throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          }
+
           // Call service with validated input
           const newOrganization = await organizationService.createOrganization(userId, validatedInput, accessToken);
           console.log('[Mutation.createOrganization] successfully created:', newOrganization.id);
@@ -156,6 +179,11 @@ export const Mutation = {
           const validatedInput = OrganizationInputSchema.partial().parse(args.input);
           console.log('[Mutation.updateOrganization] validated input:', validatedInput);
           
+          // Check permission - Assuming 'organization:update_any'
+          if (!context.userPermissions?.includes('organization:update_any')) {
+               throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          }
+          
           // Call service with validated input
           const updatedOrganization = await organizationService.updateOrganization(userId, args.id, validatedInput, accessToken);
           console.log('[Mutation.updateOrganization] successfully updated:', updatedOrganization.id);
@@ -180,6 +208,11 @@ export const Mutation = {
           const userId = context.currentUser!.id;
           const accessToken = getAccessToken(context);
           if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+          
+          // Check permission - Assuming 'organization:delete_any'
+          if (!context.userPermissions?.includes('organization:delete_any')) {
+               throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          }
           
           // ID itself is validated by GraphQL schema type ID! (which maps to string)
           // No specific Zod validation needed for just the ID here
@@ -209,7 +242,12 @@ export const Mutation = {
           requireAuthentication(context); // Check auth first
           const accessToken = getAccessToken(context)!; // Then get token
           // Validate input using Zod
-          const validatedInput = DealCreateSchema.parse(args.input); // Uses updated schema
+          const validatedInput = DealCreateSchema.parse(args.input);
+          // Check permission - 'deal:create' 
+          // RLS also enforces ownership on insert via user_id match
+          if (!context.userPermissions?.includes('deal:create')) {
+              throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          }
           // Call service with validated input
           const newDeal = await dealService.createDeal(context.currentUser!.id, validatedInput, accessToken);
           // Send event (consider adding stage_id?)
@@ -229,12 +267,17 @@ export const Mutation = {
           requireAuthentication(context); // Check auth first
           const accessToken = getAccessToken(context)!; // Then get token
           // Validate input using Zod
-          const validatedInput = DealUpdateSchema.parse(args.input); // Uses updated schema
+          const validatedInput = DealUpdateSchema.parse(args.input);
+          // Permission check - RLS will handle 'update_own' vs 'update_any'
+          // We just need to check if the user has *either* permission at the API level.
+          if (!context.userPermissions?.includes('deal:update_own') && !context.userPermissions?.includes('deal:update_any')) {
+              throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          }
           // Ensure at least one field is provided
           if (Object.keys(validatedInput).length === 0) {
-             throw new GraphQLError('No fields provided for update', { extensions: { code: 'BAD_USER_INPUT' } });
+             throw new GraphQLError('Update input cannot be empty.', { extensions: { code: 'BAD_USER_INPUT' } });
           }
-          // Call service with validated input
+          // RLS in the service/DB layer will enforce ownership if only 'update_own' is present.
           const updatedDeal = await dealService.updateDeal(context.currentUser!.id, args.id, validatedInput, accessToken);
           // Send event (consider adding stage_id?)
           inngest.send({
@@ -255,6 +298,11 @@ export const Mutation = {
         const userId = context.currentUser!.id;
         const accessToken = getAccessToken(context);
         if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+
+        // Check permission - RLS will handle 'delete_own' vs 'delete_any'
+        if (!context.userPermissions?.includes('deal:delete_own') && !context.userPermissions?.includes('deal:delete_any')) {
+            throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+        }
 
         // ID itself is validated by GraphQL schema type ID!
 
@@ -280,7 +328,11 @@ export const Mutation = {
         const action = 'creating pipeline';
         try {
             requireAuthentication(context); // Check auth first
-            const accessToken = getAccessToken(context)!; // Then get token
+            const accessToken = context.token!;
+            // Permission Check (Admin Only)
+            if (!context.userPermissions?.includes('pipeline:create')) {
+                throw new GraphQLError('Forbidden: Only admins can create pipelines', { extensions: { code: 'FORBIDDEN' } });
+            }
             const validatedInput = PipelineInputSchema.parse(input);
             const pipeline = await pipelineService.createPipeline(accessToken, validatedInput);
             return pipeline;
@@ -288,12 +340,13 @@ export const Mutation = {
     },
     updatePipeline: async (_parent: unknown, { id, input }: { id: string; input: pipelineService.UpdatePipelineInput }, context: GraphQLContext) => {
         const action = 'updating pipeline';
-        if (!input || Object.keys(input).length === 0) {
-            throw new GraphQLError("Update input cannot be empty", { extensions: { code: 'BAD_USER_INPUT' } });
-        }
         try {
             requireAuthentication(context);
-            const accessToken = getAccessToken(context)!;
+            const accessToken = context.token!;
+            // Permission Check (Admin Only)
+            if (!context.userPermissions?.includes('pipeline:update_any')) {
+                 throw new GraphQLError('Forbidden: Only admins can update pipelines', { extensions: { code: 'FORBIDDEN' } });
+            }
             const validatedInput = PipelineInputSchema.parse(input);
             const pipeline = await pipelineService.updatePipeline(accessToken, id, validatedInput);
             return pipeline;
@@ -303,7 +356,11 @@ export const Mutation = {
         const action = 'deleting pipeline';
         try {
             requireAuthentication(context);
-            const accessToken = getAccessToken(context)!;
+            const accessToken = context.token!;
+            // Permission Check (Admin Only)
+            if (!context.userPermissions?.includes('pipeline:delete_any')) {
+                 throw new GraphQLError('Forbidden: Only admins can delete pipelines', { extensions: { code: 'FORBIDDEN' } });
+            }
             const success = await pipelineService.deletePipeline(accessToken, id);
             return success;
         } catch (error) { throw processZodError(error, action); }
@@ -313,7 +370,11 @@ export const Mutation = {
         const action = 'creating stage';
         try {
             requireAuthentication(context);
-            const accessToken = getAccessToken(context)!;
+            const accessToken = context.token!;
+            // Permission Check (Admin Only)
+             if (!context.userPermissions?.includes('stage:create')) {
+                 throw new GraphQLError('Forbidden: Only admins can create stages', { extensions: { code: 'FORBIDDEN' } });
+            }
             const validatedInput = StageCreateSchema.parse(input);
             // Check pipeline access *before* creating stage
             const pipeline = await pipelineService.getPipelineById(accessToken, validatedInput.pipeline_id);
@@ -326,12 +387,13 @@ export const Mutation = {
     },
     updateStage: async (_parent: unknown, { id, input }: { id: string; input: stageService.UpdateStageInput }, context: GraphQLContext) => {
         const action = 'updating stage';
-        if (!input || Object.keys(input).length === 0) {
-            throw new GraphQLError("Update input cannot be empty", { extensions: { code: 'BAD_USER_INPUT' } });
-        }
         try {
             requireAuthentication(context);
-            const accessToken = getAccessToken(context)!;
+            const accessToken = context.token!;
+            // Permission Check (Admin Only)
+             if (!context.userPermissions?.includes('stage:update_any')) {
+                 throw new GraphQLError('Forbidden: Only admins can update stages', { extensions: { code: 'FORBIDDEN' } });
+            }
             const validatedInput = StageUpdateSchema.parse(input);
             // We might want to check if the stage exists and belongs to the user first?
             // stageService.updateStage should handle this via RLS check based on pipeline ownership implicitly
@@ -343,7 +405,11 @@ export const Mutation = {
         const action = 'deleting stage';
         try {
             requireAuthentication(context);
-            const accessToken = getAccessToken(context)!;
+            const accessToken = context.token!;
+            // Permission Check (Admin Only)
+             if (!context.userPermissions?.includes('stage:delete_any')) {
+                 throw new GraphQLError('Forbidden: Only admins can delete stages', { extensions: { code: 'FORBIDDEN' } });
+            }
             // We might want to check if the stage exists and belongs to the user first?
             // stageService.deleteStage should handle this via RLS check based on pipeline ownership implicitly
             const success = await stageService.deleteStage(accessToken, id);

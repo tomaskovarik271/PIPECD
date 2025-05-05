@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { inngest } from './inngest'; // Import the Inngest client (if used elsewhere, e.g. mutations)
 import fs from 'fs';
 import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 // Import helpers and context type
 import {
@@ -94,6 +95,7 @@ const yoga = createYoga<GraphQLContext>({
   context: async (initialContext): Promise<GraphQLContext> => {
     let currentUser: User | null = null;
     let token: string | null = null;
+    let userPermissions: string[] | null = null;
     
     // Extract token from Authorization header (common pattern)
     const authHeader = initialContext.request.headers.get('authorization');
@@ -103,14 +105,38 @@ const yoga = createYoga<GraphQLContext>({
 
     if (token) {
       try {
-        const { data: { user }, error } = await supabase.auth.getUser(token);
-        if (error) {
-          console.warn('Error fetching user from token:', error.message);
-        } else {
+        // 1. Verify token and get user
+        const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+        
+        if (userError) {
+          console.warn('Error fetching user from token:', userError.message);
+        } else if (user) {
           currentUser = user;
+          
+          // 2. Fetch user permissions using the function
+          // We need an authenticated client to call the RPC function
+          const authenticatedSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
+              global: { headers: { Authorization: `Bearer ${token}` } },
+          });
+          
+          const { data: permissionsData, error: permissionsError } = await authenticatedSupabase.rpc('get_my_permissions');
+
+          if (permissionsError) {
+            console.error('Error fetching user permissions:', permissionsError.message);
+            // Decide handling: null permissions? Throw? Log only?
+            // For now, log and set to null, resolvers should handle null permissions cautiously.
+            userPermissions = null; 
+          } else {
+            // Ensure data is an array of strings, default to empty array if not
+            userPermissions = Array.isArray(permissionsData) && permissionsData.every(p => typeof p === 'string') 
+              ? permissionsData 
+              : [];
+          }
         }
       } catch (err) {
-        console.error('Unexpected error during supabase.auth.getUser:', err);
+        console.error('Unexpected error during user/permission fetching:', err);
+        currentUser = null; // Ensure user is null on unexpected error
+        userPermissions = null; // Ensure permissions are null
       }
     }
 
@@ -120,6 +146,7 @@ const yoga = createYoga<GraphQLContext>({
       ...initialContext, 
       currentUser,
       token,
+      userPermissions, // Add permissions to context
     };
   },
   graphqlEndpoint: '/.netlify/functions/graphql',

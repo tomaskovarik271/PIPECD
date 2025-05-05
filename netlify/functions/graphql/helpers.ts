@@ -15,6 +15,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export interface GraphQLContext extends YogaInitialContext {
   currentUser: User | null;
   token: string | null;
+  userPermissions: string[] | null;
   request: Request; // Made non-optional to match YogaInitialContext
   // Add other potential context fields if needed (e.g., event, context from Netlify func?)
 }

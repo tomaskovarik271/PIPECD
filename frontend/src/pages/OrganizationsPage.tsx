@@ -50,6 +50,8 @@ function OrganizationsPage() {
   const error = useAppStore((state) => state.organizationsError);
   const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
   const deleteOrganizationAction = useAppStore((state) => state.deleteOrganization);
+  // Fetch permissions
+  const userPermissions = useAppStore((state) => state.userPermissions);
 
   // --- Local UI State ---
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
@@ -112,7 +114,12 @@ function OrganizationsPage() {
         Organizations Management
       </Heading>
 
-      <Button colorScheme="teal" onClick={handleCreateOrgClick} mb={4}>
+      <Button 
+        colorScheme="teal" 
+        onClick={handleCreateOrgClick} 
+        mb={4}
+        isDisabled={!userPermissions?.includes('organization:create')} // Add permission check
+      >
         Create New Organization
       </Button>
 
@@ -167,7 +174,7 @@ function OrganizationsPage() {
                           size="sm"
                           // colorScheme="yellow" // Removed color scheme for consistency
                           onClick={() => handleEditClick(org)}
-                          isDisabled={!!isDeletingId} // Disable if any delete is in progress
+                          isDisabled={!!isDeletingId || !userPermissions?.includes('organization:update_any')} // Disable if any delete is in progress or lacking perm
                         />
                         <IconButton
                           aria-label="Delete organization"
@@ -176,7 +183,7 @@ function OrganizationsPage() {
                           colorScheme="red"
                           onClick={() => handleDeleteClick(org.id)}
                           isLoading={isDeletingId === org.id} // Show spinner for this item
-                          isDisabled={!!isDeletingId && isDeletingId !== org.id} // Disable if another item is being deleted
+                          isDisabled={!!isDeletingId && isDeletingId !== org.id || !userPermissions?.includes('organization:delete_any')} // Disable if another item is being deleted or lacking perm
                         />
                       </HStack>
                     </Td>

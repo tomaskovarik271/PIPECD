@@ -1,0 +1,30 @@
+# Add other types as needed...
+
+# --- Query Type ---
+
+type Query {
+  deals: [Deal!]
+  deal(id: ID!): Deal
+
+  people: [Person!]
+  person(id: ID!): Person
+
+  organizations: [Organization!]
+  organization(id: ID!): Organization
+
+  pipelines: [Pipeline!]
+  pipeline(id: ID!): Pipeline
+
+  stages(pipelineId: ID!): [Stage!]
+  stage(id: ID!): Stage
+
+  activities(filter: ActivityFilterInput): [Activity!]
+  activity(id: ID!): Activity
+
+  myPermissions: [String!]
+
+  # Placeholder for health check
+  health: String
+
+  # Add other top-level queries here
+} 
