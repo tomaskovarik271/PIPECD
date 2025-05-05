@@ -186,7 +186,127 @@ PIPECD/
 *   **TypeScript:** Used throughout.
 *   **Testing:** Vitest (Unit/Integration), Playwright (E2E).
 
-## 6. Troubleshooting
+## 6. Role-Based Access Control (RBAC)
+
+This project implements a database-driven Role-Based Access Control system to manage user permissions.
+
+### 6.1 Overview
+
+The goal is to control what actions users can perform (e.g., create, read, update, delete) on different resources (e.g., deals, people, pipelines) based on roles assigned to them. This is achieved through a combination of database tables, a SQL helper function, Row-Level Security (RLS) policies, and frontend UI checks.
+
+### 6.2 Database Schema
+
+The RBAC relies on the following tables defined in `supabase/migrations/...'rbac_schema_and_policies.sql`:
+
+*   **`public.roles`**: Stores the available roles.
+    *   `id uuid PRIMARY KEY`
+    *   `name text UNIQUE NOT NULL` (e.g., 'admin', 'member')
+    *   `description text`
+*   **`public.permissions`**: Stores the granular permissions available in the system.
+    *   `id uuid PRIMARY KEY`
+    *   `resource text NOT NULL` (e.g., 'deal', 'pipeline', 'activity')
+    *   `action text NOT NULL` (e.g., 'create', 'read_any', 'read_own', 'update_any', 'update_own', 'delete_any', 'delete_own')
+    *   `description text`
+    *   `UNIQUE (resource, action)`
+*   **`public.role_permissions`**: Links roles to their assigned permissions (many-to-many).
+    *   `role_id uuid REFERENCES roles(id)`
+    *   `permission_id uuid REFERENCES permissions(id)`
+    *   `PRIMARY KEY (role_id, permission_id)`
+*   **`public.user_roles`**: Links users (from `auth.users`) to their assigned roles (many-to-many).
+    *   `user_id uuid REFERENCES auth.users(id)`
+    *   `role_id uuid REFERENCES roles(id)`
+    *   `PRIMARY KEY (user_id, role_id)`
+
+### 6.3 SQL Helper Function
+
+A key component is the `public.check_permission` SQL function:
+
+```sql
+CREATE OR REPLACE FUNCTION public.check_permission(p_user_id uuid, p_resource text, p_action text)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER -- Important: Runs with the privileges of the function owner
+SET search_path = public
+AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1
+    FROM user_roles ur
+    JOIN role_permissions rp ON ur.role_id = rp.role_id
+    JOIN permissions p ON rp.permission_id = p.id
+    WHERE ur.user_id = p_user_id
+      AND p.resource = p_resource
+      AND p.action = p_action
+  );
+END;
+$$;
+```
+
+This function takes a user ID, a resource name, and an action name, and returns `true` if the user has the specified permission through any of their assigned roles, `false` otherwise. Using `SECURITY DEFINER` allows it to query the RBAC tables even when invoked by a user who might not have direct access to them.
+
+### 6.4 Row-Level Security (RLS)
+
+RLS policies are applied to all core data tables (`deals`, `people`, `organizations`, `pipelines`, `stages`, `activities`). These policies use the `check_permission` function to enforce access control directly within the database.
+
+**Example RLS Policy (for `deals` SELECT):**
+
+```sql
+CREATE POLICY "Allow users to read own or any deals based on permissions" ON public.deals
+AS PERMISSIVE FOR SELECT
+TO authenticated
+USING (
+  (check_permission(auth.uid(), 'deal', 'read_own') AND user_id = auth.uid()) OR
+  (check_permission(auth.uid(), 'deal', 'read_any'))
+);
+```
+
+This policy allows authenticated users to select deals if:
+*   They have the `deal:read_own` permission AND the `deal.user_id` matches their own ID (`auth.uid()`).
+*   OR, they have the `deal:read_any` permission.
+
+Similar policies exist for `INSERT`, `UPDATE`, and `DELETE`, checking the relevant `create`, `update_any`/`update_own`, and `delete_any`/`delete_own` permissions respectively. The `USING` clause controls which rows are visible/targetable, and the `WITH CHECK` clause (for INSERT/UPDATE) ensures new/modified rows also satisfy the conditions.
+
+### 6.5 Backend (GraphQL)
+
+The GraphQL resolvers generally rely on the RLS policies enforced by the database. When fetching data, the backend services (`lib/*.service.ts`) use an authenticated Supabase client obtained via `getAuthenticatedClient(accessToken)`. This ensures that all database queries made on behalf of the user automatically respect the RLS policies tied to their `auth.uid()`.
+
+### 6.6 Frontend (UI)
+
+The frontend implements UI-level checks to enhance user experience by hiding or disabling controls for actions the user isn't permitted to perform.
+
+1.  **Fetching Permissions:** After a successful login or token refresh, the `fetchUserPermissions` action in the Zustand store (`useAppStore.ts`) calls the `myPermissions` GraphQL query. The result (a list of permission strings like `"deal:create"`, `"pipeline:read_any"`) is stored in `state.userPermissions`.
+2.  **Conditional Rendering/Disabling:** Components (e.g., `DealsPage.tsx`, `ActivityListItem.tsx`) select `userPermissions` and the `currentUserId` from the store.
+3.  **UI Logic:** Buttons and other controls use the `isDisabled` prop based on the permissions:
+    *   **Create:** `isDisabled={!userPermissions?.includes('resource:create')}`
+    *   **Edit/Update:** `isDisabled={! (userPermissions?.includes('resource:update_any') || (userPermissions?.includes('resource:update_own') && item.user_id === currentUserId)) }`
+    *   **Delete:** `isDisabled={! (userPermissions?.includes('resource:delete_any') || (userPermissions?.includes('resource:delete_own') && item.user_id === currentUserId)) }`
+
+This logic ensures that users with `*_any` permission can always perform the action, while users with only `*_own` permission can only perform it on items where the `user_id` matches their own.
+
+### 6.7 Managing Roles and Permissions
+
+Currently, managing the RBAC configuration is done manually via SQL or the Supabase Studio:
+
+*   **Adding Roles/Permissions:** `INSERT` new rows into the `public.roles` or `public.permissions` tables.
+*   **Assigning Permissions to Roles:** `INSERT` rows into the `public.role_permissions` table linking a `role_id` to a `permission_id`.
+*   **Assigning Roles to Users:** `INSERT` rows into the `public.user_roles` table linking a `user_id` (from `auth.users`) to a `role_id`.
+
+### 6.8 Default Roles and Permissions
+
+The migration script (`..._rbac_schema_and_policies.sql`) established the following default configuration, which represents the current standard settings:
+
+*   **Roles Defined:** `admin`, `member`.
+*   **Permissions Defined:** A comprehensive set covering `create`, `read_any`, `read_own`, `update_any`, `update_own`, `delete_any`, `delete_own` for all core resources (deals, people, organizations, pipelines, stages, activities), plus administrative permissions for roles/permissions themselves.
+*   **Default Role Assignments:**
+    *   **`admin` Role:** Granted *all* defined permissions, providing unrestricted access.
+    *   **`member` Role:** Granted permissions typically needed for standard users:
+        *   `create` permission for core resources (deals, activities, people, organizations).
+        *   `read_own`, `update_own`, `delete_own` permissions for the resources they create (deals, activities, people, organizations).
+        *   `read_any` permission for shared resources like pipelines and stages.
+
+*Remember to manually assign the appropriate role (`admin` or `member`) to new users in the `public.user_roles` table via SQL or the Supabase Studio.*
+
+## 7. Troubleshooting
 
 (Existing entries 1-15 remain relevant)
 
