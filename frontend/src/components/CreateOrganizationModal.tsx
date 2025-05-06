@@ -159,7 +159,7 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
 
         <ModalFooter>
           <Button 
-            colorScheme='teal' 
+            colorScheme='blue'
             mr={3} 
             type="submit" 
             isLoading={isLoading}

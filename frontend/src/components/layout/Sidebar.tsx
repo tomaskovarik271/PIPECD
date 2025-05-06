@@ -73,6 +73,14 @@ function Sidebar() {
       {/* Spacer to push sign out down? Or place it logically */}
       <Box flexGrow={1}></Box> 
 
+      {/* Display Logged In User */}
+      <Box borderTopWidth="1px" borderColor="gray.200" pt={4} mt={4}>
+        <Text fontSize="sm" color="gray.600">Signed in as:</Text>
+        <Text fontSize="sm" fontWeight="medium" noOfLines={1} title={useAppStore.getState().session?.user?.email}>
+            {useAppStore.getState().session?.user?.email ?? 'Unknown User'}
+        </Text>
+      </Box>
+
       {/* Sign Out Button */}
       <Button 
           variant="ghost" // Use ghost to match link hover, but provide button padding/semantics
@@ -80,7 +88,7 @@ function Sidebar() {
           onClick={handleSignOutAction}
           width="100%" 
           justifyContent="flex-start" // Align text left
-          mt={4} // Add some margin top
+          // mt={4} // Adjust margin as needed, maybe remove if Box provides enough spacing
         >
          {/* TODO: Add sign out icon */}
           Sign Out

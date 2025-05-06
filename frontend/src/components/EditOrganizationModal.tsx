@@ -171,7 +171,7 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
 
         <ModalFooter>
           <Button 
-            colorScheme='teal' 
+            colorScheme='blue'
             mr={3} 
             type="submit" 
             isLoading={isLoading}

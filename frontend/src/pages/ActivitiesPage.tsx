@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Box,
   Button,
@@ -26,13 +26,30 @@ import {
   ModalHeader,
   ModalCloseButton,
 } from '@chakra-ui/react';
-import { useAppStore, Activity } from '../stores/useAppStore'; // Keep Activity type
+import { useAppStore, Activity, Deal, Person, Organization } from '../stores/useAppStore'; // Keep types
 // import ActivityListItem from '../components/activities/ActivityListItem'; // REMOVE list item import
 import CreateActivityForm from '../components/activities/CreateActivityForm'; // Import the form
 import EmptyState from '../components/common/EmptyState'; // Import EmptyState
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
 import EditActivityModal from '../components/activities/EditActivityModal'; // Import Edit Modal
-import { TimeIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons'; // Import icons
+import { TimeIcon, EditIcon, DeleteIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons'; // Import icons
+
+// Extend Activity type to potentially include full linked objects if needed for sorting
+// (Assuming they are fetched with the activity)
+interface ActivityWithLinks extends Activity {
+    deal?: Deal | null;
+    person?: Person | null;
+    organization?: Organization | null;
+}
+
+// Define sortable keys
+type ActivitySortKeys = 'subject' | 'type' | 'due_date' | 'linked_to' | 'notes' | 'is_done';
+
+// Define sort config type
+interface SortConfig {
+    key: ActivitySortKeys;
+    direction: 'ascending' | 'descending';
+}
 
 // --- Helper Functions (copied from ActivityListItem) ---
 const formatDateTime = (isoString: string | null | undefined): string => {
@@ -59,9 +76,17 @@ const getActivityTypeColor = (type: string): string => {
     }
 }
 
+// Helper to get sortable string for linked entities
+const getLinkedEntitySortString = (activity: ActivityWithLinks): string => {
+    if (activity.deal) return `deal: ${activity.deal.name?.toLowerCase() ?? ''}`;
+    if (activity.person) return `person: ${activity.person.first_name?.toLowerCase() ?? ''} ${activity.person.last_name?.toLowerCase() ?? ''}`.trim();
+    if (activity.organization) return `organization: ${activity.organization.name?.toLowerCase() ?? ''}`;
+    return ''; // No link
+};
+
 function ActivitiesPage() {
   // Store state and actions
-  const activities = useAppStore((state) => state.activities);
+  const activities = useAppStore((state) => state.activities as ActivityWithLinks[]);
   const loading = useAppStore((state) => state.activitiesLoading);
   const error = useAppStore((state) => state.activitiesError);
   const fetchActivities = useAppStore((state) => state.fetchActivities);
@@ -79,6 +104,9 @@ function ActivitiesPage() {
   const [activityToDeleteId, setActivityToDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const toast = useToast();
+
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'due_date', direction: 'ascending' });
 
   // Fetch activities on component mount
   useEffect(() => {
@@ -126,16 +154,79 @@ function ActivitiesPage() {
     setActivityToEdit(null);
   };
 
+  // --- Sorting Logic ---
+  const requestSort = (key: ActivitySortKeys) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedActivities = useMemo(() => {
+    let sortableActivities = [...activities];
+    sortableActivities.sort((a, b) => {
+        let aValue: any;
+        let bValue: any;
+
+        switch(sortConfig.key) {
+            case 'subject':
+            case 'type':
+            case 'notes':
+                aValue = a[sortConfig.key]?.toLowerCase() ?? '';
+                bValue = b[sortConfig.key]?.toLowerCase() ?? '';
+                break;
+            case 'due_date':
+                // Handle null dates - sort them to the end when ascending
+                aValue = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+                bValue = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+                if (sortConfig.direction === 'descending') {
+                    // Treat nulls as earliest for descending
+                    aValue = a.due_date ? new Date(a.due_date).getTime() : -Infinity;
+                    bValue = b.due_date ? new Date(b.due_date).getTime() : -Infinity;
+                }
+                break;
+            case 'linked_to':
+                aValue = getLinkedEntitySortString(a);
+                bValue = getLinkedEntitySortString(b);
+                break;
+            case 'is_done': // Boolean sort (false before true)
+                aValue = a.is_done ? 1 : 0;
+                bValue = b.is_done ? 1 : 0;
+                break;
+            default:
+                return 0;
+        }
+
+        if (aValue < bValue) {
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+    });
+    return sortableActivities;
+  }, [activities, sortConfig]);
+
+  // Helper to render sort icons
+  const renderSortIcon = (columnKey: ActivitySortKeys) => {
+      if (sortConfig.key !== columnKey) return null;
+      return sortConfig.direction === 'ascending' ? 
+             <TriangleUpIcon aria-label="sorted ascending" ml={1} w={3} h={3} /> : 
+             <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} />;
+  };
+
   return (
     <VStack spacing={4} align="stretch">
-      <Box display="flex" justifyContent="space-between" alignItems="center">
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
         <Heading as="h2" size="lg">Activities</Heading>
         <Button 
           colorScheme="blue" 
           onClick={onCreateOpen}
           isDisabled={!userPermissions?.includes('activity:create')}
         >
-          Add Activity
+          New Activity
         </Button>
       </Box>
 
@@ -154,20 +245,30 @@ function ActivitiesPage() {
       )}
       
       {!loading && !error && activities.length > 0 && (
-        <TableContainer borderWidth="1px" borderRadius="lg">
-          <Table variant="simple" size="sm">
+        <TableContainer borderWidth="1px" borderRadius="lg" width="100%">
+          <Table variant="simple" size="sm" width="100%">
             <Thead>
               <Tr borderBottomWidth="1px" borderColor="gray.200">
-                <Th px={2} width="1%"><span style={{ visibility: 'hidden' }}>Done</span></Th> {/* Checkbox col */} 
-                <Th>Subject / Type</Th>
-                <Th>Due Date</Th>
-                <Th>Linked To</Th>
-                <Th>Notes</Th>
+                <Th px={2} width="1%" cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('is_done')}>
+                    {renderSortIcon('is_done')}
+                </Th>
+                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('subject')}>
+                  Subject / Type {renderSortIcon('subject')}
+                </Th>
+                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('due_date')}>
+                  Due Date {renderSortIcon('due_date')}
+                </Th>
+                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('linked_to')}>
+                  Linked To {renderSortIcon('linked_to')}
+                </Th>
+                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('notes')}>
+                  Notes {renderSortIcon('notes')}
+                </Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
             <Tbody>
-              {activities.map(activity => {
+              {sortedActivities.map(activity => {
                 // Determine linked entity for display (copied from ActivityListItem)
                 const linkedEntity = activity.deal 
                   ? `Deal: ${activity.deal.name}` 

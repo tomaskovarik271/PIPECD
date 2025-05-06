@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import {
   Box,
   Heading,
@@ -19,10 +19,11 @@ import {
   HStack,
   useToast,
   VStack,
+  Flex,
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
-import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, ViewIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import EmptyState from '../components/common/EmptyState';
@@ -40,21 +41,30 @@ interface DealStage {
     id: string;
     name: string;
     pipeline_id: string;
-    // Add other fields if needed by UI
+    pipeline?: { name: string };
 }
 
 // Update local Deal interface
 interface Deal {
   id: string;
   name: string;
-  // stage: string; // Old definition
-  stage: DealStage; // Use nested stage object
-  stage_id?: string | null; // Keep if useful
+  stage: DealStage;
+  stage_id?: string | null;
   amount?: number | null;
   created_at: string;
   updated_at: string;
   person_id?: string | null;
   person?: DealPerson | null;
+  user_id?: string | null;
+}
+
+// Define sortable keys
+type DealSortKeys = 'name' | 'person' | 'stage' | 'amount' | 'created_at';
+
+// Define sort config type
+interface SortConfig {
+    key: DealSortKeys;
+    direction: 'ascending' | 'descending';
 }
 
 function DealsPage() {
@@ -79,6 +89,9 @@ function DealsPage() {
   // For Confirmation Dialog
   const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
   const [dealToDeleteId, setDealToDeleteId] = useState<string | null>(null);
+
+  // --- Sorting State ---
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
 
   // Fetch deals on mount
   useEffect(() => {
@@ -118,17 +131,66 @@ function DealsPage() {
 
     if (success) {
         toast({ title: 'Deal deleted.', status: 'success', duration: 3000, isClosable: true });
-    } else {
-        toast({
+            } else {
+            toast({
             title: 'Error Deleting Deal',
             // Error is managed by the store, useAppStore.dealsError
             description: error || 'An unknown error occurred', 
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-        });
+                status: 'error',
+                duration: 5000,
+                isClosable: true,
+            });
     }
   };
+
+  // --- Sorting Logic ---
+  const requestSort = (key: DealSortKeys) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedDeals = useMemo(() => {
+    let sortableDeals = [...deals];
+    sortableDeals.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      // Access nested properties for sorting
+      switch (sortConfig.key) {
+        case 'person':
+          aValue = formatPersonName(a.person).toLowerCase();
+          bValue = formatPersonName(b.person).toLowerCase();
+          break;
+        case 'stage':
+          aValue = a.stage?.name?.toLowerCase() ?? '';
+          bValue = b.stage?.name?.toLowerCase() ?? '';
+          break;
+        case 'created_at':
+          aValue = new Date(a.created_at).getTime();
+          bValue = new Date(b.created_at).getTime();
+          break;
+        case 'amount':
+          aValue = a.amount ?? -Infinity; // Treat null amounts as lowest value for ascending
+          bValue = b.amount ?? -Infinity;
+          break;
+        default: // 'name'
+          aValue = a[sortConfig.key]?.toLowerCase() ?? '';
+          bValue = b[sortConfig.key]?.toLowerCase() ?? '';
+      }
+
+      if (aValue < bValue) {
+        return sortConfig.direction === 'ascending' ? -1 : 1;
+      }
+      if (aValue > bValue) {
+        return sortConfig.direction === 'ascending' ? 1 : -1;
+    }
+      return 0;
+    });
+    return sortableDeals;
+  }, [deals, sortConfig]);
 
   // Helper function to format person name for display
   const formatPersonName = (person: DealPerson | null | undefined): string => {
@@ -155,20 +217,28 @@ function DealsPage() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   }
 
+  // Helper to render sort icons
+  const renderSortIcon = (columnKey: DealSortKeys) => {
+      if (sortConfig.key !== columnKey) return null;
+      return sortConfig.direction === 'ascending' ? 
+             <TriangleUpIcon aria-label="sorted ascending" ml={1} w={3} h={3} /> : 
+             <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} />;
+  };
+
   return (
     <VStack spacing={4} align="stretch">
-      <Heading as="h2" size="lg" mb={4}>
-        Deals Management
-      </Heading>
-
-      <Button 
-        colorScheme="blue"
-        onClick={handleCreateDealClick} 
-        mb={4}
-        isDisabled={!userPermissions?.includes('deal:create')}
-      >
-        Create New Deal
-      </Button>
+      <Flex justifyContent="space-between" alignItems="center" mb={6}>
+        <Heading as="h2" size="lg">
+          Deals
+        </Heading>
+        <Button 
+          colorScheme="blue"
+          onClick={handleCreateDealClick} 
+          isDisabled={!userPermissions?.includes('deal:create')}
+        >
+          New Deal
+        </Button>
+      </Flex>
 
       {/* Loading state from store */}
       {loading && (
@@ -195,25 +265,35 @@ function DealsPage() {
             onActionButtonClick={handleCreateDealClick}
             isActionButtonDisabled={!userPermissions?.includes('deal:create')}
           />
-      )}
+       )}
 
       {!loading && deals.length > 0 && (
-        <TableContainer>
-          <Table variant='simple' size='sm'>
+        <TableContainer width="100%" borderWidth="1px" borderRadius="lg">
+          <Table variant='simple' size='sm' width="100%">
             {/* <TableCaption>List of current deals</TableCaption> */}
             <Thead>
               <Tr borderBottomWidth="1px" borderColor="gray.200">
-                <Th>Name</Th>
-                <Th>Person</Th>
-                <Th>Stage</Th>
-                <Th isNumeric>Amount</Th>
-                <Th>Created</Th>
+                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('name')}>
+                  Name {renderSortIcon('name')}
+                </Th>
+                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('person')}>
+                  Person {renderSortIcon('person')}
+                </Th>
+                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('stage')}>
+                  Stage {renderSortIcon('stage')}
+                </Th>
+                <Th isNumeric cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('amount')}>
+                  Amount {renderSortIcon('amount')}
+                </Th>
+                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('created_at')}>
+                  Created {renderSortIcon('created_at')}
+                </Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
             <Tbody>
-              {deals.map((deal) => (
-                  <Tr key={deal.id}>
+              {sortedDeals.map((deal) => (
+                  <Tr key={deal.id} bg="white">
                     <Td>{deal.name}</Td>
                     <Td>{formatPersonName(deal.person)}</Td>
                     <Td>

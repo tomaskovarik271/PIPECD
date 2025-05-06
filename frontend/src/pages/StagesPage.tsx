@@ -120,22 +120,20 @@ const StagesPage: React.FC = () => {
        <Link as={RouterLink} to="/pipelines" mb={4} display="inline-block">
          <ArrowBackIcon mr={1} /> Back to Pipelines
        </Link>
-      <Flex justify="space-between" align="center" mb={4}>
-        <Heading size="lg">
-          Stages for Pipeline: {pipeline ? pipeline.name : (pipelineId ? `(${pipelineId.substring(0, 8)}...)` : 'Loading...')}
-        </Heading>
-        {/* Only show Add Stage button if pipelineId is valid and user has permission */}
-        {pipelineId && (
-          <Button 
-            onClick={handleAddStage} 
-            colorScheme="blue"
-            leftIcon={<AddIcon boxSize={3} />}
-            isDisabled={!userPermissions?.includes('stage:create')}
-          >
-            Add Stage
-          </Button>
-        )}
-      </Flex>
+      <Heading size="lg" mb={2}>
+        Stages for Pipeline: {pipeline ? pipeline.name : (pipelineId ? `(${pipelineId.substring(0, 8)}...)` : 'Loading...')}
+      </Heading>
+      {pipelineId && (
+        <Button 
+          onClick={handleAddStage} 
+          colorScheme="blue"
+          alignSelf="flex-start"
+          mb={4}
+          isDisabled={!userPermissions?.includes('stage:create')}
+        >
+          New Stage
+        </Button>
+      )}
 
       {stagesLoading && (
         <Flex justify="center" align="center" minH="200px">

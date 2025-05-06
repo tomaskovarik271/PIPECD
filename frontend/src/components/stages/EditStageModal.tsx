@@ -184,7 +184,7 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
           <Button variant='ghost' mr={3} onClick={onClose} isDisabled={isLoading}>
             Cancel
           </Button>
-          <Button type="submit" colorScheme="teal" isLoading={isLoading}>
+          <Button type="submit" colorScheme="blue" isLoading={isLoading}>
             Save Changes
           </Button>
         </ModalFooter>

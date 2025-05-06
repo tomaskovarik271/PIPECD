@@ -315,7 +315,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
 
         <ModalFooter>
           <Button 
-            colorScheme='teal' 
+            colorScheme='blue'
             mr={3} 
             type="submit" 
             isLoading={isLoading}

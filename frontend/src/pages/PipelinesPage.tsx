@@ -114,10 +114,9 @@ const PipelinesPage: React.FC = () => {
         <Button 
             onClick={handleAddPipeline} 
             colorScheme="blue"
-            leftIcon={<AddIcon boxSize={3} />}
             isDisabled={!userPermissions?.includes('pipeline:create')}
         >
-          Add Pipeline
+          New Pipeline
         </Button>
       </Flex>
 
