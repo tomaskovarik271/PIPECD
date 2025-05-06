@@ -7,13 +7,6 @@ import {
   Text,
   VStack,
   useDisclosure, // For create modal later
-  Table, // Add Table components
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
   Checkbox, // Import Checkbox
   HStack, // Import HStack
   IconButton, // Import IconButton
@@ -33,6 +26,8 @@ import EmptyState from '../components/common/EmptyState'; // Import EmptyState
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
 import EditActivityModal from '../components/activities/EditActivityModal'; // Import Edit Modal
 import { TimeIcon, EditIcon, DeleteIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons'; // Import icons
+import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
+import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
 
 // Extend Activity type to potentially include full linked objects if needed for sorting
 // (Assuming they are fetched with the activity)
@@ -53,7 +48,7 @@ interface SortConfig {
 
 // --- Helper Functions (copied from ActivityListItem) ---
 const formatDateTime = (isoString: string | null | undefined): string => {
-  if (!isoString) return 'No due date';
+  if (!isoString) return '-'; // Display hyphen for empty dates
   try {
     return new Date(isoString).toLocaleString(undefined, {
       dateStyle: 'medium',
@@ -86,7 +81,7 @@ const getLinkedEntitySortString = (activity: ActivityWithLinks): string => {
 
 function ActivitiesPage() {
   // Store state and actions
-  const activities = useAppStore((state) => state.activities as ActivityWithLinks[]);
+  const activities = useAppStore((state) => state.activities as Activity[]);
   const loading = useAppStore((state) => state.activitiesLoading);
   const error = useAppStore((state) => state.activitiesError);
   const fetchActivities = useAppStore((state) => state.fetchActivities);
@@ -104,9 +99,6 @@ function ActivitiesPage() {
   const [activityToDeleteId, setActivityToDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const toast = useToast();
-
-  // Sorting state
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'due_date', direction: 'ascending' });
 
   // Fetch activities on component mount
   useEffect(() => {
@@ -154,180 +146,133 @@ function ActivitiesPage() {
     setActivityToEdit(null);
   };
 
-  // --- Sorting Logic ---
-  const requestSort = (key: ActivitySortKeys) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
+  // Define Columns for SortableTable
+  const columns: ColumnDefinition<Activity>[] = [
+    {
+      key: 'is_done',
+      header: '', // No text header for checkbox
+      renderCell: (activity) => {
+          const canUpdate = userPermissions?.includes('activity:update_any') || (userPermissions?.includes('activity:update_own') && activity.user_id === currentUserId);
+          return (
+            <Checkbox 
+                isChecked={activity.is_done} 
+                onChange={() => handleToggleDone(activity.id, activity.is_done)} 
+                aria-label="Mark activity as done"
+                isDisabled={!canUpdate}
+                px={2} // Add padding directly to checkbox cell
+            />
+          );
+      },
+      isSortable: true,
+      sortAccessor: (activity) => activity.is_done, // Sort by boolean
+    },
+    {
+      key: 'subject',
+      header: 'Subject / Type',
+      renderCell: (activity) => (
+        <HStack align="baseline">
+          <Text fontWeight="medium">{activity.subject}</Text>
+          <Tag size="sm" colorScheme={getActivityTypeColor(activity.type)}>{activity.type || '-'}</Tag>
+        </HStack>
+      ),
+      isSortable: true,
+      sortAccessor: (activity) => activity.subject?.toLowerCase() ?? '',
+    },
+    {
+      key: 'due_date',
+      header: 'Due Date',
+      renderCell: (activity) => formatDateTime(activity.due_date),
+      isSortable: true,
+      sortAccessor: (activity) => activity.due_date ? new Date(activity.due_date) : null, // Sort by Date or null
+    },
+    {
+      key: 'linked_to',
+      header: 'Linked To',
+      renderCell: (activity) => {
+          const linkedEntity = activity.deal 
+            ? `Deal: ${activity.deal.name}` 
+            : activity.person 
+            ? `Person: ${activity.person.first_name || ''} ${activity.person.last_name || ''}`.trim()
+            : activity.organization
+            ? `Org: ${activity.organization.name}`
+            : '-';
+          return <Text fontSize="xs">{linkedEntity}</Text>;
+      },
+      isSortable: true,
+      sortAccessor: (activity) => { // Custom accessor for linked entity string
+          if (activity.deal) return `deal: ${activity.deal.name?.toLowerCase() ?? ''}`;
+          if (activity.person) return `person: ${activity.person.first_name?.toLowerCase() ?? ''} ${activity.person.last_name?.toLowerCase() ?? ''}`.trim();
+          if (activity.organization) return `organization: ${activity.organization.name?.toLowerCase() ?? ''}`;
+          return '';
+      },
+    },
+    {
+      key: 'notes',
+      header: 'Notes',
+      renderCell: (activity) => (
+          <Text fontSize="xs" maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
+              {activity.notes || '-'}
+          </Text>
+      ),
+      isSortable: true,
+      sortAccessor: (activity) => activity.notes?.toLowerCase() ?? '',
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      renderCell: (activity) => {
+          const canUpdate = userPermissions?.includes('activity:update_any') || (userPermissions?.includes('activity:update_own') && activity.user_id === currentUserId);
+          const canDelete = userPermissions?.includes('activity:delete_any') || (userPermissions?.includes('activity:delete_own') && activity.user_id === currentUserId);
+          return (
+            <HStack spacing={1}>
+              <IconButton
+                aria-label="Edit activity"
+                icon={<EditIcon />}
+                size="sm"
+                variant="ghost"
+                onClick={() => handleEditClick(activity)}
+                isDisabled={!canUpdate}
+              />
+              <IconButton
+                aria-label="Delete activity"
+                icon={<DeleteIcon />}
+                colorScheme="red"
+                size="sm"
+                variant="ghost"
+                onClick={() => handleDeleteClick(activity.id)}
+                isDisabled={!canDelete}
+              />
+            </HStack>
+          );
+      },
+      isSortable: false,
+    },
+  ];
 
-  const sortedActivities = useMemo(() => {
-    let sortableActivities = [...activities];
-    sortableActivities.sort((a, b) => {
-        let aValue: any;
-        let bValue: any;
-
-        switch(sortConfig.key) {
-            case 'subject':
-            case 'type':
-            case 'notes':
-                aValue = a[sortConfig.key]?.toLowerCase() ?? '';
-                bValue = b[sortConfig.key]?.toLowerCase() ?? '';
-                break;
-            case 'due_date':
-                // Handle null dates - sort them to the end when ascending
-                aValue = a.due_date ? new Date(a.due_date).getTime() : Infinity;
-                bValue = b.due_date ? new Date(b.due_date).getTime() : Infinity;
-                if (sortConfig.direction === 'descending') {
-                    // Treat nulls as earliest for descending
-                    aValue = a.due_date ? new Date(a.due_date).getTime() : -Infinity;
-                    bValue = b.due_date ? new Date(b.due_date).getTime() : -Infinity;
-                }
-                break;
-            case 'linked_to':
-                aValue = getLinkedEntitySortString(a);
-                bValue = getLinkedEntitySortString(b);
-                break;
-            case 'is_done': // Boolean sort (false before true)
-                aValue = a.is_done ? 1 : 0;
-                bValue = b.is_done ? 1 : 0;
-                break;
-            default:
-                return 0;
-        }
-
-        if (aValue < bValue) {
-            return sortConfig.direction === 'ascending' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-            return sortConfig.direction === 'ascending' ? 1 : -1;
-        }
-        return 0;
-    });
-    return sortableActivities;
-  }, [activities, sortConfig]);
-
-  // Helper to render sort icons
-  const renderSortIcon = (columnKey: ActivitySortKeys) => {
-      if (sortConfig.key !== columnKey) return null;
-      return sortConfig.direction === 'ascending' ? 
-             <TriangleUpIcon aria-label="sorted ascending" ml={1} w={3} h={3} /> : 
-             <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} />;
+  // Define props for EmptyState
+  const emptyStateProps = {
+    icon: TimeIcon,
+    title: "No Activities Logged",
+    message: "Add tasks, calls, or meetings to keep track of interactions."
   };
 
   return (
-    <VStack spacing={4} align="stretch">
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
-        <Heading as="h2" size="lg">Activities</Heading>
-        <Button 
-          colorScheme="blue" 
-          onClick={onCreateOpen}
-          isDisabled={!userPermissions?.includes('activity:create')}
-        >
-          New Activity
-        </Button>
-      </Box>
-
-      {loading && <Spinner size="xl" />}
-      {error && <Text color="red.500">Error loading activities: {error}</Text>}
-
-      {!loading && !error && activities.length === 0 && (
-          <EmptyState 
-            icon={TimeIcon}
-            title="No Activities Logged"
-            message="Add tasks, calls, or meetings to keep track of interactions."
-            actionButtonLabel="Add Activity"
-            onActionButtonClick={onCreateOpen}
-            isActionButtonDisabled={!userPermissions?.includes('activity:create')}
-          />
-      )}
-      
-      {!loading && !error && activities.length > 0 && (
-        <TableContainer borderWidth="1px" borderRadius="lg" width="100%">
-          <Table variant="simple" size="sm" width="100%">
-            <Thead>
-              <Tr borderBottomWidth="1px" borderColor="gray.200">
-                <Th px={2} width="1%" cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('is_done')}>
-                    {renderSortIcon('is_done')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('subject')}>
-                  Subject / Type {renderSortIcon('subject')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('due_date')}>
-                  Due Date {renderSortIcon('due_date')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('linked_to')}>
-                  Linked To {renderSortIcon('linked_to')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('notes')}>
-                  Notes {renderSortIcon('notes')}
-                </Th>
-                <Th>Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {sortedActivities.map(activity => {
-                // Determine linked entity for display (copied from ActivityListItem)
-                const linkedEntity = activity.deal 
-                  ? `Deal: ${activity.deal.name}` 
-                  : activity.person 
-                  ? `Person: ${activity.person.first_name || ''} ${activity.person.last_name || ''}`.trim()
-                  : activity.organization
-                  ? `Org: ${activity.organization.name}`
-                  : '-';
-
-                const canUpdate = userPermissions?.includes('activity:update_any') || (userPermissions?.includes('activity:update_own') && activity.user_id === currentUserId);
-                const canDelete = userPermissions?.includes('activity:delete_any') || (userPermissions?.includes('activity:delete_own') && activity.user_id === currentUserId);
-
-                return (
-                  <Tr key={activity.id} bg={activity.is_done ? 'gray.50' : 'white'} opacity={activity.is_done ? 0.6 : 1}>
-                    <Td px={2}>
-                      <Checkbox 
-                        isChecked={activity.is_done} 
-                        onChange={() => handleToggleDone(activity.id, activity.is_done)} 
-                        aria-label="Mark activity as done"
-                        isDisabled={!canUpdate}
-                      />
-                    </Td>
-                    <Td>
-                      <HStack align="baseline">
-                        <Text fontWeight="medium">{activity.subject}</Text>
-                        <Tag size="sm" colorScheme={getActivityTypeColor(activity.type)}>{activity.type || '-'}</Tag>
-                      </HStack>
-                    </Td>
-                    <Td>{formatDateTime(activity.due_date)}</Td>
-                    <Td fontSize="xs">{linkedEntity}</Td>
-                    <Td fontSize="xs" maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{activity.notes || '-'}</Td>
-                    <Td>
-                      <HStack spacing={1}>
-                        <IconButton
-                          aria-label="Edit activity"
-                          icon={<EditIcon />}
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleEditClick(activity)}
-                          isDisabled={!canUpdate}
-                        />
-                        <IconButton
-                          aria-label="Delete activity"
-                          icon={<DeleteIcon />}
-                          colorScheme="red"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteClick(activity.id)}
-                          isDisabled={!canDelete}
-                        />
-                      </HStack>
-                    </Td>
-                  </Tr>
-                );
-              })}
-            </Tbody>
-          </Table>
-        </TableContainer>
-      )}
+    <ListPageLayout
+      title="Activities"
+      newButtonLabel="New Activity"
+      onNewButtonClick={onCreateOpen}
+      isNewButtonDisabled={!userPermissions?.includes('activity:create')}
+      isLoading={loading}
+      error={error}
+      isEmpty={activities.length === 0}
+      emptyStateProps={emptyStateProps}
+    >
+      <SortableTable<Activity>
+        data={activities}
+        columns={columns}
+        initialSortKey="due_date" // Default sort by due date
+        initialSortDirection="ascending"
+      />
 
       {/* Modals */} 
       <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl">
@@ -357,7 +302,7 @@ function ActivitiesPage() {
         confirmButtonColorScheme="red"
         isLoading={isDeleting}
       />
-    </VStack>
+    </ListPageLayout>
   );
 }
 

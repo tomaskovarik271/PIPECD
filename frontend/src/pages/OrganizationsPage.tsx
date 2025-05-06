@@ -7,14 +7,6 @@ import {
   Spinner,
   Alert,
   AlertIcon,
-  Table, 
-  Thead, 
-  Tbody, 
-  Tr, 
-  Th, 
-  Td, 
-  TableCaption, 
-  TableContainer,
   IconButton,
   HStack,
   useToast,
@@ -24,11 +16,12 @@ import {
 } from '@chakra-ui/react';
 import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
-import { EditIcon, DeleteIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, LockIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore'; // Import store
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
 import EmptyState from '../components/common/EmptyState'; // Import EmptyState
-import { LockIcon } from '@chakra-ui/icons'; // Placeholder icon
+import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
+import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
 
 // REMOVED: GET_ORGANIZATIONS_QUERY (in store)
 
@@ -73,9 +66,6 @@ function OrganizationsPage() {
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null); // For button spinner
   const [orgToDeleteId, setOrgToDeleteId] = useState<string | null>(null);
   const toast = useToast();
-
-  // --- Sorting State ---
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
 
   // --- Fetching Logic ---
   useEffect(() => {
@@ -124,161 +114,98 @@ function OrganizationsPage() {
     }
   };
 
-  // --- Sorting Logic ---
-  const requestSort = (key: OrgSortKeys) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const sortedOrganizations = useMemo(() => {
-    let sortableOrgs = [...organizations];
-    sortableOrgs.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      switch (sortConfig.key) {
-        case 'created_at':
-          aValue = new Date(a.created_at).getTime();
-          bValue = new Date(b.created_at).getTime();
-          break;
-        case 'name':
-        case 'address':
-        case 'notes':
-          aValue = a[sortConfig.key]?.toLowerCase() ?? '';
-          bValue = b[sortConfig.key]?.toLowerCase() ?? '';
-          break;
-        default:
-          return 0;
-      }
-
-      if (aValue < bValue) {
-        return sortConfig.direction === 'ascending' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === 'ascending' ? 1 : -1;
-      }
-      return 0;
-    });
-    return sortableOrgs;
-  }, [organizations, sortConfig]);
-
   // --- Helper Functions ---
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    try { return new Date(dateString).toLocaleDateString(); } 
+    catch (e) { return 'Invalid Date'; }
   }
 
-  // Helper to render sort icons
-  const renderSortIcon = (columnKey: OrgSortKeys) => {
-      if (sortConfig.key !== columnKey) return null;
-      return sortConfig.direction === 'ascending' ? 
-             <TriangleUpIcon aria-label="sorted ascending" ml={1} w={3} h={3} /> : 
-             <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} />;
+  // Define Columns for SortableTable
+  const columns: ColumnDefinition<Organization>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      renderCell: (org) => org.name,
+      isSortable: true,
+    },
+    {
+      key: 'address',
+      header: 'Address',
+      renderCell: (org) => org.address || '-',
+      isSortable: true,
+      sortAccessor: (org) => org.address?.toLowerCase() ?? '',
+    },
+    {
+      key: 'notes',
+      header: 'Notes',
+      renderCell: (org) => (
+          <Text maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
+              {org.notes || '-'}
+          </Text>
+      ),
+      isSortable: true,
+      sortAccessor: (org) => org.notes?.toLowerCase() ?? '',
+    },
+    {
+      key: 'created_at',
+      header: 'Created',
+      renderCell: (org) => formatDate(org.created_at),
+      isSortable: true,
+      sortAccessor: (org) => new Date(org.created_at),
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      renderCell: (org) => (
+          <HStack spacing={2}>
+            <IconButton
+              aria-label="Edit organization"
+              icon={<EditIcon />}
+              size="sm"
+              variant="ghost"
+              onClick={() => handleEditClick(org)}
+              isDisabled={!!isDeletingId || !userPermissions?.includes('organization:update_any')}
+            />
+            <IconButton
+              aria-label="Delete organization"
+              icon={<DeleteIcon />}
+              size="sm"
+              colorScheme="red"
+              variant="ghost"
+              onClick={() => handleDeleteClick(org.id)}
+              isLoading={isDeletingId === org.id}
+              isDisabled={!!isDeletingId && isDeletingId !== org.id || !userPermissions?.includes('organization:delete_any')}
+            />
+          </HStack>
+      ),
+      isSortable: false,
+    },
+  ];
+
+  // Define props for EmptyState
+  const emptyStateProps = {
+    icon: LockIcon,
+    title: "No Organizations Found",
+    message: "Add organizations to group your contacts and deals."
   };
 
-  // --- Render Logic ---
   return (
-    <VStack spacing={4} align="stretch">
-      <Flex justifyContent="space-between" alignItems="center" mb={6}>
-        <Heading as="h2" size="lg">
-          Organizations
-        </Heading>
-        <Button 
-          colorScheme="blue"
-          onClick={handleCreateOrgClick} 
-          isDisabled={!userPermissions?.includes('organization:create')}
-        >
-          New Organization
-        </Button>
-      </Flex>
-
-      {/* Loading state from store */}
-      {loading && (
-        <Box textAlign="center" mt={10}>
-          <Spinner size="xl" />
-          <Text mt={2}>Loading organizations...</Text>
-        </Box>
-      )}
-
-      {/* Error state from store */}
-      {error && (
-        <Alert status="error" mt={4} mb={4}>
-          <AlertIcon />
-          Error loading organizations: {error}
-        </Alert>
-      )}
+    <ListPageLayout
+      title="Organizations"
+      newButtonLabel="New Organization"
+      onNewButtonClick={handleCreateOrgClick}
+      isNewButtonDisabled={!userPermissions?.includes('organization:create')}
+      isLoading={loading}
+      error={error}
+      isEmpty={organizations.length === 0}
+      emptyStateProps={emptyStateProps}
+    >
+      <SortableTable<Organization>
+        data={organizations}
+        columns={columns}
+        initialSortKey="name"
+      />
       
-      {/* REMOVED: deleteError state */}
-
-      {!loading && organizations.length === 0 && (
-        <EmptyState 
-          icon={LockIcon}
-          title="No Organizations Found"
-          message="Add organizations to group your contacts and deals."
-          actionButtonLabel="Create New Organization"
-          onActionButtonClick={handleCreateOrgClick}
-          isActionButtonDisabled={!userPermissions?.includes('organization:create')}
-        />
-      )}
-
-      {!loading && organizations.length > 0 && (
-        <TableContainer width="100%" borderWidth="1px" borderRadius="lg">
-          <Table variant='simple' size='sm' width="100%">
-            <Thead>
-              <Tr borderBottomWidth="1px" borderColor="gray.200">
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('name')}>
-                  Name {renderSortIcon('name')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('address')}>
-                  Address {renderSortIcon('address')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('notes')}>
-                  Notes {renderSortIcon('notes')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('created_at')}>
-                  Created {renderSortIcon('created_at')}
-                </Th>
-                <Th>Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {sortedOrganizations.map((org) => (
-                <Tr key={org.id} bg="white">
-                  <Td>{org.name}</Td>
-                  <Td>{org.address || '-'}</Td>
-                  <Td maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{org.notes || '-'}</Td>
-                  <Td>{formatDate(org.created_at)}</Td>
-                  <Td>
-                    <HStack spacing={2}>
-                      <IconButton
-                        aria-label="Edit organization"
-                        icon={<EditIcon />}
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditClick(org)}
-                        isDisabled={!!isDeletingId || !userPermissions?.includes('organization:update_any')} // Disable if any delete is in progress or lacking perm
-                      />
-                      <IconButton
-                        aria-label="Delete organization"
-                        icon={<DeleteIcon />}
-                        size="sm"
-                        colorScheme="red"
-                        variant="ghost"
-                        onClick={() => handleDeleteClick(org.id)}
-                        isLoading={isDeletingId === org.id} // Show spinner for this item
-                        isDisabled={!!isDeletingId && isDeletingId !== org.id || !userPermissions?.includes('organization:delete_any')} // Disable if another item is being deleted or lacking perm
-                      />
-                    </HStack>
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </TableContainer>
-      )}
-
       {/* Render Modals */} 
       {isCreateModalOpen && (
       <CreateOrganizationModal 
@@ -316,7 +243,7 @@ function OrganizationsPage() {
         isLoading={!!isDeletingId}
       />
 
-    </VStack>
+    </ListPageLayout>
   );
 }
 

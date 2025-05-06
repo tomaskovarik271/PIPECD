@@ -507,6 +507,9 @@ export interface ActivityFilterInput {
   isDone?: boolean;
 }
 
+// Define Theme Type
+export type ThemeMode = 'light' | 'dark';
+
 // --- App State Interface ---
 interface AppState {
   // Auth
@@ -571,6 +574,10 @@ interface AppState {
   createActivity: (input: CreateActivityInput) => Promise<Activity | null>;
   updateActivity: (id: string, input: UpdateActivityInput) => Promise<Activity | null>;
   deleteActivity: (id: string) => Promise<boolean>;
+
+  // Theme Management
+  currentTheme: ThemeMode;
+  setCurrentTheme: (theme: ThemeMode) => void;
 }
 
 // Define types for Stage create/update inputs
@@ -1321,6 +1328,18 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
     },
 
+    // Theme Management
+    currentTheme: 'light', // Initialize with default theme
+    setCurrentTheme: (theme) => {
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('app-theme', theme);
+        } catch (error) {
+          console.error("Error saving theme to localStorage:", error);
+        }
+      }
+      set({ currentTheme: theme });
+    },
 }));
 
 // Initialize auth check (optional, App.tsx also listens)
@@ -1342,3 +1361,23 @@ supabase.auth.onAuthStateChange((event, session) => {
         useAppStore.setState({ userPermissions: null }); 
     }
 }); 
+
+// Helper to get initial theme from localStorage or default to 'light'
+const getInitialTheme = (): ThemeMode => {
+  if (typeof window !== 'undefined') {
+    try {
+      const storedTheme = localStorage.getItem('app-theme') as ThemeMode | null;
+      if (storedTheme === 'light' || storedTheme === 'dark') {
+        return storedTheme;
+      }
+    } catch (error) {
+      console.error("Error reading theme from localStorage:", error);
+    }
+  }
+  return 'light'; // Default for SSR, non-browser environments, or if value is invalid/missing
+};
+
+// Initial auth check on app load
+if (typeof window !== 'undefined') {
+  useAppStore.getState().checkAuth();
+} 

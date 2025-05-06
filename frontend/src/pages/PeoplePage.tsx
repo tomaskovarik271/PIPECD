@@ -18,19 +18,15 @@ import {
   HStack,
   IconButton,
   useToast, // Import useToast
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  TableContainer,
+  // Removed Table components
 } from '@chakra-ui/react';
-import { EditIcon, DeleteIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon /* Removed sort icons */ } from '@chakra-ui/icons';
 import CreatePersonForm from '../components/CreatePersonForm';
 import EditPersonForm from '../components/EditPersonForm';
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
 import { useAppStore, Person, Organization } from '../stores/useAppStore'; // Import store and Person type
+import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
+import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
 
 // REMOVED: GET_PEOPLE_QUERY (now in store)
 
@@ -55,7 +51,7 @@ interface SortConfig {
 
 function PeoplePage() {
   // --- State from Zustand Store ---
-  const people = useAppStore((state) => state.people as PersonWithOrg[]);
+  const people = useAppStore((state) => state.people as Person[]); // Use base Person type
   const loading = useAppStore((state) => state.peopleLoading);
   const peopleError = useAppStore((state) => state.peopleError); // Get specific error
   const fetchPeople = useAppStore((state) => state.fetchPeople);
@@ -72,15 +68,11 @@ function PeoplePage() {
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null); // For button spinner (can be same as loading state for dialog)
   const toast = useToast();
 
-  // --- Sorting State ---
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
-
-  // Fetch people on mount
+  // --- Fetching & Data Handling ---
   useEffect(() => {
     fetchPeople();
   }, [fetchPeople]);
 
-  // Callback for modals to refresh data
   const handleDataChanged = useCallback(() => {
     fetchPeople();
   }, [fetchPeople]);
@@ -120,138 +112,95 @@ function PeoplePage() {
     }
   };
 
-  // --- Sorting Logic ---
-  const requestSort = (key: PersonSortKeys) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
+  // Define Columns for SortableTable
+  const columns: ColumnDefinition<Person>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      renderCell: (person) => (
+        <Text fontWeight="bold">
+          {person.first_name} {person.last_name}
+        </Text>
+      ),
+      isSortable: true,
+      sortAccessor: (person) => `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim().toLowerCase(),
+    },
+    {
+      key: 'organization',
+      header: 'Organization',
+      renderCell: (person) => person.organization?.name || '-',
+      isSortable: true,
+      sortAccessor: (person) => person.organization?.name?.toLowerCase() ?? '',
+    },
+    {
+      key: 'email',
+      header: 'Email',
+      renderCell: (person) => person.email || '-',
+      isSortable: true,
+      sortAccessor: (person) => person.email?.toLowerCase() ?? '',
+    },
+    {
+      key: 'phone',
+      header: 'Phone',
+      renderCell: (person) => person.phone || '-',
+      isSortable: true,
+      sortAccessor: (person) => person.phone ?? '',
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      renderCell: (person) => (
+        <HStack spacing={2}>
+          <IconButton
+            aria-label="Edit person"
+            icon={<EditIcon />}
+            size="sm"
+            variant="ghost"
+            onClick={() => handleEditClick(person)}
+            isDisabled={!!isDeletingId || !userPermissions?.includes('person:update_any')}
+          />
+          <IconButton
+            aria-label="Delete person"
+            icon={<DeleteIcon />}
+            colorScheme="red"
+            size="sm"
+            variant="ghost"
+            onClick={() => handleDeleteClick(person.id)}
+            isLoading={isDeletingId === person.id}
+            isDisabled={
+              (!!isDeletingId && isDeletingId !== person.id) ||
+              !userPermissions?.includes('person:delete_any')
+            }
+          />
+        </HStack>
+      ),
+      isSortable: false,
+    },
+  ];
 
-  const formatPersonNameForSort = (person: PersonWithOrg): string => {
-    return `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim().toLowerCase();
-  };
-
-  const sortedPeople = useMemo(() => {
-    let sortablePeople = [...people];
-    sortablePeople.sort((a, b) => {
-      let aValue: string;
-      let bValue: string;
-
-      switch (sortConfig.key) {
-        case 'name':
-          aValue = formatPersonNameForSort(a);
-          bValue = formatPersonNameForSort(b);
-          break;
-        case 'organization':
-          aValue = a.organization?.name?.toLowerCase() ?? '';
-          bValue = b.organization?.name?.toLowerCase() ?? '';
-          break;
-        case 'email':
-          aValue = a.email?.toLowerCase() ?? '';
-          bValue = b.email?.toLowerCase() ?? '';
-          break;
-        case 'phone':
-          aValue = a.phone ?? ''; // Phone numbers might sort better as strings
-          bValue = b.phone ?? '';
-          break;
-        default:
-          return 0; // Should not happen
-      }
-
-      // Always use localeCompare for strings
-      return sortConfig.direction === 'ascending' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    });
-    return sortablePeople;
-  }, [people, sortConfig]);
-
-  // Helper to render sort icons
-  const renderSortIcon = (columnKey: PersonSortKeys) => {
-      if (sortConfig.key !== columnKey) return null;
-      return sortConfig.direction === 'ascending' ? 
-             <TriangleUpIcon aria-label="sorted ascending" ml={1} w={3} h={3} /> : 
-             <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} />;
+  // Define props for EmptyState
+  const emptyStateProps = {
+    icon: EditIcon, // Placeholder, maybe change?
+    title: "No People Added",
+    message: "Add people to track your contacts."
   };
 
   return (
-    <VStack spacing={4} align="stretch">
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={6}>
-        <Heading as="h2" size="lg">People</Heading>
-        <Button 
-            colorScheme="blue" 
-            onClick={onCreateOpen}
-            isDisabled={!userPermissions?.includes('person:create')}
-        >
-          New Person
-        </Button>
-      </Box>
-
-      {loading && <Spinner size="xl" />}
-      {peopleError && <Text color="red.500">Error loading people: {peopleError}</Text>}
-
-      {!loading && people.length > 0 && (
-        <TableContainer borderWidth="1px" borderRadius="lg" width="100%">
-          <Table variant="simple" size="sm" width="100%">
-            <Thead>
-              <Tr borderBottomWidth="1px" borderColor="gray.200">
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('name')}>
-                  Name {renderSortIcon('name')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('organization')}>
-                  Organization {renderSortIcon('organization')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('email')}>
-                  Email {renderSortIcon('email')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('phone')}>
-                  Phone {renderSortIcon('phone')}
-                </Th>
-                <Th>Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {sortedPeople.map(person => (
-                <Tr key={person.id} bg="white">
-                  <Td>
-                    <Text fontWeight="bold">
-                      {person.first_name} {person.last_name}
-                    </Text>
-                  </Td>
-                  <Td>{person.organization?.name || '-'}</Td>
-                  <Td>{person.email || '-'}</Td>
-                  <Td>{person.phone || '-'}</Td>
-                  <Td>
-                    <HStack spacing={2}>
-                      <IconButton
-                        aria-label="Edit person"
-                        icon={<EditIcon />}
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleEditClick(person)}
-                        isDisabled={!!isDeletingId || !userPermissions?.includes('person:update_any')}
-                      />
-                      <IconButton
-                        aria-label="Delete person"
-                        icon={<DeleteIcon />}
-                        colorScheme="red"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDeleteClick(person.id)}
-                        isLoading={isDeletingId === person.id}
-                        isDisabled={
-                          (!!isDeletingId && isDeletingId !== person.id) ||
-                          !userPermissions?.includes('person:delete_any')
-                        }
-                      />
-                    </HStack>
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </TableContainer>
-      )}
+    <ListPageLayout
+      title="People"
+      newButtonLabel="New Person"
+      onNewButtonClick={onCreateOpen}
+      isNewButtonDisabled={!userPermissions?.includes('person:create')}
+      isLoading={loading}
+      error={peopleError}
+      isEmpty={people.length === 0}
+      emptyStateProps={emptyStateProps}
+    >
+      <SortableTable<Person>
+        data={people}
+        columns={columns}
+        initialSortKey="name"
+      />
 
       <Modal isOpen={isCreateOpen} onClose={onCreateClose}>
         <ModalOverlay />
@@ -287,7 +236,7 @@ function PeoplePage() {
         confirmButtonColorScheme="red"
         isLoading={!!isDeletingId}
       />
-    </VStack>
+    </ListPageLayout>
   );
 }
 

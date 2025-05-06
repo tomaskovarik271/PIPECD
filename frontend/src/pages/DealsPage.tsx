@@ -7,13 +7,6 @@ import {
   Spinner,
   Alert,
   AlertIcon,
-  Table, 
-  Thead, 
-  Tbody, 
-  Tr, 
-  Th, 
-  Td, 
-  TableContainer,
   useDisclosure,
   IconButton,
   HStack,
@@ -23,10 +16,11 @@ import {
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
-import { EditIcon, DeleteIcon, ViewIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
-import EmptyState from '../components/common/EmptyState';
+import ListPageLayout from '../components/layout/ListPageLayout';
+import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 
 // Keep Deal/DealPerson types for component use
 interface DealPerson {
@@ -58,15 +52,6 @@ interface Deal {
   user_id?: string | null;
 }
 
-// Define sortable keys
-type DealSortKeys = 'name' | 'person' | 'stage' | 'amount' | 'created_at';
-
-// Define sort config type
-interface SortConfig {
-    key: DealSortKeys;
-    direction: 'ascending' | 'descending';
-}
-
 function DealsPage() {
   // --- State from Zustand Store ---
   const deals = useAppStore((state) => state.deals);
@@ -89,9 +74,6 @@ function DealsPage() {
   // For Confirmation Dialog
   const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
   const [dealToDeleteId, setDealToDeleteId] = useState<string | null>(null);
-
-  // --- Sorting State ---
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'ascending' });
 
   // Fetch deals on mount
   useEffect(() => {
@@ -143,58 +125,9 @@ function DealsPage() {
     }
   };
 
-  // --- Sorting Logic ---
-  const requestSort = (key: DealSortKeys) => {
-    let direction: 'ascending' | 'descending' = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-  };
-
-  const sortedDeals = useMemo(() => {
-    let sortableDeals = [...deals];
-    sortableDeals.sort((a, b) => {
-      let aValue: any;
-      let bValue: any;
-
-      // Access nested properties for sorting
-      switch (sortConfig.key) {
-        case 'person':
-          aValue = formatPersonName(a.person).toLowerCase();
-          bValue = formatPersonName(b.person).toLowerCase();
-          break;
-        case 'stage':
-          aValue = a.stage?.name?.toLowerCase() ?? '';
-          bValue = b.stage?.name?.toLowerCase() ?? '';
-          break;
-        case 'created_at':
-          aValue = new Date(a.created_at).getTime();
-          bValue = new Date(b.created_at).getTime();
-          break;
-        case 'amount':
-          aValue = a.amount ?? -Infinity; // Treat null amounts as lowest value for ascending
-          bValue = b.amount ?? -Infinity;
-          break;
-        default: // 'name'
-          aValue = a[sortConfig.key]?.toLowerCase() ?? '';
-          bValue = b[sortConfig.key]?.toLowerCase() ?? '';
-      }
-
-      if (aValue < bValue) {
-        return sortConfig.direction === 'ascending' ? -1 : 1;
-      }
-      if (aValue > bValue) {
-        return sortConfig.direction === 'ascending' ? 1 : -1;
-    }
-      return 0;
-    });
-    return sortableDeals;
-  }, [deals, sortConfig]);
-
   // Helper function to format person name for display
   const formatPersonName = (person: DealPerson | null | undefined): string => {
-    if (!person) return '- ';
+    if (!person) return '-'; // Return hyphen for display
     return (
       person.last_name && person.first_name
       ? `${person.last_name}, ${person.first_name}`
@@ -208,7 +141,8 @@ function DealsPage() {
 
   // Helper to format date string
   const formatDate = (dateString: string) => {
-      return new Date(dateString).toLocaleDateString();
+    try { return new Date(dateString).toLocaleDateString(); } 
+    catch (e) { return 'Invalid Date'; }
   }
 
    // Helper to format currency
@@ -217,155 +151,135 @@ function DealsPage() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   }
 
-  // Helper to render sort icons
-  const renderSortIcon = (columnKey: DealSortKeys) => {
-      if (sortConfig.key !== columnKey) return null;
-      return sortConfig.direction === 'ascending' ? 
-             <TriangleUpIcon aria-label="sorted ascending" ml={1} w={3} h={3} /> : 
-             <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} />;
+  // Define Columns for SortableTable
+  const columns: ColumnDefinition<Deal>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      renderCell: (deal) => deal.name,
+      isSortable: true,
+    },
+    {
+      key: 'person',
+      header: 'Person',
+      renderCell: (deal) => formatPersonName(deal.person),
+      isSortable: true,
+      // Provide accessor for sorting based on formatted name
+      sortAccessor: (deal) => formatPersonName(deal.person).toLowerCase(),
+    },
+    {
+      key: 'stage',
+      header: 'Stage',
+      renderCell: (deal) => (
+        <VStack align="start" spacing={0}>
+          <Text fontWeight="medium">{deal.stage?.name || '-'}</Text>
+          <Text fontSize="xs" color="gray.500">{deal.stage?.pipeline?.name || 'Pipeline N/A'}</Text>
+        </VStack>
+      ),
+      isSortable: true,
+      sortAccessor: (deal) => deal.stage?.name?.toLowerCase() ?? '',
+    },
+    {
+      key: 'amount',
+      header: 'Amount',
+      renderCell: (deal) => formatCurrency(deal.amount),
+      isSortable: true,
+      isNumeric: true,
+      sortAccessor: (deal) => deal.amount, // Sort by raw amount
+    },
+    {
+      key: 'created_at',
+      header: 'Created',
+      renderCell: (deal) => formatDate(deal.created_at),
+      isSortable: true,
+      sortAccessor: (deal) => new Date(deal.created_at), // Sort by Date object
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      renderCell: (deal) => (
+        <HStack spacing={2}>
+          <IconButton
+            aria-label="Edit deal"
+            icon={<EditIcon />}
+            size="sm"
+            variant="ghost"
+            onClick={() => handleEditClick(deal)}
+            isDisabled={
+              !!isDeletingId ||
+              !(
+                userPermissions?.includes('deal:update_any') ||
+                (userPermissions?.includes('deal:update_own') && deal.user_id === currentUserId)
+              )
+            }
+          />
+          <IconButton
+            aria-label="Delete deal"
+            icon={<DeleteIcon />}
+            colorScheme="red"
+            size="sm"
+            variant="ghost"
+            onClick={() => handleDeleteClick(deal.id)}
+            isLoading={isDeletingId === deal.id}
+            isDisabled={
+              (!!isDeletingId && isDeletingId !== deal.id) ||
+              !(
+                userPermissions?.includes('deal:delete_any') ||
+                (userPermissions?.includes('deal:delete_own') && deal.user_id === currentUserId)
+              )
+            }
+          />
+        </HStack>
+      ),
+      isSortable: false,
+    },
+  ];
+
+  // Define props for EmptyState used within ListPageLayout
+  const emptyStateProps = {
+    icon: ViewIcon,
+    title: "No Deals Yet",
+    message: "Get started by creating your first deal."
   };
 
   return (
-    <VStack spacing={4} align="stretch">
-      <Flex justifyContent="space-between" alignItems="center" mb={6}>
-        <Heading as="h2" size="lg">
-          Deals
-        </Heading>
-        <Button 
-          colorScheme="blue"
-          onClick={handleCreateDealClick} 
-          isDisabled={!userPermissions?.includes('deal:create')}
-        >
-          New Deal
-        </Button>
-      </Flex>
-
-      {/* Loading state from store */}
-      {loading && (
-        <Box textAlign="center" mt={10}>
-          <Spinner size="xl" />
-          <Text mt={2}>Loading deals...</Text>
-        </Box>
-      )}
-
-      {/* Error state from store */}
-      {error && (
-        <Alert status="error" mt={4} mb={4}>
-          <AlertIcon />
-          Error loading deals: {error}
-        </Alert>
-      )}
-
-      {!loading && deals.length === 0 && (
-          <EmptyState 
-            icon={ViewIcon}
-            title="No Deals Yet"
-            message="Get started by creating your first deal."
-            actionButtonLabel="Create New Deal"
-            onActionButtonClick={handleCreateDealClick}
-            isActionButtonDisabled={!userPermissions?.includes('deal:create')}
-          />
-       )}
-
-      {!loading && deals.length > 0 && (
-        <TableContainer width="100%" borderWidth="1px" borderRadius="lg">
-          <Table variant='simple' size='sm' width="100%">
-            {/* <TableCaption>List of current deals</TableCaption> */}
-            <Thead>
-              <Tr borderBottomWidth="1px" borderColor="gray.200">
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('name')}>
-                  Name {renderSortIcon('name')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('person')}>
-                  Person {renderSortIcon('person')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('stage')}>
-                  Stage {renderSortIcon('stage')}
-                </Th>
-                <Th isNumeric cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('amount')}>
-                  Amount {renderSortIcon('amount')}
-                </Th>
-                <Th cursor="pointer" _hover={{ bg: 'gray.100' }} onClick={() => requestSort('created_at')}>
-                  Created {renderSortIcon('created_at')}
-                </Th>
-                <Th>Actions</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {sortedDeals.map((deal) => (
-                  <Tr key={deal.id} bg="white">
-                    <Td>{deal.name}</Td>
-                    <Td>{formatPersonName(deal.person)}</Td>
-                    <Td>
-                      <VStack align="start" spacing={0}>
-                        <Text fontWeight="medium">{deal.stage?.name || '-'}</Text>
-                        <Text fontSize="xs" color="gray.500">{deal.stage?.pipeline?.name || 'Pipeline N/A'}</Text>
-                      </VStack>
-                    </Td>
-                    <Td isNumeric>{formatCurrency(deal.amount)}</Td>
-                    <Td>{formatDate(deal.created_at)}</Td>
-                    <Td>
-                      <HStack spacing={2}>
-                        <IconButton
-                          aria-label="Edit deal"
-                          icon={<EditIcon />}
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleEditClick(deal)}
-                          isDisabled={
-                            !!isDeletingId || // Still disable if any delete is in progress
-                            !(
-                              userPermissions?.includes('deal:update_any') || // Enable if has _any perm
-                              (userPermissions?.includes('deal:update_own') && deal.user_id === currentUserId) // OR (has _own perm AND is owner)
-                            )
-                          }
-                        />
-                        <IconButton
-                          aria-label="Delete deal"
-                          icon={<DeleteIcon />}
-                          colorScheme="red"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteClick(deal.id)}
-                          isLoading={isDeletingId === deal.id}
-                          isDisabled={
-                            (!!isDeletingId && isDeletingId !== deal.id) || // New RBAC logic
-                            !(
-                              userPermissions?.includes('deal:delete_any') || // Enable if has _any perm
-                              (userPermissions?.includes('deal:delete_own') && deal.user_id === currentUserId) // OR (has _own perm AND is owner)
-                            )
-                          }
-                        />
-                      </HStack>
-                    </Td>
-                  </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </TableContainer>
-      )}
-
-      {/* Render Modals */} 
+    <ListPageLayout
+      title="Deals"
+      newButtonLabel="New Deal"
+      onNewButtonClick={handleCreateDealClick}
+      isNewButtonDisabled={!userPermissions?.includes('deal:create')}
+      isLoading={loading}
+      error={error}
+      isEmpty={deals.length === 0}
+      emptyStateProps={emptyStateProps}
+    >
+      {/* Render SortableTable as child */}
+      <SortableTable<Deal>
+        data={deals} // Pass original data
+        columns={columns}
+        initialSortKey="name" // Set default sort
+        // Use default border/radius from SortableTable
+      />
+      
+      {/* Render Modals and Dialog outside the layout */}
       {isCreateModalOpen && (
       <CreateDealModal 
         isOpen={isCreateModalOpen} 
         onClose={onCreateModalClose} 
-              onDealCreated={handleDataChanged}
+        onDealCreated={handleDataChanged}
       />
       )}
       {dealToEdit && (
       <EditDealModal 
-              deal={dealToEdit}
+        deal={dealToEdit}
         isOpen={isEditModalOpen} 
         onClose={() => {
             onEditModalClose();
             setDealToEdit(null);
         }} 
-              onDealUpdated={handleDataChanged}
+        onDealUpdated={handleDataChanged}
       />
       )}
-
-      {/* Confirmation Dialog for Deleting Deals */}
       <ConfirmationDialog 
         isOpen={isConfirmDeleteDialogOpen}
         onClose={onConfirmDeleteClose}
@@ -374,10 +288,9 @@ function DealsPage() {
         bodyText="Are you sure you want to delete this deal? This action cannot be undone."
         confirmButtonText="Delete"
         confirmButtonColorScheme="red"
-        isLoading={!!isDeletingId} // Pass loading state to dialog's confirm button
+        isLoading={!!isDeletingId}
       />
-
-    </VStack>
+    </ListPageLayout>
   );
 }
 
