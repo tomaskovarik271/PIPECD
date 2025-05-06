@@ -18,6 +18,13 @@ import {
   HStack,
   IconButton,
   useToast, // Import useToast
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
+  TableContainer,
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import CreatePersonForm from '../components/CreatePersonForm';
@@ -106,43 +113,52 @@ function PeoplePage() {
       {error && <Text color="red.500">Error loading people: {error}</Text>}
 
       {!loading && (
-        <Box borderWidth="1px" borderRadius="lg" p={4}>
-          {people.length === 0 ? (
-            <Text>No people found.</Text>
-          ) : (
-            <List spacing={3}>
+        <TableContainer borderWidth="1px" borderRadius="lg">
+          <Table variant="simple" size="sm">
+            <Thead>
+              <Tr borderBottomWidth="1px" borderColor="gray.200">
+                <Th>Name</Th>
+                <Th>Email</Th>
+                <Th>Phone</Th>
+                <Th>Actions</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
               {people.map(person => (
-                <ListItem key={person.id} borderWidth="1px" borderRadius="md" p={3} display="flex" alignItems="center">
-                  <Box flexGrow={1}>
+                <Tr key={person.id}>
+                  <Td>
                     <Text fontWeight="bold">
                       {person.first_name} {person.last_name}
                       ({person.organization?.name || 'No organization'})
                     </Text>
-                    <Text fontSize="sm">{person.email || '-'} | {person.phone || '-'}</Text>
-                  </Box>
-                  <HStack spacing={2}>
-                    <IconButton
-                      aria-label="Edit person"
-                      icon={<EditIcon />}
-                      size="sm"
-                      onClick={() => handleEditClick(person)}
-                      isDisabled={!!isDeletingId || !userPermissions?.includes('person:update_any')}
-                    />
-                    <IconButton
-                      aria-label="Delete person"
-                      icon={<DeleteIcon />}
-                      colorScheme="red"
-                      size="sm"
-                      onClick={() => handleDeleteClick(person.id)}
-                      isLoading={isDeletingId === person.id}
-                      isDisabled={!!isDeletingId && isDeletingId !== person.id || !userPermissions?.includes('person:delete_any')}
-                    />
-                  </HStack>
-                </ListItem>
+                  </Td>
+                  <Td>{person.email || '-'}</Td>
+                  <Td>{person.phone || '-'}</Td>
+                  <Td>
+                    <HStack spacing={2}>
+                      <IconButton
+                        aria-label="Edit person"
+                        icon={<EditIcon />}
+                        size="sm"
+                        onClick={() => handleEditClick(person)}
+                        isDisabled={!!isDeletingId || !userPermissions?.includes('person:update_any')}
+                      />
+                      <IconButton
+                        aria-label="Delete person"
+                        icon={<DeleteIcon />}
+                        colorScheme="red"
+                        size="sm"
+                        onClick={() => handleDeleteClick(person.id)}
+                        isLoading={isDeletingId === person.id}
+                        isDisabled={!!isDeletingId && isDeletingId !== person.id || !userPermissions?.includes('person:delete_any')}
+                      />
+                    </HStack>
+                  </Td>
+                </Tr>
               ))}
-            </List>
-          )}
-        </Box>
+            </Tbody>
+          </Table>
+        </TableContainer>
       )}
 
       <Modal isOpen={isCreateOpen} onClose={onCreateClose}>

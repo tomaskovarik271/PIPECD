@@ -3,7 +3,6 @@ import { useAppStore, Pipeline } from '../stores/useAppStore';
 import { 
   Box, 
   Heading, 
-  Text, 
   Button, 
   HStack, 
   VStack, 
@@ -14,15 +13,17 @@ import {
   ListItem,
   IconButton,
   useDisclosure,
-  Flex
+  Flex,
+  useToast
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon, ViewIcon, CopyIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 
 // Import the modal components
 import CreatePipelineModal from '../components/pipelines/CreatePipelineModal';
 import EditPipelineModal from '../components/pipelines/EditPipelineModal';
-import DeletePipelineConfirmationDialog from '../components/pipelines/DeletePipelineConfirmationDialog';
+import ConfirmationDialog from '../components/common/ConfirmationDialog';
+import EmptyState from '../components/common/EmptyState';
 
 const PipelinesPage: React.FC = () => {
   // Select state slices
@@ -41,8 +42,11 @@ const PipelinesPage: React.FC = () => {
   // State for tracking pipeline being edited/deleted
   const [pipelineToEdit, setPipelineToEdit] = useState<Pipeline | null>(null);
   const [pipelineToDelete, setPipelineToDelete] = useState<Pipeline | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
+  const deletePipelineAction = useAppStore((state) => state.deletePipeline);
+  const toast = useToast();
 
   useEffect(() => {
     // Fetch pipelines when the component mounts
@@ -73,6 +77,25 @@ const PipelinesPage: React.FC = () => {
     console.log('Pipeline action successful');
     // fetchPipelines(); // Re-fetching is usually not needed due to store updates
   };
+
+  const handleConfirmDelete = async () => {
+    if (!pipelineToDelete) return;
+
+    setIsDeleting(true);
+    const success = await deletePipelineAction(pipelineToDelete.id);
+    setIsDeleting(false);
+    onDeleteClose(); // Close the dialog
+    setPipelineToDelete(null); // Clear selection
+
+    if (success) {
+      toast({ title: 'Pipeline deleted.', status: 'success', duration: 3000, isClosable: true });
+      handleSuccess(); // Call original success handler if needed
+    } else {
+      // Assuming deletePipelineAction sets an error state in the store
+      const errorMsg = useAppStore.getState().pipelinesError || 'Failed to delete pipeline';
+      toast({ title: 'Error Deleting Pipeline', description: errorMsg, status: 'error', duration: 5000, isClosable: true });
+    }
+  };
   
   const handleEditClose = () => {
       onEditClose();
@@ -85,12 +108,12 @@ const PipelinesPage: React.FC = () => {
   };
 
   return (
-    <Box p={4}>
+    <VStack spacing={4} align="stretch">
       <Flex justify="space-between" align="center" mb={4}>
         <Heading size="lg">Pipelines</Heading>
         <Button 
             onClick={handleAddPipeline} 
-            colorScheme="blue" 
+            colorScheme="blue"
             leftIcon={<AddIcon boxSize={3} />}
             isDisabled={!userPermissions?.includes('pipeline:create')}
         >
@@ -114,7 +137,14 @@ const PipelinesPage: React.FC = () => {
       {!pipelinesLoading && !pipelinesError && (
         <VStack spacing={4} align="stretch">
           {pipelines.length === 0 ? (
-            <Text>No pipelines found. Create one to get started!</Text>
+            <EmptyState 
+              icon={CopyIcon}
+              title="No Pipelines Created"
+              message="Create pipelines to visualize and manage your sales processes."
+              actionButtonLabel="Add Pipeline"
+              onActionButtonClick={handleAddPipeline}
+              isActionButtonDisabled={!userPermissions?.includes('pipeline:create')}
+            />
           ) : (
             <List spacing={3}>
               {pipelines.map((pipeline) => (
@@ -181,14 +211,18 @@ const PipelinesPage: React.FC = () => {
         onSuccess={handleSuccess} 
       />
       
-      <DeletePipelineConfirmationDialog 
-        isOpen={isDeleteOpen} 
-        onClose={handleDeleteClose} // Use custom close handler to clear state
-        pipeline={pipelineToDelete} 
-        onSuccess={handleSuccess} 
+      <ConfirmationDialog
+        isOpen={isDeleteOpen}
+        onClose={handleDeleteClose} // Keep custom close to clear state
+        onConfirm={handleConfirmDelete}
+        headerText="Delete Pipeline"
+        bodyText={`Are you sure you want to delete the pipeline "${pipelineToDelete?.name}"? All associated stages and deals within those stages will also be affected. This action cannot be undone.`}
+        confirmButtonText="Delete"
+        confirmButtonColorScheme="red"
+        isLoading={isDeleting}
       />
 
-    </Box>
+    </VStack>
   );
 };
 

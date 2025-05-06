@@ -21,11 +21,15 @@ import {
   HStack,
   useToast,
   useDisclosure,
+  VStack,
 } from '@chakra-ui/react';
 import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore'; // Import store
+import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
+import EmptyState from '../components/common/EmptyState'; // Import EmptyState
+import { LockIcon } from '@chakra-ui/icons'; // Placeholder icon
 
 // REMOVED: GET_ORGANIZATIONS_QUERY (in store)
 
@@ -56,8 +60,10 @@ function OrganizationsPage() {
   // --- Local UI State ---
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure();
+  const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
   const [orgToEdit, setOrgToEdit] = useState<Organization | null>(null);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null); // For button spinner
+  const [orgToDeleteId, setOrgToDeleteId] = useState<string | null>(null);
   const toast = useToast();
 
   // --- Fetching Logic ---
@@ -81,24 +87,29 @@ function OrganizationsPage() {
   };
 
   const handleDeleteClick = async (orgId: string) => {
-    if (isDeletingId === orgId) return; // Prevent double clicks
+    setOrgToDeleteId(orgId);
+    onConfirmDeleteOpen();
+  };
 
-    if (window.confirm('Are you sure you want to delete this organization? Associated people will have their organization link removed.')) {
-        setIsDeletingId(orgId); // Show spinner
-        const success = await deleteOrganizationAction(orgId);
-        setIsDeletingId(null); // Hide spinner
+  const handleConfirmDelete = async () => {
+    if (!orgToDeleteId) return;
 
-        if (success) {
-            toast({ title: 'Organization deleted.', status: 'success', duration: 3000, isClosable: true });
-            } else {
-            toast({
-                title: 'Error Deleting Organization',
-                description: error || 'An unknown error occurred', // Display store error
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
-            });
-        }
+    setIsDeletingId(orgToDeleteId); // Show spinner
+    const success = await deleteOrganizationAction(orgToDeleteId);
+    setIsDeletingId(null); // Hide spinner
+    onConfirmDeleteClose();
+    setOrgToDeleteId(null);
+
+    if (success) {
+        toast({ title: 'Organization deleted.', status: 'success', duration: 3000, isClosable: true });
+    } else {
+        toast({
+            title: 'Error Deleting Organization',
+            description: error || 'An unknown error occurred', // Use organizationsError
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+        });
     }
   };
 
@@ -109,13 +120,13 @@ function OrganizationsPage() {
 
   // --- Render Logic ---
   return (
-    <Box p={4}>
+    <VStack spacing={4} align="stretch">
       <Heading as="h2" size="lg" mb={4}>
         Organizations Management
       </Heading>
 
       <Button 
-        colorScheme="teal" 
+        colorScheme="blue"
         onClick={handleCreateOrgClick} 
         mb={4}
         isDisabled={!userPermissions?.includes('organization:create')} // Add permission check
@@ -141,12 +152,23 @@ function OrganizationsPage() {
       
       {/* REMOVED: deleteError state */}
 
-      {!loading && (
+      {!loading && organizations.length === 0 && (
+        <EmptyState 
+          icon={LockIcon}
+          title="No Organizations Found"
+          message="Add organizations to group your contacts and deals."
+          actionButtonLabel="Create New Organization"
+          onActionButtonClick={handleCreateOrgClick}
+          isActionButtonDisabled={!userPermissions?.includes('organization:create')}
+        />
+      )}
+
+      {!loading && organizations.length > 0 && (
         <TableContainer>
           <Table variant='simple' size='sm'>
-            <TableCaption>List of organizations</TableCaption>
+            {/* <TableCaption>List of organizations</TableCaption> */}
             <Thead>
-              <Tr>
+              <Tr borderBottomWidth="1px" borderColor="gray.200">
                 <Th>Name</Th>
                 <Th>Address</Th>
                 <Th>Notes</Th>
@@ -155,41 +177,36 @@ function OrganizationsPage() {
               </Tr>
             </Thead>
             <Tbody>
-              {organizations.length === 0 ? (
-                <Tr>
-                  <Td colSpan={5} textAlign="center">No organizations found.</Td>
+              {organizations.map((org) => (
+                <Tr key={org.id}>
+                  <Td>{org.name}</Td>
+                  <Td>{org.address || '-'}</Td>
+                  <Td maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">{org.notes || '-'}</Td>
+                  <Td>{formatDate(org.created_at)}</Td>
+                  <Td>
+                    <HStack spacing={2}>
+                      <IconButton
+                        aria-label="Edit organization"
+                        icon={<EditIcon />}
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditClick(org)}
+                        isDisabled={!!isDeletingId || !userPermissions?.includes('organization:update_any')} // Disable if any delete is in progress or lacking perm
+                      />
+                      <IconButton
+                        aria-label="Delete organization"
+                        icon={<DeleteIcon />}
+                        size="sm"
+                        colorScheme="red"
+                        variant="ghost"
+                        onClick={() => handleDeleteClick(org.id)}
+                        isLoading={isDeletingId === org.id} // Show spinner for this item
+                        isDisabled={!!isDeletingId && isDeletingId !== org.id || !userPermissions?.includes('organization:delete_any')} // Disable if another item is being deleted or lacking perm
+                      />
+                    </HStack>
+                  </Td>
                 </Tr>
-              ) : (
-                organizations.map((org) => (
-                  <Tr key={org.id}>
-                    <Td>{org.name}</Td>
-                    <Td>{org.address || '-'}</Td>
-                    <Td maxW="200px" whiteSpace="normal" overflow="hidden" textOverflow="ellipsis">{org.notes || '-'}</Td>
-                    <Td>{formatDate(org.created_at)}</Td>
-                    <Td>
-                      <HStack spacing={2}>
-                        <IconButton
-                          aria-label="Edit organization"
-                          icon={<EditIcon />}
-                          size="sm"
-                          // colorScheme="yellow" // Removed color scheme for consistency
-                          onClick={() => handleEditClick(org)}
-                          isDisabled={!!isDeletingId || !userPermissions?.includes('organization:update_any')} // Disable if any delete is in progress or lacking perm
-                        />
-                        <IconButton
-                          aria-label="Delete organization"
-                          icon={<DeleteIcon />}
-                          size="sm"
-                          colorScheme="red"
-                          onClick={() => handleDeleteClick(org.id)}
-                          isLoading={isDeletingId === org.id} // Show spinner for this item
-                          isDisabled={!!isDeletingId && isDeletingId !== org.id || !userPermissions?.includes('organization:delete_any')} // Disable if another item is being deleted or lacking perm
-                        />
-                      </HStack>
-                    </Td>
-                  </Tr>
-                ))
-              )}
+              ))}
             </Tbody>
           </Table>
         </TableContainer>
@@ -220,7 +237,19 @@ function OrganizationsPage() {
       />
       )}
 
-    </Box>
+      {/* Confirmation Dialog for Deleting Organization */}
+      <ConfirmationDialog 
+        isOpen={isConfirmDeleteDialogOpen}
+        onClose={onConfirmDeleteClose}
+        onConfirm={handleConfirmDelete}
+        headerText="Delete Organization"
+        bodyText="Are you sure you want to delete this organization? Associated people will have their organization link removed. This action cannot be undone."
+        confirmButtonText="Delete"
+        confirmButtonColorScheme="red"
+        isLoading={!!isDeletingId}
+      />
+
+    </VStack>
   );
 }
 

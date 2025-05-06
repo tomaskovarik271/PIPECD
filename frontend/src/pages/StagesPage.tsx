@@ -16,14 +16,16 @@ import {
   IconButton,
   Link,
   Flex,
-  useDisclosure
+  useDisclosure,
+  useToast
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, ArrowBackIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon, ArrowBackIcon, DragHandleIcon } from '@chakra-ui/icons';
 
 // Import the stage modal components
 import CreateStageModal from '../components/stages/CreateStageModal';
 import EditStageModal from '../components/stages/EditStageModal';
-import DeleteStageConfirmationDialog from '../components/stages/DeleteStageConfirmationDialog';
+import ConfirmationDialog from '../components/common/ConfirmationDialog';
+import EmptyState from '../components/common/EmptyState';
 
 // TODO: Import/create Modals for Create/Edit/Delete Stages later
 
@@ -49,6 +51,9 @@ const StagesPage: React.FC = () => {
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const [stageToEdit, setStageToEdit] = useState<Stage | null>(null);
   const [stageToDelete, setStageToDelete] = useState<Stage | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const toast = useToast();
+  const deleteStageAction = useAppStore((state) => state.deleteStage);
 
   useEffect(() => {
     if (pipelineId) {
@@ -92,8 +97,26 @@ const StagesPage: React.FC = () => {
       setStageToDelete(null);
   };
 
+  const handleConfirmDelete = async () => {
+    if (!stageToDelete) return;
+
+    setIsDeleting(true);
+    const success = await deleteStageAction(stageToDelete.id);
+    setIsDeleting(false);
+    onDeleteClose();
+    setStageToDelete(null);
+
+    if (success) {
+      toast({ title: 'Stage deleted.', status: 'success', duration: 3000, isClosable: true });
+      handleSuccess();
+    } else {
+      const errorMsg = useAppStore.getState().stagesError || 'Failed to delete stage';
+      toast({ title: 'Error Deleting Stage', description: errorMsg, status: 'error', duration: 5000, isClosable: true });
+    }
+  };
+
   return (
-    <Box p={4}>
+    <VStack spacing={4} align="stretch">
        <Link as={RouterLink} to="/pipelines" mb={4} display="inline-block">
          <ArrowBackIcon mr={1} /> Back to Pipelines
        </Link>
@@ -105,7 +128,7 @@ const StagesPage: React.FC = () => {
         {pipelineId && (
           <Button 
             onClick={handleAddStage} 
-            colorScheme="teal" 
+            colorScheme="blue"
             leftIcon={<AddIcon boxSize={3} />}
             isDisabled={!userPermissions?.includes('stage:create')}
           >
@@ -137,7 +160,14 @@ const StagesPage: React.FC = () => {
       {!stagesLoading && !stagesError && pipelineId && (
         <VStack spacing={4} align="stretch">
           {stages.length === 0 ? (
-            <Text>No stages found for this pipeline. Create one to get started!</Text>
+            <EmptyState 
+              icon={DragHandleIcon}
+              title="No Stages in this Pipeline"
+              message="Add stages to define the steps in your sales process for this pipeline."
+              actionButtonLabel="Add Stage"
+              onActionButtonClick={handleAddStage}
+              isActionButtonDisabled={!userPermissions?.includes('stage:create')}
+            />
           ) : (
              // TODO: Implement drag-and-drop reordering later if desired
             <List spacing={3}>
@@ -206,14 +236,17 @@ const StagesPage: React.FC = () => {
         onSuccess={handleSuccess} 
       />
       
-      <DeleteStageConfirmationDialog 
-        isOpen={isDeleteOpen} 
-        onClose={handleDeleteClose} 
-        stage={stageToDelete} 
-        onSuccess={handleSuccess} 
+      <ConfirmationDialog
+        isOpen={isDeleteOpen}
+        onClose={handleDeleteClose}
+        onConfirm={handleConfirmDelete}
+        headerText="Delete Stage"
+        bodyText={`Are you sure you want to delete the stage "${stageToDelete?.name}"? All deals in this stage will be affected. This action cannot be undone.`}
+        confirmButtonText="Delete"
+        confirmButtonColorScheme="red"
+        isLoading={isDeleting}
       />
-
-    </Box>
+    </VStack>
   );
 };
 

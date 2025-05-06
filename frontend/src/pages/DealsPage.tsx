@@ -13,7 +13,6 @@ import {
   Tr, 
   Th, 
   Td, 
-  TableCaption, 
   TableContainer,
   useDisclosure,
   IconButton,
@@ -23,8 +22,10 @@ import {
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
-import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
+import ConfirmationDialog from '../components/common/ConfirmationDialog';
+import EmptyState from '../components/common/EmptyState';
 
 // Keep Deal/DealPerson types for component use
 interface DealPerson {
@@ -75,6 +76,10 @@ function DealsPage() {
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const toast = useToast();
 
+  // For Confirmation Dialog
+  const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
+  const [dealToDeleteId, setDealToDeleteId] = useState<string | null>(null);
+
   // Fetch deals on mount
   useEffect(() => {
     fetchDeals();
@@ -95,30 +100,33 @@ function DealsPage() {
   };
 
   const handleDeleteClick = async (dealId: string) => {
-    // Prevent double clicks
-    if (isDeletingId === dealId) return;
+    // Prevent double clicks - this logic might be less relevant with a modal
+    // if (isDeletingId === dealId) return; 
     
-    if (window.confirm('Are you sure you want to delete this deal?')) {
-        setIsDeletingId(dealId); // Show spinner on this specific button
-        const success = await deleteDealAction(dealId); // Call store action
-        setIsDeletingId(null); // Hide spinner
+    setDealToDeleteId(dealId); // Set the ID for confirmation
+    onConfirmDeleteOpen(); // Open the confirmation dialog
+  };
 
-        if (success) {
-            toast({ title: 'Deal deleted.', status: 'success', duration: 3000, isClosable: true });
-            // No need to call fetchDeals, store updates itself
-            } else {
-            // Error toast is shown based on dealsError state from the store
-            // Optional: Show specific toast here if needed, but might be redundant
-            toast({
-                 title: 'Error Deleting Deal',
-                 description: error || 'An unknown error occurred', // Display the store error
-                status: 'error',
-                duration: 5000,
-                isClosable: true,
-            });
-        }
+  const handleConfirmDelete = async () => {
+    if (!dealToDeleteId) return;
+
+    setIsDeletingId(dealToDeleteId); // Show spinner on original button (optional, or handle within dialog)
+    const success = await deleteDealAction(dealToDeleteId); // Call store action
+    setIsDeletingId(null); // Hide spinner
+    onConfirmDeleteClose(); // Close the dialog
+    setDealToDeleteId(null); // Reset the ID
+
+    if (success) {
+        toast({ title: 'Deal deleted.', status: 'success', duration: 3000, isClosable: true });
     } else {
-        console.log('Delete cancelled');
+        toast({
+            title: 'Error Deleting Deal',
+            // Error is managed by the store, useAppStore.dealsError
+            description: error || 'An unknown error occurred', 
+            status: 'error',
+            duration: 5000,
+            isClosable: true,
+        });
     }
   };
 
@@ -148,13 +156,13 @@ function DealsPage() {
   }
 
   return (
-    <Box p={4}>
+    <VStack spacing={4} align="stretch">
       <Heading as="h2" size="lg" mb={4}>
         Deals Management
       </Heading>
 
       <Button 
-        colorScheme="teal" 
+        colorScheme="blue"
         onClick={handleCreateDealClick} 
         mb={4}
         isDisabled={!userPermissions?.includes('deal:create')}
@@ -178,12 +186,23 @@ function DealsPage() {
         </Alert>
       )}
 
-      {!loading && (
+      {!loading && deals.length === 0 && (
+          <EmptyState 
+            icon={ViewIcon}
+            title="No Deals Yet"
+            message="Get started by creating your first deal."
+            actionButtonLabel="Create New Deal"
+            onActionButtonClick={handleCreateDealClick}
+            isActionButtonDisabled={!userPermissions?.includes('deal:create')}
+          />
+      )}
+
+      {!loading && deals.length > 0 && (
         <TableContainer>
           <Table variant='simple' size='sm'>
-            <TableCaption>List of current deals</TableCaption>
+            {/* <TableCaption>List of current deals</TableCaption> */}
             <Thead>
-              <Tr>
+              <Tr borderBottomWidth="1px" borderColor="gray.200">
                 <Th>Name</Th>
                 <Th>Person</Th>
                 <Th>Stage</Th>
@@ -211,6 +230,7 @@ function DealsPage() {
                           aria-label="Edit deal"
                           icon={<EditIcon />}
                           size="sm"
+                          variant="ghost"
                           onClick={() => handleEditClick(deal)}
                           isDisabled={
                             !!isDeletingId || // Still disable if any delete is in progress
@@ -225,6 +245,7 @@ function DealsPage() {
                           icon={<DeleteIcon />}
                           colorScheme="red"
                           size="sm"
+                          variant="ghost"
                           onClick={() => handleDeleteClick(deal.id)}
                           isLoading={isDeletingId === deal.id}
                           isDisabled={
@@ -264,7 +285,19 @@ function DealsPage() {
       />
       )}
 
-    </Box>
+      {/* Confirmation Dialog for Deleting Deals */}
+      <ConfirmationDialog 
+        isOpen={isConfirmDeleteDialogOpen}
+        onClose={onConfirmDeleteClose}
+        onConfirm={handleConfirmDelete}
+        headerText="Delete Deal"
+        bodyText="Are you sure you want to delete this deal? This action cannot be undone."
+        confirmButtonText="Delete"
+        confirmButtonColorScheme="red"
+        isLoading={!!isDeletingId} // Pass loading state to dialog's confirm button
+      />
+
+    </VStack>
   );
 }
 

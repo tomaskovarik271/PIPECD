@@ -1,4 +1,4 @@
-import { Routes, Route, Link as RouterLink } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { useEffect /* , useState */ } from 'react'; // Removed useState
 import { supabase } from './lib/supabase'; 
 import { Auth } from '@supabase/auth-ui-react';
@@ -13,16 +13,17 @@ import ActivitiesPage from './pages/ActivitiesPage'; // Import the new Activitie
 import { 
   Box, 
   Heading, 
-  Link, 
-  Button, 
-  HStack, 
+  // Link, // Removed unused Link
+  // Button, // Removed unused Button
+  // HStack, // Removed unused HStack
   Flex,
   useToast,
   VStack,
   Spinner, // Added Spinner
-  Text, // Import Text component
+  // Text, // Removed unused Text
 } from '@chakra-ui/react';
 import { useAppStore } from './stores/useAppStore'; // Import the store
+import Sidebar from './components/layout/Sidebar'; // Import the Sidebar
 
 // REMOVED unused HEALTH_QUERY
 // const HEALTH_QUERY = gql` ... `;
@@ -41,21 +42,21 @@ import { useAppStore } from './stores/useAppStore'; // Import the store
 // --- Component for Logged-In State --- 
 function AppContent() {
   return (
-    <>
-      <TempNav />
-      <Box p={4}>
+    <Flex minH="100vh"> {/* Use Flex for sidebar layout */}
+      <Sidebar /> {/* Add the Sidebar component */}
+      <Box as="main" flex={1} p={6} bg="gray.50"> {/* Main content area - ADD BG */}
           <Routes>
-          <Route path="/" element={<Heading size="lg">Home</Heading>} />
-          <Route path="/people" element={<PeoplePage />} />
+            <Route path="/" element={<Heading size="lg">Home</Heading>} /> {/* Add a default/home page */} 
+            <Route path="/people" element={<PeoplePage />} />
             <Route path="/deals" element={<DealsPage />} />
-          <Route path="/organizations" element={<OrganizationsPage />} />
-          <Route path="/pipelines" element={<PipelinesPage />} /> {/* Add route for pipelines */}
-          <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} /> {/* Add route for stages */}
-          <Route path="/activities" element={<ActivitiesPage />} /> {/* Add route for activities */}
-          <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
+            <Route path="/organizations" element={<OrganizationsPage />} />
+            <Route path="/pipelines" element={<PipelinesPage />} />
+            <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} />
+            <Route path="/activities" element={<ActivitiesPage />} />
+            <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
           </Routes>
     </Box>
-    </>
+    </Flex>
   );
 }
 
@@ -119,47 +120,7 @@ function App() {
   }
 }
 
-// Temporary simple navigation
-function TempNav() {
-    // Get signout action and user state from the store
-    const handleSignOutAction = useAppStore((state) => state.handleSignOut);
-    const user = useAppStore((state) => state.user);
-
-    // Optional: Get loading state for signout button visual feedback
-    // const isSigningOut = useAppStore((state) => state.isLoadingAuth); // Reusing isLoadingAuth temporarily
-
-    const handleSignOutClick = () => {
-        handleSignOutAction(); // Call the action from the store
-    };
-    
-    return (
-        <Box as="nav" bg="gray.100" p={4} mb={4}>
-            <HStack spacing={4} justify="space-between">
-                <HStack spacing={4}>
-                    <Link as={RouterLink} to="/">Home (Placeholder)</Link>
-                    <Link as={RouterLink} to="/people">People</Link>
-                    <Link as={RouterLink} to="/deals">Deals</Link>
-                    <Link as={RouterLink} to="/organizations">Organizations</Link>
-                    <Link as={RouterLink} to="/pipelines">Pipelines</Link>
-                    <Link as={RouterLink} to="/activities">Activities</Link> {/* Add link for activities */}
-                </HStack>
-                <HStack spacing={3}>
-                    {user && (
-                        <Text fontSize="sm" color="gray.600">
-                            Signed in as: {user.email}
-                        </Text>
-                    )}
-                    <Button 
-                      size="sm" 
-                      onClick={handleSignOutClick} 
-                      // isLoading={isSigningOut} // Optional visual feedback
-                    >
-                        Sign Out
-                    </Button>
-                </HStack>
-            </HStack>
-      </Box>
-    );
-}
+// REMOVED Temporary simple navigation (TempNav)
+// function TempNav() { ... }
 
 export default App;

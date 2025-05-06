@@ -14,6 +14,7 @@ import {
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
 import { useAppStore, Activity } from '../../stores/useAppStore'; // Import Activity type and store
 import EditActivityModal from './EditActivityModal'; // Import the modal
+import ConfirmationDialog from '../common/ConfirmationDialog'; // Import ConfirmationDialog
 
 interface ActivityListItemProps {
   activity: Activity;
@@ -62,6 +63,12 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
   // State for the Edit modal
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
 
+  // State for Confirmation Dialog
+  const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
+  // We don't need to store activityId here as it's available in the component scope when onConfirm is called.
+  // However, we need a loading state for the delete button in the dialog specifically.
+  const [isDeletingViaDialog, setIsDeletingViaDialog] = React.useState(false);
+
   const handleToggleDone = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const is_done = e.target.checked;
     // setIsTogglingDone(true);
@@ -74,17 +81,31 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
   };
 
   const handleDeleteClick = async () => {
-     if (window.confirm('Are you sure you want to delete this activity?')) {
-        // setIsDeleting(true);
-        const success = await deleteActivity(activity.id);
-        // setIsDeleting(false); // No need to set false if component unmounts on success
-        if (success) {
-             toast({ title: 'Activity deleted.', status: 'success', duration: 3000, isClosable: true });
-        } else {
-             // Store handles error state, show toast
-             toast({ title: 'Error deleting activity', status: 'error', duration: 3000, isClosable: true });
-        }
-     }
+    //  if (window.confirm('Are you sure you want to delete this activity?')) { // OLD WAY
+    //     // setIsDeleting(true);
+    //     const success = await deleteActivity(activity.id);
+    //     // setIsDeleting(false); 
+    //     if (success) {
+    //          toast({ title: 'Activity deleted.', status: 'success', duration: 3000, isClosable: true });
+    //     } else {
+    //          toast({ title: 'Error deleting activity', status: 'error', duration: 3000, isClosable: true });
+    //     }
+    //  }
+    onConfirmDeleteOpen(); // Just open the dialog
+  };
+
+  const handleConfirmDelete = async () => {
+    setIsDeletingViaDialog(true);
+    const success = await deleteActivity(activity.id);
+    setIsDeletingViaDialog(false);
+    onConfirmDeleteClose();
+
+    if (success) {
+         toast({ title: 'Activity deleted.', status: 'success', duration: 3000, isClosable: true });
+    } else {
+         // Store handles error state, show toast
+         toast({ title: 'Error deleting activity', description: useAppStore.getState().activitiesError || 'Unknown error', status: 'error', duration: 3000, isClosable: true });
+    }
   };
 
   const handleEditClick = () => {
@@ -172,6 +193,18 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
         isOpen={isEditOpen} 
         onClose={onEditClose} 
         activity={activity} 
+      />
+
+      {/* Confirmation Dialog for Deleting Activity */}
+      <ConfirmationDialog 
+        isOpen={isConfirmDeleteDialogOpen}
+        onClose={onConfirmDeleteClose}
+        onConfirm={handleConfirmDelete}
+        headerText="Delete Activity"
+        bodyText="Are you sure you want to delete this activity? This action cannot be undone."
+        confirmButtonText="Delete"
+        confirmButtonColorScheme="red"
+        isLoading={isDeletingViaDialog} // Use specific loading state for dialog
       />
     </>
   );
