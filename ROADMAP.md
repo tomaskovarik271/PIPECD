@@ -184,7 +184,7 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Manually assign initial roles (e.g., your user as `admin`) to users via `user_roles` table (SQL or Supabase Studio).
 *   [-] **Testing:**
     *   [ ] Update/add Vitest tests focusing on the `check_permission` SQL function logic (if possible) and GraphQL resolver authorization checks.
-    *   [x] Update/add Playwright E2E tests verifying UI restrictions based on `admin` vs `member` permissions. (Manual testing confirmed success).
+    *   [x] Update/add Playwright E2E tests verifying UI restrictions based on `admin` vs `member` permissions.
 *   [-] **Documentation:**
     *   [ ] Update `DEVELOPER_GUIDE.md`/`README.md` detailing the new RBAC tables, helper function, RLS strategy, and manual role assignment.
 
@@ -240,6 +240,22 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [x] Evaluate options (Zustand, Jotai, Redux Toolkit) based on anticipated application complexity.
     *   [x] Select and integrate a state management library (Zustand chosen).
     *   [-] Refactor components relying heavily on prop drilling or complex local state to use the chosen library (`DealsPage`, `PeoplePage`, `OrganizationsPage`, `PipelinesPage`, `StagesPage` refactored; Modals pending).
+    *   [ ] **Refactor `useAppStore.ts` into Domain-Specific Stores (Addressing Code Audit Recommendation #1):**
+        *   [x] Plan the refactor (Define new store structure: Auth, Deals, People, Orgs, Pipelines, Stages, Activities, Theme).
+        *   [x] Create empty store files (`src/stores/useAuthStore.ts`, etc.).
+        *   [x] Migrate Auth logic to `useAuthStore.ts`.
+        *   [x] Migrate Theme logic to `useThemeStore.ts`.
+        *   [x] Migrate Deals logic to `useDealStore.ts`.
+        *   [x] Migrate People logic to `usePersonStore.ts`.
+        *   [x] Migrate Organizations logic to `useOrganizationStore.ts`.
+        *   [x] Migrate Pipelines logic to `usePipelineStore.ts`.
+        *   [x] Migrate Stages logic to `usePipelineStore.ts` (Note: Integrated into Pipeline store).
+        *   [x] Migrate Activities logic to `useActivityStore.ts`.
+        *   [x] Update all consuming components to use the new stores.
+        *   [ ] Refactor/cleanup `useAppStore.test.ts` and create tests for new stores.
+        *   [x] Perform final cleanup of `useAppStore.ts` (File Deleted).
+        *   [ ] Update documentation (`DEVELOPER_GUIDE.md`) for new store structure.
+
 10. **Error Handling Standardization:**
     *   [ ] Define specific, typed error classes in `lib/` services.
     *   [x] Ensure services throw these specific errors (Current `handleSupabaseError` throws `GraphQLError`).
@@ -262,6 +278,164 @@ This document outlines the development roadmap for the custom CRM system, based 
 **Other Implicit Tasks:**
 *   [x] Refactor duplicated backend service helpers (`getAuthenticatedClient`, `handleSupabaseError`) into `lib/serviceUtils.ts`.
 *   [x] Setup Vitest to load `.env` for backend service tests.
+
+## Post-Code-Analysis Action Plan (Generated May 6th, 2024)
+
+This plan addresses specific points raised during the code analysis performed on May 6th, 2024, focusing on improving developer velocity, clarity, and robustness.
+
+**Priority: High (Direct Impact on Dev Velocity / Correctness)**
+
+*   [x] **(5) Implement Frontend Path Aliases:**
+    *   [x] Configure `baseUrl` and `paths` in `frontend/tsconfig.app.json`.
+    *   [x] Configure `resolve.alias` in `frontend/vite.config.ts`.
+    *   [x] Refactor existing deep relative imports (`../../..`) in `frontend/src` to use the `@/` alias.
+    *   *Benefit: Improves import readability, reduces errors when moving files, easier navigation.*
+*   [x] **(6) Fix GraphQL Client Header Inconsistency:**
+    *   [x] Remove all calls to `gqlClient.setHeaders({...})` from `frontend/src/stores/useAuthStore.ts` (within `onAuthStateChange` and `handleSignOut`).
+    *   [x] Verify that the `requestMiddleware` in `frontend/src/lib/graphqlClient.ts` correctly handles token injection (already confirmed in analysis).
+    *   *Benefit: Removes incorrect/ineffective code, clarifies the single source of truth for token injection.*
+*   [x] **(15) Generate Backend Types:**
+    *   [x] Add `@graphql-codegen/typescript` and `@graphql-codegen/typescript-resolvers` dependencies.
+    *   [x] Create `codegen.yml` config for backend types (`lib/generated/graphql.ts`) using `typescript` and `typescript-resolvers` plugins, referencing `GraphQLContext`.
+    *   [x] Add `codegen:backend` script to `package.json`.
+    *   [x] Run codegen to generate initial `lib/generated/graphql.ts`.
+    *   [x] Refactor resolver files (`netlify/functions/graphql/resolvers/*.ts`) to use generated `Resolvers`, specific resolver types, and input/output types, casting service results where needed.
+    *   [x] Refactor service files (`lib/*.service.ts`) to use generated types for function signatures and return types, removing local type definitions.
+    *   [x] Remove redundant types from `lib/types.ts`.
+    *   [x] Fix type errors identified by `tsc --noEmit` (manual fixes needed for remaining unused imports/type names in `personService.ts`, `graphql.ts`, `activity.ts`).
+    *   *Benefit: Provides strong typing for resolvers and services based on the GraphQL schema, reducing runtime errors and improving developer experience.*
+*   [ ] **(7) Setup Database Migrations:**
+    *   [ ] Review database schema for potential indexing opportunities on frequently queried/filtered columns (e.g., `name`, `email`, foreign keys). Add indexes via migrations.
+    *   [ ] Institute a mandatory peer-review process for all new database migration scripts before merging.
+
+**Priority: Medium (Improves Clarity / Reduces Boilerplate)**
+
+*   [ ] **(7) Clarify/Refactor `useAppStore`:**
+    *   Identify any remaining state or actions in `frontend/src/stores/useAppStore.ts` that have *not* been migrated to domain-specific stores (Auth, Theme, Pipelines, etc.).
+    *   If state remains, determine if it warrants its own specific store (e.g., `useUISettingsStore`) or can be co-located logically elsewhere.
+    *   If the store becomes empty, remove the file and any remaining imports.
+    *   *Benefit: Simplifies frontend state management landscape, reduces potential confusion.*
+*   [ ] **(9) Simplify Modal Error Handling:**
+    *   Refactor `handleSubmit` functions in modal components (e.g., `CreatePipelineModal`, `EditPipelineModal`) to remove redundant `try...catch` blocks.
+    *   Rely primarily on checking the return value of the store action and the store's error state (e.g., `pipelinesError`) which is already displayed by an `Alert` component within the modal.
+    *   Ensure store actions consistently handle errors and update the store's error state appropriately.
+    *   *Benefit: Reduces boilerplate code in modals, makes error handling flow clearer.*
+*   [ ] **(11) Consolidate Duplicate GraphQL Query Fields:**
+    *   Choose `netlify/functions/graphql/schema/schema.graphql` as the single definition point for the root `Query` type.
+    *   Copy any missing `Query` fields from `base.graphql` (e.g., `supabaseConnectionTest`, `me`, `personList`) into `schema.graphql`.
+    *   Delete the entire `type Query { ... }` definition from `base.graphql`.
+    *   *Benefit: Improves schema readability and maintainability, reduces risk of inconsistencies.*
+
+**Priority: Low (Cleanup / Future Optimization)**
+
+*   [ ] **(1) Remove Unused D&D Libraries:**
+    *   Confirm again that `@dnd-kit/*` and `react-beautiful-dnd` are not used (searches indicate they aren't).
+    *   Remove these packages (and `array-move`) from `package.json` dependencies.
+    *   Run `npm install` (or equivalent).
+    *   *Benefit: Cleans up dependencies, slightly reduces install size/time.*
+*   [ ] **(4) Remove Non-Standard TS Option:**
+    *   Remove the `noUncheckedSideEffectImports: true` line from `frontend/tsconfig.app.json` and `frontend/tsconfig.node.json`.
+    *   *Benefit: Removes potentially confusing/non-functional compiler option.*
+*   [ ] **(12) Implement Specific Service Layer Error Handling:**
+    *   Identify common Supabase error codes (e.g., `23505` unique constraint, `23503` foreign key) relevant to the application.
+    *   Modify `lib/serviceUtils.ts#handleSupabaseError` to catch these specific codes and throw more specific `GraphQLError`s (e.g., with `BAD_USER_INPUT` or `CONFLICT` codes) instead of the generic `INTERNAL_SERVER_ERROR`.
+    *   *Benefit: Provides more granular error information to the client if needed for specific UI feedback, but requires more effort.*
+*   [ ] **(13) Investigate DataLoader for N+1:**
+    *   Profile GraphQL queries that fetch lists with nested related data (e.g., fetching Deals and their associated Person and Stage) under load.
+    *   If performance issues related to N+1 queries are identified, plan the implementation of `dataloader` within the service layer (requires significant refactoring).
+    *   *Benefit: Potential significant performance improvement for complex queries, but involves substantial effort.*
+
+## Phase 7: Advanced Integrations & Capabilities (Future Considerations)
+
+This phase outlines potential future enhancements based on discussions around AI/LLM integration, third-party API exposure, and new domain introduction. These items are subject to further prioritization and detailed planning.
+
+*   **AI/LLM Integration (via Model Context Protocol - MCP):**
+        *   **Phase 1: MCP Server Setup & Core Read-Only Resource (Deals)**
+            *   [ ] **Project Setup:**
+                *   [ ] Add `@modelcontextprotocol/sdk` and `zod` to root `package.json`.
+                *   [ ] Create Netlify function for MCP Server (e.g., `netlify/functions/mcp-server.ts`).
+            *   [ ] **Basic MCP Server Implementation:**
+                *   [ ] Initialize `McpServer` instance from `@modelcontextprotocol/sdk/server/mcp`.
+                *   [ ] Sketch Netlify function handler to bridge HTTP requests to an MCP transport (e.g., `StreamableHTTPServerTransport`).
+            *   [ ] **Initial Authentication & Authorization Context:**
+                *   [ ] Implement Supabase JWT extraction and validation within the MCP server function.
+                *   [ ] Define an `authContext` containing `userId` and fetched user permissions (reusing/adapting from GraphQL auth).
+            *   [ ] **Deal Resource (Read-Only via MCP):**
+                *   [ ] Define a Zod schema for the "Deal" resource as exposed via MCP (`McpDealSchema`).
+                *   [ ] Implement `mcpServer.setResourceHandler` for `pipecd://deals` URI, supporting:
+                    *   `list` method: Calls `dealService.listDeals`, passing `userId` and filters.
+                    *   `read` method: Calls `dealService.getDealById`, passing `dealId` and `userId`.
+                *   [ ] Ensure resource handlers use `authContext` for permission enforcement via service layer.
+            *   [ ] **Initial Testing (Manual):**
+                *   [ ] Use tools (e.g., Postman, curl) to send mock MCP `ListResources` and `ReadResource` requests to the local MCP server endpoint for deals.
+
+        *   **Phase 2: Create Deal MCP Tool & Dynamic Registration PoC**
+            *   [ ] **`createDeal` MCP Tool:**
+                *   [ ] Define Zod schemas for `createDeal` input and output.
+                *   [ ] Implement `mcpServer.setToolHandler` for `createDeal`, calling `dealService.createDeal` and passing `userId` from `authContext`.
+            *   [ ] **Dynamic Tool Registration Proof-of-Concept:**
+                *   [ ] Conditionally register the `createDeal` tool based on the authenticated user's `deal:create` permission within the MCP server function's request handling logic.
+            *   [ ] **Testing (Manual):**
+                *   [ ] Test `createDeal` tool, ensuring it only functions if the JWT user has the necessary permissions.
+
+        *   **Phase 3: Robust Authentication, Authorization & Expanded MCP Coverage**
+            *   [ ] **Refine Authentication & Permission Handling:**
+                *   [ ] Ensure all PipeCD service calls made from MCP handlers correctly pass `userId` for RLS and business logic checks.
+                *   [ ] Implement comprehensive dynamic registration (or conditional enabling) of all MCP tools and resource handlers based on fully fetched user permissions for each request/session.
+            *   [ ] **Expand MCP Resource Coverage:**
+                *   [ ] Implement MCP resource handlers (`list`, `read`) for People, Organizations, Pipelines, Stages, and Activities.
+                *   [ ] Define corresponding Zod schemas for each MCP resource type.
+            *   [ ] **Expand MCP Tool Coverage:**
+                *   [ ] Implement MCP tool handlers for relevant CRUD operations (create, update, delete) on all core entities (People, Orgs, Pipelines, Stages, Activities).
+                *   [ ] Define Zod input/output schemas for each new tool.
+            *   [ ] **Automated Testing (Unit/Integration):**
+                *   [ ] Write unit tests for individual MCP tool handlers and resource handlers (mocking PipeCD services and `authContext`).
+                *   [ ] Write integration tests for the MCP server function's authentication and dynamic tool/resource registration logic.
+
+        *   **Phase 4: Inngest Integration for Asynchronous MCP Tools & Advanced Features**
+            *   [ ] **Identify Long-Running/Asynchronous MCP Tools:** Determine MCP tool operations that should not block the MCP response (e.g., "generate sales report," "bulk update records").
+            *   [ ] **Inngest Integration for Async Tools:**
+                *   [ ] Modify identified MCP tool handlers to validate inputs and dispatch an Inngest event (e.g., `mcp/generate.sales.report`) with necessary parameters and `userId`.
+                *   [ ] Return an immediate acknowledgment from the MCP tool (e.g., "Processing started").
+                *   [ ] Implement corresponding Inngest functions to perform the long-running tasks, using the `userId` for permission context.
+            *   [ ] **MCP Error Handling:** Implement robust mapping from PipeCD service errors to appropriate MCP error responses.
+            *   [ ] **MCP Prompt Capability (Optional):**
+                *   [ ] If PipeCD intends to expose prompt templates, implement `ListPrompts` and `GetPrompt` handlers.
+
+        *   **Phase 5: Documentation & Refinement**
+            *   [ ] **Update `DEVELOPER_GUIDE.md`:** Add a new, detailed section covering:
+                *   MCP Server architecture for PipeCD.
+                *   Defined MCP URI schemes for resources.
+                *   Available MCP tools and their Zod schemas.
+                *   Authentication and authorization flow for MCP requests.
+            *   [ ] **Update `ADR-005`:** Ensure ADR-005 ("Advanced System Extensibility and Integration Strategies") aligns with the final MCP implementation details and decisions.
+            *   [ ] **MCP Client-Side Testing (Automated):**
+                *   [ ] If feasible, use `@modelcontextprotocol/sdk/client` to write automated integration tests against the deployed PipeCD MCP server.
+            *   [ ] **Review & Refine:** Conduct a final review of the MCP integration for security, performance, and usability.
+
+*   **Third-Party API Exposure:**
+    *   [ ] **Define Third-Party API Strategy:** Formalize the strategy for exposing PipeCD functionality (likely leveraging the existing GraphQL API).
+    *   [ ] **Implement Enhanced Authentication for APIs:** Develop support for API Key / Service Account authentication if deemed necessary, alongside existing OAuth capabilities.
+    *   [ ] **Develop API Documentation:** Create comprehensive documentation for third-party developers.
+    *   [ ] **Pilot Integration:** Work with a pilot third-party developer/system to test and refine the API.
+
+*   **New Business Domain Expansion (Example: General Ledger):**
+    *   [ ] **Detailed Domain Analysis & Design:** Thoroughly analyze requirements for any new major domain (e.g., General Ledger).
+    *   [ ] **Implement Core Domain Functionality:** Following established patterns:
+        *   [ ] New Database schema (Supabase migrations).
+        *   [ ] New Backend services (`lib/`).
+        *   [ ] New GraphQL schema, types, queries, mutations, resolvers.
+        *   [ ] New Frontend stores, pages, components.
+    *   [ ] **Integrate with Inngest:** Use Inngest for cross-domain asynchronous processes and side effects.
+    *   [ ] **AI/LLM Access:** Extend the AI Integration Layer to support new domain data/actions if required.
+
+*   **Enhanced Asynchronous Processing & UX:**
+    *   [ ] **Review and Optimize Inngest Usage:** As Inngest use grows, periodically review for efficiency, cost, and error handling.
+    *   [ ] **Improve Frontend Feedback for Async Operations:** Enhance UI to provide clear loading states, progress indicators, and notifications for background tasks initiated by users or LLMs.
+
+*   **Continuous Monitoring & Evolution:**
+    *   [ ] Monitor advancements in AI/LLM tooling and integration patterns.
+    *   [ ] Regularly review and update architectural decisions (ADRs) as the system evolves and new requirements emerge.
 
 ---
 

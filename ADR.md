@@ -236,3 +236,75 @@ sequenceDiagram
 *   **Testing Complexity:** Ensuring adequate coverage requires effort. **Mitigation:** Implement a **prioritized testing strategy for MVP:** Use Vitest for integration tests (GraphQL resolvers, Inngest handlers connecting to a test DB or mocked services) and unit tests (critical/complex logic in `/lib`). Add core E2E tests (e.g., using Playwright/Cypress) for essential user flows. Automate selected tests in CI. Iteratively expand coverage post-MVP.
 
 ---
+
+## ADR-005: Advanced System Extensibility and Integration Strategies
+
+**Status:** Proposed | **Date:** 2025-05-27
+
+### 1. Context
+
+As Project PipeCD matures beyond its core CRM functionalities, there's a need to define strategies for integrating advanced capabilities such as AI/LLM-driven features, exposing functionalities to third-party software, and expanding the system with new business domains (e.g., General Ledger). This ADR outlines the architectural approach to these extensions, building upon the existing service-oriented design and asynchronous processing capabilities.
+
+### 2. Decisions
+
+#### 2.1. AI/LLM Integration (e.g., via MCP or other frameworks)
+
+*   **Approach:** LLM integration will be facilitated by a new backend layer or service that utilizes existing backend services (`lib/*.service.ts`). This "AI Integration Layer" will be responsible for preparing context, invoking LLMs, and processing their responses.
+*   **Mapping to Existing Architecture:**
+    *   **Backend Services (`lib/`)**: These services will be the primary interface for the AI Integration Layer to fetch data and execute actions within PipeCD.
+    *   **Zustand Stores (`frontend/src/stores/`)**: Frontend stores will *not* be directly accessed by the AI Integration Layer, which operates on the backend.
+    *   **GraphQL API**: While the AI Integration Layer *could* call the project's GraphQL API, direct use of backend services is preferred for efficiency and to maintain a clear separation of concerns (GraphQL for client-facing API, services for internal business logic).
+*   **Authentication & Authorization:** Critical. Any action performed or data accessed by an LLM must be on behalf of an authenticated PipeCD user. The AI Integration Layer must receive and propagate user context to the backend services, which will enforce RBAC rules. The LLM's capabilities will be strictly limited to what the impersonated user is permitted to do.
+*   **Frameworks (e.g., MCP, LangChain):** Evaluation of specific frameworks (like Model Context Protocol, LangChain, LlamaIndex) will occur when LLM features are prioritized. The architecture should be flexible enough to accommodate various approaches. If MCP is used, an MCP Server component would be developed, leveraging the backend services.
+*   **Asynchronicity (Inngest):** For long-running LLM tasks (e.g., report generation, complex analysis), the AI Integration Layer will trigger Inngest functions to perform the work asynchronously. The initial API call will return quickly, and Inngest will manage the background execution.
+
+#### 2.2. Exposing Functionality to Third-Party Software
+
+*   **Primary Mechanism:** The existing GraphQL API (`netlify/functions/graphql.ts`) will serve as the primary API for trusted third-party software.
+*   **Authentication for Third Parties:**
+    *   **OAuth 2.0 (Delegated Access):** For applications acting on behalf of a PipeCD user (preferred).
+    *   **API Keys/Service Accounts (Direct Access):** For system-to-system integrations. This will require enhancements to the current auth system to manage and authenticate these non-user principals.
+*   **Authorization:** All third-party API access will be subject to the existing RBAC system. Service accounts would be assigned specific roles with narrowly defined permissions.
+*   **Documentation:** Comprehensive API documentation (GraphQL schema, authentication methods, rate limits) will be essential.
+*   **Alternative (REST API):** If a strong demand for a REST API emerges, a REST facade could be built over the existing backend services (`lib/`). However, the GraphQL API is the preferred and more flexible interface.
+
+#### 2.3. Expanding with New Business Domains (e.g., General Ledger)
+
+*   **Approach:** New domains will be implemented following the established architectural pattern:
+    *   **Database (Supabase):** New tables and migrations in `supabase/migrations/`.
+    *   **Backend Services (`lib/`):** New service files (e.g., `generalLedgerService.ts`) containing business logic and data access for the new domain.
+    *   **GraphQL API:** New `.graphql` schema files, types, queries, mutations, and corresponding resolvers in `netlify/functions/graphql/` that utilize the new domain services.
+    *   **Frontend (`frontend/src/`):** New Zustand stores, pages, and components.
+    *   **AI/LLM Access:** If LLMs need to interact with the new domain, corresponding resources and tools will be added to the AI Integration Layer.
+*   **Inngest for Cross-Domain Processes:** Inngest will be used for asynchronous communication and to manage side effects between domains (e.g., a "Deal Closed-Won" event in Sales triggering an Inngest function to create initial entries in General Ledger). This promotes loose coupling.
+
+#### 2.4. Role of Asynchronicity and Inngest
+
+*   **Core Principle:** Asynchronicity is fundamental to scalability and responsiveness, especially with integrations.
+*   **Inngest Usage:**
+    *   Long-running LLM tasks.
+    *   Event-driven actions triggered by system events (e.g., deal stage change prompting an LLM summary).
+    *   Batch processing for new domains (e.g., month-end closing for General Ledger).
+    *   Scheduled tasks.
+    *   Decoupling API responses from background work.
+    *   Reliable execution of inter-domain side effects.
+*   **User Experience:** The frontend must provide robust handling of loading states, progress indicators, and potentially real-time updates for asynchronous operations initiated by the user or LLMs.
+*   **Error Handling:** Comprehensive error handling for asynchronous operations across all layers is critical.
+
+### 3. Rationale
+
+*   **Leveraging Existing Strengths:** These strategies build upon the existing modular service layer in `lib/`, the GraphQL API, and the established use of Supabase and Inngest.
+*   **Maintainability & Scalability:** Clear separation of concerns and defined patterns for adding new domains or integrations facilitate maintainability and allow the system to scale in functionality.
+*   **Security:** Consistent application of authentication and RBAC across all access methods (UI, LLM, Third-Party API) is prioritized.
+*   **Flexibility:** The approach to LLM integration allows for adopting various frameworks as the technology evolves.
+*   **Developer Experience:** Adhering to established patterns simplifies development for new features and domains.
+
+### 4. Implications
+
+*   **Developer Guide:** The `DEVELOPER_GUIDE.md` will need to be updated to reflect these patterns for integrating LLMs, exposing APIs, and adding new domains. Section 7 on LLM integration has already been updated in this direction.
+*   **Auth System:** May require enhancements to support API keys/service accounts for third-party integrations.
+*   **Frontend Development:** Increased emphasis on handling asynchronous operations and providing feedback to the user.
+*   **Inngest Usage:** Will likely increase, requiring monitoring of costs and performance.
+*   **Testing:** Test strategies must encompass these new integration points and asynchronous flows.
+
+---
