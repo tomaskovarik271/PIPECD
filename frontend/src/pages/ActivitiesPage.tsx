@@ -18,6 +18,7 @@ import {
   ModalContent,
   ModalHeader,
   ModalCloseButton,
+  Alert, AlertIcon // Added Alert & AlertIcon
 } from '@chakra-ui/react';
 import { useAppStore, Activity, Deal, Person, Organization } from '../stores/useAppStore'; // Keep types
 // import ActivityListItem from '../components/activities/ActivityListItem'; // REMOVE list item import
@@ -25,7 +26,7 @@ import CreateActivityForm from '../components/activities/CreateActivityForm'; //
 import EmptyState from '../components/common/EmptyState'; // Import EmptyState
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
 import EditActivityModal from '../components/activities/EditActivityModal'; // Import Edit Modal
-import { TimeIcon, EditIcon, DeleteIcon, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons'; // Import icons
+import { TimeIcon, EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons'; // Import icons
 import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
 
@@ -256,39 +257,41 @@ function ActivitiesPage() {
     message: "Add tasks, calls, or meetings to keep track of interactions."
   };
 
-  return (
-    <ListPageLayout
-      title="Activities"
-      newButtonLabel="New Activity"
-      onNewButtonClick={onCreateOpen}
-      isNewButtonDisabled={!userPermissions?.includes('activity:create')}
-      isLoading={loading}
-      error={error}
-      isEmpty={activities.length === 0}
-      emptyStateProps={emptyStateProps}
-    >
-      <SortableTable<Activity>
-        data={activities}
-        columns={columns}
-        initialSortKey="due_date" // Default sort by due date
-        initialSortDirection="ascending"
-      />
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" minH="calc(100vh - 200px)">
+        <Spinner size="xl" />
+      </Flex>
+    );
+  }
 
-      {/* Modals */} 
-      <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl">
+  if (error) {
+    return (
+      <Alert status="error" m={4}>
+        <AlertIcon />
+        Error fetching activities: {error}
+      </Alert>
+    );
+  }
+
+  return (
+    <Box p={6}> {/* Main page container with padding */}
+      {/* Modals rendered at the top level */}
+      <Modal isOpen={isCreateOpen} onClose={onCreateClose}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Create New Activity</ModalHeader>
           <ModalCloseButton />
-          <CreateActivityForm onClose={onCreateClose} onSuccess={handleCreateSuccess} /> 
+          <CreateActivityForm onClose={onCreateClose} onSuccess={handleCreateSuccess} />
         </ModalContent>
       </Modal>
 
       {activityToEdit && (
         <EditActivityModal 
+          activity={activityToEdit} 
           isOpen={isEditOpen} 
           onClose={handleEditClose} 
-          activity={activityToEdit} 
+          onSuccess={() => { fetchActivities(); handleEditClose(); }} 
         />
       )}
 
@@ -302,7 +305,48 @@ function ActivitiesPage() {
         confirmButtonColorScheme="red"
         isLoading={isDeleting}
       />
-    </ListPageLayout>
+
+      {/* Conditional content: Empty state or ListPageLayout with table */}
+      {activities.length === 0 ? (
+        <VStack spacing={4} align="stretch">
+          <Flex justifyContent="space-between" alignItems="center" mb={4}>
+            <Heading as="h2" size="lg">Activities</Heading>
+            <Button 
+              colorScheme="blue"
+              onClick={onCreateOpen}
+              isDisabled={!userPermissions?.includes('activity:create')}
+            >
+              New Activity
+            </Button>
+          </Flex>
+          <EmptyState 
+            icon={emptyStateProps.icon}
+            title={emptyStateProps.title}
+            message={emptyStateProps.message}
+            actionButtonLabel="New Activity"
+            onActionButtonClick={onCreateOpen}
+            isActionButtonDisabled={!userPermissions?.includes('activity:create')}
+          />
+        </VStack>
+      ) : (
+        <ListPageLayout
+          title="Activities"
+          newButtonLabel="New Activity"
+          onNewButtonClick={onCreateOpen}
+          isNewButtonDisabled={!userPermissions?.includes('activity:create')}
+          isLoading={loading}
+          error={error}
+          isEmpty={false}
+          emptyStateProps={emptyStateProps}
+        >
+          <SortableTable<Activity>
+            data={activities}
+            columns={columns}
+            initialSortKey="due_date"
+          />
+        </ListPageLayout>
+      )}
+    </Box>
   );
 }
 

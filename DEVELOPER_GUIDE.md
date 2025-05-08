@@ -44,7 +44,7 @@ PIPECD/
 ├── lib/                # Shared Backend TypeScript Modules
 │   ├── supabaseClient.ts # Backend Supabase client init
 │   ├── serviceUtils.ts   # Shared service helpers (auth client, error handler)
-│   ├── types.ts          # Shared TypeScript interfaces/types (Pipeline, Stage, etc.)
+│   ├── types.ts          # May contain backend-specific shared TypeScript interfaces or types that are *not* directly defined by or generated from the GraphQL schema (e.g., internal service layer types, complex argument types for internal functions if not covered by GraphQL inputs). For entities and inputs defined in the GraphQL schema, the schema itself (for resolvers) and frontend generated types (for UI) serve as the primary sources of truth.
 │   ├── dealService.ts
 │   ├── dealService.test.ts
 │   ├── personService.ts
@@ -110,14 +110,14 @@ PIPECD/
 *   **`vitest.config.ts` (Root):** Configures Vitest test runner for *both* backend (`lib/`) and frontend (`frontend/src/`) tests.
 *   **`playwright.config.ts` (Root):** Configures Playwright E2E test runner.
 *   **`netlify/functions/graphql.ts`:** Main entry point for the GraphQL API. Sets up GraphQL Yoga, loads the combined schema from `./graphql/schema/*.graphql`, imports and combines resolvers from `./graphql/resolvers/`, and includes a context factory for JWT authentication.
-*   **`netlify/functions/graphql/schema/*.graphql`:** Contains GraphQL Schema Definition Language (SDL) files. Loaded dynamically by `graphql.ts`.
+*   **`netlify/functions/graphql/schema/*.graphql`:** Contains GraphQL Schema Definition Language (SDL) files. These are the source of truth for API data structures.
 *   **`netlify/functions/graphql/resolvers/*.ts`:** Individual files implementing GraphQL resolvers (e.g., `query.ts`, `mutation.ts`, `deal.ts`, `stage.ts`). These files contain the logic to fetch or manipulate data, often calling services from `/lib`.
 *   **`netlify/functions/graphql/helpers.ts`:** Utility functions specific to the GraphQL layer (e.g., extracting auth tokens, validating authentication, processing errors).
 *   **`netlify/functions/graphql/validators.ts`:** Zod schemas used for validating input arguments in GraphQL mutations.
 *   **`netlify/functions/inngest.ts`:** Initializes the Inngest client and defines Inngest functions/handlers.
 *   **`lib/supabaseClient.ts`:** Initializes and exports the *backend* Supabase client.
 *   **`lib/serviceUtils.ts`:** Contains shared helper functions for backend services (e.g., `getAuthenticatedClient`, `handleSupabaseError`).
-*   **`lib/types.ts`:** Defines shared TypeScript interfaces (e.g., `Pipeline`, `Stage`) used across services and potentially resolvers.
+*   **`lib/types.ts`:** May contain backend-specific shared TypeScript interfaces or types that are *not* directly defined by or generated from the GraphQL schema (e.g., internal service layer types, complex argument types for internal functions if not covered by GraphQL inputs). For entities and inputs defined in the GraphQL schema, the schema itself (for resolvers) and frontend generated types (for UI) serve as the primary sources of truth.
 *   **`frontend/src/App.tsx`:** Root React component, handles auth state changes, defines routing.
 *   **`frontend/src/lib/supabase.ts`:** Initializes and exports the *frontend* Supabase client.
 *   **`frontend/src/lib/graphqlClient.ts`:** Initializes and exports the `graphql-request` client with middleware to inject the auth token.
@@ -262,58 +262,4 @@ USING (
 
 This policy allows authenticated users to select deals if:
 *   They have the `deal:read_own` permission AND the `deal.user_id` matches their own ID (`auth.uid()`).
-*   OR, they have the `deal:read_any` permission.
-
-Similar policies exist for `INSERT`, `UPDATE`, and `DELETE`, checking the relevant `create`, `update_any`/`update_own`, and `delete_any`/`delete_own` permissions respectively. The `USING` clause controls which rows are visible/targetable, and the `WITH CHECK` clause (for INSERT/UPDATE) ensures new/modified rows also satisfy the conditions.
-
-### 6.5 Backend (GraphQL)
-
-The GraphQL resolvers generally rely on the RLS policies enforced by the database. When fetching data, the backend services (`lib/*.service.ts`) use an authenticated Supabase client obtained via `getAuthenticatedClient(accessToken)`. This ensures that all database queries made on behalf of the user automatically respect the RLS policies tied to their `auth.uid()`.
-
-### 6.6 Frontend (UI)
-
-The frontend implements UI-level checks to enhance user experience by hiding or disabling controls for actions the user isn't permitted to perform.
-
-1.  **Fetching Permissions:** After a successful login or token refresh, the `fetchUserPermissions` action in the Zustand store (`useAppStore.ts`) calls the `myPermissions` GraphQL query. The result (a list of permission strings like `"deal:create"`, `"pipeline:read_any"`) is stored in `state.userPermissions`.
-2.  **Conditional Rendering/Disabling:** Components (e.g., `DealsPage.tsx`, `ActivityListItem.tsx`) select `userPermissions` and the `currentUserId` from the store.
-3.  **UI Logic:** Buttons and other controls use the `isDisabled` prop based on the permissions:
-    *   **Create:** `isDisabled={!userPermissions?.includes('resource:create')}`
-    *   **Edit/Update:** `isDisabled={! (userPermissions?.includes('resource:update_any') || (userPermissions?.includes('resource:update_own') && item.user_id === currentUserId)) }`
-    *   **Delete:** `isDisabled={! (userPermissions?.includes('resource:delete_any') || (userPermissions?.includes('resource:delete_own') && item.user_id === currentUserId)) }`
-
-This logic ensures that users with `*_any` permission can always perform the action, while users with only `*_own` permission can only perform it on items where the `user_id` matches their own.
-
-### 6.7 Managing Roles and Permissions
-
-Currently, managing the RBAC configuration is done manually via SQL or the Supabase Studio:
-
-*   **Adding Roles/Permissions:** `INSERT` new rows into the `public.roles` or `public.permissions` tables.
-*   **Assigning Permissions to Roles:** `INSERT` rows into the `public.role_permissions` table linking a `role_id` to a `permission_id`.
-*   **Assigning Roles to Users:** `INSERT` rows into the `public.user_roles` table linking a `user_id` (from `auth.users`) to a `role_id`.
-
-### 6.8 Default Roles and Permissions
-
-The migration script (`..._rbac_schema_and_policies.sql`) established the following default configuration, which represents the current standard settings:
-
-*   **Roles Defined:** `admin`, `member`.
-*   **Permissions Defined:** A comprehensive set covering `create`, `read_any`, `read_own`, `update_any`, `update_own`, `delete_any`, `delete_own` for all core resources (deals, people, organizations, pipelines, stages, activities), plus administrative permissions for roles/permissions themselves.
-*   **Default Role Assignments:**
-    *   **`admin` Role:** Granted *all* defined permissions, providing unrestricted access.
-    *   **`member` Role:** Granted permissions typically needed for standard users:
-        *   `create` permission for core resources (deals, activities, people, organizations).
-        *   `read_own`, `update_own`, `delete_own` permissions for the resources they create (deals, activities, people, organizations).
-        *   `read_any` permission for shared resources like pipelines and stages.
-
-*Remember to manually assign the appropriate role (`admin` or `member`) to new users in the `public.user_roles` table via SQL or the Supabase Studio.*
-
-## 7. Troubleshooting
-
-(Existing entries 1-15 remain relevant)
-
-16. **Issue:** Persistent TypeScript build error (`TS2345: Argument of type 'string' is not assignable to parameter of type '{ name: string; }'`) in Netlify deploy, despite code appearing correct and explicit type assertions/modifications.
-    *   **Cause:** Potentially an issue with `tsc -b` (TypeScript incremental build) within the Netlify build environment's caching or interaction with project references.
-    *   **Resolution:** Modified the frontend build script in `frontend/package.json` from `"build": "tsc -b && vite build"` to `"build": "vite build"`, letting Vite handle the TypeScript compilation directly. This resolved the persistent build error.
-
----
-
-*This guide is a living document...* 
+*   OR, they have the `

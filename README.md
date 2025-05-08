@@ -9,6 +9,7 @@ The system utilizes a serverless architecture based on:
 *   **Frontend:** React (Vite) SPA hosted on Netlify
 *   **Frontend State:** Zustand (`frontend/src/stores/useAppStore.ts`)
 *   **Frontend API Client:** `graphql-request` (`frontend/src/lib/graphqlClient.ts`)
+*   **Frontend GraphQL Types:** GraphQL Code Generator (`frontend/codegen.ts`, see `DEVELOPER_GUIDE.md`)
 *   **UI Library:** Chakra UI
 *   **API:** GraphQL Gateway (**GraphQL Yoga**) running as a Netlify Function (`netlify/functions/graphql.ts`); Schema defined in `.graphql` files within `netlify/functions/graphql/schema/`.
 *   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `pipelineService.ts`), utilities in `lib/serviceUtils.ts`, shared types in `lib/types.ts`.

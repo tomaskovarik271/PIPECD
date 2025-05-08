@@ -15,9 +15,10 @@ interface EditActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
   activity: Activity | null; // Activity to edit, null if none selected
+  onSuccess?: () => void; // Add onSuccess prop
 }
 
-function EditActivityModal({ isOpen, onClose, activity }: EditActivityModalProps) {
+function EditActivityModal({ isOpen, onClose, activity, onSuccess }: EditActivityModalProps) {
   if (!activity) return null; // Don't render modal if no activity is selected
 
   return (
@@ -27,8 +28,8 @@ function EditActivityModal({ isOpen, onClose, activity }: EditActivityModalProps
         <ModalHeader>Edit Activity</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          {/* Pass the activity and onClose handler to the form */}
-          <EditActivityForm activity={activity} onClose={onClose} />
+          {/* Pass the activity, onClose, and onSuccess handler to the form */}
+          <EditActivityForm activity={activity} onClose={onClose} onSuccess={onSuccess} />
         </ModalBody>
         {/* Footer can be removed if submit is handled solely within the form */}
         {/* <ModalFooter>

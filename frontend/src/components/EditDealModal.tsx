@@ -20,20 +20,20 @@ import {
   AlertIcon,
   Spinner,
 } from '@chakra-ui/react';
-import { useAppStore, UpdateDealInput } from '../stores/useAppStore'; // Import store and input type
+import { useAppStore } from '../stores/useAppStore'; // updateDealAction expects generated DealInput
+import type { Deal, Person as GeneratedPerson, Pipeline, Stage, DealInput } from '../generated/graphql/graphql'; // Import generated types
 
-// Updated interface for the Deal data passed to the modal
-interface DealToEdit {
-  id: string;
-  name: string;
-  // stage: string; // Old
-  stage: { id: string; name: string; pipeline_id: string; }; // Need pipeline_id here!
-  stage_id?: string | null; // Keep existing stage_id if available
-  amount?: number | null;
-  person_id?: string | null;
-}
+// Updated interface for the Deal data passed to the modal - REMOVED
+// interface DealToEdit {
+//   id: string;
+//   name: string;
+//   stage: { id: string; name: string; pipeline_id: string; }; 
+//   stage_id?: string | null; 
+//   amount?: number | null;
+//   person_id?: string | null;
+// }
 
-// Add Pipeline/Stage types locally if needed (or rely on store types)
+// Add Pipeline/Stage types locally if needed (or rely on store types) - REMOVED (using imports)
 // interface Pipeline { id: string; name: string; }
 // interface Stage { id: string; name: string; order: number; pipeline_id: string; }
 
@@ -41,21 +41,20 @@ interface EditDealModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDealUpdated: () => void; // Callback to refresh list
-  deal: DealToEdit | null; // The deal data to edit
+  deal: Deal | null; // Use generated Deal type for the deal data to edit
 }
 
-// Explicit Person type (matching store)
-interface Person {
-  id: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  email?: string | null;
-}
+// Explicit Person type (matching store) - REMOVED
+// interface Person {
+//   id: string;
+//   first_name?: string | null;
+//   last_name?: string | null;
+//   email?: string | null;
+// }
 
 function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalProps) {
   // Form state
   const [name, setName] = useState('');
-  // const [stage, setStage] = useState(dealStages[0]); // REMOVED old stage
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
   const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [initialPipelineId, setInitialPipelineId] = useState<string | null>(null);
@@ -64,9 +63,9 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   const [personId, setPersonId] = useState<string>(''); 
 
   // Store State & Actions (Selected individually)
-  const people = useAppStore((state) => state.people);
-  const pipelines = useAppStore((state) => state.pipelines);
-  const stages = useAppStore((state) => state.stages);
+  const people = useAppStore((state) => state.people); // Already GeneratedPerson[]
+  const pipelines = useAppStore((state) => state.pipelines); // Already GeneratedPipeline[]
+  const stages = useAppStore((state) => state.stages); // Already GeneratedStage[]
   const fetchPeople = useAppStore((state) => state.fetchPeople);
   const fetchPipelines = useAppStore((state) => state.fetchPipelines);
   const fetchStages = useAppStore((state) => state.fetchStages);
@@ -87,7 +86,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     if (isOpen) {
       fetchPeople(); 
       fetchPipelines();
-      // Clear stages? Or wait for pipeline selection?
+      // Clear stages initially, will be repopulated by other effects
       useAppStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
   }, [isOpen, fetchPeople, fetchPipelines]); 
@@ -97,11 +96,11 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     if (deal) {
       setName(deal.name || '');
       setAmount(deal.amount != null ? String(deal.amount) : '');
-      setPersonId(deal.person_id || '');
+      setPersonId(deal.person_id || ''); // deal.person_id is from generated Deal type
       setError(null);
       setIsLoading(false);
       
-      // Extract initial pipeline and stage IDs from the deal
+      // Extract initial pipeline and stage IDs from the deal (deal.stage is GeneratedStage)
       const pipelineIdFromDeal = deal.stage?.pipeline_id;
       const stageIdFromDeal = deal.stage_id || deal.stage?.id;
       
@@ -175,12 +174,13 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     }
 
     try {
-      // Prepare input for the store action
-      const updateInput: UpdateDealInput = {
+      // Prepare input for the store action, using generated DealInput
+      const updateInput: DealInput = {
         name: name.trim(),
         stage_id: selectedStageId,
         amount: amount ? parseFloat(amount) : null,
         person_id: personId || null,
+        // user_id is not part of DealInput for updates, it's set by backend or immutable here
       };
 
       console.log('Calling updateDealAction with ID:', deal.id, 'Input:', updateInput);
@@ -226,10 +226,10 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                 {error}
             </Alert>
           )}
-          {peopleError && ( // Use renamed state variable
+          {peopleError && ( 
              <Alert status="warning" mb={4}>
                 <AlertIcon />
-                {peopleError} {/* Use renamed state variable */}
+                {peopleError} 
             </Alert>
           )}
           <VStack spacing={4}>
@@ -248,10 +248,10 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
             <FormControl isRequired isInvalid={!selectedPipelineId && error?.toLowerCase().includes('pipeline')}> 
               <FormLabel>Pipeline</FormLabel>
               <Select 
-                placeholder={pipelinesLoading ? 'Loading pipelines...' : 'Select pipeline'}
+                placeholder={pipelinesLoading ? 'Loading pipelines...' : (pipelines.length > 0 ? 'Select pipeline' : 'No pipelines available')}
                 value={selectedPipelineId}
                 onChange={(e) => setSelectedPipelineId(e.target.value)}
-                isDisabled={pipelinesLoading || !!pipelinesError}
+                isDisabled={pipelinesLoading || !!pipelinesError || pipelines.length === 0}
               >
                  {!pipelinesLoading && !pipelinesError && pipelines.map(pipeline => (
                     <option key={pipeline.id} value={pipeline.id}>
@@ -260,14 +260,14 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                 ))}
               </Select>
               {pipelinesError && <FormErrorMessage>Error loading pipelines: {pipelinesError}</FormErrorMessage>}
-              {!selectedPipelineId && error?.toLowerCase().includes('pipeline') && <FormErrorMessage>{error}</FormErrorMessage>} 
+              {pipelines.length === 0 && !pipelinesLoading && <FormErrorMessage>No pipelines found. Please create one first.</FormErrorMessage>}
             </FormControl>
 
             {/* Stage Selection */} 
             <FormControl isRequired isInvalid={!selectedStageId && error?.toLowerCase().includes('stage')}> 
               <FormLabel>Stage</FormLabel>
               <Select 
-                placeholder={stagesLoading ? 'Loading stages...' : (selectedPipelineId ? 'Select stage' : 'Select pipeline first') }
+                placeholder={stagesLoading ? 'Loading stages...' : (selectedPipelineId && stages.length > 0 ? 'Select stage' : (selectedPipelineId ? 'No stages in pipeline' : 'Select pipeline first'))}
                 value={selectedStageId}
                 onChange={(e) => setSelectedStageId(e.target.value)}
                 isDisabled={!selectedPipelineId || stagesLoading || !!stagesError || stages.length === 0}
@@ -279,10 +279,10 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                 ))}
               </Select>
               {stagesError && <FormErrorMessage>Error loading stages: {stagesError}</FormErrorMessage>}
-              {!selectedPipelineId && stages.length === 0 && <FormErrorMessage>Select a pipeline to see stages.</FormErrorMessage>}
-              {!selectedStageId && error?.toLowerCase().includes('stage') && <FormErrorMessage>{error}</FormErrorMessage>} 
+              {selectedPipelineId && stages.length === 0 && !stagesLoading && <FormErrorMessage>No stages found for this pipeline.</FormErrorMessage>}
             </FormControl>
 
+            {/* Amount */} 
             <FormControl>
               <FormLabel>Amount</FormLabel>
               <NumberInput value={amount} onChange={(valueAsString) => setAmount(valueAsString)}>
@@ -290,42 +290,38 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
               </NumberInput>
             </FormControl>
 
+            {/* Person Selection */} 
             <FormControl>
-              <FormLabel>Link to Person (Optional)</FormLabel> {/* Renamed label */}
+              <FormLabel>Link to Person (Optional)</FormLabel>
               <Select 
-                placeholder={peopleLoading ? 'Loading people...' : 'Select person'} /* Renamed placeholder */
-                value={personId} /* Use renamed state variable */
-                onChange={(e) => setPersonId(e.target.value)} /* Use renamed state setter */
-                isDisabled={peopleLoading || !!peopleError} /* Use renamed state variable */
+                placeholder={peopleLoading ? 'Loading people...' : (people.length > 0 ? 'Select person' : 'No people available')}
+                value={personId}
+                onChange={(e) => setPersonId(e.target.value)}
+                isDisabled={peopleLoading || !!peopleError || people.length === 0}
               >
-                 {/* Add an option for 'None' or empty selection */}
-                 <option value="">-- None --</option>
-                 {/* Iterate over people state */}
-                 {!peopleLoading && !peopleError && (people as Person[]).map(person => ( // Cast to explicit Person type
+                {/* people array is already GeneratedPerson[] from the store */}
+                 {!peopleLoading && !peopleError && people.map(person => (
                     <option key={person.id} value={person.id}>
-                         {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email || `Person ID: ${person.id}`}
+                        {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email || `Person ID: ${person.id}`}
                     </option>
                 ))}
               </Select>
+              {people.length === 0 && !peopleLoading && <FormErrorMessage>No people found. Please create one first.</FormErrorMessage>}
             </FormControl>
-
-             {/* Removed outdated TODO */}
           </VStack>
         </ModalBody>
 
         <ModalFooter>
           <Button 
-            colorScheme='blue'
+            colorScheme="blue" 
             mr={3} 
             type="submit" 
-            isLoading={isLoading}
+            isLoading={isLoading} 
             leftIcon={isLoading ? <Spinner size="sm" /> : undefined}
           >
-            Update Deal
+            Save Changes
           </Button>
-          <Button variant='ghost' onClick={onClose} isDisabled={isLoading}>
-            Cancel
-          </Button>
+          <Button variant="ghost" onClick={onClose} isDisabled={isLoading}>Cancel</Button>
         </ModalFooter>
       </ModalContent>
     </Modal>

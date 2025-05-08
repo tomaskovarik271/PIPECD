@@ -17,31 +17,18 @@ import {
   Alert, 
   AlertIcon,
   Spinner,
+  useToast // Added for success message
 } from '@chakra-ui/react';
-import { gql } from 'graphql-request';
-import { gqlClient } from '../lib/graphqlClient';
+// import { gql } from 'graphql-request'; // No longer needed
+// import { gqlClient } from '../lib/graphqlClient'; // No longer needed
+import { useAppStore } from '../stores/useAppStore'; // Import store
+import type { OrganizationInput } from '../generated/graphql/graphql'; // Import generated type
 
-// Define GraphQL Mutation for creating an organization
-const CREATE_ORGANIZATION_MUTATION = gql`
-  mutation CreateOrganization($input: OrganizationInput!) {
-    createOrganization(input: $input) {
-      id # Request fields needed after creation
-      name
-      address
-      notes
-      created_at
-      updated_at
-    }
-  }
-`;
+// Define GraphQL Mutation for creating an organization - REMOVED (Handled by store action)
+// const CREATE_ORGANIZATION_MUTATION = gql` ... `;
 
-// Define the expected shape of the mutation result
-interface CreateOrganizationMutationResult {
-    createOrganization: {
-        id: string;
-        // Include other fields returned by mutation if needed
-    };
-}
+// Define the expected shape of the mutation result - REMOVED (Handled by store action)
+// interface CreateOrganizationMutationResult { ... }
 
 interface CreateOrganizationModalProps {
   isOpen: boolean;
@@ -54,7 +41,12 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [localError, setLocalError] = useState<string | null>(null); // For local validation
+  const toast = useToast();
+
+  // Get store action and error state
+  const createOrganizationAction = useAppStore((state) => state.createOrganization);
+  const storeError = useAppStore((state) => state.organizationsError);
 
   // Effect to reset form when modal opens
   useEffect(() => {
@@ -62,7 +54,9 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
       setName('');
       setAddress('');
       setNotes('');
-      setError(null);
+      setLocalError(null);
+      // Optionally reset store error? Maybe not here, let action handle it.
+      // useAppStore.setState({ organizationsError: null });
       setIsLoading(false);
     }
   }, [isOpen]);
@@ -70,42 +64,48 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
-    setError(null);
+    setLocalError(null);
 
     // Basic validation
     if (!name.trim()) {
-        setError('Organization name is required.');
+        setLocalError('Organization name is required.');
         setIsLoading(false);
         return;
     }
 
     try {
-        const variables = {
-            input: {
-                name: name.trim(),
-                address: address.trim() || null, // Send null if empty
-                notes: notes.trim() || null,     // Send null if empty
-            },
+        // Prepare input using generated type
+        const input: OrganizationInput = {
+            name: name.trim(),
+            address: address.trim() || null, // Send null if empty
+            notes: notes.trim() || null,     // Send null if empty
         };
 
-        console.log('Submitting variables:', variables);
+        console.log('Submitting input:', input);
 
-        // Call the mutation using gqlClient
-        const result = await gqlClient.request<CreateOrganizationMutationResult>(
-            CREATE_ORGANIZATION_MUTATION, 
-            variables
-        );
-        console.log('Organization created:', result);
-
-        // Success
-        onOrganizationCreated(); // Trigger refresh on the parent page
-        onClose();             // Close the modal
+        // Call the store action
+        const createdOrg = await createOrganizationAction(input);
+        
+        if (createdOrg) {
+            console.log('Organization created:', createdOrg);
+            toast({ 
+                title: 'Organization Created', 
+                status: 'success', 
+                duration: 3000, 
+                isClosable: true 
+            });
+            // Success
+            onOrganizationCreated(); // Trigger refresh on the parent page
+            onClose();             // Close the modal
+        } else {
+            // Error should be in storeError
+             setLocalError(storeError || 'Failed to create organization.');
+        }
 
     } catch (err: any) {
+      // Catch unexpected errors during the action call itself
       console.error('Error creating organization:', err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      const validationError = err.response?.errors?.[0]?.extensions?.originalError?.message;
-      setError(validationError || gqlError || err.message || 'Failed to create organization');
+      setLocalError('An unexpected error occurred.');
     } finally {
       setIsLoading(false);
     }
@@ -118,21 +118,22 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
         <ModalHeader>Create New Organization</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          {error && (
+          {/* Display local or store error */} 
+          {(localError || storeError) && (
              <Alert status="error" mb={4} whiteSpace="pre-wrap">
                 <AlertIcon />
-                {error}
+                {localError || storeError}
             </Alert>
           )}
           <VStack spacing={4}>
-            <FormControl isRequired isInvalid={!name.trim() && error?.includes('name')}>
+            <FormControl isRequired isInvalid={!!localError && localError.includes('name')}>
               <FormLabel>Organization Name</FormLabel>
               <Input 
                 placeholder='Enter organization name' 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              {!name.trim() && error?.includes('name') && <FormErrorMessage>{error}</FormErrorMessage>}
+              {!!localError && localError.includes('name') && <FormErrorMessage>{localError}</FormErrorMessage>}
             </FormControl>
 
             <FormControl>

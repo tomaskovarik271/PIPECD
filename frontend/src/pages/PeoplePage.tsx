@@ -18,27 +18,30 @@ import {
   HStack,
   IconButton,
   useToast, // Import useToast
-  // Removed Table components
+  Flex, // Added Flex
+  Alert, AlertIcon // Added Alert & AlertIcon
 } from '@chakra-ui/react';
-import { EditIcon, DeleteIcon /* Removed sort icons */ } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons'; // Added ViewIcon for potential EmptyState
 import CreatePersonForm from '../components/CreatePersonForm';
 import EditPersonForm from '../components/EditPersonForm';
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
-import { useAppStore, Person, Organization } from '../stores/useAppStore'; // Import store and Person type
+import { useAppStore } from '../stores/useAppStore'; // Import store
+import type { Person as GeneratedPerson, Organization as GeneratedOrganization } from '../generated/graphql/graphql'; // Import generated types
 import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
+import EmptyState from '../components/common/EmptyState'; // Import EmptyState
 
 // REMOVED: GET_PEOPLE_QUERY (now in store)
 
 // --- Type definitions (Keep for component use) ---
-// interface Organization { ... } // Defined elsewhere if needed
-// interface Person { ... } // Defined in store
+// interface Organization { ... } // Defined elsewhere if needed - REMOVED
+// interface Person { ... } // Defined in store - REMOVED
 // --- End Type definitions ---
 
-// Define Person including nested Organization for sorting
-interface PersonWithOrg extends Person {
-  organization?: Organization | null;
-}
+// Define Person including nested Organization for sorting - REMOVED (GeneratedPerson includes organization)
+// interface PersonWithOrg extends Person {
+//   organization?: Organization | null;
+// }
 
 // Define sortable keys
 type PersonSortKeys = 'name' | 'organization' | 'email' | 'phone';
@@ -51,7 +54,7 @@ interface SortConfig {
 
 function PeoplePage() {
   // --- State from Zustand Store ---
-  const people = useAppStore((state) => state.people as Person[]); // Use base Person type
+  const people = useAppStore((state) => state.people); // Removed cast, state.people is already GeneratedPerson[]
   const loading = useAppStore((state) => state.peopleLoading);
   const peopleError = useAppStore((state) => state.peopleError); // Get specific error
   const fetchPeople = useAppStore((state) => state.fetchPeople);
@@ -61,7 +64,7 @@ function PeoplePage() {
 
   // --- Local UI State ---
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
-  const [personToEdit, setPersonToEdit] = useState<Person | null>(null);
+  const [personToEdit, setPersonToEdit] = useState<GeneratedPerson | null>(null); // Use GeneratedPerson
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
   const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure(); // For Confirmation Dialog
   const [personToDeleteId, setPersonToDeleteId] = useState<string | null>(null); // For Confirmation Dialog
@@ -70,6 +73,10 @@ function PeoplePage() {
 
   // --- Fetching & Data Handling ---
   useEffect(() => {
+    console.log('[PeoplePage] isCreateOpen changed to:', isCreateOpen);
+  }, [isCreateOpen]);
+
+  useEffect(() => {
     fetchPeople();
   }, [fetchPeople]);
 
@@ -77,7 +84,7 @@ function PeoplePage() {
     fetchPeople();
   }, [fetchPeople]);
 
-  const handleEditClick = (person: Person) => {
+  const handleEditClick = (person: GeneratedPerson) => { // Use GeneratedPerson
     setPersonToEdit(person);
     onEditOpen();
   };
@@ -113,7 +120,7 @@ function PeoplePage() {
   };
 
   // Define Columns for SortableTable
-  const columns: ColumnDefinition<Person>[] = [
+  const columns: ColumnDefinition<GeneratedPerson>[] = [ // Use GeneratedPerson
     {
       key: 'name',
       header: 'Name',
@@ -128,7 +135,7 @@ function PeoplePage() {
     {
       key: 'organization',
       header: 'Organization',
-      renderCell: (person) => person.organization?.name || '-',
+      renderCell: (person) => person.organization?.name || '-', // Access nested org name
       isSortable: true,
       sortAccessor: (person) => person.organization?.name?.toLowerCase() ?? '',
     },
@@ -179,29 +186,32 @@ function PeoplePage() {
   ];
 
   // Define props for EmptyState
-  const emptyStateProps = {
-    icon: EditIcon, // Placeholder, maybe change?
-    title: "No People Added",
-    message: "Add people to track your contacts."
+  const emptyStatePropsForPage = {
+    icon: ViewIcon, // Example icon, change as needed
+    title: "No People Yet",
+    message: "Get started by adding a new person."
   };
 
-  return (
-    <ListPageLayout
-      title="People"
-      newButtonLabel="New Person"
-      onNewButtonClick={onCreateOpen}
-      isNewButtonDisabled={!userPermissions?.includes('person:create')}
-      isLoading={loading}
-      error={peopleError}
-      isEmpty={people.length === 0}
-      emptyStateProps={emptyStateProps}
-    >
-      <SortableTable<Person>
-        data={people}
-        columns={columns}
-        initialSortKey="name"
-      />
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" minH="calc(100vh - 200px)">
+        <Spinner size="xl" />
+      </Flex>
+    );
+  }
 
+  if (peopleError) {
+    return (
+      <Alert status="error" m={4}>
+        <AlertIcon />
+        Error fetching people: {peopleError}
+      </Alert>
+    );
+  }
+
+  return (
+    <Box p={6}> {/* Main page container with padding */}
+      {/* Modals rendered at the top level of the page component */}
       <Modal isOpen={isCreateOpen} onClose={onCreateClose}>
         <ModalOverlay />
         <ModalContent>
@@ -236,7 +246,48 @@ function PeoplePage() {
         confirmButtonColorScheme="red"
         isLoading={!!isDeletingId}
       />
-    </ListPageLayout>
+
+      {/* Conditional content: Empty state or ListPageLayout with table */}
+      {people.length === 0 ? (
+        <VStack spacing={4} align="stretch">
+          <Flex justifyContent="space-between" alignItems="center" mb={4}>
+            <Heading as="h2" size="lg">People</Heading>
+            <Button 
+              colorScheme="blue"
+              onClick={onCreateOpen} // Changed from handleCreateDealClick
+              isDisabled={!userPermissions?.includes('person:create')}
+            >
+              New Person
+            </Button>
+          </Flex>
+          <EmptyState 
+            icon={emptyStatePropsForPage.icon}
+            title={emptyStatePropsForPage.title}
+            message={emptyStatePropsForPage.message}
+            actionButtonLabel="New Person"
+            onActionButtonClick={onCreateOpen} // Changed from handleCreateDealClick
+            isActionButtonDisabled={!userPermissions?.includes('person:create')}
+          />
+        </VStack>
+      ) : (
+        <ListPageLayout
+          title="People"
+          newButtonLabel="New Person"
+          onNewButtonClick={onCreateOpen} // Changed from handleCreateDealClick
+          isNewButtonDisabled={!userPermissions?.includes('person:create')}
+          isLoading={loading} // Will be false here
+          error={peopleError} // Will be null here
+          isEmpty={false} // Explicitly false
+          emptyStateProps={emptyStatePropsForPage}
+        >
+          <SortableTable<GeneratedPerson>
+            data={people}
+            columns={columns}
+            initialSortKey="name"
+          />
+        </ListPageLayout>
+      )}
+    </Box>
   );
 }
 

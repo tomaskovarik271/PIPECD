@@ -18,36 +18,35 @@ import {
   AlertIcon,
   Spinner,
 } from '@chakra-ui/react';
-import { gql } from 'graphql-request';
-import { gqlClient } from '../lib/graphqlClient';
+import { useAppStore, Organization, OrganizationInput } from '../stores/useAppStore';
 
 // Interface for the Organization data passed to the modal
-interface OrganizationToEdit {
-  id: string;
-  name: string;
-  address?: string | null;
-  notes?: string | null;
-  // Add other fields if needed
-}
+// interface OrganizationToEdit {
+//   id: string;
+//   name: string;
+//   address?: string | null;
+//   notes?: string | null;
+//   // Add other fields if needed
+// }
 
 // Define GraphQL Mutation for updating an organization
-const UPDATE_ORGANIZATION_MUTATION = gql`
-  mutation UpdateOrganization($id: ID!, $input: OrganizationInput!) {
-    updateOrganization(id: $id, input: $input) {
-      id # Request fields needed after update
-      name
-      address
-      notes
-      updated_at # Get updated timestamp
-    }
-  }
-`;
+// const UPDATE_ORGANIZATION_MUTATION = gql`
+//   mutation UpdateOrganization($id: ID!, $input: OrganizationInput!) {
+//     updateOrganization(id: $id, input: $input) {
+//       id # Request fields needed after update
+//       name
+//       address
+//       notes
+//       updated_at # Get updated timestamp
+//     }
+//   }
+// `;
 
 interface EditOrganizationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onOrganizationUpdated: () => void; // Callback to refresh list
-  organization: OrganizationToEdit | null; // The organization data to edit
+  organization: Organization | null; // Use imported Organization type
 }
 
 function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organization }: EditOrganizationModalProps) {
@@ -57,6 +56,8 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const updateOrganizationAction = useAppStore((state) => state.updateOrganization);
+  const storeError = useAppStore((state) => state.organizationsError); // For potential errors from the store action
 
   // Effect to update form state when the organization prop changes
   useEffect(() => {
@@ -88,27 +89,31 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
     }
 
     try {
-      const variables = {
-        id: organization.id,
-        input: {
-          name: name.trim(),
-          address: address.trim() || null, // Send null if empty
-          notes: notes.trim() || null,     // Send null if empty
-        },
+      const input: OrganizationInput = {
+        name: name.trim(),
+        address: address.trim() || null,
+        notes: notes.trim() || null,
       };
 
-      console.log('Submitting update variables:', variables);
+      console.log('Submitting update input:', input);
 
-      // Call the update mutation
-      const result = await gqlClient.request(UPDATE_ORGANIZATION_MUTATION, variables);
-      console.log('Organization updated:', result);
+      // Call the update mutation - OLD WAY
+      // const result = await gqlClient.request(UPDATE_ORGANIZATION_MUTATION, variables);
+      const updatedOrg = await updateOrganizationAction(organization.id, input); // USE STORE ACTION
+      
+      if (updatedOrg) { // Check if store action was successful
+        console.log('Organization updated:', updatedOrg);
 
-      // Success
-      onOrganizationUpdated(); // Trigger refresh
-      onClose();               // Close modal
+        // Success
+        onOrganizationUpdated(); // Trigger refresh
+        onClose();               // Close modal
+      } else {
+        // Error is likely in storeError now
+        setError(storeError || 'Failed to update organization.');
+      }
 
-    } catch (err: any) {
-      console.error('Error updating organization:', err);
+    } catch (err: any) { // Catch unexpected errors if the action itself throws
+      console.error('Error updating organization (component catch):', err);
       const gqlError = err.response?.errors?.[0]?.message;
       const validationError = err.response?.errors?.[0]?.extensions?.originalError?.message;
       setError(validationError || gqlError || err.message || 'Failed to update organization');

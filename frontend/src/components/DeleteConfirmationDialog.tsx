@@ -9,23 +9,7 @@ import {
   Button,
   useToast,
 } from '@chakra-ui/react';
-import { gql } from '@apollo/client';
-import { gqlClient } from '../lib/graphqlClient';
-
-// Define the mutation for deleting a Person
-const DELETE_PERSON_MUTATION = gql`
-  mutation DeletePerson($id: ID!) {
-    deletePerson(id: $id)
-  }
-`;
-
-// Define the Person type prop (matching the one used in PeoplePage/EditPersonForm)
-interface Person {
-  id: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  // Add other fields if needed for display, but only id, first/last name used here
-}
+import { useAppStore, Person } from '../stores/useAppStore';
 
 // Update prop definition
 interface DeleteConfirmationDialogProps {
@@ -39,23 +23,37 @@ function DeleteConfirmationDialog({ isOpen, onClose, person, onSuccess }: Delete
   const cancelRef = React.useRef<HTMLButtonElement>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const toast = useToast();
+  const deletePersonAction = useAppStore((state) => state.deletePerson); // Get action from store
+  const peopleError = useAppStore((state) => state.peopleError); // Get error state from store
 
   const handleDelete = async () => {
     if (!person) return; // Check for person
     setIsLoading(true);
     try {
       // Use the updated mutation and person ID
-      await gqlClient.request(DELETE_PERSON_MUTATION, { id: person.id });
-      toast({ 
-        title: 'Person Deleted', // Updated title
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-       });
-      onSuccess();
-      onClose();
+      const success = await deletePersonAction(person.id); // USE STORE ACTION
+
+      if (success) {
+        toast({ 
+          title: 'Person Deleted', // Updated title
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        });
+        onSuccess();
+        onClose();
+      } else {
+        // If deletePersonAction returns false, an error occurred and is in the store
+        toast({
+          title: 'Deletion Failed',
+          description: peopleError || 'Could not delete person.', // Use error from store
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+      }
     } catch (error: any) {
-      console.error("Failed to delete person:", error);
+      console.error("Failed to delete person (component catch):", error);
       // Extract more specific error message if available
       let errorMessage = 'An unexpected error occurred.';
        if (error.response?.errors?.[0]?.message) {

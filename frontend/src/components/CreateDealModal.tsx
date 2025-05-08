@@ -22,15 +22,16 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore'; // Import the store
+import type { Person as GeneratedPerson, DealInput, Pipeline, Stage } from '../generated/graphql/graphql'; // Import generated types
 
-// Explicit Person type based on store data
-interface Person {
-  id: string;
-  first_name?: string | null;
-  last_name?: string | null;
-  email?: string | null;
-  // Add other fields if needed by component
-}
+// Explicit Person type based on store data - REMOVED
+// interface Person {
+//   id: string;
+//   first_name?: string | null;
+//   last_name?: string | null;
+//   email?: string | null;
+//   // Add other fields if needed by component
+// }
 
 interface CreateDealModalProps {
   isOpen: boolean;
@@ -47,9 +48,9 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [personId, setPersonId] = useState<string>(''); // Renamed from contactId
   
   // Store State & Actions (Selected individually)
-  const people = useAppStore((state) => state.people);
-  const pipelines = useAppStore((state) => state.pipelines);
-  const stages = useAppStore((state) => state.stages);
+  const people = useAppStore((state) => state.people); // Already uses GeneratedPerson[] from store
+  const pipelines = useAppStore((state) => state.pipelines); // Already uses GeneratedPipeline[] from store
+  const stages = useAppStore((state) => state.stages); // Already uses GeneratedStage[] from store
   const fetchPeople = useAppStore((state) => state.fetchPeople);
   const fetchPipelines = useAppStore((state) => state.fetchPipelines);
   const fetchStages = useAppStore((state) => state.fetchStages);
@@ -81,8 +82,6 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       // Fetch people and pipelines
       fetchPeople(); 
       fetchPipelines(); 
-      // Clear stages from previous selections
-      useAppStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
   }, [isOpen, fetchPeople, fetchPipelines]);
 
@@ -115,12 +114,13 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     }
 
     try {
-      // Prepare input for the store action
-      const dealInput = {
+      // Prepare input for the store action, matching generated DealInput type
+      const dealInput: DealInput = {
         name: name.trim(),
         stage_id: selectedStageId,
         amount: amount ? parseFloat(amount) : null,
         person_id: personId || null,
+        // user_id will be set by the backend based on authenticated user
       };
 
       console.log('Calling createDealAction with input:', dealInput);
@@ -238,7 +238,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
                 onChange={(e) => setPersonId(e.target.value)}
                 isDisabled={peopleLoading || !!peopleError}
               >
-                 {!peopleLoading && !peopleError && (people as Person[]).map(person => (
+                 {/* people array is already GeneratedPerson[] from the store */}
+                 {!peopleLoading && !peopleError && people.map(person => (
                     <option key={person.id} value={person.id}>
                         {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email || `Person ID: ${person.id}`}
                     </option>

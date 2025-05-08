@@ -223,8 +223,8 @@ This document outlines the development roadmap for the custom CRM system, based 
     *   [ ] Test authorization (ensure unauthorized access attempts fail - may require mocking auth context).
 6.  **Frontend Data Fetching Refactor:**
     *   [x] Centralize GraphQL query/mutation definitions (e.g., in Zustand store `useAppStore.ts`).
-    *   [ ] Consider using GraphQL Code Generator to create typed hooks/SDK.
-    *   [-] Refactor components (`DealsPage`, `PeoplePage`, `OrganizationsPage`, `PipelinesPage`, `StagesPage` done; Modals pending) to use Zustand store actions/state.
+    *   [x] Consider using GraphQL Code Generator to create typed hooks/SDK. (Implemented for core types and store actions).
+    *   [-] Refactor components (`DealsPage`, `PeoplePage`, `OrganizationsPage`, `PipelinesPage`, `StagesPage` done; Modals like `EditOrganizationModal`, `CreateOrganizationModal`, `DeleteConfirmationDialog` also refactored. Review if other modals require similar updates) to use Zustand store actions/state.
     *   [ ] Ensure consistent loading and error state handling across all data-fetching components.
 7.  **Component Testing (Frontend):**
     *   [ ] Increase test coverage for key UI components (e.g., `Create*Modal`, `Edit*Modal`, complex table rendering), including interaction with Zustand store.

@@ -179,11 +179,39 @@ sequenceDiagram
 *   **Frontend State Management: Zustand**
     *   **Rationale:** Chosen for its simplicity, minimal boilerplate, and good performance characteristics for managing global state (like authentication) and server cache state (like fetched data lists) in the React frontend. Alternatives like Redux Toolkit or Jotai were considered but Zustand offered the best balance for the current project scale.
 *   **Dependency Versioning Strategy:** Use Node LTS. Use latest stable libraries, checking compatibility. Avoid RCs for critical dependencies.
+*   **Deletion Strategy for Linked Entities (e.g., Person linked to Deal):**
+    *   **Context:** Entities like Persons can be linked to other entities like Deals (via `deals.person_id`). Deleting a primary entity (Person) requires a strategy for handling references in associated entities (Deals).
+    *   **Decision (Current - MVP):** Implement hard deletes for primary entities. Utilize database foreign key constraints with `ON DELETE SET NULL` for references where appropriate (e.g., on `deals.person_id` referencing `persons.id`). When a Person is deleted, the database automatically sets `person_id` to `NULL` on associated Deals.
+    *   **Rationale:** This approach prioritizes simplicity for the initial implementation. It ensures referential integrity at the database level and clearly reflects the deletion in the UI (the Deal appears unlinked). It avoids the complexity of soft-delete flags or deletion prevention logic during the MVP phase.
+    *   **Future Considerations:** If business requirements evolve to necessitate preserving historical links after deletion, revisit this decision. Alternatives include:
+        *   **Soft Deletes:** Add `is_deleted`/`deleted_at` flags to entities like `persons`, requiring query modifications (`WHERE deleted_at IS NULL`) and potentially more complex UI handling.
+        *   **Deletion Prevention:** Block deletion of entities if they are actively linked elsewhere, requiring user intervention to unlink first.
 *   **Process:** Rigorous input validation in resolvers/logic modules (e.g., using `zod`). Document patterns in `DEVELOPER_GUIDE.md`.
 *   **Inngest Lock-in/Cost:** Dependency on a third-party SaaS. **Mitigation:**
     *   Monitor usage/cost.
     *   Abstract Inngest client calls.
 *   **Testing Complexity:** Ensuring adequate coverage requires effort. **Mitigation:** Implement a **prioritized testing strategy for MVP:** Use Vitest for integration tests (GraphQL resolvers, Inngest handlers connecting to a test DB or mocked services) and unit tests (critical/complex logic in `/lib`). Add core E2E tests (e.g., using Playwright/Cypress) for essential user flows. Automate selected tests in CI. Iteratively expand coverage post-MVP.
+
+*   **Frontend GraphQL Type Generation: GraphQL Code Generator**
+    *   **Rationale:** To enhance developer experience, ensure type safety, and reduce boilerplate when working with GraphQL in the frontend, `graphql-codegen` has been adopted. It generates TypeScript types directly from the GraphQL schema and frontend operations.
+    *   **Benefits:**
+        *   Strongly typed GraphQL operations (queries, mutations) and their results, primarily consumed via `useAppStore.ts` actions and state.
+        *   Reduced likelihood of runtime errors due to type mismatches between frontend and backend schema.
+        *   Faster development as types are automatically generated and updated, ensuring consistency between the GraphQL schema, store logic, and UI components.
+    *   **Implementation:** Configured via `frontend/codegen.ts` (or `codegen.yml`), uses the `client-preset` (or similar plugins like `typescript`, `typescript-operations`, `typescript-graphql-request`), and generates types into `frontend/src/generated/graphql/`. Core entity types (e.g., `Deal`, `Person`) and input types (e.g., `DealInput`) are then re-exported from `frontend/src/stores/useAppStore.ts`, which serves as the primary source for UI components to import these types. Store actions in `useAppStore.ts` are also typed using these generated types for their parameters and return values. See `DEVELOPER_GUIDE.md` for detailed usage patterns.
+
+*   **Deletion Strategy for Linked Pipeline/Stage Entities:**
+    *   **Context:** Entities like Pipelines contain Stages, and Stages can be linked to Deals (via `deals.stage_id`). Deleting a Pipeline or a Stage requires a strategy for handling these relationships to maintain data integrity and prevent application errors.
+    *   **Problem Observed:** Deleting a Pipeline (which might cascade to delete its Stages) that has Stages linked to Deals can lead to orphaned `deals.stage_id` values if not handled correctly. This can cause GraphQL queries for Deals to fail with an internal server error when trying to resolve a non-existent Stage.
+    *   **Decision (Current - MVP):**
+        1.  **Pipelines to Stages:** When a `Pipeline` is deleted, all its associated `Stage` records will also be deleted (achieved via `ON DELETE CASCADE` on the `stages.pipeline_id` foreign key).
+        2.  **Stages to Deals:** When a `Stage` is deleted (either directly or as a result of a Pipeline deletion), any `Deal` referencing that `Stage` will have its `deals.stage_id` foreign key automatically set to `NULL` (achieved via `ON DELETE SET NULL` on the `deals.stage_id` foreign key).
+    *   **Rationale:** This approach ensures data integrity at the database level, preventing orphaned foreign keys and subsequent application errors. It allows for the deletion of pipelines and stages even if they are in use, with deals gracefully becoming "stageless." The frontend should then be able to handle and display deals with a `null` stage appropriately (e.g., showing "N/A" or omitting stage information).
+    *   **Implementation:** Requires database migrations to set up the appropriate `ON DELETE CASCADE` and `ON DELETE SET NULL` behaviors on the relevant foreign keys.
+    *   **Future Considerations:** If business requirements evolve to necessitate preventing deletion of in-use pipelines/stages, or to preserve historical stage information on deals, this decision can be revisited. Alternatives include:
+        *   **Deletion Prevention:** Block deletion if the pipeline/stage is linked to active deals.
+        *   **Soft Deletes:** Implement soft deletes for Stages and Pipelines.
+        *   **Archiving:** Introduce an "Archived" status for pipelines/stages instead of hard deletion.
 
 ## 6. Key Architectural Risks & Considerations
 

@@ -16,8 +16,9 @@ import {
 } from '@chakra-ui/react';
 import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
-import { EditIcon, DeleteIcon, LockIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, LockIcon, ViewIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore'; // Import store
+import type { Organization as GeneratedOrganization } from '../generated/graphql/graphql'; // Import generated type
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
 import EmptyState from '../components/common/EmptyState'; // Import EmptyState
 import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
@@ -25,15 +26,15 @@ import SortableTable, { ColumnDefinition } from '../components/common/SortableTa
 
 // REMOVED: GET_ORGANIZATIONS_QUERY (in store)
 
-// --- Type Definition (Keep for component use) ---
-interface Organization {
-  id: string;
-  name: string;
-  address?: string | null;
-  notes?: string | null;
-  created_at: string;
-  updated_at: string;
-}
+// --- Type Definition (Keep for component use) - REMOVED
+// interface Organization {
+//   id: string;
+//   name: string;
+//   address?: string | null;
+//   notes?: string | null;
+//   created_at: string;
+//   updated_at: string;
+// }
 
 // Define sortable keys
 type OrgSortKeys = 'name' | 'address' | 'notes' | 'created_at';
@@ -50,7 +51,7 @@ interface SortConfig {
 
 function OrganizationsPage() {
   // --- State from Zustand Store ---
-  const organizations = useAppStore((state) => state.organizations);
+  const organizations = useAppStore((state) => state.organizations); // Already uses GeneratedOrganization[]
   const loading = useAppStore((state) => state.organizationsLoading);
   const error = useAppStore((state) => state.organizationsError);
   const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
@@ -62,12 +63,16 @@ function OrganizationsPage() {
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure();
   const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
-  const [orgToEdit, setOrgToEdit] = useState<Organization | null>(null);
+  const [orgToEdit, setOrgToEdit] = useState<GeneratedOrganization | null>(null); // Use generated type
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null); // For button spinner
   const [orgToDeleteId, setOrgToDeleteId] = useState<string | null>(null);
   const toast = useToast();
 
   // --- Fetching Logic ---
+  useEffect(() => {
+    console.log('[OrganizationsPage] isCreateModalOpen changed to:', isCreateModalOpen);
+  }, [isCreateModalOpen]);
+
   useEffect(() => {
     fetchOrganizations();
   }, [fetchOrganizations]);
@@ -82,7 +87,7 @@ function OrganizationsPage() {
     fetchOrganizations(); 
   }, [fetchOrganizations]);
 
-  const handleEditClick = (org: Organization) => {
+  const handleEditClick = (org: GeneratedOrganization) => { // Use generated type
     setOrgToEdit(org);
     onEditModalOpen();
   };
@@ -121,7 +126,7 @@ function OrganizationsPage() {
   }
 
   // Define Columns for SortableTable
-  const columns: ColumnDefinition<Organization>[] = [
+  const columns: ColumnDefinition<GeneratedOrganization>[] = [ // Use generated type
     {
       key: 'name',
       header: 'Name',
@@ -183,55 +188,54 @@ function OrganizationsPage() {
   ];
 
   // Define props for EmptyState
-  const emptyStateProps = {
-    icon: LockIcon,
-    title: "No Organizations Found",
-    message: "Add organizations to group your contacts and deals."
+  const emptyStatePropsForPage = {
+    icon: ViewIcon,
+    title: "No Organizations Yet",
+    message: "Get started by adding your first organization."
   };
 
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" minH="calc(100vh - 200px)">
+        <Spinner size="xl" />
+      </Flex>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert status="error" m={4}>
+        <AlertIcon />
+        Error fetching organizations: {error}
+      </Alert>
+    );
+  }
+
   return (
-    <ListPageLayout
-      title="Organizations"
-      newButtonLabel="New Organization"
-      onNewButtonClick={handleCreateOrgClick}
-      isNewButtonDisabled={!userPermissions?.includes('organization:create')}
-      isLoading={loading}
-      error={error}
-      isEmpty={organizations.length === 0}
-      emptyStateProps={emptyStateProps}
-    >
-      <SortableTable<Organization>
-        data={organizations}
-        columns={columns}
-        initialSortKey="name"
-      />
-      
-      {/* Render Modals */} 
-      {isCreateModalOpen && (
+    <Box p={6}> {/* Main page container with padding */}
+      {/* Modals rendered at the top level */}
       <CreateOrganizationModal 
         isOpen={isCreateModalOpen} 
         onClose={onCreateModalClose} 
-            onOrganizationCreated={handleDataChanged}
+        onOrganizationCreated={handleDataChanged}
       />
-      )}
 
       {orgToEdit && (
       <EditOrganizationModal 
-            organization={orgToEdit} 
+        organization={orgToEdit} 
         isOpen={isEditModalOpen} 
-            onClose={() => { 
-                onEditModalClose(); 
-                setOrgToEdit(null); 
-            }} 
-            onOrganizationUpdated={() => {
-                handleDataChanged(); 
-                onEditModalClose(); 
-                setOrgToEdit(null); 
-            }} 
+        onClose={() => { 
+            onEditModalClose(); 
+            setOrgToEdit(null); 
+        }} 
+        onOrganizationUpdated={() => {
+            handleDataChanged(); 
+            onEditModalClose(); 
+            setOrgToEdit(null); 
+        }} 
       />
       )}
 
-      {/* Confirmation Dialog for Deleting Organization */}
       <ConfirmationDialog 
         isOpen={isConfirmDeleteDialogOpen}
         onClose={onConfirmDeleteClose}
@@ -243,7 +247,47 @@ function OrganizationsPage() {
         isLoading={!!isDeletingId}
       />
 
-    </ListPageLayout>
+      {/* Conditional content: Empty state or ListPageLayout with table */}
+      {organizations.length === 0 ? (
+        <VStack spacing={4} align="stretch">
+          <Flex justifyContent="space-between" alignItems="center" mb={4}>
+            <Heading as="h2" size="lg">Organizations</Heading>
+            <Button 
+              colorScheme="blue"
+              onClick={handleCreateOrgClick}
+              isDisabled={!userPermissions?.includes('organization:create')}
+            >
+              New Organization
+            </Button>
+          </Flex>
+          <EmptyState 
+            icon={emptyStatePropsForPage.icon}
+            title={emptyStatePropsForPage.title}
+            message={emptyStatePropsForPage.message}
+            actionButtonLabel="New Organization"
+            onActionButtonClick={handleCreateOrgClick}
+            isActionButtonDisabled={!userPermissions?.includes('organization:create')}
+          />
+        </VStack>
+      ) : (
+        <ListPageLayout
+          title="Organizations"
+          newButtonLabel="New Organization"
+          onNewButtonClick={handleCreateOrgClick}
+          isNewButtonDisabled={!userPermissions?.includes('organization:create')}
+          isLoading={loading} // Will be false here
+          error={error}       // Will be null here
+          isEmpty={false}     // Explicitly false
+          emptyStateProps={emptyStatePropsForPage} // Passed but not used if not empty
+        >
+          <SortableTable<GeneratedOrganization>
+            data={organizations}
+            columns={columns}
+            initialSortKey="name"
+          />
+        </ListPageLayout>
+      )}
+    </Box>
   );
 }
 

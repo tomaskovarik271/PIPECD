@@ -21,40 +21,42 @@ import { useAppStore } from '../stores/useAppStore';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import ListPageLayout from '../components/layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
+import EmptyState from '../components/common/EmptyState';
+import type { Deal, Person as GeneratedPerson, Stage as GeneratedStage } from '../generated/graphql/graphql'; // Import generated types
 
-// Keep Deal/DealPerson types for component use
-interface DealPerson {
-    id: string;
-    first_name?: string | null;
-    last_name?: string | null;
-    email?: string | null;
-}
+// Keep Deal/DealPerson types for component use - REMOVED
+// interface DealPerson {
+//     id: string;
+//     first_name?: string | null;
+//     last_name?: string | null;
+//     email?: string | null;
+// }
 
-// Add nested Stage type for Deal (matching store definition)
-interface DealStage { 
-    id: string;
-    name: string;
-    pipeline_id: string;
-    pipeline?: { name: string };
-}
+// Add nested Stage type for Deal (matching store definition) - REMOVED
+// interface DealStage { 
+//     id: string;
+//     name: string;
+//     pipeline_id: string;
+//     pipeline?: { name: string };
+// }
 
-// Update local Deal interface
-interface Deal {
-  id: string;
-  name: string;
-  stage: DealStage;
-  stage_id?: string | null;
-  amount?: number | null;
-  created_at: string;
-  updated_at: string;
-  person_id?: string | null;
-  person?: DealPerson | null;
-  user_id?: string | null;
-}
+// Update local Deal interface - REMOVED
+// interface Deal {
+//   id: string;
+//   name: string;
+//   stage: DealStage;
+//   stage_id?: string | null;
+//   amount?: number | null;
+//   created_at: string;
+//   updated_at: string;
+//   person_id?: string | null;
+//   person?: DealPerson | null;
+//   user_id?: string | null;
+// }
 
 function DealsPage() {
   // --- State from Zustand Store ---
-  const deals = useAppStore((state) => state.deals);
+  const deals = useAppStore((state) => state.deals); // deals is already using generated Deal from store
   const loading = useAppStore((state) => state.dealsLoading);
   const error = useAppStore((state) => state.dealsError);
   const fetchDeals = useAppStore((state) => state.fetchDeals);
@@ -67,13 +69,18 @@ function DealsPage() {
   // --- Local UI State ---
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure();
-  const [dealToEdit, setDealToEdit] = useState<Deal | null>(null);
+  const [dealToEdit, setDealToEdit] = useState<Deal | null>(null); // Uses generated Deal from store
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const toast = useToast();
 
   // For Confirmation Dialog
   const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
   const [dealToDeleteId, setDealToDeleteId] = useState<string | null>(null);
+
+  // DEBUG: Log when isCreateModalOpen changes
+  useEffect(() => {
+    console.log('[DealsPage] isCreateModalOpen changed to:', isCreateModalOpen);
+  }, [isCreateModalOpen]);
 
   // Fetch deals on mount
   useEffect(() => {
@@ -89,7 +96,7 @@ function DealsPage() {
     fetchDeals();
   }, [fetchDeals]);
 
-  const handleEditClick = (deal: Deal) => {
+  const handleEditClick = (deal: Deal) => { // Uses generated Deal from store
     setDealToEdit(deal);
     onEditModalOpen();
   };
@@ -126,7 +133,7 @@ function DealsPage() {
   };
 
   // Helper function to format person name for display
-  const formatPersonName = (person: DealPerson | null | undefined): string => {
+  const formatPersonName = (person: GeneratedPerson | null | undefined): string => { // Use GeneratedPerson
     if (!person) return '-'; // Return hyphen for display
     return (
       person.last_name && person.first_name
@@ -135,7 +142,9 @@ function DealsPage() {
       ? person.first_name
       : person.last_name
       ? person.last_name
-      : person.email || 'Unnamed Person'
+      // : person.email || 'Unnamed Person' // Generated Person might not have email directly if not queried, check schema/query for Deal.person
+      // Assuming GET_DEALS_QUERY fetches person { id first_name last_name email }, so email should be available.
+      : person.email || 'Unnamed Person' 
     );
   };
 
@@ -152,7 +161,7 @@ function DealsPage() {
   }
 
   // Define Columns for SortableTable
-  const columns: ColumnDefinition<Deal>[] = [
+  const columns: ColumnDefinition<Deal>[] = [ // Uses generated Deal from store
     {
       key: 'name',
       header: 'Name',
@@ -162,17 +171,19 @@ function DealsPage() {
     {
       key: 'person',
       header: 'Person',
-      renderCell: (deal) => formatPersonName(deal.person),
+      renderCell: (deal) => formatPersonName(deal.person as GeneratedPerson | null | undefined), // Cast deal.person if its type is broader
       isSortable: true,
       // Provide accessor for sorting based on formatted name
-      sortAccessor: (deal) => formatPersonName(deal.person).toLowerCase(),
+      sortAccessor: (deal) => formatPersonName(deal.person as GeneratedPerson | null | undefined).toLowerCase(),
     },
     {
       key: 'stage',
       header: 'Stage',
       renderCell: (deal) => (
         <VStack align="start" spacing={0}>
+          {/* Assuming deal.stage is of type GeneratedStage | null | undefined */}
           <Text fontWeight="medium">{deal.stage?.name || '-'}</Text>
+          {/* Assuming deal.stage.pipeline is available and correctly typed by codegen based on GET_DEALS_QUERY */}
           <Text fontSize="xs" color="gray.500">{deal.stage?.pipeline?.name || 'Pipeline N/A'}</Text>
         </VStack>
       ),
@@ -242,33 +253,32 @@ function DealsPage() {
     message: "Get started by creating your first deal."
   };
 
+  // Conditional rendering for loading and error states
+  if (loading) {
+    return (
+      <Flex justify="center" align="center" minH="calc(100vh - 200px)">
+        <Spinner size="xl" />
+      </Flex>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert status="error" m={4}>
+        <AlertIcon />
+        Error fetching deals: {error}
+      </Alert>
+    );
+  }
+
   return (
-    <ListPageLayout
-      title="Deals"
-      newButtonLabel="New Deal"
-      onNewButtonClick={handleCreateDealClick}
-      isNewButtonDisabled={!userPermissions?.includes('deal:create')}
-      isLoading={loading}
-      error={error}
-      isEmpty={deals.length === 0}
-      emptyStateProps={emptyStateProps}
-    >
-      {/* Render SortableTable as child */}
-      <SortableTable<Deal>
-        data={deals} // Pass original data
-        columns={columns}
-        initialSortKey="name" // Set default sort
-        // Use default border/radius from SortableTable
-      />
-      
-      {/* Render Modals and Dialog outside the layout */}
-      {isCreateModalOpen && (
+    <Box p={6}> {/* Add padding similar to ListPageLayout content area if needed */}
+      {/* Render modals first, so they are in the DOM tree */}
       <CreateDealModal 
         isOpen={isCreateModalOpen} 
         onClose={onCreateModalClose} 
         onDealCreated={handleDataChanged}
       />
-      )}
       {dealToEdit && (
       <EditDealModal 
         deal={dealToEdit}
@@ -290,7 +300,48 @@ function DealsPage() {
         confirmButtonColorScheme="red"
         isLoading={!!isDeletingId}
       />
-    </ListPageLayout>
+
+      {/* Logic to switch between EmptyState and ListPageLayout with Table */}
+      {deals.length === 0 ? (
+        <VStack spacing={4} align="stretch">
+          <Flex justifyContent="space-between" alignItems="center" mb={4}> {/* Mimic ListPageLayout header */}
+            <Heading as="h2" size="lg">Deals</Heading>
+            <Button 
+              colorScheme="blue"
+              onClick={handleCreateDealClick}
+              isDisabled={!userPermissions?.includes('deal:create')}
+            >
+              New Deal
+            </Button>
+          </Flex>
+          <EmptyState 
+            icon={emptyStateProps.icon}
+            title={emptyStateProps.title}
+            message={emptyStateProps.message}
+            actionButtonLabel="New Deal"
+            onActionButtonClick={handleCreateDealClick}
+            isActionButtonDisabled={!userPermissions?.includes('deal:create')}
+          />
+        </VStack>
+      ) : (
+        <ListPageLayout
+          title="Deals"
+          newButtonLabel="New Deal"
+          onNewButtonClick={handleCreateDealClick}
+          isNewButtonDisabled={!userPermissions?.includes('deal:create')}
+          isLoading={loading}
+          error={error}
+          isEmpty={false}
+          emptyStateProps={emptyStateProps}
+        >
+          <SortableTable<Deal>
+            data={deals}
+            columns={columns}
+            initialSortKey="name"
+          />
+        </ListPageLayout>
+      )}
+    </Box>
   );
 }
 
