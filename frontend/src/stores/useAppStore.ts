@@ -3,11 +3,11 @@ import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { gqlClient } from '../lib/graphqlClient';
 import { gql } from 'graphql-request';
+import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
 import type {
   Deal,       // Generated main Deal entity type
   DealInput,  // Generated input type for create/update deals
   Stage,      // Generated Stage type (for Deal.stage and standalone use if needed)
-  Person,     // Generated Person type (for Deal.person and standalone use if needed)
   Maybe,      // Import the Maybe type helper
   Organization, // Generated Organization type
   GetOrganizationsQueryVariables, // Generated variables type for GetOrganizationsQuery
@@ -23,7 +23,6 @@ import type {
   MutationCreateDealArgs,
   MutationUpdateDealArgs,
   MutationDeleteDealArgs,
-  MutationDeletePersonArgs,
   MutationDeleteOrganizationArgs, // Generated variables type for DeleteOrganization
   MutationCreatePipelineArgs,
   MutationUpdatePipelineArgs,
@@ -38,10 +37,7 @@ import type {
   MutationDeleteActivityArgs,
   // Specific Query/Mutation result types like GetDealsQuery might not be explicitly exported if not used with gql tag,
   // so we'll define response shapes inline using the core entity types.
-  PersonInput, 
-  MutationCreatePersonArgs,
-  MutationUpdatePersonArgs,
-  OrganizationInput, // Assuming generated based on schema
+  OrganizationInput,
   MutationCreateOrganizationArgs,
   MutationUpdateOrganizationArgs
 } from '../generated/graphql/graphql'; // Path to the main generated types file
@@ -50,45 +46,17 @@ import type {
 export type {
   Deal, DealInput,
   Stage, GeneratedCreateStageInput, GeneratedUpdateStageInput,
-  Person, PersonInput,
   Organization, OrganizationInput,
   Pipeline, PipelineInput,
   Activity, GeneratedCreateActivityInput, GeneratedUpdateActivityInput, GeneratedActivityFilterInput,
   Maybe // Also re-export Maybe if components might need it for optional fields
 };
 
-// --- GraphQL Error Handling Types ---
-interface GQLError {
-  message: string;
-  // Depending on your GraphQL server, other properties like 'path' or 'extensions' might exist
-}
-
-interface GQLResponse {
-  errors: GQLError[];
-  // Data would also be here in a full response, but we only care about errors for this type
-}
-
-interface GraphQLErrorWithMessage {
-  response?: GQLResponse; // Make response optional as it might not always be there (e.g. network error)
-  // Add other properties if your client might throw errors with different shapes
-  // For instance, a plain Error object from a network issue won't have 'response'.
-}
-
-// Type guard to check if an error is a GraphQL-like error with a message
-function isGraphQLErrorWithMessage(error: unknown): error is GraphQLErrorWithMessage {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    // Check if 'response' exists and is an object
-    (typeof (error as GraphQLErrorWithMessage).response === 'object' &&
-      (error as GraphQLErrorWithMessage).response !== null &&
-      // Check if 'response.errors' exists, is an array, and has at least one element
-      Array.isArray((error as GraphQLErrorWithMessage).response?.errors) &&
-      ((error as GraphQLErrorWithMessage).response?.errors?.length ?? 0) > 0 &&
-      // Check if the first error has a 'message' property of type string
-      typeof (error as GraphQLErrorWithMessage).response?.errors?.[0]?.message === 'string')
-  );
-}
+// --- GraphQL Error Handling Types --- MOVED to lib/graphqlUtils.ts
+// interface GQLError { ... } // MOVED
+// interface GQLResponse { ... } // MOVED
+// interface GraphQLErrorWithMessage { ... } // MOVED
+// function isGraphQLErrorWithMessage(error: unknown): error is GraphQLErrorWithMessage { ... } // MOVED
 
 // --- Interface Definitions ---
 
@@ -146,24 +114,11 @@ const UPDATE_DEAL_MUTATION = gql`mutation UpdateDeal($id: ID!, $input: DealInput
 const DELETE_DEAL_MUTATION = gql`mutation DeleteDeal($id: ID!) { deleteDeal(id: $id) }`;
 
 // Other entity GQL strings (People, Orgs, etc.) remain unchanged here...
-const GET_PEOPLE_QUERY = gql` query GetPeople { people { id first_name last_name email phone notes created_at updated_at organization_id organization { id name } } }`;
-const DELETE_PERSON_MUTATION = gql` mutation DeletePerson($id: ID!) { deletePerson(id: $id) }`;
-const CREATE_PERSON_MUTATION = gql`
-  mutation CreatePerson($input: PersonInput!) {
-    createPerson(input: $input) {
-      id
-      first_name
-      last_name
-      email
-      phone
-      notes
-      created_at
-      updated_at
-      organization_id
-      organization { id name } # Ensure response matches Person type used in fetchPeople
-    }
-  }
-`;
+// const GET_PEOPLE_QUERY = gql` query GetPeople { ... } `; // MOVED to usePeopleStore.ts
+// const DELETE_PERSON_MUTATION = gql` mutation DeletePerson($id: ID!) { ... } `; // MOVED to usePeopleStore.ts
+// const CREATE_PERSON_MUTATION = gql` mutation CreatePerson($input: PersonInput!) { ... } `; // MOVED to usePeopleStore.ts
+// const UPDATE_PERSON_MUTATION = gql` mutation UpdatePerson($id: ID!, $input: PersonInput!) { ... } `; // MOVED to usePeopleStore.ts
+
 const GET_ORGANIZATIONS_QUERY = gql` query GetOrganizations { organizations { id name address notes created_at updated_at } }`;
 const DELETE_ORGANIZATION_MUTATION = gql` mutation DeleteOrganization($id: ID!) { deleteOrganization(id: $id) }`;
 const GET_PIPELINES_QUERY = gql` query GetPipelines { pipelines { id name } }`;
@@ -211,24 +166,6 @@ export type ThemeMode = 'light' | 'dark';
 // interface CreateActivityMutationResult { createActivity: Activity; } // REMOVED
 // interface UpdateActivityMutationResult { updateActivity: Activity; } // REMOVED
 // interface DeleteActivityMutationResult { deleteActivity: string; } // REMOVED - Will adjust deleteActivity to return boolean and handle string ID response
-
-// Add Update Person Mutation (assuming standard fields)
-const UPDATE_PERSON_MUTATION = gql`
-  mutation UpdatePerson($id: ID!, $input: PersonInput!) {
-    updatePerson(id: $id, input: $input) {
-      id
-      first_name
-      last_name
-      email
-      phone
-      notes
-      created_at
-      updated_at
-      organization_id
-      organization { id name }
-    }
-  }
-`;
 
 // Add Create/Update Organization Mutations (assuming standard fields)
 const CREATE_ORGANIZATION_MUTATION = gql`
@@ -293,14 +230,14 @@ interface AppState {
   updateDeal: (id: string, input: DealInput) => Promise<Deal | null>; // Uses generated DealInput and Deal
   deleteDeal: (id: string) => Promise<boolean>;
 
-  // People (uses generated Person)
-  people: Person[];
-  peopleLoading: boolean;
-  peopleError: string | null;
-  fetchPeople: () => Promise<void>;
-  createPerson: (input: PersonInput) => Promise<Person | null>;
-  updatePerson: (id: string, input: PersonInput) => Promise<Person | null>;
-  deletePerson: (id: string) => Promise<boolean>;
+  // People (uses generated Person) - MOVED to usePeopleStore.ts
+  // people: Person[];
+  // peopleLoading: boolean;
+  // peopleError: string | null;
+  // fetchPeople: () => Promise<void>;
+  // createPerson: (input: PersonInput) => Promise<Person | null>;
+  // updatePerson: (id: string, input: PersonInput) => Promise<Person | null>;
+  // deletePerson: (id: string) => Promise<boolean>;
 
   // Organizations (uses generated Organization)
   organizations: Organization[];
@@ -346,7 +283,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   // --- Initial state (unchanged) ---
   session: null, user: null, isLoadingAuth: true, userPermissions: null, permissionsLoading: false,
   deals: [], dealsLoading: false, dealsError: null,
-  people: [], peopleLoading: false, peopleError: null,
   organizations: [], organizationsLoading: false, organizationsError: null,
   pipelines: [], stages: [], pipelinesLoading: false, pipelinesError: null, stagesLoading: false, stagesError: null, selectedPipelineId: null,
   activities: [], activitiesLoading: false, activitiesError: null,
@@ -518,132 +454,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  // People Actions (Refactored)
-  fetchPeople: async () => {
-    set({ peopleLoading: true, peopleError: null });
-    try {
-        const session = get().session;
-        if (!session) throw new Error("Not authenticated");
-        type GetPeopleQueryResponse = { people: Person[] }; 
-        const data = await gqlClient.request<GetPeopleQueryResponse>(
-            GET_PEOPLE_QUERY,
-            {},
-            { Authorization: `Bearer ${session.access_token}` }
-        );
-        set({ people: data.people || [], peopleLoading: false });
-    } catch (error: unknown) {
-        console.error("Error fetching people:", error);
-        let message = 'Failed to fetch people';
-        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
-            message = error.response.errors[0].message;
-        } else if (error instanceof Error) {
-            message = error.message;
-        } else if (typeof error === 'string') {
-            message = error;
-        }
-        set({ peopleError: message, peopleLoading: false, people: [] });
-    }
-  },
-  createPerson: async (input: PersonInput): Promise<Person | null> => {
-    set({ peopleLoading: true, peopleError: null });
-    try {
-      type CreatePersonMutationResponse = { createPerson?: Maybe<Person> }; 
-      const response = await gqlClient.request<CreatePersonMutationResponse, MutationCreatePersonArgs>(
-        CREATE_PERSON_MUTATION,
-        { input } 
-      );
-      if (response.createPerson) {
-        set((state) => ({ 
-          people: [...state.people, response.createPerson!],
-          peopleLoading: false 
-        }));
-        return response.createPerson;
-      } else {
-        set({ peopleLoading: false });
-        return null;
-      }
-    } catch (error: unknown) {
-        console.error("Error creating person:", error);
-        let message = 'Failed to create person';
-        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
-            message = error.response.errors[0].message;
-        } else if (error instanceof Error) {
-            message = error.message;
-        } else if (typeof error === 'string') {
-            message = error;
-        }
-        set({ peopleError: message, peopleLoading: false });
-        return null;
-    }
-  },
-  updatePerson: async (id: string, input: PersonInput): Promise<Person | null> => {
-    set({ peopleLoading: true, peopleError: null });
-    try {
-      type UpdatePersonMutationResponse = { updatePerson?: Maybe<Person> };
-      const response = await gqlClient.request<UpdatePersonMutationResponse, MutationUpdatePersonArgs>(
-        UPDATE_PERSON_MUTATION,
-        { id, input }
-      );
-      if (response.updatePerson) {
-        set((state) => ({ 
-          people: state.people.map(p => p.id === id ? response.updatePerson! : p),
-          peopleLoading: false 
-        }));
-        return response.updatePerson;
-      } else {
-        set({ peopleLoading: false });
-        return null;
-      }
-    } catch (error: unknown) {
-      console.error(`Error updating person ${id}:`, error);
-      let message = 'Failed to update person';
-      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
-            message = error.response.errors[0].message;
-        } else if (error instanceof Error) {
-            message = error.message;
-        } else if (typeof error === 'string') {
-            message = error;
-        }
-      set({ peopleError: message, peopleLoading: false });
-      return null;
-    }
-  },
-  deletePerson: async (id: string): Promise<boolean> => {
-    const session = get().session;
-    if (!session) {
-      set({ peopleError: 'Not authenticated' });
-      return false;
-    }
-    const originalPeople = get().people;
-    set((state) => ({ people: state.people.filter(p => p.id !== id), peopleError: null }));
-    try {
-      type DeletePersonMutationResponse = { deletePerson?: Maybe<boolean> };
-      const result = await gqlClient.request<DeletePersonMutationResponse, MutationDeletePersonArgs>(
-          DELETE_PERSON_MUTATION, 
-          { id },
-          { Authorization: `Bearer ${session.access_token}` }
-      );
-      if (result.deletePerson) {
-          set({ peopleError: null });
-          return true;
-      } else {
-          set({ people: originalPeople, peopleError: 'Delete operation did not succeed as reported by API' });
-          return false;
-      }
-    } catch (error: unknown) {
-        console.error('Error deleting person:', error);
-        let message = `Failed to delete person (${id})`;
-        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
-            message = error.response.errors[0].message;
-        } else if (error instanceof Error) {
-            message = error.message;
-        } else if (typeof error === 'string') {
-            message = error;
-        }
-        set({ people: originalPeople, peopleError: message });
-        return false;
-    }
-  },
+  // People Actions - MOVED to usePeopleStore.ts
+  // fetchPeople: async () => { ... },
+  // createPerson: async (input) => { ... },
+  // updatePerson: async (id, input) => { ... },
+  // deletePerson: async (id) => { ... },
 
   // Organizations Actions
   fetchOrganizations: async () => {

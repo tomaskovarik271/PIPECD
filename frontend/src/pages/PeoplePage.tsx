@@ -1,230 +1,163 @@
-import { useEffect, useState, useCallback } from 'react';
-// import { gql } from 'graphql-request'; // No longer needed
-// import { gqlClient } from '../lib/graphqlClient'; // No longer needed
+import React, { useEffect, useState } from 'react';
 import {
-  Button,
-  Box,
-  Heading,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
+  ModalBody,
   ModalCloseButton,
-  Spinner,
-  Text,
   useDisclosure,
-  VStack,
+  useToast,
   HStack,
   IconButton,
-  useToast, // Import useToast
-  Flex, // Added Flex
-  Alert, AlertIcon // Added Alert & AlertIcon
+  // Add any other necessary Chakra UI imports here
 } from '@chakra-ui/react';
-import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons'; // Added ViewIcon for potential EmptyState
+import { AddIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { usePeopleStore, Person } from '../stores/usePeopleStore'; // Use Person from usePeopleStore
+import { useAppStore } from '../stores/useAppStore'; // For userPermissions
 import CreatePersonForm from '../components/CreatePersonForm';
 import EditPersonForm from '../components/EditPersonForm';
-import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
-import { useAppStore } from '../stores/useAppStore'; // Import store
-import type { Person as GeneratedPerson } from '../generated/graphql/graphql'; // Removed GeneratedOrganization
-import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
-import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
-import EmptyState from '../components/common/EmptyState'; // Import EmptyState
-
-// REMOVED: GET_PEOPLE_QUERY (now in store)
-
-// --- Type definitions (Keep for component use) ---
-// interface Organization { ... } // Defined elsewhere if needed - REMOVED
-// interface Person { ... } // Defined in store - REMOVED
-// --- End Type definitions ---
-
-// Define Person including nested Organization for sorting - REMOVED (GeneratedPerson includes organization)
-// interface PersonWithOrg extends Person {
-//   organization?: Organization | null;
-// }
-
-// Define sortable keys - REMOVED PersonSortKeys
-// type PersonSortKeys = 'name' | 'organization' | 'email' | 'phone';
+import ConfirmationDialog from '../components/common/ConfirmationDialog';
+import ListPageLayout from '../components/layout/ListPageLayout';
+import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 
 function PeoplePage() {
-  // --- State from Zustand Store ---
-  const people = useAppStore((state) => state.people); // Removed cast, state.people is already GeneratedPerson[]
-  const loading = useAppStore((state) => state.peopleLoading);
-  const peopleError = useAppStore((state) => state.peopleError); // Get specific error
-  const fetchPeople = useAppStore((state) => state.fetchPeople);
-  const deletePersonAction = useAppStore((state) => state.deletePerson);
-  // Fetch permissions
-  const userPermissions = useAppStore((state) => state.userPermissions);
+  // --- State from Zustand Stores ---
+  const { people, peopleLoading: loading, peopleError, fetchPeople, deletePerson } = usePeopleStore();
+  const { userPermissions } = useAppStore(); // Only for permissions
 
   // --- Local UI State ---
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
-  const [personToEdit, setPersonToEdit] = useState<GeneratedPerson | null>(null); // Use GeneratedPerson
+  const [personToEdit, setPersonToEdit] = useState<Person | null>(null); // Use Person from store
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-  const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure(); // For Confirmation Dialog
-  const [personToDeleteId, setPersonToDeleteId] = useState<string | null>(null); // For Confirmation Dialog
-  const [isDeletingId, setIsDeletingId] = useState<string | null>(null); // For button spinner (can be same as loading state for dialog)
+  const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
+  const [personIdToDelete, setPersonIdToDelete] = useState<string | null>(null);
   const toast = useToast();
 
-  // --- Fetching & Data Handling ---
-  useEffect(() => {
-    console.log('[PeoplePage] isCreateOpen changed to:', isCreateOpen);
-  }, [isCreateOpen]);
-
   useEffect(() => {
     fetchPeople();
   }, [fetchPeople]);
 
-  const handleDataChanged = useCallback(() => {
-    fetchPeople();
-  }, [fetchPeople]);
-
-  const handleEditClick = (person: GeneratedPerson) => { // Use GeneratedPerson
+  const handleEditClick = (person: Person) => { // Use Person from store
     setPersonToEdit(person);
     onEditOpen();
   };
 
-  const handleDeleteClick = async (personId: string) => {
-    // Open confirmation dialog instead of window.confirm
-    setPersonToDeleteId(personId);
+  const handleDeleteClick = (personId: string) => {
+    setPersonIdToDelete(personId);
     onConfirmDeleteOpen();
   };
 
-  // Add handler for the confirmation dialog
   const handleConfirmDelete = async () => {
-    if (!personToDeleteId) return;
-
-    setIsDeletingId(personToDeleteId); // Set loading state for the dialog button
-    const success = await deletePersonAction(personToDeleteId);
-    setIsDeletingId(null); // Clear loading state
-    onConfirmDeleteClose(); // Close the dialog
-    setPersonToDeleteId(null); // Reset the ID
-
-    if (success) {
-        toast({ title: 'Person deleted.', status: 'success', duration: 3000, isClosable: true });
-    } else {
-        // Error state is managed by the store, show toast here
-        toast({
-            title: 'Error Deleting Person',
-            description: peopleError || 'An unknown error occurred', // Display specific store error
-            status: 'error',
-            duration: 5000,
-            isClosable: true,
-        });
+    if (personIdToDelete) {
+      const success = await deletePerson(personIdToDelete);
+      if (success) {
+        toast({ title: 'Person deleted', status: 'success', duration: 3000, isClosable: true });
+      } else {
+        toast({ title: 'Error', description: peopleError || 'Failed to delete person.', status: 'error', duration: 3000, isClosable: true });
+      }
+      setPersonIdToDelete(null);
+      onConfirmDeleteClose();
     }
   };
 
-  // Define Columns for SortableTable
-  const columns: ColumnDefinition<GeneratedPerson>[] = [ // Use GeneratedPerson
-    {
-      key: 'name',
-      header: 'Name',
-      renderCell: (person) => (
-        <Text fontWeight="bold">
-          {person.first_name} {person.last_name}
-        </Text>
-      ),
-      isSortable: true,
-      sortAccessor: (person) => `${person.first_name ?? ''} ${person.last_name ?? ''}`.trim().toLowerCase(),
+  const columns: ColumnDefinition<Person>[] = [
+    { 
+      key: 'name', 
+      header: 'Name', 
+      renderCell: (person) => `${person.first_name || ''} ${person.last_name || ''}`.trim() || '-', 
+      isSortable: true, 
+      sortAccessor: (p) => `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase().trim()
     },
-    {
-      key: 'organization',
-      header: 'Organization',
-      renderCell: (person) => person.organization?.name || '-', // Access nested org name
-      isSortable: true,
-      sortAccessor: (person) => person.organization?.name?.toLowerCase() ?? '',
+    { 
+      key: 'email', 
+      header: 'Email', 
+      renderCell: (person) => person.email || '-', 
+      isSortable: true, 
+      sortAccessor: (p) => p.email?.toLowerCase() 
     },
-    {
-      key: 'email',
-      header: 'Email',
-      renderCell: (person) => person.email || '-',
-      isSortable: true,
-      sortAccessor: (person) => person.email?.toLowerCase() ?? '',
+    { 
+      key: 'phone', 
+      header: 'Phone', 
+      renderCell: (person) => person.phone || '-', 
+      isSortable: false 
     },
-    {
-      key: 'phone',
-      header: 'Phone',
-      renderCell: (person) => person.phone || '-',
-      isSortable: true,
-      sortAccessor: (person) => person.phone ?? '',
+    { 
+      key: 'organization', 
+      header: 'Organization', 
+      renderCell: (person) => person.organization?.name || '-', 
+      isSortable: true, 
+      sortAccessor: (p) => p.organization?.name?.toLowerCase() 
     },
     {
       key: 'actions',
       header: 'Actions',
       renderCell: (person) => (
         <HStack spacing={2}>
-          <IconButton
-            aria-label="Edit person"
-            icon={<EditIcon />}
-            size="sm"
-            variant="ghost"
-            onClick={() => handleEditClick(person)}
-            isDisabled={!!isDeletingId || !userPermissions?.includes('person:update_any')}
+          <IconButton 
+            icon={<EditIcon />} 
+            aria-label="Edit person" 
+            size="sm" 
+            onClick={() => handleEditClick(person)} 
+            isDisabled={!userPermissions?.includes('person:update_any') && !userPermissions?.includes('person:update_own')} 
           />
-          <IconButton
-            aria-label="Delete person"
-            icon={<DeleteIcon />}
-            colorScheme="red"
-            size="sm"
-            variant="ghost"
-            onClick={() => handleDeleteClick(person.id)}
-            isLoading={isDeletingId === person.id}
-            isDisabled={
-              (!!isDeletingId && isDeletingId !== person.id) ||
-              !userPermissions?.includes('person:delete_any')
-            }
+          <IconButton 
+            icon={<DeleteIcon />} 
+            aria-label="Delete person" 
+            size="sm" 
+            colorScheme="red" 
+            onClick={() => handleDeleteClick(person.id)} 
+            isDisabled={!userPermissions?.includes('person:delete_any') && !userPermissions?.includes('person:delete_own')} 
           />
         </HStack>
       ),
       isSortable: false,
     },
   ];
-
-  // Define props for EmptyState
+  
   const emptyStatePropsForPage = {
-    icon: ViewIcon, // Example icon, change as needed
-    title: "No People Yet",
-    message: "Get started by adding a new person."
+    title: "No People Found",
+    message: "Get started by creating a new person.",
+    icon: AddIcon, 
   };
 
-  if (loading) {
-    return (
-      <Flex justify="center" align="center" minH="calc(100vh - 200px)">
-        <Spinner size="xl" />
-      </Flex>
-    );
-  }
-
-  if (peopleError) {
-    return (
-      <Alert status="error" m={4}>
-        <AlertIcon />
-        Error fetching people: {peopleError}
-      </Alert>
-    );
-  }
-
   return (
-    <Box p={6}> {/* Main page container with padding */}
-      {/* Modals rendered at the top level of the page component */}
-      <Modal isOpen={isCreateOpen} onClose={onCreateClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Create New Person</ModalHeader>
-          <ModalCloseButton />
-          <CreatePersonForm onClose={onCreateClose} onSuccess={handleDataChanged} />
-        </ModalContent>
-      </Modal>
+    <ListPageLayout
+      title="People"
+      newButtonLabel="New Person"
+      onNewButtonClick={onCreateOpen}
+      isNewButtonDisabled={!userPermissions?.includes('person:create')}
+      isLoading={loading}
+      error={peopleError}
+      isEmpty={!loading && people.length === 0}
+      emptyStateProps={emptyStatePropsForPage}
+    >
+      {!loading && !peopleError && people.length > 0 && (
+        <SortableTable data={people} columns={columns} initialSortKey="name" />
+      )}
 
-      {personToEdit && (
-        <Modal isOpen={isEditOpen} onClose={() => { setPersonToEdit(null); onEditClose(); }}>
+      {isCreateOpen && (
+        <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl" isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Create New Person</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <CreatePersonForm onSuccess={onCreateClose} onClose={onCreateClose} />
+            </ModalBody>
+          </ModalContent>
+        </Modal>
+      )}
+
+      {isEditOpen && personToEdit && (
+        <Modal isOpen={isEditOpen} onClose={onEditClose} size="xl" isCentered>
           <ModalOverlay />
           <ModalContent>
             <ModalHeader>Edit Person</ModalHeader>
-            <ModalCloseButton onClick={() => { setPersonToEdit(null); onEditClose(); }} />
-            <EditPersonForm 
-              person={personToEdit}
-              onClose={() => { setPersonToEdit(null); onEditClose(); }} 
-              onSuccess={() => { handleDataChanged(); onEditClose(); setPersonToEdit(null); }} // Chain callbacks
-            />
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <EditPersonForm person={personToEdit} onSuccess={onEditClose} onClose={onEditClose} />
+            </ModalBody>
           </ModalContent>
         </Modal>
       )}
@@ -234,53 +167,11 @@ function PeoplePage() {
         onClose={onConfirmDeleteClose}
         onConfirm={handleConfirmDelete}
         headerText="Delete Person"
-        bodyText="Are you sure you want to delete this person? Related deals might be affected. This action cannot be undone."
+        bodyText="Are you sure you want to delete this person? This action cannot be undone."
         confirmButtonText="Delete"
         confirmButtonColorScheme="red"
-        isLoading={!!isDeletingId}
       />
-
-      {/* Conditional content: Empty state or ListPageLayout with table */}
-      {people.length === 0 ? (
-        <VStack spacing={4} align="stretch">
-          <Flex justifyContent="space-between" alignItems="center" mb={4}>
-            <Heading as="h2" size="lg">People</Heading>
-            <Button 
-              colorScheme="blue"
-              onClick={onCreateOpen} // Changed from handleCreateDealClick
-              isDisabled={!userPermissions?.includes('person:create')}
-            >
-              New Person
-            </Button>
-          </Flex>
-          <EmptyState 
-            icon={emptyStatePropsForPage.icon}
-            title={emptyStatePropsForPage.title}
-            message={emptyStatePropsForPage.message}
-            actionButtonLabel="New Person"
-            onActionButtonClick={onCreateOpen} // Changed from handleCreateDealClick
-            isActionButtonDisabled={!userPermissions?.includes('person:create')}
-          />
-        </VStack>
-      ) : (
-        <ListPageLayout
-          title="People"
-          newButtonLabel="New Person"
-          onNewButtonClick={onCreateOpen} // Changed from handleCreateDealClick
-          isNewButtonDisabled={!userPermissions?.includes('person:create')}
-          isLoading={loading} // Will be false here
-          error={peopleError} // Will be null here
-          isEmpty={false} // Explicitly false
-          emptyStateProps={emptyStatePropsForPage}
-        >
-          <SortableTable<GeneratedPerson>
-            data={people}
-            columns={columns}
-            initialSortKey="name"
-          />
-        </ListPageLayout>
-      )}
-    </Box>
+    </ListPageLayout>
   );
 }
 

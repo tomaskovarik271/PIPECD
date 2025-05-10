@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 // import { gql } from '@apollo/client'; // No longer needed
 // import { gqlClient } from '../lib/graphqlClient'; // No longer needed
 import {
@@ -18,7 +18,8 @@ import {
   FormErrorMessage // Added for form validation display
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore'; // Import store
-import type { Person as GeneratedPerson, PersonInput } from '../generated/graphql/graphql'; // Import generated types, removed Organization
+import { usePeopleStore, Person } from '../stores/usePeopleStore'; // ADDED for people actions/error and Person type
+import type { /* Organization, REMOVED */ PersonInput } from '../generated/graphql/graphql'; // Keep other types
 
 // Define the mutation for updating a Person - REMOVED (Handled by store action)
 // const UPDATE_PERSON_MUTATION = gql` ... `;
@@ -37,12 +38,12 @@ import type { Person as GeneratedPerson, PersonInput } from '../generated/graphq
 
 // Prop definition for the component
 interface EditPersonFormProps {
-  person: GeneratedPerson; // Use generated Person type
+  person: Person; // Use Person type from usePeopleStore
   onClose: () => void;
   onSuccess: () => void;
 }
 
-function EditPersonForm({ person, onClose, onSuccess }: EditPersonFormProps) {
+const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSuccess }) => {
   // Initialize form state with the passed person data, using generated PersonInput
   const [formData, setFormData] = useState<PersonInput>({
     first_name: person.first_name,
@@ -60,10 +61,10 @@ function EditPersonForm({ person, onClose, onSuccess }: EditPersonFormProps) {
   const orgLoading = useAppStore((state) => state.organizationsLoading);
   const orgError = useAppStore((state) => state.organizationsError);
   const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
-  // Get the update action from the store
-  const updatePersonAction = useAppStore((state) => state.updatePerson);
-  // Get specific person error state from store
-  const personError = useAppStore((state) => state.peopleError); 
+
+  // People actions/error from usePeopleStore
+  const { updatePerson: updatePersonAction, peopleError } = usePeopleStore(); // ADDED
+  
   const [localError, setLocalError] = useState<string | null>(null); // For form validation errors
 
   // Fetch organizations if not already loaded
@@ -101,7 +102,7 @@ function EditPersonForm({ person, onClose, onSuccess }: EditPersonFormProps) {
     e.preventDefault();
     setIsLoading(true);
     setLocalError(null); // Clear local errors
-    // useAppStore.setState({ peopleError: null }); // Optional: Reset store error
+    // useAppStore.setState({ peopleError: null }); // Clear global error before attempt if it was set there
 
     // Basic validation
     if (!formData.first_name && !formData.last_name && !formData.email) {
@@ -134,8 +135,9 @@ function EditPersonForm({ person, onClose, onSuccess }: EditPersonFormProps) {
         onSuccess();
         onClose();
       } else {
-        // Error should be set in the store's peopleError state
-        setLocalError(useAppStore.getState().peopleError || 'Failed to update person. Please try again.');
+        // Use peopleError from usePeopleStore for the error message
+        setLocalError(peopleError || 'Failed to update person. Please try again.');
+        toast({ title: 'Error', description: peopleError || 'Failed to update person.', status: 'error', duration: 5000, isClosable: true });
       }
 
     } catch (error: unknown) {
@@ -157,10 +159,10 @@ function EditPersonForm({ person, onClose, onSuccess }: EditPersonFormProps) {
     <form onSubmit={handleSubmit}>
       <ModalBody>
         {/* Display local form error or store error */} 
-        {(localError || personError) && (
+        {(localError || peopleError) && (
              <Alert status="error" mb={4} whiteSpace="pre-wrap">
                 <AlertIcon />
-                {localError || personError}
+                {localError || peopleError}
             </Alert>
           )}
         <Stack spacing={4}>

@@ -22,6 +22,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore'; // Import the store
+import { usePeopleStore, Person } from '../stores/usePeopleStore'; // ADDED for people state + Person type
 import { DealInput } from '../generated/graphql/graphql'; // Removed Deal, Person, Stage
 
 // Explicit Person type based on store data - REMOVED
@@ -47,20 +48,19 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [amount, setAmount] = useState<string>(''); // Store as string for input
   const [personId, setPersonId] = useState<string>(''); // Renamed from contactId
   
-  // Store State & Actions (Selected individually)
-  const people = useAppStore((state) => state.people); // Already uses GeneratedPerson[] from store
-  const pipelines = useAppStore((state) => state.pipelines); // Already uses GeneratedPipeline[] from store
-  const stages = useAppStore((state) => state.stages); // Already uses GeneratedStage[] from store
-  const fetchPeople = useAppStore((state) => state.fetchPeople);
+  // Store State & Actions
+  const pipelines = useAppStore((state) => state.pipelines);
+  const stages = useAppStore((state) => state.stages);
   const fetchPipelines = useAppStore((state) => state.fetchPipelines);
   const fetchStages = useAppStore((state) => state.fetchStages);
-  const peopleLoading = useAppStore((state) => state.peopleLoading);
-  const peopleError = useAppStore((state) => state.peopleError);
   const pipelinesLoading = useAppStore((state) => state.pipelinesLoading);
   const pipelinesError = useAppStore((state) => state.pipelinesError);
   const stagesLoading = useAppStore((state) => state.stagesLoading);
   const stagesError = useAppStore((state) => state.stagesError);
   const createDealAction = useAppStore((state) => state.createDeal);
+
+  // ADDED: People state from usePeopleStore
+  const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
 
   // Component State
   const [isLoading, setIsLoading] = useState(false);
@@ -244,8 +244,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
                 onChange={(e) => setPersonId(e.target.value)}
                 isDisabled={peopleLoading || !!peopleError}
               >
-                 {/* people array is already GeneratedPerson[] from the store */}
-                 {!peopleLoading && !peopleError && people.map(person => (
+                 {!peopleLoading && !peopleError && people.map((person: Person) => (
                     <option key={person.id} value={person.id}>
                         {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email || `Person ID: ${person.id}`}
                     </option>
@@ -260,9 +259,10 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
           <Button 
             colorScheme='blue'
             mr={3} 
-            type="submit" 
+            type="submit"
             isLoading={isLoading}
             leftIcon={isLoading ? <Spinner size="sm" /> : undefined}
+            onClick={handleSubmit}
           >
             Save Deal
           </Button>

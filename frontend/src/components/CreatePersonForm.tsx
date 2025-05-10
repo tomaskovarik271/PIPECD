@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore'; // Import store
 import type { PersonInput } from '../generated/graphql/graphql'; // Import generated types, removed Organization
+import { usePeopleStore } from '../stores/usePeopleStore'; // ADDED: Import usePeopleStore
 
 // Define the mutation for creating a Person - REMOVED (Handled by store action)
 // const CREATE_PERSON_MUTATION = gql` ... `;
@@ -56,10 +57,10 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
   const orgLoading = useAppStore((state) => state.organizationsLoading);
   const orgError = useAppStore((state) => state.organizationsError);
   const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
-  // Get the create action from the store
-  const createPersonAction = useAppStore((state) => state.createPerson);
-  // Get specific person error state from store
-  const personError = useAppStore((state) => state.peopleError); 
+  
+  // Get actions and state from usePeopleStore
+  const { createPerson: createPersonAction, peopleError } = usePeopleStore(); 
+
   const [localError, setLocalError] = useState<string | null>(null); // For form validation errors
 
   // Fetch organizations if not already loaded (e.g., if accessed directly)
@@ -120,7 +121,7 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
       } else {
         // Error should be set in the store's peopleError state by the action
         // Display the store error
-        setLocalError(useAppStore.getState().peopleError || 'Failed to create person. Please try again.');
+        setLocalError(peopleError || 'Failed to create person. Please try again.');
       }
     } catch (error: unknown) {
       // Catch unexpected errors during the action call itself
@@ -141,10 +142,10 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
     <form onSubmit={handleSubmit}>
       <ModalBody>
         {/* Display local form error or store error */} 
-        {(localError || personError) && (
+        {(localError || peopleError) && (
              <Alert status="error" mb={4} whiteSpace="pre-wrap">
                 <AlertIcon />
-                {localError || personError}
+                {localError || peopleError}
             </Alert>
           )}
         <Stack spacing={4}>
