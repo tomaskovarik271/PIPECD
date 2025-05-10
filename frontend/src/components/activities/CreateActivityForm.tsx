@@ -15,10 +15,13 @@ import {
   Radio,
   HStack,
   Spinner,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
-import { useAppStore } from '../../stores/useAppStore';
+import { useActivitiesStore, GeneratedCreateActivityInput as CreateActivityInput, ActivityType } from '../../stores/useActivitiesStore';
 import { usePeopleStore, Person } from '../../stores/usePeopleStore';
-import type { CreateActivityInput, ActivityType } from '../../generated/graphql/graphql';
+import { useDealsStore, Deal } from '../../stores/useDealsStore';
+import { useOrganizationsStore, Organization } from '../../stores/useOrganizationsStore';
 
 // Define Activity Types matching GraphQL Enum
 const activityTypes = [
@@ -45,18 +48,18 @@ type FormValues = CreateActivityInput;
 type LinkType = 'deal' | 'person' | 'organization' | 'none';
 
 function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
-  // Select state individually to prevent infinite loops
-  const createActivity = useAppStore((state) => state.createActivity);
-  const deals = useAppStore((state) => state.deals);
-  const organizations = useAppStore((state) => state.organizations);
-  const fetchDeals = useAppStore((state) => state.fetchDeals);
-  const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
-  const dealsLoading = useAppStore((state) => state.dealsLoading);
-  const organizationsLoading = useAppStore((state) => state.organizationsLoading);
-  
-  // ADDED: Get people state from usePeopleStore
-  const { people, fetchPeople, peopleLoading } = usePeopleStore();
-  
+  // Actions and state from useActivitiesStore
+  const { createActivity, activitiesError, activitiesLoading } = useActivitiesStore();
+
+  // People state & actions from usePeopleStore
+  const { people, fetchPeople, peopleLoading, peopleError: _peopleError } = usePeopleStore();
+
+  // Deals state & actions from useDealsStore
+  const { deals, fetchDeals, dealsLoading, dealsError: _dealsError } = useDealsStore();
+
+  // Organizations state & actions from useOrganizationsStore
+  const { organizations, fetchOrganizations, organizationsLoading, organizationsError: _organizationsError } = useOrganizationsStore();
+
   const toast = useToast();
   const { 
     handleSubmit, 
@@ -83,10 +86,10 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
   // Fetch related entities when the form mounts (or modal opens)
   useEffect(() => {
     // Only fetch if not already loaded (basic check)
-    if (deals && deals.length === 0) fetchDeals();
-    if (people && people.length === 0) fetchPeople();
-    if (organizations && organizations.length === 0) fetchOrganizations();
-  }, [fetchDeals, fetchPeople, fetchOrganizations, deals, people, organizations]);
+    if (deals && deals.length === 0 && !dealsLoading) fetchDeals(); 
+    if (people && people.length === 0 && !peopleLoading) fetchPeople();
+    if (organizations && organizations.length === 0 && !organizationsLoading) fetchOrganizations();
+  }, [fetchDeals, fetchPeople, fetchOrganizations, deals, people, organizations, dealsLoading, peopleLoading, organizationsLoading]);
 
   // Clear other link IDs when radio selection changes
   const handleLinkTypeChange = (nextValue: string) => {
@@ -148,7 +151,7 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
     } else {
       // Error toast is likely handled by the store hook or generic error boundary
       // but we can add a specific one here if desired.
-      toast({ title: 'Failed to create activity', description: 'Please check the details and try again.', status: 'error', duration: 5000, isClosable: true });
+      toast({ title: 'Failed to create activity', description: activitiesError || 'Please check the details and try again.', status: 'error', duration: 5000, isClosable: true });
     }
   };
 
@@ -158,6 +161,13 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
   return (
     <form onSubmit={handleSubmit(onSubmit)}>
       <VStack spacing={4} p={4}>
+        {/* Optionally display activityError if it means form submission error */}
+        {activitiesError && (
+            <Alert status="error" mb={4}>
+                <AlertIcon />
+                {activitiesError}
+            </Alert>
+        )}
         <FormControl isInvalid={!!errors.subject}>
           <FormLabel htmlFor='subject'>Subject</FormLabel>
           <Input
@@ -169,7 +179,7 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
 
         <FormControl isInvalid={!!errors.type}>
             <FormLabel htmlFor='type'>Type</FormLabel>
-            <Select id='type' {...register('type', { required: 'Type is required' })}>
+            <Select id='type' {...register('type', { required: 'Type is required' })} defaultValue={activityTypes[0] as ActivityType}>
                 {activityTypes.map(type => (
                     <option key={type} value={type}>{type}</option>
                 ))}
@@ -207,7 +217,7 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
                     placeholder='Select Deal' 
                     {...register('deal_id')} // Register deal_id
                 >
-                     {deals.map(deal => (
+                     {deals.map((deal: Deal) => (
                         <option key={deal.id} value={deal.id}>{deal.name}</option>
                      ))}
                  </Select>
@@ -231,13 +241,13 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
                     placeholder='Select Organization' 
                     {...register('organization_id')} // Register organization_id
                  >
-                     {organizations.map(org => (
+                     {organizations.map((org: Organization) => (
                         <option key={org.id} value={org.id}>{org.name}</option>
                      ))}
                  </Select>
              )}
-             {/* Display general link error if needed, handled by form submit check */}
-             {/* <FormErrorMessage>A link is required.</FormErrorMessage> */}
+             {(errors.deal_id || errors.person_id || errors.organization_id) && 
+                <FormErrorMessage>Please select a linked entity if a type is chosen.</FormErrorMessage> }
         </FormControl>
         {/* --- End Linked Entity Selection --- */}
         
@@ -251,8 +261,8 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
           <Checkbox {...register('is_done')}>Mark as Done</Checkbox>
         </FormControl>
 
-        <Button mt={4} colorScheme='blue' isLoading={isSubmitting} type='submit'>
-          Save Activity
+        <Button type="submit" colorScheme="blue" isLoading={isSubmitting || activitiesLoading}>
+          Create Activity
         </Button>
       </VStack>
     </form>

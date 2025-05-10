@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useAppStore, Pipeline } from '../stores/useAppStore';
+import { useAppStore } from '../stores/useAppStore';
+import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore';
 import { 
   Box, 
   Heading, 
@@ -27,10 +28,8 @@ import EmptyState from '../components/common/EmptyState';
 
 const PipelinesPage: React.FC = () => {
   // Select state slices
-  const pipelines = useAppStore((state) => state.pipelines);
-  const fetchPipelines = useAppStore((state) => state.fetchPipelines);
-  const pipelinesLoading = useAppStore((state) => state.pipelinesLoading);
-  const pipelinesError = useAppStore((state) => state.pipelinesError);
+  const { pipelines, fetchPipelines, pipelinesLoading, pipelinesError, deletePipeline: deletePipelineAction } = usePipelinesStore();
+
   // Fetch permissions
   const userPermissions = useAppStore((state) => state.userPermissions);
   
@@ -45,7 +44,6 @@ const PipelinesPage: React.FC = () => {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const navigate = useNavigate();
-  const deletePipelineAction = useAppStore((state) => state.deletePipeline);
   const toast = useToast();
 
   useEffect(() => {
@@ -92,7 +90,7 @@ const PipelinesPage: React.FC = () => {
       handleSuccess(); // Call original success handler if needed
     } else {
       // Assuming deletePipelineAction sets an error state in the store
-      const errorMsg = useAppStore.getState().pipelinesError || 'Failed to delete pipeline';
+      const errorMsg = usePipelinesStore.getState().pipelinesError || 'Failed to delete pipeline';
       toast({ title: 'Error Deleting Pipeline', description: errorMsg, status: 'error', duration: 5000, isClosable: true });
     }
   };

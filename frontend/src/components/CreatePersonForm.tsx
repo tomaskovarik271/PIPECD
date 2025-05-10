@@ -17,9 +17,10 @@ import {
   AlertIcon,
   FormErrorMessage
 } from '@chakra-ui/react';
-import { useAppStore } from '../stores/useAppStore'; // Import store
+// import { useAppStore } from '../stores/useAppStore'; // REMOVED for orgs, keep for permissions if any
 import type { PersonInput } from '../generated/graphql/graphql'; // Import generated types, removed Organization
-import { usePeopleStore } from '../stores/usePeopleStore'; // ADDED: Import usePeopleStore
+import { usePeopleStore } from '../stores/usePeopleStore'; // ADDED
+import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore'; // ADDED
 
 // Define the mutation for creating a Person - REMOVED (Handled by store action)
 // const CREATE_PERSON_MUTATION = gql` ... `;
@@ -52,21 +53,26 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
-  // Get organizations and related state from the store
-  const organizations = useAppStore((state) => state.organizations);
-  const orgLoading = useAppStore((state) => state.organizationsLoading);
-  const orgError = useAppStore((state) => state.organizationsError);
-  const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
+  // Get organizations and related state from useOrganizationsStore
+  const { 
+    organizations, 
+    organizationsLoading: orgLoading, 
+    organizationsError: orgError, 
+    fetchOrganizations 
+  } = useOrganizationsStore(); // CHANGED
+  // const organizations = useAppStore((state) => state.organizations); // REMOVED
+  // const orgLoading = useAppStore((state) => state.organizationsLoading); // REMOVED
+  // const orgError = useAppStore((state) => state.organizationsError); // REMOVED
+  // const fetchOrganizations = useAppStore((state) => state.fetchOrganizations); // REMOVED
   
   // Get actions and state from usePeopleStore
   const { createPerson: createPersonAction, peopleError } = usePeopleStore(); 
 
   const [localError, setLocalError] = useState<string | null>(null); // For form validation errors
 
-  // Fetch organizations if not already loaded (e.g., if accessed directly)
+  // Fetch organizations if not already loaded
   useEffect(() => {
-    // Simple check, might need refinement based on how orgs are loaded globally
-    if (!organizations.length && !orgLoading) {
+    if (organizations && organizations.length === 0 && !orgLoading) { // Added check for organizations being defined
       fetchOrganizations(); 
     }
   }, [organizations, orgLoading, fetchOrganizations]);
@@ -178,18 +184,18 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
             {!orgLoading && !orgError && (
                 <Select 
                     name="organization_id" 
-                    value={formData.organization_id || ''} // Handle null value for placeholder
+                    value={formData.organization_id || ''} 
                     onChange={handleChange}
                     placeholder="Select organization (optional)"
-                    isDisabled={organizations.length === 0}
+                    isDisabled={!organizations || organizations.length === 0} // Added check for organizations being defined
                 >
-                    {/* organizations from store is already GeneratedOrganization[] */} 
-                    {organizations.map(org => (
+                    {/* organizations from store is already Organization[] from useOrganizationsStore */} 
+                    {organizations && organizations.map((org: Organization) => ( // Added check for organizations and type for org
                         <option key={org.id} value={org.id}>{org.name}</option>
                     ))}
                 </Select>
             )}
-            {organizations.length === 0 && !orgLoading && <FormErrorMessage>No organizations found. Create one first.</FormErrorMessage>}
+            {(!organizations || organizations.length === 0) && !orgLoading && <FormErrorMessage>No organizations found. Create one first.</FormErrorMessage>} {/* Added check */}
           </FormControl>
           <FormControl>
             <FormLabel>Notes</FormLabel>

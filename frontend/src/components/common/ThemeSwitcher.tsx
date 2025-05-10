@@ -1,11 +1,12 @@
 import React from 'react';
-import { IconButton } from '@chakra-ui/react';
+import { useThemeStore } from '../../stores/useThemeStore';
+import { IconButton, useColorMode } from '@chakra-ui/react';
 import { SunIcon, MoonIcon } from '@chakra-ui/icons';
-import { useAppStore, ThemeMode } from '../../stores/useAppStore';
 
 const ThemeSwitcher: React.FC = () => {
-  const currentTheme = useAppStore((state) => state.currentTheme);
-  const setCurrentTheme = useAppStore((state) => state.setCurrentTheme);
+  const currentTheme = useThemeStore((state) => state.currentTheme);
+  const setCurrentTheme = useThemeStore((state) => state.setCurrentTheme);
+  const { setColorMode } = useColorMode();
 
   // Chakra's useColorMode can still be useful for components that inherently use it,
   // but our primary theme switching is now manual via Zustand.
@@ -13,8 +14,9 @@ const ThemeSwitcher: React.FC = () => {
   // const { colorMode, toggleColorMode } = useColorMode(); 
 
   const toggleTheme = () => {
-    const newTheme: ThemeMode = currentTheme === 'light' ? 'dark' : 'light';
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
     setCurrentTheme(newTheme);
+    setColorMode(newTheme);
     // If we still want to synchronize with Chakra's internal color mode for 
     // any components that might rely on it directly:
     // if ((newTheme === 'dark' && colorMode === 'light') || (newTheme === 'light' && colorMode === 'dark')) {
@@ -24,7 +26,7 @@ const ThemeSwitcher: React.FC = () => {
 
   return (
     <IconButton
-      aria-label={`Switch to ${currentTheme === 'light' ? 'dark' : 'light'} mode`}
+      aria-label="Toggle theme"
       icon={currentTheme === 'light' ? <MoonIcon /> : <SunIcon />}
       onClick={toggleTheme}
       variant="ghost"

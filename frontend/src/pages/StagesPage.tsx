@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
-import { useAppStore, Stage } from '../stores/useAppStore';
+import { useAppStore } from '../stores/useAppStore';
+import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore';
+import { useStagesStore, Stage } from '../stores/useStagesStore';
 import { 
   Box, 
   Heading, 
@@ -33,17 +35,25 @@ const StagesPage: React.FC = () => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
   
   // Select state slices from Zustand
-  const stages = useAppStore((state) => state.stages);
-  const fetchStages = useAppStore((state) => state.fetchStages);
-  const stagesLoading = useAppStore((state) => state.stagesLoading);
-  const stagesError = useAppStore((state) => state.stagesError);
-  const selectedPipelineId = useAppStore((state) => state.selectedPipelineId);
-  // Fetch permissions
+  const { 
+    stages,
+    fetchStages,
+    stagesLoading,
+    stagesError,
+    deleteStage: deleteStageAction
+  } = useStagesStore();
+
   const userPermissions = useAppStore((state) => state.userPermissions);
-  // Also get pipeline name for context (assuming pipelines are already fetched)
-  const pipeline = useAppStore((state) => 
-    state.pipelines.find(p => p.id === pipelineId)
-  );
+
+  // Get pipelines state from usePipelinesStore
+  const { 
+    pipelines, 
+    fetchPipelines: fetchPipelinesFromStore,
+    pipelinesLoading: pipelinesLoadingFromStore,
+    selectedPipelineId: selectedPipelineIdFromStore
+  } = usePipelinesStore();
+  
+  const currentPipeline = pipelines.find(p => p.id === pipelineId);
 
   // State for modals
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
@@ -53,19 +63,19 @@ const StagesPage: React.FC = () => {
   const [stageToDelete, setStageToDelete] = useState<Stage | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const toast = useToast();
-  const deleteStageAction = useAppStore((state) => state.deleteStage);
 
   useEffect(() => {
+    if (pipelines.length === 0 && !pipelinesLoadingFromStore && pipelineId) {
+        fetchPipelinesFromStore(); 
+    }
+
     if (pipelineId) {
-      // Fetch stages only if the pipelineId is available and different from the currently selected one
-      // or if stages haven't been loaded for this pipeline yet.
-      if (pipelineId !== selectedPipelineId || stages.length === 0) {
+      const stagesForCurrentPipeline = stages.filter((s: Stage) => s.pipeline_id === pipelineId);
+      if (stagesForCurrentPipeline.length === 0 && !stagesLoading) {
           fetchStages(pipelineId);
       } 
-      // Note: If pipelines haven't loaded yet, the pipeline name might not appear initially.
-      // Consider fetching the specific pipeline if not found in the store list for robustness.
     }
-  }, [pipelineId, fetchStages, selectedPipelineId, stages.length]); // Add dependencies
+  }, [pipelines, pipelinesLoadingFromStore, fetchPipelinesFromStore, pipelineId, fetchStages, stages, stagesLoading]);
 
   // --- Modal Handlers ---
   const handleAddStage = () => {
@@ -108,9 +118,10 @@ const StagesPage: React.FC = () => {
 
     if (success) {
       toast({ title: 'Stage deleted.', status: 'success', duration: 3000, isClosable: true });
-      handleSuccess();
+      // handleSuccess(); // Already handled by optimistic update or store reaction
     } else {
-      const errorMsg = useAppStore.getState().stagesError || 'Failed to delete stage';
+      // Get error from the correct store now
+      const errorMsg = useStagesStore.getState().stagesError || 'Failed to delete stage';
       toast({ title: 'Error Deleting Stage', description: errorMsg, status: 'error', duration: 5000, isClosable: true });
     }
   };
@@ -121,7 +132,7 @@ const StagesPage: React.FC = () => {
          <ArrowBackIcon mr={1} /> Back to Pipelines
        </Link>
       <Heading size="lg" mb={2}>
-        Stages for Pipeline: {pipeline ? pipeline.name : (pipelineId ? `(${pipelineId.substring(0, 8)}...)` : 'Loading...')}
+        Stages for Pipeline: {currentPipeline ? currentPipeline.name : (pipelineId ? `(${pipelineId.substring(0, 8)}...)` : 'Loading...')}
       </Heading>
       {pipelineId && (
         <Button 
@@ -157,7 +168,7 @@ const StagesPage: React.FC = () => {
 
       {!stagesLoading && !stagesError && pipelineId && (
         <VStack spacing={4} align="stretch">
-          {stages.length === 0 ? (
+          {stages.filter((s: Stage) => s.pipeline_id === pipelineId).length === 0 ? (
             <EmptyState 
               icon={DragHandleIcon}
               title="No Stages in this Pipeline"
@@ -167,9 +178,8 @@ const StagesPage: React.FC = () => {
               isActionButtonDisabled={!userPermissions?.includes('stage:create')}
             />
           ) : (
-             // TODO: Implement drag-and-drop reordering later if desired
             <List spacing={3}>
-              {stages.map((stage) => (
+              {stages.filter((s: Stage) => s.pipeline_id === pipelineId).map((stage: Stage) => (
                 <ListItem 
                   key={stage.id} 
                   p={4} 
@@ -217,7 +227,6 @@ const StagesPage: React.FC = () => {
         </VStack>
       )}
       
-      {/* Render Stage Modals */} 
       {pipelineId && (
         <CreateStageModal 
           isOpen={isCreateOpen} 

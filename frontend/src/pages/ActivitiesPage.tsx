@@ -20,8 +20,8 @@ import {
   ModalCloseButton,
   Alert, AlertIcon // Added Alert & AlertIcon
 } from '@chakra-ui/react';
-import { useAppStore, Activity } from '../stores/useAppStore'; // Removed Deal, Person, Organization
-// import ActivityListItem from '../components/activities/ActivityListItem'; // REMOVE list item import
+import { useAppStore } from '../stores/useAppStore'; // For userPermissions and currentUserId
+import { useActivitiesStore, Activity } from '../stores/useActivitiesStore'; // NEW IMPORT
 import CreateActivityForm from '../components/activities/CreateActivityForm'; // Import the form
 import EmptyState from '../components/common/EmptyState'; // Import EmptyState
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
@@ -67,16 +67,19 @@ const getActivityTypeColor = (type: string): string => {
 }
 
 function ActivitiesPage() {
-  // Store state and actions
-  const activities = useAppStore((state) => state.activities as Activity[]);
-  const loading = useAppStore((state) => state.activitiesLoading);
-  const error = useAppStore((state) => state.activitiesError);
-  const fetchActivities = useAppStore((state) => state.fetchActivities);
+  // Store state and actions from useActivitiesStore
+  const {
+    activities,
+    activitiesLoading,
+    activitiesError,
+    fetchActivities,
+    updateActivity,
+    deleteActivity,
+  } = useActivitiesStore();
+
+  // Auth related state from useAppStore (to be refactored to useAuthStore later)
   const userPermissions = useAppStore((state) => state.userPermissions);
   const currentUserId = useAppStore((state) => state.session?.user.id);
-  const updateActivity = useAppStore((state) => state.updateActivity);
-  const deleteActivity = useAppStore((state) => state.deleteActivity);
-  const activitiesError = useAppStore((state) => state.activitiesError); // Get specific error
 
   // Modal state
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
@@ -92,14 +95,16 @@ function ActivitiesPage() {
     fetchActivities();
   }, [fetchActivities]);
 
-  // Callback for successful creation
-  const handleCreateSuccess = () => {};
+  const handleCreateSuccess = () => {
+    // The store should update the list, so potentially just close modal or show toast
+    // fetchActivities(); // Re-fetch if optimistic updates aren't fully covering linked data or complex sorts
+    onCreateClose(); // Assuming CreateActivityForm is in a modal handled by isCreateOpen
+  };
 
-  // --- Handlers from ActivityListItem (adapted) ---
   const handleToggleDone = async (activityId: string, currentStatus: boolean) => {
     const success = await updateActivity(activityId, { is_done: !currentStatus });
     if (!success) {
-        toast({ title: 'Failed to update activity status', status: 'error', duration: 3000, isClosable: true });
+        toast({ title: 'Failed to update activity status', description: activitiesError || 'Unknown error', status: 'error', duration: 3000, isClosable: true });
     }
   };
 
@@ -123,8 +128,8 @@ function ActivitiesPage() {
     }
   };
 
-  const handleEditClick = (activity: Activity) => {
-    setActivityToEdit(activity);
+  const handleEditClick = (activityItem: Activity) => { // Renamed to activityItem to avoid conflict
+    setActivityToEdit(activityItem);
     onEditOpen();
   };
 
@@ -138,12 +143,12 @@ function ActivitiesPage() {
     {
       key: 'is_done',
       header: '', // No text header for checkbox
-      renderCell: (activity) => {
-          const canUpdate = userPermissions?.includes('activity:update_any') || (userPermissions?.includes('activity:update_own') && activity.user_id === currentUserId);
+      renderCell: (activityItem) => {
+          const canUpdate = userPermissions?.includes('activity:update_any') || (userPermissions?.includes('activity:update_own') && activityItem.user_id === currentUserId);
           return (
             <Checkbox 
-                isChecked={activity.is_done} 
-                onChange={() => handleToggleDone(activity.id, activity.is_done)} 
+                isChecked={activityItem.is_done} 
+                onChange={() => handleToggleDone(activityItem.id, activityItem.is_done)} 
                 aria-label="Mark activity as done"
                 isDisabled={!canUpdate}
                 px={2} // Add padding directly to checkbox cell
@@ -151,65 +156,65 @@ function ActivitiesPage() {
           );
       },
       isSortable: true,
-      sortAccessor: (activity) => activity.is_done, // Sort by boolean
+      sortAccessor: (activityItem) => activityItem.is_done, // Sort by boolean
     },
     {
       key: 'subject',
       header: 'Subject / Type',
-      renderCell: (activity) => (
+      renderCell: (activityItem) => (
         <HStack align="baseline">
-          <Text fontWeight="medium">{activity.subject}</Text>
-          <Tag size="sm" colorScheme={getActivityTypeColor(activity.type)}>{activity.type || '-'}</Tag>
+          <Text fontWeight="medium">{activityItem.subject}</Text>
+          <Tag size="sm" colorScheme={getActivityTypeColor(activityItem.type)}>{activityItem.type || '-'}</Tag>
         </HStack>
       ),
       isSortable: true,
-      sortAccessor: (activity) => activity.subject?.toLowerCase() ?? '',
+      sortAccessor: (activityItem) => activityItem.subject?.toLowerCase() ?? '',
     },
     {
       key: 'due_date',
       header: 'Due Date',
-      renderCell: (activity) => formatDateTime(activity.due_date),
+      renderCell: (activityItem) => formatDateTime(activityItem.due_date),
       isSortable: true,
-      sortAccessor: (activity) => activity.due_date ? new Date(activity.due_date) : null, // Sort by Date or null
+      sortAccessor: (activityItem) => activityItem.due_date ? new Date(activityItem.due_date) : null, // Sort by Date or null
     },
     {
       key: 'linked_to',
       header: 'Linked To',
-      renderCell: (activity) => {
-          const linkedEntity = activity.deal 
-            ? `Deal: ${activity.deal.name}` 
-            : activity.person 
-            ? `Person: ${activity.person.first_name || ''} ${activity.person.last_name || ''}`.trim()
-            : activity.organization
-            ? `Org: ${activity.organization.name}`
+      renderCell: (activityItem) => {
+          const linkedEntity = activityItem.deal 
+            ? `Deal: ${activityItem.deal.name}` 
+            : activityItem.person 
+            ? `Person: ${activityItem.person.first_name || ''} ${activityItem.person.last_name || ''}`.trim()
+            : activityItem.organization
+            ? `Org: ${activityItem.organization.name}`
             : '-';
           return <Text fontSize="xs">{linkedEntity}</Text>;
       },
       isSortable: true,
-      sortAccessor: (activity) => { // Custom accessor for linked entity string
-          if (activity.deal) return `deal: ${activity.deal.name?.toLowerCase() ?? ''}`;
-          if (activity.person) return `person: ${activity.person.first_name?.toLowerCase() ?? ''} ${activity.person.last_name?.toLowerCase() ?? ''}`.trim();
-          if (activity.organization) return `organization: ${activity.organization.name?.toLowerCase() ?? ''}`;
+      sortAccessor: (activityItem) => { // Custom accessor for linked entity string
+          if (activityItem.deal) return `deal: ${activityItem.deal.name?.toLowerCase() ?? ''}`;
+          if (activityItem.person) return `person: ${activityItem.person.first_name?.toLowerCase() ?? ''} ${activityItem.person.last_name?.toLowerCase() ?? ''}`.trim();
+          if (activityItem.organization) return `organization: ${activityItem.organization.name?.toLowerCase() ?? ''}`;
           return '';
       },
     },
     {
       key: 'notes',
       header: 'Notes',
-      renderCell: (activity) => (
+      renderCell: (activityItem) => (
           <Text fontSize="xs" maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
-              {activity.notes || '-'}
+              {activityItem.notes || '-'}
           </Text>
       ),
       isSortable: true,
-      sortAccessor: (activity) => activity.notes?.toLowerCase() ?? '',
+      sortAccessor: (activityItem) => activityItem.notes?.toLowerCase() ?? '',
     },
     {
       key: 'actions',
       header: 'Actions',
-      renderCell: (activity) => {
-          const canUpdate = userPermissions?.includes('activity:update_any') || (userPermissions?.includes('activity:update_own') && activity.user_id === currentUserId);
-          const canDelete = userPermissions?.includes('activity:delete_any') || (userPermissions?.includes('activity:delete_own') && activity.user_id === currentUserId);
+      renderCell: (activityItem) => {
+          const canUpdate = userPermissions?.includes('activity:update_any') || (userPermissions?.includes('activity:update_own') && activityItem.user_id === currentUserId);
+          const canDelete = userPermissions?.includes('activity:delete_any') || (userPermissions?.includes('activity:delete_own') && activityItem.user_id === currentUserId);
           return (
             <HStack spacing={1}>
               <IconButton
@@ -217,7 +222,7 @@ function ActivitiesPage() {
                 icon={<EditIcon />}
                 size="sm"
                 variant="ghost"
-                onClick={() => handleEditClick(activity)}
+                onClick={() => handleEditClick(activityItem)}
                 isDisabled={!canUpdate}
               />
               <IconButton
@@ -226,7 +231,7 @@ function ActivitiesPage() {
                 colorScheme="red"
                 size="sm"
                 variant="ghost"
-                onClick={() => handleDeleteClick(activity.id)}
+                onClick={() => handleDeleteClick(activityItem.id)}
                 isDisabled={!canDelete}
               />
             </HStack>
@@ -243,7 +248,7 @@ function ActivitiesPage() {
     message: "Add tasks, calls, or meetings to keep track of interactions."
   };
 
-  if (loading) {
+  if (activitiesLoading) {
     return (
       <Flex justify="center" align="center" minH="calc(100vh - 200px)">
         <Spinner size="xl" />
@@ -251,19 +256,52 @@ function ActivitiesPage() {
     );
   }
 
-  if (error) {
+  if (activitiesError && !activities.length) {
     return (
-      <Alert status="error" m={4}>
-        <AlertIcon />
-        Error fetching activities: {error}
-      </Alert>
+      <ListPageLayout 
+        title="Activities" 
+        onNewButtonClick={onCreateOpen} 
+        newButtonLabel="New Activity"
+        isNewButtonDisabled={!userPermissions?.includes('activity:create')}
+        isLoading={activitiesLoading} // Pass loading state
+        error={activitiesError} // Pass error state
+        isEmpty={true} // Explicitly set isEmpty
+        emptyStateProps={emptyStateProps} // Pass empty state props
+      >
+        {/* Children can be empty or an Alert, ListPageLayout handles error display */}
+        <Alert status="error" mt={4}>
+            <AlertIcon />
+            Error fetching activities: {activitiesError}
+        </Alert>
+      </ListPageLayout>
     );
   }
 
   return (
-    <Box p={6}> {/* Main page container with padding */}
-      {/* Modals rendered at the top level */}
-      <Modal isOpen={isCreateOpen} onClose={onCreateClose}>
+    <ListPageLayout 
+        title="Activities" 
+        onNewButtonClick={onCreateOpen}
+        newButtonLabel="New Activity"
+        isNewButtonDisabled={!userPermissions?.includes('activity:create')}
+        isLoading={activitiesLoading}
+        error={activitiesError} // Pass error here too for consistency, ListPageLayout might only show one error source.
+        isEmpty={activities.length === 0}
+        emptyStateProps={emptyStateProps}
+    >
+      {/* Display a less intrusive error if activities are present but an error occurred (e.g. during update/delete) */}
+      {/* This specific error display might be redundant if ListPageLayout handles its 'error' prop well enough */}
+      {/* For now, keeping it if it provides different context than the main error prop */}
+      {activitiesError && activities.length > 0 && (
+           <Alert status="warning" mt={4} mb={4}>
+               <AlertIcon />
+               {activitiesError} 
+           </Alert>
+      )}
+      {/* SortableTable now explicitly typed */}
+      <SortableTable<Activity> columns={columns} data={activities} initialSortKey="due_date" initialSortDirection="ascending" />
+
+      {/* Modals remain the same */}
+      <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl">
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Create New Activity</ModalHeader>
@@ -273,66 +311,24 @@ function ActivitiesPage() {
       </Modal>
 
       {activityToEdit && (
-        <EditActivityModal 
-          activity={activityToEdit} 
-          isOpen={isEditOpen} 
-          onClose={handleEditClose} 
-          onSuccess={() => { fetchActivities(); handleEditClose(); }} 
+        <EditActivityModal
+          isOpen={isEditOpen}
+          onClose={handleEditClose}
+          activity={activityToEdit}
         />
       )}
 
-      <ConfirmationDialog 
+      <ConfirmationDialog
         isOpen={isConfirmDeleteDialogOpen}
         onClose={onConfirmDeleteClose}
         onConfirm={handleConfirmDelete}
         headerText="Delete Activity"
-        bodyText="Are you sure you want to delete this activity? This action cannot be undone."
+        bodyText={`Are you sure you want to delete activity: ${activityToDeleteId ? activities.find(a=>a.id === activityToDeleteId)?.subject : 'this activity'}? This action cannot be undone.`}
         confirmButtonText="Delete"
         confirmButtonColorScheme="red"
         isLoading={isDeleting}
       />
-
-      {/* Conditional content: Empty state or ListPageLayout with table */}
-      {activities.length === 0 ? (
-        <VStack spacing={4} align="stretch">
-          <Flex justifyContent="space-between" alignItems="center" mb={4}>
-            <Heading as="h2" size="lg">Activities</Heading>
-            <Button 
-              colorScheme="blue"
-              onClick={onCreateOpen}
-              isDisabled={!userPermissions?.includes('activity:create')}
-            >
-              New Activity
-            </Button>
-          </Flex>
-          <EmptyState 
-            icon={emptyStateProps.icon}
-            title={emptyStateProps.title}
-            message={emptyStateProps.message}
-            actionButtonLabel="New Activity"
-            onActionButtonClick={onCreateOpen}
-            isActionButtonDisabled={!userPermissions?.includes('activity:create')}
-          />
-        </VStack>
-      ) : (
-        <ListPageLayout
-          title="Activities"
-          newButtonLabel="New Activity"
-          onNewButtonClick={onCreateOpen}
-          isNewButtonDisabled={!userPermissions?.includes('activity:create')}
-          isLoading={loading}
-          error={error}
-          isEmpty={false}
-          emptyStateProps={emptyStateProps}
-        >
-          <SortableTable<Activity>
-            data={activities}
-            columns={columns}
-            initialSortKey="due_date"
-          />
-        </ListPageLayout>
-      )}
-    </Box>
+    </ListPageLayout>
   );
 }
 

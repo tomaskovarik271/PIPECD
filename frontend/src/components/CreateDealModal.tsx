@@ -24,6 +24,8 @@ import {
 import { useAppStore } from '../stores/useAppStore'; // Import the store
 import { usePeopleStore, Person } from '../stores/usePeopleStore'; // ADDED for people state + Person type
 import { useDealsStore } from '../stores/useDealsStore'; // ADDED
+import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore'; // ADDED for pipeline state and Pipeline type
+import { useStagesStore, Stage } from '../stores/useStagesStore'; // Import new store and Stage type
 import { DealInput } from '../generated/graphql/graphql'; // Removed Deal, Person, Stage
 
 // Explicit Person type based on store data - REMOVED
@@ -44,21 +46,27 @@ interface CreateDealModalProps {
 function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProps) {
   // Form State
   const [name, setName] = useState('');
-  const [selectedPipelineId, setSelectedPipelineId] = useState<string>('');
+  const [localSelectedPipelineId, setLocalSelectedPipelineId] = useState<string>(''); // Renamed to avoid conflict if store selector is named the same
   const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [amount, setAmount] = useState<string>(''); // Store as string for input
   const [personId, setPersonId] = useState<string>(''); // Renamed from contactId
   
   // Store State & Actions
-  const pipelines = useAppStore((state) => state.pipelines);
-  const stages = useAppStore((state) => state.stages);
-  const fetchPipelines = useAppStore((state) => state.fetchPipelines);
-  const fetchStages = useAppStore((state) => state.fetchStages);
-  const pipelinesLoading = useAppStore((state) => state.pipelinesLoading);
-  const pipelinesError = useAppStore((state) => state.pipelinesError);
-  const stagesLoading = useAppStore((state) => state.stagesLoading);
-  const stagesError = useAppStore((state) => state.stagesError);
-  // const createDealAction = useAppStore((state) => state.createDeal); // REMOVED
+  // const pipelines = useAppStore((state) => state.pipelines); // REMOVED
+  // const fetchPipelines = useAppStore((state) => state.fetchPipelines); // REMOVED
+  // const pipelinesLoading = useAppStore((state) => state.pipelinesLoading); // REMOVED
+  // const pipelinesError = useAppStore((state) => state.pipelinesError); // REMOVED
+
+  // ADDED: Pipelines state from usePipelinesStore
+  const { pipelines, fetchPipelines, pipelinesLoading, pipelinesError } = usePipelinesStore();
+
+  // Use new store for stages
+  const { 
+    stages,
+    fetchStages,
+    stagesLoading,
+    stagesError
+  } = useStagesStore();
 
   // ADDED: Deals state & actions from useDealsStore
   const { createDeal: createDealAction, dealsError, dealsLoading } = useDealsStore(); 
@@ -76,7 +84,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     if (isOpen) {
       // Reset form state when opening
       setName('');
-      setSelectedPipelineId('');
+      // setSelectedPipelineId(''); // REMOVED, using localSelectedPipelineId
+      setLocalSelectedPipelineId(''); // Use local state setter
       setSelectedStageId('');
       setAmount('');
       setPersonId('');
@@ -91,14 +100,14 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
 
   // Effect to fetch stages when a pipeline is selected
   useEffect(() => {
-    if (selectedPipelineId) {
+    if (localSelectedPipelineId) {
         setSelectedStageId(''); // Reset stage selection when pipeline changes
-        fetchStages(selectedPipelineId);
+        fetchStages(localSelectedPipelineId);
     } else {
-        // Clear stages if no pipeline is selected
-        useAppStore.setState({ stages: [], stagesError: null, stagesLoading: false });
+        // Clear stages if no pipeline is selected, using the new store
+        useStagesStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
-  }, [selectedPipelineId, fetchStages]);
+  }, [localSelectedPipelineId, fetchStages]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -133,11 +142,15 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       const createdDeal = await createDealAction(dealInput);
 
       if (createdDeal) {
+        // The createdDeal from useDealsStore might not have the full stage object with name.
+        // We might need to find the stage from useStagesStore to display its name.
+        const stageOfCreatedDeal = stages.find(s => s.id === createdDeal.stage_id);
+
         console.log('Deal created via store action:', createdDeal);
         // Success
         toast({ // Use toast for success message
           title: "Deal Created",
-          description: `Deal "${createdDeal.name}" created in stage "${createdDeal.stage.name}".`,
+          description: `Deal "${createdDeal.name}" created${stageOfCreatedDeal ? ` in stage "${stageOfCreatedDeal.name}"` : ''}.`,
           status: "success",
           duration: 5000,
           isClosable: true,
@@ -196,40 +209,40 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
               {error?.toLowerCase().includes('name') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
-            <FormControl isRequired isInvalid={!selectedPipelineId && error?.toLowerCase().includes('pipeline')}>
+            <FormControl isRequired isInvalid={!localSelectedPipelineId && error?.toLowerCase().includes('pipeline')}>
               <FormLabel>Pipeline</FormLabel>
               <Select 
                 placeholder={pipelinesLoading ? 'Loading pipelines...' : 'Select pipeline'}
-                value={selectedPipelineId}
-                onChange={(e) => setSelectedPipelineId(e.target.value)}
+                value={localSelectedPipelineId}
+                onChange={(e) => setLocalSelectedPipelineId(e.target.value)}
                 isDisabled={pipelinesLoading || !!pipelinesError}
               >
-                 {!pipelinesLoading && !pipelinesError && pipelines.map(pipeline => (
+                 {!pipelinesLoading && !pipelinesError && pipelines.map((pipeline: Pipeline) => (
                     <option key={pipeline.id} value={pipeline.id}>
                         {pipeline.name}
                     </option>
                 ))}
               </Select>
               {pipelinesError && <FormErrorMessage>Error loading pipelines: {pipelinesError}</FormErrorMessage>}
-              {!selectedPipelineId && error?.toLowerCase().includes('pipeline') && <FormErrorMessage>{error}</FormErrorMessage>}
+              {!localSelectedPipelineId && error?.toLowerCase().includes('pipeline') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
             <FormControl isRequired isInvalid={!selectedStageId && error?.toLowerCase().includes('stage')}>
               <FormLabel>Stage</FormLabel>
               <Select 
-                placeholder={stagesLoading ? 'Loading stages...' : (selectedPipelineId ? 'Select stage' : 'Select pipeline first') }
+                placeholder={stagesLoading ? 'Loading stages...' : (localSelectedPipelineId ? 'Select stage' : 'Select pipeline first') }
                 value={selectedStageId}
                 onChange={(e) => setSelectedStageId(e.target.value)}
-                isDisabled={!selectedPipelineId || stagesLoading || !!stagesError || stages.length === 0}
+                isDisabled={!localSelectedPipelineId || stagesLoading || !!stagesError || stages.length === 0}
               >
-                 {!stagesLoading && !stagesError && stages.map(stage => (
+                 {!stagesLoading && !stagesError && stages.map((stage: Stage) => (
                     <option key={stage.id} value={stage.id}>
                         {stage.name} (Order: {stage.order})
                     </option>
                 ))}
               </Select>
               {stagesError && <FormErrorMessage>Error loading stages: {stagesError}</FormErrorMessage>}
-              {!selectedPipelineId && stages.length === 0 && <FormErrorMessage>Select a pipeline to see stages.</FormErrorMessage>}
+              {!localSelectedPipelineId && stages.length === 0 && !stagesLoading && <FormErrorMessage>Select a pipeline to see stages.</FormErrorMessage>}
               {!selectedStageId && error?.toLowerCase().includes('stage') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 

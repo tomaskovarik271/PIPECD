@@ -18,7 +18,7 @@ import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
 import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore'; // Import store
-import type { Organization as GeneratedOrganization } from '../generated/graphql/graphql'; // Import generated type
+import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore'; // ADDED
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
 import EmptyState from '../components/common/EmptyState'; // Import EmptyState
 import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
@@ -41,11 +41,13 @@ import SortableTable, { ColumnDefinition } from '../components/common/SortableTa
 
 function OrganizationsPage() {
   // --- State from Zustand Store ---
-  const organizations = useAppStore((state) => state.organizations); // Already uses GeneratedOrganization[]
-  const loading = useAppStore((state) => state.organizationsLoading);
-  const error = useAppStore((state) => state.organizationsError);
-  const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
-  const deleteOrganizationAction = useAppStore((state) => state.deleteOrganization);
+  const { organizations, organizationsLoading: loading, organizationsError: error, fetchOrganizations, deleteOrganization: deleteOrganizationAction } = useOrganizationsStore(); // CHANGED
+  // const organizations = useAppStore((state) => state.organizations); // REMOVED
+  // const loading = useAppStore((state) => state.organizationsLoading); // REMOVED
+  // const error = useAppStore((state) => state.organizationsError); // REMOVED
+  // const fetchOrganizations = useAppStore((state) => state.fetchOrganizations); // REMOVED
+  // const deleteOrganizationAction = useAppStore((state) => state.deleteOrganization); // REMOVED
+  
   // Fetch permissions
   const userPermissions = useAppStore((state) => state.userPermissions);
 
@@ -53,7 +55,7 @@ function OrganizationsPage() {
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure();
   const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
-  const [orgToEdit, setOrgToEdit] = useState<GeneratedOrganization | null>(null); // Use generated type
+  const [orgToEdit, setOrgToEdit] = useState<Organization | null>(null); // Use Organization from store
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null); // For button spinner
   const [orgToDeleteId, setOrgToDeleteId] = useState<string | null>(null);
   const toast = useToast();
@@ -77,7 +79,7 @@ function OrganizationsPage() {
     fetchOrganizations(); 
   }, [fetchOrganizations]);
 
-  const handleEditClick = (org: GeneratedOrganization) => { // Use generated type
+  const handleEditClick = (org: Organization) => { // Use Organization from store
     setOrgToEdit(org);
     onEditModalOpen();
   };
@@ -116,7 +118,7 @@ function OrganizationsPage() {
   }
 
   // Define Columns for SortableTable
-  const columns: ColumnDefinition<GeneratedOrganization>[] = [ // Use generated type
+  const columns: ColumnDefinition<Organization>[] = [ // Use Organization from store
     {
       key: 'name',
       header: 'Name',
@@ -270,7 +272,7 @@ function OrganizationsPage() {
           isEmpty={false}     // Explicitly false
           emptyStateProps={emptyStatePropsForPage} // Passed but not used if not empty
         >
-          <SortableTable<GeneratedOrganization>
+          <SortableTable<Organization>
             data={organizations}
             columns={columns}
             initialSortKey="name"

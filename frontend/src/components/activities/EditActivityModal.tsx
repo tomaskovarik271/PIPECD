@@ -1,41 +1,41 @@
+import React from 'react';
 import {
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalBody,
   ModalCloseButton,
+  ModalBody,
 } from '@chakra-ui/react';
+import { Activity } from '../../stores/useActivitiesStore';
 import EditActivityForm from './EditActivityForm';
-import { Activity } from '../../stores/useAppStore';
 
 interface EditActivityModalProps {
   isOpen: boolean;
   onClose: () => void;
-  activity: Activity | null; // Activity to edit, null if none selected
-  onSuccess?: () => void; // Add onSuccess prop
+  activity: Activity | null; // Activity can be null if modal is prepared but no activity selected
+  onSuccess?: () => void; // Optional: To refresh list or give feedback
 }
 
-function EditActivityModal({ isOpen, onClose, activity, onSuccess }: EditActivityModalProps) {
-  if (!activity) return null; // Don't render modal if no activity is selected
+const EditActivityModal: React.FC<EditActivityModalProps> = ({ isOpen, onClose, activity, onSuccess }) => {
+  if (!activity) return null; // Don't render if no activity is provided
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Edit Activity</ModalHeader>
+        <ModalHeader>Edit Activity: {activity.subject}</ModalHeader>
         <ModalCloseButton />
-        <ModalBody pb={6}>
-          {/* Pass the activity, onClose, and onSuccess handler to the form */}
-          <EditActivityForm activity={activity} onClose={onClose} onSuccess={onSuccess} />
+        <ModalBody pb={6}> {/* Add padding to bottom of modal body */}
+          <EditActivityForm 
+            activity={activity} 
+            onClose={onClose} 
+            onSuccess={onSuccess} 
+          />
         </ModalBody>
-        {/* Footer can be removed if submit is handled solely within the form */}
-        {/* <ModalFooter>
-          <Button onClick={onClose}>Cancel</Button>
-        </ModalFooter> */}
       </ModalContent>
     </Modal>
   );
-}
+};
 
 export default EditActivityModal; 

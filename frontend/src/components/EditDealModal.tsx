@@ -23,13 +23,15 @@ import {
 import { useAppStore } from '../stores/useAppStore';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
 import { useDealsStore, Deal } from '../stores/useDealsStore';
-import type { DealInput } from '../generated/graphql/graphql';
+import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore';
+import { useStagesStore } from '../stores/useStagesStore';
+import type { DealInput, Stage } from '../generated/graphql/graphql';
 
 interface EditDealModalProps {
   isOpen: boolean;
   onClose: () => void;
   onDealUpdated: () => void;
-  deal: Deal | null; // Use Deal type from useDealsStore
+  deal: Deal | null;
 }
 
 function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalProps) {
@@ -41,15 +43,16 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>(''); 
 
-  // Store State & Actions (Pipelines & Stages from AppStore for now)
-  const pipelines = useAppStore((state) => state.pipelines);
-  const stages = useAppStore((state) => state.stages);
-  const fetchPipelines = useAppStore((state) => state.fetchPipelines);
-  const fetchStages = useAppStore((state) => state.fetchStages);
-  const pipelinesLoading = useAppStore((state) => state.pipelinesLoading);
-  const pipelinesError = useAppStore((state) => state.pipelinesError);
-  const stagesLoading = useAppStore((state) => state.stagesLoading);
-  const stagesError = useAppStore((state) => state.stagesError);
+  // Store State & Actions
+  const { pipelines, fetchPipelines, pipelinesLoading, pipelinesError } = usePipelinesStore();
+
+  // Stage related state from useStagesStore
+  const {
+    stages,
+    fetchStages,
+    stagesLoading,
+    stagesError
+  } = useStagesStore();
 
   // Deals state & actions from useDealsStore
   const { updateDeal: updateDealAction, dealsError, dealsLoading } = useDealsStore();
@@ -64,7 +67,8 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     if (isOpen) {
       fetchPeople(); 
       fetchPipelines();
-      useAppStore.setState({ stages: [], stagesError: null, stagesLoading: false });
+      // Clear stages using useStagesStore when modal opens, before potentially fetching new ones
+      useStagesStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
   }, [isOpen, fetchPeople, fetchPipelines]); 
 
@@ -100,13 +104,14 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     if (targetPipelineId) {
         fetchStages(targetPipelineId);
     } else {
-        useAppStore.setState({ stages: [], stagesError: null, stagesLoading: false });
+        // Clear stages if no pipeline is selected, using the new store
+        useStagesStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
   }, [selectedPipelineId, initialPipelineId, fetchStages]);
 
   useEffect(() => {
-    if (initialStageId && initialPipelineId && selectedPipelineId === initialPipelineId && stages.length > 0) {
-       const stageExists = stages.some(s => s.id === initialStageId);
+    if (initialStageId && initialPipelineId && selectedPipelineId === initialPipelineId && Array.isArray(stages) && stages.length > 0) {
+       const stageExists = stages.some((s: Stage) => s.id === initialStageId);
        if (stageExists) {
            setSelectedStageId(initialStageId);
            setInitialStageId(null); 
@@ -212,7 +217,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                 onChange={(e) => setSelectedPipelineId(e.target.value)}
                 isDisabled={pipelinesLoading || !!pipelinesError}
               >
-                 {!pipelinesLoading && !pipelinesError && pipelines.map(pipeline => (
+                 {!pipelinesLoading && !pipelinesError && Array.isArray(pipelines) && pipelines.map((pipeline: Pipeline) => (
                     <option key={pipeline.id} value={pipeline.id}>
                         {pipeline.name}
                     </option>
@@ -230,7 +235,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                 onChange={(e) => setSelectedStageId(e.target.value)}
                 isDisabled={!selectedPipelineId || stagesLoading || !!stagesError || stages.length === 0}
               >
-                 {!stagesLoading && !stagesError && stages.map(stage => (
+                 {!stagesLoading && !stagesError && stages.map((stage: Stage) => (
                     <option key={stage.id} value={stage.id}>
                         {stage.name} (Order: {stage.order})
                     </option>
@@ -250,37 +255,34 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
 
             <FormControl>
               <FormLabel>Link to Person (Optional)</FormLabel>
-              {peopleLoading && <Spinner size="xs" />}
-              {peopleError && <Alert status="error" size="sm"><AlertIcon />{peopleError}</Alert>}
-              {!peopleLoading && !peopleError && (
                 <Select 
-                  placeholder='Select person'
+                placeholder={peopleLoading ? 'Loading people...' : 'Select person'}
                   value={personId}
                   onChange={(e) => setPersonId(e.target.value)}
-                  isDisabled={people.length === 0}
+                isDisabled={peopleLoading || !!peopleError}
                 >
-                   {people.map((person: Person) => ( // Typed person
+                 {!peopleLoading && !peopleError && Array.isArray(people) && people.map((person: Person) => (
                       <option key={person.id} value={person.id}>
-                          {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email}
+                        {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email || `Person ID: ${person.id}`}
                       </option>
                   ))}
                 </Select>
-              )}
-              {people.length === 0 && !peopleLoading && !peopleError && <FormErrorMessage>No people found. Create one first or clear selection.</FormErrorMessage>}
             </FormControl>
           </VStack>
         </ModalBody>
         <ModalFooter>
-          <Button variant='ghost' onClick={onClose} isDisabled={isLoading || dealsLoading}>
-            Cancel
-          </Button>
           <Button 
             colorScheme='blue' 
+            mr={3} 
             type="submit" 
             isLoading={isLoading || dealsLoading} 
-            isDisabled={isLoading || dealsLoading} 
+            leftIcon={(isLoading || dealsLoading) ? <Spinner size="sm" /> : undefined}
+            onClick={handleSubmit}
           >
             Save Changes
+          </Button>
+          <Button variant='ghost' onClick={onClose} isDisabled={isLoading}>
+            Cancel
           </Button>
         </ModalFooter>
       </ModalContent>

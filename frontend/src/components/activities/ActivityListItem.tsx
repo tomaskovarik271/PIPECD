@@ -12,12 +12,14 @@ import {
   useDisclosure, // Import useDisclosure hook
 } from '@chakra-ui/react';
 import { EditIcon, DeleteIcon } from '@chakra-ui/icons';
-import { useAppStore, Activity } from '../../stores/useAppStore'; // Import Activity type and store
+// import { useAppStore, Activity } from '../../stores/useAppStore'; // OLD IMPORT
+import { useAppStore } from '../../stores/useAppStore'; // For userPermissions and currentUserId
+import { useActivitiesStore, Activity } from '../../stores/useActivitiesStore'; // NEW IMPORT
 import EditActivityModal from './EditActivityModal'; // Import the modal
 import ConfirmationDialog from '../common/ConfirmationDialog'; // Import ConfirmationDialog
 
 interface ActivityListItemProps {
-  activity: Activity;
+  activity: Activity; // This Activity type will now come from useActivitiesStore
 }
 
 // Helper to format date/time nicely
@@ -47,51 +49,28 @@ const getActivityTypeColor = (type: string): string => {
 }
 
 function ActivityListItem({ activity }: ActivityListItemProps) {
-  // Select actions individually to prevent re-renders caused by shallow comparison
-  const updateActivity = useAppStore((state) => state.updateActivity);
-  const deleteActivity = useAppStore((state) => state.deleteActivity);
-  // Fetch permissions
+  // Select actions from the new useActivitiesStore
+  const { updateActivity, deleteActivity, activitiesError } = useActivitiesStore(); 
+
+  // Fetch permissions and user ID from useAppStore (to be refactored later with useAuthStore)
   const userPermissions = useAppStore((state) => state.userPermissions);
-  // Fetch current user ID
   const currentUserId = useAppStore((state) => state.session?.user.id);
 
   const toast = useToast();
-  // Add loading state if needed for async actions (mark done, delete)
-  // const [isDeleting, setIsDeleting] = useState(false);
-  // const [isTogglingDone, setIsTogglingDone] = useState(false);
-
-  // State for the Edit modal
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure();
-
-  // State for Confirmation Dialog
   const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
-  // We don't need to store activityId here as it's available in the component scope when onConfirm is called.
-  // However, we need a loading state for the delete button in the dialog specifically.
   const [isDeletingViaDialog, setIsDeletingViaDialog] = React.useState(false);
 
   const handleToggleDone = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const is_done = e.target.checked;
-    // setIsTogglingDone(true);
     const success = await updateActivity(activity.id, { is_done });
-    // setIsTogglingDone(false);
     if (!success) {
         toast({ title: 'Failed to update activity status', status: 'error', duration: 3000, isClosable: true });
-        // Revert checkbox? Needs more complex state handling or rely on fetch refresh
     }
   };
 
   const handleDeleteClick = async () => {
-    //  if (window.confirm('Are you sure you want to delete this activity?')) { // OLD WAY
-    //     // setIsDeleting(true);
-    //     const success = await deleteActivity(activity.id);
-    //     // setIsDeleting(false); 
-    //     if (success) {
-    //          toast({ title: 'Activity deleted.', status: 'success', duration: 3000, isClosable: true });
-    //     } else {
-    //          toast({ title: 'Error deleting activity', status: 'error', duration: 3000, isClosable: true });
-    //     }
-    //  }
-    onConfirmDeleteOpen(); // Just open the dialog
+    onConfirmDeleteOpen();
   };
 
   const handleConfirmDelete = async () => {
@@ -103,13 +82,13 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
     if (success) {
          toast({ title: 'Activity deleted.', status: 'success', duration: 3000, isClosable: true });
     } else {
-         // Store handles error state, show toast
-         toast({ title: 'Error deleting activity', description: useAppStore.getState().activitiesError || 'Unknown error', status: 'error', duration: 3000, isClosable: true });
+         // Use activitiesError from useActivitiesStore
+         toast({ title: 'Error deleting activity', description: activitiesError || 'Unknown error', status: 'error', duration: 3000, isClosable: true });
     }
   };
 
   const handleEditClick = () => {
-      onEditOpen(); // Open the modal
+      onEditOpen();
   };
 
   // Determine linked entity for display
@@ -135,7 +114,6 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
           isChecked={activity.is_done} 
           onChange={handleToggleDone} 
           mr={4} 
-          // isDisabled={isTogglingDone || isDeleting} 
           aria-label="Mark activity as done"
           isDisabled={ // New RBAC logic
             !(
@@ -161,7 +139,6 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
             size="sm"
             variant="ghost"
             onClick={handleEditClick}
-            // isDisabled={isDeleting || isTogglingDone}
             isDisabled={ // New RBAC logic
                 !(
                   userPermissions?.includes('activity:update_any') ||
@@ -176,8 +153,6 @@ function ActivityListItem({ activity }: ActivityListItemProps) {
             size="sm"
             variant="ghost"
             onClick={handleDeleteClick}
-            // isLoading={isDeleting}
-            // isDisabled={isTogglingDone}
             isDisabled={ // New RBAC logic
                 !(
                     userPermissions?.includes('activity:delete_any') ||

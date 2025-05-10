@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore'; // Import store
 import { usePeopleStore, Person } from '../stores/usePeopleStore'; // ADDED for people actions/error and Person type
+import { useOrganizationsStore } from '../stores/useOrganizationsStore'; // CORRECTED PATH
 import type { /* Organization, REMOVED */ PersonInput } from '../generated/graphql/graphql'; // Keep other types
 
 // Define the mutation for updating a Person - REMOVED (Handled by store action)
@@ -57,10 +58,16 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
   const toast = useToast();
 
   // Get organizations and related state from the store
-  const organizations = useAppStore((state) => state.organizations); // Already GeneratedOrganization[]
-  const orgLoading = useAppStore((state) => state.organizationsLoading);
-  const orgError = useAppStore((state) => state.organizationsError);
-  const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
+  // const organizations = useAppStore((state) => state.organizations); // REMOVE
+  // const orgLoading = useAppStore((state) => state.organizationsLoading); // REMOVE
+  // const orgError = useAppStore((state) => state.organizationsError); // REMOVE
+  // const fetchOrganizations = useAppStore((state) => state.fetchOrganizations); // REMOVE
+  const { 
+    organizations, 
+    organizationsLoading: orgLoading, // alias to keep variable name consistent 
+    organizationsError: orgError, // alias
+    fetchOrganizations 
+  } = useOrganizationsStore(); // USE THIS
 
   // People actions/error from usePeopleStore
   const { updatePerson: updatePersonAction, peopleError } = usePeopleStore(); // ADDED
@@ -69,7 +76,8 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
 
   // Fetch organizations if not already loaded
   useEffect(() => {
-    if (!organizations.length && !orgLoading) {
+    // Add Array.isArray check for safety, though store should init with []
+    if (Array.isArray(organizations) && !organizations.length && !orgLoading) {
       fetchOrganizations();
     }
   }, [organizations, orgLoading, fetchOrganizations]);
@@ -201,15 +209,15 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
                     value={formData.organization_id || ''} 
                     onChange={handleChange}
                     placeholder="Select organization (optional)"
-                    isDisabled={organizations.length === 0}
+                    isDisabled={!Array.isArray(organizations) || organizations.length === 0}
                 >
                     {/* organizations from store is already GeneratedOrganization[] */} 
-                    {organizations.map(org => (
+                    {Array.isArray(organizations) && organizations.map(org => (
                         <option key={org.id} value={org.id}>{org.name}</option>
                     ))}
                 </Select>
             )}
-             {organizations.length === 0 && !orgLoading && <FormErrorMessage>No organizations found. Create one first.</FormErrorMessage>}
+            {Array.isArray(organizations) && organizations.length === 0 && !orgLoading && <FormErrorMessage>No organizations found. Create one first.</FormErrorMessage>}
           </FormControl>
           
           <FormControl>

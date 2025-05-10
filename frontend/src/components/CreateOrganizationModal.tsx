@@ -21,7 +21,7 @@ import {
 } from '@chakra-ui/react';
 // import { gql } from 'graphql-request'; // No longer needed
 // import { gqlClient } from '../lib/graphqlClient'; // No longer needed
-import { useAppStore } from '../stores/useAppStore'; // Import store
+import { useOrganizationsStore } from '../stores/useOrganizationsStore'; // ADDED
 import type { OrganizationInput } from '../generated/graphql/graphql'; // Import generated type
 
 // Define GraphQL Mutation for creating an organization - REMOVED (Handled by store action)
@@ -44,9 +44,12 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
   const [localError, setLocalError] = useState<string | null>(null); // For local validation
   const toast = useToast();
 
-  // Get store action and error state
-  const createOrganizationAction = useAppStore((state) => state.createOrganization);
-  const storeError = useAppStore((state) => state.organizationsError);
+  // Get store action and error state from useOrganizationsStore
+  const { 
+    createOrganization: createOrganizationAction, 
+    organizationsError: storeError, 
+    organizationsLoading: storeLoading 
+  } = useOrganizationsStore();
 
   // Effect to reset form when modal opens
   useEffect(() => {
@@ -169,12 +172,12 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
             colorScheme='blue'
             mr={3} 
             type="submit" 
-            isLoading={isLoading}
-            leftIcon={isLoading ? <Spinner size="sm" /> : undefined}
+            isLoading={isLoading || storeLoading}
+            leftIcon={(isLoading || storeLoading) ? <Spinner size="sm" /> : undefined}
           >
             Save Organization
           </Button>
-          <Button variant='ghost' onClick={onClose} isDisabled={isLoading}>
+          <Button variant='ghost' onClick={onClose} isDisabled={isLoading || storeLoading}>
             Cancel
           </Button>
         </ModalFooter>

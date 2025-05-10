@@ -19,7 +19,7 @@ import {
   useToast, 
   VStack 
 } from '@chakra-ui/react';
-import { useAppStore } from '../../stores/useAppStore';
+import { useStagesStore } from '../../stores/useStagesStore';
 import type { CreateStageInput as GeneratedCreateStageInput } from '../../generated/graphql/graphql';
 
 interface CreateStageModalProps {
@@ -35,7 +35,7 @@ const CreateStageModal: React.FC<CreateStageModalProps> = ({ isOpen, onClose, pi
   const [stageOrder, setStageOrder] = useState<number | string>(0); // Store as number or string for NumberInput
   const [dealProbability, setDealProbability] = useState<number | string>(''); // Optional, use empty string for placeholder
   const [isLoading, setIsLoading] = useState(false);
-  const createStage = useAppStore((state) => state.createStage);
+  const { createStage, stagesError } = useStagesStore();
   const toast = useToast();
 
   // Reset form when modal is opened/closed
@@ -88,7 +88,7 @@ const CreateStageModal: React.FC<CreateStageModalProps> = ({ isOpen, onClose, pi
         onSuccess?.(newStage.id);
         onClose(); // Close modal
       } else {
-        toast({ title: "Failed to create stage.", description: "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
+        toast({ title: "Failed to create stage.", description: stagesError || "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
       }
     } catch (error: unknown) {
         console.error("Error in create stage modal submit:", error);

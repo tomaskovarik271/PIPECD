@@ -18,7 +18,7 @@ import {
   AlertIcon,
   Spinner,
 } from '@chakra-ui/react';
-import { useAppStore, Organization, OrganizationInput } from '../stores/useAppStore';
+import { useOrganizationsStore, Organization, OrganizationInput } from '../stores/useOrganizationsStore';
 
 // Interface for the Organization data passed to the modal
 // interface OrganizationToEdit {
@@ -56,8 +56,13 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const updateOrganizationAction = useAppStore((state) => state.updateOrganization);
-  const storeError = useAppStore((state) => state.organizationsError); // For potential errors from the store action
+  
+  // Get store action and error state from useOrganizationsStore
+  const { 
+    updateOrganization: updateOrganizationAction, 
+    organizationsError: storeError, 
+    organizationsLoading: storeLoading 
+  } = useOrganizationsStore();
 
   // Effect to update form state when the organization prop changes
   useEffect(() => {
@@ -188,12 +193,12 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
             colorScheme='blue'
             mr={3} 
             type="submit" 
-            isLoading={isLoading}
-            leftIcon={isLoading ? <Spinner size="sm" /> : undefined}
+            isLoading={isLoading || storeLoading}
+            leftIcon={(isLoading || storeLoading) ? <Spinner size="sm" /> : undefined}
           >
             Save Changes
           </Button>
-          <Button variant='ghost' onClick={onClose} isDisabled={isLoading}>
+          <Button variant='ghost' onClick={onClose} isDisabled={isLoading || storeLoading}>
             Cancel
           </Button>
         </ModalFooter>

@@ -128,11 +128,11 @@
             *   `[ ]` Create `useAuthStore.ts` (session, user, permissions, related actions & GQL).
             *   `[x]` Create `useDealsStore.ts` (deals state, CRUD actions & GQL).
             *   `[x]` Create `usePeopleStore.ts` (people state, CRUD actions & GQL).
-            *   `[ ]` Create `useOrganizationsStore.ts` (organizations state, CRUD actions & GQL).
-            *   `[ ]` Create `usePipelinesStore.ts` (pipelines state, `selectedPipelineId`, CRUD actions & GQL).
-            *   `[ ]` Create `useStagesStore.ts` (stages state, CRUD actions needing `pipelineId`, & GQL).
-            *   `[ ]` Create `useActivitiesStore.ts` (activities state, CRUD actions & GQL).
-            *   `[ ]` Create `useUIStore.ts` (e.g., `currentTheme`, `setCurrentTheme`, future global UI state).
+            *   `[x]` Create `useOrganizationsStore.ts` (organizations state, CRUD actions & GQL).
+            *   `[x]` Create `usePipelinesStore.ts` (pipelines state, `selectedPipelineId`, CRUD actions & GQL).
+            *   `[x]` Create `useStagesStore.ts` (stages state, CRUD actions needing `pipelineId`, & GQL).
+            *   `[x]` Create `useActivitiesStore.ts` (activities state, CRUD actions & GQL).
+            *   `[x]` Create `useThemeStore.ts` (currentTheme, setCurrentTheme).
         *   **III. Updating Component Usage:**
             *   `[ ]` Systematically Replace `useAppStore`: Go through files importing `useAppStore`, update to use new specific store hooks.
             *   `[ ]` Address Combined Selectors: Components using multiple slices will now call multiple store hooks.
