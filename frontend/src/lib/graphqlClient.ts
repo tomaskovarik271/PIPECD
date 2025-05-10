@@ -18,7 +18,7 @@ const endpoint = import.meta.env.DEV
   : `${window.location.origin}${relativeEndpoint}`; // Production absolute URL
 
 // Create and export the GraphQL client instance
-export const gqlClient = new GraphQLClient(endpoint, {
+export const gqlClient: GraphQLClient = new GraphQLClient(endpoint, {
   // Dynamically set headers before each request
   requestMiddleware: async (request) => {
     // Get the current session from Supabase

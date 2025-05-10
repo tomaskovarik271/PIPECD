@@ -102,10 +102,16 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
              setLocalError(storeError || 'Failed to create organization.');
         }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Catch unexpected errors during the action call itself
       console.error('Error creating organization:', err);
-      setLocalError('An unexpected error occurred.');
+      let message = 'An unexpected error occurred.';
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      setLocalError(message);
     } finally {
       setIsLoading(false);
     }

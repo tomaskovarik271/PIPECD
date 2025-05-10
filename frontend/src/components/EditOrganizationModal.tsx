@@ -112,11 +112,20 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
         setError(storeError || 'Failed to update organization.');
       }
 
-    } catch (err: any) { // Catch unexpected errors if the action itself throws
+    } catch (err: unknown) { // Changed from any to unknown
       console.error('Error updating organization (component catch):', err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      const validationError = err.response?.errors?.[0]?.extensions?.originalError?.message;
-      setError(validationError || gqlError || err.message || 'Failed to update organization');
+      let message = 'Failed to update organization';
+      if (err instanceof Error) {
+        // Check for GraphQL-like error structure on the Error object
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const gqlError = (err as any).response?.errors?.[0]?.message;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const validationError = (err as any).response?.errors?.[0]?.extensions?.originalError?.message;
+        message = validationError || gqlError || err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      setError(message);
     } finally {
       setIsLoading(false);
     }

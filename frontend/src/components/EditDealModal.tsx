@@ -21,7 +21,7 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore'; // updateDealAction expects generated DealInput
-import type { Deal, Person as GeneratedPerson, Pipeline, Stage, DealInput } from '../generated/graphql/graphql'; // Import generated types
+import type { Deal, DealInput } from '../generated/graphql/graphql'; // Import generated types, removed GeneratedPerson, Pipeline, Stage
 
 // Updated interface for the Deal data passed to the modal - REMOVED
 // interface DealToEdit {
@@ -199,10 +199,16 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
           setError(storeError || 'Failed to update deal. Please check store errors.');
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Catch unexpected errors during the action call itself
       console.error('Unexpected error during handleSubmit:', err);
-      setError(err.message || 'An unexpected error occurred while updating deal.');
+      let message = 'An unexpected error occurred while updating deal.';
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      setError(message);
     } finally {
       setIsLoading(false);
     }

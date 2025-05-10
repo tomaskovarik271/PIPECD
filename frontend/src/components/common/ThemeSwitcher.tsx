@@ -1,5 +1,5 @@
 import React from 'react';
-import { IconButton, useColorMode } from '@chakra-ui/react';
+import { IconButton } from '@chakra-ui/react';
 import { SunIcon, MoonIcon } from '@chakra-ui/icons';
 import { useAppStore, ThemeMode } from '../../stores/useAppStore';
 

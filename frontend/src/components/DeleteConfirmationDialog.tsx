@@ -52,14 +52,18 @@ function DeleteConfirmationDialog({ isOpen, onClose, person, onSuccess }: Delete
           isClosable: true,
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to delete person (component catch):", error);
       // Extract more specific error message if available
       let errorMessage = 'An unexpected error occurred.';
-       if (error.response?.errors?.[0]?.message) {
-         errorMessage = error.response.errors[0].message;
-       } else if (error.message) {
+       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       if (error instanceof Error && (error as any).response?.errors?.[0]?.message) {
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         errorMessage = (error as any).response.errors[0].message;
+       } else if (error instanceof Error) {
          errorMessage = error.message;
+       } else if (typeof error === 'string') {
+         errorMessage = error;
        }
       toast({ 
         title: 'Deletion Failed', 

@@ -41,9 +41,15 @@ const DeleteStageConfirmationDialog: React.FC<DeleteStageConfirmationDialogProps
         // Error handled in store, fallback
         toast({ title: "Failed to delete stage.", description: "Check console or try again.", status: 'error', duration: 5000, isClosable: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error in delete stage dialog submit:", error);
-        toast({ title: "An error occurred.", description: error.message || "Could not delete stage.", status: 'error', duration: 5000, isClosable: true });
+        let message = "Could not delete stage.";
+        if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        toast({ title: "An error occurred.", description: message, status: 'error', duration: 5000, isClosable: true });
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +76,7 @@ const DeleteStageConfirmationDialog: React.FC<DeleteStageConfirmationDialogProps
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            Are you sure you want to delete the stage "<strong>{stage?.name || 'this stage'}</strong>"?
+            Are you sure you want to delete the stage &ldquo;<strong>{stage?.name || 'this stage'}</strong>&rdquo;?
             <br />
             Deals in this stage will have their stage cleared. This action cannot be undone.
           </AlertDialogBody>

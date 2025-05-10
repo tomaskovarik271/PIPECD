@@ -1,4 +1,4 @@
-import { extendTheme, ThemeConfig } from '@chakra-ui/react';
+import { extendTheme, ThemeConfig, StyleFunctionProps } from '@chakra-ui/react';
 
 // 1. Define color mode config
 const config: ThemeConfig = {
@@ -21,7 +21,9 @@ const lightTheme = extendTheme({
     // },
   },
   styles: {
-    global: (props: any) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    global: (props: StyleFunctionProps) => ({
       body: {
         bg: 'gray.50',
         color: 'gray.800',
@@ -115,7 +117,9 @@ const darkTheme = extendTheme({
     red: { 200: '#FEB2B2', 800: '#9B2C2C' },
   },
   styles: {
-    global: (props: any) => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    global: (props: StyleFunctionProps) => ({
       body: {
         bg: 'gray.900', 
         color: 'gray.300',
@@ -192,7 +196,9 @@ const darkTheme = extendTheme({
                 _hover: { bg: 'whiteAlpha.200' },
                 _active: { bg: 'whiteAlpha.300' },
             },
-            solid: (props: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            solid: (props: StyleFunctionProps) => {
                 if (props.colorScheme === 'blue') {
                     return {
                         bg: 'blue.400', // Use our dark-theme blue

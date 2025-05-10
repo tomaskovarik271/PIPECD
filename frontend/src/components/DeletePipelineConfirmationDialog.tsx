@@ -73,7 +73,7 @@ function DeletePipelineConfirmationDialog({
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            Are you sure you want to delete the pipeline "{pipeline.name}"? 
+            Are you sure you want to delete the pipeline &ldquo;{pipeline.name}&rdquo;? 
             All stages within this pipeline will also be deleted. Deals in those stages will have their stage unset.
             This action cannot be undone.
           </AlertDialogBody>

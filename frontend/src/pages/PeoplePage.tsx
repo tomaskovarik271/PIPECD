@@ -1,11 +1,10 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 // import { gql } from 'graphql-request'; // No longer needed
 // import { gqlClient } from '../lib/graphqlClient'; // No longer needed
 import {
   Button,
   Box,
   Heading,
-  List, ListItem,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -26,7 +25,7 @@ import CreatePersonForm from '../components/CreatePersonForm';
 import EditPersonForm from '../components/EditPersonForm';
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
 import { useAppStore } from '../stores/useAppStore'; // Import store
-import type { Person as GeneratedPerson, Organization as GeneratedOrganization } from '../generated/graphql/graphql'; // Import generated types
+import type { Person as GeneratedPerson } from '../generated/graphql/graphql'; // Removed GeneratedOrganization
 import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
 import EmptyState from '../components/common/EmptyState'; // Import EmptyState
@@ -43,14 +42,8 @@ import EmptyState from '../components/common/EmptyState'; // Import EmptyState
 //   organization?: Organization | null;
 // }
 
-// Define sortable keys
-type PersonSortKeys = 'name' | 'organization' | 'email' | 'phone';
-
-// Define sort config type
-interface SortConfig {
-    key: PersonSortKeys;
-    direction: 'ascending' | 'descending';
-}
+// Define sortable keys - REMOVED PersonSortKeys
+// type PersonSortKeys = 'name' | 'organization' | 'email' | 'phone';
 
 function PeoplePage() {
   // --- State from Zustand Store ---

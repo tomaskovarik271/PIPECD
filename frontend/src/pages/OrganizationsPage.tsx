@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Heading,
@@ -16,7 +16,7 @@ import {
 } from '@chakra-ui/react';
 import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
-import { EditIcon, DeleteIcon, LockIcon, ViewIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore'; // Import store
 import type { Organization as GeneratedOrganization } from '../generated/graphql/graphql'; // Import generated type
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
@@ -35,16 +35,6 @@ import SortableTable, { ColumnDefinition } from '../components/common/SortableTa
 //   created_at: string;
 //   updated_at: string;
 // }
-
-// Define sortable keys
-type OrgSortKeys = 'name' | 'address' | 'notes' | 'created_at';
-
-// Define sort config type
-interface SortConfig {
-    key: OrgSortKeys;
-    direction: 'ascending' | 'descending';
-}
-// --- End Type Definition ---
 
 // REMOVED: GetOrganizationsQueryResult (in store)
 // REMOVED: DELETE_ORGANIZATION_MUTATION and result type (in store)

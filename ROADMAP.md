@@ -285,24 +285,24 @@ This plan addresses specific points raised during the code analysis performed on
 
 **Priority: High (Direct Impact on Dev Velocity / Correctness)**
 
-*   [x] **(5) Implement Frontend Path Aliases:**
-    *   [x] Configure `baseUrl` and `paths` in `frontend/tsconfig.app.json`.
-    *   [x] Configure `resolve.alias` in `frontend/vite.config.ts`.
-    *   [x] Refactor existing deep relative imports (`../../..`) in `frontend/src` to use the `@/` alias.
+*   [ ] **(5) Implement Frontend Path Aliases:**
+    *   [ ] Configure `baseUrl` and `paths` in `frontend/tsconfig.app.json`.
+    *   [ ] Configure `resolve.alias` in `frontend/vite.config.ts`.
+    *   [ ] Refactor existing deep relative imports (`../../..`) in `frontend/src` to use the `@/` alias.
     *   *Benefit: Improves import readability, reduces errors when moving files, easier navigation.*
-*   [x] **(6) Fix GraphQL Client Header Inconsistency:**
-    *   [x] Remove all calls to `gqlClient.setHeaders({...})` from `frontend/src/stores/useAuthStore.ts` (within `onAuthStateChange` and `handleSignOut`).
-    *   [x] Verify that the `requestMiddleware` in `frontend/src/lib/graphqlClient.ts` correctly handles token injection (already confirmed in analysis).
+*   [ ] **(6) Fix GraphQL Client Header Inconsistency:**
+    *   [ ] Remove all calls to `gqlClient.setHeaders({...})` from `frontend/src/stores/useAuthStore.ts` (within `onAuthStateChange` and `handleSignOut`).
+    *   [ ] Verify that the `requestMiddleware` in `frontend/src/lib/graphqlClient.ts` correctly handles token injection (already confirmed in analysis).
     *   *Benefit: Removes incorrect/ineffective code, clarifies the single source of truth for token injection.*
-*   [x] **(15) Generate Backend Types:**
-    *   [x] Add `@graphql-codegen/typescript` and `@graphql-codegen/typescript-resolvers` dependencies.
-    *   [x] Create `codegen.yml` config for backend types (`lib/generated/graphql.ts`) using `typescript` and `typescript-resolvers` plugins, referencing `GraphQLContext`.
-    *   [x] Add `codegen:backend` script to `package.json`.
-    *   [x] Run codegen to generate initial `lib/generated/graphql.ts`.
-    *   [x] Refactor resolver files (`netlify/functions/graphql/resolvers/*.ts`) to use generated `Resolvers`, specific resolver types, and input/output types, casting service results where needed.
-    *   [x] Refactor service files (`lib/*.service.ts`) to use generated types for function signatures and return types, removing local type definitions.
-    *   [x] Remove redundant types from `lib/types.ts`.
-    *   [x] Fix type errors identified by `tsc --noEmit` (manual fixes needed for remaining unused imports/type names in `personService.ts`, `graphql.ts`, `activity.ts`).
+*   [ ] **(15) Generate Backend Types:**
+    *   [ ] Add `@graphql-codegen/typescript` and `@graphql-codegen/typescript-resolvers` dependencies.
+    *   [ ] Create `codegen.yml` config for backend types (`lib/generated/graphql.ts`) using `typescript` and `typescript-resolvers` plugins, referencing `GraphQLContext`.
+    *   [ ] Add `codegen:backend` script to `package.json`.
+    *   [ ] Run codegen to generate initial `lib/generated/graphql.ts`.
+    *   [ ] Refactor resolver files (`netlify/functions/graphql/resolvers/*.ts`) to use generated `Resolvers`, specific resolver types, and input/output types, casting service results where needed.
+    *   [ ] Refactor service files (`lib/*.service.ts`) to use generated types for function signatures and return types, removing local type definitions.
+    *   [ ] Remove redundant types from `lib/types.ts`.
+    *   [ ] Fix type errors identified by `tsc --noEmit` (manual fixes needed for remaining unused imports/type names in `personService.ts`, `graphql.ts`, `activity.ts`).
     *   *Benefit: Provides strong typing for resolvers and services based on the GraphQL schema, reducing runtime errors and improving developer experience.*
 *   [ ] **(7) Setup Database Migrations:**
     *   [ ] Review database schema for potential indexing opportunities on frequently queried/filtered columns (e.g., `name`, `email`, foreign keys). Add indexes via migrations.

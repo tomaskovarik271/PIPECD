@@ -35,6 +35,7 @@ interface MockUser {
 
 // Type helper for the mocked PostgrestBuilder methods
 type MockedBuilderMethods = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   [K in keyof typeof mockPostgrestBuilderMethods]: MockedFunction<any>;
 };
 

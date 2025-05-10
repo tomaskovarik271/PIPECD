@@ -26,7 +26,8 @@ import {
   HStack,
   Text,
 } from '@chakra-ui/react';
-import { useAppStore, UpdateStageInput, Stage } from '../stores/useAppStore';
+import { useAppStore, Stage } from '../stores/useAppStore';
+import type { UpdateStageInput } from '../generated/graphql/graphql';
 
 interface EditStageModalProps {
   isOpen: boolean;
@@ -125,14 +126,21 @@ const EditStageModal: React.FC<EditStageModalProps> = ({
             const updateError = useAppStore.getState().stagesError;
             setError(updateError || 'Failed to update stage. Unknown error.');
         }
-    } catch (err: any) { 
+    } catch (err: unknown) {
       console.error("Unexpected error during stage update:", err);
-      setError(err.message || 'An unexpected error occurred.');
+      let message = 'An unexpected error occurred.';
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      setError(message);
     } finally {
         setIsSubmitting(false);
     }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleInputChange = (setter: React.Dispatch<React.SetStateAction<any>>, value: any) => {
       setter(value);
       if (error) {
@@ -159,7 +167,7 @@ const EditStageModal: React.FC<EditStageModalProps> = ({
                 placeholder="e.g., Qualified Lead"
                 value={stageName}
                 onChange={(e) => handleInputChange(setStageName, e.target.value)}
-                autoFocus
+                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
               />
               {error && error.toLowerCase().includes('name') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>

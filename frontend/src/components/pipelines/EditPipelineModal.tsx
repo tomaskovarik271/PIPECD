@@ -76,9 +76,15 @@ const EditPipelineModal: React.FC<EditPipelineModalProps> = ({ isOpen, onClose, 
       } else {
         toast({ title: "Failed to update pipeline.", description: "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error in edit pipeline modal submit:", error);
-        toast({ title: "An error occurred.", description: error.message || "Could not update pipeline.", status: 'error', duration: 5000, isClosable: true });
+        let message = "Could not update pipeline.";
+        if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        toast({ title: "An error occurred.", description: message, status: 'error', duration: 5000, isClosable: true });
     } finally {
         setIsLoading(false);
     }
@@ -98,7 +104,7 @@ const EditPipelineModal: React.FC<EditPipelineModalProps> = ({ isOpen, onClose, 
                 placeholder="e.g., Sales Pipeline Q3"
                 value={pipelineName}
                 onChange={(e) => setPipelineName(e.target.value)}
-                autoFocus
+                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
               />
             </FormControl>
           </VStack>

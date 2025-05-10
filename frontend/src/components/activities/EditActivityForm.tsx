@@ -1,4 +1,4 @@
-import { useForm, SubmitHandler, Controller } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import React, { useState, useEffect } from 'react';
 import {
   Button,
@@ -11,13 +11,13 @@ import {
   Checkbox,
   VStack,
   useToast,
-  SimpleGrid,
   RadioGroup,
   Radio,
   HStack,
   Spinner,
 } from '@chakra-ui/react';
-import { useAppStore, Activity, UpdateActivityInput, Deal, Person, Organization } from '../../stores/useAppStore';
+import { useAppStore, Activity } from '../../stores/useAppStore';
+import type { UpdateActivityInput } from '../../generated/graphql/graphql';
 
 // Define Activity Types matching GraphQL Enum
 const activityTypes = [
@@ -87,11 +87,9 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
   const { 
     handleSubmit, 
     register, 
-    control, 
     formState: { errors, isSubmitting, dirtyFields }, // Use dirtyFields to send only changed values
     reset, 
     setValue, 
-    watch 
   } = useForm<FormValues>({
       defaultValues: {
           type: activity.type,
@@ -161,9 +159,11 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
             } else {
                  // Handle potential empty strings for notes -> null
                  if (key === 'notes' && values[key] === '') {
+                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                      (updateData as any)[key] = null;
                  } else {
                      // Assign other dirty fields directly, ensuring correct type
+                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                      (updateData as any)[key] = values[key];
                  }
             }

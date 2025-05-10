@@ -19,7 +19,7 @@ import {
   useDisclosure,
   useToast
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, ArrowBackIcon, DragHandleIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, ArrowBackIcon, DragHandleIcon } from '@chakra-ui/icons';
 
 // Import the stage modal components
 import CreateStageModal from '../components/stages/CreateStageModal';

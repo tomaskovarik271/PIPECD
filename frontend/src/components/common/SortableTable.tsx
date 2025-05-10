@@ -7,7 +7,6 @@ import {
   Th,
   Td,
   TableContainer,
-  Box,
 } from '@chakra-ui/react';
 import { TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
 
@@ -18,7 +17,7 @@ export interface ColumnDefinition<T> {
   renderCell: (item: T) => React.ReactNode;
   isSortable: boolean;
   isNumeric?: boolean;
-  sortAccessor?: (item: T) => any; // Optional accessor for complex sort values
+  sortAccessor?: (item: T) => unknown; // Changed any to unknown
 }
 
 // Sort Configuration
@@ -61,10 +60,10 @@ function SortableTable<T extends { id: string }>({
   };
 
   const sortedData = useMemo(() => {
-    let sortableItems = [...data];
+    const sortableItems = [...data];
     const currentColumn = columns.find(col => col.key === sortConfig.key);
     
-    if (!currentColumn) return sortableItems; // Should not happen if key is valid
+    if (!currentColumn?.isSortable) return sortableItems; // Return unsorted if column not found or not sortable
 
     sortableItems.sort((a, b) => {
         // Use sortAccessor if provided, otherwise direct key access
@@ -72,7 +71,8 @@ function SortableTable<T extends { id: string }>({
             if (currentColumn.sortAccessor) {
                 return currentColumn.sortAccessor(item);
             }
-            // Basic handling for direct keys - assumes primitive values or requires careful key selection
+            // Fallback to direct key access using sortConfig.key
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             return (item as any)[sortConfig.key]; 
         };
 

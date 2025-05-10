@@ -3,10 +3,8 @@ import {
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Button,
 } from '@chakra-ui/react';
 import EditActivityForm from './EditActivityForm';
 import { Activity } from '../../stores/useAppStore';

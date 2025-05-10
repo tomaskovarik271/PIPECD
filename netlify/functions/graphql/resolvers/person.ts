@@ -36,7 +36,7 @@ export const Person = {
       }
     },
     // Placeholder for deals linked to a person (requires dealService update)
-    deals: async (parent: PersonDealsParent, _args: unknown, context: GraphQLContext) => {
+    deals: async (_parent: PersonDealsParent, _args: unknown, context: GraphQLContext) => {
       requireAuthentication(context);
       const accessToken = getAccessToken(context);
       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });

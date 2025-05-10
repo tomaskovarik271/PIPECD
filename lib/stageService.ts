@@ -146,6 +146,7 @@ export async function updateStage(accessToken: string, id: string, updates: Upda
     }
     // const userId = user.id; // Not strictly needed for the update query itself due to RLS
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updatePayload: { [key: string]: any } = { ...updates };
 
     // Map JS 'order' to DB '"order"' if necessary - Supabase client often handles this, but check during testing

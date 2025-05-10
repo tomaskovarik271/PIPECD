@@ -1,5 +1,5 @@
 import { YogaInitialContext } from 'graphql-yoga';
-import { SupabaseClient, User, createClient } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 import { ZodError } from 'zod';
 

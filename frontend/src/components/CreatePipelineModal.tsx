@@ -40,7 +40,7 @@ const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({ isOpen, onClo
     setError(null);
     
     try {
-        const newPipeline = await createPipeline(pipelineName);
+        const newPipeline = await createPipeline({ name: pipelineName.trim() });
         if (newPipeline) {
             toast({
                 title: 'Pipeline Created',
@@ -58,9 +58,15 @@ const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({ isOpen, onClo
             const creationError = useAppStore.getState().pipelinesError;
             setError(creationError || 'Failed to create pipeline. Unknown error.');
         }
-    } catch (err: any) { // Catch any unexpected errors from the action itself
+    } catch (err: unknown) { // Changed from any to unknown
       console.error("Unexpected error during pipeline creation:", err);
-      setError(err.message || 'An unexpected error occurred.');
+      let message = 'An unexpected error occurred.';
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      setError(message);
     } finally {
         setIsSubmitting(false);
     }
@@ -89,7 +95,7 @@ const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({ isOpen, onClo
                 placeholder="e.g., Sales Pipeline Q3"
                 value={pipelineName}
                 onChange={handleInputChange}
-                autoFocus
+                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
               />
                {error && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>

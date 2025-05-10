@@ -41,9 +41,15 @@ const DeletePipelineConfirmationDialog: React.FC<DeletePipelineConfirmationDialo
         // Error handled in store, but provide fallback
         toast({ title: "Failed to delete pipeline.", description: "Check console or try again. Ensure pipeline is empty if required.", status: 'error', duration: 5000, isClosable: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error in delete pipeline dialog submit:", error);
-        toast({ title: "An error occurred.", description: error.message || "Could not delete pipeline.", status: 'error', duration: 5000, isClosable: true });
+        let message = "Could not delete pipeline.";
+        if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        toast({ title: "An error occurred.", description: message, status: 'error', duration: 5000, isClosable: true });
     } finally {
       setIsLoading(false);
     }
@@ -70,7 +76,7 @@ const DeletePipelineConfirmationDialog: React.FC<DeletePipelineConfirmationDialo
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            Are you sure you want to delete the pipeline "<strong>{pipeline?.name || 'this pipeline'}</strong>"? 
+            Are you sure you want to delete the pipeline &ldquo;<strong>{pipeline?.name || 'this pipeline'}</strong>&rdquo;? 
             <br />
             This action cannot be undone. Any stages within this pipeline will also be deleted.
           </AlertDialogBody>

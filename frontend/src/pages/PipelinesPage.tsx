@@ -16,7 +16,7 @@ import {
   Flex,
   useToast
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, ViewIcon, CopyIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, ViewIcon, CopyIcon } from '@chakra-ui/icons';
 import { useNavigate } from 'react-router-dom';
 
 // Import the modal components

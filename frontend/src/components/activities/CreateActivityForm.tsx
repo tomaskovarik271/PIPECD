@@ -1,4 +1,4 @@
-import { useForm, SubmitHandler, Controller } from 'react-hook-form';
+import { useForm, SubmitHandler } from 'react-hook-form';
 import React, { useState, useEffect } from 'react';
 import {
   Button,
@@ -11,13 +11,13 @@ import {
   Checkbox,
   VStack,
   useToast,
-  SimpleGrid,
   RadioGroup,
   Radio,
   HStack,
   Spinner,
 } from '@chakra-ui/react';
-import { useAppStore, CreateActivityInput, Deal, Person, Organization } from '../../stores/useAppStore';
+import { useAppStore } from '../../stores/useAppStore';
+import type { CreateActivityInput, ActivityType } from '../../generated/graphql/graphql';
 
 // Define Activity Types matching GraphQL Enum
 const activityTypes = [
@@ -60,14 +60,12 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
   const { 
     handleSubmit, 
     register, 
-    control, 
     formState: { errors, isSubmitting },
     reset, 
     setValue, 
-    watch 
   } = useForm<FormValues>({
       defaultValues: {
-          type: activityTypes[0],
+          type: activityTypes[0] as ActivityType,
           subject: '',
           due_date: null,
           notes: '',

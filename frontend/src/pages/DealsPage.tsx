@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import {
   Box,
   Heading,
@@ -22,7 +22,7 @@ import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import ListPageLayout from '../components/layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import EmptyState from '../components/common/EmptyState';
-import type { Deal, Person as GeneratedPerson, Stage as GeneratedStage } from '../generated/graphql/graphql'; // Import generated types
+import type { Deal, Person as GeneratedPerson } from '../generated/graphql/graphql'; // Removed GeneratedStage
 
 // Keep Deal/DealPerson types for component use - REMOVED
 // interface DealPerson {

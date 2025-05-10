@@ -32,6 +32,7 @@ vi.doMock('@supabase/supabase-js', () => {
 
 // --- Helper Types ---
 interface MockUser { id: string; }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MockedBuilderMethods = { [K in keyof typeof mockPostgrestBuilderMethods]: MockedFunction<any>; };
 
 // --- Test Suite ---
@@ -236,6 +237,7 @@ describe('stageService', () => {
             .rejects.toThrow("Deal probability must be between 0 and 1.");
          await expect(service.updateStage(mockAccessToken, stageId, { deal_probability: 1.1 }))
             .rejects.toThrow("Deal probability must be between 0 and 1.");
+         // eslint-disable-next-line @typescript-eslint/no-explicit-any
          await expect(service.updateStage(mockAccessToken, stageId, { name: 123 as any }))
             .rejects.toThrow("Invalid type for stage name update.");
         await expect(service.updateStage(mockAccessToken, stageId, { order: 1.5 }))

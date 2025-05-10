@@ -1,8 +1,7 @@
 import { createYoga, createSchema } from 'graphql-yoga';
-import type { Handler, HandlerEvent, HandlerContext } from '@netlify/functions';
+import type { Handler, HandlerContext } from '@netlify/functions';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabaseClient';
-import { inngest } from './inngest'; // Import the Inngest client (if used elsewhere, e.g. mutations)
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
@@ -10,7 +9,6 @@ import { createClient } from '@supabase/supabase-js';
 // Import helpers and context type
 import {
   GraphQLContext, 
-  getAccessToken, 
   // processZodError, // Likely only needed in resolvers now
   // requireAuthentication // Likely only needed in resolvers now
 } from './graphql/helpers'; 
@@ -54,9 +52,13 @@ const loadTypeDefs = (): string => {
       }
     });
     return typeDefs;
-  } catch (error: any) {
+  } catch (error: unknown) {
       console.error("Failed to load GraphQL schema files:", error);
-      throw new Error(`Failed to load GraphQL schema files: ${error.message}`);
+      let message = "Unknown error loading schema";
+      if (error instanceof Error) {
+        message = error.message;
+      }
+      throw new Error(`Failed to load GraphQL schema files: ${message}`);
   }
 };
 
@@ -155,7 +157,7 @@ const yoga = createYoga<GraphQLContext>({
 });
 
 // Netlify Function handler
-export const handler: Handler = async (event, context) => {
+export const handler: Handler = async (event, _: HandlerContext) => {
   try {
     // Construct a URL object for yoga.fetch
     const url = new URL(event.path, `http://${event.headers.host || 'localhost'}`);
@@ -181,11 +183,19 @@ export const handler: Handler = async (event, context) => {
     body: await response.text(),
       isBase64Encoded: false, // Assuming text response
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in GraphQL handler:", error);
+    let message = "Internal Server Error";
+    if (error instanceof Error) {
+      message = error.message;
+    } else if (typeof error === 'string') {
+      message = error;
+    } else if (typeof error === 'object' && error !== null && 'message' in error && typeof (error as {message: unknown}).message === 'string') {
+      message = (error as {message: string}).message;
+    }
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: "Internal Server Error" }),
+      body: JSON.stringify({ message }),
       headers: { "Content-Type": "application/json" },
     };
   }

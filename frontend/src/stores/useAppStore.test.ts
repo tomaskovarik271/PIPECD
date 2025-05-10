@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react'; // Use renderHook for testing hooks/stores
-import { Session, User } from '@supabase/supabase-js';
+import { Session } from '@supabase/supabase-js';
 
 // Import the necessary types now that they're exported
-import { Deal, Person, Organization, Pipeline, Stage, UpdatePipelineInput } from './useAppStore';
+import { Deal, Person, Organization, Pipeline, Stage, PipelineInput } from './useAppStore';
 
 // --- Mock Dependencies ---
 
@@ -30,6 +30,7 @@ vi.doMock('../lib/graphqlClient', () => ({ // Mock the path used by the store
 // --- Test Suite ---
 
 describe('useAppStore', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let useAppStore: any; // Will be dynamically imported
 
   beforeEach(async () => {
@@ -1059,7 +1060,7 @@ describe('useAppStore', () => {
         { id: 'pipe-keep', name: 'Keep Me', user_id: 'u', created_at: 't', updated_at: 't' }, 
         { id: pipelineToUpdateId, name: 'Update Me', user_id: 'u', created_at: 't', updated_at: 't' }
       ];
-      const updateInput: UpdatePipelineInput = { name: 'Updated Pipeline Name' };
+      const updateInput: PipelineInput = { name: 'Updated Pipeline Name' };
       const updatedPipeline = { ...initialPipelines[1], ...updateInput }; // Combine original with update
       const mockSession = { access_token: 'update-pipe-token', user: { id: 'user-update-pipe' } } as unknown as Session;
 

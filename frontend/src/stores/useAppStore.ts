@@ -57,6 +57,39 @@ export type {
   Maybe // Also re-export Maybe if components might need it for optional fields
 };
 
+// --- GraphQL Error Handling Types ---
+interface GQLError {
+  message: string;
+  // Depending on your GraphQL server, other properties like 'path' or 'extensions' might exist
+}
+
+interface GQLResponse {
+  errors: GQLError[];
+  // Data would also be here in a full response, but we only care about errors for this type
+}
+
+interface GraphQLErrorWithMessage {
+  response?: GQLResponse; // Make response optional as it might not always be there (e.g. network error)
+  // Add other properties if your client might throw errors with different shapes
+  // For instance, a plain Error object from a network issue won't have 'response'.
+}
+
+// Type guard to check if an error is a GraphQL-like error with a message
+function isGraphQLErrorWithMessage(error: unknown): error is GraphQLErrorWithMessage {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    // Check if 'response' exists and is an object
+    (typeof (error as GraphQLErrorWithMessage).response === 'object' &&
+      (error as GraphQLErrorWithMessage).response !== null &&
+      // Check if 'response.errors' exists, is an array, and has at least one element
+      Array.isArray((error as GraphQLErrorWithMessage).response?.errors) &&
+      ((error as GraphQLErrorWithMessage).response?.errors?.length ?? 0) > 0 &&
+      // Check if the first error has a 'message' property of type string
+      typeof (error as GraphQLErrorWithMessage).response?.errors?.[0]?.message === 'string')
+  );
+}
+
 // --- Interface Definitions ---
 
 // Organization (Keep manual, to be refactored separately) - REMOVED, using generated type
@@ -170,9 +203,9 @@ export type ThemeMode = 'light' | 'dark';
 // interface CreatePipelineMutationResult { createPipeline: Pipeline; } // REMOVED
 // interface UpdatePipelineMutationResult { updatePipeline: Pipeline; } // REMOVED
 // interface DeletePipelineMutationResult { deletePipeline: boolean; } // REMOVED
-// interface GetStagesQueryResult { stages: Stage[]; } // REMOVED (Uses generated Stage now)
-// interface CreateStageMutationResult { createStage: Stage; } // REMOVED (Uses generated Stage)
-// interface UpdateStageMutationResult { updateStage: Stage; } // REMOVED (Uses generated Stage)
+// interface GetStagesQueryResult { stages: Stage[]; } // REMOVED
+// interface CreateStageMutationResult { createStage: Stage; } // REMOVED
+// interface UpdateStageMutationResult { updateStage: Stage; } // REMOVED
 // interface DeleteStageMutationResult { deleteStage: boolean; } // REMOVED
 // interface GetActivitiesQueryResult { activities: Activity[]; } // REMOVED
 // interface CreateActivityMutationResult { createActivity: Activity; } // REMOVED
@@ -223,6 +256,21 @@ const UPDATE_ORGANIZATION_MUTATION = gql`
     }
   }
 `;
+
+// Helper function to get the initial theme
+const getInitialTheme = (): ThemeMode => {
+  if (typeof window !== 'undefined') {
+    try {
+      const storedTheme = localStorage.getItem('app-theme') as ThemeMode | null;
+      if (storedTheme === 'light' || storedTheme === 'dark') {
+        return storedTheme;
+      }
+    } catch (error: unknown) {
+      console.error("Error reading theme from localStorage:", error);
+    }
+  }
+  return 'light';
+};
 
 interface AppState {
   // Auth (unchanged)
@@ -290,6 +338,7 @@ interface AppState {
   deleteActivity: (id: string) => Promise<boolean>; // Response should be boolean
 
   // Theme Management (unchanged)
+  currentTheme: ThemeMode; // Added currentTheme state
   setCurrentTheme: (theme: ThemeMode) => void;
 }
 
@@ -301,6 +350,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   organizations: [], organizationsLoading: false, organizationsError: null,
   pipelines: [], stages: [], pipelinesLoading: false, pipelinesError: null, stagesLoading: false, stagesError: null, selectedPipelineId: null,
   activities: [], activitiesLoading: false, activitiesError: null,
+  currentTheme: getInitialTheme(), // Initialize currentTheme
 
   // --- Actions ---
   
@@ -318,7 +368,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         // Assuming GetMyPermissionsQueryResult is still the manual one for now, or this query is simple string array
         const data = await gqlClient.request<{myPermissions: string[]}>(GET_MY_PERMISSIONS_QUERY);
         set({ userPermissions: data.myPermissions || [], permissionsLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error fetching user permissions:', error);
         set({ userPermissions: null, permissionsLoading: false });
     }
@@ -354,21 +404,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchDeals: async () => {
     set({ dealsLoading: true, dealsError: null });
     try {
-      // Define inline response shape using the generated Deal type
       type GetDealsQueryResponse = { deals: Deal[] }; 
       const data = await gqlClient.request<GetDealsQueryResponse>(GET_DEALS_QUERY);
         set({ deals: data.deals || [], dealsLoading: false });
-    } catch (err: any) {
-        console.error("Error fetching deals:", err);
-        const gqlError = err.response?.errors?.[0]?.message;
-        const errorMsg = gqlError || err.message || 'Failed to fetch deals';
-        set({ dealsError: errorMsg, dealsLoading: false, deals: [] });
+    } catch (error: unknown) {
+        console.error("Error fetching deals:", error);
+        let message = 'Failed to fetch deals';
+        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        set({ dealsError: message, dealsLoading: false, deals: [] });
     }
   },
   createDeal: async (input: DealInput): Promise<Deal | null> => {
-    set({ dealsLoading: true, dealsError: null }); // Use general dealsLoading
+    set({ dealsLoading: true, dealsError: null });
     try {
-      // Define inline response shape using the generated Deal type
       type CreateDealMutationResponse = { createDeal: Deal }; 
       const response = await gqlClient.request<CreateDealMutationResponse, MutationCreateDealArgs>(
         CREATE_DEAL_MUTATION,
@@ -378,21 +432,26 @@ export const useAppStore = create<AppState>((set, get) => ({
         set((state) => ({ deals: [...state.deals, response.createDeal], dealsLoading: false }));
         return response.createDeal;
       } else {
-        set({ dealsLoading: false }); // Reset loading if null response
+        set({ dealsLoading: false });
         return null;
       }
-    } catch (err: any) {
-        console.error("Error creating deal:", err);
-        const gqlError = err.response?.errors?.[0]?.message;
-        const errorMsg = gqlError || err.message || 'Failed to create deal';
-        set({ dealsError: errorMsg, dealsLoading: false });
+    } catch (error: unknown) {
+        console.error("Error creating deal:", error);
+        let message = 'Failed to create deal';
+        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        set({ dealsError: message, dealsLoading: false });
         return null;
     }
   },
   updateDeal: async (id: string, input: DealInput): Promise<Deal | null> => {
     set({ dealsLoading: true, dealsError: null });
     try {
-      // Define inline response shape using the generated Deal type
       type UpdateDealMutationResponse = { updateDeal?: Maybe<Deal> }; 
       const response = await gqlClient.request<UpdateDealMutationResponse, MutationUpdateDealArgs>(
         UPDATE_DEAL_MUTATION,
@@ -400,31 +459,37 @@ export const useAppStore = create<AppState>((set, get) => ({
       );
       if (response.updateDeal) {
         set((state) => ({
-          deals: state.deals.map((d) => (d.id === id ? response.updateDeal! : d)), // Using non-null assertion
+          deals: state.deals.map((d) => (d.id === id ? response.updateDeal! : d)),
           dealsLoading: false,
         }));
         return response.updateDeal;
       } else {
-        set({ dealsLoading: false }); // Reset loading if null response
+        set({ dealsLoading: false });
         return null;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error(`Error updating deal ${id}:`, error);
-        const errorMsg = error.response?.errors?.[0]?.message || error.message || 'Failed to update deal';
-        set({ dealsLoading: false, dealsError: errorMsg });
+        let message = 'Failed to update deal';
+        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        set({ dealsLoading: false, dealsError: message });
         return null;
     }
   },
   deleteDeal: async (id: string): Promise<boolean> => {
-    const session = get().session; // Auth check still relevant
+    const session = get().session;
     if (!session) {
       set({ dealsError: 'Not authenticated' });
       return false;
     }
     const originalDeals = get().deals;
-    set((state) => ({ deals: state.deals.filter(deal => deal.id !== id), dealsError: null })); // Optimistic update
+    set((state) => ({ deals: state.deals.filter(deal => deal.id !== id), dealsError: null }));
     try {
-      // Define inline response shape
       type DeleteDealMutationResponse = { deleteDeal?: Maybe<boolean> }; 
       const response = await gqlClient.request<DeleteDealMutationResponse, MutationDeleteDealArgs>(
           DELETE_DEAL_MUTATION, 
@@ -432,18 +497,23 @@ export const useAppStore = create<AppState>((set, get) => ({
         { Authorization: `Bearer ${session.access_token}` } 
       );
       if (response.deleteDeal) {
-        set({ dealsError: null, dealsLoading: false }); // Clear loading on success
+        set({ dealsError: null, dealsLoading: false });
           return true;
       } else {
-        // If API returns false explicitly or field is null/missing after successful HTTP call
         set({ deals: originalDeals, dealsError: 'Delete operation did not succeed as reported by API', dealsLoading: false });
         return false;
       }
-    } catch (err: any) {
-        console.error('Error deleting deal:', err);
-        const gqlError = err.response?.errors?.[0]?.message;
-        const errorMsg = gqlError || err.message || 'Failed to delete deal';
-        set({ deals: originalDeals, dealsError: `Failed to delete deal (${id}): ${errorMsg}`, dealsLoading: false });
+    } catch (error: unknown) {
+        console.error('Error deleting deal:', error);
+        let message = `Failed to delete deal (${id})`;
+        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        set({ deals: originalDeals, dealsError: message, dealsLoading: false });
         return false;
     }
   },
@@ -454,25 +524,29 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
         const session = get().session;
         if (!session) throw new Error("Not authenticated");
-        // Define inline response shape using generated Person
         type GetPeopleQueryResponse = { people: Person[] }; 
         const data = await gqlClient.request<GetPeopleQueryResponse>(
             GET_PEOPLE_QUERY,
             {},
             { Authorization: `Bearer ${session.access_token}` }
         );
-        set({ people: data.people || [], peopleLoading: false }); // Uses generated Person[]
-    } catch (err: any) {
-        console.error("Error fetching people:", err);
-        const gqlError = err.response?.errors?.[0]?.message;
-        const errorMsg = gqlError || err.message || 'Failed to fetch people';
-        set({ peopleError: errorMsg, peopleLoading: false, people: [] });
+        set({ people: data.people || [], peopleLoading: false });
+    } catch (error: unknown) {
+        console.error("Error fetching people:", error);
+        let message = 'Failed to fetch people';
+        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        set({ peopleError: message, peopleLoading: false, people: [] });
     }
   },
   createPerson: async (input: PersonInput): Promise<Person | null> => {
     set({ peopleLoading: true, peopleError: null });
     try {
-      // Define inline response shape using the generated Person type
       type CreatePersonMutationResponse = { createPerson?: Maybe<Person> }; 
       const response = await gqlClient.request<CreatePersonMutationResponse, MutationCreatePersonArgs>(
         CREATE_PERSON_MUTATION,
@@ -480,21 +554,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       );
       if (response.createPerson) {
         set((state) => ({ 
-          people: [...state.people, response.createPerson!], // Add new person to state
+          people: [...state.people, response.createPerson!],
           peopleLoading: false 
         }));
         return response.createPerson;
       } else {
-        set({ peopleLoading: false }); // Reset loading if null response
-        // Consider setting an error if the API unexpectedly returns null after a 200 OK
-        // set({ peopleError: 'Create person mutation returned null' });
+        set({ peopleLoading: false });
         return null;
       }
-    } catch (err: any) {
-        console.error("Error creating person:", err);
-        const gqlError = err.response?.errors?.[0]?.message;
-        const errorMsg = gqlError || err.message || 'Failed to create person';
-        set({ peopleError: errorMsg, peopleLoading: false });
+    } catch (error: unknown) {
+        console.error("Error creating person:", error);
+        let message = 'Failed to create person';
+        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        set({ peopleError: message, peopleLoading: false });
         return null;
     }
   },
@@ -514,14 +592,19 @@ export const useAppStore = create<AppState>((set, get) => ({
         return response.updatePerson;
       } else {
         set({ peopleLoading: false });
-        // set({ peopleError: 'Update person mutation returned null' });
         return null;
       }
-    } catch (err: any) {
-      console.error(`Error updating person ${id}:`, err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      const errorMsg = gqlError || err.message || 'Failed to update person';
-      set({ peopleError: errorMsg, peopleLoading: false });
+    } catch (error: unknown) {
+      console.error(`Error updating person ${id}:`, error);
+      let message = 'Failed to update person';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ peopleError: message, peopleLoading: false });
       return null;
     }
   },
@@ -532,13 +615,12 @@ export const useAppStore = create<AppState>((set, get) => ({
       return false;
     }
     const originalPeople = get().people;
-    set((state) => ({ people: state.people.filter(p => p.id !== id), peopleError: null })); // Uses generated Person[]
+    set((state) => ({ people: state.people.filter(p => p.id !== id), peopleError: null }));
     try {
-      // Define inline response shape
       type DeletePersonMutationResponse = { deletePerson?: Maybe<boolean> };
       const result = await gqlClient.request<DeletePersonMutationResponse, MutationDeletePersonArgs>(
           DELETE_PERSON_MUTATION, 
-          { id }, // Variables match MutationDeletePersonArgs
+          { id },
           { Authorization: `Bearer ${session.access_token}` }
       );
       if (result.deletePerson) {
@@ -548,11 +630,17 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({ people: originalPeople, peopleError: 'Delete operation did not succeed as reported by API' });
           return false;
       }
-    } catch (err: any) {
-        console.error('Error deleting person:', err);
-        const gqlError = err.response?.errors?.[0]?.message;
-        const errorMsg = gqlError || err.message || 'Failed to delete person';
-        set({ people: originalPeople, peopleError: `Failed to delete person (${id}): ${errorMsg}` });
+    } catch (error: unknown) {
+        console.error('Error deleting person:', error);
+        let message = `Failed to delete person (${id})`;
+        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        set({ people: originalPeople, peopleError: message });
         return false;
     }
   },
@@ -561,13 +649,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchOrganizations: async () => {
     set({ organizationsLoading: true, organizationsError: null });
     try {
-      // Use generated Organization type for the response structure
       const data = await gqlClient.request<{ organizations: Organization[] }, GetOrganizationsQueryVariables>(GET_ORGANIZATIONS_QUERY, {});
       set({ organizations: data.organizations || [], organizationsLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching organizations:', error);
-      const gqlError = error.response?.errors?.[0]?.message; // Extract GQL error
-      set({ organizationsError: gqlError || error.message, organizationsLoading: false, organizations: [] });
+      let message = 'Failed to fetch organizations';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ organizationsError: message, organizationsLoading: false, organizations: [] });
     }
   },
   createOrganization: async (input: OrganizationInput): Promise<Organization | null> => {
@@ -588,10 +682,17 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ organizationsLoading: false });
         return null;
       }
-    } catch (err: any) {
-      console.error("Error creating organization:", err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      set({ organizationsError: gqlError || err.message, organizationsLoading: false });
+    } catch (error: unknown) {
+      console.error("Error creating organization:", error);
+      let message = 'Failed to create organization';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ organizationsError: message, organizationsLoading: false });
       return null;
     }
   },
@@ -613,17 +714,23 @@ export const useAppStore = create<AppState>((set, get) => ({
         set({ organizationsLoading: false });
         return null;
       }
-    } catch (err: any) {
-      console.error(`Error updating organization ${id}:`, err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      set({ organizationsError: gqlError || err.message, organizationsLoading: false });
+    } catch (error: unknown) {
+      console.error(`Error updating organization ${id}:`, error);
+      let message = 'Failed to update organization';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ organizationsError: message, organizationsLoading: false });
       return null;
     }
   },
   deleteOrganization: async (id: string): Promise<boolean> => {
-    set({ organizationsLoading: true, organizationsError: null }); // Optimistic loading
+    set({ organizationsLoading: true, organizationsError: null });
     try {
-      // Use generated Organization related types for response and variables
       const response = await gqlClient.request<{ deleteOrganization?: Maybe<boolean> }, MutationDeleteOrganizationArgs>(DELETE_ORGANIZATION_MUTATION, { id });
       if (response.deleteOrganization) {
         set(state => ({
@@ -632,10 +739,17 @@ export const useAppStore = create<AppState>((set, get) => ({
         return true;
       }
       return false;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error deleting organization:', error);
-      // Optionally, set an error state for organization deletion
-      // set({ organizationsError: error.message }); 
+      let message = 'Failed to delete organization';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ organizationsError: message, organizationsLoading: false });
       return false;
     }
   },
@@ -646,10 +760,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const data = await gqlClient.request<{ pipelines: Pipeline[] }>(GET_PIPELINES_QUERY);
       set({ pipelines: data.pipelines || [], pipelinesLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error fetching pipelines:", error);
-      const errorMessage = error.response?.errors?.[0]?.message || error.message || "Failed to fetch pipelines";
-      set({ pipelinesError: errorMessage, pipelinesLoading: false, pipelines: [] });
+      let message = 'Failed to fetch pipelines';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ pipelinesError: message, pipelinesLoading: false, pipelines: [] });
     }
   },
   fetchStages: async (pipelineId: string) => {
@@ -660,10 +781,17 @@ export const useAppStore = create<AppState>((set, get) => ({
         { pipelineId }
       );
       set({ stages: (data.stages || []).sort((a, b) => a.order - b.order), stagesLoading: false });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error fetching stages for pipeline ${pipelineId}:`, error);
-      const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to fetch stages for pipeline ${pipelineId}`;
-      set({ stages: [], stagesError: errorMessage, stagesLoading: false });
+      let message = `Failed to fetch stages for pipeline ${pipelineId}`;
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ stages: [], stagesError: message, stagesLoading: false });
     }
   },
   createPipeline: async (input: PipelineInput): Promise<Pipeline | null> => {
@@ -682,10 +810,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       set({ pipelinesLoading: false });
       return null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating pipeline:", error);
-      const errorMessage = error.response?.errors?.[0]?.message || error.message || "Failed to create pipeline";
-      set({ pipelinesError: errorMessage, pipelinesLoading: false });
+      let message = 'Failed to create pipeline';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ pipelinesError: message, pipelinesLoading: false });
       return null;
     }
   },
@@ -705,15 +840,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       set({ pipelinesLoading: false });
       return null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating pipeline:", error);
-      const errorMessage = error.response?.errors?.[0]?.message || error.message || "Failed to update pipeline";
-      set({ pipelinesError: errorMessage, pipelinesLoading: false });
+      let message = 'Failed to update pipeline';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ pipelinesError: message, pipelinesLoading: false });
       return null;
     }
   },
   deletePipeline: async (id: string): Promise<boolean> => {
-    set({ pipelinesLoading: true, pipelinesError: null }); // Indicate loading
+    set({ pipelinesLoading: true, pipelinesError: null });
     try {
       const response = await gqlClient.request<{ deletePipeline?: Maybe<boolean> }, MutationDeletePipelineArgs>(
         DELETE_PIPELINE_MUTATION,
@@ -725,16 +867,23 @@ export const useAppStore = create<AppState>((set, get) => ({
             pipelinesLoading: false 
         }));
         if (get().selectedPipelineId === id) {
-          set({ stages: [], selectedPipelineId: null }); // Clear stages if deleted pipeline was selected
+          set({ stages: [], selectedPipelineId: null });
         }
         return true;
       }
-      set({ pipelinesLoading: false }); // Reset loading if API reports false
+      set({ pipelinesLoading: false });
       return false;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error deleting pipeline ${id}:`, error);
-      const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to delete pipeline ${id}`;
-      set({ pipelinesError: errorMessage, pipelinesLoading: false });
+      let message = `Failed to delete pipeline ${id}`;
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ pipelinesError: message, pipelinesLoading: false });
       return false;
     }
   },
@@ -754,10 +903,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       set({ stagesLoading: false });
       return null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating stage:", error);
-      const errorMessage = error.response?.errors?.[0]?.message || error.message || "Failed to create stage";
-      set({ stagesError: errorMessage, stagesLoading: false });
+      let message = 'Failed to create stage';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ stagesError: message, stagesLoading: false });
       return null;
     }
   },
@@ -777,10 +933,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       set({ stagesLoading: false });
       return null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error updating stage ${id}:`, error);
-      const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to update stage ${id}`;
-      set({ stagesError: errorMessage, stagesLoading: false });
+      let message = `Failed to update stage ${id}`;
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ stagesError: message, stagesLoading: false });
       return null;
     }
   },
@@ -800,10 +963,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       set({ stagesLoading: false });
       return false;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error deleting stage ${id}:`, error);
-      const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to delete stage ${id}`;
-      set({ stagesError: errorMessage, stagesLoading: false });
+      let message = `Failed to delete stage ${id}`;
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ stagesError: message, stagesLoading: false });
       return false;
     }
   },
@@ -822,11 +992,17 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (aDate !== bDate) return aDate - bDate;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime(); 
       }), activitiesLoading: false });
-    } catch (err: any) {
-      console.error("Error fetching activities:", err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      const errorMsg = gqlError || err.message || 'Failed to fetch activities';
-      set({ activitiesError: errorMsg, activitiesLoading: false, activities: [] });
+    } catch (error: unknown) {
+      console.error("Error fetching activities:", error);
+      let message = 'Failed to fetch activities';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ activitiesError: message, activitiesLoading: false, activities: [] });
     }
   },
   createActivity: async (input: GeneratedCreateActivityInput): Promise<Activity | null> => {
@@ -850,11 +1026,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       set({ activitiesLoading: false });
       return null;
-    } catch (err: any) {
-      console.error("Error creating activity:", err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      const errorMsg = gqlError || err.message || 'Failed to create activity';
-      set({ activitiesError: errorMsg, activitiesLoading: false });
+    } catch (error: unknown) {
+      console.error("Error creating activity:", error);
+      let message = 'Failed to create activity';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ activitiesError: message, activitiesLoading: false });
       return null;
     }
   },
@@ -880,11 +1062,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       set({ activitiesLoading: false });
       return null;
-    } catch (err: any) {
-      console.error(`Error updating activity ${id}:`, err);
-      const gqlError = err.response?.errors?.[0]?.message;
-      const errorMsg = gqlError || err.message || 'Failed to update activity';
-      set({ activitiesError: errorMsg, activitiesLoading: false });
+    } catch (error: unknown) {
+      console.error(`Error updating activity ${id}:`, error);
+      let message = 'Failed to update activity';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ activitiesError: message, activitiesLoading: false });
       return null;
     }
   },
@@ -895,7 +1083,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         DELETE_ACTIVITY_MUTATION,
         { id }
       );
-      if (response.deleteActivity) { // Check if an ID (string) was returned, indicating success
+      if (response.deleteActivity) {
         set(state => ({ 
             activities: state.activities.filter(a => a.id !== id),
             activitiesLoading: false 
@@ -904,10 +1092,17 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
       set({ activitiesLoading: false, activitiesError: "Delete operation did not return an ID." }); 
       return false;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(`Error deleting activity ${id}:`, error);
-      const errorMessage = error.response?.errors?.[0]?.message || error.message || `Failed to delete activity ${id}`;
-      set({ activitiesError: errorMessage, activitiesLoading: false });
+      let message = `Failed to delete activity ${id}`;
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+            message = error.response.errors[0].message;
+        } else if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+      set({ activitiesError: message, activitiesLoading: false });
       return false;
     }
   },
@@ -917,10 +1112,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (typeof window !== 'undefined') {
       try {
         localStorage.setItem('app-theme', theme);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error("Error saving theme to localStorage:", error);
       }
     }
+    set({ currentTheme: theme }); // Added set call
   },
 }));
 
@@ -934,20 +1130,6 @@ supabase.auth.onAuthStateChange((event, session) => {
         useAppStore.setState({ userPermissions: null }); 
     }
 }); 
-
-const getInitialTheme = (): ThemeMode => {
-  if (typeof window !== 'undefined') {
-    try {
-      const storedTheme = localStorage.getItem('app-theme') as ThemeMode | null;
-      if (storedTheme === 'light' || storedTheme === 'dark') {
-        return storedTheme;
-      }
-    } catch (error) {
-      console.error("Error reading theme from localStorage:", error);
-    }
-  }
-  return 'light';
-};
 
 if (typeof window !== 'undefined') {
   useAppStore.getState().checkAuth();

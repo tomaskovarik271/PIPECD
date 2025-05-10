@@ -19,7 +19,8 @@ import {
   useToast, 
   VStack 
 } from '@chakra-ui/react';
-import { useAppStore, CreateStageInput } from '../../stores/useAppStore';
+import { useAppStore } from '../../stores/useAppStore';
+import type { CreateStageInput as GeneratedCreateStageInput } from '../../generated/graphql/graphql';
 
 interface CreateStageModalProps {
   isOpen: boolean;
@@ -72,7 +73,7 @@ const CreateStageModal: React.FC<CreateStageModalProps> = ({ isOpen, onClose, pi
     
     setIsLoading(true);
     try {
-        const input: CreateStageInput = {
+        const input: GeneratedCreateStageInput = {
             pipeline_id: pipelineId,
             name: stageName.trim(),
             order: orderNum,
@@ -89,9 +90,15 @@ const CreateStageModal: React.FC<CreateStageModalProps> = ({ isOpen, onClose, pi
       } else {
         toast({ title: "Failed to create stage.", description: "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error in create stage modal submit:", error);
-        toast({ title: "An error occurred.", description: error.message || "Could not create stage.", status: 'error', duration: 5000, isClosable: true });
+        let message = "Could not create stage.";
+        if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        toast({ title: "An error occurred.", description: message, status: 'error', duration: 5000, isClosable: true });
     } finally {
         setIsLoading(false);
     }
@@ -111,7 +118,7 @@ const CreateStageModal: React.FC<CreateStageModalProps> = ({ isOpen, onClose, pi
                 placeholder="e.g., Qualification"
                 value={stageName}
                 onChange={(e) => setStageName(e.target.value)}
-                autoFocus
+                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
               />
             </FormControl>
             

@@ -1,4 +1,3 @@
-import { GraphQLError } from 'graphql';
 import { GraphQLContext, getAccessToken, requireAuthentication, processZodError } from '../helpers';
 import {
   CreateActivityInputSchema,
@@ -18,6 +17,11 @@ import { inngest } from '../../inngest';
 import { dealService } from '../../../../lib/dealService';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
+import type { 
+    QueryActivitiesArgs, 
+    MutationCreateActivityArgs, 
+    MutationUpdateActivityArgs,
+} from '../../../../frontend/src/generated/graphql/graphql.js' with { "resolution-mode": "import" };
 
 // Type definition for the parent object in Activity field resolvers
 interface ActivityParent {
@@ -70,13 +74,15 @@ export const Activity = {
 };
 
 export const Query = {
-    activities: async (_parent: unknown, args: { filter?: any }, context: GraphQLContext) => {
+    activities: async (_parent: unknown, args: QueryActivitiesArgs, context: GraphQLContext) => {
       const action = 'fetching activities';
       try {
         requireAuthentication(context); // Check auth first
         const accessToken = getAccessToken(context)!; // Then get token (assert non-null)
         const userId = context.currentUser!.id;
 
+        // Use args.filter directly if QueryActivitiesArgs already defines it with the correct type
+        // Or ensure ActivityFilterInputSchema can parse args.filter which might be of type Maybe<ActivityFilterInput>
         const validatedFilter = ActivityFilterInputSchema.parse(args.filter || {});
         return await getActivities(userId, accessToken, validatedFilter);
       } catch (error) {
@@ -97,7 +103,7 @@ export const Query = {
 };
 
 export const Mutation = {
-    createActivity: async (_parent: unknown, args: { input: any }, context: GraphQLContext) => {
+    createActivity: async (_parent: unknown, args: MutationCreateActivityArgs, context: GraphQLContext) => {
       const action = 'creating activity';
       try {
         requireAuthentication(context);
@@ -112,14 +118,14 @@ export const Mutation = {
           name: 'crm/activity.created',
           data: { activity: newActivity },
           user: { id: userId, email: context.currentUser!.email }
-        }).catch((err: any) => console.error('Failed to send activity.created event to Inngest:', err));
+        }).catch((err: unknown) => console.error('Failed to send activity.created event to Inngest:', err));
 
         return newActivity;
       } catch (error) {
         throw processZodError(error, action);
       }
     },
-    updateActivity: async (_parent: unknown, args: { id: string; input: any }, context: GraphQLContext) => {
+    updateActivity: async (_parent: unknown, args: MutationUpdateActivityArgs, context: GraphQLContext) => {
       const action = `updating activity ${args.id}`;
       try {
         requireAuthentication(context);
@@ -134,7 +140,7 @@ export const Mutation = {
           name: 'crm/activity.updated',
           data: { activity: updatedActivity },
           user: { id: userId, email: context.currentUser!.email }
-        }).catch((err: any) => console.error('Failed to send activity.updated event to Inngest:', err));
+        }).catch((err: unknown) => console.error('Failed to send activity.updated event to Inngest:', err));
 
         return updatedActivity;
       } catch (error) {
@@ -155,7 +161,7 @@ export const Mutation = {
           name: 'crm/activity.deleted',
           data: { activityId: id },
           user: { id: userId, email: context.currentUser!.email }
-        }).catch((err: any) => console.error('Failed to send activity.deleted event to Inngest:', err));
+        }).catch((err: unknown) => console.error('Failed to send activity.deleted event to Inngest:', err));
 
         return result.id;
       } catch (error) {

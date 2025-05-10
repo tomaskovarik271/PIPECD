@@ -1,5 +1,5 @@
 import { Inngest } from 'inngest';
-import type { Handler } from '@netlify/functions'; // Import Handler type
+import type { Handler, HandlerContext } from '@netlify/functions'; // Import Handler type and HandlerContext
 // import { serve } from 'inngest/node'; // Node adapter expects IncomingMessage
 // import { serve } from 'inngest/netlify'; // Revert to original import despite build warning
 // import { serve } from 'inngest/netlify'; // Original import path (incorrect)
@@ -93,7 +93,8 @@ export const functions = [helloWorld, logContactCreation, logDealCreation];
 
 // Add back the minimal handler export to satisfy Netlify Dev
 // The Inngest Dev Server + Plugin should handle the actual serving.
-export const handler: Handler = async (_event, _context) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const handler: Handler = async (_event, _context: HandlerContext) => {
   console.warn('[inngest.ts handler] Invoked directly by Netlify Dev - this should ideally be handled by Inngest infrastructure (Plugin/Dev Server).');
   // Allow all origins for local development/testing
   // TODO: Restrict this more in production if needed

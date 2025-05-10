@@ -18,7 +18,7 @@ import {
   FormErrorMessage // Added for form validation display
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore'; // Import store
-import type { Person as GeneratedPerson, PersonInput, Organization } from '../generated/graphql/graphql'; // Import generated types
+import type { Person as GeneratedPerson, PersonInput } from '../generated/graphql/graphql'; // Import generated types, removed Organization
 
 // Define the mutation for updating a Person - REMOVED (Handled by store action)
 // const UPDATE_PERSON_MUTATION = gql` ... `;
@@ -138,10 +138,16 @@ function EditPersonForm({ person, onClose, onSuccess }: EditPersonFormProps) {
         setLocalError(useAppStore.getState().peopleError || 'Failed to update person. Please try again.');
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Catch unexpected errors during the action call itself
       console.error(`Failed to update person ${person.id}:`, error);
-      setLocalError('An unexpected error occurred.');
+      let message = 'An unexpected error occurred.';
+      if (error instanceof Error) {
+        message = error.message;
+      } else if (typeof error === 'string') {
+        message = error;
+      }
+      setLocalError(message);
     } finally {
       setIsLoading(false);
     }

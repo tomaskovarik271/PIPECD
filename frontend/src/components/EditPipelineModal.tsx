@@ -15,7 +15,8 @@ import {
   VStack,
   FormErrorMessage,
 } from '@chakra-ui/react';
-import { useAppStore, Pipeline, UpdatePipelineInput } from '../stores/useAppStore';
+import { useAppStore, Pipeline } from '../stores/useAppStore';
+import type { PipelineInput } from '../generated/graphql/graphql';
 
 interface EditPipelineModalProps {
   isOpen: boolean;
@@ -65,7 +66,7 @@ const EditPipelineModal: React.FC<EditPipelineModalProps> = ({
     setIsSubmitting(true);
     setError(null);
 
-    const input: UpdatePipelineInput = {
+    const input: PipelineInput = {
       name: pipelineName.trim(),
     };
 
@@ -85,9 +86,15 @@ const EditPipelineModal: React.FC<EditPipelineModalProps> = ({
         const updateError = useAppStore.getState().pipelinesError;
         setError(updateError || 'Failed to update pipeline. Unknown error.');
       }
-    } catch (err: any) { 
+    } catch (err: unknown) {
       console.error("Unexpected error during pipeline update:", err);
-      setError(err.message || 'An unexpected error occurred.');
+      let message = 'An unexpected error occurred.';
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      setError(message);
     } finally {
       setIsSubmitting(false);
     }
@@ -117,7 +124,7 @@ const EditPipelineModal: React.FC<EditPipelineModalProps> = ({
                 placeholder="Enter pipeline name"
                 value={pipelineName}
                 onChange={handleInputChange}
-                autoFocus
+                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
               />
                {error && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>

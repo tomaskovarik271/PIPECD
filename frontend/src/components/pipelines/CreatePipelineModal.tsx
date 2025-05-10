@@ -47,10 +47,16 @@ const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({ isOpen, onClo
         // Error toast is likely handled within the store action, but add a fallback
         toast({ title: "Failed to create pipeline.", description: "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
         // This catch might be redundant if store handles all errors, but keep for safety
         console.error("Error in create pipeline modal submit:", error);
-        toast({ title: "An error occurred.", description: error.message || "Could not create pipeline.", status: 'error', duration: 5000, isClosable: true });
+        let message = "Could not create pipeline.";
+        if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        toast({ title: "An error occurred.", description: message, status: 'error', duration: 5000, isClosable: true });
     } finally {
         setIsLoading(false);
     }
@@ -78,7 +84,7 @@ const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({ isOpen, onClo
                 placeholder="e.g., Sales Pipeline Q3"
                 value={pipelineName}
                 onChange={(e) => setPipelineName(e.target.value)}
-                autoFocus
+                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
               />
             </FormControl>
           </VStack>

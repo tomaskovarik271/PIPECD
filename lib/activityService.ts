@@ -43,7 +43,7 @@ export const getActivityById = async (userId: string, activityId: string, access
 };
 
 // Define a simple filter type for getActivities
-interface ActivityFilter {
+export interface ActivityFilter {
     dealId?: string;
     personId?: string;
     organizationId?: string;
@@ -51,9 +51,11 @@ interface ActivityFilter {
 }
 
 /**
- * Retrieves activities for the user, optionally filtering by related entities or status.
+ * Fetches activities for a given user, optionally filtered.
+ * Note: RLS policies are expected to enforce that users can only see their own activities
+ * or activities related to entities they have access to.
  */
-export const getActivities = async (userId: string, accessToken: string, filter?: ActivityFilter): Promise<Activity[]> => {
+export const getActivities = async (_userId: string, accessToken: string, filter?: ActivityFilter): Promise<Activity[]> => {
   const supabaseClient: SupabaseClient = getAuthenticatedClient(accessToken);
   let query = supabaseClient
     .from('activities')

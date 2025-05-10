@@ -20,6 +20,7 @@ vi.mock('@supabase/supabase-js', () => {
 
 // --- Helper Types --- 
 interface MockUser { id: string; }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MockedBuilderMethods = { [K in keyof typeof mockPostgrestBuilderMethods]: MockedFunction<any>; };
 
 // --- Test Suite --- 

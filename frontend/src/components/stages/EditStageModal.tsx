@@ -19,7 +19,8 @@ import {
   useToast, 
   VStack 
 } from '@chakra-ui/react';
-import { useAppStore, Stage, UpdateStageInput } from '../../stores/useAppStore'; // Import Stage and UpdateStageInput
+import { useAppStore, Stage } from '../../stores/useAppStore'; // Import Stage 
+import type { UpdateStageInput as GeneratedUpdateStageInput } from '../../generated/graphql/graphql'; // Corrected import
 
 interface EditStageModalProps {
   isOpen: boolean;
@@ -85,7 +86,7 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
     }
     
     // Construct update payload - only include changed fields
-    const updates: UpdateStageInput = {};
+    const updates: GeneratedUpdateStageInput = {}; // Use the aliased import
     let hasChanges = false;
     if (stageName.trim() !== stage.name) {
         updates.name = stageName.trim();
@@ -120,9 +121,15 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
       } else {
         toast({ title: "Failed to update stage.", description: "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
       }
-    } catch (error: any) {
+    } catch (error: unknown) { // Changed from any to unknown
         console.error("Error in edit stage modal submit:", error);
-        toast({ title: "An error occurred.", description: error.message || "Could not update stage.", status: 'error', duration: 5000, isClosable: true });
+        let message = "Could not update stage.";
+        if (error instanceof Error) {
+            message = error.message;
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+        toast({ title: "An error occurred.", description: message, status: 'error', duration: 5000, isClosable: true });
     } finally {
         setIsLoading(false);
     }
@@ -142,7 +149,7 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
                 placeholder="e.g., Qualification"
                 value={stageName}
                 onChange={(e) => setStageName(e.target.value)}
-                autoFocus
+                autoFocus // eslint-disable-line jsx-a11y/no-autofocus
               />
             </FormControl>
             

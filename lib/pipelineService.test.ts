@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
-import { createClient, PostgrestError, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, PostgrestError } from '@supabase/supabase-js';
 import * as pipelineService from './pipelineService'; // Import the service functions
 import { GraphQLError } from 'graphql';
 // Import types from the service file itself, not shared types.ts
@@ -31,8 +31,11 @@ vi.doMock('@supabase/supabase-js', () => {
   };
 });
 
+vi.mock('./supabaseClient');
+
 // --- Helper Types ---
 interface MockUser { id: string; }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type MockedBuilderMethods = { [K in keyof typeof mockPostgrestBuilderMethods]: MockedFunction<any>; };
 
 // --- Test Suite ---

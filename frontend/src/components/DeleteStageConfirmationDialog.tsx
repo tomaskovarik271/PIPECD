@@ -74,7 +74,7 @@ function DeleteStageConfirmationDialog({
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            Are you sure you want to delete the stage "{stage.name}"? 
+            Are you sure you want to delete the stage &ldquo;{stage.name}&rdquo;? 
             Deals currently in this stage will have their stage unset.
             This action cannot be undone.
           </AlertDialogBody>

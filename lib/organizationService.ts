@@ -1,4 +1,5 @@
-import { /* createClient, SupabaseClient, */ PostgrestError } from '@supabase/supabase-js';
+import { /* createClient, SupabaseClient, */ } from '@supabase/supabase-js';
+// import { supabase } from './supabaseClient'; // Removed unused import
 // import type { User } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils'; // Import shared helpers

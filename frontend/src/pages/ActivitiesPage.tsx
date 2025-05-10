@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Box,
   Button,
@@ -20,32 +20,26 @@ import {
   ModalCloseButton,
   Alert, AlertIcon // Added Alert & AlertIcon
 } from '@chakra-ui/react';
-import { useAppStore, Activity, Deal, Person, Organization } from '../stores/useAppStore'; // Keep types
+import { useAppStore, Activity } from '../stores/useAppStore'; // Removed Deal, Person, Organization
 // import ActivityListItem from '../components/activities/ActivityListItem'; // REMOVE list item import
 import CreateActivityForm from '../components/activities/CreateActivityForm'; // Import the form
 import EmptyState from '../components/common/EmptyState'; // Import EmptyState
 import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
 import EditActivityModal from '../components/activities/EditActivityModal'; // Import Edit Modal
-import { TimeIcon, EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons'; // Import icons
+import { TimeIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons'; // Removed ViewIcon
 import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
 
 // Extend Activity type to potentially include full linked objects if needed for sorting
 // (Assuming they are fetched with the activity)
-interface ActivityWithLinks extends Activity {
-    deal?: Deal | null;
-    person?: Person | null;
-    organization?: Organization | null;
-}
+// interface ActivityWithLinks extends Activity {
+// deal?: Deal | null;
+// person?: Person | null;
+// organization?: Organization | null;
+// }
 
 // Define sortable keys
-type ActivitySortKeys = 'subject' | 'type' | 'due_date' | 'linked_to' | 'notes' | 'is_done';
-
-// Define sort config type
-interface SortConfig {
-    key: ActivitySortKeys;
-    direction: 'ascending' | 'descending';
-}
+// type ActivitySortKeys = 'subject' | 'type' | 'due_date' | 'linked_to' | 'notes' | 'is_done';
 
 // --- Helper Functions (copied from ActivityListItem) ---
 const formatDateTime = (isoString: string | null | undefined): string => {
@@ -71,14 +65,6 @@ const getActivityTypeColor = (type: string): string => {
         default: return 'gray';
     }
 }
-
-// Helper to get sortable string for linked entities
-const getLinkedEntitySortString = (activity: ActivityWithLinks): string => {
-    if (activity.deal) return `deal: ${activity.deal.name?.toLowerCase() ?? ''}`;
-    if (activity.person) return `person: ${activity.person.first_name?.toLowerCase() ?? ''} ${activity.person.last_name?.toLowerCase() ?? ''}`.trim();
-    if (activity.organization) return `organization: ${activity.organization.name?.toLowerCase() ?? ''}`;
-    return ''; // No link
-};
 
 function ActivitiesPage() {
   // Store state and actions

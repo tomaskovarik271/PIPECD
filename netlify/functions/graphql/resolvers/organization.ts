@@ -4,7 +4,7 @@ import { GraphQLError } from 'graphql';
 // import { personService } from '../../../../lib/personService'; // Assuming personService will be needed eventually
 
 export const Organization = {
-  people: async (parent: { id: string }, _args: unknown, context: GraphQLContext) => {
+  people: async (_parent: { id: string }, _args: unknown, context: GraphQLContext) => {
      requireAuthentication(context);
      const accessToken = getAccessToken(context);
      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });

@@ -22,7 +22,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore'; // Import the store
-import type { Person as GeneratedPerson, DealInput, Pipeline, Stage } from '../generated/graphql/graphql'; // Import generated types
+import { DealInput } from '../generated/graphql/graphql'; // Removed Deal, Person, Stage
 
 // Explicit Person type based on store data - REMOVED
 // interface Person {
@@ -147,10 +147,16 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         setError(storeError || 'Failed to create deal. Please check store errors.');
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Catch unexpected errors during the action call itself (less likely)
       console.error('Unexpected error during handleSubmit:', err);
-      setError(err.message || 'An unexpected error occurred.');
+      let message = 'An unexpected error occurred.';
+      if (err instanceof Error) {
+        message = err.message;
+      } else if (typeof err === 'string') {
+        message = err;
+      }
+      setError(message);
     } finally {
       setIsLoading(false);
     }
