@@ -23,6 +23,7 @@ import {
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore'; // Import the store
 import { usePeopleStore, Person } from '../stores/usePeopleStore'; // ADDED for people state + Person type
+import { useDealsStore } from '../stores/useDealsStore'; // ADDED
 import { DealInput } from '../generated/graphql/graphql'; // Removed Deal, Person, Stage
 
 // Explicit Person type based on store data - REMOVED
@@ -57,14 +58,17 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const pipelinesError = useAppStore((state) => state.pipelinesError);
   const stagesLoading = useAppStore((state) => state.stagesLoading);
   const stagesError = useAppStore((state) => state.stagesError);
-  const createDealAction = useAppStore((state) => state.createDeal);
+  // const createDealAction = useAppStore((state) => state.createDeal); // REMOVED
+
+  // ADDED: Deals state & actions from useDealsStore
+  const { createDeal: createDealAction, dealsError, dealsLoading } = useDealsStore(); 
 
   // ADDED: People state from usePeopleStore
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
 
   // Component State
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false); // This local isLoading seems to shadow dealsLoading from store
+  const [error, setError] = useState<string | null>(null); // This local error seems to shadow dealsError from store
   const toast = useToast(); // Initialize toast
 
   // Effect to fetch initial data (people & pipelines) when modal opens
@@ -143,8 +147,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       } else {
         // Error is handled by the store action, potentially setting dealsError
         // We can pull the error from the store or use a generic message
-        const storeError = useAppStore.getState().dealsError;
-        setError(storeError || 'Failed to create deal. Please check store errors.');
+        // const storeError = useAppStore.getState().dealsError; // REMOVED
+        setError(dealsError || 'Failed to create deal. Please check store errors.'); // Use dealsError from useDealsStore
       }
 
     } catch (err: unknown) {
@@ -169,7 +173,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         <ModalHeader>Create New Deal</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          {error && (
+          {error && ( // This will now show local error OR dealsError from store via setError
              <Alert status="error" mb={4} whiteSpace="pre-wrap"> {/* Allow wrapping for long errors */}
                 <AlertIcon />
                 {error}
@@ -260,8 +264,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
             colorScheme='blue'
             mr={3} 
             type="submit"
-            isLoading={isLoading}
-            leftIcon={isLoading ? <Spinner size="sm" /> : undefined}
+            isLoading={isLoading || dealsLoading} // Combine local submit loading with store loading
+            leftIcon={(isLoading || dealsLoading) ? <Spinner size="sm" /> : undefined} // Show spinner if either is loading
             onClick={handleSubmit}
           >
             Save Deal

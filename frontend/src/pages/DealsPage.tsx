@@ -18,11 +18,12 @@ import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
 import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
+import { useDealsStore, Deal } from '../stores/useDealsStore';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import ListPageLayout from '../components/layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import EmptyState from '../components/common/EmptyState';
-import type { Deal, Person as GeneratedPerson } from '../generated/graphql/graphql'; // Removed GeneratedStage
+import type { Person as GeneratedPerson } from '../generated/graphql/graphql'; // Removed GeneratedStage
 
 // Keep Deal/DealPerson types for component use - REMOVED
 // interface DealPerson {
@@ -56,14 +57,15 @@ import type { Deal, Person as GeneratedPerson } from '../generated/graphql/graph
 
 function DealsPage() {
   // --- State from Zustand Store ---
-  const deals = useAppStore((state) => state.deals); // deals is already using generated Deal from store
-  const loading = useAppStore((state) => state.dealsLoading);
-  const error = useAppStore((state) => state.dealsError);
-  const fetchDeals = useAppStore((state) => state.fetchDeals);
-  const deleteDealAction = useAppStore((state) => state.deleteDeal);
-  // Fetch permissions
+  const { deals, dealsLoading: loading, dealsError: error, fetchDeals, deleteDeal: deleteDealAction } = useDealsStore();
+  // const deals = useAppStore((state) => state.deals); // REMOVED
+  // const loading = useAppStore((state) => state.dealsLoading); // REMOVED
+  // const error = useAppStore((state) => state.dealsError); // REMOVED
+  // const fetchDeals = useAppStore((state) => state.fetchDeals); // REMOVED
+  // const deleteDealAction = useAppStore((state) => state.deleteDeal); // REMOVED
+  
+  // Fetch permissions & user from AppStore (remains here)
   const userPermissions = useAppStore((state) => state.userPermissions);
-  // Fetch current user ID
   const currentUserId = useAppStore((state) => state.session?.user.id);
   
   // --- Local UI State ---
@@ -161,7 +163,7 @@ function DealsPage() {
   }
 
   // Define Columns for SortableTable
-  const columns: ColumnDefinition<Deal>[] = [ // Uses generated Deal from store
+  const columns: ColumnDefinition<Deal>[] = [ // Uses Deal from useDealsStore
     {
       key: 'name',
       header: 'Name',

@@ -126,7 +126,7 @@
                 *   `[ ]` Handle Inter-Store Dependencies carefully (e.g., `selectedPipelineId` for stages).
                 *   `[ ]` Export the New Store.
             *   `[ ]` Create `useAuthStore.ts` (session, user, permissions, related actions & GQL).
-            *   `[ ]` Create `useDealsStore.ts` (deals state, CRUD actions & GQL).
+            *   `[x]` Create `useDealsStore.ts` (deals state, CRUD actions & GQL).
             *   `[x]` Create `usePeopleStore.ts` (people state, CRUD actions & GQL).
             *   `[ ]` Create `useOrganizationsStore.ts` (organizations state, CRUD actions & GQL).
             *   `[ ]` Create `usePipelinesStore.ts` (pipelines state, `selectedPipelineId`, CRUD actions & GQL).

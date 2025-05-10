@@ -5,8 +5,6 @@ import { gqlClient } from '../lib/graphqlClient';
 import { gql } from 'graphql-request';
 import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
 import type {
-  Deal,       // Generated main Deal entity type
-  DealInput,  // Generated input type for create/update deals
   Stage,      // Generated Stage type (for Deal.stage and standalone use if needed)
   Maybe,      // Import the Maybe type helper
   Organization, // Generated Organization type
@@ -20,9 +18,9 @@ import type {
   CreateActivityInput as GeneratedCreateActivityInput, // Alias for generated type
   UpdateActivityInput as GeneratedUpdateActivityInput, // Alias for generated type
   // For operation variables, we use the specific *Args types if available:
-  MutationCreateDealArgs,
-  MutationUpdateDealArgs,
-  MutationDeleteDealArgs,
+  // MutationCreateDealArgs, // MOVED to useDealsStore.ts
+  // MutationUpdateDealArgs, // MOVED to useDealsStore.ts
+  // MutationDeleteDealArgs, // MOVED to useDealsStore.ts
   MutationDeleteOrganizationArgs, // Generated variables type for DeleteOrganization
   MutationCreatePipelineArgs,
   MutationUpdatePipelineArgs,
@@ -44,7 +42,6 @@ import type {
 
 // Re-export core entity and input types for external use
 export type {
-  Deal, DealInput,
   Stage, GeneratedCreateStageInput, GeneratedUpdateStageInput,
   Organization, OrganizationInput,
   Pipeline, PipelineInput,
@@ -108,10 +105,10 @@ export type {
 // --- GraphQL Queries/Mutations --- (Strings remain the same)
 
 const GET_MY_PERMISSIONS_QUERY = gql`query GetMyPermissions { myPermissions }`;
-const GET_DEALS_QUERY = gql`query GetDeals { deals { id name stage { id name pipeline_id pipeline { id name } order deal_probability } stage_id amount created_at updated_at person_id person { id first_name last_name email } user_id } }`;
-const CREATE_DEAL_MUTATION = gql`mutation CreateDeal($input: DealInput!) { createDeal(input: $input) { id name stage { id name pipeline_id pipeline { id name } order deal_probability } stage_id amount created_at updated_at person_id person { id first_name last_name email } user_id } }`;
-const UPDATE_DEAL_MUTATION = gql`mutation UpdateDeal($id: ID!, $input: DealInput!) { updateDeal(id: $id, input: $input) { id name stage { id name pipeline_id pipeline { id name } order deal_probability } stage_id amount created_at updated_at person_id person { id first_name last_name email } user_id } }`;
-const DELETE_DEAL_MUTATION = gql`mutation DeleteDeal($id: ID!) { deleteDeal(id: $id) }`;
+// const GET_DEALS_QUERY = gql`query GetDeals { ... }`; // MOVED to useDealsStore.ts
+// const CREATE_DEAL_MUTATION = gql`mutation CreateDeal($input: DealInput!) { ... }`; // MOVED to useDealsStore.ts
+// const UPDATE_DEAL_MUTATION = gql`mutation UpdateDeal($id: ID!, $input: DealInput!) { ... }`; // MOVED to useDealsStore.ts
+// const DELETE_DEAL_MUTATION = gql`mutation DeleteDeal($id: ID!) { ... }`; // MOVED to useDealsStore.ts
 
 // Other entity GQL strings (People, Orgs, etc.) remain unchanged here...
 // const GET_PEOPLE_QUERY = gql` query GetPeople { ... } `; // MOVED to usePeopleStore.ts
@@ -221,14 +218,14 @@ interface AppState {
   handleSignOut: () => Promise<void>;
   fetchUserPermissions: () => Promise<void>; 
   
-  // Deals (use generated types)
-  deals: Deal[]; // Now uses generated Deal
-  dealsLoading: boolean;
-  dealsError: string | null;
-  fetchDeals: () => Promise<void>;
-  createDeal: (input: DealInput) => Promise<Deal | null>; // Uses generated DealInput and Deal
-  updateDeal: (id: string, input: DealInput) => Promise<Deal | null>; // Uses generated DealInput and Deal
-  deleteDeal: (id: string) => Promise<boolean>;
+  // Deals (use generated types) - MOVED to useDealsStore.ts
+  // deals: Deal[]; 
+  // dealsLoading: boolean;
+  // dealsError: string | null;
+  // fetchDeals: () => Promise<void>;
+  // createDeal: (input: DealInput) => Promise<Deal | null>; 
+  // updateDeal: (id: string, input: DealInput) => Promise<Deal | null>; 
+  // deleteDeal: (id: string) => Promise<boolean>;
 
   // People (uses generated Person) - MOVED to usePeopleStore.ts
   // people: Person[];
@@ -282,7 +279,7 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => ({
   // --- Initial state (unchanged) ---
   session: null, user: null, isLoadingAuth: true, userPermissions: null, permissionsLoading: false,
-  deals: [], dealsLoading: false, dealsError: null,
+  // deals: [], dealsLoading: false, dealsError: null, // MOVED to useDealsStore.ts
   organizations: [], organizationsLoading: false, organizationsError: null,
   pipelines: [], stages: [], pipelinesLoading: false, pipelinesError: null, stagesLoading: false, stagesError: null, selectedPipelineId: null,
   activities: [], activitiesLoading: false, activitiesError: null,
@@ -336,123 +333,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoadingAuth: false });
   },
 
-  // Deals Actions (Refactored to use generated types)
-  fetchDeals: async () => {
-    set({ dealsLoading: true, dealsError: null });
-    try {
-      type GetDealsQueryResponse = { deals: Deal[] }; 
-      const data = await gqlClient.request<GetDealsQueryResponse>(GET_DEALS_QUERY);
-        set({ deals: data.deals || [], dealsLoading: false });
-    } catch (error: unknown) {
-        console.error("Error fetching deals:", error);
-        let message = 'Failed to fetch deals';
-        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
-            message = error.response.errors[0].message;
-        } else if (error instanceof Error) {
-            message = error.message;
-        } else if (typeof error === 'string') {
-            message = error;
-        }
-        set({ dealsError: message, dealsLoading: false, deals: [] });
-    }
-  },
-  createDeal: async (input: DealInput): Promise<Deal | null> => {
-    set({ dealsLoading: true, dealsError: null });
-    try {
-      type CreateDealMutationResponse = { createDeal: Deal }; 
-      const response = await gqlClient.request<CreateDealMutationResponse, MutationCreateDealArgs>(
-        CREATE_DEAL_MUTATION,
-        { input } 
-      );
-      if (response.createDeal) {
-        set((state) => ({ deals: [...state.deals, response.createDeal], dealsLoading: false }));
-        return response.createDeal;
-      } else {
-        set({ dealsLoading: false });
-        return null;
-      }
-    } catch (error: unknown) {
-        console.error("Error creating deal:", error);
-        let message = 'Failed to create deal';
-        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
-            message = error.response.errors[0].message;
-        } else if (error instanceof Error) {
-            message = error.message;
-        } else if (typeof error === 'string') {
-            message = error;
-        }
-        set({ dealsError: message, dealsLoading: false });
-        return null;
-    }
-  },
-  updateDeal: async (id: string, input: DealInput): Promise<Deal | null> => {
-    set({ dealsLoading: true, dealsError: null });
-    try {
-      type UpdateDealMutationResponse = { updateDeal?: Maybe<Deal> }; 
-      const response = await gqlClient.request<UpdateDealMutationResponse, MutationUpdateDealArgs>(
-        UPDATE_DEAL_MUTATION,
-        { id, input }
-      );
-      if (response.updateDeal) {
-        set((state) => ({
-          deals: state.deals.map((d) => (d.id === id ? response.updateDeal! : d)),
-          dealsLoading: false,
-        }));
-        return response.updateDeal;
-      } else {
-        set({ dealsLoading: false });
-        return null;
-      }
-    } catch (error: unknown) {
-        console.error(`Error updating deal ${id}:`, error);
-        let message = 'Failed to update deal';
-        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
-            message = error.response.errors[0].message;
-        } else if (error instanceof Error) {
-            message = error.message;
-        } else if (typeof error === 'string') {
-            message = error;
-        }
-        set({ dealsLoading: false, dealsError: message });
-        return null;
-    }
-  },
-  deleteDeal: async (id: string): Promise<boolean> => {
-    const session = get().session;
-    if (!session) {
-      set({ dealsError: 'Not authenticated' });
-      return false;
-    }
-    const originalDeals = get().deals;
-    set((state) => ({ deals: state.deals.filter(deal => deal.id !== id), dealsError: null }));
-    try {
-      type DeleteDealMutationResponse = { deleteDeal?: Maybe<boolean> }; 
-      const response = await gqlClient.request<DeleteDealMutationResponse, MutationDeleteDealArgs>(
-          DELETE_DEAL_MUTATION, 
-        { id },
-        { Authorization: `Bearer ${session.access_token}` } 
-      );
-      if (response.deleteDeal) {
-        set({ dealsError: null, dealsLoading: false });
-          return true;
-      } else {
-        set({ deals: originalDeals, dealsError: 'Delete operation did not succeed as reported by API', dealsLoading: false });
-        return false;
-      }
-    } catch (error: unknown) {
-        console.error('Error deleting deal:', error);
-        let message = `Failed to delete deal (${id})`;
-        if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
-            message = error.response.errors[0].message;
-        } else if (error instanceof Error) {
-            message = error.message;
-        } else if (typeof error === 'string') {
-            message = error;
-        }
-        set({ deals: originalDeals, dealsError: message, dealsLoading: false });
-        return false;
-    }
-  },
+  // Deals Actions - MOVED to useDealsStore.ts
+  // fetchDeals: async () => { ... },
+  // createDeal: async (input: DealInput): Promise<Deal | null> => { ... },
+  // updateDeal: async (id: string, input: DealInput): Promise<Deal | null> => { ... },
+  // deleteDeal: async (id: string): Promise<boolean> => { ... },
 
   // People Actions - MOVED to usePeopleStore.ts
   // fetchPeople: async () => { ... },
