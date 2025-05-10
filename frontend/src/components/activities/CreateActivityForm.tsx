@@ -17,6 +17,7 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { useAppStore } from '../../stores/useAppStore';
+import { usePeopleStore, Person } from '../../stores/usePeopleStore';
 import type { CreateActivityInput, ActivityType } from '../../generated/graphql/graphql';
 
 // Define Activity Types matching GraphQL Enum
@@ -47,14 +48,14 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
   // Select state individually to prevent infinite loops
   const createActivity = useAppStore((state) => state.createActivity);
   const deals = useAppStore((state) => state.deals);
-  const people = useAppStore((state) => state.people);
   const organizations = useAppStore((state) => state.organizations);
   const fetchDeals = useAppStore((state) => state.fetchDeals);
-  const fetchPeople = useAppStore((state) => state.fetchPeople);
   const fetchOrganizations = useAppStore((state) => state.fetchOrganizations);
   const dealsLoading = useAppStore((state) => state.dealsLoading);
-  const peopleLoading = useAppStore((state) => state.peopleLoading);
   const organizationsLoading = useAppStore((state) => state.organizationsLoading);
+  
+  // ADDED: Get people state from usePeopleStore
+  const { people, fetchPeople, peopleLoading } = usePeopleStore();
   
   const toast = useToast();
   const { 
@@ -82,10 +83,10 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
   // Fetch related entities when the form mounts (or modal opens)
   useEffect(() => {
     // Only fetch if not already loaded (basic check)
-    if (deals.length === 0) fetchDeals();
-    if (people.length === 0) fetchPeople();
-    if (organizations.length === 0) fetchOrganizations();
-  }, [fetchDeals, fetchPeople, fetchOrganizations, deals.length, people.length, organizations.length]);
+    if (deals && deals.length === 0) fetchDeals();
+    if (people && people.length === 0) fetchPeople();
+    if (organizations && organizations.length === 0) fetchOrganizations();
+  }, [fetchDeals, fetchPeople, fetchOrganizations, deals, people, organizations]);
 
   // Clear other link IDs when radio selection changes
   const handleLinkTypeChange = (nextValue: string) => {
@@ -217,7 +218,7 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
                     placeholder='Select Person' 
                     {...register('person_id')} // Register person_id
                  >
-                     {people.map(person => (
+                     {people.map((person: Person) => (
                         <option key={person.id} value={person.id}>
                             {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email}
                         </option>
