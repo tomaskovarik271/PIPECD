@@ -113,6 +113,43 @@
 *   **Task:** `[ ]` Clarify/Refactor `frontend/src/stores/useAppStore.ts`: Migrate any remaining general state to domain-specific stores or remove if empty.
     *   *Source: ROADMAP.md (Post-Code-Analysis Action Plan #7)*
     *   *Priority: MEDIUM*
+    *   **Detailed Refactoring Plan:**
+        *   **I. Preparation & Setup:**
+            *   `[ ]` Create Store Directory Structure: Ensure `frontend/src/stores/` for new store files.
+            *   `[ ]` Define Common Utility Types: Move `GraphQLErrorWithMessage` and `isGraphQLErrorWithMessage` to a shared utility file (e.g., `frontend/src/lib/graphqlUtils.ts` or `frontend/src/types/errors.ts`).
+            *   `[ ]` Decide on GraphQL Operations Management: Determine if GQL constants live within new stores or a central `frontend/src/graphql/operations.ts`. (Assume they move with stores for now).
+        *   **II. Domain Store Creation & Migration (Iterative for each domain: Auth, People, Deals, Orgs, Pipelines, Stages, Activities, UI/Theme):**
+            *   For each domain:
+                *   `[ ]` Create New Store File (e.g., `frontend/src/stores/usePeopleStore.ts`).
+                *   `[ ]` Define Store Interface & Initial State: Extract relevant parts from `AppState`.
+                *   `[ ]` Migrate Actions & Related Logic: Move actions, GQL constants, and adapt to new store's `set`/`get`. Ensure type imports.
+                *   `[ ]` Handle Inter-Store Dependencies carefully (e.g., `selectedPipelineId` for stages).
+                *   `[ ]` Export the New Store.
+            *   `[ ]` Create `useAuthStore.ts` (session, user, permissions, related actions & GQL).
+            *   `[ ]` Create `useDealsStore.ts` (deals state, CRUD actions & GQL).
+            *   `[ ]` Create `usePeopleStore.ts` (people state, CRUD actions & GQL).
+            *   `[ ]` Create `useOrganizationsStore.ts` (organizations state, CRUD actions & GQL).
+            *   `[ ]` Create `usePipelinesStore.ts` (pipelines state, `selectedPipelineId`, CRUD actions & GQL).
+            *   `[ ]` Create `useStagesStore.ts` (stages state, CRUD actions needing `pipelineId`, & GQL).
+            *   `[ ]` Create `useActivitiesStore.ts` (activities state, CRUD actions & GQL).
+            *   `[ ]` Create `useUIStore.ts` (e.g., `currentTheme`, `setCurrentTheme`, future global UI state).
+        *   **III. Updating Component Usage:**
+            *   `[ ]` Systematically Replace `useAppStore`: Go through files importing `useAppStore`, update to use new specific store hooks.
+            *   `[ ]` Address Combined Selectors: Components using multiple slices will now call multiple store hooks.
+        *   **IV. Refactoring `useAppStore.ts`:**
+            *   `[ ]` Remove Migrated Code: Delete corresponding state, actions, types, GQL constants from `useAppStore.ts` as migrations complete.
+            *   `[ ]` Evaluate Remaining Content: Check what's left in `useAppStore.ts`.
+            *   `[ ]` Final Action: Delete `useAppStore.ts` if empty, or rename if minimal essential global setup remains (aim to eliminate).
+        *   **V. Testing & Validation:**
+            *   `[ ]` Update/Split Unit Tests for `useAppStore.test.ts`.
+            *   `[ ]` Create New Unit Tests for each new domain store (e.g., `usePeopleStore.test.ts`).
+            *   `[ ]` Run All E2E Tests (`npm run test:e2e`) and ensure they pass.
+            *   `[ ]` Perform Thorough Manual Testing of all application areas.
+        *   **VI. Code Review & Cleanup:**
+            *   `[ ]` Conduct Peer Review of all changes.
+            *   `[ ]` Remove Dead Code: Ensure no unused imports, variables, or functions remain.
+            *   `[ ]` Consistency Check: Verify new stores follow consistent structure and naming.
+            *   `[ ]` Documentation: Update `DEVELOPER_GUIDE_V2.md` and any other relevant docs.
 *   **Task:** `[ ]` Simplify Modal Error Handling: Refactor `handleSubmit` in modal components to rely primarily on store error state.
     *   *Source: ROADMAP.md (Post-Code-Analysis Action Plan #9)*
     *   *Priority: MEDIUM*
