@@ -86,21 +86,45 @@ export const useStagesStore = create<StagesState>((set, get) => ({
   // },
 
   fetchStages: async (pipelineId: string) => {
-    set({ stages: [], stagesLoading: true, stagesError: null });
+    set(state => ({ 
+      stagesLoading: true, 
+      stagesError: null, 
+      // Important: Do not filter here initially, let the merge logic handle updates/additions
+    }));
     try {
       type GetStagesQueryResponse = { stages: Stage[] };
       const data = await gqlClient.request<GetStagesQueryResponse, QueryStagesArgs>(
         GET_STAGES_QUERY,
         { pipelineId }
       );
-      set({ stages: (data.stages || []).sort((a: Stage, b: Stage) => a.order - b.order), stagesLoading: false });
+      
+      const fetchedStages = data.stages || [];
+
+      set(state => {
+        // Create a map of existing stages for quick lookups
+        const existingStagesMap = new Map(state.stages.map(s => [s.id, s]));
+
+        // Add or update stages from the fetch
+        fetchedStages.forEach(s => {
+          existingStagesMap.set(s.id, s);
+        });
+
+        // Convert back to an array and sort
+        const mergedStages = Array.from(existingStagesMap.values());
+        mergedStages.sort((a, b) => a.order - b.order);
+
+        return {
+          stages: mergedStages,
+          stagesLoading: false
+        };
+      });
     } catch (error) {
       console.error(`Error fetching stages for pipeline ${pipelineId}:`, error);
       let message = `Failed to fetch stages for pipeline ${pipelineId}`;
       if (isGraphQLErrorWithMessage(error) && error.response && error.response.errors && error.response.errors.length > 0) {
         message = error.response.errors[0].message;
       }
-      set({ stagesError: message, stagesLoading: false, stages: [] });
+      set({ stagesError: message, stagesLoading: false });
     }
   },
 

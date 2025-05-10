@@ -11,29 +11,21 @@ import {
   FormControl,
   FormLabel,
   Input,
-  Textarea, // Use Textarea for notes
+  Textarea,
   VStack,
   FormErrorMessage,
   Alert, 
   AlertIcon,
   Spinner,
-  useToast // Added for success message
+  useToast
 } from '@chakra-ui/react';
-// import { gql } from 'graphql-request'; // No longer needed
-// import { gqlClient } from '../lib/graphqlClient'; // No longer needed
-import { useOrganizationsStore } from '../stores/useOrganizationsStore'; // ADDED
-import type { OrganizationInput } from '../generated/graphql/graphql'; // Import generated type
-
-// Define GraphQL Mutation for creating an organization - REMOVED (Handled by store action)
-// const CREATE_ORGANIZATION_MUTATION = gql` ... `;
-
-// Define the expected shape of the mutation result - REMOVED (Handled by store action)
-// interface CreateOrganizationMutationResult { ... }
+import { useOrganizationsStore } from '../stores/useOrganizationsStore';
+import type { OrganizationInput } from '../generated/graphql/graphql';
 
 interface CreateOrganizationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOrganizationCreated: () => void; // Callback to refresh list
+  onOrganizationCreated: () => void;
 }
 
 function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: CreateOrganizationModalProps) {
@@ -41,25 +33,21 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null); // For local validation
+  const [localError, setLocalError] = useState<string | null>(null);
   const toast = useToast();
 
-  // Get store action and error state from useOrganizationsStore
   const { 
     createOrganization: createOrganizationAction, 
     organizationsError: storeError, 
     organizationsLoading: storeLoading 
   } = useOrganizationsStore();
 
-  // Effect to reset form when modal opens
   useEffect(() => {
     if (isOpen) {
       setName('');
       setAddress('');
       setNotes('');
       setLocalError(null);
-      // Optionally reset store error? Maybe not here, let action handle it.
-      // useAppStore.setState({ organizationsError: null });
       setIsLoading(false);
     }
   }, [isOpen]);
@@ -69,7 +57,6 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
     setIsLoading(true);
     setLocalError(null);
 
-    // Basic validation
     if (!name.trim()) {
         setLocalError('Organization name is required.');
         setIsLoading(false);
@@ -77,16 +64,14 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
     }
 
     try {
-        // Prepare input using generated type
         const input: OrganizationInput = {
             name: name.trim(),
-            address: address.trim() || null, // Send null if empty
-            notes: notes.trim() || null,     // Send null if empty
+            address: address.trim() || null,
+            notes: notes.trim() || null,
         };
 
         console.log('Submitting input:', input);
 
-        // Call the store action
         const createdOrg = await createOrganizationAction(input);
         
         if (createdOrg) {
@@ -97,16 +82,13 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
                 duration: 3000, 
                 isClosable: true 
             });
-            // Success
-            onOrganizationCreated(); // Trigger refresh on the parent page
-            onClose();             // Close the modal
+            onOrganizationCreated();
+            onClose();
         } else {
-            // Error should be in storeError
              setLocalError(storeError || 'Failed to create organization.');
         }
 
     } catch (err: unknown) {
-      // Catch unexpected errors during the action call itself
       console.error('Error creating organization:', err);
       let message = 'An unexpected error occurred.';
       if (err instanceof Error) {
@@ -127,7 +109,6 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
         <ModalHeader>Create New Organization</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          {/* Display local or store error */} 
           {(localError || storeError) && (
              <Alert status="error" mb={4} whiteSpace="pre-wrap">
                 <AlertIcon />

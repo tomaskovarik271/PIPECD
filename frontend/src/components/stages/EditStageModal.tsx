@@ -19,8 +19,8 @@ import {
   useToast, 
   VStack 
 } from '@chakra-ui/react';
-import { useAppStore, Stage } from '../../stores/useAppStore'; // Import Stage 
-import type { UpdateStageInput as GeneratedUpdateStageInput } from '../../generated/graphql/graphql'; // Corrected import
+import { useStagesStore, Stage } from '../../stores/useStagesStore'; // Corrected: Stage is from useStagesStore
+import type { UpdateStageInput as GeneratedUpdateStageInput } from '../../generated/graphql/graphql';
 
 interface EditStageModalProps {
   isOpen: boolean;
@@ -34,7 +34,7 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
   const [stageOrder, setStageOrder] = useState<number | string>(0);
   const [dealProbability, setDealProbability] = useState<number | string>('');
   const [isLoading, setIsLoading] = useState(false);
-  const updateStage = useAppStore((state) => state.updateStage);
+  const { updateStage, stagesError } = useStagesStore(); 
   const toast = useToast();
 
   // Pre-fill form when stage prop changes
@@ -42,9 +42,8 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
     if (stage) {
       setStageName(stage.name);
       setStageOrder(stage.order);
-      setDealProbability(stage.deal_probability ?? ''); // Use empty string if null/undefined
+      setDealProbability(stage.deal_probability ?? '');
     } else {
-        // Clear form if no stage is provided (shouldn't happen if used correctly)
         setStageName('');
         setStageOrder(0);
         setDealProbability('');
@@ -55,7 +54,6 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
   useEffect(() => {
     if (!isOpen) {
         setIsLoading(false);
-        // Optionally reset fields here too, though pre-fill handles opening
     }
   }, [isOpen]);
 
@@ -66,7 +64,6 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
         return;
     }
     
-    // Validation
     if (!stageName.trim()) {
       toast({ title: "Stage name cannot be empty.", status: 'warning', duration: 3000, isClosable: true });
       return;
@@ -79,14 +76,13 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
     let probabilityNum: number | null = null;
     if (String(dealProbability).trim() !== '') {
         probabilityNum = parseFloat(String(dealProbability));
-        if (isNaN(probabilityNum) || probabilityNum < 0 || probabilityNum > 100) { // Assuming 0-100
+        if (isNaN(probabilityNum) || probabilityNum < 0 || probabilityNum > 100) {
             toast({ title: "Deal probability must be between 0 and 100 (or empty).", status: 'warning', duration: 3000, isClosable: true });
             return;
         }
     }
     
-    // Construct update payload - only include changed fields
-    const updates: GeneratedUpdateStageInput = {}; // Use the aliased import
+    const updates: GeneratedUpdateStageInput = {};
     let hasChanges = false;
     if (stageName.trim() !== stage.name) {
         updates.name = stageName.trim();
@@ -96,9 +92,8 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
         updates.order = orderNum;
         hasChanges = true;
     }
-    // Check probability change carefully (null vs. number)
     const originalProbabilityDecimal = stage.deal_probability ?? null;
-    const newProbabilityDecimal = probabilityNum === null ? null : probabilityNum / 100; // Convert new value
+    const newProbabilityDecimal = probabilityNum === null ? null : probabilityNum / 100;
     if (newProbabilityDecimal !== originalProbabilityDecimal) {
         updates.deal_probability = newProbabilityDecimal;
         hasChanges = true;
@@ -117,11 +112,11 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
       if (updatedStage) {
         toast({ title: "Stage updated successfully.", status: 'success', duration: 3000, isClosable: true });
         onSuccess?.(updatedStage.id);
-        onClose(); // Close modal
+        onClose();
       } else {
-        toast({ title: "Failed to update stage.", description: "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
+        toast({ title: "Failed to update stage.", description: stagesError || "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
       }
-    } catch (error: unknown) { // Changed from any to unknown
+    } catch (error: unknown) {
         console.error("Error in edit stage modal submit:", error);
         let message = "Could not update stage.";
         if (error instanceof Error) {

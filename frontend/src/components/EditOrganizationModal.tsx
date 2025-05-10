@@ -20,69 +20,43 @@ import {
 } from '@chakra-ui/react';
 import { useOrganizationsStore, Organization, OrganizationInput } from '../stores/useOrganizationsStore';
 
-// Interface for the Organization data passed to the modal
-// interface OrganizationToEdit {
-//   id: string;
-//   name: string;
-//   address?: string | null;
-//   notes?: string | null;
-//   // Add other fields if needed
-// }
-
-// Define GraphQL Mutation for updating an organization
-// const UPDATE_ORGANIZATION_MUTATION = gql`
-//   mutation UpdateOrganization($id: ID!, $input: OrganizationInput!) {
-//     updateOrganization(id: $id, input: $input) {
-//       id # Request fields needed after update
-//       name
-//       address
-//       notes
-//       updated_at # Get updated timestamp
-//     }
-//   }
-// `;
-
 interface EditOrganizationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOrganizationUpdated: () => void; // Callback to refresh list
-  organization: Organization | null; // Use imported Organization type
+  onOrganizationUpdated: () => void;
+  organization: Organization | null;
 }
 
 function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organization }: EditOrganizationModalProps) {
-  // Form state, initialized from the organization prop
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Get store action and error state from useOrganizationsStore
   const { 
     updateOrganization: updateOrganizationAction, 
     organizationsError: storeError, 
     organizationsLoading: storeLoading 
   } = useOrganizationsStore();
 
-  // Effect to update form state when the organization prop changes
   useEffect(() => {
     if (organization) {
       setName(organization.name || '');
       setAddress(organization.address || '');
       setNotes(organization.notes || '');
-      setError(null); // Clear previous errors when opening with new data
-      setIsLoading(false); // Reset loading state
+      setError(null);
+      setIsLoading(false);
     } else {
-        // Reset form if organization becomes null (e.g., modal closes unexpectedly)
         setName('');
         setAddress('');
         setNotes('');
     }
-  }, [organization]); // Runs when the organization prop changes
+  }, [organization]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!organization) return; // Should not happen if modal is open with data
+    if (!organization) return;
 
     setIsLoading(true);
     setError(null);
@@ -102,29 +76,22 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
 
       console.log('Submitting update input:', input);
 
-      // Call the update mutation - OLD WAY
-      // const result = await gqlClient.request(UPDATE_ORGANIZATION_MUTATION, variables);
-      const updatedOrg = await updateOrganizationAction(organization.id, input); // USE STORE ACTION
+      const updatedOrg = await updateOrganizationAction(organization.id, input);
       
-      if (updatedOrg) { // Check if store action was successful
+      if (updatedOrg) {
         console.log('Organization updated:', updatedOrg);
 
-        // Success
-        onOrganizationUpdated(); // Trigger refresh
-        onClose();               // Close modal
+        onOrganizationUpdated();
+        onClose();
       } else {
-        // Error is likely in storeError now
         setError(storeError || 'Failed to update organization.');
       }
 
-    } catch (err: unknown) { // Changed from any to unknown
+    } catch (err: unknown) {
       console.error('Error updating organization (component catch):', err);
       let message = 'Failed to update organization';
       if (err instanceof Error) {
-        // Check for GraphQL-like error structure on the Error object
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const gqlError = (err as any).response?.errors?.[0]?.message;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const validationError = (err as any).response?.errors?.[0]?.extensions?.originalError?.message;
         message = validationError || gqlError || err.message;
       } else if (typeof err === 'string') {
@@ -136,7 +103,6 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
     }
   };
 
-  // Render null if the modal shouldn't be open or no organization is provided
   if (!isOpen || !organization) {
       return null;
   }
@@ -155,7 +121,6 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
             </Alert>
           )}
           <VStack spacing={4}>
-            {/* Form Controls using state initialized by useEffect */}
             <FormControl isRequired isInvalid={!name.trim() && error?.includes('name')}>
               <FormLabel>Organization Name</FormLabel>
               <Input 

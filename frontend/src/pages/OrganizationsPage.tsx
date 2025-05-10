@@ -17,50 +17,26 @@ import {
 import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
 import { EditIcon, DeleteIcon, ViewIcon } from '@chakra-ui/icons';
-import { useAppStore } from '../stores/useAppStore'; // Import store
-import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore'; // ADDED
-import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
-import EmptyState from '../components/common/EmptyState'; // Import EmptyState
-import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
-import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
-
-// REMOVED: GET_ORGANIZATIONS_QUERY (in store)
-
-// --- Type Definition (Keep for component use) - REMOVED
-// interface Organization {
-//   id: string;
-//   name: string;
-//   address?: string | null;
-//   notes?: string | null;
-//   created_at: string;
-//   updated_at: string;
-// }
-
-// REMOVED: GetOrganizationsQueryResult (in store)
-// REMOVED: DELETE_ORGANIZATION_MUTATION and result type (in store)
+import { useAppStore } from '../stores/useAppStore';
+import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
+import ConfirmationDialog from '../components/common/ConfirmationDialog';
+import EmptyState from '../components/common/EmptyState';
+import ListPageLayout from '../components/layout/ListPageLayout';
+import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 
 function OrganizationsPage() {
-  // --- State from Zustand Store ---
-  const { organizations, organizationsLoading: loading, organizationsError: error, fetchOrganizations, deleteOrganization: deleteOrganizationAction } = useOrganizationsStore(); // CHANGED
-  // const organizations = useAppStore((state) => state.organizations); // REMOVED
-  // const loading = useAppStore((state) => state.organizationsLoading); // REMOVED
-  // const error = useAppStore((state) => state.organizationsError); // REMOVED
-  // const fetchOrganizations = useAppStore((state) => state.fetchOrganizations); // REMOVED
-  // const deleteOrganizationAction = useAppStore((state) => state.deleteOrganization); // REMOVED
+  const { organizations, organizationsLoading: loading, organizationsError: error, fetchOrganizations, deleteOrganization: deleteOrganizationAction } = useOrganizationsStore();
   
-  // Fetch permissions
   const userPermissions = useAppStore((state) => state.userPermissions);
 
-  // --- Local UI State ---
   const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
   const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure();
   const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
-  const [orgToEdit, setOrgToEdit] = useState<Organization | null>(null); // Use Organization from store
-  const [isDeletingId, setIsDeletingId] = useState<string | null>(null); // For button spinner
+  const [orgToEdit, setOrgToEdit] = useState<Organization | null>(null);
+  const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [orgToDeleteId, setOrgToDeleteId] = useState<string | null>(null);
   const toast = useToast();
 
-  // --- Fetching Logic ---
   useEffect(() => {
     console.log('[OrganizationsPage] isCreateModalOpen changed to:', isCreateModalOpen);
   }, [isCreateModalOpen]);
@@ -69,17 +45,15 @@ function OrganizationsPage() {
     fetchOrganizations();
   }, [fetchOrganizations]);
 
-  // --- Handlers ---
   const handleCreateOrgClick = () => {
     onCreateModalOpen();
   };
 
-  // Callback for modals to refresh data
   const handleDataChanged = useCallback(() => {
     fetchOrganizations(); 
   }, [fetchOrganizations]);
 
-  const handleEditClick = (org: Organization) => { // Use Organization from store
+  const handleEditClick = (org: Organization) => {
     setOrgToEdit(org);
     onEditModalOpen();
   };
@@ -92,9 +66,9 @@ function OrganizationsPage() {
   const handleConfirmDelete = async () => {
     if (!orgToDeleteId) return;
 
-    setIsDeletingId(orgToDeleteId); // Show spinner
+    setIsDeletingId(orgToDeleteId);
     const success = await deleteOrganizationAction(orgToDeleteId);
-    setIsDeletingId(null); // Hide spinner
+    setIsDeletingId(null);
     onConfirmDeleteClose();
     setOrgToDeleteId(null);
 
@@ -103,7 +77,7 @@ function OrganizationsPage() {
     } else {
         toast({
             title: 'Error Deleting Organization',
-            description: error || 'An unknown error occurred', // Use organizationsError
+            description: error || 'An unknown error occurred',
             status: 'error',
             duration: 5000,
             isClosable: true,
@@ -111,14 +85,12 @@ function OrganizationsPage() {
     }
   };
 
-  // --- Helper Functions ---
   const formatDate = (dateString: string) => {
     try { return new Date(dateString).toLocaleDateString(); } 
     catch (e) { return 'Invalid Date'; }
   }
 
-  // Define Columns for SortableTable
-  const columns: ColumnDefinition<Organization>[] = [ // Use Organization from store
+  const columns: ColumnDefinition<Organization>[] = [
     {
       key: 'name',
       header: 'Name',
@@ -179,7 +151,6 @@ function OrganizationsPage() {
     },
   ];
 
-  // Define props for EmptyState
   const emptyStatePropsForPage = {
     icon: ViewIcon,
     title: "No Organizations Yet",
@@ -204,8 +175,7 @@ function OrganizationsPage() {
   }
 
   return (
-    <Box p={6}> {/* Main page container with padding */}
-      {/* Modals rendered at the top level */}
+    <Box p={6}>
       <CreateOrganizationModal 
         isOpen={isCreateModalOpen} 
         onClose={onCreateModalClose} 
@@ -239,7 +209,6 @@ function OrganizationsPage() {
         isLoading={!!isDeletingId}
       />
 
-      {/* Conditional content: Empty state or ListPageLayout with table */}
       {organizations.length === 0 ? (
         <VStack spacing={4} align="stretch">
           <Flex justifyContent="space-between" alignItems="center" mb={4}>
@@ -267,10 +236,10 @@ function OrganizationsPage() {
           newButtonLabel="New Organization"
           onNewButtonClick={handleCreateOrgClick}
           isNewButtonDisabled={!userPermissions?.includes('organization:create')}
-          isLoading={loading} // Will be false here
-          error={error}       // Will be null here
-          isEmpty={false}     // Explicitly false
-          emptyStateProps={emptyStatePropsForPage} // Passed but not used if not empty
+          isLoading={loading}
+          error={error}
+          isEmpty={false}
+          emptyStateProps={emptyStatePropsForPage}
         >
           <SortableTable<Organization>
             data={organizations}

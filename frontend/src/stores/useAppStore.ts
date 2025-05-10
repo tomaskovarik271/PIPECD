@@ -5,31 +5,20 @@ import { gqlClient } from '../lib/graphqlClient';
 import { gql } from 'graphql-request';
 import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
 import type {
-  Stage, // Keep Stage import for potential use in Activity, etc.
+  Stage,
   Maybe,
   Pipeline,
-  // Activity, // Removed as it will be handled by useActivitiesStore
-  // ActivityFilterInput as GeneratedActivityFilterInput, // Removed
-  // CreateActivityInput as GeneratedCreateActivityInput, // Removed
-  // UpdateActivityInput as GeneratedUpdateActivityInput, // Removed
-  // QueryActivitiesArgs, // Removed
-  // MutationCreateActivityArgs, // Removed
-  // MutationUpdateActivityArgs, // Removed
-  // MutationDeleteActivityArgs, // Removed
 } from '../generated/graphql/graphql';
 
 // Re-export core entity and input types for external use
 export type {
   Pipeline,
-  // Activity, GeneratedCreateActivityInput, GeneratedUpdateActivityInput, GeneratedActivityFilterInput, // Removed
   Maybe
 };
 
 // --- GraphQL Queries/Mutations ---
 
 const GET_MY_PERMISSIONS_QUERY = gql`query GetMyPermissions { myPermissions }`;
-
-// Activity GQL Constants Removed - they are now in useActivitiesStore.ts
 
 interface AppState {
   // Auth
@@ -42,8 +31,6 @@ interface AppState {
   checkAuth: () => Promise<void>;
   handleSignOut: () => Promise<void>;
   fetchUserPermissions: () => Promise<void>; 
-  
-  // Activities related state and actions removed - now in useActivitiesStore.ts
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -53,8 +40,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoadingAuth: true, // Start with true, checkAuth will set it
   userPermissions: null,
   permissionsLoading: false,
-
-  // Initial Activities State Removed
 
   // Auth Action Implementations
   setSession: (session) => set({ session, user: session?.user ?? null, isLoadingAuth: false }),
@@ -131,8 +116,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     }
   },
-
-  // Activities Action Implementations Removed
 }));
 
 // Initialize auth check when store is loaded (client-side only)

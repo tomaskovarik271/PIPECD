@@ -6,40 +6,29 @@ import {
   Spinner,
   Text,
   VStack,
-  useDisclosure, // For create modal later
-  Checkbox, // Import Checkbox
-  HStack, // Import HStack
-  IconButton, // Import IconButton
-  Tag, // Import Tag
-  Flex, // Import Flex (might not be needed)
-  useToast, // Import useToast
+  useDisclosure,
+  Checkbox,
+  HStack,
+  IconButton,
+  Tag,
+  Flex,
+  useToast,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalCloseButton,
-  Alert, AlertIcon // Added Alert & AlertIcon
+  Alert, AlertIcon
 } from '@chakra-ui/react';
-import { useAppStore } from '../stores/useAppStore'; // For userPermissions and currentUserId
-import { useActivitiesStore, Activity } from '../stores/useActivitiesStore'; // NEW IMPORT
-import CreateActivityForm from '../components/activities/CreateActivityForm'; // Import the form
-import EmptyState from '../components/common/EmptyState'; // Import EmptyState
-import ConfirmationDialog from '../components/common/ConfirmationDialog'; // Import ConfirmationDialog
-import EditActivityModal from '../components/activities/EditActivityModal'; // Import Edit Modal
-import { TimeIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons'; // Removed ViewIcon
-import ListPageLayout from '../components/layout/ListPageLayout'; // Import layout
-import SortableTable, { ColumnDefinition } from '../components/common/SortableTable'; // Import table
-
-// Extend Activity type to potentially include full linked objects if needed for sorting
-// (Assuming they are fetched with the activity)
-// interface ActivityWithLinks extends Activity {
-// deal?: Deal | null;
-// person?: Person | null;
-// organization?: Organization | null;
-// }
-
-// Define sortable keys
-// type ActivitySortKeys = 'subject' | 'type' | 'due_date' | 'linked_to' | 'notes' | 'is_done';
+import { useAppStore } from '../stores/useAppStore';
+import { useActivitiesStore, Activity } from '../stores/useActivitiesStore';
+import CreateActivityForm from '../components/activities/CreateActivityForm';
+import EmptyState from '../components/common/EmptyState';
+import ConfirmationDialog from '../components/common/ConfirmationDialog';
+import EditActivityModal from '../components/activities/EditActivityModal';
+import { TimeIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import ListPageLayout from '../components/layout/ListPageLayout';
+import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 
 // --- Helper Functions (copied from ActivityListItem) ---
 const formatDateTime = (isoString: string | null | undefined): string => {
@@ -300,7 +289,6 @@ function ActivitiesPage() {
       {/* SortableTable now explicitly typed */}
       <SortableTable<Activity> columns={columns} data={activities} initialSortKey="due_date" initialSortDirection="ascending" />
 
-      {/* Modals remain the same */}
       <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl">
         <ModalOverlay />
         <ModalContent>

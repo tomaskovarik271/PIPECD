@@ -1,4 +1,3 @@
-// Resolvers for Mutation operations
 import { GraphQLError } from 'graphql';
 import { GraphQLContext, requireAuthentication, getAccessToken, processZodError } from '../helpers';
 import { 
@@ -20,23 +19,23 @@ import * as stageService from '../../../../lib/stageService';
 import type { 
     // Person
     MutationCreatePersonArgs, 
-    Person, // Assuming generated Person type
+    Person, 
     MutationUpdatePersonArgs,
     // Organization
     MutationCreateOrganizationArgs,
-    Organization, // Assuming generated Organization type
+    Organization, 
     MutationUpdateOrganizationArgs,
     // Deal
     MutationCreateDealArgs,
-    Deal, // Assuming generated Deal type
+    Deal, 
     MutationUpdateDealArgs,
     // Pipeline
     MutationCreatePipelineArgs,
-    Pipeline, // Assuming generated Pipeline type
+    Pipeline, 
     MutationUpdatePipelineArgs,
     // Stage
     MutationCreateStageArgs,
-    Stage, // Assuming generated Stage type
+    Stage, 
     MutationUpdateStageArgs
 } from '../../../../frontend/src/generated/graphql/graphql.js' with { "resolution-mode": "import" };
 

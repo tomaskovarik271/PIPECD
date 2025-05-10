@@ -34,6 +34,9 @@ import EmptyState from '../components/common/EmptyState';
 const StagesPage: React.FC = () => {
   const { pipelineId } = useParams<{ pipelineId: string }>();
   
+  // Add this state to track fetch attempts per pipeline
+  const [initialFetchAttemptedForPipeline, setInitialFetchAttemptedForPipeline] = useState<Record<string, boolean>>({});
+
   // Select state slices from Zustand
   const { 
     stages,
@@ -69,13 +72,24 @@ const StagesPage: React.FC = () => {
         fetchPipelinesFromStore(); 
     }
 
-    if (pipelineId) {
-      const stagesForCurrentPipeline = stages.filter((s: Stage) => s.pipeline_id === pipelineId);
-      if (stagesForCurrentPipeline.length === 0 && !stagesLoading) {
-          fetchStages(pipelineId);
-      } 
+    if (pipelineId && !stagesLoading) {
+      // Check if fetch has been attempted for the current pipelineId
+      if (!initialFetchAttemptedForPipeline[pipelineId]) {
+        fetchStages(pipelineId).finally(() => {
+          // Mark that fetch has been attempted for this pipelineId, regardless of outcome
+          setInitialFetchAttemptedForPipeline(prev => ({ ...prev, [pipelineId]: true }));
+        });
+      }
     }
-  }, [pipelines, pipelinesLoadingFromStore, fetchPipelinesFromStore, pipelineId, fetchStages, stages, stagesLoading]);
+  }, [
+    pipelineId, 
+    pipelines, 
+    pipelinesLoadingFromStore, 
+    fetchPipelinesFromStore, 
+    stagesLoading, 
+    fetchStages, 
+    initialFetchAttemptedForPipeline // Add this to dependencies
+  ]);
 
   // --- Modal Handlers ---
   const handleAddStage = () => {

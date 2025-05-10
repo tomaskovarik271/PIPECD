@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-// import { gql } from '@apollo/client'; // No longer needed
-// import { gqlClient } from '../lib/graphqlClient'; // No longer needed
 import {
   Button,
   FormControl,
@@ -17,69 +15,46 @@ import {
   AlertIcon,
   FormErrorMessage
 } from '@chakra-ui/react';
-// import { useAppStore } from '../stores/useAppStore'; // REMOVED for orgs, keep for permissions if any
-import type { PersonInput } from '../generated/graphql/graphql'; // Import generated types, removed Organization
-import { usePeopleStore } from '../stores/usePeopleStore'; // ADDED
-import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore'; // ADDED
+import type { PersonInput } from '../generated/graphql/graphql';
+import { usePeopleStore } from '../stores/usePeopleStore';
+import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
 
-// Define the mutation for creating a Person - REMOVED (Handled by store action)
-// const CREATE_PERSON_MUTATION = gql` ... `;
-
-// Define the query to fetch organizations for the dropdown - REMOVED (Handled by store/page)
-// const GET_ORGANIZATIONS_QUERY = gql` ... `;
-
-// Define the input type (Person) - REMOVED (Using generated PersonInput)
-// interface PersonInput { ... }
-
-// Define the type for the Organization query result - REMOVED (Using generated Organization)
-// interface OrganizationListItem { ... }
-
-// Prop definition for the component
 interface CreatePersonFormProps {
   onClose: () => void;
   onSuccess: () => void;
 }
 
 function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
-  // Use generated PersonInput for formData state
   const [formData, setFormData] = useState<PersonInput>({
     first_name: '',
     last_name: '',
     email: '',
     phone: '',
     notes: '',
-    organization_id: null, // Use null for optional ID
+    organization_id: null,
   });
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
-  // Get organizations and related state from useOrganizationsStore
   const { 
     organizations, 
     organizationsLoading: orgLoading, 
     organizationsError: orgError, 
     fetchOrganizations 
-  } = useOrganizationsStore(); // CHANGED
-  // const organizations = useAppStore((state) => state.organizations); // REMOVED
-  // const orgLoading = useAppStore((state) => state.organizationsLoading); // REMOVED
-  // const orgError = useAppStore((state) => state.organizationsError); // REMOVED
-  // const fetchOrganizations = useAppStore((state) => state.fetchOrganizations); // REMOVED
+  } = useOrganizationsStore();
   
-  // Get actions and state from usePeopleStore
   const { createPerson: createPersonAction, peopleError } = usePeopleStore(); 
 
-  const [localError, setLocalError] = useState<string | null>(null); // For form validation errors
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  // Fetch organizations if not already loaded
   useEffect(() => {
-    if (organizations && organizations.length === 0 && !orgLoading) { // Added check for organizations being defined
+    if (organizations && organizations.length === 0 && !orgLoading) {
       fetchOrganizations(); 
     }
   }, [organizations, orgLoading, fetchOrganizations]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    // Handle optional organization_id: set to null if empty string selected
     if (name === 'organization_id' && value === '') {
         setFormData(prev => ({ ...prev, [name]: null }));
     } else {
@@ -90,18 +65,14 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setLocalError(null); // Clear local form errors
-    // Reset store error for this action specifically?
-    // useAppStore.setState({ peopleError: null }); // Optional: Reset store error before action
+    setLocalError(null);
 
-    // Basic validation
     if (!formData.first_name && !formData.last_name && !formData.email) {
       setLocalError('Please provide at least a first name, last name, or email.');
       setIsLoading(false);
       return;
     }
 
-    // Prepare input, ensuring empty strings become null (already handled by generated type structure and handleChange)
     const mutationInput: PersonInput = {
         first_name: formData.first_name || null,
         last_name: formData.last_name || null,
@@ -112,7 +83,6 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
     };
 
     try {
-      // Call the store action
       const createdPerson = await createPersonAction(mutationInput);
 
       if (createdPerson) {
@@ -125,12 +95,9 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
         onSuccess();
         onClose();
       } else {
-        // Error should be set in the store's peopleError state by the action
-        // Display the store error
         setLocalError(peopleError || 'Failed to create person. Please try again.');
       }
     } catch (error: unknown) {
-      // Catch unexpected errors during the action call itself
       console.error("Unexpected error during handleSubmit:", error);
       let message = 'An unexpected error occurred.';
       if (error instanceof Error) {
@@ -147,7 +114,6 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       <ModalBody>
-        {/* Display local form error or store error */} 
         {(localError || peopleError) && (
              <Alert status="error" mb={4} whiteSpace="pre-wrap">
                 <AlertIcon />
@@ -187,15 +153,14 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
                     value={formData.organization_id || ''} 
                     onChange={handleChange}
                     placeholder="Select organization (optional)"
-                    isDisabled={!organizations || organizations.length === 0} // Added check for organizations being defined
+                    isDisabled={!organizations || organizations.length === 0}
                 >
-                    {/* organizations from store is already Organization[] from useOrganizationsStore */} 
-                    {organizations && organizations.map((org: Organization) => ( // Added check for organizations and type for org
+                    {organizations && organizations.map((org: Organization) => (
                         <option key={org.id} value={org.id}>{org.name}</option>
                     ))}
                 </Select>
             )}
-            {(!organizations || organizations.length === 0) && !orgLoading && <FormErrorMessage>No organizations found. Create one first.</FormErrorMessage>} {/* Added check */}
+            {(!organizations || organizations.length === 0) && !orgLoading && <FormErrorMessage>No organizations found. Create one first.</FormErrorMessage>}
           </FormControl>
           <FormControl>
             <FormLabel>Notes</FormLabel>

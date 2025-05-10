@@ -1,52 +1,32 @@
 import { Routes, Route } from 'react-router-dom';
-import { useEffect /* , useState */ } from 'react'; // Removed useState
+import { useEffect } from 'react';
 import { supabase } from './lib/supabase'; 
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-// import type { Session } from '@supabase/supabase-js'; // No longer needed here
 import DealsPage from './pages/DealsPage';
 import PeoplePage from './pages/PeoplePage';
 import OrganizationsPage from './pages/OrganizationsPage'; 
-import PipelinesPage from './pages/PipelinesPage'; // Import the new page
-import StagesPage from './pages/StagesPage'; // Import the Stages page
-import ActivitiesPage from './pages/ActivitiesPage'; // Import the new Activities page
+import PipelinesPage from './pages/PipelinesPage';
+import StagesPage from './pages/StagesPage';
+import ActivitiesPage from './pages/ActivitiesPage';
 import { 
   Box, 
   Heading, 
-  // Link, // Removed unused Link
-  // Button, // Removed unused Button
-  // HStack, // Removed unused HStack
   Flex,
   useToast,
   VStack,
-  Spinner, // Added Spinner
-  // Text, // Removed unused Text
+  Spinner,
 } from '@chakra-ui/react';
-import { useAppStore } from './stores/useAppStore'; // Import the store
-import Sidebar from './components/layout/Sidebar'; // Import the Sidebar
+import { useAppStore } from './stores/useAppStore';
+import Sidebar from './components/layout/Sidebar';
 
-// REMOVED unused HEALTH_QUERY
-// const HEALTH_QUERY = gql` ... `;
-
-// REMOVED unused ME_QUERY
-// const ME_QUERY = gql` ... `;
-
-// REMOVED unused MeQueryResult
-// interface MeQueryResult { ... }
-
-// REMOVED unused page components
-// function HomePage() { ... }
-// function AboutPage() { ... }
-// function NotFoundPage() { ... }
-
-// --- Component for Logged-In State --- 
 function AppContent() {
   return (
-    <Flex minH="100vh"> {/* Use Flex for sidebar layout */}
-      <Sidebar /> {/* Add the Sidebar component */}
-      <Box as="main" flex={1} p={6} bg="gray.50"> {/* Main content area - ADD BG */}
+    <Flex minH="100vh">
+      <Sidebar />
+      <Box as="main" flex={1} p={6} bg="gray.50">
           <Routes>
-            <Route path="/" element={<Heading size="lg">Home</Heading>} /> {/* Add a default/home page */} 
+            <Route path="/" element={<Heading size="lg">Home</Heading>} />
             <Route path="/people" element={<PeoplePage />} />
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
@@ -60,9 +40,7 @@ function AppContent() {
   );
 }
 
-// --- Main App Component with Auth Logic --- 
 function App() {
-  // Use state from Zustand store
   const session = useAppStore((state) => state.session);
   const isLoadingAuth = useAppStore((state) => state.isLoadingAuth);
   const setSession = useAppStore((state) => state.setSession);
@@ -70,14 +48,11 @@ function App() {
   const toast = useToast();
 
   useEffect(() => {
-    // Initial check
     checkAuth();
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         console.log('Auth state changed:', _event, session ? 'Session exists' : 'No session');
-        setSession(session); // Update store state
-      // Optionally show toast on login/logout
+        setSession(session);
       if (_event === 'SIGNED_IN') {
           toast({ title: "Signed In", status: "success", duration: 3000, isClosable: true });
       }
@@ -90,9 +65,8 @@ function App() {
         console.log('Unsubscribing from auth changes.');
         subscription.unsubscribe();
     }
-  }, [checkAuth, setSession, toast]); // Add dependencies
+  }, [checkAuth, setSession, toast]);
 
-  // Show loading spinner during initial auth check
   if (isLoadingAuth) {
     return (
       <Flex minH="100vh" align="center" justify="center">
@@ -101,7 +75,6 @@ function App() {
     );
   }
 
-  // Show Auth UI if not logged in
   if (!session) {
     return (
       <Flex minH="100vh" align="center" justify="center" bg="gray.50">
@@ -115,12 +88,8 @@ function App() {
     );
   }
   else {
-    // Show main app content if logged in
     return <AppContent />;
   }
 }
-
-// REMOVED Temporary simple navigation (TempNav)
-// function TempNav() { ... }
 
 export default App;

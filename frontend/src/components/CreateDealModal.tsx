@@ -14,53 +14,36 @@ import {
   NumberInput,
   NumberInputField,
   Select,
-  VStack, // For layout
+  VStack,
   FormErrorMessage,
   Alert, 
   AlertIcon,
   Spinner,
   useToast,
 } from '@chakra-ui/react';
-import { useAppStore } from '../stores/useAppStore'; // Import the store
-import { usePeopleStore, Person } from '../stores/usePeopleStore'; // ADDED for people state + Person type
-import { useDealsStore } from '../stores/useDealsStore'; // ADDED
-import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore'; // ADDED for pipeline state and Pipeline type
-import { useStagesStore, Stage } from '../stores/useStagesStore'; // Import new store and Stage type
-import { DealInput } from '../generated/graphql/graphql'; // Removed Deal, Person, Stage
-
-// Explicit Person type based on store data - REMOVED
-// interface Person {
-//   id: string;
-//   first_name?: string | null;
-//   last_name?: string | null;
-//   email?: string | null;
-//   // Add other fields if needed by component
-// }
+import { useAppStore } from '../stores/useAppStore';
+import { usePeopleStore, Person } from '../stores/usePeopleStore';
+import { useDealsStore } from '../stores/useDealsStore';
+import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore';
+import { useStagesStore, Stage } from '../stores/useStagesStore';
+import { DealInput } from '../generated/graphql/graphql';
 
 interface CreateDealModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onDealCreated: () => void; // Callback to refresh list
+  onDealCreated: () => void;
 }
 
 function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProps) {
-  // Form State
   const [name, setName] = useState('');
-  const [localSelectedPipelineId, setLocalSelectedPipelineId] = useState<string>(''); // Renamed to avoid conflict if store selector is named the same
+  const [localSelectedPipelineId, setLocalSelectedPipelineId] = useState<string>('');
   const [selectedStageId, setSelectedStageId] = useState<string>('');
-  const [amount, setAmount] = useState<string>(''); // Store as string for input
-  const [personId, setPersonId] = useState<string>(''); // Renamed from contactId
+  const [amount, setAmount] = useState<string>('');
+  const [personId, setPersonId] = useState<string>('');
   
-  // Store State & Actions
-  // const pipelines = useAppStore((state) => state.pipelines); // REMOVED
-  // const fetchPipelines = useAppStore((state) => state.fetchPipelines); // REMOVED
-  // const pipelinesLoading = useAppStore((state) => state.pipelinesLoading); // REMOVED
-  // const pipelinesError = useAppStore((state) => state.pipelinesError); // REMOVED
 
-  // ADDED: Pipelines state from usePipelinesStore
   const { pipelines, fetchPipelines, pipelinesLoading, pipelinesError } = usePipelinesStore();
 
-  // Use new store for stages
   const { 
     stages,
     fetchStages,
@@ -68,43 +51,34 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     stagesError
   } = useStagesStore();
 
-  // ADDED: Deals state & actions from useDealsStore
   const { createDeal: createDealAction, dealsError, dealsLoading } = useDealsStore(); 
 
-  // ADDED: People state from usePeopleStore
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
 
-  // Component State
-  const [isLoading, setIsLoading] = useState(false); // This local isLoading seems to shadow dealsLoading from store
-  const [error, setError] = useState<string | null>(null); // This local error seems to shadow dealsError from store
-  const toast = useToast(); // Initialize toast
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const toast = useToast();
 
-  // Effect to fetch initial data (people & pipelines) when modal opens
   useEffect(() => {
     if (isOpen) {
-      // Reset form state when opening
       setName('');
-      // setSelectedPipelineId(''); // REMOVED, using localSelectedPipelineId
-      setLocalSelectedPipelineId(''); // Use local state setter
+      setLocalSelectedPipelineId('');
       setSelectedStageId('');
       setAmount('');
       setPersonId('');
       setError(null);
       setIsLoading(false);
       
-      // Fetch people and pipelines
       fetchPeople(); 
       fetchPipelines(); 
     }
   }, [isOpen, fetchPeople, fetchPipelines]);
 
-  // Effect to fetch stages when a pipeline is selected
   useEffect(() => {
     if (localSelectedPipelineId) {
-        setSelectedStageId(''); // Reset stage selection when pipeline changes
+        setSelectedStageId('');
         fetchStages(localSelectedPipelineId);
     } else {
-        // Clear stages if no pipeline is selected, using the new store
         useStagesStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
   }, [localSelectedPipelineId, fetchStages]);
@@ -114,7 +88,6 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     setIsLoading(true);
     setError(null);
 
-    // Basic validation
     if (!name.trim()) {
         setError('Deal name is required.');
         setIsLoading(false);
@@ -127,45 +100,35 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     }
 
     try {
-      // Prepare input for the store action, matching generated DealInput type
       const dealInput: DealInput = {
         name: name.trim(),
         stage_id: selectedStageId,
         amount: amount ? parseFloat(amount) : null,
         person_id: personId || null,
-        // user_id will be set by the backend based on authenticated user
       };
 
       console.log('Calling createDealAction with input:', dealInput);
 
-      // Use the store action
       const createdDeal = await createDealAction(dealInput);
 
       if (createdDeal) {
-        // The createdDeal from useDealsStore might not have the full stage object with name.
-        // We might need to find the stage from useStagesStore to display its name.
         const stageOfCreatedDeal = stages.find(s => s.id === createdDeal.stage_id);
 
         console.log('Deal created via store action:', createdDeal);
-        // Success
-        toast({ // Use toast for success message
+        toast({
           title: "Deal Created",
           description: `Deal "${createdDeal.name}" created${stageOfCreatedDeal ? ` in stage "${stageOfCreatedDeal.name}"` : ''}.`,
           status: "success",
           duration: 5000,
           isClosable: true,
         });
-        onDealCreated(); // Trigger refresh on the parent page
-        onClose();       // Close the modal
+        onDealCreated();
+        onClose();
       } else {
-        // Error is handled by the store action, potentially setting dealsError
-        // We can pull the error from the store or use a generic message
-        // const storeError = useAppStore.getState().dealsError; // REMOVED
-        setError(dealsError || 'Failed to create deal. Please check store errors.'); // Use dealsError from useDealsStore
+        setError(dealsError || 'Failed to create deal. Please check store errors.');
       }
 
     } catch (err: unknown) {
-      // Catch unexpected errors during the action call itself (less likely)
       console.error('Unexpected error during handleSubmit:', err);
       let message = 'An unexpected error occurred.';
       if (err instanceof Error) {
@@ -186,8 +149,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         <ModalHeader>Create New Deal</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          {error && ( // This will now show local error OR dealsError from store via setError
-             <Alert status="error" mb={4} whiteSpace="pre-wrap"> {/* Allow wrapping for long errors */}
+          {error && (
+             <Alert status="error" mb={4} whiteSpace="pre-wrap"> 
                 <AlertIcon />
                 {error}
             </Alert>
@@ -199,7 +162,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
             </Alert>
           )}
           <VStack spacing={4}>
-            <FormControl isRequired isInvalid={!name.trim() && error?.includes('name')}> {/* Basic error state check */}
+            <FormControl isRequired isInvalid={!name.trim() && error?.includes('name')}>
               <FormLabel>Deal Name</FormLabel>
               <Input 
                 placeholder='Enter deal name' 
@@ -277,8 +240,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
             colorScheme='blue'
             mr={3} 
             type="submit"
-            isLoading={isLoading || dealsLoading} // Combine local submit loading with store loading
-            leftIcon={(isLoading || dealsLoading) ? <Spinner size="sm" /> : undefined} // Show spinner if either is loading
+            isLoading={isLoading || dealsLoading}
+            leftIcon={(isLoading || dealsLoading) ? <Spinner size="sm" /> : undefined}
             onClick={handleSubmit}
           >
             Save Deal

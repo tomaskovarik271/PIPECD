@@ -14,7 +14,7 @@ import {
   useToast, 
   VStack 
 } from '@chakra-ui/react';
-import { useAppStore } from '../../stores/useAppStore';
+import { usePipelinesStore } from '../../stores/usePipelinesStore';
 
 interface CreatePipelineModalProps {
   isOpen: boolean;
@@ -26,7 +26,7 @@ interface CreatePipelineModalProps {
 const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const [pipelineName, setPipelineName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const createPipeline = useAppStore((state) => state.createPipeline);
+  const { createPipeline, pipelinesError } = usePipelinesStore();
   const toast = useToast();
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -44,8 +44,7 @@ const CreatePipelineModal: React.FC<CreatePipelineModalProps> = ({ isOpen, onClo
         onSuccess?.(newPipeline.id);
         onClose(); // Close modal
       } else {
-        // Error toast is likely handled within the store action, but add a fallback
-        toast({ title: "Failed to create pipeline.", description: "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
+        toast({ title: "Failed to create pipeline.", description: pipelinesError || "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });
       }
     } catch (error: unknown) {
         // This catch might be redundant if store handles all errors, but keep for safety
