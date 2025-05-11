@@ -183,17 +183,20 @@ export const Query: QueryResolvers<GraphQLContext> = {
        const accessToken = getAccessToken(context)!;
        try {
            const dealList = await dealService.getDeals(context.currentUser!.id, accessToken);
-           // Map DealRecord[] to GraphQLDeal[]
+           // Map Deal[] from service to GraphQLDeal[]
            return dealList.map(d => ({
                 id: d.id,
+                user_id: d.user_id!,
                 created_at: d.created_at,
                 updated_at: d.updated_at,
-                user_id: d.user_id,
-                name: d.name!, // Name is non-nullable in GraphQL Deal type
+                name: d.name!, 
                 amount: d.amount,
-                stage_id: d.stage_id!, // Stage (and thus stage_id) is non-nullable on Deal type
+                expected_close_date: d.expected_close_date,
+                pipeline_id: d.pipeline_id!,
+                stage_id: d.stage_id!, 
                 person_id: d.person_id,
-                // person, stage, activities resolved by Deal type resolvers
+                organization_id: d.organization_id,
+                deal_specific_probability: d.deal_specific_probability,
            })) as GraphQLDeal[];
        } catch (e) {
            throw processZodError(e, 'fetching deals list');
@@ -205,16 +208,20 @@ export const Query: QueryResolvers<GraphQLContext> = {
        try {
            const d = await dealService.getDealById(context.currentUser!.id, args.id, accessToken);
            if (!d) return null;
-           // Map DealRecord to GraphQLDeal
+           // Map Deal from service to GraphQLDeal
            return {
                 id: d.id,
+                user_id: d.user_id!,
                 created_at: d.created_at,
                 updated_at: d.updated_at,
-                user_id: d.user_id,
                 name: d.name!, 
                 amount: d.amount,
+                expected_close_date: d.expected_close_date,
+                pipeline_id: d.pipeline_id!,
                 stage_id: d.stage_id!, 
                 person_id: d.person_id,
+                organization_id: d.organization_id,
+                deal_specific_probability: d.deal_specific_probability,
            } as GraphQLDeal;
        } catch (e) {
            throw processZodError(e, 'fetching deal by ID');

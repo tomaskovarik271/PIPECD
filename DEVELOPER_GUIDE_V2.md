@@ -198,7 +198,83 @@ Refer to [README.md](README.md) for a streamlined setup. Detailed steps:
 *   **Usage**: These generated types are used throughout the backend, particularly in GraphQL resolvers (`netlify/functions/graphql/resolvers/`) and service layers (`lib/`), to ensure type safety and consistency with the GraphQL schema.
 *   **Running**: The generation can be triggered manually using the `npm run codegen` script. This should be done after any changes to the GraphQL schema files (`*.graphql`).
 
-### Database (`supabase/migrations`)
+### 5.4 Handling GraphQL Inputs with Fields Not Directly Mapped to Database Tables
+
+A common scenario in GraphQL development involves input types that contain fields necessary for the GraphQL layer (e.g., for validation, context, or to satisfy client-side expectations) but do not directly correspond to a column in the primary database table for the entity being mutated. This section outlines best practices for handling such discrepancies, using the implementation of "Deal-Specific Probability" and its `pipeline_id` field in `DealInput` as a case study.
+
+#### 5.4.1 The Challenge: `pipeline_id` in `DealInput`
+
+During the implementation of deal-specific probabilities, the `DealInput` GraphQL type was defined to include fields like `name`, `stage_id`, `amount`, and crucially, `pipeline_id`. The `pipeline_id` is essential at the GraphQL/frontend layer because:
+*   When creating or editing a deal, selecting a pipeline is often the first step before selecting a stage.
+*   The frontend needs `pipeline_id` to correctly populate stage selection dropdowns based on the chosen pipeline.
+
+However, the `deals` table in the database does not have a `pipeline_id` column. Instead, a deal is associated with a pipeline indirectly: `deals.stage_id` links to the `stages` table, and `stages.pipeline_id` links to the `pipelines` table.
+
+This mismatch led to an error: `PGRST204: Could not find the 'pipeline_id' column of 'deals' in the schema cache`. This occurred when GraphQL resolvers for `createDeal` and `updateDeal` passed the full `DealInput` (containing `pipeline_id`) to service layer methods (`dealService.createDeal` and `dealService.updateDeal`). These service methods, in their initial implementation, then attempted to use all fields from the input in Supabase `insert` or `update` operations on the `deals` table.
+
+#### 5.4.2 Solution and Best Practices
+
+The core principle is to ensure that only data corresponding to actual database table columns is passed to the database client for `insert` or `update` operations. The responsibility for stripping or transforming fields depends on the nature of the mutation and the service layer design.
+
+##### 5.4.2.1 Resolver Responsibility (Primarily for Partial Updates)
+
+*   **Scenario**: When a mutation is designed for partial updates (e.g., `updateDeal` where only a subset of fields might be provided) and the corresponding service method also expects a partial input (e.g., `dealService.updateDeal` taking `Partial<DealInput>`).
+*   **Action**: The GraphQL resolver is a suitable place to destructure the validated input and explicitly pass only the fields that are intended for direct update on the database table.
+*   **Example (`updateDeal` resolver in `mutation.ts`):**
+    ```typescript
+    // In netlify/functions/graphql/resolvers/mutation.ts
+    // ...
+    const validatedInput = DealUpdateSchema.parse(args.input);
+    // ...
+    // Destructure to exclude pipeline_id before passing to the service
+    const { pipeline_id, ...dealDataForUpdate } = validatedInput;
+    const updatedDealRecord = await dealService.updateDeal(userId, args.id, dealDataForUpdate, accessToken);
+    // ...
+    ```
+    Here, `dealDataForUpdate` only contains fields that directly map to the `deals` table or are otherwise handled by the `dealService.updateDeal` method for persistence.
+
+##### 5.4.2.2 Service Layer Responsibility (Primarily for Create Operations or Full Input Updates)
+
+*   **Scenario**: When a service layer method is designed to accept the full GraphQL input type (e.g., `dealService.createDeal` taking `DealInput`), especially for creation operations where a complete representation is often expected.
+*   **Action**: The service method itself should be responsible for ensuring only valid columns are passed to the database. This involves destructuring or mapping the input *within* the service method to exclude fields not present in the target table *before* calling the database client (e.g., Supabase `insert()`).
+*   **Example (`createDeal` method in `lib/dealService.ts`):**
+    ```typescript
+    // In lib/dealService.ts
+    async createDeal(userId: string, input: DealInput, accessToken: string): Promise<Deal> {
+      // ...
+      // Destructure pipeline_id from input, as it doesn't belong in the 'deals' table directly.
+      const { pipeline_id, ...dealDataForDbInsert } = input;
+      
+      const { data, error } = await supabase
+        .from('deals')
+        .insert({ ...dealDataForDbInsert, user_id: userId }) // Use the destructured object
+        .select()
+        .single();
+      // ...
+    }
+    ```
+    In this case, the `createDeal` resolver in `mutation.ts` can pass the full `validatedInput` to `dealService.createDeal`, and the service layer handles the adaptation for the database.
+
+##### 5.4.2.3 Why the Distinction?
+
+*   **Create Operations**: Service methods for creating new entities (e.g., `createDeal`) often have a contract closely tied to the full GraphQL input type. It's cleaner and more encapsulated for them to internally manage the mapping to the database schema. The resolver then doesn't need to know the intimate details of which fields are transient for DB persistence.
+*   **Partial Update Operations**: Service methods for partial updates (e.g., `updateDeal`) are typically more flexible if they accept a subset of fields. The resolver, having validated the full `Partial<DealInput>`, can then prepare this precise subset for the update, minimizing the risk of accidentally trying to update non-existent or non-updatable fields.
+
+##### 5.4.2.4 Zod Schemas and GraphQL Inputs
+
+*   Zod validation schemas (e.g., `DealCreateSchema`, `DealUpdateSchema` in `netlify/functions/graphql/validators.ts`) should generally align with the corresponding GraphQL `Input` types. This ensures consistent validation at the entry point of the resolver.
+*   The transformation or stripping of fields not meant for direct database persistence (like `pipeline_id` from `DealInput` for the `deals` table) should occur *after* Zod validation, either in the resolver or the service layer, following the patterns described above.
+
+#### 5.4.3 Key Takeaways
+
+*   **Be Mindful of Discrepancies**: Always be aware of differences between the structure of your GraphQL input types and your underlying database table schemas.
+*   **Define Responsibility**: Clearly determine where the logic for adapting GraphQL inputs for database operations should reside (resolver vs. service layer). This decision can be guided by whether it's a "create" versus a "partial update" scenario and the design of your service layer methods.
+*   **Defensive Service Layers**: Implement service layer methods that interact with the database defensively. They should only attempt to write data for columns that actually exist in the target table.
+*   **Test CRUD Thoroughly**: When introducing new fields to input types or modifying how entities are structured, thoroughly test all related Create, Read, Update, and Delete (CRUD) operations to catch such issues early.
+
+This pattern helps maintain a clean separation of concerns: THE GraphQL layer handles client-facing data contracts and validation, while the service and database layers ensure data is persisted correctly according to the defined schema.
+
+### 5.5 Database (`supabase/migrations`)
 
 *   Database schema changes are managed via SQL migration files.
 *   Use `supabase migrations new <migration_name>` to create a new migration file.
@@ -207,7 +283,7 @@ Refer to [README.md](README.md) for a streamlined setup. Detailed steps:
 *   For production, migrations are applied using `supabase db push --linked` (see Deployment).
 *   Use Supabase Studio (local: `http://127.0.0.1:54323`) to inspect schema, data, and test RLS.
 
-### Async Workflows (`netlify/functions/inngest.ts`)
+### 5.6 Async Workflows (`netlify/functions/inngest.ts`)
 
 *   **Inngest Client**: Initialized in `inngest.ts`.
 *   **Function Definitions**: Inngest functions are defined here (e.g., `crm/person.created`). These functions are triggered by events.

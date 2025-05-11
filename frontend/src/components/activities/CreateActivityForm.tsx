@@ -194,7 +194,7 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
             type='datetime-local' // Use datetime-local for combined date and time
             {...register('due_date')}
           />
-          <FormErrorMessage>{errors.due_date?.message}</FormErrorMessage>
+          <FormErrorMessage>{errors.due_date?.message as string}</FormErrorMessage>
         </FormControl>
         
         {/* --- Linked Entity Selection --- */}

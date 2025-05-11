@@ -25,14 +25,22 @@ export const OrganizationInputSchema = z.object({
 });
 
 // --- Deal Schemas ---
-const DealBaseSchema = z.object({
-    name: z.string().trim().min(1, { message: "Deal name cannot be empty" }),
-    stage_id: z.string().uuid({ message: "Invalid Stage ID format" }),
-    amount: z.number().positive({ message: "Amount must be a positive number"}).optional().nullable(),
-    person_id: z.string().uuid({ message: "Invalid Person ID format" }).optional().nullable(),
+export const DealBaseSchema = z.object({
+  name: z.string().min(1, { message: "Deal name is required" }).optional(),
+  amount: z.number().positive("Amount must be positive").optional().nullable(),
+  expected_close_date: z.string().datetime().optional().nullable(),
+  stage_id: z.string().uuid("Valid Stage ID is required").optional(),
+  pipeline_id: z.string().uuid("Valid Pipeline ID is required").optional(),
+  person_id: z.string().uuid("Valid Person ID is required").optional().nullable(),
+  organization_id: z.string().uuid("Valid Organization ID is required").optional().nullable(),
+  deal_specific_probability: z.number().min(0).max(1).optional().nullable(),
 });
 
-export const DealCreateSchema = DealBaseSchema;
+export const DealCreateSchema = DealBaseSchema.merge(z.object({
+  name: z.string().min(1, { message: "Deal name is required" }),
+  stage_id: z.string().uuid("Valid Stage ID is required"),
+  pipeline_id: z.string().uuid("Valid Pipeline ID is required"),
+}));
 export const DealUpdateSchema = DealBaseSchema.partial();
 
 // --- Pipeline Schemas ---

@@ -75,10 +75,15 @@ export const dealService = {
   async createDeal(userId: string, input: DealInput, accessToken: string): Promise<Deal> { // Changed to DealInput, DealRecord to Deal
     console.log('[dealService.createDeal] called for user:', userId, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
-    // Note: Input already includes stage_id? if provided
+    
+    // Destructure pipeline_id from input, as it doesn't belong in the 'deals' table directly.
+    // It's part of DealInput for GraphQL layer consistency but handled via stage_id for DB persistence.
+    const { pipeline_id, ...dealDataForDbInsert } = input;
+    // console.log('[dealService.createDeal] pipeline_id from input (not directly saved to deal):', pipeline_id);
+
     const { data, error } = await supabase
       .from('deals')
-      .insert({ ...input, user_id: userId }) // RLS CHECK (auth.uid() = user_id)
+      .insert({ ...dealDataForDbInsert, user_id: userId }) // Use the destructured object
       .select() 
       .single();
 

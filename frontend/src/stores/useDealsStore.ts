@@ -33,6 +33,7 @@ const GET_DEALS_QUERY = gql`
       }
       stage_id
       amount
+      expected_close_date
       created_at
       updated_at
       person_id
@@ -42,7 +43,10 @@ const GET_DEALS_QUERY = gql`
         last_name
         email
       }
+      organization_id
       user_id
+      deal_specific_probability
+      weighted_amount
     }
   }
 `;
@@ -65,6 +69,7 @@ const CREATE_DEAL_MUTATION = gql`
       }
       stage_id
       amount
+      expected_close_date
       created_at
       updated_at
       person_id
@@ -74,7 +79,10 @@ const CREATE_DEAL_MUTATION = gql`
         last_name
         email
       }
+      organization_id
       user_id
+      deal_specific_probability
+      weighted_amount
     }
   }
 `;
@@ -97,6 +105,7 @@ const UPDATE_DEAL_MUTATION = gql`
       }
       stage_id
       amount
+      expected_close_date
       created_at
       updated_at
       person_id
@@ -106,7 +115,10 @@ const UPDATE_DEAL_MUTATION = gql`
         last_name
         email
       }
+      organization_id
       user_id
+      deal_specific_probability
+      weighted_amount
     }
   }
 `;

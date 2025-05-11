@@ -40,6 +40,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>('');
+  const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   
 
   const { pipelines, fetchPipelines, pipelinesLoading, pipelinesError } = usePipelinesStore();
@@ -67,6 +68,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       setAmount('');
       setPersonId('');
       setError(null);
+      setDealSpecificProbability('');
       setIsLoading(false);
       
       fetchPeople(); 
@@ -103,9 +105,17 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       const dealInput: DealInput = {
         name: name.trim(),
         stage_id: selectedStageId,
+        pipeline_id: localSelectedPipelineId,
         amount: amount ? parseFloat(amount) : null,
         person_id: personId || null,
       };
+
+      const probPercent = parseFloat(dealSpecificProbability);
+      if (!isNaN(probPercent) && probPercent >= 0 && probPercent <= 100) {
+        dealInput.deal_specific_probability = probPercent / 100;
+      } else if (dealSpecificProbability.trim() === '') {
+        dealInput.deal_specific_probability = null;
+      }
 
       console.log('Calling createDealAction with input:', dealInput);
 
@@ -213,6 +223,19 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
               <FormLabel>Amount</FormLabel>
               <NumberInput value={amount} onChange={(valueAsString) => setAmount(valueAsString)}>
                 <NumberInputField placeholder='Enter amount (optional)' />
+              </NumberInput>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Deal Specific Probability (%)</FormLabel>
+              <NumberInput
+                min={0}
+                max={100}
+                value={dealSpecificProbability}
+                onChange={(valueString) => setDealSpecificProbability(valueString)}
+                allowMouseWheel
+              >
+                <NumberInputField placeholder="Optional (e.g., 75)" />
               </NumberInput>
             </FormControl>
 

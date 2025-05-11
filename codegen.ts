@@ -25,6 +25,21 @@ const config: CodegenConfig = {
         // }
       },
     },
+    'frontend/src/generated/graphql/graphql.ts': {
+      plugins: [
+        'typescript', // Generates base TypeScript types from the schema
+        // Consider 'typescript-operations' if you have .graphql files for frontend ops
+        // Consider 'typescript-graphql-request' for a typed SDK if using graphql-request extensively with operations files
+      ],
+      config: {
+        // Ensure scalars are mapped correctly if needed for frontend (e.g., DateTime to string)
+        // scalars: {
+        //   DateTime: 'string',
+        // },
+        // Avoids __typename on everything if not strictly needed by client cache/logic
+        // skipTypename: true, 
+      }
+    }
   },
   hooks: {
     afterAllFileWrite: ['prettier --write'], // Optional: Format generated files

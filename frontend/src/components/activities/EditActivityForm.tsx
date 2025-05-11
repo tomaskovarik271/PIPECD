@@ -180,7 +180,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
             type='datetime-local'
             {...register('due_date')}
           />
-          <FormErrorMessage>{errors.due_date?.message}</FormErrorMessage>
+          <FormErrorMessage>{errors.due_date?.message as string}</FormErrorMessage>
         </FormControl>
         
         <FormControl isInvalid={!!errors.deal_id || !!errors.person_id || !!errors.organization_id}>

@@ -1,20 +1,41 @@
 type Deal {
   id: ID!
+  user_id: ID!
+  name: String!
+  amount: Float
+  expected_close_date: DateTime
   created_at: DateTime!
   updated_at: DateTime!
-  user_id: ID! 
-  name: String!
-  stage_id: ID! # ADDED FK
-  stage: Stage! # ADDED nested object
-  amount: Float
-  person_id: ID # FK referencing people table (Renamed from contact_id)
-  person: Person # Associated person (updated from contact)
-  activities: [Activity!]! # ADDED list of related activities
+  pipeline_id: ID!
+  pipeline: Pipeline!
+  stage_id: ID!
+  stage: Stage!
+  person_id: ID
+  person: Person
+  organization_id: ID
+  organization: Organization
+  activities: [Activity!]!
+  deal_specific_probability: Float # Nullable, actual probability (0.0 to 1.0)
+  weighted_amount: Float          # Calculated: amount * effective_probability
 }
 
 input DealInput {
   name: String!
-  stage_id: ID! # ADDED stage_id
   amount: Float
-  person_id: ID # FK referencing people table (Renamed from contact_id)
+  expected_close_date: DateTime
+  stage_id: ID!
+  pipeline_id: ID!
+  person_id: ID
+  organization_id: ID
+  deal_specific_probability: Float # Nullable, for setting/unsetting
+}
+
+input DealInput {
+  name: String
+  amount: Float
+  expected_close_date: DateTime
+  stage_id: ID
+  person_id: ID
+  organization_id: ID
+  deal_specific_probability: Float # Nullable, for setting/unsetting
 } 

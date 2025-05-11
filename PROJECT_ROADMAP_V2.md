@@ -94,7 +94,7 @@
             *   `[x]` Remove `gqlClient.setHeaders({...})` calls. (Commented out in `useAppStore.ts`)
             *   `[x]` Ensure store logic correctly updates state for `requestMiddleware` to use.
         4.  **Testing:**
-            *   `[ ]` Manually test login, logout, and authenticated GraphQL requests.
+            *   `[x]` Manually test login, logout, and authenticated GraphQL requests.
             *   `[x]` Run relevant E2E tests. (People CRUD E2E tests passed, covering login & auth requests)
         5.  **Roadmap Update (Self-Reference):**
             *   `[ ]` Mark this task as complete in this roadmap.

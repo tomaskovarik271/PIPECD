@@ -146,6 +146,24 @@ function DealsPage() {
       sortAccessor: (deal) => deal.amount,
     },
     {
+      key: 'deal_specific_probability',
+      header: 'Specific Prob. (%)',
+      renderCell: (deal) => 
+        deal.deal_specific_probability != null 
+          ? `${Math.round(deal.deal_specific_probability * 100)}%` 
+          : '-',
+      isSortable: true,
+      sortAccessor: (deal) => deal.deal_specific_probability,
+    },
+    {
+      key: 'weighted_amount',
+      header: 'Weighted Amount',
+      renderCell: (deal) => formatCurrency(deal.weighted_amount),
+      isSortable: true,
+      isNumeric: true,
+      sortAccessor: (deal) => deal.weighted_amount,
+    },
+    {
       key: 'created_at',
       header: 'Created',
       renderCell: (deal) => formatDate(deal.created_at),

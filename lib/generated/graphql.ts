@@ -95,20 +95,31 @@ export type Deal = {
   activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
+  deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
+  expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
+  organization?: Maybe<Organization>;
+  organization_id?: Maybe<Scalars["ID"]["output"]>;
   person?: Maybe<Person>;
   person_id?: Maybe<Scalars["ID"]["output"]>;
+  pipeline: Pipeline;
+  pipeline_id: Scalars["ID"]["output"];
   stage: Stage;
   stage_id: Scalars["ID"]["output"];
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
+  weighted_amount?: Maybe<Scalars["Float"]["output"]>;
 };
 
 export type DealInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
+  deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
+  expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   name: Scalars["String"]["input"];
+  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
+  pipeline_id: Scalars["ID"]["input"];
   stage_id: Scalars["ID"]["input"];
 };
 
@@ -584,14 +595,41 @@ export type DealResolvers<
   >;
   amount?: Resolver<Maybe<ResolversTypes["Float"]>, ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  deal_specific_probability?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  expected_close_date?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  organization?: Resolver<
+    Maybe<ResolversTypes["Organization"]>,
+    ParentType,
+    ContextType
+  >;
+  organization_id?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
   person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
   person_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
+  pipeline?: Resolver<ResolversTypes["Pipeline"], ParentType, ContextType>;
+  pipeline_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   stage?: Resolver<ResolversTypes["Stage"], ParentType, ContextType>;
   stage_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  weighted_amount?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

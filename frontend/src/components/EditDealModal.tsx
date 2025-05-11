@@ -42,6 +42,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   const [initialStageId, setInitialStageId] = useState<string | null>(null);
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>(''); 
+  const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
 
   // Store State & Actions
   const { pipelines, fetchPipelines, pipelinesLoading, pipelinesError } = usePipelinesStore();
@@ -77,6 +78,11 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       setName(deal.name || '');
       setAmount(deal.amount != null ? String(deal.amount) : '');
       setPersonId(deal.person_id || ''); 
+      setDealSpecificProbability(
+        deal.deal_specific_probability != null 
+          ? String(Math.round(deal.deal_specific_probability * 100)) 
+          : ''
+      );
       setError(null);
       setIsLoading(false);
       
@@ -96,6 +102,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
         setSelectedStageId('');
         setInitialPipelineId(null);
         setInitialStageId(null);
+        setDealSpecificProbability('');
     }
   }, [deal]);
 
@@ -149,9 +156,17 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       const updateInput: DealInput = {
         name: name.trim(),
         stage_id: selectedStageId,
+        pipeline_id: selectedPipelineId,
         amount: amount ? parseFloat(amount) : null,
         person_id: personId || null,
       };
+
+      const probPercent = parseFloat(dealSpecificProbability);
+      if (!isNaN(probPercent) && probPercent >= 0 && probPercent <= 100) {
+        updateInput.deal_specific_probability = probPercent / 100;
+      } else if (dealSpecificProbability.trim() === '') {
+        updateInput.deal_specific_probability = null;
+      }
 
       const updatedDeal = await updateDealAction(deal.id, updateInput);
 
@@ -248,8 +263,25 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
 
             <FormControl>
               <FormLabel>Amount</FormLabel>
-              <NumberInput value={amount} onChange={(valueAsString) => setAmount(valueAsString)}>
-                <NumberInputField placeholder='Enter amount (optional)' />
+              <NumberInput 
+                value={amount}
+                onChange={(valueString) => setAmount(valueString)} 
+                precision={2} 
+              >
+                <NumberInputField placeholder='Enter deal amount' />
+              </NumberInput>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Deal Specific Probability (%)</FormLabel>
+              <NumberInput
+                min={0}
+                max={100}
+                value={dealSpecificProbability}
+                onChange={(valueString) => setDealSpecificProbability(valueString)}
+                allowMouseWheel
+              >
+                <NumberInputField placeholder="Optional (e.g., 75)" />
               </NumberInput>
             </FormControl>
 

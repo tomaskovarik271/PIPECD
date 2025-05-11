@@ -261,65 +261,88 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
       const action = 'creating deal';
       try {
           requireAuthentication(context);
-          const accessToken = getAccessToken(context)!;
           const userId = context.currentUser!.id;
+          const accessToken = getAccessToken(context)!;
+
           const validatedInput = DealCreateSchema.parse(args.input);
           if (!context.userPermissions?.includes('deal:create')) {
-              throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+               throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
           }
+
+          // Pass validatedInput directly as dealService.createDeal now handles stripping pipeline_id for DB insert
           const newDealRecord = await dealService.createDeal(userId, validatedInput, accessToken);
           
           inngest.send({
             name: 'crm/deal.created',
-            data: { deal: newDealRecord as any },
+            data: { deal: newDealRecord as any }, 
             user: { id: userId, email: context.currentUser!.email! }
           }).catch((err: unknown) => console.error('Failed to send deal.created event to Inngest:', err));
 
-          // Map DealRecord to GraphQLDeal
+          // Map Deal from service to GraphQLDeal
           return {
             id: newDealRecord.id,
+            user_id: newDealRecord.user_id!,
             created_at: newDealRecord.created_at,
             updated_at: newDealRecord.updated_at,
-            user_id: newDealRecord.user_id,
             name: newDealRecord.name!,
             amount: newDealRecord.amount,
+            expected_close_date: newDealRecord.expected_close_date,
+            // pipeline_id is not directly on newDealRecord from the 'deals' table.
+            // It will be resolved by the Deal type resolver via the stage relationship.
             stage_id: newDealRecord.stage_id!,
             person_id: newDealRecord.person_id,
+            organization_id: newDealRecord.organization_id,
+            deal_specific_probability: newDealRecord.deal_specific_probability,
+            // activities, pipeline, stage, weighted_amount are resolved by Deal type resolvers
           } as GraphQLDeal;
       } catch (error) {
           throw processZodError(error, action);
       }
     },
     updateDeal: async (_parent, args, context) => {
-      const action = `updating deal ${args.id}`;
+      const action = 'updating deal';
       try {
           requireAuthentication(context);
-          const accessToken = getAccessToken(context)!;
           const userId = context.currentUser!.id;
+          const accessToken = getAccessToken(context)!;
+
           const validatedInput = DealUpdateSchema.parse(args.input);
-          
-          if (!context.userPermissions?.includes('deal:update_any')) { // Assuming generic update perm for now
-              throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          if (!context.userPermissions?.includes('deal:update_any')) { // TODO: check deal:update_own
+               throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
+          }
+          if (Object.keys(validatedInput).length === 0) {
+            throw new GraphQLError('Update input cannot be empty.', { extensions: { code: 'BAD_USER_INPUT' } });
           }
 
-          const updatedDealRecord = await dealService.updateDeal(userId, args.id, validatedInput, accessToken);
+          // Destructure to exclude pipeline_id before passing to the service
+          const { pipeline_id, ...dealDataForUpdate } = validatedInput;
+          // Log to confirm pipeline_id is handled if needed for other logic (though not for direct DB update here)
+          // console.log('[Mutation.updateDeal] pipeline_id from input (not directly saved to deal):', pipeline_id);
 
+          const updatedDealRecord = await dealService.updateDeal(userId, args.id, dealDataForUpdate, accessToken);
+          
           inngest.send({
             name: 'crm/deal.updated',
             data: { deal: updatedDealRecord as any },
             user: { id: userId, email: context.currentUser!.email! }
           }).catch((err: unknown) => console.error('Failed to send deal.updated event to Inngest:', err));
 
-          // Map DealRecord to GraphQLDeal
+          // Map Deal from service to GraphQLDeal
           return {
             id: updatedDealRecord.id,
+            user_id: updatedDealRecord.user_id!,
             created_at: updatedDealRecord.created_at,
             updated_at: updatedDealRecord.updated_at,
-            user_id: updatedDealRecord.user_id,
             name: updatedDealRecord.name!,
             amount: updatedDealRecord.amount,
+            expected_close_date: updatedDealRecord.expected_close_date,
             stage_id: updatedDealRecord.stage_id!,
             person_id: updatedDealRecord.person_id,
+            organization_id: updatedDealRecord.organization_id,
+            deal_specific_probability: updatedDealRecord.deal_specific_probability,
+            // If updatedDealRecord is directly from 'deals' table, it won't have pipeline_id.
+            // If it's a composed object, this needs to be handled correctly.
+            // For now, let's assume pipeline_id is resolved by the Deal type resolver if needed.
           } as GraphQLDeal;
       } catch (error) {
           throw processZodError(error, action);
