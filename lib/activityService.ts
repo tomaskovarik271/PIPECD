@@ -1,7 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils';
-import { Activity, CreateActivityInput, UpdateActivityInput } from './types';
+import type { Activity, CreateActivityInput, UpdateActivityInput } from './generated/graphql';
 
 /**
  * Creates a new activity for the given user.

@@ -190,6 +190,14 @@ Refer to [README.md](README.md) for a streamlined setup. Detailed steps:
 *   **Helpers (consider moving to `serviceUtils` or domain-specific helpers if more broadly applicable)**:
     *   Utility functions specific to the GraphQL layer that don't fit elsewhere.
 
+### GraphQL Code Generation (Backend)
+
+*   **Tooling**: The project uses `@graphql-codegen/cli` to automatically generate TypeScript types for the backend.
+*   **Configuration**: The generation process is configured in `codegen.ts` at the project root.
+*   **Output**: Generated types, including resolver types (`Resolvers`) and types for GraphQL schema entities, are output to `lib/generated/graphql.ts`.
+*   **Usage**: These generated types are used throughout the backend, particularly in GraphQL resolvers (`netlify/functions/graphql/resolvers/`) and service layers (`lib/`), to ensure type safety and consistency with the GraphQL schema.
+*   **Running**: The generation can be triggered manually using the `npm run codegen` script. This should be done after any changes to the GraphQL schema files (`*.graphql`).
+
 ### Database (`supabase/migrations`)
 
 *   Database schema changes are managed via SQL migration files.
@@ -249,7 +257,7 @@ Refer to [README.md](README.md) for a streamlined setup. Detailed steps:
 *   Initializes `graphql-request` client.
 *   Configured with the GraphQL endpoint (`/functions/graphql`).
 *   Includes middleware to dynamically inject the Supabase JWT (from `useAppStore`) into the `Authorization` header for authenticated requests.
-*   **Generated Types**: GraphQL Code Generator (setup pending/manual for now) should be used to generate TypeScript types from the GraphQL schema, ensuring type safety between frontend and backend. These types are typically stored in `frontend/src/generated/graphql/`.
+*   **Generated Types**: GraphQL Code Generator is used to generate TypeScript types from the GraphQL schema, ensuring type safety between frontend and backend. These types are typically stored in `frontend/src/generated/graphql/` and can be regenerated using the `npm run codegen` script after schema changes.
 
 ### Components (`frontend/src/components`)
 
@@ -327,10 +335,11 @@ The project aims for a balanced testing approach:
 *   **Running the Linter**: `npm run lint`.
 *   **Importance**: Address all ESLint errors and warnings before committing code. This ensures consistency and catches potential issues early. The CI/CD pipeline (future) should enforce this.
 
-### Prettier (TODO: Consider adding)
+### Prettier
 
-*   Prettier is an opinionated code formatter that can be integrated to ensure consistent code style across the project automatically.
-*   If added, configure it and ensure it runs on pre-commit hooks and in CI.
+*   **Status**: The `prettier` dependency is included in the project.
+*   **Goal**: Prettier is an opinionated code formatter that helps ensure a consistent code style across the project automatically.
+*   **Integration (Pending)**: While the dependency is present, full integration (e.g., defining formatting scripts in `package.json`, setting up pre-commit hooks, and CI checks for formatting) is an area for future enhancement. Developers can manually run Prettier via their IDE or npx if desired.
 
 ### Naming Conventions
 

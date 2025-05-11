@@ -3,6 +3,7 @@ import { /* createClient, SupabaseClient, */ } from '@supabase/supabase-js';
 // import type { User } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils'; // Import shared helpers
+import type { Organization, OrganizationInput } from './generated/graphql'; // Added
 
 // REMOVED: Redundant env var loading
 // import dotenv from 'dotenv';
@@ -19,27 +20,27 @@ import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils'; //
 // --- Organization Data Shape ---
 
 // Input for creating/updating organizations
-interface OrganizationInput {
-  name: string; // Assuming name is required
-  address?: string | null;
-  notes?: string | null;
-  // Add other fields from schema as needed (e.g., website)
-}
+// interface OrganizationInput { // REMOVED
+//   name: string; // Assuming name is required
+//   address?: string | null;
+//   notes?: string | null;
+//   // Add other fields from schema as needed (e.g., website)
+// }
 
 // Shape returned by the database (includes id, timestamps, user_id)
-interface OrganizationRecord extends OrganizationInput {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  user_id: string;
-}
+// interface OrganizationRecord extends OrganizationInput { // REMOVED
+//   id: string;
+//   created_at: string;
+//   updated_at: string;
+//   user_id: string;
+// }
 
 // --- Organization Service ---
 
 export const organizationService = {
 
   // Get all organizations for the authenticated user (RLS handles filtering)
-  async getOrganizations(userId: string, accessToken: string): Promise<OrganizationRecord[]> {
+  async getOrganizations(userId: string, accessToken: string): Promise<Organization[]> { // Changed OrganizationRecord[] to Organization[]
     console.log('[organizationService.getOrganizations] called for user:', userId);
     const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
@@ -48,11 +49,11 @@ export const organizationService = {
       .order('name', { ascending: true });
 
     handleSupabaseError(error, 'fetching organizations'); // USE IMPORTED HELPER
-    return data || [];
+    return (data || []) as Organization[]; // Cast to Organization[]
   },
 
   // Get a single organization by ID (RLS handles filtering)
-  async getOrganizationById(userId: string, id: string, accessToken: string): Promise<OrganizationRecord | null> {
+  async getOrganizationById(userId: string, id: string, accessToken: string): Promise<Organization | null> { // Changed OrganizationRecord to Organization
     console.log('[organizationService.getOrganizationById] called for user:', userId, 'id:', id);
     const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
@@ -65,11 +66,11 @@ export const organizationService = {
     if (error && error.code !== 'PGRST116') {
       handleSupabaseError(error, 'fetching organization by ID'); // USE IMPORTED HELPER
     }
-    return data;
+    return data as Organization | null; // Cast to Organization | null
   },
 
   // Create a new organization (RLS requires authenticated client)
-  async createOrganization(userId: string, input: OrganizationInput, accessToken: string): Promise<OrganizationRecord> {
+  async createOrganization(userId: string, input: OrganizationInput, accessToken: string): Promise<Organization> { // Changed OrganizationRecord to Organization
     console.log('[organizationService.createOrganization] called for user:', userId, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
@@ -83,11 +84,11 @@ export const organizationService = {
       // This case might indicate a different issue if no DB error occurred
       throw new GraphQLError('Failed to create organization, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
     }
-    return data;
+    return data as Organization; // Cast to Organization
   },
 
   // Update an existing organization (RLS requires authenticated client)
-  async updateOrganization(userId: string, id: string, input: Partial<OrganizationInput>, accessToken: string): Promise<OrganizationRecord> {
+  async updateOrganization(userId: string, id: string, input: Partial<OrganizationInput>, accessToken: string): Promise<Organization> { // Changed OrganizationRecord to Organization
     console.log('[organizationService.updateOrganization] called for user:', userId, 'id:', id, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); // USE IMPORTED HELPER
     const { data, error } = await supabase
@@ -105,7 +106,7 @@ export const organizationService = {
     if (!data) { // Should be redundant if error handling is correct, but good failsafe
       throw new GraphQLError('Organization update failed, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
     }
-    return data;
+    return data as Organization; // Cast to Organization
   },
 
   // Delete an organization (RLS requires authenticated client)

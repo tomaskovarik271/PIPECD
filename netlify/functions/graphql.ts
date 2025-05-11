@@ -7,7 +7,7 @@ import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
 import {
-  GraphQLContext,
+  GraphQLContext, 
 } from './graphql/helpers'; 
 
 import { 

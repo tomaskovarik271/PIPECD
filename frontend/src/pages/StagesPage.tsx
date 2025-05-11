@@ -36,7 +36,7 @@ const StagesPage: React.FC = () => {
   
   // Add this state to track fetch attempts per pipeline
   const [initialFetchAttemptedForPipeline, setInitialFetchAttemptedForPipeline] = useState<Record<string, boolean>>({});
-
+  
   // Select state slices from Zustand
   const { 
     stages,

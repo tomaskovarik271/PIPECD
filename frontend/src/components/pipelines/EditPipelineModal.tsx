@@ -51,27 +51,27 @@ const EditPipelineModal: React.FC<EditPipelineModalProps> = ({ isOpen, onClose, 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!pipeline) {
-      toast({ title: "No pipeline selected for editing.", status: 'error', duration: 3000, isClosable: true });
-      return;
+        toast({ title: "No pipeline selected for editing.", status: 'error', duration: 3000, isClosable: true });
+        return;
     }
     if (!pipelineName.trim()) {
       toast({ title: "Pipeline name cannot be empty.", status: 'warning', duration: 3000, isClosable: true });
       return;
     }
     if (pipelineName.trim() === pipeline.name) {
-      toast({ title: "No changes detected.", status: 'info', duration: 2000, isClosable: true });
+         toast({ title: "No changes detected.", status: 'info', duration: 2000, isClosable: true });
       onClose();
-      return;
+         return;
     }
     
     const pipelineInput: PipelineInput = { name: pipelineName.trim() };
-    const updatedPipeline = await updatePipeline(pipeline.id, pipelineInput);
+      const updatedPipeline = await updatePipeline(pipeline.id, pipelineInput);
     
-    if (updatedPipeline) {
-      toast({ title: "Pipeline updated successfully.", status: 'success', duration: 3000, isClosable: true });
-      onSuccess?.(updatedPipeline.id);
+      if (updatedPipeline) {
+        toast({ title: "Pipeline updated successfully.", status: 'success', duration: 3000, isClosable: true });
+        onSuccess?.(updatedPipeline.id);
       onClose();
-    } else {
+      } else {
       toast({ 
         title: "Failed to update pipeline.", 
         description: pipelinesError || "An unexpected error occurred. Please try again.", 

@@ -50,7 +50,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
   // Actions and state from useActivitiesStore
   const { updateActivity, activitiesError, activitiesLoading } = useActivitiesStore();
   const toast = useToast();
-
+  
   // Fetching data for linked entities
   const { deals, fetchDeals, dealsLoading } = useDealsStore();
   const { people, fetchPeople, peopleLoading } = usePeopleStore();
@@ -72,16 +72,16 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
     reset, 
     setValue
   } = useForm<UpdateActivityInput>({
-    defaultValues: {
+      defaultValues: {
       type: activity.type as ActivityType,
-      subject: activity.subject,
+          subject: activity.subject,
       due_date: activity.due_date ? new Date(activity.due_date).toISOString().substring(0, 16) : null,
       notes: activity.notes || '',
-      is_done: activity.is_done,
-      deal_id: activity.deal_id,
-      person_id: activity.person_id,
-      organization_id: activity.organization_id,
-    }
+          is_done: activity.is_done,
+          deal_id: activity.deal_id,
+          person_id: activity.person_id,
+          organization_id: activity.organization_id,
+      }
   });
 
   // Reset form if activity prop changes (e.g. modal is reused for different activities)
@@ -124,11 +124,11 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
 
     if (submissionData.notes === '') submissionData.notes = null;
     if (submissionData.due_date) {
-      try {
+                    try {
         const date = new Date(submissionData.due_date);
         submissionData.due_date = !isNaN(date.getTime()) ? date.toISOString() : null;
       } catch { submissionData.due_date = null; }
-    } else {
+                        } else {
       submissionData.due_date = null;
     }
 
@@ -182,7 +182,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
           />
           <FormErrorMessage>{errors.due_date?.message}</FormErrorMessage>
         </FormControl>
-
+        
         <FormControl isInvalid={!!errors.deal_id || !!errors.person_id || !!errors.organization_id}>
              <FormLabel>Linked To</FormLabel>
              <RadioGroup onChange={handleLinkTypeChange} value={selectedLinkType}>
@@ -213,7 +213,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
              {(errors.deal_id && selectedLinkType ==='deal' || errors.person_id && selectedLinkType ==='person' || errors.organization_id && selectedLinkType ==='organization') && 
                 <FormErrorMessage>Please select a linked entity.</FormErrorMessage> }
         </FormControl>
-
+        
         <FormControl isInvalid={!!errors.notes}>
           <FormLabel htmlFor='notes'>Notes</FormLabel>
           <Textarea

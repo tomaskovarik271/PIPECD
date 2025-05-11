@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, MockedFunction } from 'vitest';
 import { createClient, PostgrestError } from '@supabase/supabase-js';
 import * as pipelineService from './pipelineService'; // Import the service functions
 import { GraphQLError } from 'graphql';
-// Import types from the service file itself, not shared types.ts
-import { Pipeline, CreatePipelineInput, UpdatePipelineInput } from './pipelineService'; 
+// Explicitly ensure ONLY these types are imported from generated/graphql for Pipeline related tests
+import type { Pipeline, PipelineInput } from './generated/graphql';
 
 // --- Mock Setup ---
 
@@ -135,7 +135,7 @@ describe('pipelineService', () => {
   });
 
   describe('createPipeline', () => {
-    const pipelineInput: CreatePipelineInput = { name: 'New Pipeline' };
+    const pipelineInput: PipelineInput = { name: 'New Pipeline' };
     const expectedRecord: Pipeline = { ...pipelineInput, id: 'new-pipe-xyz', user_id: mockUser.id, created_at: 'ts', updated_at: 'ts' };
 
     it('should create a pipeline and return the record', async () => {
@@ -179,7 +179,7 @@ describe('pipelineService', () => {
 
   describe('updatePipeline', () => {
     const pipelineId = 'pipe-to-update';
-    const updateInput: UpdatePipelineInput = { name: 'Updated Pipe Name' };
+    const updateInput: PipelineInput = { name: 'Updated Pipe Name' };
     const expectedRecord: Pipeline = { id: pipelineId, name: 'Updated Pipe Name', user_id: mockUser.id, created_at: 'ts', updated_at: 'ts' };
 
     it('should update a pipeline and return the record', async () => {

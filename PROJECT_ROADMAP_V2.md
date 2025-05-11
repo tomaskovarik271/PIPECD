@@ -49,12 +49,55 @@
     *   *Priority: HIGH (Completed)*
 
 ### 1.4. Critical Code Quality & Developer Experience Improvements
-*   **Task:** `[ ]` Generate Backend Types (GraphQL Codegen): Implement `@graphql-codegen/typescript` and `@graphql-codegen/typescript-resolvers` for backend type generation (`lib/generated/graphql.ts`). Refactor resolvers and services to use these generated types.
+*   **Task:** `[x]` Generate Backend Types (GraphQL Codegen): Implement `@graphql-codegen/typescript` and `@graphql-codegen/typescript-resolvers` for backend type generation (`lib/generated/graphql.ts`). Refactor resolvers and services to use these generated types.
     *   *Source: ROADMAP.md (Post-Code-Analysis Action Plan #15)*
-    *   *Priority: HIGH*
+    *   *Priority: HIGH (Completed)*
+    *   **Detailed Plan:**
+        1.  **Installation of Dependencies:** `[x]`
+            *   Install `@graphql-codegen/cli`, `@graphql-codegen/typescript`, `@graphql-codegen/typescript-resolvers`, and `graphql`.
+        2.  **Configuration (`codegen.ts` or `codegen.yml`):** `[x]`
+            *   Create a configuration file (e.g., `codegen.ts`) in the project root.
+            *   Point to the GraphQL schema path (likely `netlify/functions/graphql/schema/**/*.graphql`).
+            *   Configure output to `lib/generated/graphql.ts`.
+            *   Specify plugins: `typescript` and `typescript-resolvers`.
+            *   Identify and set `contextType` for `typescript-resolvers` (e.g., `../../netlify/functions/graphql#GraphQLContext`).
+            *   Consider `mappers` if existing model types need to be mapped.
+        3.  **Add NPM Script:** `[x]`
+            *   Add a script to `package.json` (e.g., `"codegen": "graphql-codegen --config codegen.ts"`).
+        4.  **Initial Type Generation:** `[x]`
+            *   Run the npm script to generate `lib/generated/graphql.ts`.
+            *   Inspect the generated file for correctness.
+        5.  **Refactor GraphQL Resolvers:** `[x]`
+            *   Identify all resolver files (e.g., in `netlify/functions/graphql/resolvers/`).
+            *   Import `Resolvers` and other generated types.
+            *   Update resolver function signatures.
+        6.  **Refactor Service Layer:** `[x]`
+            *   Identify service files (e.g., in `lib/`).
+            *   Update service function parameters and return types with generated types where appropriate.
+        7.  **Build and Test:** `[x]`
+            *   Ensure the backend builds successfully (`npx tsc --noEmit`).
+            *   Run backend tests to check for regressions (`npm test`).
+        8.  **Roadmap Update (Self-Reference):** `[x]`
+            *   Mark this task as complete in this roadmap.
 *   **Task:** `[ ]` Fix GraphQL Client Header Inconsistency: Remove all calls to `gqlClient.setHeaders({...})` from `frontend/src/stores/useAuthStore.ts`, relying solely on `requestMiddleware`.
     *   *Source: ROADMAP.md (Post-Code-Analysis Action Plan #6)*
     *   *Priority: HIGH*
+    *   **Detailed Plan:**
+        1.  **Analyze `frontend/src/lib/graphqlClient.ts`:**
+            *   `[x]` Read the file to understand the `requestMiddleware` implementation.
+            *   `[x]` Verify it correctly retrieves the auth token, sets the `Authorization` header, and handles token absence.
+        2.  **Analyze `frontend/src/stores/useAuthStore.ts` (or equivalent):**
+            *   `[x]` Read the file to find all `gqlClient.setHeaders({...})` calls. (Identified in `useAppStore.ts`)
+            *   `[x]` Understand their purpose (login/logout token management).
+            *   `[x]` Confirm existence of the file or identify the current auth token handler. (`useAppStore.ts`)
+        3.  **Refactor `useAppStore.ts` (or equivalent):**
+            *   `[x]` Remove `gqlClient.setHeaders({...})` calls. (Commented out in `useAppStore.ts`)
+            *   `[x]` Ensure store logic correctly updates state for `requestMiddleware` to use.
+        4.  **Testing:**
+            *   `[ ]` Manually test login, logout, and authenticated GraphQL requests.
+            *   `[x]` Run relevant E2E tests. (People CRUD E2E tests passed, covering login & auth requests)
+        5.  **Roadmap Update (Self-Reference):**
+            *   `[ ]` Mark this task as complete in this roadmap.
 
 ### 1.5. Roadmap & Task Management
 *   **Task:** `[ ]` Conduct a thorough review of the original `ROADMAP.md` and any internal task tracking systems to align with `CIO_REPORT.md` findings and this `PROJECT_ROADMAP_V2.md`. Ensure all items accurately reflect their true status.

@@ -2,9 +2,10 @@ import type { GraphQLContext } from '../helpers';
 import { requireAuthentication, processZodError, getAccessToken } from '../helpers';
 import { GraphQLError } from 'graphql';
 import * as pipelineService from '../../../../lib/pipelineService';
+import type { StageResolvers } from '../../../../lib/generated/graphql';
 
-export const Stage = {
-  pipeline: async (parent: { pipeline_id: string }, _args: unknown, context: GraphQLContext) => {
+export const Stage: StageResolvers<GraphQLContext> = {
+  pipeline: async (parent, _args, context) => {
     requireAuthentication(context);
     const accessToken = getAccessToken(context)!;
     

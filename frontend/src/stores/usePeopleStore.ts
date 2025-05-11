@@ -119,8 +119,18 @@ export const usePeopleStore = create<PeopleState>((set, _) => ({
       return null;
     } catch (error: unknown) {
       let message = 'An unknown error occurred during person creation';
-      if (isGraphQLErrorWithMessage(error)) {
-        message = error.response?.errors?.[0]?.message || 'GraphQL error';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.length) {
+        const firstGraphQLError = error.response.errors[0] as any; // Broaden type here for now
+        
+        if (firstGraphQLError.extensions && 
+            firstGraphQLError.extensions.originalError && 
+            firstGraphQLError.extensions.originalError.code === '23505' && 
+            typeof firstGraphQLError.extensions.originalError.message === 'string' &&
+            firstGraphQLError.extensions.originalError.message.includes('contacts_email_key')) {
+          message = 'This email address is already in use. Please use a different email.';
+        } else {
+          message = firstGraphQLError.message || 'GraphQL error during person creation';
+        }
       } else if (error instanceof Error) {
         message = error.message;
       }

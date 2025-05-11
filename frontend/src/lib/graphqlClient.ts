@@ -22,16 +22,36 @@ export const gqlClient: GraphQLClient = new GraphQLClient(endpoint, {
   // Dynamically set headers before each request
   requestMiddleware: async (request) => {
     // Get the current session from Supabase
-    const { data: { session } } = await supabase.auth.getSession();
+    console.log('[requestMiddleware] Attempting to get session...');
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
+    if (sessionError) {
+      console.error('[requestMiddleware] Error getting session:', sessionError);
+    }
+    if (!session) {
+      console.log('[requestMiddleware] No active session found.');
+    } else {
+      console.log('[requestMiddleware] Active session found:', session);
+      if (session.access_token) {
+        console.log('[requestMiddleware] Access token found:', session.access_token.substring(0, 20) + '...'); // Log a snippet
+      } else {
+        console.log('[requestMiddleware] Session found, but NO access token.');
+      }
+    }
+
     // Initialize headers, potentially from existing request headers
     const headers = new Headers(request.headers);
 
     // Add the Authorization header if a session exists
     if (session?.access_token) {
       headers.set('Authorization', `Bearer ${session.access_token}`);
+      console.log('[requestMiddleware] Authorization header SET.');
+    } else {
+      console.log('[requestMiddleware] Authorization header NOT SET (no session/token).');
     }
     
+    console.log('[requestMiddleware] Final headers being sent:', Object.fromEntries(headers.entries()));
+
     return {
       ...request,
       headers,

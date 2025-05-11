@@ -1,9 +1,10 @@
 import type { GraphQLContext } from '../helpers';
 import { requireAuthentication, getAccessToken } from '../helpers';
 import { GraphQLError } from 'graphql';
+import type { OrganizationResolvers } from '../../../../lib/generated/graphql';
 // import { personService } from '../../../../lib/personService'; // Assuming personService will be needed eventually
 
-export const Organization = {
+export const Organization: OrganizationResolvers<GraphQLContext> = {
   people: async (_parent: { id: string }, _args: unknown, context: GraphQLContext) => {
      requireAuthentication(context);
      const accessToken = getAccessToken(context);

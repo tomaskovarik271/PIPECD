@@ -2,23 +2,22 @@
 // Functions for CRUD operations on pipelines will be implemented here.
 
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils';
+import type { Pipeline, PipelineInput } from './generated/graphql'; // ADDED: Import generated types
 
-// Define the interface for a Pipeline based on the DB schema
-export interface Pipeline {
-    id: string;         // uuid, primary key
-    name: string;       // text, not null
-    created_at: string; // timestamptz, default now()
-    updated_at: string; // timestamptz, default now()
-    user_id: string;    // uuid, foreign key to auth.users
-}
+// REMOVED: Local Pipeline interface
+// export interface Pipeline {
+//     id: string;         
+//     name: string;       
+//     created_at: string; 
+//     updated_at: string; 
+//     user_id: string;    
+// }
 
-// Define the type for data needed to create a pipeline
-// user_id will be inferred from the authenticated client context
-export type CreatePipelineInput = Pick<Pipeline, 'name'>;
+// REMOVED: Local CreatePipelineInput type
+// export type CreatePipelineInput = Pick<Pipeline, 'name'>;
 
-// Define the type for data needed to update a pipeline
-// Only 'name' is expected to be updatable for now
-export type UpdatePipelineInput = Partial<Pick<Pipeline, 'name'>>;
+// REMOVED: Local UpdatePipelineInput type
+// export type UpdatePipelineInput = Partial<Pick<Pipeline, 'name'>>;
 
 
 /**
@@ -26,7 +25,7 @@ export type UpdatePipelineInput = Partial<Pick<Pipeline, 'name'>>;
  * @param accessToken - The user's JWT.
  * @returns A promise that resolves to an array of Pipelines.
  */
-export async function getPipelines(accessToken: string): Promise<Pipeline[]> {
+export async function getPipelines(accessToken: string): Promise<Pipeline[]> { // Return type is already Pipeline[] (compatible)
     console.log('[pipelineService.getPipelines] AccessToken:', accessToken); // DEBUG LOG
     const supabase = getAuthenticatedClient(accessToken);
     const { data, error } = await supabase
@@ -35,8 +34,7 @@ export async function getPipelines(accessToken: string): Promise<Pipeline[]> {
 
     handleSupabaseError(error, 'fetching pipelines');
 
-    // Ensure data is not null before returning; default to empty array if null
-    return data || [];
+    return (data || []) as Pipeline[]; // CHANGED: Cast to Pipeline[] (from generated type)
 }
 
 /**
@@ -45,7 +43,7 @@ export async function getPipelines(accessToken: string): Promise<Pipeline[]> {
  * @param id - The UUID of the pipeline to fetch.
  * @returns A promise that resolves to the Pipeline object or null if not found/accessible.
  */
-export async function getPipelineById(accessToken: string, id: string): Promise<Pipeline | null> {
+export async function getPipelineById(accessToken: string, id: string): Promise<Pipeline | null> { // Return type is already Pipeline | null (compatible)
      if (!id) {
         throw new Error("Pipeline ID is required.");
     }
@@ -54,11 +52,11 @@ export async function getPipelineById(accessToken: string, id: string): Promise<
         .from('pipelines')
         .select('*')
         .eq('id', id)
-        .maybeSingle(); // Use maybeSingle() to return null instead of error if not found
+        .maybeSingle(); 
 
     handleSupabaseError(error, `fetching pipeline with id ${id}`);
 
-    return data;
+    return data as Pipeline | null; // CHANGED: Cast to Pipeline | null (from generated type)
 }
 
 /**
@@ -68,14 +66,13 @@ export async function getPipelineById(accessToken: string, id: string): Promise<
  * @param pipelineData - An object containing the 'name' for the new pipeline.
  * @returns A promise that resolves to the newly created Pipeline object.
  */
-export async function createPipeline(accessToken: string, pipelineData: CreatePipelineInput): Promise<Pipeline> {
+export async function createPipeline(accessToken: string, pipelineData: PipelineInput): Promise<Pipeline> { // CHANGED: pipelineData type to PipelineInput, return type to Pipeline (compatible)
     if (!pipelineData || !pipelineData.name) {
         throw new Error("Pipeline name is required for creation.");
     }
 
     const supabase = getAuthenticatedClient(accessToken);
 
-    // Get the authenticated user's ID
     const { data: { user }, error: userError } = await supabase.auth.getUser();
 
     if (userError || !user) {
@@ -90,22 +87,19 @@ export async function createPipeline(accessToken: string, pipelineData: CreatePi
         .insert([
             { 
                 name: pipelineData.name,
-                user_id: userId // Explicitly set the user_id
+                user_id: userId 
             },
         ])
-        .select() // Return the created record
-        .single(); // Expecting a single record to be created
+        .select() 
+        .single(); 
 
-    // Handle potential errors during insertion
     handleSupabaseError(error, 'creating pipeline');
 
-    // Supabase insert returns an array, but .single() ensures we get one object or error
     if (!data) {
-        // This case should ideally be caught by handleSupabaseError, but added for robustness
          throw new Error("Failed to create pipeline, no data returned.");
     }
 
-    return data;
+    return data as Pipeline; // CHANGED: Cast to Pipeline (from generated type)
 }
 
 /**
@@ -117,36 +111,32 @@ export async function createPipeline(accessToken: string, pipelineData: CreatePi
  * @param updates - An object containing the fields to update (e.g., { name: 'New Name' }).
  * @returns A promise that resolves to the updated Pipeline object.
  */
-export async function updatePipeline(accessToken: string, id: string, updates: UpdatePipelineInput): Promise<Pipeline> {
+export async function updatePipeline(accessToken: string, id: string, updates: PipelineInput): Promise<Pipeline> { // CHANGED: updates type to PipelineInput, return type to Pipeline (compatible)
     if (!id) {
         throw new Error("Pipeline ID is required for update.");
     }
-    if (!updates || Object.keys(updates).length === 0) {
-        throw new Error("No update data provided for pipeline.");
+    // The generated PipelineInput only has {name: string}, so it cannot be empty if provided.
+    // The old UpdatePipelineInput was Partial<Pick<Pipeline, 'name'>>, so Object.keys(updates).length === 0 was relevant.
+    // Now, if `updates` is provided, `updates.name` must be a string.
+    if (!updates || typeof updates.name !== 'string' || updates.name.trim() === '') { // Updated validation for PipelineInput
+        throw new Error("Valid pipeline name is required for update.");
     }
-     // Basic validation for allowed fields (currently only 'name')
-    if (updates.name !== undefined && typeof updates.name !== 'string') {
-        throw new Error("Invalid type for pipeline name update.");
-    }
-
 
     const supabase = getAuthenticatedClient(accessToken);
     const { data, error } = await supabase
         .from('pipelines')
-        .update(updates)
-        .eq('id', id) // Match the specific pipeline
-        // RLS policy ensures the user can only update their own pipelines
-        .select() // Return the updated record
-        .single(); // Expecting a single record to be updated
+        .update({ name: updates.name }) // Explicitly update only name, as PipelineInput might have more fields in future
+        .eq('id', id) 
+        .select() 
+        .single(); 
 
     handleSupabaseError(error, `updating pipeline with id ${id}`);
 
     if (!data) {
-       // This might happen if the ID doesn't exist or RLS prevents access
         throw new Error(`Pipeline with id ${id} not found or update failed.`);
     }
 
-    return data;
+    return data as Pipeline; // CHANGED: Cast to Pipeline (from generated type)
 }
 
 /**
@@ -167,21 +157,11 @@ export async function deletePipeline(accessToken: string, id: string): Promise<b
     const supabase = getAuthenticatedClient(accessToken);
     const { error, count } = await supabase
         .from('pipelines')
-        .delete({ count: 'exact' }) // Request count for verification
-        .eq('id', id); // Match the specific pipeline
-        // RLS policy ensures the user can only delete their own pipelines
-
-    // Check specifically for foreign key violation errors if needed (e.g., P0001),
-    // although handleSupabaseError provides a general catch.
-    // if (error && error.code === '23503') { // Foreign key violation
-    //     console.warn(`Attempted to delete pipeline ${id} which might still have associated stages/deals.`);
-    //     throw new Error(`Cannot delete pipeline: It may still contain stages or deals.`);
-    // }
+        .delete({ count: 'exact' }) 
+        .eq('id', id); 
 
     handleSupabaseError(error, `deleting pipeline with id ${id}`);
 
-    // Deletion is successful if there's no error.
-    // count can be 0 if the pipeline didn't exist, which is still considered successful deletion state.
-    console.log(`Pipeline delete operation for id ${id}: count=${count}`); // Log count for debugging
-    return true; // Indicate success
+    console.log(`Pipeline delete operation for id ${id}: count=${count}`); 
+    return true; 
 } 

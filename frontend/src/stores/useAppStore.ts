@@ -50,33 +50,33 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (error) throw error;
       set({ session, user: session?.user ?? null, isLoadingAuth: false });
       if (session) {
-        gqlClient.setHeader('Authorization', `Bearer ${session.access_token}`);
+        // gqlClient.setHeader('Authorization', `Bearer ${session.access_token}`);
         // Set up a listener for auth changes AFTER initial check
         supabase.auth.onAuthStateChange((_event, currentSession) => {
           set({ session: currentSession, user: currentSession?.user ?? null });
-          if (currentSession?.access_token) {
-            gqlClient.setHeader('Authorization', `Bearer ${currentSession.access_token}`);
-          } else {
-             gqlClient.setHeader('Authorization', '');
-          }
+          // if (currentSession?.access_token) {
+          //   gqlClient.setHeader('Authorization', `Bearer ${currentSession.access_token}`);
+          // } else {
+          //    gqlClient.setHeader('Authorization', '');
+          // }
           if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED' || _event === 'USER_UPDATED') {
             get().fetchUserPermissions();
           }
           if (_event === 'SIGNED_OUT') {
             set({ userPermissions: null });
-            gqlClient.setHeader('Authorization', '');
+            // gqlClient.setHeader('Authorization', '');
           }
         });
         await get().fetchUserPermissions(); // Fetch initial permissions
       } else {
         // No session, clear auth header and permissions
         set({ userPermissions: null });
-        gqlClient.setHeader('Authorization', '');
+        // gqlClient.setHeader('Authorization', '');
       }
     } catch (error: any) {
       console.error('Auth check error:', error.message);
       set({ session: null, user: null, isLoadingAuth: false, userPermissions: null });
-      gqlClient.setHeader('Authorization', '');
+      // gqlClient.setHeader('Authorization', '');
     }
   },
   handleSignOut: async () => {
@@ -84,7 +84,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await supabase.auth.signOut();
       set({ session: null, user: null, userPermissions: null, isLoadingAuth: false });
-      gqlClient.setHeader('Authorization', '');
+      // gqlClient.setHeader('Authorization', '');
     } catch (error: any) {
       console.error('Sign out error:', error.message);
       set({ isLoadingAuth: false });
@@ -99,7 +99,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ permissionsLoading: true });
     try {
       // Ensure gqlClient has the latest token before this call specifically
-      gqlClient.setHeader('Authorization', `Bearer ${session.access_token}`);
+      // gqlClient.setHeader('Authorization', `Bearer ${session.access_token}`);
       const data = await gqlClient.request<{ myPermissions: string[] }>(GET_MY_PERMISSIONS_QUERY);
       set({ userPermissions: data.myPermissions || [], permissionsLoading: false });
     } catch (error) {
@@ -112,8 +112,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (authError) {
           console.warn("Permissions fetch failed due to auth error, potentially stale session.");
           // Consider auto sign-out or token refresh attempt here if this becomes a recurring issue.
-        }
       }
+    }
     }
   },
 }));

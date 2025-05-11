@@ -259,9 +259,9 @@ function ActivitiesPage() {
       >
         {/* Children can be empty or an Alert, ListPageLayout handles error display */}
         <Alert status="error" mt={4}>
-            <AlertIcon />
+        <AlertIcon />
             Error fetching activities: {activitiesError}
-        </Alert>
+      </Alert>
       </ListPageLayout>
     );
   }
@@ -299,14 +299,14 @@ function ActivitiesPage() {
       </Modal>
 
       {activityToEdit && (
-        <EditActivityModal
-          isOpen={isEditOpen}
-          onClose={handleEditClose}
+        <EditActivityModal 
+          isOpen={isEditOpen} 
+          onClose={handleEditClose} 
           activity={activityToEdit}
         />
       )}
 
-      <ConfirmationDialog
+      <ConfirmationDialog 
         isOpen={isConfirmDeleteDialogOpen}
         onClose={onConfirmDeleteClose}
         onConfirm={handleConfirmDelete}
@@ -315,8 +315,8 @@ function ActivitiesPage() {
         confirmButtonText="Delete"
         confirmButtonColorScheme="red"
         isLoading={isDeleting}
-      />
-    </ListPageLayout>
+          />
+        </ListPageLayout>
   );
 }
 

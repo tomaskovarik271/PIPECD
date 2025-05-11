@@ -106,7 +106,7 @@ function DealsPage() {
     catch (e) { return 'Invalid Date'; }
   }
 
-  const formatCurrency = (amount: number | null | undefined) => {
+   const formatCurrency = (amount: number | null | undefined) => {
     if (amount == null) return '-';
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
   }

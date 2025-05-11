@@ -72,4 +72,4 @@ export const handler: Handler = async (_event, _context: HandlerContext) => {
     body: JSON.stringify({ message: 'Inngest functions defined; placeholder handler invoked.' }),
     headers: { 'Content-Type': 'application/json' },
   };
-}; 
+};
