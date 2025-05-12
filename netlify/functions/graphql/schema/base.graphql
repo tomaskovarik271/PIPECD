@@ -4,7 +4,7 @@ scalar Float # Ensure Float is available if using it
 type Query {
   health: String!
   supabaseConnectionTest: String!
-  me: UserInfo
+  me: User
   # People (formerly Contacts)
   people: [Person!]!          # Get all people for the user
   person(id: ID!): Person      # Get a specific person by ID

@@ -19,10 +19,10 @@ const config: CodegenConfig = {
         // Optional: To avoid default 'any' type if a resolver is not found for a field
         // defaultMapper: 'Partial<{T}>', 
         // Optional: Specify custom scalars if you have them
-        // scalars: {
-        //   DateTime: 'Date',
-        //   JSON: '{ [key: string]: any }',
-        // }
+        scalars: {
+          DateTime: 'Date',
+          JSON: '{ [key: string]: any }',
+        }
       },
     },
     'frontend/src/generated/graphql/graphql.ts': {
@@ -33,9 +33,10 @@ const config: CodegenConfig = {
       ],
       config: {
         // Ensure scalars are mapped correctly if needed for frontend (e.g., DateTime to string)
-        // scalars: {
-        //   DateTime: 'string',
-        // },
+        scalars: {
+          DateTime: 'string', // For frontend, string is often preferred for DateTime
+          JSON: 'Record<string, any>', // For frontend
+        },
         // Avoids __typename on everything if not strictly needed by client cache/logic
         // skipTypename: true, 
       }

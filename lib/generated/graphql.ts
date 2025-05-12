@@ -34,7 +34,8 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
-  DateTime: { input: any; output: any };
+  DateTime: { input: Date; output: Date };
+  JSON: { input: { [key: string]: any }; output: { [key: string]: any } };
 };
 
 export type Activity = {
@@ -97,6 +98,7 @@ export type Deal = {
   created_at: Scalars["DateTime"]["output"];
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
+  history?: Maybe<Array<DealHistoryEntry>>;
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
   organization?: Maybe<Organization>;
@@ -110,6 +112,20 @@ export type Deal = {
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
   weighted_amount?: Maybe<Scalars["Float"]["output"]>;
+};
+
+export type DealHistoryArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type DealHistoryEntry = {
+  __typename?: "DealHistoryEntry";
+  changes?: Maybe<Scalars["JSON"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  eventType: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  user?: Maybe<User>;
 };
 
 export type DealInput = {
@@ -297,7 +313,7 @@ export type Query = {
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   health: Scalars["String"]["output"];
-  me?: Maybe<UserInfo>;
+  me?: Maybe<User>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
@@ -373,10 +389,11 @@ export type UpdateStageInput = {
   order?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
-export type UserInfo = {
-  __typename?: "UserInfo";
+export type User = {
+  __typename?: "User";
   email?: Maybe<Scalars["String"]["output"]>;
   id: Scalars["ID"]["output"];
+  name?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -494,10 +511,12 @@ export type ResolversTypes = {
   CreateStageInput: CreateStageInput;
   DateTime: ResolverTypeWrapper<Scalars["DateTime"]["output"]>;
   Deal: ResolverTypeWrapper<Deal>;
+  DealHistoryEntry: ResolverTypeWrapper<DealHistoryEntry>;
   DealInput: DealInput;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
   Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
+  JSON: ResolverTypeWrapper<Scalars["JSON"]["output"]>;
   Mutation: ResolverTypeWrapper<{}>;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationInput: OrganizationInput;
@@ -511,7 +530,7 @@ export type ResolversTypes = {
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
   UpdateActivityInput: UpdateActivityInput;
   UpdateStageInput: UpdateStageInput;
-  UserInfo: ResolverTypeWrapper<UserInfo>;
+  User: ResolverTypeWrapper<User>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
@@ -523,10 +542,12 @@ export type ResolversParentTypes = {
   CreateStageInput: CreateStageInput;
   DateTime: Scalars["DateTime"]["output"];
   Deal: Deal;
+  DealHistoryEntry: DealHistoryEntry;
   DealInput: DealInput;
   Float: Scalars["Float"]["output"];
   ID: Scalars["ID"]["output"];
   Int: Scalars["Int"]["output"];
+  JSON: Scalars["JSON"]["output"];
   Mutation: {};
   Organization: Organization;
   OrganizationInput: OrganizationInput;
@@ -540,7 +561,7 @@ export type ResolversParentTypes = {
   String: Scalars["String"]["output"];
   UpdateActivityInput: UpdateActivityInput;
   UpdateStageInput: UpdateStageInput;
-  UserInfo: UserInfo;
+  User: User;
 };
 
 export type ActivityResolvers<
@@ -605,6 +626,12 @@ export type DealResolvers<
     ParentType,
     ContextType
   >;
+  history?: Resolver<
+    Maybe<Array<ResolversTypes["DealHistoryEntry"]>>,
+    ParentType,
+    ContextType,
+    Partial<DealHistoryArgs>
+  >;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   organization?: Resolver<
@@ -632,6 +659,24 @@ export type DealResolvers<
   >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
+
+export type DealHistoryEntryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DealHistoryEntry"] = ResolversParentTypes["DealHistoryEntry"],
+> = {
+  changes?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  eventType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export interface JsonScalarConfig
+  extends GraphQLScalarTypeConfig<ResolversTypes["JSON"], any> {
+  name: "JSON";
+}
 
 export type MutationResolvers<
   ContextType = GraphQLContext,
@@ -867,7 +912,7 @@ export type QueryResolvers<
   >;
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
   health?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  me?: Resolver<Maybe<ResolversTypes["UserInfo"]>, ParentType, ContextType>;
+  me?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
   myPermissions?: Resolver<
     Maybe<Array<ResolversTypes["String"]>>,
     ParentType,
@@ -947,13 +992,14 @@ export type StageResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type UserInfoResolvers<
+export type UserResolvers<
   ContextType = GraphQLContext,
   ParentType extends
-    ResolversParentTypes["UserInfo"] = ResolversParentTypes["UserInfo"],
+    ResolversParentTypes["User"] = ResolversParentTypes["User"],
 > = {
   email?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -961,6 +1007,8 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Activity?: ActivityResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
+  DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
+  JSON?: GraphQLScalarType;
   Mutation?: MutationResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   Person?: PersonResolvers<ContextType>;
@@ -968,5 +1016,5 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Pipeline?: PipelineResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Stage?: StageResolvers<ContextType>;
-  UserInfo?: UserInfoResolvers<ContextType>;
+  User?: UserResolvers<ContextType>;
 };

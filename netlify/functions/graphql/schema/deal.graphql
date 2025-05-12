@@ -17,6 +17,7 @@ type Deal {
   activities: [Activity!]!
   deal_specific_probability: Float # Nullable, actual probability (0.0 to 1.0)
   weighted_amount: Float          # Calculated: amount * effective_probability
+  history(limit: Int, offset: Int): [DealHistoryEntry!]
 }
 
 input DealInput {

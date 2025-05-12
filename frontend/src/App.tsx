@@ -9,6 +9,7 @@ import OrganizationsPage from './pages/OrganizationsPage';
 import PipelinesPage from './pages/PipelinesPage';
 import StagesPage from './pages/StagesPage';
 import ActivitiesPage from './pages/ActivitiesPage';
+import DealDetailPage from './pages/DealDetailPage';
 import { 
   Box, 
   Heading, 
@@ -29,6 +30,7 @@ function AppContent() {
             <Route path="/" element={<Heading size="lg">Home</Heading>} />
             <Route path="/people" element={<PeoplePage />} />
             <Route path="/deals" element={<DealsPage />} />
+            <Route path="/deals/:dealId" element={<DealDetailPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
             <Route path="/pipelines" element={<PipelinesPage />} />
             <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} />

@@ -10,12 +10,13 @@ import {
   StageCreateSchema,
   StageUpdateSchema,
 } from '../validators';
-import { inngest } from '../../inngest';
+import { inngest } from '../../../../lib/inngestClient';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 import { dealService } from '../../../../lib/dealService';
 import * as pipelineService from '../../../../lib/pipelineService';
 import * as stageService from '../../../../lib/stageService';
+import * as activityService from '../../../../lib/activityService';
 
 // Import generated types from backend codegen
 import type { 
@@ -321,12 +322,6 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
 
           const updatedDealRecord = await dealService.updateDeal(userId, args.id, dealDataForUpdate, accessToken);
           
-          inngest.send({
-            name: 'crm/deal.updated',
-            data: { deal: updatedDealRecord as any },
-            user: { id: userId, email: context.currentUser!.email! }
-          }).catch((err: unknown) => console.error('Failed to send deal.updated event to Inngest:', err));
-
           // Map Deal from service to GraphQLDeal
           return {
             id: updatedDealRecord.id,

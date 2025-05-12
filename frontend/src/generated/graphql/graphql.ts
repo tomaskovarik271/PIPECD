@@ -25,7 +25,8 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
-  DateTime: { input: any; output: any };
+  DateTime: { input: string; output: string };
+  JSON: { input: Record<string, any>; output: Record<string, any> };
 };
 
 export type Activity = {
@@ -88,6 +89,7 @@ export type Deal = {
   created_at: Scalars["DateTime"]["output"];
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
+  history?: Maybe<Array<DealHistoryEntry>>;
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
   organization?: Maybe<Organization>;
@@ -101,6 +103,20 @@ export type Deal = {
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
   weighted_amount?: Maybe<Scalars["Float"]["output"]>;
+};
+
+export type DealHistoryArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type DealHistoryEntry = {
+  __typename?: "DealHistoryEntry";
+  changes?: Maybe<Scalars["JSON"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  eventType: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  user?: Maybe<User>;
 };
 
 export type DealInput = {
@@ -288,7 +304,7 @@ export type Query = {
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   health: Scalars["String"]["output"];
-  me?: Maybe<UserInfo>;
+  me?: Maybe<User>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
@@ -364,8 +380,9 @@ export type UpdateStageInput = {
   order?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
-export type UserInfo = {
-  __typename?: "UserInfo";
+export type User = {
+  __typename?: "User";
   email?: Maybe<Scalars["String"]["output"]>;
   id: Scalars["ID"]["output"];
+  name?: Maybe<Scalars["String"]["output"]>;
 };

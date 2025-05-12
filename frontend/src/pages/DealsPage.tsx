@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Box,
   Heading,
@@ -175,6 +176,14 @@ function DealsPage() {
       header: 'Actions',
       renderCell: (deal) => (
         <HStack spacing={2}>
+          <IconButton
+            as={Link}
+            to={`/deals/${deal.id}`}
+            aria-label="View deal"
+            icon={<ViewIcon />}
+            size="sm"
+            variant="ghost"
+          />
           <IconButton
             aria-label="Edit deal"
             icon={<EditIcon />}

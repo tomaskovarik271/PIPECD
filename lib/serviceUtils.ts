@@ -46,4 +46,38 @@ export function handleSupabaseError(error: PostgrestError | null, context: strin
       extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: { message: error.message, code: error.code } }, // Include original code
     });
   }
+}
+
+export interface HistoryChangeDetail {
+  field: string;
+  oldValue: any;
+  newValue: any;
+}
+
+export async function recordEntityHistory(
+  supabase: SupabaseClient, // Authenticated Supabase client
+  entityTable: string, // e.g., \'deal_history\'
+  entityIdField: string, // e.g., \'deal_id\'
+  entityId: string,
+  userId: string | undefined, // User performing the action
+  eventType: string,
+  changes?: Record<string, { oldValue: any; newValue: any }> | Record<string, any> | null // Flexible changes object
+): Promise<void> {
+  try {
+    const historyRecord: any = {
+      [entityIdField]: entityId,
+      user_id: userId,
+      event_type: eventType,
+      changes: changes || null,
+    };
+
+    const { error } = await supabase.from(entityTable).insert(historyRecord);
+    if (error) {
+      console.error(`[recordEntityHistory] Error recording history for ${entityTable} (${entityIdField}: ${entityId}):`, error);
+      // Decide if this error should be re-thrown or just logged
+      // For now, log and continue to not break main operation
+    }
+  } catch (err) {
+    console.error(`[recordEntityHistory] Exception recording history for ${entityTable}:`, err);
+  }
 } 

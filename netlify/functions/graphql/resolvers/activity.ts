@@ -11,7 +11,7 @@ import {
     updateActivity as updateActivityService,
     deleteActivity as deleteActivityService 
 } from '../../../../lib/activityService';
-import { inngest } from '../../inngest';
+import { inngest } from '../../../../lib/inngestClient';
 
 // Import service objects for resolving linked entities
 import { dealService } from '../../../../lib/dealService';

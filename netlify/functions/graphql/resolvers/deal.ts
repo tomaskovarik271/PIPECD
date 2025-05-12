@@ -1,9 +1,10 @@
 // Resolvers for Deal type fields
-import { GraphQLError } from 'graphql';
+import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { GraphQLContext, requireAuthentication, getAccessToken, processZodError } from '../helpers';
 import { personService } from '../../../../lib/personService';
 import * as stageService from '../../../../lib/stageService';
 import type { DealResolvers, Person, Stage as GraphQLStage, Deal as GraphQLDealParent } from '../../../../lib/generated/graphql'; // Import generated types
+import { getAuthenticatedClient } from '../../../../lib/serviceUtils'; // Added import for getAuthenticatedClient
 
 // Define the parent type for Deal field resolvers to ensure all fields are available
 // type ParentDeal = Pick<GraphQLDealParent, 'id' | 'person_id' | 'stage_id' | 'amount' | 'deal_specific_probability'> & {
@@ -70,7 +71,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
         }
     },
     // Resolver for the 'weighted_amount' field on Deal
-    weighted_amount: async (parent: GraphQLDealParent, _args, context: GraphQLContext) => {
+    weighted_amount: async (parent: GraphQLDealParent, _args: any, context: GraphQLContext) => {
         if (parent.amount == null) {
             return null;
         }
@@ -110,6 +111,37 @@ export const Deal: DealResolvers<GraphQLContext> = {
             return parent.amount * probabilityToUse;
         }
         return null; // If no probability can be determined
-    }
+    },
     // TODO: Add resolver for Deal.activities if not already present or handled by default
+
+    history: async (parent: GraphQLDealParent, args: any, context: GraphQLContext, info: GraphQLResolveInfo) => {
+      requireAuthentication(context);
+      const token = getAccessToken(context);
+      if (!token) {
+        // This should be caught by requireAuthentication, but as a safeguard
+        throw new GraphQLError('Authentication token not found.', { extensions: { code: 'UNAUTHENTICATED' } });
+      }
+      const supabase = getAuthenticatedClient(token);
+
+      // No need to check if supabase is null here as getAuthenticatedClient would throw if config is missing.
+
+      const limit = args.limit || 20;
+      const offset = args.offset || 0;
+
+      const { data, error } = await supabase
+        .from('deal_history')
+        .select('*')
+        .eq('deal_id', parent.id)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        console.error('Error fetching deal history for deal:', parent.id, error);
+        throw new GraphQLError('Could not fetch deal history.');
+      }
+      // Log the raw data from the database
+      console.log('[Deal.history resolver] Raw data for deal_id', parent.id, ':', JSON.stringify(data, null, 2));
+      return data || [];
+    },
 }; 

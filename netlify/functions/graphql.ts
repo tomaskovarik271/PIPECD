@@ -24,6 +24,7 @@ import {
   Query as ActivityQuery,
   Mutation as ActivityMutation
 } from './graphql/resolvers/activity';
+import { DealHistoryEntry } from './graphql/resolvers/history';
 
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
@@ -64,6 +65,7 @@ export const resolvers = {
   Organization,
   Stage,
   Activity,
+  DealHistoryEntry,
 }; 
 
 const yoga = createYoga<GraphQLContext>({

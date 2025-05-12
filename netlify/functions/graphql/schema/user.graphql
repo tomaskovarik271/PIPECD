@@ -1,4 +1,8 @@
-type UserInfo {
+# netlify/functions/graphql/schema/user.graphql
+
+type User {
   id: ID!
   email: String
+  name: String # Combined first_name and last_name or default
+  # avatar_url: String # Optional: if you plan to add it
 } 

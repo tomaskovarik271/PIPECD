@@ -8,6 +8,9 @@ import type {
   Stage,
   Maybe,
   Pipeline,
+  Deal as GraphQLDeal,
+  DealHistoryEntry as GraphQLDealHistoryEntry,
+  User as GraphQLUser
 } from '../generated/graphql/graphql';
 
 // Re-export core entity and input types for external use
@@ -20,7 +23,58 @@ export type {
 
 const GET_MY_PERMISSIONS_QUERY = gql`query GetMyPermissions { myPermissions }`;
 
-interface AppState {
+const GET_DEAL_WITH_HISTORY_QUERY = gql`
+  query GetDealWithHistory($dealId: ID!) {
+    deal(id: $dealId) {
+      id
+      name
+      amount
+      expected_close_date
+      created_at
+      updated_at
+      deal_specific_probability
+      stage {
+        id
+        name
+        pipeline_id
+      }
+      person {
+          id
+          first_name
+          last_name
+          email
+      }
+      organization {
+          id
+          name
+      }
+      history(limit: 50) {
+        id
+        eventType
+        changes
+        createdAt
+        user {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
+
+// Define a more specific type for the deal we expect from GetDealWithHistory
+// This helps with typing in the component that uses this data.
+// We can use Pick or extend GraphQLDeal if needed, but for now, let's assume this structure matches the query.
+export interface DealWithHistory extends GraphQLDeal {
+    history: (Pick<GraphQLDealHistoryEntry, 'id' | 'eventType' | 'changes' | 'createdAt'> & {
+        user: Pick<GraphQLUser, 'id' | 'name'> | null;
+    })[];
+    // Ensure other fields from the query like person, organization are also strongly typed if not already by GraphQLDeal
+    person: GraphQLDeal['person'];
+    organization: GraphQLDeal['organization'];
+}
+
+export interface AppState {
   // Auth
   session: Session | null;
   user: User | null;
@@ -31,6 +85,12 @@ interface AppState {
   checkAuth: () => Promise<void>;
   handleSignOut: () => Promise<void>;
   fetchUserPermissions: () => Promise<void>; 
+
+  // Current Deal Detail
+  currentDeal: DealWithHistory | null;
+  currentDealLoading: boolean;
+  currentDealError: string | null;
+  fetchDealById: (dealId: string) => Promise<void>; 
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -40,6 +100,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoadingAuth: true, // Start with true, checkAuth will set it
   userPermissions: null,
   permissionsLoading: false,
+
+  // Initial Deal Detail State
+  currentDeal: null,
+  currentDealLoading: false,
+  currentDealError: null,
 
   // Auth Action Implementations
   setSession: (session) => set({ session, user: session?.user ?? null, isLoadingAuth: false }),
@@ -114,6 +179,40 @@ export const useAppStore = create<AppState>((set, get) => ({
           // Consider auto sign-out or token refresh attempt here if this becomes a recurring issue.
       }
     }
+    }
+  },
+
+  // Deal Detail Actions
+  fetchDealById: async (dealId: string) => {
+    set({ currentDealLoading: true, currentDealError: null, currentDeal: null });
+    if (!get().session?.access_token) {
+      set({ currentDealLoading: false, currentDealError: 'User not authenticated to fetch deal.' });
+      return;
+    }
+    try {
+      const data = await gqlClient.request<
+        { deal: DealWithHistory }, 
+        { dealId: string } 
+      >(
+        GET_DEAL_WITH_HISTORY_QUERY, 
+        { dealId } 
+      );
+      set({ currentDeal: data.deal, currentDealLoading: false });
+    } catch (error: any) {
+      console.error(`Error fetching deal ${dealId}:`, error);
+      let errorMessage = 'Failed to fetch deal details.';
+      if (isGraphQLErrorWithMessage(error)) {
+        // Check for specific GraphQL errors (e.g., NOT_FOUND)
+        const notFoundError = error.response?.errors?.find((e: any) => e.extensions?.code === 'NOT_FOUND');
+        if (notFoundError) {
+          errorMessage = 'Deal not found.';
+        } else {
+            errorMessage = error.response?.errors?.map((e:any) => e.message).join('\n') || errorMessage;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      set({ currentDealLoading: false, currentDealError: errorMessage, currentDeal: null });
     }
   },
 }));

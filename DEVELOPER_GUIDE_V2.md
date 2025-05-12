@@ -15,9 +15,11 @@ For the project plan, feature tracking, and known issues, consult [ROADMAP.md](R
 Project PipeCD is a custom CRM system built with a modern full-stack TypeScript approach:
 
 *   **Frontend**: React Single Page Application (SPA) built with Vite, using Chakra UI for components and Zustand for state management.
+    *   **Date Formatting**: `date-fns` for robust and flexible date/time formatting and manipulation.
 *   **Backend API**: GraphQL API served via Netlify Functions, implemented with GraphQL Yoga.
 *   **Database**: PostgreSQL managed by Supabase, including authentication and Row-Level Security (RLS).
 *   **Shared Logic**: TypeScript modules in a common `/lib` directory, usable by backend services.
+    *   **Object Diffing**: `deep-diff` for calculating differences between JavaScript objects, useful for audit trails and history tracking.
 *   **Async Workflows**: Inngest for managing background tasks and event-driven logic.
 *   **Testing**: Vitest for unit/integration tests and Playwright for end-to-end tests.
 
@@ -430,7 +432,68 @@ The project aims for a balanced testing approach:
 *   Use JSDoc-style comments for functions and classes where appropriate, especially for shared library code.
 *   Avoid over-commenting obvious code. Well-named variables and functions often make comments unnecessary.
 
-## 9. Role-Based Access Control (RBAC)
+## 9. Code Generation
+
+*   **Tooling**: The project uses `@graphql-codegen/cli` to automatically generate TypeScript types for the backend.
+*   **Configuration**: The generation process is configured in `codegen.ts` at the project root.
+*   **Output**: Generated types, including resolver types (`Resolvers`) and types for GraphQL schema entities, are output to `lib/generated/graphql.ts`.
+*   **Usage**: These generated types are used throughout the backend, particularly in GraphQL resolvers (`netlify/functions/graphql/resolvers/`) and service layers (`lib/`), to ensure type safety and consistency with the GraphQL schema.
+*   **Running**: The generation can be triggered manually using the `npm run codegen` script. This should be done after any changes to the GraphQL schema files (`*.graphql`).
+
+## X. Key Development Learnings & Best Practices (NEW SECTION)
+
+This section consolidates key learnings and best practices derived from feature implementations, such as the Deal History / Audit Trail. Applying these can help improve development efficiency, code quality, and reduce common pitfalls.
+
+### X.1 Database & Migrations
+
+*   **Migration Verification**: Always double-check the content of generated SQL migration files before applying them, especially when using tools to edit them. An empty or incorrect migration file can lead to significant lost time.
+*   **RLS Policy Completeness**: When creating new tables requiring Row-Level Security:
+    *   Remember to define policies for all relevant operations: `SELECT`, `INSERT`, `UPDATE`, `DELETE`.
+    *   Test RLS policies thoroughly, especially for `INSERT` operations which are often triggered by backend logic after initial checks.
+*   **Data Integrity**: Be mindful of data integrity issues. Incorrect data in one table (e.g., a user profile in `people` having incorrect name data) can manifest as bugs in seemingly unrelated features (e.g., incorrect user attribution in an audit log). Direct database inspection is crucial for diagnosing such issues.
+*   **Table & Column Naming**: Clearly understand and use correct table and column names, especially when joining or filtering (e.g., `people.user_id` vs. `people.id` when linking to `deal_history.user_id` which references `auth.users.id`).
+
+### X.2 Backend Services & Business Logic (`/lib`)
+
+*   **Single Source of Truth**: For operations that involve multiple steps (e.g., data update, history recording, event emission), ensure a single service layer function is responsible. This avoids duplicate logic or events (e.g., Inngest events should be sent from the core service method, not also from the GraphQL resolver that calls the service).
+*   **Shared Client Configuration**: For external services like Inngest, establish a shared client instance (e.g., `lib/inngestClient.ts`) and ensure all parts of the application (backend services, Inngest function handlers) use this shared instance. Pay close attention to relative import paths when referencing shared modules from different directory levels.
+
+### X.3 GraphQL API Development
+
+*   **Scalar Types**: For custom GraphQL scalar types like `JSON` or `DateTime`:
+    *   Ensure they are defined in your GraphQL schema (`*.graphql` files).
+    *   Map them correctly in `codegen.ts` to appropriate TypeScript types (e.g., `JSON: 'any'`, `DateTime: 'Date'`).
+*   **Code Generation (`codegen`)**:
+    *   Run `npm run codegen` after any schema changes.
+    *   Troubleshoot "Unknown type" errors by checking schema definitions and `codegen.ts` mappings. Ensure all types referenced in the schema (e.g., `User` vs. `UserInfo`) are correctly defined and consistently used.
+*   **Explicit Resolvers**: For GraphQL object types, especially those mapping to database tables with different naming conventions (snake_case vs. camelCase) or requiring data transformation:
+    *   Provide explicit resolvers for each field rather than relying solely on default resolvers. This is crucial for non-nullable fields.
+    *   Ensure resolvers correctly map data from the parent object (database row) to the GraphQL field type. For example, if a `DateTime` field is mapped to a `Date` object in TypeScript, the resolver must return `new Date(stringValueFromDb)`.
+*   **Resolver `parent` Argument**: Understand that the `parent` argument in a field resolver is the result from its parent field's resolver. For list items, it's an individual item from the list.
+*   **Type Safety & Linter**: When TypeScript and linters flag issues with resolver signatures (e.g., `ParentType` constraints), ensure the underlying logic of data transformation is sound. Sometimes, a type assertion (e.g., `as ResolverType<Context, Parent>`) on the resolver map can be a pragmatic solution if the types are verifiably correct at runtime but complex for the type system.
+
+### X.4 Inngest (Async Workflows)
+
+*   **Local Development & Dev Server**:
+    *   The `netlify/functions/inngest.ts` handler should use `serve` from `inngest/lambda`.
+    *   For reliable local Inngest Dev Server synchronization with Netlify Dev, explicitly configuring `serveHost`, `servePath`, and `signingKey` in the `serve` options within `inngest.ts` might be necessary.
+    *   The Inngest Dev Server typically expects to connect via HTTP for local Netlify Dev.
+*   **Event Data Contracts**: Ensure Inngest functions correctly access data from the `event` object (e.g., `event.data.deal.id` vs. `event.data.id`).
+*   **Idempotency & Error Handling**: (Future consideration for more complex Inngest functions) Plan for idempotency and robust error handling within Inngest functions.
+
+### X.5 Frontend Development
+
+*   **Dependency Management**: When installing new frontend-specific libraries (e.g., `date-fns`), ensure they are installed in the correct `package.json` (e.g., `frontend/package.json`).
+*   **Data Display & Formatting**: Utilize libraries like `date-fns` for user-friendly display of dates and times. Plan for displaying resolved names for foreign key IDs in user-facing views (e.g., showing Stage Name instead of `stage_id` in history).
+
+### X.6 General Development & Planning
+
+*   **Iterative Debugging**: Use `console.log` extensively in backend resolvers and services, and inspect frontend component props and state to trace data flow and diagnose issues.
+*   **Incremental Changes**: Apply and test changes incrementally, especially when debugging complex interactions between the database, backend, and frontend.
+*   **Plan Adherence & Adaptation**: While a good implementation plan is invaluable, be prepared to adapt and troubleshoot unforeseen issues. The initial plan for Deal History was a strong guide, but practical implementation always reveals nuances.
+*   **Verify Assumptions**: Early verification of assumptions about existing schema, naming conventions, and library/SDK behavior can save significant time.
+
+## 10. Role-Based Access Control (RBAC)
 
 The project implements a database-driven RBAC system.
 
@@ -454,7 +517,7 @@ The project implements a database-driven RBAC system.
     *   UI elements (buttons, links, fields) are conditionally rendered or disabled based on these permissions.
         *   Example: `<Button isDisabled={!userPermissions.includes('deal:create')}>Create Deal</Button>`
 
-## 10. Environment Variables
+## 11. Environment Variables
 
 *   **`env.example.txt` (Root)**: Template for the root `.env` file.
 *   **Root `.env` (Gitignored)**:
@@ -474,7 +537,7 @@ The project implements a database-driven RBAC system.
     *   `VITE_SUPABASE_ANON_KEY`: Production Supabase public anon key (for frontend build).
     *   `NODE_VERSION`: (e.g., "18" or "20")
 
-## 11. Deployment
+## 12. Deployment
 
 ### Netlify
 
@@ -498,7 +561,7 @@ The project implements a database-driven RBAC system.
     *   Configure Auth providers (Google, GitHub, etc.) in the Supabase Dashboard.
     *   Set Site URL, additional redirect URLs in Supabase Auth settings.
 
-## 12. Contribution Workflow
+## 13. Contribution Workflow
 
 1.  **Branching Strategy**:
     *   Use feature branches. Create your branch from the latest `main` (or `develop` if used as an integration branch).
@@ -526,7 +589,7 @@ The project implements a database-driven RBAC system.
         ```
     *   Resolve any merge conflicts carefully.
 
-## 13. Common Pitfalls & Troubleshooting
+## 14. Common Pitfalls & Troubleshooting
 
 *   **Supabase Local Issues**:
     *   Docker not running or port conflicts: Ensure Docker is running. Check `supabase/config.toml` for ports; stop other services if conflicting.
@@ -545,7 +608,7 @@ The project implements a database-driven RBAC system.
     *   Temporarily simplify policies to isolate issues. `EXPLAIN (ANALYZE, VERBOSE)` can be helpful.
 *   **CORS Issues**: Usually handled by Netlify Dev and GraphQL Yoga defaults for local. For prod, ensure Netlify function responses have correct CORS headers if accessed from unexpected origins.
 
-## 14. Further Reading & Resources
+## 15. Further Reading & Resources
 
 *   [React](https://react.dev/)
 *   [Vite](https://vitejs.dev/)
