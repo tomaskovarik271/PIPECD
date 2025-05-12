@@ -1,22 +1,6 @@
-import { Inngest } from 'inngest';
-import type { Handler, HandlerContext } from '@netlify/functions';
-
-if (!process.env.INNGEST_EVENT_KEY) {
-  throw new Error('INNGEST_EVENT_KEY environment variable is not set.');
-}
-
-if (!process.env.INNGEST_SIGNING_KEY) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('INNGEST_SIGNING_KEY environment variable is not set in production.');
-  } else {
-    console.warn('INNGEST_SIGNING_KEY environment variable is not set. Requests will not be signed.');
-  }
-}
-
-export const inngest = new Inngest({
-  id: 'pipe-cd-crm',
-  eventKey: process.env.INNGEST_EVENT_KEY,
-});
+import type { Handler } from '@netlify/functions';
+import { serve } from 'inngest/lambda';
+import { inngest } from '../../lib/inngestClient';
 
 const helloWorld = inngest.createFunction(
   { id: 'hello-world' },
@@ -56,20 +40,53 @@ const logDealCreation = inngest.createFunction(
 
     await step.sleep('wait-a-moment', '100ms'); 
 
-    const logMessage = `Deal created: ID=${event.data.dealId}, Name=${event.data.name}, Stage=${event.data.stage}, Amount=${event.data.amount}, ContactID=${event.data.contactId}`; 
+    const logMessage = `Deal created: ID=${event.data.deal.id}, Name=${event.data.deal.name}, Stage=${event.data.deal.stage_id}, Amount=${event.data.deal.amount}, ContactID=${event.data.deal.person_id}`;
     console.log(`[Inngest Fn: log-deal-creation] Processed: ${logMessage}`);
 
     return { success: true, message: logMessage };
   }
 );
 
+// Add new function for logging deal updates
+const logDealUpdate = inngest.createFunction(
+  { id: 'log-deal-update' },
+  { event: 'crm/deal.updated' },
+  async ({ event, step }) => {
+    console.log(`[Inngest Fn: log-deal-update] Received event '${event.name}' for deal ID: ${event.data.dealId}`);
+    console.log('[Inngest Fn: log-deal-update] Event Data:', event.data);
+    console.log('[Inngest Fn: log-deal-update] User Info:', event.user);
+
+    // Example of using a step, e.g., to simulate further processing or notify another system
+    await step.run('log-update-details', async () => {
+      const changesSummary = Object.entries(event.data.changes)
+        .map(([key, value]: [string, any]) => `${key}: '${value.oldValue}' -> '${value.newValue}'`)
+        .join('; ');
+      console.log(`[Inngest Fn: log-deal-update] Changes processed: ${changesSummary}`);
+      return { summary: changesSummary };
+    });
+
+    return { success: true, message: `Deal update for ${event.data.dealId} processed.` };
+  }
+);
+
 export const functions = [helloWorld, logContactCreation, logDealCreation];
 
-export const handler: Handler = async (_event, _context: HandlerContext) => {
-  console.warn('[inngest.ts handler] Invoked directly by Netlify Dev - this should ideally be handled by Inngest infrastructure (Plugin/Dev Server).');
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: 'Inngest functions defined; placeholder handler invoked.' }),
-    headers: { 'Content-Type': 'application/json' },
-  };
+// Add the new function to the exported array
+export const allFunctions = [...functions, logDealUpdate];
+
+// Base config for Inngest serve
+const inngestServeConfig = {
+  client: inngest,
+  functions: allFunctions,
+  signingKey: process.env.INNGEST_SIGNING_KEY,
 };
+
+// Add serveHost and servePath only if running in Netlify Dev local environment
+if (process.env.NETLIFY_DEV === 'true') {
+  Object.assign(inngestServeConfig, {
+    serveHost: 'http://localhost:8888', 
+    servePath: '/.netlify/functions/inngest',
+  });
+}
+
+export const handler = serve(inngestServeConfig);
