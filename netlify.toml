@@ -11,7 +11,7 @@
 # Base settings for all contexts
 [build]
   # Command to build your site: cd into frontend, install deps, then build
-  command = "cd frontend && npm install && npm run build"
+  command = "npm run build" # Assuming root package.json handles frontend build
   # Directory (relative to root) containing deploy-ready assets
   publish = "frontend/dist"
   # Directory containing Netlify functions
@@ -21,25 +21,34 @@
 # This might help resolve module issues like the one with inngest/netlify
 [functions]
   node_bundler = "esbuild"
-  # ADDED: Explicitly include the schema files directory for the graphql function
-  # Use a specific function entry if only needed for graphql, or keep global if needed elsewhere
-  # included_files = ["netlify/functions/graphql/schema/**"]
-  # Trying global inclusion first:
-  included_files = ["netlify/functions/graphql/schema/**"]
+  # ADDED: Include the schema files directory and the shared lib directory
+  included_files = ["netlify/functions/graphql/schema/**", "lib/**"]
 
 # Development server settings for Vite
 [dev]
   # Explicitly run the dev script from the frontend directory
-  command = "npm run dev --prefix frontend"
+  command = "npm run dev" # Start frontend dev server (vite)
   framework = "vite"
   # viteProjectDirectory = "frontend" # Commented out
   # Port the frontend dev server (Vite) runs on
-  targetPort = 5173 # Use default Vite port
+  targetPort = 5173 # Assuming Vite default
   # Serve static assets from build output if needed (can sometimes help)
+  port = 8888 # Port for Netlify Dev UI/proxy
+  # Optional: Auto-launch browser
+  # autoLaunch = true
   publish = "frontend/dist"
 
 # Redirects and rewrites (Essential for SPAs)
 [[redirects]]
   from = "/*"
   to = "/index.html"
-  status = 200 
+  status = 200
+
+# Optional: Plugin for Inngest integration (if used)
+[[plugins]]
+  package = "netlify-plugin-inngest"
+
+# Optional: Apply to all functions, could also be per-function
+# [functions."*"]
+#   # Apply to all functions, could also be per-function
+#   # included_files = ["../../lib/**"] # Alternative: per function 
