@@ -85,11 +85,14 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
 
   // Fetch related entities when the form mounts (or modal opens)
   useEffect(() => {
-    // Only fetch if not already loaded (basic check)
-    if (deals && deals.length === 0 && !dealsLoading) fetchDeals(); 
-    if (people && people.length === 0 && !peopleLoading) fetchPeople();
-    if (organizations && organizations.length === 0 && !organizationsLoading) fetchOrganizations();
-  }, [fetchDeals, fetchPeople, fetchOrganizations, deals, people, organizations, dealsLoading, peopleLoading, organizationsLoading]);
+    // Fetch data for dropdowns when the component mounts.
+    // The stores themselves should ideally prevent redundant fetches if data is already loaded or loading.
+    fetchDeals(); 
+    fetchPeople();
+    fetchOrganizations();
+    // Dependency array includes the fetch functions. These should be stable references from Zustand.
+    // If they were unstable, this could loop. Assuming they are stable.
+  }, [fetchDeals, fetchPeople, fetchOrganizations]);
 
   // Clear other link IDs when radio selection changes
   const handleLinkTypeChange = (nextValue: string) => {

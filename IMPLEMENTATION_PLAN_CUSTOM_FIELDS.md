@@ -712,6 +712,39 @@
 ### 0: Mental Validation & Dry Run
 *   **Action:** Before implementing advanced features (search, permissions, migrations, etc.), mentally simulate the impact on existing data, performance, and user experience. Adjust the plan as needed.
 
+### X.X: Extending Custom Fields to New Entities (NEW SECTION)
+
+The custom fields system is designed with reusability and future expansion in mind, allowing it to be extended beyond initial CRM entities (Deals, People, Organizations) to other parts of the application or new domains.
+
+**Reusable Core Infrastructure:**
+*   **`custom_field_definitions` Table:** This central table stores definitions for any entity type via the `entity_type` ENUM.
+*   **`customFieldService.ts`:** Service logic for managing definitions (CRUD operations, validation) is designed to be generic.
+*   **Dynamic Frontend Components:** UI components like `DynamicCustomFieldInput.tsx` and `CustomFieldValueDisplay.tsx` are built to render fields based on their type definition, making them reusable across different entities.
+
+**Per-Entity Integration Steps:**
+While the core infrastructure is reusable, enabling custom fields for a *new* entity type requires the following specific integration steps:
+
+1.  **Database Schema Updates:**
+    *   Add the new entity identifier (e.g., `'PROJECT'`, `'TICKET'`) to the `entity_type` ENUM in the database (requires a migration).
+    *   Add the `custom_field_values JSONB DEFAULT \'{}\' NOT NULL` column to the new entity's database table (e.g., `public.projects`). Don't forget to add a GIN index to this column.
+
+2.  **Backend (GraphQL & Service Layer) Updates:**
+    *   Add the new entity identifier to the `CustomFieldEntityType` GraphQL ENUM in your schema files.
+    *   Extend the GraphQL type for the new entity to include the `customFieldValues: [CustomFieldValue!]!` field (e.g., `type Project { ... customFieldValues: [CustomFieldValue!]! }`).
+    *   Update or create GraphQL input types (e.g., `ProjectInput`, `ProjectUpdateInput`) to include `customFields: [CustomFieldValueInput!]`.
+    *   Implement the GraphQL resolver for the new entity's `customFieldValues` field (e.g., `Project.customFieldValues`). This resolver will fetch definitions and map the JSONB data to the `CustomFieldValue` GraphQL type.
+    *   Update the service layer for the new entity (e.g., `projectService.ts`) to:
+        *   Accept `customFields` data in its create and update methods.
+        *   Utilize the `customFieldService.ts` to validate the incoming custom field data against their definitions.
+        *   Correctly format and save the custom field data into the entity's `custom_field_values` JSONB column.
+
+3.  **Frontend Integration:**
+    *   Integrate the reusable custom field components (e.g., `CustomFieldsSection.tsx`) into the creation and editing forms for the new entity.
+    *   Integrate the display components (e.g., `CustomFieldsPanel.tsx`) into the detail view page for the new entity.
+    *   Ensure the entity-specific Zustand store (if applicable) correctly handles fetching and submitting custom field data for the new entity.
+
+By following these steps, the custom fields functionality can be systematically rolled out to any new part of the application that requires enhanced data flexibility.
+
 ### 4.1: Performance Optimization
 
 *   **Action:** Optimize database queries and indexing for JSONB.

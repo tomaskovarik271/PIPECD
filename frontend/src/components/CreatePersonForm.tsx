@@ -48,7 +48,9 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (organizations && organizations.length === 0 && !orgLoading) {
+    // Fetch organizations if the list is empty and not already loading.
+    // This ensures the dropdown is populated.
+    if (!orgLoading && (!organizations || organizations.length === 0)) {
       fetchOrganizations(); 
     }
   }, [organizations, orgLoading, fetchOrganizations]);
@@ -95,6 +97,7 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
         onSuccess();
         onClose();
       } else {
+        // Use peopleError from the store if available, otherwise a generic message.
         setLocalError(peopleError || 'Failed to create person. Please try again.');
       }
     } catch (error: unknown) {
@@ -114,6 +117,7 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
   return (
     <form onSubmit={handleSubmit}>
       <ModalBody>
+        {/* Display localError first if it exists, then fallback to peopleError */}
         {(localError || peopleError) && (
              <Alert status="error" mb={4} whiteSpace="pre-wrap">
                 <AlertIcon />
@@ -132,6 +136,7 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
           <FormControl isInvalid={!!localError && (!formData.first_name && !formData.last_name && !formData.email)}>
             <FormLabel>Email</FormLabel>
             <Input type="email" name="email" value={formData.email || ''} onChange={handleChange} />
+            {/* Ensure FormErrorMessage is shown only when the specific validation fails */}
             {!!localError && (!formData.first_name && !formData.last_name && !formData.email) && <FormErrorMessage>{localError}</FormErrorMessage>}
           </FormControl>
           <FormControl>
@@ -153,14 +158,21 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
                     value={formData.organization_id || ''} 
                     onChange={handleChange}
                     placeholder="Select organization (optional)"
-                    isDisabled={!organizations || organizations.length === 0}
+                    // Disable if no orgs or if orgs are present but empty (e.g. after a filter with no results in future)
+                    isDisabled={orgLoading || !organizations || organizations.length === 0}
                 >
+                    {/* Ensure organizations is not null before mapping */}
                     {organizations && organizations.map((org: Organization) => (
                         <option key={org.id} value={org.id}>{org.name}</option>
                     ))}
                 </Select>
             )}
-            {(!organizations || organizations.length === 0) && !orgLoading && <FormErrorMessage>No organizations found. Create one first.</FormErrorMessage>}
+            {/* Show message if explicitly no orgs and not loading, or if there was an error fetching them */}
+            {(!orgLoading && (orgError || (!organizations || organizations.length === 0))) && 
+              <FormErrorMessage>
+                {orgError ? "Could not load organizations." : "No organizations found. Create one first."}
+              </FormErrorMessage>
+            }
           </FormControl>
           <FormControl>
             <FormLabel>Notes</FormLabel>

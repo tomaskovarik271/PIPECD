@@ -42,7 +42,12 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
     if (stage) {
       setStageName(stage.name);
       setStageOrder(stage.order);
-      setDealProbability(stage.deal_probability ?? '');
+      // Convert decimal from DB (e.g., 0.6) to percentage for display (e.g., 60)
+      if (stage.deal_probability !== null && stage.deal_probability !== undefined) {
+        setDealProbability(Math.round(stage.deal_probability * 100)); // Multiply by 100 and round
+      } else {
+        setDealProbability(''); // Default to empty string if no probability
+      }
     } else {
         setStageName('');
         setStageOrder(0);
@@ -73,6 +78,7 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
          toast({ title: "Order must be a non-negative number.", status: 'warning', duration: 3000, isClosable: true });
       return;
     }
+    
     let probabilityNum: number | null = null;
     if (String(dealProbability).trim() !== '') {
         probabilityNum = parseFloat(String(dealProbability));
@@ -84,15 +90,15 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
     
     const updates: GeneratedUpdateStageInput = {};
     let hasChanges = false;
-    if (stageName.trim() !== stage.name) {
+    if (stageName.trim() !== stage!.name) {
         updates.name = stageName.trim();
         hasChanges = true;
     }
-    if (orderNum !== stage.order) {
+    if (orderNum !== stage!.order) {
         updates.order = orderNum;
         hasChanges = true;
     }
-    const originalProbabilityDecimal = stage.deal_probability ?? null;
+    const originalProbabilityDecimal = stage!.deal_probability ?? null;
     const newProbabilityDecimal = probabilityNum === null ? null : probabilityNum / 100;
     if (newProbabilityDecimal !== originalProbabilityDecimal) {
         updates.deal_probability = newProbabilityDecimal;
@@ -107,11 +113,13 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
     
     setIsLoading(true);
     try {
-      const updatedStage = await updateStage(stage.id, updates);
+      const updatedStage = await updateStage(stage!.id, updates);
       
       if (updatedStage) {
         toast({ title: "Stage updated successfully.", status: 'success', duration: 3000, isClosable: true });
-        onSuccess?.(updatedStage.id);
+        if (onSuccess && updatedStage.id) {
+            onSuccess(updatedStage.id);
+        }
         onClose();
       } else {
         toast({ title: "Failed to update stage.", description: stagesError || "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });

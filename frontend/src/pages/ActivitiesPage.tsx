@@ -237,6 +237,7 @@ function ActivitiesPage() {
     message: "Add tasks, calls, or meetings to keep track of interactions."
   };
 
+  // Loading state is handled before the main layout
   if (activitiesLoading) {
     return (
       <Flex justify="center" align="center" minH="calc(100vh - 200px)">
@@ -244,79 +245,87 @@ function ActivitiesPage() {
       </Flex>
     );
   }
-
-  if (activitiesError && !activities.length) {
+  
+  // Error state when no activities are loaded yet (this might need adjustment based on full file content)
+  // This specific conditional rendering of ListPageLayout for error might be part of what gets simplified
+  // if the main ListPageLayout is always rendered.
+  if (activitiesError && !activities.length && !activitiesLoading) { // Added !activitiesLoading here
     return (
       <ListPageLayout 
-        title="Activities" 
-        onNewButtonClick={onCreateOpen} 
+        title="Activities"
         newButtonLabel="New Activity"
+        onNewButtonClick={onCreateOpen} // This should trigger the modal
         isNewButtonDisabled={!userPermissions?.includes('activity:create')}
-        isLoading={activitiesLoading} // Pass loading state
-        error={activitiesError} // Pass error state
-        isEmpty={true} // Explicitly set isEmpty
-        emptyStateProps={emptyStateProps} // Pass empty state props
+        isLoading={false} // Explicitly false as we are in error state
+        error={activitiesError}
+        isEmpty={true} // True because of error and no activities
+        emptyStateProps={emptyStateProps} // Use the defined emptyStateProps
       >
-        {/* Children can be empty or an Alert, ListPageLayout handles error display */}
-        <Alert status="error" mt={4}>
-        <AlertIcon />
-            Error fetching activities: {activitiesError}
-      </Alert>
+         <></>{/* Provide empty fragment as children to satisfy prop type */}
       </ListPageLayout>
     );
   }
 
   return (
-    <ListPageLayout 
-        title="Activities" 
-        onNewButtonClick={onCreateOpen}
+    <>
+      <ListPageLayout
+        title="Activities"
         newButtonLabel="New Activity"
+        onNewButtonClick={onCreateOpen}
         isNewButtonDisabled={!userPermissions?.includes('activity:create')}
-        isLoading={activitiesLoading}
-        error={activitiesError} // Pass error here too for consistency, ListPageLayout might only show one error source.
-        isEmpty={activities.length === 0}
+        isLoading={activitiesLoading} // Use the actual loading state here
+        error={activitiesError} // Pass the error state
+        isEmpty={!activitiesLoading && activities.length === 0 && !activitiesError} // Correct isEmpty condition
         emptyStateProps={emptyStateProps}
-    >
-      {/* Display a less intrusive error if activities are present but an error occurred (e.g. during update/delete) */}
-      {/* This specific error display might be redundant if ListPageLayout handles its 'error' prop well enough */}
-      {/* For now, keeping it if it provides different context than the main error prop */}
-      {activitiesError && activities.length > 0 && (
-           <Alert status="warning" mt={4} mb={4}>
-               <AlertIcon />
-               {activitiesError} 
-           </Alert>
+      >
+        {/* Children of ListPageLayout: Table should be here, rendered if not empty by ListPageLayout */}
+        {!activitiesLoading && !activitiesError && activities.length > 0 && (
+            <SortableTable<Activity>
+                data={activities}
+                columns={columns}
+                initialSortKey="due_date" // Or any other sensible default
+                initialSortDirection="ascending" // Corrected value
+            />
+        )}
+        {/* The Create Activity Modal is NO LONGER HERE */}
+      </ListPageLayout>
+
+      {/* Create Activity Modal - Rendered as a SIBLING to ListPageLayout */}
+      {isCreateOpen && (
+        <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl" isCentered>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Log New Activity</ModalHeader>
+            <ModalCloseButton />
+            {/* ModalBody and CreateActivityForm would be here */}
+            {/* Assuming CreateActivityForm takes onSuccess and onClose similar to People */}
+            <CreateActivityForm onSuccess={handleCreateSuccess} onClose={onCreateClose} />
+          </ModalContent>
+        </Modal>
       )}
-      {/* SortableTable now explicitly typed */}
-      <SortableTable<Activity> columns={columns} data={activities} initialSortKey="due_date" initialSortDirection="ascending" />
-
-      <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Create New Activity</ModalHeader>
-          <ModalCloseButton />
-          <CreateActivityForm onClose={onCreateClose} onSuccess={handleCreateSuccess} />
-        </ModalContent>
-      </Modal>
-
-      {activityToEdit && (
-        <EditActivityModal 
-          isOpen={isEditOpen} 
-          onClose={handleEditClose} 
-          activity={activityToEdit}
+      
+      {/* Edit Activity Modal (if it exists and is structured similarly) */}
+      {activityToEdit && isEditOpen && (
+        <EditActivityModal
+            activity={activityToEdit}
+            isOpen={isEditOpen}
+            onClose={handleEditClose} // Use the specific close handler for edit
+            // onUpdated might be a prop if EditActivityModal handles its own data saving and re-fetch call
         />
       )}
 
+      {/* Confirmation Dialog for Delete */}
       <ConfirmationDialog 
         isOpen={isConfirmDeleteDialogOpen}
         onClose={onConfirmDeleteClose}
         onConfirm={handleConfirmDelete}
         headerText="Delete Activity"
-        bodyText={`Are you sure you want to delete activity: ${activityToDeleteId ? activities.find(a=>a.id === activityToDeleteId)?.subject : 'this activity'}? This action cannot be undone.`}
+        bodyText="Are you sure you want to delete this activity? This action cannot be undone."
         confirmButtonText="Delete"
         confirmButtonColorScheme="red"
         isLoading={isDeleting}
-          />
-        </ListPageLayout>
+      />
+    </>
   );
 }
 

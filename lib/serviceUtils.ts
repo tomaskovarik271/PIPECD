@@ -36,14 +36,37 @@ export function getAuthenticatedClient(accessToken: string): SupabaseClient {
 export function handleSupabaseError(error: PostgrestError | null, context: string): void {
   if (error) {
     console.error(`Supabase error in ${context}:`, error.message, error.details, error.hint);
-    // Consider mapping specific error codes (e.g., unique constraints '23505') to specific GQL errors if needed
-    // if (error.code === '23505') {
-    //   throw new GraphQLError(`Database error: Duplicate value for unique constraint during ${context}.`, {
-    //     extensions: { code: 'BAD_USER_INPUT', originalError: error.message }, // Or CONFLICT?
-    //   });
-    // }
-    throw new GraphQLError(`Database error during ${context}. Please try again later.`, { // User-friendly message
-      extensions: { code: 'INTERNAL_SERVER_ERROR', originalError: { message: error.message, code: error.code } }, // Include original code
+
+    // Handle unique constraint violation (PostgreSQL error code 23505)
+    if (error.code === '23505') {
+      let userMessage = `A unique value is required for ${context}, but a duplicate was provided. Please check your input.`;
+      // Try to make the message more specific if it's our known stage order or name constraint
+      if (error.message && error.message.includes('stages_pipeline_id_order_key')) {
+        userMessage = `The 'order' number is already in use for this pipeline. Please choose a different order.`;
+      } else if (error.message && error.message.includes('stages_pipeline_id_name_key')) {
+        userMessage = `The stage 'name' is already in use for this pipeline. Please choose a different name.`;
+      } else if (error.message && error.message.includes('pipelines_user_id_name_key')) {
+        userMessage = `The pipeline 'name' is already in use. Please choose a different name.`;
+      }
+      // Add more specific checks for other known unique constraints as needed:
+      // else if (error.message && error.message.includes('some_other_key_constraint_name')) {
+      //   userMessage = `Specific message for some_other_key_constraint_name.`;
+      // }
+
+      throw new GraphQLError(userMessage, {
+        extensions: { 
+          code: 'BAD_USER_INPUT', 
+          originalError: { message: error.message, code: error.code, details: error.details, hint: error.hint }
+        },
+      });
+    }
+
+    // Fallback for other database errors
+    throw new GraphQLError(`Database error during ${context}. Please try again later or contact support.`, {
+      extensions: { 
+        code: 'INTERNAL_SERVER_ERROR', 
+        originalError: { message: error.message, code: error.code, details: error.details, hint: error.hint }
+      },
     });
   }
 }

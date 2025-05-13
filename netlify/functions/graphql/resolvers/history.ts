@@ -26,58 +26,42 @@ export const DealHistoryEntry = {
   // Explicitly resolve 'createdAt' from the parent DB row's 'created_at' field
   createdAt: (parent: DealHistoryDbRow) => new Date(parent.created_at),
 
-  user: async (parent: DealHistoryDbRow, _args: any, context: GraphQLContext, _info: any) => {
-    if (!parent.user_id) return null;
-    // requireAuthentication(context); // History entries are public if the deal is accessible, user might be null if system action or user deleted
-    const token = getAccessToken(context);
-    // If there's no token (e.g. public query part for some reason, or initial schema introspection)
-    // we can't fetch a user securely. If user_id exists, but we can't get a token, it implies an issue or an unauthenticated user trying to resolve this.
-    // However, the RLS on deal_history should prevent unauthorized access to the parent DealHistoryEntry itself.
-    // So, if we reach here, it implies the user CAN see the history entry.
-    // We need a client to fetch user details. If no token, we can't get an *authenticated* client for the *current user*,
-    // but we might need a service client or a specific way to fetch public user profiles if users can be null.
-    // For now, let's assume if we have a user_id, we try to fetch with current user's token for their RLS on users table.
-
-    if (!token) {
-        // If no token, we cannot fetch the user details that might be protected by RLS of the 'users' table for the current querier.
-        // console.warn('No access token available to fetch user details for DealHistoryEntry.user resolver');
-        // Depending on RLS of 'users' table, this might be okay or might prevent fetching.
-        // If 'users' table is public for id, email, name, then a service client could be used.
-        // For now, if no token, return null to avoid errors, assuming user data might be restricted.
-        return null; 
+  user: async (parent: DealHistoryDbRow, _args: any, context: GraphQLContext, _info: any): Promise<GraphQLUser | null> => {
+    if (!parent.user_id) {
+      console.log('[DealHistoryEntry.user resolver] No user_id in parent history entry, returning null.');
+      return null;
     }
-    const supabase = getAuthenticatedClient(token);
 
-    try {
-      console.log(`[DealHistoryEntry.user resolver] Fetching person for user_id: ${parent.user_id} (from deal_history)`);
-      // Query the 'people' table, matching its 'user_id' with the one from deal_history (auth.users.id).
-      const { data, error } = await supabase
-        .from('people') 
-        .select('id, user_id, email, first_name, last_name') // Ensure user_id from people is selected for clarity if needed, though not strictly for matching here
-        .eq('user_id', parent.user_id) // Corrected: Match people.user_id with parent.user_id (auth.users.id)
-        .single();
+    const currentUser = context.currentUser; // User object from @supabase/supabase-js
 
-      console.log(`[DealHistoryEntry.user resolver] Fetched data from people table:`, JSON.stringify(data, null, 2));
-
-      if (error && error.code !== 'PGRST116') { // PGRST116: No rows found
-        console.error(`Error fetching user ${parent.user_id} for history entry ${parent.id}:`, error);
-        // Optionally, throw new GraphQLError to signal frontend about data inconsistency?
-        return null; 
-      }
-      if (!data) return null;
-
-      // Map to GraphQLUser type (ensure fields match User type in your GraphQL schema)
+    if (currentUser && currentUser.id === parent.user_id) {
+      console.log(`[DealHistoryEntry.user resolver] History user ${parent.user_id} is the current authenticated user.`);
+      // Attempt to get name from user_metadata, fallback to email part or generic
+      const nameFromMetadata = currentUser.user_metadata?.name || currentUser.user_metadata?.full_name;
+      const displayName = nameFromMetadata || currentUser.email?.split('@')[0] || `User ${currentUser.id.substring(0, 8)}`;
+      
       return {
-        id: data.id,
-        email: data.email,
-        // Construct name if available, otherwise default to email or part of it
-        name: [data.first_name, data.last_name].filter(Boolean).join(' ') || data.email?.split('@')[0] || 'User',
-        // avatar_url: data.avatar_url, // If you have this field
-        // Add other User fields from your GraphQL User type as needed
-      } as GraphQLUser; // Cast carefully or ensure types match your GraphQL User type definition
-    } catch (e) {
-        console.error(`Exception fetching user ${parent.user_id} for history entry ${parent.id}:`, e);
-        return null;
+        id: currentUser.id,
+        email: currentUser.email || null, // Ensure email is explicitly null if undefined
+        name: displayName,
+        // avatar_url: currentUser.user_metadata?.avatar_url || null, // If you add avatar_url to GraphQL User
+      } as GraphQLUser;
+    } else {
+      // The user who made the history entry is NOT the current user,
+      // or the current user is not authenticated (e.g. during schema introspection).
+      // This is where querying 'user_profiles' or an RPC to 'auth.users' for parent.user_id would be ideal.
+      // For now, return a placeholder. This is NOT a long-term solution for displaying other users.
+      console.warn(`[DealHistoryEntry.user resolver] History user ${parent.user_id} is not the current authenticated user OR no current user in context. \
+Returning placeholder. Implement proper lookup (e.g., from a user_profiles table or RPC to auth.users).`);
+      
+      // We must return a valid GraphQLUser if parent.user_id exists.
+      // 'id' is mandatory. 'email' and 'name' are nullable in the GraphQL schema.
+      return {
+        id: parent.user_id,
+        email: null, // We can't securely get other users' emails without a proper mechanism
+        name: `User ${parent.user_id.substring(0, 8)}...`, // Placeholder name
+        // avatar_url: null,
+      } as GraphQLUser;
     }
   },
-} as DealHistoryEntryResolvers<GraphQLContext, any>; 
+} as DealHistoryEntryResolvers<GraphQLContext, any>; // Specify 'any' for ParentType to bypass complex type constraint 

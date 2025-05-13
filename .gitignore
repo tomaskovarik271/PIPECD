@@ -29,3 +29,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.iml
+
+# Test Reports & Results
+playwright-report/
+test-results/
