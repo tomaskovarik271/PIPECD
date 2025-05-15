@@ -40,6 +40,12 @@ import { inngest } from './inngestClient'; // Import the shared Inngest client
 //     stage_id?: string | null;  // Ensure stage_id is here too
 // }
 
+// Define a more specific type for the update payload to include weighted_amount
+interface DealUpdatePayload extends Partial<DealInput> {
+  user_id?: string; // user_id is added by create, but not typically in DealInput for updates from client
+  weighted_amount?: number | null;
+}
+
 // --- Deal Service ---
 export const dealService = {
 
@@ -125,18 +131,107 @@ export const dealService = {
         throw new GraphQLError('No fields provided for deal update.', { extensions: { code: 'BAD_USER_INPUT' } });
     }
 
-    // 1. Fetch Old State
+    // 1. Fetch Old State for history tracking
     const oldDealData = await this.getDealById(userId, id, accessToken);
     if (!oldDealData) {
         throw new GraphQLError('Deal not found for history tracking', { extensions: { code: 'NOT_FOUND' } });
     }
 
-    // Destructure pipeline_id from input if present, as it's not directly part of the 'deals' table
-    const { pipeline_id, ...dealDataForUpdate } = input;
+    // Make a mutable copy of the input to potentially add/modify fields
+    const updatePayload: DealUpdatePayload = { ...input };
+
+    // 2. Handle stage change and associated probability adjustments
+    if (updatePayload.stage_id && updatePayload.stage_id !== oldDealData.stage_id) {
+        console.log(`[dealService.updateDeal] Stage changed from ${oldDealData.stage_id} to ${updatePayload.stage_id}`);
+        const { data: newStage, error: stageError } = await supabase
+            .from('stages')
+            .select('stage_type, deal_probability') // Fetch necessary fields from the new stage
+            .eq('id', updatePayload.stage_id)
+            .single();
+
+        if (stageError) {
+            handleSupabaseError(stageError, `fetching new stage ${updatePayload.stage_id} for deal update`);
+            throw new GraphQLError(`Target stage ${updatePayload.stage_id} not found.`, { extensions: { code: 'BAD_USER_INPUT' } });
+        }
+
+        if (newStage) {
+            console.log('[dealService.updateDeal] New stage properties:', newStage);
+            let effectiveProbability: number | null = null;
+
+            if (newStage.stage_type === 'WON') {
+                updatePayload.deal_specific_probability = 1.0;
+                effectiveProbability = 1.0;
+                console.log('[dealService.updateDeal] Setting deal_specific_probability to 1.0 for WON stage');
+            } else if (newStage.stage_type === 'LOST') {
+                updatePayload.deal_specific_probability = 0.0;
+                effectiveProbability = 0.0;
+                console.log('[dealService.updateDeal] Setting deal_specific_probability to 0.0 for LOST stage');
+            } else { // OPEN stage
+                updatePayload.deal_specific_probability = null; // Clear specific probability to inherit from stage
+                effectiveProbability = newStage.deal_probability; // Use stage's probability
+                console.log('[dealService.updateDeal] Clearing deal_specific_probability for OPEN stage, effective probability from stage:', effectiveProbability);
+            }
+
+            // Calculate and set weighted_amount
+            const currentAmount = typeof input.amount === 'number' ? input.amount : oldDealData.amount;
+            if (typeof currentAmount === 'number' && effectiveProbability !== null) {
+                updatePayload.weighted_amount = currentAmount * effectiveProbability;
+                console.log('[dealService.updateDeal] Calculated weighted_amount:', updatePayload.weighted_amount);
+            } else {
+                updatePayload.weighted_amount = null; 
+                console.log('[dealService.updateDeal] Setting weighted_amount to null due to missing amount or probability.');
+            }
+
+        } else {
+             console.warn(`[dealService.updateDeal] New stage ${updatePayload.stage_id} not found, probability not adjusted. Weighted amount not calculated.`);
+        }
+    } else if (typeof input.amount === 'number' && input.amount !== oldDealData.amount) {
+        // Stage didn't change, but amount did. 
+        // Weighted amount would need recalculation.
+        console.log('[dealService.updateDeal] Amount changed. Recalculating weighted_amount.');
+        let existingEffectiveProbability: number | null = null;
+        if (oldDealData.deal_specific_probability !== null && oldDealData.deal_specific_probability !== undefined) {
+            existingEffectiveProbability = oldDealData.deal_specific_probability;
+        } else if (oldDealData.stage_id) {
+            // Need to fetch the current stage to get its probability if DSP is null
+            const { data: currentStage, error: currentStageError } = await supabase
+                .from('stages')
+                .select('deal_probability, stage_type') // also get stage_type
+                .eq('id', oldDealData.stage_id)
+                .single();
+            
+            if (currentStage && !currentStageError) {
+                if (currentStage.stage_type === 'WON') {
+                    existingEffectiveProbability = 1.0;
+                } else if (currentStage.stage_type === 'LOST') {
+                    existingEffectiveProbability = 0.0;
+                } else { // OPEN
+                    existingEffectiveProbability = currentStage.deal_probability;
+                }
+            } else {
+                console.warn(`[dealService.updateDeal] Could not fetch current stage ${oldDealData.stage_id} to recalculate weighted_amount.`);
+            }
+        }
+
+        if (typeof input.amount === 'number' && existingEffectiveProbability !== null) {
+            updatePayload.weighted_amount = input.amount * existingEffectiveProbability;
+            console.log('[dealService.updateDeal] Amount changed, recalculated weighted_amount:', updatePayload.weighted_amount);
+        } else {
+            updatePayload.weighted_amount = null;
+            console.log('[dealService.updateDeal] Amount changed, but weighted_amount set to null due to missing effective probability or new amount.');
+        }
+    }
+
+    // Destructure pipeline_id from updatePayload if present, as it's not directly part of the 'deals' table
+    // This should be done *after* any stage_id related logic might have used it conceptually (though it doesn't here)
+    // And *before* the actual DB update operation.
+    if ('pipeline_id' in updatePayload) {
+        delete updatePayload.pipeline_id; // Remove pipeline_id as it's not a column in deals table
+    }
 
     const { data: updatedDealRecord, error } = await supabase
       .from('deals')
-      .update(dealDataForUpdate) // Pass Partial<DealInput> without pipeline_id
+      .update(updatePayload) // Use the potentially modified updatePayload
       .eq('id', id) 
       .select() 
       .single();

@@ -127,19 +127,19 @@ function PeoplePage() {
 
   return (
     <>
-      <ListPageLayout
-        title="People"
-        newButtonLabel="New Person"
-        onNewButtonClick={onCreateOpen}
-        isNewButtonDisabled={!userPermissions?.includes('person:create')}
-        isLoading={loading}
-        error={peopleError}
-        isEmpty={!loading && people.length === 0}
-        emptyStateProps={emptyStatePropsForPage}
-      >
-        {!loading && !peopleError && people.length > 0 && (
-          <SortableTable data={people} columns={columns} initialSortKey="name" />
-        )}
+    <ListPageLayout
+      title="People"
+      newButtonLabel="New Person"
+      onNewButtonClick={onCreateOpen}
+      isNewButtonDisabled={!userPermissions?.includes('person:create')}
+      isLoading={loading}
+      error={peopleError}
+      isEmpty={!loading && people.length === 0}
+      emptyStateProps={emptyStatePropsForPage}
+    >
+      {!loading && !peopleError && people.length > 0 && (
+        <SortableTable data={people} columns={columns} initialSortKey="name" />
+      )}
       </ListPageLayout>
 
       {isCreateOpen && (

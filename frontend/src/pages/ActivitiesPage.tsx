@@ -245,14 +245,14 @@ function ActivitiesPage() {
       </Flex>
     );
   }
-  
+
   // Error state when no activities are loaded yet (this might need adjustment based on full file content)
   // This specific conditional rendering of ListPageLayout for error might be part of what gets simplified
   // if the main ListPageLayout is always rendered.
   if (activitiesError && !activities.length && !activitiesLoading) { // Added !activitiesLoading here
     return (
       <ListPageLayout 
-        title="Activities"
+        title="Activities" 
         newButtonLabel="New Activity"
         onNewButtonClick={onCreateOpen} // This should trigger the modal
         isNewButtonDisabled={!userPermissions?.includes('activity:create')}
@@ -268,8 +268,8 @@ function ActivitiesPage() {
 
   return (
     <>
-      <ListPageLayout
-        title="Activities"
+    <ListPageLayout 
+        title="Activities" 
         newButtonLabel="New Activity"
         onNewButtonClick={onCreateOpen}
         isNewButtonDisabled={!userPermissions?.includes('activity:create')}
@@ -277,7 +277,7 @@ function ActivitiesPage() {
         error={activitiesError} // Pass the error state
         isEmpty={!activitiesLoading && activities.length === 0 && !activitiesError} // Correct isEmpty condition
         emptyStateProps={emptyStateProps}
-      >
+    >
         {/* Children of ListPageLayout: Table should be here, rendered if not empty by ListPageLayout */}
         {!activitiesLoading && !activitiesError && activities.length > 0 && (
             <SortableTable<Activity>
@@ -293,22 +293,22 @@ function ActivitiesPage() {
       {/* Create Activity Modal - Rendered as a SIBLING to ListPageLayout */}
       {isCreateOpen && (
         <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl" isCentered>
-          <ModalOverlay />
-          <ModalContent>
+        <ModalOverlay />
+        <ModalContent>
             <ModalHeader>Log New Activity</ModalHeader>
-            <ModalCloseButton />
+          <ModalCloseButton />
             {/* ModalBody and CreateActivityForm would be here */}
             {/* Assuming CreateActivityForm takes onSuccess and onClose similar to People */}
             <CreateActivityForm onSuccess={handleCreateSuccess} onClose={onCreateClose} />
-          </ModalContent>
-        </Modal>
+        </ModalContent>
+      </Modal>
       )}
-      
+
       {/* Edit Activity Modal (if it exists and is structured similarly) */}
       {activityToEdit && isEditOpen && (
-        <EditActivityModal
+        <EditActivityModal 
             activity={activityToEdit}
-            isOpen={isEditOpen}
+          isOpen={isEditOpen} 
             onClose={handleEditClose} // Use the specific close handler for edit
             // onUpdated might be a prop if EditActivityModal handles its own data saving and re-fetch call
         />
@@ -324,7 +324,7 @@ function ActivitiesPage() {
         confirmButtonText="Delete"
         confirmButtonColorScheme="red"
         isLoading={isDeleting}
-      />
+          />
     </>
   );
 }

@@ -6,6 +6,7 @@ type Stage {
   pipeline: Pipeline!
   name: String!
   order: Int!
+  stage_type: StageType! # New field for terminal stage properties
   deal_probability: Float # Maps to 'real' in DB, nullable
   created_at: String! # Consider DateTime scalar
   updated_at: String! # Consider DateTime scalar
@@ -18,6 +19,7 @@ input CreateStageInput {
   name: String!
   order: Int!
   deal_probability: Float # Optional, null allowed
+  stage_type: StageType # Optional, DB defaults to OPEN
 }
 
 # ADDED Stage Update Input (for updates, pipeline_id omitted)
@@ -25,6 +27,7 @@ input UpdateStageInput {
   name: String
   order: Int
   deal_probability: Float # Allow setting to null via absence or explicit null?
+  stage_type: StageType # Optional
 }
 
 # Add queries and mutations related to Stages

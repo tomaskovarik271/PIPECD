@@ -55,6 +55,7 @@
     "@graphql-tools/load-files": "^7.0.1",
     "@graphql-tools/merge": "^9.0.24",
     "@graphql-tools/schema": "^10.0.23",
+    "@hello-pangea/dnd": "^18.0.1",
     "@supabase/supabase-js": "^2.49.4",
     "@types/react-beautiful-dnd": "^13.1.8",
     "@whatwg-node/server": "^0.10.5",

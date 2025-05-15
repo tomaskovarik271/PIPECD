@@ -89,6 +89,7 @@ export type CreateStageInput = {
   name: Scalars["String"]["input"];
   order: Scalars["Int"]["input"];
   pipeline_id: Scalars["ID"]["input"];
+  stage_type?: InputMaybe<StageType>;
 };
 
 export type Deal = {
@@ -368,9 +369,16 @@ export type Stage = {
   order: Scalars["Int"]["output"];
   pipeline: Pipeline;
   pipeline_id: Scalars["ID"]["output"];
+  stage_type: StageType;
   updated_at: Scalars["String"]["output"];
   user_id: Scalars["ID"]["output"];
 };
+
+export enum StageType {
+  Lost = "LOST",
+  Open = "OPEN",
+  Won = "WON",
+}
 
 export type UpdateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
@@ -387,6 +395,7 @@ export type UpdateStageInput = {
   deal_probability?: InputMaybe<Scalars["Float"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   order?: InputMaybe<Scalars["Int"]["input"]>;
+  stage_type?: InputMaybe<StageType>;
 };
 
 export type User = {
@@ -527,6 +536,7 @@ export type ResolversTypes = {
   PipelineInput: PipelineInput;
   Query: ResolverTypeWrapper<{}>;
   Stage: ResolverTypeWrapper<Stage>;
+  StageType: StageType;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
   UpdateActivityInput: UpdateActivityInput;
   UpdateStageInput: UpdateStageInput;
@@ -987,6 +997,7 @@ export type StageResolvers<
   order?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   pipeline?: Resolver<ResolversTypes["Pipeline"], ParentType, ContextType>;
   pipeline_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  stage_type?: Resolver<ResolversTypes["StageType"], ParentType, ContextType>;
   updated_at?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;

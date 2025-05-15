@@ -25,7 +25,8 @@ import type {
     Organization as GraphQLOrganization,
     Deal as GraphQLDeal,
     Pipeline as GraphQLPipeline,
-    Stage as GraphQLStage
+    Stage as GraphQLStage,
+    StageType as GeneratedStageType
     // Argument types (e.g., MutationCreatePersonArgs) are inferred by MutationResolvers for args and args.input
 } from '../../../../lib/generated/graphql';
 
@@ -33,6 +34,16 @@ import type {
 // import type { 
 // // ... (old types) ...
 // } from '../../../../frontend/src/generated/graphql/graphql.js' with { "resolution-mode": "import" };
+
+// Helper function to convert string to Date or null
+const convertToDateOrNull = (dateStr: string | null | undefined): Date | null => {
+  if (dateStr && typeof dateStr === 'string' && dateStr.trim() !== '') {
+    const date = new Date(dateStr);
+    // Check if the date is valid; Invalid Date getTime() returns NaN
+    return isNaN(date.getTime()) ? null : date;
+  }
+  return null; // Return null for empty strings, null, undefined, or invalid date strings
+};
 
 export const Mutation: MutationResolvers<GraphQLContext> = {
     // --- Person Mutations (formerly Contact) ---
@@ -270,8 +281,12 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
                throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
           }
 
-          // Pass validatedInput directly as dealService.createDeal now handles stripping pipeline_id for DB insert
-          const newDealRecord = await dealService.createDeal(userId, validatedInput, accessToken);
+          const serviceInput = {
+            ...validatedInput,
+            expected_close_date: convertToDateOrNull(validatedInput.expected_close_date),
+          };
+
+          const newDealRecord = await dealService.createDeal(userId, serviceInput, accessToken);
           
           inngest.send({
             name: 'crm/deal.created',
@@ -287,7 +302,9 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
             updated_at: newDealRecord.updated_at,
             name: newDealRecord.name!,
             amount: newDealRecord.amount,
-            expected_close_date: newDealRecord.expected_close_date,
+            expected_close_date: newDealRecord.expected_close_date instanceof Date 
+              ? newDealRecord.expected_close_date.toISOString() 
+              : newDealRecord.expected_close_date,
             // pipeline_id is not directly on newDealRecord from the 'deals' table.
             // It will be resolved by the Deal type resolver via the stage relationship.
             stage_id: newDealRecord.stage_id!,
@@ -315,12 +332,14 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
             throw new GraphQLError('Update input cannot be empty.', { extensions: { code: 'BAD_USER_INPUT' } });
           }
 
-          // Destructure to exclude pipeline_id before passing to the service
-          const { pipeline_id, ...dealDataForUpdate } = validatedInput;
-          // Log to confirm pipeline_id is handled if needed for other logic (though not for direct DB update here)
-          // console.log('[Mutation.updateDeal] pipeline_id from input (not directly saved to deal):', pipeline_id);
+          const { pipeline_id, ...dealDataFromZod } = validatedInput;
+          
+          const serviceInput = {
+            ...dealDataFromZod,
+            expected_close_date: convertToDateOrNull(dealDataFromZod.expected_close_date),
+          };
 
-          const updatedDealRecord = await dealService.updateDeal(userId, args.id, dealDataForUpdate, accessToken);
+          const updatedDealRecord = await dealService.updateDeal(userId, args.id, serviceInput, accessToken);
           
           // Map Deal from service to GraphQLDeal
           return {
@@ -330,7 +349,9 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
             updated_at: updatedDealRecord.updated_at,
             name: updatedDealRecord.name!,
             amount: updatedDealRecord.amount,
-            expected_close_date: updatedDealRecord.expected_close_date,
+            expected_close_date: updatedDealRecord.expected_close_date instanceof Date 
+              ? updatedDealRecord.expected_close_date.toISOString() 
+              : updatedDealRecord.expected_close_date,
             stage_id: updatedDealRecord.stage_id!,
             person_id: updatedDealRecord.person_id,
             organization_id: updatedDealRecord.organization_id,
@@ -462,7 +483,12 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
         if (!context.userPermissions?.includes('stage:create')) {
                 throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
         }
-        const newStage = await stageService.createStage(accessToken, validatedInput);
+        // Cast stage_type to satisfy linter if validatedInput.stage_type is string literal union
+        const serviceInput = {
+          ...validatedInput,
+          stage_type: validatedInput.stage_type as GeneratedStageType | undefined,
+        };
+        const newStage = await stageService.createStage(accessToken, serviceInput as any); // Using 'as any' temporarily if deep type issues persist with other fields, focus on stage_type
             // Map Stage from lib/types to GraphQLStage
             return {
                 id: newStage.id,
@@ -471,6 +497,7 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
                 name: newStage.name,
                 order: newStage.order,
                 deal_probability: newStage.deal_probability,
+                stage_type: newStage.stage_type,
                 created_at: newStage.created_at,
                 updated_at: newStage.updated_at,
             } as GraphQLStage;
@@ -487,7 +514,12 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
             if (!context.userPermissions?.includes('stage:update_any')) { // Assuming general update permission
                 throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
         }
-        const updatedStage = await stageService.updateStage(accessToken, args.id, validatedInput);
+        // Cast stage_type to satisfy linter
+        const serviceInput = {
+            ...validatedInput,
+            stage_type: validatedInput.stage_type as GeneratedStageType | undefined,
+        };
+        const updatedStage = await stageService.updateStage(accessToken, args.id, serviceInput as any); // Using 'as any' temporarily
             // Map Stage from lib/types to GraphQLStage
             return {
                 id: updatedStage.id,
@@ -496,6 +528,7 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
                 name: updatedStage.name,
                 order: updatedStage.order,
                 deal_probability: updatedStage.deal_probability,
+                stage_type: updatedStage.stage_type,
                 created_at: updatedStage.created_at,
                 updated_at: updatedStage.updated_at,
             } as GraphQLStage;

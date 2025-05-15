@@ -200,3 +200,365 @@ Allow users to archive and unarchive pipelines and stages. Archived items should
 *   What happens to deals in a stage that gets archived? They remain in that stage, but the stage itself becomes hidden.
 
 --- 
+
+## Task: Kanban View UX Enhancements (Quick Add & Stage Summaries)
+
+**ID:** KANBAN-UX-001
+**Status:** To Do
+**Priority:** Medium
+**Reporter:** System (Derived from Kanban Plan Non-Goals)
+**Assignee:** TBD
+
+**Summary:**
+Enhance the Deals Kanban view by adding the ability to quickly create new deals directly from the Kanban interface and by displaying summary information (e.g., total deal amount, deal count) for each stage column.
+
+**Goal:**
+Improve the efficiency and informational value of the Kanban view, making it a more comprehensive tool for deal management.
+
+**Key Requirements:**
+*   **Quick Deal Creation:**
+    *   Provide a UI mechanism (e.g., a "+" button on each stage column or a general "Add Deal" button within the Kanban view) to initiate new deal creation.
+    *   If initiated from a specific stage, that stage (and the current pipeline) should be pre-selected in the deal creation form.
+*   **Stage Summaries:**
+    *   Display configurable summary metrics at the top or bottom of each stage column (e.g., total value of deals in the stage, count of deals).
+    *   These summaries should update dynamically as deals are added, removed, or moved between stages, or when deal values change.
+
+**Acceptance Criteria:**
+*   Users can create a new deal directly from the Kanban view.
+*   The process of creating a deal from Kanban is intuitive and pre-fills relevant context like pipeline and stage if applicable.
+*   Each stage column on the Kanban board displays a summary of its contained deals (e.g., total amount and/or count).
+*   Stage summary data is accurate and updates in real-time in response to deal movements, additions, or value changes affecting that stage.
+*   The performance of the Kanban view remains acceptable with these additions.
+
+---
+
+## Task: Real-Time Collaborative Updates for Kanban View
+
+**ID:** KANBAN-RT-001
+**Status:** To Do
+**Priority:** Medium
+**Reporter:** System (Derived from Kanban Plan Non-Goals)
+**Assignee:** TBD
+
+**Summary:**
+Implement real-time updates for the Deals Kanban view to ensure that changes made by one user (e.g., dragging deals, adding new deals) are automatically reflected on the boards of other users viewing the same pipeline, without requiring manual page refreshes.
+
+**Goal:**
+Enable seamless collaboration for teams using the Kanban board, providing a live and synchronized view of deal progression.
+
+**Key Requirements:**
+*   Utilize a suitable real-time communication technology (e.g., WebSockets, Supabase Realtime).
+*   Broadcast relevant deal events (creation, stage change, updates to critical fields displayed on cards) to connected clients viewing the same pipeline's Kanban.
+*   Frontend should listen for these events and update the Kanban board UI dynamically.
+*   Consider optimistic updates on the client initiating the change, followed by reconciliation with server-sent events.
+
+**Acceptance Criteria:**
+*   When User A moves a deal card to a new stage on the Kanban board for Pipeline X, User B (also viewing Pipeline X Kanban) sees the deal card move to the new stage automatically and in near real-time.
+*   When User A adds a new deal that appears on Pipeline X Kanban, User B sees the new deal card appear automatically.
+*   If deal card information (e.g., name, amount) is updated and reflected on the card, these updates are also synchronized in real-time.
+*   The solution is robust and handles connection issues or event ordering appropriately.
+*   Performance of the Kanban view is not significantly degraded by the real-time update mechanism.
+
+--- 
+
+## Task: Implement Deal "Rotten" Indicators & Automation
+
+**ID:** FEATURE-001
+**Status:** To Do
+**Priority:** Medium
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Provide visual cues for deals that have been inactive (e.g., no new activities, notes, or stage changes) for a configurable period. Optionally, allow automation for follow-up tasks or notifications for such deals.
+
+**Goal:**
+Help sales users identify and prioritize stale or neglected deals to prevent opportunities from being lost due to lack of follow-up.
+
+**Key Requirements/Acceptance Criteria:**
+*   System administrators can configure the "rotten" period (e.g., X days of inactivity).
+*   Deals exceeding this inactivity threshold are visually highlighted in list and Kanban views.
+*   (Optional) A background process identifies rotten deals.
+*   (Optional) Users can be notified or tasks can be automatically created for rotten deals.
+*   Inactivity considers linked activities, notes, and deal field updates.
+
+---
+
+## Task: Implement Product/Service Linking to Deals
+
+**ID:** FEATURE-002
+**Status:** To Do
+**Priority:** High
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Allow users to define a catalog of products and services (with names, SKUs, prices, descriptions) and associate these items (including quantity and individual price overrides) to specific deals.
+
+**Goal:**
+Enable detailed tracking of what is being sold, improve sales forecasting accuracy, and facilitate reporting on product/service performance.
+
+**Key Requirements/Acceptance Criteria:**
+*   New database tables for `products` and `deal_products` (line items).
+*   UI for managing the product catalog (CRUD operations for products).
+*   UI on the Deal form/page to add/edit/remove products/services to a deal, specifying quantity and price.
+*   Deal total amount can be automatically calculated from line items or manually entered.
+*   GraphQL schema, resolvers, and services for products and deal line items.
+*   Reports can be generated based on products sold.
+
+---
+
+## Task: Implement Advanced Filtering & Saved Views
+
+**ID:** FEATURE-003
+**Status:** To Do
+**Priority:** High
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Provide a UI for users to build complex, multi-condition filters for list views (Deals, People, Organizations, Activities) and allow them to save these filter sets as named "views" for quick reuse.
+
+**Goal:**
+Empower users to segment and analyze their data more effectively, improving workflow efficiency and data discoverability.
+
+**Key Requirements/Acceptance Criteria:**
+*   UI component for constructing filters (e.g., field + operator + value, AND/OR conditions).
+*   Applicable to all major list views (Deals, People, Orgs, Activities).
+*   Users can save a set of applied filters as a named view (e.g., "My Hot Deals Q4").
+*   Users can select and apply their saved views.
+*   Views can be private to the user or potentially shared (future enhancement).
+*   Backend support for dynamic query generation based on filter criteria.
+
+---
+
+## Task: Implement User-Definable Custom Fields
+
+**ID:** FEATURE-004
+**Status:** To Do
+**Priority:** High
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Allow administrators to create and configure custom data fields for standard entities (Deals, People, Organizations, potentially Activities). Supported field types should include text, number, date, dropdown, checkbox.
+
+**Goal:**
+Enable tailoring the CRM to specific business needs by capturing unique data points not covered by standard fields.
+
+**Key Requirements/Acceptance Criteria:**
+*   Admin UI for defining custom fields (name, type, target entity, options for dropdowns).
+*   Database schema to store custom field definitions and their values (e.g., EAV pattern or JSONB columns).
+*   Custom fields appear on the relevant entity's create/edit forms and detail views.
+*   Custom fields can be included in list view columns and used in filtering (requires FEATURE-003).
+*   GraphQL schema dynamically incorporates custom fields or provides a generic way to query/mutate them.
+
+---
+
+## Task: Implement Comprehensive Contact Timeline View
+
+**ID:** FEATURE-005
+**Status:** To Do
+**Priority:** Medium
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+For Person and Organization detail views, display a chronological, aggregated timeline of all associated interactions and significant events.
+
+**Goal:**
+Provide a holistic view of the relationship history with a contact, making it easy to understand past interactions and prepare for future ones.
+
+**Key Requirements/Acceptance Criteria:**
+*   Timeline displays items like: completed activities (calls, meetings, tasks), notes, deal associations/stage changes, logged emails (if FEATURE-008 is implemented).
+*   Items are sorted chronologically.
+*   Users can filter the timeline by activity type (e.g., show only notes and emails).
+*   Each timeline entry provides key details and a link to the source object if applicable.
+*   Implemented on Person and Organization detail pages/views.
+
+---
+
+## Task: Implement Calendar View for Activities
+
+**ID:** FEATURE-006
+**Status:** To Do
+**Priority:** Medium
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Provide a visual calendar interface (day, week, month views) for managing user activities (tasks, meetings, calls, emails with due dates).
+
+**Goal:**
+Offer users a more intuitive way to visualize their schedule, manage time-sensitive tasks, and plan their work.
+
+**Key Requirements/Acceptance Criteria:**
+*   Calendar displays activities based on their due dates.
+*   Users can switch between day, week, and month views.
+*   Users can create new activities by clicking on the calendar.
+*   Users can drag and drop activities to reschedule them (updates due date).
+*   Clicking an activity on the calendar shows its details or opens an edit modal.
+*   Filtering options (e.g., by activity type, completion status).
+
+---
+
+## Task: Implement Proactive Activity Reminders & Notifications
+
+**ID:** FEATURE-007
+**Status:** To Do
+**Priority:** Medium
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Implement a system for users to receive proactive reminders for upcoming or overdue activities. Also, establish a general in-app notification center for important system events or mentions.
+
+**Goal:**
+Help users stay on top of their tasks, reduce missed deadlines, and improve overall engagement with the CRM.
+
+**Key Requirements/Acceptance Criteria:**
+*   Users can configure reminder preferences (e.g., X minutes/hours before due date).
+*   Reminders can be delivered via in-app notifications and optionally email.
+*   An in-app notification center aggregates unread notifications.
+*   Background jobs (e.g., Inngest) to check for upcoming activities and trigger reminders.
+
+---
+
+## Task: Implement Full Email Integration
+
+**ID:** FEATURE-008
+**Status:** To Do
+**Priority:** High
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Enable deeper email integration, including BCC-to-CRM for logging correspondence, optional email inbox synchronization for selected users, and the ability to compose and send emails directly from within the CRM, automatically linking them to relevant records.
+
+**Goal:**
+Centralize customer communication, ensure all interactions are captured, and streamline sales workflows by reducing the need to switch between CRM and email client.
+
+**Key Requirements/Acceptance Criteria:**
+*   **BCC-to-CRM:** A unique CRM email address allows users to BCC emails, which are then parsed and automatically linked to matching contacts/deals.
+*   **Send Email from App:** UI for composing and sending emails. Emails sent are logged as activities and linked. Templates support.
+*   **(Optional) Email Sync:** Users can connect their email accounts (IMAP/OAuth) to sync incoming/outgoing emails with CRM records.
+*   Emails are displayed in the Contact Timeline (FEATURE-005).
+
+---
+
+## Task: Implement "Leads" Entity & Management Workflow
+
+**ID:** FEATURE-009
+**Status:** To Do
+**Priority:** High
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Introduce a "Leads" entity to manage unqualified prospects separately from Deals and verified Contacts (People/Organizations). Include a dedicated lead inbox/list and a process for converting leads.
+
+**Goal:**
+Streamline the top-of-funnel process, allowing sales teams to qualify prospects before cluttering the main contact and deal databases.
+
+**Key Requirements/Acceptance Criteria:**
+*   New `leads` database table and associated GraphQL types, resolvers, services.
+*   UI for managing leads (list view, create/edit forms, lead status).
+*   Process/UI for converting a qualified lead into a Person, Organization, and/or Deal.
+*   Leads can be assigned to users.
+*   Basic reporting on lead sources and conversion rates.
+
+---
+
+## Task: Implement Web Forms for Lead Capture
+
+**ID:** FEATURE-010
+**Status:** To Do
+**Priority:** Medium
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Allow users (likely admins) to create simple web forms that can be embedded on external websites. Submissions to these forms should create new records in the CRM (e.g., as Leads under FEATURE-009, or directly as People/Deals).
+
+**Goal:**
+Automate lead generation from websites, ensuring new inquiries are captured directly and efficiently into the CRM.
+
+**Key Requirements/Acceptance Criteria:**
+*   UI for designing forms (selecting fields to include, basic styling).
+*   Generated embed code (e.g., iframe or JavaScript snippet).
+*   Backend endpoint to receive form submissions securely.
+*   Configurable mapping of form fields to CRM entity fields.
+*   New submissions create appropriate records and can trigger notifications.
+
+---
+
+## Task: Implement Sales Dashboard & Customizable Reporting
+
+**ID:** FEATURE-011
+**Status:** To Do
+**Priority:** High
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Develop a configurable sales dashboard displaying key performance indicators (KPIs), charts (e.g., sales pipeline, deal conversion rates, activity summaries), and leaderboards. Also, create a module for users to build and save custom reports.
+
+**Goal:**
+Provide actionable insights into sales performance, team activity, and pipeline health, enabling data-driven decision-making.
+
+**Key Requirements/Acceptance Criteria:**
+*   **Dashboard:**
+    *   Dedicated dashboard page.
+    *   Configurable widgets for different metrics (e.g., deals won, revenue, activities completed, pipeline overview).
+    *   Date range filters for dashboard data.
+*   **Reporting Module:**
+    *   UI for selecting data sources (Deals, Activities, etc.), fields, filters, groupings, and chart types.
+    *   Ability to save and schedule reports.
+    *   Export reports (e.g., CSV, PDF).
+
+---
+
+## Task: Implement User-Configurable Workflow Automation Engine
+
+**ID:** FEATURE-012
+**Status:** To Do
+**Priority:** Low (High complexity, consider after core features)
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Create a system where users (likely admins or power users) can define simple automation rules based on triggers and actions (e.g., "IF a Deal's stage changes to 'Won', THEN send a thank you email and create a follow-up task for account management").
+
+**Goal:**
+Automate repetitive tasks, enforce business processes, and improve efficiency without requiring custom code for every workflow.
+
+**Key Requirements/Acceptance Criteria:**
+*   UI for defining workflows: trigger (e.g., "Deal Created," "Activity Updated"), conditions (e.g., "Deal Amount > $1000"), actions (e.g., "Create Activity," "Send Email," "Update Field").
+*   Backend engine to execute these workflows (likely leveraging Inngest for asynchronous actions).
+*   Logging and monitoring of workflow executions.
+*   Initial set of supported triggers, conditions, and actions, extensible over time.
+
+---
+
+## Task: Implement UI for User Role & Team Management
+
+**ID:** FEATURE-013
+**Status:** To Do
+**Priority:** Medium
+**Reporter:** System (GAP Analysis)
+**Assignee:** TBD
+
+**Summary:**
+Provide an admin interface for managing user access by assigning existing RBAC roles (e.g., "Sales Rep," "Manager") to users. Potentially, allow grouping users into sales teams for reporting and record visibility purposes.
+
+**Goal:**
+Enable administrators to easily manage user permissions and team structures within the application, aligning with the defined RBAC policies.
+
+**Key Requirements/Acceptance Criteria:**
+*   Admin UI to list users and their current roles.
+*   Ability for admins to assign/unassign roles to users.
+*   (Optional) UI for creating and managing teams, and assigning users to teams.
+*   (Optional) Record visibility and reporting can be filtered by team.
+*   Changes are reflected in user permissions and access.
+
+--- 

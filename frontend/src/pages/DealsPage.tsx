@@ -14,6 +14,7 @@ import {
   useToast,
   VStack,
   Flex,
+  ButtonGroup,
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
@@ -25,9 +26,18 @@ import ListPageLayout from '../components/layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import EmptyState from '../components/common/EmptyState';
 import type { Person as GeneratedPerson } from '../generated/graphql/graphql';
+import DealsKanbanView from '../components/deals/DealsKanbanView';
 
 function DealsPage() {
-  const { deals, dealsLoading: loading, dealsError: error, fetchDeals, deleteDeal: deleteDealAction } = useDealsStore();
+  const { 
+    deals, 
+    dealsLoading: loading, 
+    dealsError: error, 
+    fetchDeals, 
+    deleteDeal: deleteDealAction,
+    dealsViewMode,
+    setDealsViewMode
+  } = useDealsStore();
   
   const userPermissions = useAppStore((state) => state.userPermissions);
   const currentUserId = useAppStore((state) => state.session?.user.id);
@@ -252,12 +262,9 @@ function DealsPage() {
       />
       {dealToEdit && (
       <EditDealModal 
+            isOpen={isEditModalOpen}
+            onClose={onEditModalClose}
         deal={dealToEdit}
-        isOpen={isEditModalOpen} 
-        onClose={() => {
-            onEditModalClose();
-            setDealToEdit(null);
-        }} 
         onDealUpdated={handleDataChanged}
       />
       )}
@@ -266,51 +273,59 @@ function DealsPage() {
         onClose={onConfirmDeleteClose}
         onConfirm={handleConfirmDelete}
         headerText="Delete Deal"
-        bodyText="Are you sure you want to delete this deal? This action cannot be undone."
+        bodyText={`Are you sure you want to delete this deal? This action cannot be undone.`}
         confirmButtonText="Delete"
         confirmButtonColorScheme="red"
-        isLoading={!!isDeletingId}
       />
 
-      {deals.length === 0 ? (
-        <VStack spacing={4} align="stretch">
-          <Flex justifyContent="space-between" alignItems="center" mb={4}>
-            <Heading as="h2" size="lg">Deals</Heading>
+      <Flex justifyContent="space-between" alignItems="center" mb={6}>
+        <Heading as="h2" size="lg">
+          Deals
+        </Heading>
+        <HStack spacing={4}>
+            <ButtonGroup isAttached size="sm" variant="outline">
+                <Button 
+                    onClick={() => setDealsViewMode('table')}
+                    isActive={dealsViewMode === 'table'}
+                >
+                    Table
+                </Button>
             <Button 
-              colorScheme="blue"
-              onClick={handleCreateDealClick}
-              isDisabled={!userPermissions?.includes('deal:create')}
+                    onClick={() => setDealsViewMode('kanban')}
+                    isActive={dealsViewMode === 'kanban'}
             >
+                    Kanban
+                </Button>
+            </ButtonGroup>
+            <Button colorScheme="blue" onClick={handleCreateDealClick} isDisabled={!userPermissions?.includes('deal:create')}>
               New Deal
             </Button>
+        </HStack>
           </Flex>
-          <EmptyState 
-            icon={emptyStateProps.icon}
-            title={emptyStateProps.title}
-            message={emptyStateProps.message}
-            actionButtonLabel="New Deal"
-            onActionButtonClick={handleCreateDealClick}
-            isActionButtonDisabled={!userPermissions?.includes('deal:create')}
-          />
-        </VStack>
-      ) : (
+
         <ListPageLayout
-          title="Deals"
-          newButtonLabel="New Deal"
-          onNewButtonClick={handleCreateDealClick}
-          isNewButtonDisabled={!userPermissions?.includes('deal:create')}
+        title=""
+        newButtonLabel=""
+        onNewButtonClick={() => {}}
+        isNewButtonDisabled={true}
           isLoading={loading}
           error={error}
-          isEmpty={false}
+        isEmpty={dealsViewMode === 'table' ? deals.length === 0 : (dealsViewMode === 'kanban' ? false : deals.length === 0) }
           emptyStateProps={emptyStateProps}
         >
-          <SortableTable<Deal>
-            data={deals}
-            columns={columns}
-            initialSortKey="name"
-          />
+        {dealsViewMode === 'table' && (
+          <>
+            {deals.length > 0 ? (
+              <SortableTable columns={columns} data={deals} initialSortKey="name" />
+            ) : (
+              null 
+            )}
+          </>
+        )}
+        {dealsViewMode === 'kanban' && (
+          <DealsKanbanView />
+        )}
         </ListPageLayout>
-      )}
     </Box>
   );
 }

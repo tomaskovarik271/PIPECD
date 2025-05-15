@@ -9,7 +9,7 @@ The system utilizes a serverless architecture based on:
 *   **Frontend:** React (Vite) SPA hosted on Netlify
 *   **Frontend State:** Zustand (`frontend/src/stores/useAppStore.ts`)
 *   **Frontend API Client:** `graphql-request` (`frontend/src/lib/graphqlClient.ts`)
-*   **Frontend GraphQL Types:** GraphQL Code Generator (`frontend/codegen.ts`, see `DEVELOPER_GUIDE.md`)
+*   **Frontend GraphQL Types:** GraphQL Code Generator (`frontend/codegen.ts`, see `DEVELOPER_GUIDE_V2.md`)
 *   **UI Library:** Chakra UI
 *   **API:** GraphQL Gateway (**GraphQL Yoga**) running as a Netlify Function (`netlify/functions/graphql.ts`); Schema defined in `.graphql` files within `netlify/functions/graphql/schema/`.
 *   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `pipelineService.ts`), utilities in `lib/serviceUtils.ts`, shared types in `lib/types.ts`.
@@ -34,7 +34,7 @@ The system utilizes a serverless architecture based on:
 *   Production deployment is live on Netlify.
 *   Build process fixed (removed `tsc -b` from frontend build script).
 
-Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE.md` for technical details, and `ROADMAP.md` for the development plan and issue log.
+Refer to `ADR.md` for architectural decisions, `DEVELOPER_GUIDE_V2.md` for technical details, and `PROJECT_ROADMAP_V2.md` for the development plan and issue log.
 
 ## Getting Started
 
@@ -89,6 +89,6 @@ If needed for testing login or specific features, you can create a user in your 
 *   **Automatic:** Pushing to the `main` branch triggers an automatic build and deployment on Netlify.
 *   **Manual Steps:**
     *   **Environment Variables:** Production keys (`SUPABASE_*`, `INNGEST_*`, `VITE_*`) must be configured in the Netlify UI (**Site settings > Build & deploy > Environment**).
-    *   **Database Migrations:** Apply schema changes to the production Supabase database manually using the Supabase CLI (see `DEVELOPER_GUIDE.md` for details).
+    *   **Database Migrations:** Apply schema changes to the production Supabase database manually using the Supabase CLI (see `DEVELOPER_GUIDE_V2.md` for details).
 
-Refer to `DEVELOPER_GUIDE.md` for more detailed deployment instructions and architecture information.
+Refer to `DEVELOPER_GUIDE_V2.md` for more detailed deployment instructions and architecture information.

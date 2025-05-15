@@ -29,7 +29,7 @@ export const DealHistoryEntry = {
   user: async (parent: DealHistoryDbRow, _args: any, context: GraphQLContext, _info: any): Promise<GraphQLUser | null> => {
     if (!parent.user_id) {
       console.log('[DealHistoryEntry.user resolver] No user_id in parent history entry, returning null.');
-      return null;
+        return null; 
     }
 
     const currentUser = context.currentUser; // User object from @supabase/supabase-js

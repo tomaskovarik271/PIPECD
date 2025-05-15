@@ -21,7 +21,7 @@ import type {
     Deal as GraphQLDeal,
     Pipeline as GraphQLPipeline,
     Stage as GraphQLStage,
-    UserInfo as GraphQLUserInfo,
+    User as GraphQLUserInfo,
     PersonListItem as GraphQLPersonListItem
     // Argument types (e.g., QueryPersonArgs) are inferred by QueryResolvers
 } from '../../../../lib/generated/graphql';
@@ -283,6 +283,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 name: s.name,
                 order: s.order,
                 deal_probability: s.deal_probability,
+                stage_type: s.stage_type,
                 created_at: s.created_at,
                 updated_at: s.updated_at,
                 // pipeline field resolved by Stage type resolver
@@ -307,6 +308,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 name: s.name,
                 order: s.order,
                 deal_probability: s.deal_probability,
+                stage_type: s.stage_type,
                 created_at: s.created_at,
                 updated_at: s.updated_at,
             } as GraphQLStage;

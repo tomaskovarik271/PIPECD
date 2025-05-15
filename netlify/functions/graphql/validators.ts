@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { StageType as GeneratedStageType } from '../../../lib/generated/graphql'; // Adjusted path
 
 // --- Person Schemas ---
 const PersonBaseSchema = z.object({
@@ -48,12 +49,20 @@ export const PipelineInputSchema = z.object({
     name: z.string().trim().min(1, { message: "Pipeline name cannot be empty" }),
 });
 
+// Define StageType enum for Zod validation, using imported GraphQL enum members
+const StageTypeZodEnum = z.enum([
+    GeneratedStageType.Open,
+    GeneratedStageType.Won,
+    GeneratedStageType.Lost
+], { errorMap: () => ({ message: 'Invalid stage type' }) });
+
 // --- Stage Schemas ---
 const StageBaseSchema = z.object({
     name: z.string().trim().min(1, { message: "Stage name cannot be empty" }),
     order: z.number().int().nonnegative({ message: "Order must be a non-negative integer"}),
     pipeline_id: z.string().uuid({ message: "Invalid Pipeline ID format" }),
     deal_probability: z.number().min(0).max(1, { message: "Probability must be between 0.0 and 1.0" }).optional().nullable(),
+    stage_type: StageTypeZodEnum.optional(), // Use the new Zod enum
 });
 
 export const StageCreateSchema = StageBaseSchema;

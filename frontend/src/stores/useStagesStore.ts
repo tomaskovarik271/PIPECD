@@ -26,6 +26,7 @@ const GET_STAGES_QUERY = gql`
       order
       deal_probability
       pipeline_id
+      stage_type
     }
   }
 `;
@@ -38,6 +39,7 @@ const CREATE_STAGE_MUTATION = gql`
       order
       deal_probability
       pipeline_id
+      stage_type
     }
   }
 `;
@@ -50,6 +52,7 @@ const UPDATE_STAGE_MUTATION = gql`
       order
       deal_probability
       pipeline_id
+      stage_type
     }
   }
 `;
@@ -65,6 +68,7 @@ export interface StagesState {
   stages: Stage[];
   stagesLoading: boolean;
   stagesError: string | null;
+  hasInitiallyFetchedStages: boolean;
   fetchStages: (pipelineId: string) => Promise<void>;
   createStage: (input: GeneratedCreateStageInput) => Promise<Stage | null>;
   updateStage: (id: string, input: GeneratedUpdateStageInput) => Promise<Stage | null>;
@@ -79,6 +83,7 @@ export const useStagesStore = create<StagesState>((set, get) => ({
   stages: [],
   stagesLoading: false,
   stagesError: null,
+  hasInitiallyFetchedStages: false,
   // selectedStageId: null, // Uncomment if selectedStageId is needed
 
   // selectStage: (stageId: string | null) => { // Uncomment if selectedStageId is needed
@@ -88,8 +93,7 @@ export const useStagesStore = create<StagesState>((set, get) => ({
   fetchStages: async (pipelineId: string) => {
     set(state => ({ 
       stagesLoading: true, 
-      stagesError: null, 
-      // Important: Do not filter here initially, let the merge logic handle updates/additions
+      stagesError: null
     }));
     try {
       type GetStagesQueryResponse = { stages: Stage[] };
@@ -115,7 +119,8 @@ export const useStagesStore = create<StagesState>((set, get) => ({
 
         return {
           stages: mergedStages,
-          stagesLoading: false
+          stagesLoading: false,
+          hasInitiallyFetchedStages: true,
         };
       });
     } catch (error) {
@@ -124,7 +129,7 @@ export const useStagesStore = create<StagesState>((set, get) => ({
       if (isGraphQLErrorWithMessage(error) && error.response && error.response.errors && error.response.errors.length > 0) {
         message = error.response.errors[0].message;
       }
-      set({ stagesError: message, stagesLoading: false });
+      set({ stagesError: message, stagesLoading: false, hasInitiallyFetchedStages: true });
     }
   },
 

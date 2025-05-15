@@ -107,26 +107,46 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   }, [deal]);
 
   useEffect(() => {
-    const targetPipelineId = selectedPipelineId || initialPipelineId;
-    if (targetPipelineId) {
-        fetchStages(targetPipelineId);
+    // This effect is responsible for fetching stages for the pipeline
+    // that is currently relevant to the modal. This could be the deal's initial pipeline
+    // (via selectedPipelineId being set from `deal` prop) or a pipeline chosen by the user in the modal's dropdown.
+    
+    // `selectedPipelineId` is the primary driver here.
+    // It's updated when `deal` changes (by the useEffect above) or when the user selects a new pipeline in this modal.
+    if (selectedPipelineId) { 
+        console.log(`[EditDealModal] Fetching stages for selected pipeline in modal: ${selectedPipelineId}. Deal ID: ${deal?.id}`);
+        // Effect 1 (on isOpen) clears global stages. This call will populate them for the current pipeline context.
+        fetchStages(selectedPipelineId);
     } else {
-        // Clear stages if no pipeline is selected, using the new store
+        // This case might occur if a deal has no pipeline and modal opens, or if somehow selection is cleared.
+        console.log(`[EditDealModal] No selectedPipelineId for modal. Clearing stages in store.`);
         useStagesStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
-  }, [selectedPipelineId, initialPipelineId, fetchStages]);
+    // We depend on `selectedPipelineId` because if the user changes it in the modal, we need to refetch.
+    // We depend on `deal` because if a new deal is passed in (even if `selectedPipelineId` happens to resolve to the same string value
+    // as the previous deal), we still need this effect to run to ensure `fetchStages` is called for the new deal's context
+    // after Effect 1 has cleared the stages.
+    // `fetchStages` itself is a stable dependency.
+  }, [selectedPipelineId, deal, fetchStages]); // Key: `deal` ensures re-run for new deal, `selectedPipelineId` for dropdown change
 
   useEffect(() => {
+    console.log(`[EditDealModal] Effect 4 CHECK: initialStageId=${initialStageId}, initialPipelineId=${initialPipelineId}, selectedPipelineIdModal=${selectedPipelineId}, stages_length=${stages?.length}`);
     if (initialStageId && initialPipelineId && selectedPipelineId === initialPipelineId && Array.isArray(stages) && stages.length > 0) {
+       console.log(`[EditDealModal] Effect 4: Conditions MET. Checking for stage existence. initialStageId=${initialStageId}`);
        const stageExists = stages.some((s: Stage) => s.id === initialStageId);
+       console.log(`[EditDealModal] Effect 4: Stage ${initialStageId} exists in loaded stages: ${stageExists}`);
        if (stageExists) {
+           console.log(`[EditDealModal] Effect 4: Setting selectedStageId to: ${initialStageId}`);
            setSelectedStageId(initialStageId);
-           setInitialStageId(null); 
+           setInitialStageId(null); // Prevent re-running for this reason
        } else {
-           console.warn(`Initial stage ID ${initialStageId} not found in loaded stages for pipeline ${initialPipelineId}`);
+           console.warn(`[EditDealModal] Effect 4: Initial stage ID ${initialStageId} not found in loaded stages for pipeline ${initialPipelineId}. Current stages:`, stages);
            setInitialStageId(null); 
        }
+    } else {
+      console.log(`[EditDealModal] Effect 4: Conditions NOT MET or stages not loaded/empty.`);
     }
+    // Keep `setSelectedStageId` out of deps as per React guidelines for setters if not strictly needed for logic re-evaluation based on its change
   }, [stages, initialStageId, initialPipelineId, selectedPipelineId]);
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -194,6 +214,11 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       return null;
   }
 
+  // Filter stages for the dropdown based on the locally selected pipeline in the modal
+  const filteredStagesForModal = selectedPipelineId 
+    ? stages.filter((stage: Stage) => stage.pipeline_id === selectedPipelineId)
+    : []; // If no pipeline selected in modal, show no stages
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
@@ -245,19 +270,20 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
             <FormControl isRequired isInvalid={!selectedStageId && error?.toLowerCase().includes('stage')}>
               <FormLabel>Stage</FormLabel>
               <Select 
-                placeholder={stagesLoading ? 'Loading stages...' : (selectedPipelineId ? 'Select stage' : 'Select pipeline first') }
+                placeholder={stagesLoading ? 'Loading stages...' : (selectedPipelineId ? (filteredStagesForModal.length > 0 ? 'Select stage' : 'No stages for this pipeline') : 'Select pipeline first') }
                 value={selectedStageId}
                 onChange={(e) => setSelectedStageId(e.target.value)}
-                isDisabled={!selectedPipelineId || stagesLoading || !!stagesError || stages.length === 0}
+                isDisabled={!selectedPipelineId || stagesLoading || !!stagesError || filteredStagesForModal.length === 0}
               >
-                 {!stagesLoading && !stagesError && stages.map((stage: Stage) => (
+                 {!stagesLoading && !stagesError && filteredStagesForModal.map((stage: Stage) => (
                     <option key={stage.id} value={stage.id}>
                         {stage.name} (Order: {stage.order})
                     </option>
                 ))}
               </Select>
               {stagesError && <FormErrorMessage>Error loading stages: {stagesError}</FormErrorMessage>}
-              {!selectedPipelineId && stages.length === 0 && <FormErrorMessage>Select a pipeline to see stages.</FormErrorMessage>}
+              {!selectedPipelineId && stages.length === 0 && !stagesLoading && <FormErrorMessage>Select a pipeline to see stages.</FormErrorMessage>}
+              {selectedPipelineId && !stagesLoading && !stagesError && filteredStagesForModal.length === 0 && <FormErrorMessage>This pipeline has no stages defined.</FormErrorMessage>}
               {!selectedStageId && error?.toLowerCase().includes('stage') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 

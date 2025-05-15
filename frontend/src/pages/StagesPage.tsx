@@ -121,7 +121,7 @@ const StagesPage: React.FC = () => {
     // We use a local variable for the error from this specific delete action
     let deleteError: string | null = null; 
     try {
-      const success = await deleteStageAction(stageToDelete.id);
+    const success = await deleteStageAction(stageToDelete.id);
       if (success) {
         toast({ title: 'Stage deleted.', status: 'success', duration: 3000, isClosable: true });
       } else {
@@ -132,9 +132,9 @@ const StagesPage: React.FC = () => {
       // If deleteStageAction itself throws (less likely if it catches internally)
       deleteError = (e instanceof Error) ? e.message : String(e);
     } finally {
-      setIsDeleting(false);
-      onDeleteClose();
-      setStageToDelete(null);
+    setIsDeleting(false);
+    onDeleteClose();
+    setStageToDelete(null);
       if (deleteError) {
         toast({ title: 'Error Deleting Stage', description: deleteError, status: 'error', duration: 5000, isClosable: true });
       }
@@ -195,60 +195,60 @@ const StagesPage: React.FC = () => {
         stages.filter((s: Stage) => s.pipeline_id === pipelineId).length === 0 && !stagesLoading ? (
           // Show EmptyState only if, after filtering, there are no stages for THIS pipeline, AND not currently loading.
           // And no critical fetch error prevented any stage loading (the Alert above would show stagesError).
-          <EmptyState 
-            icon={DragHandleIcon}
-            title="No Stages in this Pipeline"
-            message="Add stages to define the steps in your sales process for this pipeline."
-            actionButtonLabel="Add Stage"
-            onActionButtonClick={handleAddStage}
-            isActionButtonDisabled={!userPermissions?.includes('stage:create')}
-          />
-        ) : (
-          <List spacing={3}>
-            {stages.filter((s: Stage) => s.pipeline_id === pipelineId).map((stage: Stage) => (
-              <ListItem 
-                key={stage.id} 
-                p={4} 
-                borderWidth="1px" 
-                borderRadius="md" 
-                bg="white" 
-                shadow="sm"
-                _hover={{ shadow: 'md' }}
-              >
-                <Flex justify="space-between" align="center">
-                  <Box flexGrow={1} mr={4}>
-                    <Heading size="sm">{stage.name}</Heading>
-                    <Text fontSize="sm" color="gray.500">
-                      Order: {stage.order}
-                      {stage.deal_probability !== null && stage.deal_probability !== undefined && 
-                        // Multiply by 100 and format as percentage
-                        ` | Probability: ${Math.round(stage.deal_probability * 100)}%` 
-                      }
-                    </Text>
-                  </Box>
-                  <HStack spacing={2}>
-                    <IconButton
-                      aria-label="Edit stage"
-                      icon={<EditIcon />}
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleEditStage(stage)}
-                      isDisabled={!userPermissions?.includes('stage:update_any')}
-                    />
-                    <IconButton
-                      aria-label="Delete stage"
-                      icon={<DeleteIcon />}
-                      size="sm"
-                      variant="ghost"
-                      colorScheme="red"
-                      onClick={() => handleDeleteStage(stage)}
-                      isDisabled={!userPermissions?.includes('stage:delete_any')}
-                    />
-                  </HStack>
-                </Flex>
-              </ListItem>
-            ))}
-          </List>
+            <EmptyState 
+              icon={DragHandleIcon}
+              title="No Stages in this Pipeline"
+              message="Add stages to define the steps in your sales process for this pipeline."
+              actionButtonLabel="Add Stage"
+              onActionButtonClick={handleAddStage}
+              isActionButtonDisabled={!userPermissions?.includes('stage:create')}
+            />
+          ) : (
+            <List spacing={3}>
+              {stages.filter((s: Stage) => s.pipeline_id === pipelineId).map((stage: Stage) => (
+                <ListItem 
+                  key={stage.id} 
+                  p={4} 
+                  borderWidth="1px" 
+                  borderRadius="md" 
+                  bg="white" 
+                  shadow="sm"
+                  _hover={{ shadow: 'md' }}
+                >
+                  <Flex justify="space-between" align="center">
+                    <Box flexGrow={1} mr={4}>
+                      <Heading size="sm">{stage.name}</Heading>
+                      <Text fontSize="sm" color="gray.500">
+                        Order: {stage.order}
+                        {stage.deal_probability !== null && stage.deal_probability !== undefined && 
+                          // Multiply by 100 and format as percentage
+                          ` | Probability: ${Math.round(stage.deal_probability * 100)}%` 
+                        }
+                      </Text>
+                    </Box>
+                    <HStack spacing={2}>
+                      <IconButton
+                        aria-label="Edit stage"
+                        icon={<EditIcon />}
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleEditStage(stage)}
+                        isDisabled={!userPermissions?.includes('stage:update_any')}
+                      />
+                      <IconButton
+                        aria-label="Delete stage"
+                        icon={<DeleteIcon />}
+                        size="sm"
+                        variant="ghost"
+                        colorScheme="red"
+                        onClick={() => handleDeleteStage(stage)}
+                        isDisabled={!userPermissions?.includes('stage:delete_any')}
+                      />
+                    </HStack>
+                  </Flex>
+                </ListItem>
+              ))}
+            </List>
         )
       )}
       

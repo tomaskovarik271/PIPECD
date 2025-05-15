@@ -80,6 +80,7 @@ export type CreateStageInput = {
   name: Scalars["String"]["input"];
   order: Scalars["Int"]["input"];
   pipeline_id: Scalars["ID"]["input"];
+  stage_type?: InputMaybe<StageType>;
 };
 
 export type Deal = {
@@ -359,9 +360,16 @@ export type Stage = {
   order: Scalars["Int"]["output"];
   pipeline: Pipeline;
   pipeline_id: Scalars["ID"]["output"];
+  stage_type: StageType;
   updated_at: Scalars["String"]["output"];
   user_id: Scalars["ID"]["output"];
 };
+
+export enum StageType {
+  Lost = "LOST",
+  Open = "OPEN",
+  Won = "WON",
+}
 
 export type UpdateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
@@ -378,6 +386,7 @@ export type UpdateStageInput = {
   deal_probability?: InputMaybe<Scalars["Float"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   order?: InputMaybe<Scalars["Int"]["input"]>;
+  stage_type?: InputMaybe<StageType>;
 };
 
 export type User = {

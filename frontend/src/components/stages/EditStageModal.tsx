@@ -16,11 +16,13 @@ import {
   NumberInputStepper,
   NumberIncrementStepper,
   NumberDecrementStepper,
+  Select,
   useToast, 
   VStack 
 } from '@chakra-ui/react';
-import { useStagesStore, Stage } from '../../stores/useStagesStore'; // Corrected: Stage is from useStagesStore
-import type { UpdateStageInput as GeneratedUpdateStageInput } from '../../generated/graphql/graphql';
+import { useStagesStore, Stage } from '../../stores/useStagesStore';
+import type { UpdateStageInput as GeneratedUpdateStageInput, StageType } from '../../generated/graphql/graphql';
+import { StageType as StageTypeEnum } from '../../generated/graphql/graphql';
 
 interface EditStageModalProps {
   isOpen: boolean;
@@ -33,6 +35,8 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
   const [stageName, setStageName] = useState('');
   const [stageOrder, setStageOrder] = useState<number | string>(0);
   const [dealProbability, setDealProbability] = useState<number | string>('');
+  const [stageType, setStageType] = useState<StageType>(StageTypeEnum.Open);
+  const [isDealProbabilityDisabled, setIsDealProbabilityDisabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { updateStage, stagesError } = useStagesStore(); 
   const toast = useToast();
@@ -44,14 +48,16 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
       setStageOrder(stage.order);
       // Convert decimal from DB (e.g., 0.6) to percentage for display (e.g., 60)
       if (stage.deal_probability !== null && stage.deal_probability !== undefined) {
-        setDealProbability(Math.round(stage.deal_probability * 100)); // Multiply by 100 and round
+        setDealProbability(Math.round(stage.deal_probability * 100));
       } else {
-        setDealProbability(''); // Default to empty string if no probability
+        setDealProbability('');
       }
+      setStageType(stage.stage_type || StageTypeEnum.Open);
     } else {
         setStageName('');
         setStageOrder(0);
         setDealProbability('');
+        setStageType(StageTypeEnum.Open);
     }
   }, [stage]);
 
@@ -61,6 +67,28 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
         setIsLoading(false);
     }
   }, [isOpen]);
+
+  // New useEffect to handle deal probability based on stageType
+  useEffect(() => {
+    if (stageType === StageTypeEnum.Won) {
+      setDealProbability(100);
+      setIsDealProbabilityDisabled(true);
+    } else if (stageType === StageTypeEnum.Lost) {
+      setDealProbability(0);
+      setIsDealProbabilityDisabled(true);
+    } else { // StageTypeEnum.Open or any other
+      setIsDealProbabilityDisabled(false);
+      // When switching to OPEN, if the stage prop exists and has a deal_probability,
+      // restore it. Otherwise, it might have been from WON/LOST or empty.
+      if (stage && stage.stage_type === StageTypeEnum.Open && stage.deal_probability !== null && stage.deal_probability !== undefined) {
+         setDealProbability(Math.round(stage.deal_probability * 100));
+      } else if (stage && stage.stage_type !== StageTypeEnum.Open && stageType === StageTypeEnum.Open) {
+         // If switching from WON/LOST to OPEN, and original wasn't OPEN, clear probability for user input
+         setDealProbability('');
+      }
+      // If no specific logic to restore, it remains as is or as set by user/previous state.
+    }
+  }, [stageType, stage]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -80,30 +108,61 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
     }
     
     let probabilityNum: number | null = null;
-    if (String(dealProbability).trim() !== '') {
-        probabilityNum = parseFloat(String(dealProbability));
-        if (isNaN(probabilityNum) || probabilityNum < 0 || probabilityNum > 100) {
+    if (!isDealProbabilityDisabled && String(dealProbability).trim() !== '') {
+        const parsedProb = parseFloat(String(dealProbability));
+        if (isNaN(parsedProb) || parsedProb < 0 || parsedProb > 100) {
             toast({ title: "Deal probability must be between 0 and 100 (or empty).", status: 'warning', duration: 3000, isClosable: true });
             return;
         }
+        probabilityNum = parsedProb;
+    } else if (isDealProbabilityDisabled) {
+        // If disabled, use the auto-set value (0 for LOST, 100 for WON)
+        probabilityNum = stageType === StageTypeEnum.Won ? 100 : 0;
     }
     
     const updates: GeneratedUpdateStageInput = {};
     let hasChanges = false;
-    if (stageName.trim() !== stage!.name) {
+
+    if (stageName.trim() !== stage.name) {
         updates.name = stageName.trim();
         hasChanges = true;
     }
-    if (orderNum !== stage!.order) {
+    if (orderNum !== stage.order) {
         updates.order = orderNum;
         hasChanges = true;
     }
-    const originalProbabilityDecimal = stage!.deal_probability ?? null;
+
+    // Compare stageType
+    if (stageType !== (stage.stage_type || StageTypeEnum.Open)) { // Compare with original or default
+        updates.stage_type = stageType;
+        hasChanges = true;
+    }
+    
+    // Deal probability comparison and update
+    // Ensure probabilityNum is set based on stageType if it was disabled
+    if (stageType === StageTypeEnum.Won) probabilityNum = 100;
+    else if (stageType === StageTypeEnum.Lost) probabilityNum = 0;
+    // If not WON/LOST, probabilityNum is from user input or null if empty
+
+    const originalProbabilityDecimal = stage.deal_probability ?? null;
     const newProbabilityDecimal = probabilityNum === null ? null : probabilityNum / 100;
+
     if (newProbabilityDecimal !== originalProbabilityDecimal) {
         updates.deal_probability = newProbabilityDecimal;
         hasChanges = true;
     }
+    
+    // If stage_type changed to WON or LOST, ensure deal_probability is updated accordingly,
+    // even if it wasn't different from original (e.g. if original was OPEN with 0% prob and changed to LOST)
+    if (updates.stage_type === StageTypeEnum.Won && updates.deal_probability !== 1.0) {
+        updates.deal_probability = 1.0;
+        hasChanges = true; // Ensure change is flagged
+    }
+    if (updates.stage_type === StageTypeEnum.Lost && updates.deal_probability !== 0.0) {
+        updates.deal_probability = 0.0;
+        hasChanges = true; // Ensure change is flagged
+    }
+
 
     if (!hasChanges) {
          toast({ title: "No changes detected.", status: 'info', duration: 2000, isClosable: true });
@@ -113,7 +172,9 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
     
     setIsLoading(true);
     try {
-      const updatedStage = await updateStage(stage!.id, updates);
+      // Ensure stage_type is explicitly set in updates if it's part of the changes
+      // The logic above already adds it to `updates` if changed.
+      const updatedStage = await updateStage(stage.id, updates);
       
       if (updatedStage) {
         toast({ title: "Stage updated successfully.", status: 'success', duration: 3000, isClosable: true });
@@ -179,6 +240,7 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
                     value={dealProbability} 
                     onChange={(valueAsString, valueAsNumber) => setDealProbability(isNaN(valueAsNumber) ? valueAsString : valueAsNumber)} 
                     allowMouseWheel
+                    isDisabled={isDealProbabilityDisabled}
                 >
                     <NumberInputField placeholder="Optional (e.g., 50)" />
                     <NumberInputStepper>
@@ -186,6 +248,18 @@ const EditStageModal: React.FC<EditStageModalProps> = ({ isOpen, onClose, stage,
                         <NumberDecrementStepper />
                     </NumberInputStepper>
                 </NumberInput>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Stage Type</FormLabel>
+              <Select 
+                value={stageType} 
+                onChange={(e) => setStageType(e.target.value as StageType)}
+              >
+                <option value={StageTypeEnum.Open}>Open</option>
+                <option value={StageTypeEnum.Won}>Won</option>
+                <option value={StageTypeEnum.Lost}>Lost</option>
+              </Select>
             </FormControl>
 
           </VStack>

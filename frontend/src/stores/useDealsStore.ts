@@ -10,6 +10,7 @@ import type {
   MutationUpdateDealArgs,
   MutationDeleteDealArgs,
 } from '../generated/graphql/graphql';
+import { useStagesStore } from './useStagesStore';
 
 // Re-export core Deal types
 export type { Deal, DealInput, Maybe };
@@ -133,19 +134,43 @@ interface DealsState {
   deals: Deal[];
   dealsLoading: boolean;
   dealsError: string | null;
+  hasInitiallyFetchedDeals: boolean;
   fetchDeals: () => Promise<void>;
   createDeal: (input: DealInput) => Promise<Deal | null>;
   updateDeal: (id: string, input: DealInput) => Promise<Deal | null>;
   deleteDeal: (id: string) => Promise<boolean>;
+
+  // Kanban View State and Actions
+  selectedKanbanPipelineId: string | null;
+  dealsViewMode: 'table' | 'kanban';
+  setSelectedKanbanPipelineId: (pipelineId: string | null) => void;
+  setDealsViewMode: (mode: 'table' | 'kanban') => void;
 }
+
+// Helper to safely get from localStorage
+const getDealsViewModeFromLocalStorage = (): 'table' | 'kanban' => {
+  try {
+    const mode = localStorage.getItem('dealsViewMode');
+    return mode === 'kanban' ? 'kanban' : 'table'; // Default to 'table' if not 'kanban'
+  } catch (error) {
+    // In case localStorage is not available (e.g. SSR or privacy settings)
+    console.warn('Could not access localStorage to get dealsViewMode.', error);
+    return 'table';
+  }
+};
 
 export const useDealsStore = create<DealsState>((set, get) => ({
   deals: [],
   dealsLoading: false,
   dealsError: null,
+  hasInitiallyFetchedDeals: false,
+
+  // Initialize Kanban state
+  selectedKanbanPipelineId: null,
+  dealsViewMode: getDealsViewModeFromLocalStorage(),
 
   fetchDeals: async () => {
-    set({ dealsLoading: true, dealsError: null });
+    set({ dealsLoading: true, dealsError: null, hasInitiallyFetchedDeals: true });
     try {
       type GetDealsQueryResponse = { deals: Deal[] };
       const data = await gqlClient.request<GetDealsQueryResponse>(GET_DEALS_QUERY);
@@ -253,4 +278,39 @@ export const useDealsStore = create<DealsState>((set, get) => ({
       return false;
     }
   },
-})); 
+
+  // Kanban View Actions
+  setSelectedKanbanPipelineId: (pipelineId: string | null) => {
+    set({ selectedKanbanPipelineId: pipelineId });
+
+    if (pipelineId) {
+      // Always reset stage fetching state when a pipeline is actively selected for Kanban,
+      // to ensure its stages are fetched/re-fetched for this new context.
+      useStagesStore.setState({
+        hasInitiallyFetchedStages: false,
+        stagesError: null,
+        stages: [], // Clear current stages to ensure only the selected pipeline's stages are shown
+        stagesLoading: false // Reset loading state before DealsKanbanView attempts to fetch
+      });
+    } else {
+      // No pipeline selected, clear stages and reset flags appropriately
+      useStagesStore.setState({
+        hasInitiallyFetchedStages: false, // Or true, if "no pipeline" implies fetched state is "empty and done"
+        stagesError: null,
+        stages: [],
+        stagesLoading: false
+      });
+    }
+  },
+
+  setDealsViewMode: (mode: 'table' | 'kanban') => {
+    set({ dealsViewMode: mode });
+    try {
+      localStorage.setItem('dealsViewMode', mode);
+    } catch (error) {
+      console.warn('Could not access localStorage to set dealsViewMode.', error);
+    }
+  },
+}));
+
+export default useDealsStore; 

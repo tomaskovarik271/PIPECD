@@ -8,7 +8,7 @@ Welcome to Project PipeCD! This document will help you understand the project st
 
 For critical setup instructions and initial verification, please refer to [README.md](README.md).
 For high-level architectural decisions and their rationale, see [ADR.md](ADR.md).
-For the project plan, feature tracking, and known issues, consult [ROADMAP.md](ROADMAP.md) and the upcoming `PROJECT_ROADMAP_V2.md`.
+For the project plan, feature tracking, and known issues, consult `PROJECT_ROADMAP_V2.md`.
 
 ## 2. Core Technologies & Architecture
 
