@@ -17,6 +17,7 @@ import { dealService } from '../../../../lib/dealService';
 import * as pipelineService from '../../../../lib/pipelineService';
 import * as stageService from '../../../../lib/stageService';
 import * as activityService from '../../../../lib/activityService';
+import * as userProfileService from '../../../../lib/userProfileService';
 
 // Import generated types from backend codegen
 import type { 
@@ -26,7 +27,9 @@ import type {
     Deal as GraphQLDeal,
     Pipeline as GraphQLPipeline,
     Stage as GraphQLStage,
-    StageType as GeneratedStageType
+    StageType as GeneratedStageType,
+    User as GraphQLUser,
+    UpdateUserProfileInput
     // Argument types (e.g., MutationCreatePersonArgs) are inferred by MutationResolvers for args and args.input
 } from '../../../../lib/generated/graphql';
 
@@ -547,6 +550,45 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
             return await stageService.deleteStage(accessToken, args.id);
       } catch (error) {
         throw processZodError(error, action);
+      }
+    },
+
+    // --- User Profile Mutations ---
+    updateUserProfile: async (_parent, args, context: GraphQLContext): Promise<GraphQLUser> => {
+      const actionDescription = 'updating user profile';
+      try {
+        requireAuthentication(context);
+        const currentUser = context.currentUser!;
+        const accessToken = getAccessToken(context)!; // Ensure we have the access token
+
+        if (!currentUser.email) {
+          console.error(`[Mutation.updateUserProfile] Critical: Authenticated user ${currentUser.id} has no email.`);
+          throw new GraphQLError('Authenticated user email is missing.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+        }
+
+        // We don't need specific Zod validation here as UpdateUserProfileInput is simple
+        // and userProfileService handles individual field presence.
+        // If complex validation were needed, a Zod schema would be appropriate.
+        console.log(`[Mutation.updateUserProfile] User: ${currentUser.id}, Input:`, args.input);
+
+        const updatedProfileData = await userProfileService.updateUserProfile(
+          currentUser.id,
+          args.input, // Pass the input directly
+          accessToken // Pass the accessToken
+        );
+
+        console.log(`[Mutation.updateUserProfile] Successfully updated profile for user ${currentUser.id}`);
+        
+        // Return data conforming to the GraphQLUser type
+        return {
+          id: currentUser.id,
+          email: currentUser.email, // Email is guaranteed non-null by the check above
+          display_name: updatedProfileData.display_name,
+          avatar_url: updatedProfileData.avatar_url,
+        };
+      } catch (error) {
+        console.error(`[Mutation.updateUserProfile] Error ${actionDescription} for user ${context.currentUser?.id}:`, error);
+        throw processZodError(error, actionDescription); // processZodError can handle general errors too
       }
     },
 }; 

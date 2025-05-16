@@ -15,6 +15,7 @@ The system utilizes a serverless architecture based on:
 *   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `pipelineService.ts`), utilities in `lib/serviceUtils.ts`, shared types in `lib/types.ts`.
 *   **Database:** Supabase (PostgreSQL) with RLS
 *   **Authentication:** Supabase Auth (Email/Password, GitHub configured)
+*   **User Profile Management:** Users can manage their display name and avatar URL, stored in a dedicated `user_profiles` table with RLS. Profile information is integrated into features like Deal History.
 *   **Async Tasks:** Inngest (`netlify/functions/inngest.ts`)
 *   **Testing:** Vitest (Unit/Integration), Playwright (E2E)
 *   **Hosting/Deployment:** Netlify (`netlify.toml`)
@@ -27,6 +28,11 @@ The system utilizes a serverless architecture based on:
 *   Backend service layer refactored with shared utilities (`lib/serviceUtils.ts`).
 *   GraphQL API layer refactored: Resolvers moved into modular files (`netlify/functions/graphql/resolvers/`).
 *   Full CRUD implemented for **Activities** (Backend service, GraphQL API, Frontend Zustand store, Frontend UI Page/Modals).
+*   **User Profile Management** implemented:
+    *   Users can view and edit their `display_name` and `avatar_url`.
+    *   Profile data is stored in `user_profiles` table in Supabase.
+    *   GraphQL `Query.me` and `Mutation.updateUserProfile` handle profile data.
+    *   Deal history now displays the `display_name` of the user who performed the action, leveraging updated RLS policies for `user_profiles` to allow authenticated reads.
 *   Inngest event sending implemented for Person & Deal creation (simple logging handlers).
 *   Basic UI (Chakra UI) implemented for Auth and all core CRUD entities.
 *   Unit/Integration tests implemented for backend services (`lib/`).

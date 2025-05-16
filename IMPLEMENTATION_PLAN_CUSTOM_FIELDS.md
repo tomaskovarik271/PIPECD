@@ -786,88 +786,23 @@ By following these steps, the custom fields functionality can be systematically 
         *   E2E tests for form submission and display
     *   **Status:** Not Started
 
+### 4.6 User Interface Personalization Enhancements (Potential Phase 2 consideration)
+
+Once the core custom fields functionality is implemented and stable, the following UI/UX enhancements could be considered to allow users more control over their views:
+
+*   **List View Column Configuration:**
+    *   **Functionality:** Allow users to choose which custom fields (and standard fields) appear as columns in table/list views (e.g., the main Deals table, People list). Users could select fields, hide fields, and reorder columns.
+    *   **Benefit:** Provides a personalized view tailored to what each user finds most relevant in list views, improving efficiency.
+    *   **Implementation Note:** Would require storing user preferences for column visibility and order per entity list view.
+    *   **Status:** Future Enhancement (Post-MVP)
+
+*   **"Show/Hide Empty Fields" Toggle:**
+    *   **Functionality:** Provide a toggle on entity detail pages that allows users to hide any custom fields (and potentially standard fields) that do not have a value entered for the currently viewed record.
+    *   **Benefit:** Reduces clutter on detail pages, especially for entities with many custom fields where only a subset might be filled out for any given record.
+    *   **Implementation Note:** Frontend logic to check field values and conditionally render them based on the toggle state.
+    *   **Status:** Future Enhancement (Post-MVP)
+
 ### 4R: Risk Mitigation for Advanced Features
 
 * **Backup Strategy:** Implement regular backups before schema changes:
-  ```sql
-  -- Example backup procedure before schema changes
-  CREATE OR REPLACE FUNCTION backup_custom_field_data()
-  RETURNS void AS $$
-  BEGIN
-    CREATE TABLE IF NOT EXISTS custom_field_backups (
-      entity_type text,
-      entity_id uuid,
-      backup_date timestamptz DEFAULT now(),
-      field_values jsonb
-    );
-    
-    -- Backup deals custom fields
-    INSERT INTO custom_field_backups (entity_type, entity_id, field_values)
-    SELECT 'DEAL', id, custom_field_values FROM deals WHERE custom_field_values != '{}';
-    
-    -- Repeat for other entities
-  END;
-  $$ LANGUAGE plpgsql;
   ```
-
-* **Monitoring:** Add monitoring for custom field usage and performance:
-  ```typescript
-  // Example monitoring wrapper for custom field operations
-  const trackCustomFieldOperation = async (operation, entityType, fn) => {
-    const startTime = performance.now();
-    try {
-      const result = await fn();
-      const duration = performance.now() - startTime;
-      
-      // Log or send to monitoring service
-      console.log(`CustomField ${operation} on ${entityType}: ${duration}ms`);
-      
-      return result;
-    } catch (error) {
-      // Log error
-      console.error(`CustomField ${operation} on ${entityType} failed:`, error);
-      throw error;
-    }
-  };
-  ```
-
-* **Gradual Rollout:** Plan for staged rollout of custom fields:
-  1. Start with non-critical entity types
-  2. Begin with admin-only access
-  3. Expand to power users
-  4. Release to all users
-
----
-
-## Implementation Checklist & Timeline
-
-### Phase 1: Backend (Estimated: 2 weeks)
-- [ ] **Mental Validation & Dry Run**
-- [ ] Database migrations
-- [ ] GraphQL schema updates
-- [ ] Service layer implementation
-- [ ] Resolver implementation
-- [ ] Testing & validation
-
-### Phase 2: Admin UI (Estimated: 1 week)
-- [ ] **Mental Validation & Dry Run**
-- [ ] Definition management pages
-- [ ] Form validation
-- [ ] Store implementation
-
-### Phase 3: Entity Integration (Estimated: 2 weeks)
-- [ ] **Mental Validation & Dry Run**
-- [ ] Dynamic form components
-- [ ] Detail page display
-- [ ] Entity store updates
-- [ ] Testing with real data
-
-### Phase 4: Refinements (Estimated: 1+ weeks)
-- [ ] **Mental Validation & Dry Run**
-- [ ] Performance optimization
-- [ ] Search & filtering
-- [ ] Additional features based on feedback
-
----
-
-This plan provides a detailed roadmap for implementing custom fields with a strong focus on data integrity, error handling, and risk mitigation based on lessons learned from previous features. It now formalizes a mental validation step before each phase to catch issues early and ensure confidence before execution.

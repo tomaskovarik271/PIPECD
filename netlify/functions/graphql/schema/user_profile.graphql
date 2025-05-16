@@ -1,0 +1,22 @@
+# GraphQL schema definitions for User Profile Management
+
+# UserProfile type is now merged into the main User type in user.graphql
+
+"""
+Input type for updating a user's profile.
+Only fields intended for update should be included.
+"""
+input UpdateUserProfileInput {
+  "The new display name for the user. Null means no change."
+  display_name: String
+  "The new avatar URL for the user. Null means no change."
+  avatar_url: String
+}
+
+# Query.me is already defined in base.graphql returning User type, which now includes profile fields.
+
+# No description directly on extend type Mutation
+extend type Mutation {
+  "Updates the profile for the currently authenticated user."
+  updateUserProfile(input: UpdateUserProfileInput!): User # Return type changed to User
+} 

@@ -10,6 +10,7 @@ import PipelinesPage from './pages/PipelinesPage';
 import StagesPage from './pages/StagesPage';
 import ActivitiesPage from './pages/ActivitiesPage';
 import DealDetailPage from './pages/DealDetailPage';
+import ProfilePage from './pages/ProfilePage';
 import { 
   Box, 
   Heading, 
@@ -35,6 +36,7 @@ function AppContent() {
             <Route path="/pipelines" element={<PipelinesPage />} />
             <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
+            <Route path="/profile" element={<ProfilePage />} />
             <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
           </Routes>
     </Box>

@@ -3,28 +3,38 @@
 ## Task: Implement Robust User Lookup for Deal History
 
 **ID:** HIST-001
-**Status:** To Do
+**Status:** Done
 **Priority:** High
 **Reporter:** System (AI Assistant)
-**Assignee:** TBD
+**Assignee:** AI Assistant / Dev Team
 
 **Summary:**
+The `DealHistoryEntry.user` GraphQL resolver previously used placeholder data for users who were not the currently authenticated user. This task aimed to implement a robust solution to display accurate user information (ID, display name) for *any* user appearing in the deal history.
 
-The `DealHistoryEntry.user` GraphQL resolver currently uses placeholder data when displaying users who are not the currently authenticated user. This is because it was previously fetching from the incorrect `people` (CRM contacts) table. While the immediate bug of incorrect data is fixed, a robust solution is needed to display accurate information (ID, email, name) for *any* user who appears in the deal history.
+**Resolution:**
+Option A from the proposed solutions was implemented:
+1.  **`public.user_profiles` Table Created:** A new table `public.user_profiles` was created (migration: `20250728000000_create_user_profiles.sql`) to store `user_id`, `display_name`, and `avatar_url`.
+2.  **RLS Policies Updated:**
+    *   Initially, users could only manage their own profiles.
+    *   RLS was updated (migration: `20250729000000_update_user_profiles_rls.sql`) to allow any `authenticated` user to read any profile from `user_profiles`. This is essential for the deal history use case.
+    *   Users can still only insert/update their own specific profile.
+3.  **`userProfileService.ts` Utilized:** The existing `lib/userProfileService.ts` (with `getUserProfile` and `updateUserProfile` functions) is used to interact with the `user_profiles` table.
+4.  **`DealHistoryEntry.user` Resolver Updated:** The resolver in `netlify/functions/graphql/resolvers/history.ts` was updated:
+    *   For the `currentUser`, it fetches their profile from `userProfileService` to get `display_name` and `avatar_url`.
+    *   For *other* users (not `currentUser`), it now also uses `userProfileService.getUserProfile` (leveraging the updated RLS) to fetch their `display_name` and `avatar_url`. A placeholder email is returned to satisfy the GraphQL schema's non-nullable `User.email` field, as actual emails of other users are not exposed here.
+    *   If a profile cannot be fetched for any reason, it correctly falls back to `null`, resulting in "System Action" on the frontend.
 
 **Affected Component:** `netlify/functions/graphql/resolvers/history.ts` (specifically the `DealHistoryEntry.user` resolver).
 
 **Problem Details:**
 
 *   The `deal_history` table stores `user_id` (from `auth.users.id`) for actions performed by users.
-*   The GraphQL `User` type expects `id: ID!`, `email: String`, `name: String`.
-*   The current resolver correctly fetches details for the `currentUser` from the GraphQL context.
-*   For other users, it returns their `id` but `null` for `email` and a generic placeholder for `name` (e.g., "User abc123de...").
-*   This is because there's currently no direct, secure mechanism in that resolver to fetch display information (like email or a display name) for an arbitrary `user_id` from `auth.users` or a dedicated profiles table.
+*   The GraphQL `User` type expects `id: ID!`, `email: String!`, `display_name: String`, `avatar_url: String`.
+*   Previously, for users other than `currentUser`, it returned their `id` but `null` for `email` and a generic placeholder for `name`.
 
 **Proposed Solutions (Choose One):**
 
-1.  **Option A: Create a `public.user_profiles` Table (Recommended)**
+1.  **Option A: Create a `public.user_profiles` Table (Recommended)** - Implemented.
     *   **Description:** Introduce a new table in the public schema to store display-related information for application users.
     *   **Schema Definition (`public.user_profiles`):**
         *   `id`: `UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE`
@@ -74,15 +84,53 @@ The `DealHistoryEntry.user` GraphQL resolver currently uses placeholder data whe
 *   If Option B is chosen:
     *   The PostgreSQL RPC function `get_user_display_info` (or similar) exists and works correctly.
     *   The resolver calls this RPC function.
-*   Data for `email` and `name` should be `null` in the GraphQL response only if legitimately not available from the chosen data source (e.g., user has no email or display name set). It should not be `null` due to inability to fetch.
-*   The solution is secure and does not expose sensitive user data inappropriately.
-*   Relevant `console.warn` messages about placeholder data in `history.ts` are removed or updated.
+*   Data for `email` and `name` should be `null` in the GraphQL response only if legitimately not available from the chosen data source (e.g., user has no email or display name set). It should not be `null` due to inability to fetch. (Partially Met: `display_name` is fetched; `email` for other users is a placeholder as actual emails are not exposed via this path to satisfy `String!`. This is an accepted trade-off for now.)
+*   The solution is secure and does not expose sensitive user data inappropriately. (Met for `display_name` and `avatar_url`; email privacy for other users maintained by using a placeholder).
+*   Relevant `console.warn` messages about placeholder data in `history.ts` are removed or updated. (Met)
 
 **Notes/Considerations:**
 
 *   The choice between Option A and B depends on project preference for data modeling and how user profile data (like display names) is intended to be managed system-wide. Option A is generally more flexible for future enhancements to user profiles.
-*   Ensure any new database objects (tables, functions, triggers) are included in Supabase migrations.
-*   Update `DEVELOPER_GUIDE_V2.md` if necessary to reflect the new user profile data strategy.
+*   Ensure any new database objects (tables, functions, triggers) are included in Supabase migrations. (Met)
+*   Update `DEVELOPER_GUIDE_V2.md` if necessary to reflect the new user profile data strategy. (Met)
+
+## Task: User Profile Management (View & Edit)
+
+**ID:** USER-PROF-001
+**Status:** Done
+**Priority:** High
+**Reporter:** System (AI Assistant)
+**Assignee:** AI Assistant / Dev Team
+
+**Summary:**
+Implement functionality for users to view and manage their own profile information, specifically their display name and avatar URL. This includes creating the necessary database table, GraphQL API endpoints, and frontend interface.
+
+**Resolution & Key Features:**
+
+1.  **Database (`user_profiles` Table - See HIST-001 for details):**
+    *   Created `public.user_profiles` table with `user_id`, `display_name`, `avatar_url`, and timestamps.
+    *   RLS policies allow users to manage their own profile and authenticated users to read all profiles.
+2.  **Backend (`userProfileService.ts`, GraphQL API):
+    *   Created `lib/userProfileService.ts` with `getUserProfile` and `updateUserProfile`.
+    *   GraphQL `User` type in `user.graphql` updated to include `display_name` and `avatar_url`.
+    *   `Query.me: User` implemented to fetch the current user's profile.
+    *   `Mutation.updateUserProfile(input: UpdateUserProfileInput!): User` implemented for users to update their own profiles.
+3.  **Frontend (`ProfilePage.tsx`, `ProfileView.tsx`, `ProfileEditForm.tsx`):
+    *   New "My Profile" page accessible from the sidebar.
+    *   Users can view their current email (read-only from auth), display name, and avatar.
+    *   Users can edit their display name and avatar URL.
+    *   `graphql-request` is used for data fetching and mutations.
+    *   Form handling with `react-hook-form`.
+4.  **Integration with Deal History:** User display names from profiles are now shown in the Deal History section (see HIST-001).
+
+**Acceptance Criteria:**
+*   Users can navigate to a "My Profile" page.
+*   Users can see their current email, display name, and avatar (or placeholders).
+*   Users can edit their display name and avatar URL.
+*   Changes are saved to the `user_profiles` table in Supabase.
+*   The updated profile information is reflected immediately on the profile page.
+*   The updated `display_name` is used in other parts of the application where the user is referenced (e.g., Deal History).
+*   Appropriate RLS is in place for security.
 
 ## Task: Refactor Store Error State Granularity
 
@@ -560,5 +608,51 @@ Enable administrators to easily manage user permissions and team structures with
 *   (Optional) UI for creating and managing teams, and assigning users to teams.
 *   (Optional) Record visibility and reporting can be filtered by team.
 *   Changes are reflected in user permissions and access.
+
+--- 
+
+## Task: Implement Labels/Tagging System
+
+**ID:** TAGS-001
+**Status:** To Do
+**Priority:** Medium
+**Reporter:** User Request / System (AI Assistant)
+**Assignee:** TBD
+
+**Summary:**
+Implement a system allowing users to add free-form labels or tags to core entities (e.g., Deals, People, Organizations). These tags will provide a flexible, ad-hoc way for users to categorize records, flag items, and improve filterability beyond standard and custom fields.
+
+**Goal:**
+Enable users to create and apply multiple text-based tags to records. The system should support filtering records based on these tags.
+
+**Key Requirements:**
+*   **User Interface (UI):**
+    *   On entity detail pages/forms, an input field to add new tags or select from existing tags (with autocomplete suggestions).
+    *   Display applied tags clearly on the record (e.g., as pills/lozenges).
+    *   Ability to remove tags from a record.
+*   **Backend Implementation:**
+    *   **Storage:** Choose a storage mechanism for tags and their associations with entities. Options:
+        1.  Central `tags` table (`tag_id`, `tag_name`) and join tables (e.g., `deal_tags` with `deal_id`, `tag_id`). (Often preferred for querying).
+        2.  A `TEXT[]` (array of text) column on each entity table that supports tags, with GIN indexing for efficient searching.
+    *   **API (GraphQL):**
+        *   Mutations to add/remove tags from an entity.
+        *   Extend entity types (Deal, Person, etc.) to expose their associated `tags: [String!]!` or `tags: [Tag!]!`.
+        *   Update query resolvers to allow filtering by tags (e.g., `deals(tags_include_any: ["urgent", "Q1"], tags_include_all: ["new-lead"])`).
+*   **Functionality:**
+    *   Tags should be case-insensitive for creation/matching (e.g., "Urgent" and "urgent" are the same tag) but preserve original casing for display if desired.
+    *   Users should be able to filter lists of entities by one or more tags.
+
+**Relationship to Custom Fields:**
+*   This feature is distinct from the administrator-defined Custom Fields system.
+*   Labels/Tags are user-driven and semi-structured, while Custom Fields are admin-defined and structured (typed).
+*   It is recommended to implement this after the core Custom Fields functionality is in place.
+
+**Acceptance Criteria:**
+*   Users can add multiple tags to Deals, People, and Organizations.
+*   Users can remove tags from these entities.
+*   The system suggests existing tags as users type.
+*   Tags are displayed on the entity records.
+*   Users can filter entity list views by one or more tags (e.g., show all Deals tagged 'Urgent' AND 'Demo Scheduled').
+*   The implementation is performant for adding, removing, and filtering tags.
 
 --- 

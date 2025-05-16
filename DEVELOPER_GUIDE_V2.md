@@ -294,6 +294,41 @@ This pattern helps maintain a clean separation of concerns: THE GraphQL layer ha
     *   Run the Inngest Dev Server: `npx inngest-cli dev -u http://localhost:8888/.netlify/functions/inngest` (ensure the URL matches your local Netlify Dev setup for the Inngest function).
     *   Trigger events from your application; they will appear in the Inngest Dev UI (`http://localhost:8288`).
 
+### 5.7 User Profile Management
+
+The system allows users to manage basic profile information, which is also leveraged in other features like Deal History to display user names.
+
+*   **Database (`user_profiles` Table)**:
+    *   Located in `supabase/migrations/20250728000000_create_user_profiles.sql`.
+    *   **Schema**:
+        *   `user_id` (UUID, PK, FK to `auth.users.id ON DELETE CASCADE`): Links to the Supabase auth user.
+        *   `display_name` (TEXT, nullable): User's preferred display name.
+        *   `avatar_url` (TEXT, nullable): URL to the user's avatar image.
+        *   `created_at` (TIMESTAMPTZ, default now())
+        *   `updated_at` (TIMESTAMPTZ, default now(), auto-updated by trigger).
+    *   **Row Level Security (RLS)**:
+        *   Initially, users could only select/update their own profiles.
+        *   Updated by `supabase/migrations/20250729000000_update_user_profiles_rls.sql` to allow any authenticated user to read any profile (`SELECT` policy: `auth.role() = 'authenticated'`). This is crucial for features like Deal History to resolve user names.
+        *   INSERT and UPDATE policies remain restricted to the profile owner (`auth.uid() = user_id`).
+
+*   **Service Layer (`lib/userProfileService.ts`)**:
+    *   Provides `getUserProfile(userId: string, accessToken: string)` to fetch a user's profile data.
+    *   Provides `updateUserProfile(userId: string, input: UpdateUserProfileInput, accessToken: string)` to create or update a user's profile.
+    *   Both functions use an authenticated Supabase client, respecting RLS.
+
+*   **GraphQL API**:
+    *   **Schema Changes**:
+        *   The `User` type (in `netlify/functions/graphql/schema/user.graphql`) was augmented to include `display_name` and `avatar_url`. The concept of a separate `UserProfile` type was merged into the main `User` type.
+        *   `Query.me: User` now returns the extended `User` object, fetching profile data via `userProfileService.getUserProfile`.
+        *   `Mutation.updateUserProfile(input: UpdateUserProfileInput!): User` allows authenticated users to update their `display_name` and `avatar_url`.
+    *   **Resolver Logic**:
+        *   `Query.me` (in `netlify/functions/graphql/resolvers/query.ts`): Calls `userProfileService.getUserProfile` using the authenticated user's ID and access token.
+        *   `Mutation.updateUserProfile` (in `netlify/functions/graphql/resolvers/mutation.ts`): Calls `userProfileService.updateUserProfile`.
+        *   `DealHistoryEntry.user` (in `netlify/functions/graphql/resolvers/history.ts`):
+            *   If the history entry's `user_id` is the current authenticated user, it calls `userProfileService.getUserProfile` to fetch their profile, ensuring the `display_name` from `user_profiles` is used.
+            *   If the history entry's `user_id` is a *different* user, it also calls `userProfileService.getUserProfile` (using the *viewing* user's access token) to fetch the actor's profile. This is possible due to the updated RLS policy allowing authenticated reads on `user_profiles`.
+            *   A placeholder email (e.g., `user@system.local`) is used for users other than `currentUser` to satisfy the `User.email: String!` schema requirement, as actual emails of other users are not exposed through this path.
+
 ## 6. Frontend Development
 
 ### Core Libraries
@@ -361,6 +396,38 @@ This pattern helps maintain a clean separation of concerns: THE GraphQL layer ha
 *   **Chakra UI Theming**: Customizations to the default Chakra theme (colors, fonts, component variants) are defined in `frontend/src/theme/index.ts`.
 *   **Global Styles**: Global CSS resets or base styles can be applied via Chakra's global style object or in `main.tsx`/`index.css`.
 *   Prefer Chakra's style props and `sx` prop for component-specific styling over custom CSS files where possible.
+
+### 6.6 User Profile Management (Frontend)
+
+The frontend provides a dedicated page for users to view and manage their profiles, and integrates profile information (like display names) into other relevant parts of the UI, such as Deal History.
+
+*   **GraphQL Operations (`frontend/src/lib/graphql/userProfileOperations.ts` and inline in page component)**:
+    *   `GET_ME_QUERY`: Defined in `ProfilePage.tsx` to fetch the current user's `id`, `email`, `display_name`, and `avatar_url`.
+    *   `UPDATE_USER_PROFILE_MUTATION`: Defined in `ProfileEditForm.tsx` to update `display_name` and `avatar_url`.
+    *   These operations use `graphql-request` via the `gqlClient`.
+
+*   **Profile Page (`frontend/src/pages/ProfilePage.tsx`)**:
+    *   Manages the overall view/edit state for the user's profile.
+    *   Fetches the current user's data using `GET_ME_QUERY` on component mount (and potentially on re-focus, pending further refinement for stale data).
+    *   Displays either `ProfileView` or `ProfileEditForm` based on the edit state.
+    *   Handles success and error notifications for profile updates.
+
+*   **Profile View Component (`frontend/src/components/profile/ProfileView.tsx`)**:
+    *   Displays the user's `display_name`, `email`, and `avatar_url` (or placeholders if data is null/empty).
+    *   Shows a loading state if data is being fetched.
+
+*   **Profile Edit Form Component (`frontend/src/components/profile/ProfileEditForm.tsx`)**:
+    *   Uses `react-hook-form` for form state management and validation.
+    *   Allows users to edit their `display_name` and `avatar_url`.
+    *   Includes basic validation (e.g., avatar URL format, though currently permissive for empty strings which are treated as clearing the URL).
+    *   Submits changes using the `UPDATE_USER_PROFILE_MUTATION` via `graphql-request`.
+
+*   **Navigation (`frontend/src/components/layout/Sidebar.tsx`)**:
+    *   A "My Profile" link (using `SettingsIcon`) was added to `NAV_ITEMS`, routing to `/profile`.
+
+*   **Integration in Deal History (`frontend/src/components/deals/DealHistoryItem.tsx`)**:
+    *   The component now uses `entry.user?.display_name` to show the name of the user who performed an action on a deal.
+    *   This leverages the backend resolver updates and new RLS policies that allow fetching display names for any authenticated user associated with a history entry.
 
 ## 7. Testing
 

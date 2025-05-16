@@ -145,7 +145,7 @@ sequenceDiagram
 |  8  | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
 |  9  | **Workflow Automation**                 | Rule-based triggers/actions across modules.          | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
 |  10 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
-|  11 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ *In* (basic user table via Supabase Auth) | ✅ Done (Basic via Auth)                             |
+|  11 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ *In* (Supabase Auth + `user_profiles` table) | ✅ Done (Profile view/edit for display name & avatar implemented) |
 |  12 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ *In* (owner / company-wide)               | ✅ *In* (Basic RLS via `auth.uid()`), ⬜ *Later* (RBAC) |
 |  13 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
 |  14 | **Document Management**                 | Files, proposals, e-signature, attachment storage.   | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |

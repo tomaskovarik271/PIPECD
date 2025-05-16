@@ -14,7 +14,7 @@ import {
   // LockIcon, // Placeholder for Organizations
   // CopyIcon, // Placeholder for Pipelines
   // TimeIcon, // Placeholder for Activities
-  // SettingsIcon, // Example
+  SettingsIcon, // Uncommented for Profile
   // RepeatIcon // Example
 } from '@chakra-ui/icons'; // Use appropriate icons
 
@@ -24,6 +24,7 @@ const NAV_ITEMS = [
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
   { path: '/pipelines', label: 'Pipelines', icon: <ArrowRightIcon /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
+  { path: '/profile', label: 'My Profile', icon: <SettingsIcon /> }, // Added Profile link
   // Add other items like Settings if needed
 ];
 
@@ -64,8 +65,9 @@ function Sidebar() {
         // Use NavLink for active state detection, pass function as children
         <RouterNavLink key={item.path} to={item.path} end={item.path === '/'}> 
           {({ isActive }) => (
-            // Use ChakraLink for styling, apply styles conditionally
-            <ChakraLink
+            // Use Flex for styling, apply styles conditionally, avoid nesting <a>
+            <Flex // CHANGED from ChakraLink
+              as="span" // Render as span or div, not another <a>
               display="flex"
               alignItems="center"
               p="8px 12px"
@@ -73,10 +75,11 @@ function Sidebar() {
               // REMOVED direct bg/color props
               // Rely solely on sx prop to apply the entire style object
               sx={isActive ? activeNavLinkStyles : navLinkStyles} 
+              // Ensure navLinkStyles includes cursor: pointer if not already present
             >
               <Box as="span" mr={3}>{item.icon}</Box>
               {item.label}
-            </ChakraLink>
+            </Flex> // CHANGED from ChakraLink
           )}
         </RouterNavLink>
       ))}

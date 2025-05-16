@@ -2,7 +2,7 @@
 
 type User {
   id: ID!
-  email: String
-  name: String # Combined first_name and last_name or default
-  # avatar_url: String # Optional: if you plan to add it
+  email: String!
+  display_name: String # Renamed from 'name', represents combined or preferred display name
+  avatar_url: String # Added avatar URL
 } 

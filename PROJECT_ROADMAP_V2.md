@@ -208,13 +208,13 @@
     *   *Source: ROADMAP.md (Post-Refactor Plan #4), CIO Report (Gap)*
     *   *Priority: MEDIUM (for core Inngest setup), LOW (for new complex functions unless technically enabling)*
 
-### 3.3. New Feature Technical Enablement (Low Priority in this Technical Backlog)
-*   **Task:** `[ ]` User Profile Feature - Technical Foundation:
-    *   `[ ]` Database Schema: `user_profiles` table (if distinct from `auth.users` or `people`).
-    *   `[ ]` Backend Logic: `userProfileService.ts`.
-    *   `[ ]` GraphQL API: Types, queries, mutations for user profiles.
-    *   *This is primarily functional, keep low priority here unless a technical system (e.g. advanced RBAC based on profile settings) depends on it.*
-    *   *Priority: LOW*
+### 3.3. New Feature Technical Enablement
+*   **Task:** `[x]` User Profile Feature - Technical Foundation:
+    *   `[x]` Database Schema: `user_profiles` table created (distinct from `auth.users` or `people`).
+    *   `[x]` Backend Logic: `userProfileService.ts` created and functional.
+    *   `[x]` GraphQL API: `User` type augmented, `Query.me` and `Mutation.updateUserProfile` implemented.
+    *   *This feature has been implemented, providing user profile view/edit capabilities and integration with Deal History for user name display.*
+    *   *Priority: Was LOW, Now DONE*
 *   **Task:** `[ ]` Full Text Search - Investigation & PoC: Investigate Supabase FTS capabilities or alternative search solutions for core entities.
     *   *Priority: LOW*
 *   **Task:** `[ ]` Email Integration (Basic) - Technical PoC: Investigate options for sending transactional emails (e.g., via Supabase an external SMTP service triggered by Inngest).

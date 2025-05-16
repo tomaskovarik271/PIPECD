@@ -151,6 +151,8 @@ export type Mutation = {
   updatePerson?: Maybe<Person>;
   updatePipeline: Pipeline;
   updateStage: Stage;
+  /** Updates the profile for the currently authenticated user. */
+  updateUserProfile?: Maybe<User>;
 };
 
 export type MutationCreateActivityArgs = {
@@ -229,6 +231,10 @@ export type MutationUpdatePipelineArgs = {
 export type MutationUpdateStageArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateStageInput;
+};
+
+export type MutationUpdateUserProfileArgs = {
+  input: UpdateUserProfileInput;
 };
 
 /** Defines the Organization type and related queries/mutations. */
@@ -389,9 +395,21 @@ export type UpdateStageInput = {
   stage_type?: InputMaybe<StageType>;
 };
 
+/**
+ * Input type for updating a user's profile.
+ * Only fields intended for update should be included.
+ */
+export type UpdateUserProfileInput = {
+  /** The new avatar URL for the user. Null means no change. */
+  avatar_url?: InputMaybe<Scalars["String"]["input"]>;
+  /** The new display name for the user. Null means no change. */
+  display_name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type User = {
   __typename?: "User";
-  email?: Maybe<Scalars["String"]["output"]>;
+  avatar_url?: Maybe<Scalars["String"]["output"]>;
+  display_name?: Maybe<Scalars["String"]["output"]>;
+  email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
-  name?: Maybe<Scalars["String"]["output"]>;
 };

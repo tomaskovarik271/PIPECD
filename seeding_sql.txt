@@ -1,0 +1,141 @@
+############
+
+ADMIN ROLE TO USER
+
+-- First, find the ID of the 'admin' role (if you don't know it)
+-- SELECT id FROM public.roles WHERE name = 'admin';
+-- Let's assume the output for admin role id is 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'
+
+-- Now, insert the user-role mapping:
+INSERT INTO public.user_roles (user_id, role_id)
+VALUES
+    ('your_new_user_id_here', (SELECT id FROM public.roles WHERE name = 'admin'));
+
+
+
+############
+
+PIPELINES AND STAGES
+
+
+-- Variables to set (REPLACE THESE PLACEHOLDERS)
+DO $$
+DECLARE
+    v_user_id UUID := 'your_user_id_here'; -- <<< REPLACE THIS WITH THE ACTUAL USER ID
+    v_pipeline_id UUID;
+    v_stage_name_1 TEXT := 'Qualified Lead'; -- <<< REPLACE
+    v_stage_prob_1 REAL := 0.1;           -- <<< REPLACE (e.g., 0.1 for 10%)
+    v_stage_name_2 TEXT := 'Opportunity Scoping'; -- <<< REPLACE
+    v_stage_prob_2 REAL := 0.25;          -- <<< REPLACE
+    v_stage_name_3 TEXT := 'Proposal Development'; -- <<< REPLACE
+    v_stage_prob_3 REAL := 0.5;           -- <<< REPLACE
+    v_stage_name_4 TEXT := 'Proposal Sent'; -- <<< REPLACE
+    v_stage_prob_4 REAL := 0.75;          -- <<< REPLACE
+    v_stage_name_5 TEXT := 'Contract Negotiation'; -- <<< REPLACE
+    v_stage_prob_5 REAL := 0.9;           -- <<< REPLACE
+BEGIN
+    -- 1. Create the Pipeline
+    INSERT INTO public.pipelines (user_id, name)
+    VALUES (v_user_id, 'Default Sales Pipeline')
+    RETURNING id INTO v_pipeline_id;
+
+    RAISE NOTICE 'Created pipeline with ID: %', v_pipeline_id;
+
+    -- 2. Create the Stages
+    -- Stage 1
+    INSERT INTO public.stages (user_id, pipeline_id, name, "order", deal_probability, stage_type)
+    VALUES (v_user_id, v_pipeline_id, v_stage_name_1, 0, v_stage_prob_1, 'OPEN');
+
+    -- Stage 2
+    INSERT INTO public.stages (user_id, pipeline_id, name, "order", deal_probability, stage_type)
+    VALUES (v_user_id, v_pipeline_id, v_stage_name_2, 1, v_stage_prob_2, 'OPEN');
+
+    -- Stage 3
+    INSERT INTO public.stages (user_id, pipeline_id, name, "order", deal_probability, stage_type)
+    VALUES (v_user_id, v_pipeline_id, v_stage_name_3, 2, v_stage_prob_3, 'OPEN');
+
+    -- Stage 4
+    INSERT INTO public.stages (user_id, pipeline_id, name, "order", deal_probability, stage_type)
+    VALUES (v_user_id, v_pipeline_id, v_stage_name_4, 3, v_stage_prob_4, 'OPEN');
+
+    -- Stage 5
+    INSERT INTO public.stages (user_id, pipeline_id, name, "order", deal_probability, stage_type)
+    VALUES (v_user_id, v_pipeline_id, v_stage_name_5, 4, v_stage_prob_5, 'OPEN');
+
+    RAISE NOTICE 'Successfully created 5 stages for pipeline ID: %', v_pipeline_id;
+
+END $$;
+
+
+
+################
+
+ORGANIZATIONS AND PEOPLE
+
+-- Variables to set (REPLACE THESE PLACEHOLDERS)
+DO $$
+DECLARE
+    v_user_id UUID := 'your_user_id_here'; -- <<< REPLACE THIS WITH THE ACTUAL USER ID
+
+    -- Organization 1 Data
+    v_org1_name TEXT := 'Stark Industries'; -- <<< REPLACE
+    v_org1_address TEXT := '1 Avengers Tower, New York, NY'; -- <<< REPLACE (optional)
+    v_org1_id UUID;
+
+    -- Organization 2 Data
+    v_org2_name TEXT := 'Wayne Enterprises'; -- <<< REPLACE
+    v_org2_address TEXT := '1007 Mountain Drive, Gotham City'; -- <<< REPLACE (optional)
+    v_org2_id UUID;
+
+    -- Person 1 Data (linked to Org 1)
+    v_person1_first_name TEXT := 'Tony'; -- <<< REPLACE
+    v_person1_last_name TEXT := 'Stark'; -- <<< REPLACE
+    v_person1_email TEXT := 'tony@stark.com'; -- <<< REPLACE (ensure unique)
+    v_person1_phone TEXT := '555-0100'; -- <<< REPLACE (optional)
+    v_person1_company TEXT := 'Stark Industries'; -- <<< REPLACE (optional, could be from org)
+
+    -- Person 2 Data (linked to Org 2)
+    v_person2_first_name TEXT := 'Bruce'; -- <<< REPLACE
+    v_person2_last_name TEXT := 'Wayne'; -- <<< REPLACE
+    v_person2_email TEXT := 'bruce@wayne.com'; -- <<< REPLACE (ensure unique)
+    v_person2_phone TEXT := '555-0101'; -- <<< REPLACE (optional)
+    v_person2_company TEXT := 'Wayne Enterprises'; -- <<< REPLACE (optional)
+
+    -- Person 3 Data (no organization)
+    v_person3_first_name TEXT := 'Peter'; -- <<< REPLACE
+    v_person3_last_name TEXT := 'Parker'; -- <<< REPLACE
+    v_person3_email TEXT := 'peter@dailybugle.com'; -- <<< REPLACE (ensure unique)
+    v_person3_phone TEXT := '555-0102'; -- <<< REPLACE (optional)
+    v_person3_company TEXT := 'Daily Bugle'; -- <<< REPLACE (optional)
+
+BEGIN
+    -- 1. Create Organizations
+    INSERT INTO public.organizations (user_id, name, address)
+    VALUES (v_user_id, v_org1_name, v_org1_address)
+    RETURNING id INTO v_org1_id;
+    RAISE NOTICE 'Created Organization 1 (Stark Industries) with ID: %', v_org1_id;
+
+    INSERT INTO public.organizations (user_id, name, address)
+    VALUES (v_user_id, v_org2_name, v_org2_address)
+    RETURNING id INTO v_org2_id;
+    RAISE NOTICE 'Created Organization 2 (Wayne Enterprises) with ID: %', v_org2_id;
+
+    -- 2. Create People
+    -- Person 1 (linked to Stark Industries)
+    INSERT INTO public.people (user_id, first_name, last_name, email, phone, company, organization_id)
+    VALUES (v_user_id, v_person1_first_name, v_person1_last_name, v_person1_email, v_person1_phone, v_person1_company, v_org1_id);
+    RAISE NOTICE 'Created Person 1 (Tony Stark)';
+
+    -- Person 2 (linked to Wayne Enterprises)
+    INSERT INTO public.people (user_id, first_name, last_name, email, phone, company, organization_id)
+    VALUES (v_user_id, v_person2_first_name, v_person2_last_name, v_person2_email, v_person2_phone, v_person2_company, v_org2_id);
+    RAISE NOTICE 'Created Person 2 (Bruce Wayne)';
+
+    -- Person 3 (no organization)
+    INSERT INTO public.people (user_id, first_name, last_name, email, phone, company, organization_id)
+    VALUES (v_user_id, v_person3_first_name, v_person3_last_name, v_person3_email, v_person3_phone, v_person3_company, NULL);
+    RAISE NOTICE 'Created Person 3 (Peter Parker)';
+
+    RAISE NOTICE 'Successfully created sample organizations and people.';
+
+END $$;

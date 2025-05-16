@@ -160,6 +160,8 @@ export type Mutation = {
   updatePerson?: Maybe<Person>;
   updatePipeline: Pipeline;
   updateStage: Stage;
+  /** Updates the profile for the currently authenticated user. */
+  updateUserProfile?: Maybe<User>;
 };
 
 export type MutationCreateActivityArgs = {
@@ -238,6 +240,10 @@ export type MutationUpdatePipelineArgs = {
 export type MutationUpdateStageArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateStageInput;
+};
+
+export type MutationUpdateUserProfileArgs = {
+  input: UpdateUserProfileInput;
 };
 
 /** Defines the Organization type and related queries/mutations. */
@@ -398,11 +404,23 @@ export type UpdateStageInput = {
   stage_type?: InputMaybe<StageType>;
 };
 
+/**
+ * Input type for updating a user's profile.
+ * Only fields intended for update should be included.
+ */
+export type UpdateUserProfileInput = {
+  /** The new avatar URL for the user. Null means no change. */
+  avatar_url?: InputMaybe<Scalars["String"]["input"]>;
+  /** The new display name for the user. Null means no change. */
+  display_name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type User = {
   __typename?: "User";
-  email?: Maybe<Scalars["String"]["output"]>;
+  avatar_url?: Maybe<Scalars["String"]["output"]>;
+  display_name?: Maybe<Scalars["String"]["output"]>;
+  email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
-  name?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type ResolverTypeWrapper<T> = Promise<T> | T;
@@ -540,6 +558,7 @@ export type ResolversTypes = {
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
   UpdateActivityInput: UpdateActivityInput;
   UpdateStageInput: UpdateStageInput;
+  UpdateUserProfileInput: UpdateUserProfileInput;
   User: ResolverTypeWrapper<User>;
 };
 
@@ -571,6 +590,7 @@ export type ResolversParentTypes = {
   String: Scalars["String"]["output"];
   UpdateActivityInput: UpdateActivityInput;
   UpdateStageInput: UpdateStageInput;
+  UpdateUserProfileInput: UpdateUserProfileInput;
   User: User;
 };
 
@@ -801,6 +821,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateStageArgs, "id" | "input">
   >;
+  updateUserProfile?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateUserProfileArgs, "input">
+  >;
 };
 
 export type OrganizationResolvers<
@@ -1008,9 +1034,18 @@ export type UserResolvers<
   ParentType extends
     ResolversParentTypes["User"] = ResolversParentTypes["User"],
 > = {
-  email?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  avatar_url?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  display_name?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  email?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

@@ -6,6 +6,7 @@ import { organizationService } from '../../../../lib/organizationService';
 import { dealService } from '../../../../lib/dealService';
 import * as pipelineService from '../../../../lib/pipelineService';
 import * as stageService from '../../../../lib/stageService';
+import * as userProfileService from '../../../../lib/userProfileService';
 import {
   GraphQLContext, 
   getAccessToken, 
@@ -21,7 +22,7 @@ import type {
     Deal as GraphQLDeal,
     Pipeline as GraphQLPipeline,
     Stage as GraphQLStage,
-    User as GraphQLUserInfo,
+    User as GraphQLUser,
     PersonListItem as GraphQLPersonListItem
     // Argument types (e.g., QueryPersonArgs) are inferred by QueryResolvers
 } from '../../../../lib/generated/graphql';
@@ -63,13 +64,37 @@ export const Query: QueryResolvers<GraphQLContext> = {
         return `Unexpected Error: ${message}`;
       }
     },
-    me: (_parent, _args, context) => {
+    me: async (_parent, _args, context: GraphQLContext): Promise<GraphQLUser | null> => {
       requireAuthentication(context);
-      const currentUser = context.currentUser!; // Assert non-null due to requireAuthentication
-      return {
-        id: currentUser.id,
-        email: currentUser.email,
-      } as GraphQLUserInfo; // Cast to generated UserInfo
+      const currentUser = context.currentUser!;
+      const accessToken = getAccessToken(context)!;
+
+      if (!currentUser.email) {
+        // This case should ideally not happen for an authenticated user if email is a primary identifier.
+        // Log an error and throw, as the GraphQL schema expects a non-null email for the User type.
+        console.error(`[Query.me] Critical: Authenticated user ${currentUser.id} has no email.`);
+        throw new GraphQLError('Authenticated user email is missing.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+
+      try {
+        const profile = await userProfileService.getUserProfile(currentUser.id, accessToken);
+        
+        return {
+          id: currentUser.id,
+          email: currentUser.email, // Now checked for null/undefined
+          display_name: profile?.display_name || null,
+          avatar_url: profile?.avatar_url || null,    
+        };
+      } catch (error) {
+        console.error(`[Query.me] Error fetching profile for user ${currentUser.id}:`, error);
+        // Fallback: return basic info, but email is guaranteed by the check above.
+        return {
+            id: currentUser.id,
+            email: currentUser.email, // currentUser.email is guaranteed here
+            display_name: null,
+            avatar_url: null,
+        }; 
+      }
     },
 
     // --- Person Resolvers ---\

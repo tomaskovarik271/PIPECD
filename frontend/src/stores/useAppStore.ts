@@ -55,7 +55,8 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
         createdAt
         user {
           id
-          name
+          email
+          display_name
         }
       }
     }
@@ -67,7 +68,7 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
 // We can use Pick or extend GraphQLDeal if needed, but for now, let's assume this structure matches the query.
 export interface DealWithHistory extends GraphQLDeal {
     history: (Pick<GraphQLDealHistoryEntry, 'id' | 'eventType' | 'changes' | 'createdAt'> & {
-        user: Pick<GraphQLUser, 'id' | 'name'> | null;
+        user: Pick<GraphQLUser, 'id' | 'email' | 'display_name'> | null;
     })[];
     // Ensure other fields from the query like person, organization are also strongly typed if not already by GraphQLDeal
     person: GraphQLDeal['person'];

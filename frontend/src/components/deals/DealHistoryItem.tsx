@@ -76,9 +76,9 @@ const renderChanges = (eventType: string, changes: any): JSX.Element | string =>
 };
 
 const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
-  const userName = entry.user?.name || 'System Action';
+  const userName = entry.user?.display_name || 'System Action';
   // Placeholder for avatar, replace with actual avatar URL if available
-  const userAvatarSrc = entry.user?.id ? `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random&color=fff` : undefined;
+  const userAvatarSrc = entry.user?.display_name ? `https://ui-avatars.com/api/?name=${encodeURIComponent(entry.user.display_name)}&background=random&color=fff` : undefined;
 
   let eventDescription = 'made changes to this deal.';
   if (entry.eventType === 'DEAL_CREATED') eventDescription = 'created this deal.';

@@ -6,39 +6,7 @@ import type { Deal, DealInput } from './generated/graphql'; // Changed to DealIn
 import { diff, Diff } from 'deep-diff';
 import { inngest } from './inngestClient'; // Import the shared Inngest client
 
-// REMOVED: Redundant env var loading
-// import dotenv from 'dotenv';
-// dotenv.config();
-// const supabaseUrl = process.env.SUPABASE_URL;
-// ... etc ...
-// if (!supabaseUrl) { ... }
-// if (!supabaseAnonKey) { ... }
 
-
-// REMOVED: Helper Functions (now in serviceUtils.ts)
-// function getAuthenticatedClient(accessToken: string): SupabaseClient { ... }
-// function handleSupabaseError(error: any, context: string) { ... }
-
-// --- Deal Data Shape (Placeholder - Define more accurately with schema) ---
-// interface DealInput { // REMOVED
-//   name?: string | null;
-//   // REMOVED: stage?: string | null; // Replaced by stage_id
-//   amount?: number | null;
-//   person_id?: string | null; // Foreign key to people table
-//   stage_id?: string | null;  // Foreign key to stages table
-//   // Add other relevant fields like close_date, notes etc.
-// }
-
-// Define the shape returned by the database (includes id, timestamps, user_id)
-// Ideally, generate this from schema or use a shared type
-// interface DealRecord extends Omit<DealInput, 'person_id'> { // REMOVED
-//     id: string;
-//     created_at: string;
-//     updated_at: string;
-//     user_id: string;
-//     person_id?: string | null; // Ensure person_id is here too
-//     stage_id?: string | null;  // Ensure stage_id is here too
-// }
 
 // Define a more specific type for the update payload to include weighted_amount
 interface DealUpdatePayload extends Partial<DealInput> {
