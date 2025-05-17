@@ -211,14 +211,15 @@ const StagesPage: React.FC = () => {
                   p={4} 
                   borderWidth="1px" 
                   borderRadius="md" 
-                  bg="white" 
+                  bg={{ base: 'white', _dark: 'gray.700' }} 
+                  borderColor={{ base: 'gray.200', _dark: 'gray.600' }}
                   shadow="sm"
                   _hover={{ shadow: 'md' }}
                 >
                   <Flex justify="space-between" align="center">
                     <Box flexGrow={1} mr={4}>
                       <Heading size="sm">{stage.name}</Heading>
-                      <Text fontSize="sm" color="gray.500">
+                      <Text fontSize="sm" color={{ base: 'gray.500', _dark: 'gray.400' }}>
                         Order: {stage.order}
                         {stage.deal_probability !== null && stage.deal_probability !== undefined && 
                           // Multiply by 100 and format as percentage

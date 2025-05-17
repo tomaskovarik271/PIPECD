@@ -86,17 +86,24 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
   if (entry.eventType === 'DEAL_DELETED') eventDescription = 'deleted this deal.';
 
   return (
-    <Box borderWidth="1px" borderRadius="md" p={4} bg="white" shadow="sm">
+    <Box 
+      borderWidth="1px" 
+      borderRadius="md" 
+      p={4} 
+      bg={{ base: 'white', _dark: 'gray.700' }} 
+      borderColor={{ base: 'gray.200', _dark: 'gray.600' }} 
+      shadow="sm"
+    >
       <HStack spacing={3} align="start">
         <Avatar size="sm" name={userName} src={userAvatarSrc} mt={1} />
         <VStack align="start" spacing={1} flex={1}>
           <HStack justifyContent="space-between" w="full">
             <Text fontWeight="bold" fontSize="sm">{userName}</Text>
-            <Text fontSize="xs" color="gray.500">
+            <Text fontSize="xs" color={{ base: 'gray.500', _dark: 'gray.400' }}>
               {format(parseISO(entry.createdAt), 'MMM d, yyyy, h:mm a')} 
             </Text>
           </HStack>
-          <Text fontSize="sm" color="gray.700">
+          <Text fontSize="sm" color={{ base: 'gray.700', _dark: 'gray.200' }}>
             {eventDescription}
           </Text>
           {entry.changes && (

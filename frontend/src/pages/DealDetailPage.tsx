@@ -46,9 +46,9 @@ const DealDetailPage = () => {
   return (
     <Box>
       <Heading mb={1}>Deal: {currentDeal.name}</Heading>
-      <Text fontSize="sm" color="gray.500" mb={4}>ID: {currentDeal.id}</Text>
+      <Text fontSize="sm" color={{ base: 'gray.500', _dark: 'gray.400' }} mb={4}>ID: {currentDeal.id}</Text>
       
-      <Box mb={6} p={4} borderWidth="1px" borderRadius="lg" bg="white">
+      <Box mb={6} p={4} borderWidth="1px" borderRadius="lg" bg={{ base: 'white', _dark: 'gray.700' }} borderColor={{ base: 'gray.200', _dark: 'gray.600' }}>
         <Heading size="sm" mb={2}>Details</Heading>
         <Text><strong>Amount:</strong> {currentDeal.amount ? `$${currentDeal.amount.toLocaleString()}` : 'N/A'}</Text>
         <Text><strong>Stage:</strong> {currentDeal.stage?.name || 'N/A'}</Text>
@@ -59,7 +59,7 @@ const DealDetailPage = () => {
 
       {/* Custom Fields Display Section Added Below */}
       {currentDeal.customFieldValues && currentDeal.customFieldValues.length > 0 && (
-        <Box mt={6} p={4} borderWidth="1px" borderRadius="lg" bg="white">
+        <Box mt={6} p={4} borderWidth="1px" borderRadius="lg" bg={{ base: 'white', _dark: 'gray.700' }} borderColor={{ base: 'gray.200', _dark: 'gray.600' }}>
           <Heading size="sm" mb={3}>Custom Information</Heading>
           {currentDeal.customFieldValues.map((cfValue) => {
             if (!cfValue.definition) return null; // Should not happen if query is correct
@@ -103,7 +103,7 @@ const DealDetailPage = () => {
       )}
       {/* End of Custom Fields Display Section */}
 
-      <Box mt={6} p={4} borderWidth="1px" borderRadius="lg" bg="white">
+      <Box mt={6} p={4} borderWidth="1px" borderRadius="lg" bg={{ base: 'white', _dark: 'gray.700' }} borderColor={{ base: 'gray.200', _dark: 'gray.600' }}>
         <Heading size="md" mb={3}>History / Audit Trail</Heading>
         {currentDeal.history ? (
           <DealHistoryList historyEntries={currentDeal.history} />

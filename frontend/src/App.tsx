@@ -27,7 +27,7 @@ function AppContent() {
   return (
     <Flex minH="100vh">
       <Sidebar />
-      <Box as="main" flex={1} p={6} bg="gray.50">
+      <Box as="main" flex={1} p={6} bg={{ base: 'gray.50', _dark: 'gray.900' }}>
           <Routes>
             <Route path="/" element={<Heading size="lg">Home</Heading>} />
             <Route path="/people" element={<PeoplePage />} />

@@ -150,7 +150,8 @@ const PipelinesPage: React.FC = () => {
                   p={4} 
                   borderWidth="1px" 
                   borderRadius="md" 
-                  bg="white" 
+                  bg={{ base: 'white', _dark: 'gray.700' }} 
+                  borderColor={{ base: 'gray.200', _dark: 'gray.600' }}
                   shadow="sm"
                   _hover={{ shadow: 'md' }}
                 >

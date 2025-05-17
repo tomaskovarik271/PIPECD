@@ -109,6 +109,7 @@ function PeoplePage() {
             icon={<DeleteIcon />} 
             aria-label="Delete person" 
             size="sm" 
+            variant="ghost"
             colorScheme="red" 
             onClick={() => handleDeleteClick(person.id)} 
             isDisabled={!userPermissions?.includes('person:delete_any') && !userPermissions?.includes('person:delete_own')} 

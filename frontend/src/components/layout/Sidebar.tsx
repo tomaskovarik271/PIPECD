@@ -1,4 +1,4 @@
-import { VStack, Link as ChakraLink, Text, Box, Button, Flex, useStyleConfig, SystemStyleObject } from '@chakra-ui/react';
+import { VStack, Link as ChakraLink, Text, Box, Button, Flex, useStyleConfig, SystemStyleObject, Image, useColorModeValue } from '@chakra-ui/react';
 import { NavLink as RouterNavLink } from 'react-router-dom';
 import { useAppStore } from '../../stores/useAppStore';
 import ThemeSwitcher from '../common/ThemeSwitcher';
@@ -17,6 +17,16 @@ import {
   SettingsIcon, // Used for Profile and Admin items now
   // RepeatIcon // Example
 } from '@chakra-ui/icons'; // Use appropriate icons
+
+// Comment out direct imports if moving logos to public directory
+// import logoPositiveRoot from '../../assets/logos/logo-positive.svg'; 
+// import logoNegativeRoot from '../../assets/logos/logo-negative.svg';
+
+// Use string paths assuming logos are in `frontend/public/assets/logos/`
+const logoPositive = '/assets/logos/logo-positive.svg';
+const logoNegative = '/assets/logos/logo-negative.svg';
+
+import { useThemeStore } from '../../stores/useThemeStore'; // To check current theme for logo
 
 const NAV_ITEMS = [
   { path: '/deals', label: 'Deals', icon: <CheckCircleIcon /> },
@@ -39,18 +49,25 @@ const USER_NAV_ITEMS = [
 function Sidebar() {
   const handleSignOutAction = useAppStore((state) => state.handleSignOut);
   const userEmail = useAppStore((state) => state.session?.user?.email);
-
-  // Get styles from the theme. 
-  // useStyleConfig returns SystemStyleObject | Record<string, SystemStyleObject>
-  // We defined parts, so it should be Record<string, SystemStyleObject>
   const styles = useStyleConfig("Sidebar", {}) as Record<string, SystemStyleObject>; 
+  const currentThemeName = useThemeStore((state) => state.currentTheme);
 
-  // Safely access style parts
   const containerStyles = styles?.container || {};
   const headerTextStyles = styles?.headerText || {};
   const navLinkStyles = styles?.navLink || {};
   const activeNavLinkStyles = styles?.activeNavLink || {};
   const userInfoTextStyles = styles?.userInfoText || {};
+
+  const isDarkTheme = [
+    'dark', 
+    'bowie', 
+    'industrialMetal', 
+    'creativeDockDarkTheme', // Ensure this matches your dark CD theme name if distinct in store
+    'andyWarhol',
+    'daliDark' // Add daliDark to this check if its sidebar is also dark for logo selection
+  ].includes(currentThemeName);
+  
+  const selectedLogo = isDarkTheme ? logoNegative : logoPositive;
 
   return (
     <VStack 
@@ -67,7 +84,10 @@ function Sidebar() {
       // Apply themed styles to the container safely
       sx={containerStyles}
     >
-      <Text fontSize="xl" fontWeight="bold" mb={4} sx={headerTextStyles}>PipeCD</Text>
+      {/* Logo Section */}
+      <Box mb={4} sx={headerTextStyles} h={{base: "30px"}} display="flex" alignItems="center"> 
+        <Image src={selectedLogo} alt="Creative Dock Logo" maxH="30px" />
+      </Box>
       
       {NAV_ITEMS.map((item) => (
         // Use NavLink for active state detection, pass function as children
@@ -132,6 +152,20 @@ function Sidebar() {
           )}
         </RouterNavLink>
       ))}
+
+      {/* Conditionally render Dali inspiration image */}
+      {currentThemeName === 'daliDark' && (
+        <Box my={4} px={2} display="flex" justifyContent="center">
+          <Image 
+            src="/assets/images/dali-inspiration.png" 
+            alt="Dali Inspiration" 
+            borderRadius="md" 
+            boxShadow="lg" // Add a subtle shadow, can be themed later
+            maxW="150px" // Limit width
+            objectFit="contain"
+          />
+        </Box>
+      )}
 
       {/* Spacer to push sign out down? Or place it logically */}
       <Box flexGrow={1}></Box> 

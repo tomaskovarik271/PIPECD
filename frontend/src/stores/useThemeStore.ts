@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 
-export type ThemeMode = 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark' | 'daliDark' | 'bowie' | 'industrialMetal' | 'andyWarhol';
 
 const getInitialTheme = (): ThemeMode => {
   if (typeof window !== 'undefined') {
     try {
       const storedTheme = localStorage.getItem('app-theme') as ThemeMode | null;
-      if (storedTheme === 'light' || storedTheme === 'dark') {
+      if (storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'daliDark' || storedTheme === 'bowie' || storedTheme === 'industrialMetal' || storedTheme === 'andyWarhol') {
         return storedTheme;
       }
     } catch (error: unknown) {

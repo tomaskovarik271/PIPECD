@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Box, Heading, Spinner, Alert, AlertIcon, VStack, Text, Flex, useToast } from '@chakra-ui/react';
+import { Box, Heading, Spinner, Alert, AlertIcon, VStack, Text, Flex, useToast, useColorModeValue } from '@chakra-ui/react';
 import { useDealsStore, Deal } from '../../stores/useDealsStore';
 import { useStagesStore, Stage } from '../../stores/useStagesStore';
 import PipelineSelectorDropdown from './PipelineSelectorDropdown';
@@ -18,6 +18,10 @@ const DealsKanbanView: React.FC = () => {
   } = useDealsStore();
   const { stages, stagesLoading, stagesError, fetchStages, hasInitiallyFetchedStages } = useStagesStore();
   const toast = useToast();
+
+  // Theme-aware scrollbar colors for the main Kanban container
+  const kanbanScrollbarThumbBg = useColorModeValue('gray.300', 'gray.500');
+  const kanbanScrollbarTrackBg = useColorModeValue('gray.100', 'gray.600');
 
   useEffect(() => {
     if (!hasInitiallyFetchedDeals && !dealsLoading && !dealsError) {
@@ -139,11 +143,11 @@ const DealsKanbanView: React.FC = () => {
                       height: '8px',
                   },
                   '&::-webkit-scrollbar-thumb': {
-                      background: 'gray.300',
+                      background: kanbanScrollbarThumbBg, // Theme-aware
                       borderRadius: '8px',
                   },
                   '&::-webkit-scrollbar-track': {
-                      background: 'gray.100',
+                      background: kanbanScrollbarTrackBg, // Theme-aware
                   },
               }}
           >
