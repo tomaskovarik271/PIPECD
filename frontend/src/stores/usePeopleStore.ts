@@ -22,6 +22,21 @@ const GET_PEOPLE_QUERY = gql`
       updated_at
       organization_id
       organization { id name }
+      customFieldValues {
+        stringValue
+        numberValue
+        booleanValue
+        dateValue
+        selectedOptionValues
+        definition {
+          id
+          fieldName
+          fieldLabel
+          fieldType
+          isRequired
+          dropdownOptions { value label }
+        }
+      }
     }
   }
 `;
@@ -39,6 +54,21 @@ const CREATE_PERSON_MUTATION = gql`
       updated_at
       organization_id
       organization { id name }
+      customFieldValues {
+        stringValue
+        numberValue
+        booleanValue
+        dateValue
+        selectedOptionValues
+        definition {
+          id
+          fieldName
+          fieldLabel
+          fieldType
+          isRequired
+          dropdownOptions { value label }
+        }
+      }
     }
   }
 `;
@@ -56,6 +86,21 @@ const UPDATE_PERSON_MUTATION = gql`
       updated_at
       organization_id
       organization { id name }
+      customFieldValues {
+        stringValue
+        numberValue
+        booleanValue
+        dateValue
+        selectedOptionValues
+        definition {
+          id
+          fieldName
+          fieldLabel
+          fieldType
+          isRequired
+          dropdownOptions { value label }
+        }
+      }
     }
   }
 `;

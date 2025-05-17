@@ -61,3 +61,13 @@ export function processZodError(error: unknown, actionDescription: string): Grap
     extensions: { code: 'INTERNAL_SERVER_ERROR' },
   });
 } 
+
+// Helper function to convert string to Date or null
+export const convertToDateOrNull = (dateStr: string | null | undefined): Date | null => {
+  if (dateStr && typeof dateStr === 'string' && dateStr.trim() !== '') {
+    const date = new Date(dateStr);
+    // Check if the date is valid; Invalid Date getTime() returns NaN
+    return isNaN(date.getTime()) ? null : date;
+  }
+  return null; // Return null for empty strings, null, undefined, or invalid date strings
+}; 

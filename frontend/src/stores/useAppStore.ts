@@ -48,6 +48,23 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
           id
           name
       }
+      customFieldValues {
+        definition {
+          id
+          fieldName
+          fieldLabel
+          fieldType
+          dropdownOptions {
+            value
+            label
+          }
+        }
+        stringValue
+        numberValue
+        booleanValue
+        dateValue
+        selectedOptionValues
+      }
       history(limit: 50) {
         id
         eventType

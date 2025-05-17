@@ -20,13 +20,21 @@ import {
   AlertIcon,
   Spinner,
   useToast,
+  Switch,
+  Textarea,
+  CheckboxGroup,
+  Checkbox,
+  Stack,
+  Text,
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
 import { useDealsStore } from '../stores/useDealsStore';
 import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore';
 import { useStagesStore, Stage } from '../stores/useStagesStore';
-import { DealInput } from '../generated/graphql/graphql';
+import { DealInput, CustomFieldType } from '../generated/graphql/graphql';
+import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
+import { CustomFieldEntityType, CustomFieldDefinition as GraphQLCustomFieldDefinition, CustomFieldValueInput } from '../generated/graphql/graphql';
 
 interface CreateDealModalProps {
   isOpen: boolean;
@@ -42,6 +50,9 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [personId, setPersonId] = useState<string>('');
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   
+  // State for Custom Fields
+  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, any>>({});
+  const [activeDealCustomFields, setActiveDealCustomFields] = useState<GraphQLCustomFieldDefinition[]>([]);
 
   const { pipelines, fetchPipelines, pipelinesLoading, pipelinesError } = usePipelinesStore();
 
@@ -51,6 +62,14 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     stagesLoading,
     stagesError
   } = useStagesStore();
+
+  // Custom Field Definitions Store
+  const { 
+    definitions: allCustomFieldDefs, 
+    fetchCustomFieldDefinitions: fetchDefinitions, 
+    loading: customFieldsLoading, 
+    error: customFieldsError 
+  } = useCustomFieldDefinitionStore();
 
   const { createDeal: createDealAction, dealsError, dealsLoading } = useDealsStore(); 
 
@@ -71,10 +90,40 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       setDealSpecificProbability('');
       setIsLoading(false);
       
+      // Reset custom field states
+      setCustomFieldFormValues({});
+      setActiveDealCustomFields([]); // Clear previous active fields
+
       fetchPeople(); 
       fetchPipelines(); 
+      // Fetch active custom field definitions for Deals
+      fetchDefinitions(CustomFieldEntityType.Deal, false);
     }
-  }, [isOpen, fetchPeople, fetchPipelines]);
+  }, [isOpen, fetchPeople, fetchPipelines, fetchDefinitions]);
+
+  useEffect(() => {
+    // Update activeDealCustomFields when definitions are fetched from the store
+    // We filter here to ensure we only use DEAL definitions and they are active (though fetchDefinitions should handle active state)
+    const activeDealDefs = allCustomFieldDefs.filter(
+      def => def.entityType === CustomFieldEntityType.Deal && def.isActive
+    );
+    setActiveDealCustomFields(activeDealDefs);
+  }, [allCustomFieldDefs]);
+
+  useEffect(() => {
+    // Initialize customFieldFormValues with default values when activeDealCustomFields are loaded
+    const initialCustomValues: Record<string, any> = {};
+    activeDealCustomFields.forEach(def => {
+      if (def.fieldType === CustomFieldType.Boolean) {
+        initialCustomValues[def.fieldName] = false;
+      } else if (def.fieldType === CustomFieldType.MultiSelect) {
+        initialCustomValues[def.fieldName] = [];
+      } else {
+        initialCustomValues[def.fieldName] = '';
+      }
+    });
+    setCustomFieldFormValues(initialCustomValues);
+  }, [activeDealCustomFields]);
 
   useEffect(() => {
     if (localSelectedPipelineId) {
@@ -108,7 +157,84 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         pipeline_id: localSelectedPipelineId,
         amount: amount ? parseFloat(amount) : null,
         person_id: personId || null,
+        // customFields: [] // Initialize customFields array - will be populated below
       };
+
+      // Populate customFields for submission
+      const customFieldsSubmission: CustomFieldValueInput[] = activeDealCustomFields
+        .map(def => {
+          const rawValue = customFieldFormValues[def.fieldName];
+          
+          const valueInputPayload: Omit<CustomFieldValueInput, 'definitionId'> = {};
+
+          // Skip if the rawValue is undefined or null, unless it's a boolean (which defaults to false)
+          // or an empty array for multi-select (which is a valid empty state).
+          // For empty strings in required text fields, validation should catch it, but we might send it.
+          if (rawValue === undefined || rawValue === null) {
+            if (def.fieldType === CustomFieldType.Boolean) {
+              // Booleans always have a value (true/false)
+              valueInputPayload.booleanValue = false; // Default to false if null/undefined somehow
+            } else if (def.fieldType === CustomFieldType.MultiSelect && Array.isArray(rawValue) && rawValue.length === 0) {
+              valueInputPayload.selectedOptionValues = []; // Send empty array for multi-select
+            } else if (def.isRequired) {
+              // A required field is null/undefined and not a boolean/empty multi-select - this is a validation issue
+              // For now, we'll let it pass and backend validation or GraphQL type system might catch it if we send nothing.
+              // Or, we could return null here to not send this field value at all if it's truly empty for a required field.
+              // Let's try to send what we have, or nothing if truly empty and not boolean/multi-select.
+               if (rawValue === undefined || rawValue === null) return null; // Skip if no value for non-boolean/non-multiselect
+            } else {
+                 // Optional field with no value
+                 return null; 
+            }
+          }
+
+          switch (def.fieldType) {
+            case CustomFieldType.Text:
+              valueInputPayload.stringValue = String(rawValue);
+              break;
+            case CustomFieldType.Dropdown: // Single select dropdown
+              valueInputPayload.stringValue = String(rawValue);
+              break;
+            case CustomFieldType.Number:
+              const num = parseFloat(String(rawValue));
+              if (!isNaN(num)) {
+                valueInputPayload.numberValue = num;
+              } else if (String(rawValue).trim() === '' && !def.isRequired) {
+                // Optional number field, cleared by user, send nothing for this value part
+              } else if (def.isRequired || String(rawValue).trim() !== '') {
+                // Required number or optional with invalid data - this is a validation issue.
+                // For now, don't set numberValue if invalid to let GraphQL validation catch missing required or wrong type.
+                // Or, set an error and prevent submission. For now, we omit if invalid.
+                 console.warn(`Invalid number for required field ${def.fieldName}: ${rawValue}`);
+                 return null; // Don't submit this custom field if number is invalid
+              }
+              break;
+            case CustomFieldType.Boolean:
+              valueInputPayload.booleanValue = Boolean(rawValue);
+              break;
+            case CustomFieldType.Date:
+              // Ensure YYYY-MM-DD format if that's what your DateTime scalar expects for date-only
+              valueInputPayload.dateValue = String(rawValue); 
+              break;
+            case CustomFieldType.MultiSelect:
+              if (Array.isArray(rawValue)) {
+                valueInputPayload.selectedOptionValues = rawValue.map(String);
+              }
+              break;
+            default:
+              console.warn(`Unhandled custom field type: ${def.fieldType} for field ${def.fieldName}`);
+              return null; // Skip unhandled types
+          }
+          
+          // Only return an entry if at least one value field was set in valueInputPayload
+          if (Object.keys(valueInputPayload).length > 0) {
+            return { definitionId: def.id, ...valueInputPayload };
+          }
+          return null; // If no value field was set (e.g. optional empty number)
+        })
+        .filter(cf => cf !== null) as CustomFieldValueInput[]; // Filter out any nulls from map
+      
+      dealInput.customFields = customFieldsSubmission;
 
       const probPercent = parseFloat(dealSpecificProbability);
       if (!isNaN(probPercent) && probPercent >= 0 && probPercent <= 100) {
@@ -181,6 +307,92 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
               />
               {error?.toLowerCase().includes('name') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
+
+            {/* Custom Fields Rendering */}
+            {customFieldsLoading && <Spinner label="Loading custom fields..." />}
+            {customFieldsError && <Alert status="error" mb={4}><AlertIcon />Error loading custom fields: {customFieldsError}</Alert>}
+            
+            {activeDealCustomFields.map((def) => (
+              <FormControl key={def.fieldName} isRequired={def.isRequired} mb={4}>
+                <FormLabel htmlFor={def.fieldName}>{def.fieldLabel}</FormLabel>
+                {(() => {
+                  switch (def.fieldType) {
+                    case CustomFieldType.Text:
+                      return (
+                        <Input
+                          id={def.fieldName}
+                          placeholder={def.fieldLabel}
+                          value={customFieldFormValues[def.fieldName] || ''}
+                          onChange={(e) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: e.target.value }))}
+                        />
+                      );
+                    case CustomFieldType.Number:
+                      return (
+                        <NumberInput
+                          id={def.fieldName}
+                          value={customFieldFormValues[def.fieldName] || ''}
+                          onChange={(valueString) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: valueString }))}
+                          allowMouseWheel
+                        >
+                          <NumberInputField placeholder={def.fieldLabel} />
+                        </NumberInput>
+                      );
+                    case CustomFieldType.Date:
+                      return (
+                        <Input
+                          id={def.fieldName}
+                          type="date"
+                          value={customFieldFormValues[def.fieldName] || ''}
+                          onChange={(e) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: e.target.value }))}
+                        />
+                      );
+                    case CustomFieldType.Boolean:
+                      return (
+                        <Switch
+                          id={def.fieldName}
+                          isChecked={customFieldFormValues[def.fieldName] || false}
+                          onChange={(e) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: e.target.checked }))}
+                        />
+                      );
+                    case CustomFieldType.Dropdown:
+                      return (
+                        <Select
+                          id={def.fieldName}
+                          placeholder={`Select ${def.fieldLabel}...`}
+                          value={customFieldFormValues[def.fieldName] || ''}
+                          onChange={(e) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: e.target.value }))}
+                        >
+                          {def.dropdownOptions?.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                          ))}
+                        </Select>
+                      );
+                    case CustomFieldType.MultiSelect:
+                      return (
+                        <CheckboxGroup 
+                          value={customFieldFormValues[def.fieldName] || []} 
+                          onChange={(values) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: values }))}
+                        >
+                          <Stack direction="column">
+                            {def.dropdownOptions?.map(opt => (
+                              <Checkbox key={opt.value} value={opt.value}>{opt.label}</Checkbox>
+                            ))}
+                          </Stack>
+                        </CheckboxGroup>
+                      );
+                    default:
+                      return <Text color="red">Unsupported field type: {def.fieldType}</Text>;
+                  }
+                })()}
+                {def.isRequired && 
+                  (!customFieldFormValues[def.fieldName] || 
+                    (Array.isArray(customFieldFormValues[def.fieldName]) && customFieldFormValues[def.fieldName].length === 0) ||
+                    (typeof customFieldFormValues[def.fieldName] === 'string' && customFieldFormValues[def.fieldName].trim() === '')
+                  ) && (
+                  <Text fontSize="sm" color="red.500" mt={1}>This field is required.</Text>
+                )}
+              </FormControl>
+            ))}
 
             <FormControl isRequired isInvalid={!localSelectedPipelineId && error?.toLowerCase().includes('pipeline')}>
               <FormLabel>Pipeline</FormLabel>

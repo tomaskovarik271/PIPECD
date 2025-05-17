@@ -1,5 +1,7 @@
 ## Implementation Plan: Deal-Specific Probability & Weighted Value
 
+**Status:** Done
+
 **Overall Goal:** Allow users to set a specific probability for individual deals, and display a calculated "weighted amount" for deals based on this probability (with a fallback to stage probability).
 
 ---

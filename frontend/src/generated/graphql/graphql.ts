@@ -45,6 +45,7 @@ export type Activity = {
   subject: Scalars["String"]["output"];
   type: ActivityType;
   updated_at: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
   user_id: Scalars["ID"]["output"];
 };
 
@@ -83,11 +84,82 @@ export type CreateStageInput = {
   stage_type?: InputMaybe<StageType>;
 };
 
+export type CustomFieldDefinition = {
+  __typename?: "CustomFieldDefinition";
+  createdAt: Scalars["DateTime"]["output"];
+  displayOrder: Scalars["Int"]["output"];
+  dropdownOptions?: Maybe<Array<CustomFieldOption>>;
+  entityType: CustomFieldEntityType;
+  fieldLabel: Scalars["String"]["output"];
+  fieldName: Scalars["String"]["output"];
+  fieldType: CustomFieldType;
+  id: Scalars["ID"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  isRequired: Scalars["Boolean"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type CustomFieldDefinitionInput = {
+  displayOrder?: InputMaybe<Scalars["Int"]["input"]>;
+  dropdownOptions?: InputMaybe<Array<CustomFieldOptionInput>>;
+  entityType: CustomFieldEntityType;
+  fieldLabel: Scalars["String"]["input"];
+  fieldName: Scalars["String"]["input"];
+  fieldType: CustomFieldType;
+  isRequired?: InputMaybe<Scalars["Boolean"]["input"]>;
+};
+
+export enum CustomFieldEntityType {
+  Deal = "DEAL",
+  Organization = "ORGANIZATION",
+  Person = "PERSON",
+}
+
+export type CustomFieldOption = {
+  __typename?: "CustomFieldOption";
+  label: Scalars["String"]["output"];
+  value: Scalars["String"]["output"];
+};
+
+export type CustomFieldOptionInput = {
+  label: Scalars["String"]["input"];
+  value: Scalars["String"]["input"];
+};
+
+export enum CustomFieldType {
+  Boolean = "BOOLEAN",
+  Date = "DATE",
+  Dropdown = "DROPDOWN",
+  MultiSelect = "MULTI_SELECT",
+  Number = "NUMBER",
+  Text = "TEXT",
+}
+
+export type CustomFieldValue = {
+  __typename?: "CustomFieldValue";
+  booleanValue?: Maybe<Scalars["Boolean"]["output"]>;
+  dateValue?: Maybe<Scalars["DateTime"]["output"]>;
+  definition: CustomFieldDefinition;
+  numberValue?: Maybe<Scalars["Float"]["output"]>;
+  selectedOptionValues?: Maybe<Array<Scalars["String"]["output"]>>;
+  stringValue?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type CustomFieldValueInput = {
+  booleanValue?: InputMaybe<Scalars["Boolean"]["input"]>;
+  dateValue?: InputMaybe<Scalars["DateTime"]["input"]>;
+  definitionId: Scalars["ID"]["input"];
+  numberValue?: InputMaybe<Scalars["Float"]["input"]>;
+  selectedOptionValues?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  stringValue?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type Deal = {
   __typename?: "Deal";
   activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
+  customFieldValues: Array<CustomFieldValue>;
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
   history?: Maybe<Array<DealHistoryEntry>>;
@@ -122,6 +194,7 @@ export type DealHistoryEntry = {
 
 export type DealInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   name: Scalars["String"]["input"];
@@ -131,21 +204,36 @@ export type DealInput = {
   stage_id: Scalars["ID"]["input"];
 };
 
+export type DealUpdateInput = {
+  amount?: InputMaybe<Scalars["Float"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
+  expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
+  person_id?: InputMaybe<Scalars["ID"]["input"]>;
+  stage_id?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
 export type Mutation = {
   __typename?: "Mutation";
   createActivity: Activity;
+  createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
   createOrganization: Organization;
   createPerson: Person;
   createPipeline: Pipeline;
   createStage: Stage;
+  deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteActivity: Scalars["ID"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   deletePipeline: Scalars["Boolean"]["output"];
   deleteStage: Scalars["Boolean"]["output"];
+  reactivateCustomFieldDefinition: CustomFieldDefinition;
   updateActivity: Activity;
+  updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
@@ -157,6 +245,10 @@ export type Mutation = {
 
 export type MutationCreateActivityArgs = {
   input: CreateActivityInput;
+};
+
+export type MutationCreateCustomFieldDefinitionArgs = {
+  input: CustomFieldDefinitionInput;
 };
 
 export type MutationCreateDealArgs = {
@@ -177,6 +269,10 @@ export type MutationCreatePipelineArgs = {
 
 export type MutationCreateStageArgs = {
   input: CreateStageInput;
+};
+
+export type MutationDeactivateCustomFieldDefinitionArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationDeleteActivityArgs = {
@@ -203,9 +299,18 @@ export type MutationDeleteStageArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationReactivateCustomFieldDefinitionArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationUpdateActivityArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateActivityInput;
+};
+
+export type MutationUpdateCustomFieldDefinitionArgs = {
+  id: Scalars["ID"]["input"];
+  input: CustomFieldDefinitionInput;
 };
 
 export type MutationUpdateDealArgs = {
@@ -243,6 +348,7 @@ export type Organization = {
   activities: Array<Activity>;
   address?: Maybe<Scalars["String"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
+  customFieldValues: Array<CustomFieldValue>;
   deals: Array<Deal>;
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
@@ -254,7 +360,15 @@ export type Organization = {
 
 export type OrganizationInput = {
   address?: InputMaybe<Scalars["String"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   name: Scalars["String"]["input"];
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type OrganizationUpdateInput = {
+  address?: InputMaybe<Scalars["String"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -263,6 +377,7 @@ export type Person = {
   __typename?: "Person";
   activities: Array<Activity>;
   created_at: Scalars["DateTime"]["output"];
+  customFieldValues: Array<CustomFieldValue>;
   deals?: Maybe<Array<Deal>>;
   email?: Maybe<Scalars["String"]["output"]>;
   first_name?: Maybe<Scalars["String"]["output"]>;
@@ -277,6 +392,7 @@ export type Person = {
 };
 
 export type PersonInput = {
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   email?: InputMaybe<Scalars["String"]["input"]>;
   first_name?: InputMaybe<Scalars["String"]["input"]>;
   last_name?: InputMaybe<Scalars["String"]["input"]>;
@@ -289,6 +405,16 @@ export type PersonListItem = {
   __typename?: "PersonListItem";
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
+};
+
+export type PersonUpdateInput = {
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  email?: InputMaybe<Scalars["String"]["input"]>;
+  first_name?: InputMaybe<Scalars["String"]["input"]>;
+  last_name?: InputMaybe<Scalars["String"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
+  phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type Pipeline = {
@@ -308,6 +434,8 @@ export type Query = {
   __typename?: "Query";
   activities: Array<Activity>;
   activity?: Maybe<Activity>;
+  customFieldDefinition?: Maybe<CustomFieldDefinition>;
+  customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   health: Scalars["String"]["output"];
@@ -331,6 +459,15 @@ export type QueryActivitiesArgs = {
 
 export type QueryActivityArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryCustomFieldDefinitionArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryCustomFieldDefinitionsArgs = {
+  entityType: CustomFieldEntityType;
+  includeInactive?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type QueryDealArgs = {

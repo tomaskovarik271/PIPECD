@@ -38,6 +38,35 @@
     *   *Source: Derived from Activity feature existence*
     *   *Priority: HIGH*
 
+### 1.1B. Critical Security Fixes from Code Review (NEW SECTION)
+*   **Task:** `[ ]` **TECH-TASK-CRIT-001:** Remove `accessToken` logging from `serviceUtils.ts`.
+    *   *Source: Code Review (`CODE_REVIEW_0517.md`)*
+    *   *Priority: CRITICAL (Immediate Fix)*
+    *   **Implementation Plan:**
+        1.  Locate the `console.log` statement in `lib/serviceUtils.ts` within the `getAuthenticatedClient` function that logs the `accessToken`.
+        2.  Delete this specific `console.log` statement.
+        3.  Verify no other sensitive information is inadvertently logged in this function or immediate vicinity.
+        4.  Commit the change with a clear message indicating a security fix.
+        5.  If CI/CD is set up, ensure it passes. Manually test login/authenticated requests to ensure no functionality broke.
+*   **Task:** `[ ]` **TECH-TASK-CRIT-002:** Implement API-level permission checks in Custom Field GraphQL resolvers.
+    *   *Source: Code Review (`CODE_REVIEW_0517.md`)*
+    *   *Priority: CRITICAL*
+    *   **Implementation Plan:**
+        1.  **Create/Identify Permission Checking Helper (TypeScript):**
+            *   Create a new helper function (e.g., in `netlify/functions/graphql/helpers.ts` or a new `permissionUtils.ts`).
+            *   This function should take `GraphQLContext`, `resource: string`, and `action: string` as arguments.
+            *   It will use the `context.currentUser.id` (or `auth.uid()` equivalent from context) and the provided resource/action to call the Supabase `public.check_permission` function (likely via an `rpc` call using the Supabase client from context).
+            *   The helper should return `true` if permission is granted, `false` otherwise, and handle potential errors.
+        2.  **Update Custom Field Resolvers (`customFields.ts`):**
+            *   For each mutation resolver (`createCustomFieldDefinition`, `updateCustomFieldDefinition`, `deactivateCustomFieldDefinition`, `reactivateCustomFieldDefinition`):
+                *   After `requireAuthentication` but before main logic, call the new permission checking helper with resource (`'custom_fields'`) and action (`'manage_definitions'`).
+                *   If `false`, throw a `GraphQLError` ("Permission Denied", code `FORBIDDEN`).
+                *   Remove `// TODO: Add permission check` comments.
+        3.  **Testing:**
+            *   Unit/integration tests for the permission helper.
+            *   Update/write integration tests for custom field resolvers to verify correct behavior for users with and without permission.
+        4.  **Documentation:** Briefly document the new permission helper.
+
 ### 1.2. CI/CD Pipeline - Initial Setup
 *   **Task:** `[ ]` Setup basic CI/CD with GitHub Actions:
     *   `[ ]` Workflow for linting and formatting checks (Prettier, ESLint) on push/PR.
@@ -62,7 +91,7 @@
     *   *Source: ROADMAP.md (Post-Refactor Plan #6) - Correction: Verified this is already implemented in `graphql.ts` context creation.*
     *   *Priority: CRITICAL (Completed)*
 *   **Task:** `[x]` Review and Update relevant GraphQL mutations (`mutation.ts`) to consistently use fetched `userPermissions` from context for authorization.
-    *   *Source: ROADMAP.md (Post-Refactor Plan #6) - Mutations verified. Query RLS reliance noted.*
+    *   *Source: ROADMAP.md (Post-Refactor Plan #6) - Mutations verified. Query RLS reliance noted. Note: `customFields.ts` mutations require separate fix (TECH-TASK-CRIT-002).*
     *   *Priority: CRITICAL (Completed)*
 *   **Task:** `[ ]` Conduct thorough E2E testing of RLS and RBAC policies, ensuring GraphQL operations respect permissions for different user roles (e.g., admin vs. member access to various resources).
     *   *Source: CIO Report (Gap in Phase 4 Hardening) - Remains critical.*
@@ -111,7 +140,7 @@
             *   `[ ]` Consistency Check.
             *   `[ ]` Documentation: Update `DEVELOPER_GUIDE_V2.md`.
 *   **Task:** `[ ]` Implement Prettier for automated code formatting and integrate with ESLint.
-    *   *Source: CIO Report (Gap), `DEVELOPER_GUIDE_V2.md` (Prettier status)*
+    *   *Source: CIO Report (Gap), `DEVELOPER_GUIDE_V2.md` (Prettier status). Note: Prettier is available, but full CI integration and project-wide enforcement might be pending.*
     *   *Priority: HIGH*
 
 ### 1.5. Roadmap & Task Management
@@ -125,17 +154,20 @@
 *Focus: Address remaining technical debt, further enhance developer experience, expand test coverage significantly.*
 
 ### 2.1. Testing Overhaul - Comprehensive Coverage
-*   **Task:** `[ ]` Write Integration Tests for all critical GraphQL Resolvers (e.g., testing resolver logic, service calls, context usage, error handling).
-    *   *Source: CIO Report (Gap in Phase 4 Testing), ROADMAP.md (Post-Refactor Plan #5)*
+*   **Task:** `[ ]` Write Integration Tests for all critical GraphQL Resolvers (e.g., testing resolver logic, service calls, context usage, error handling). Include tests for `customFields.ts` resolvers after permission checks are added.
+    *   *Source: CIO Report (Gap in Phase 4 Testing), ROADMAP.md (Post-Refactor Plan #5), Code Review (`CODE_REVIEW_0517.md`)*
     *   *Priority: CRITICAL*
 *   **Task:** `[ ]` Write Unit/Integration Tests for Key Frontend UI Components (using React Testing Library, focusing on props, state, interactions, and store connections).
     *   *Source: CIO Report (Gap in Phase 4 Testing), ROADMAP.md (Post-Refactor Plan #5)*
-    *   *Priority: HIGH*
+    *   *Priority: CRITICAL*
 *   **Task:** `[ ]` Test authorization thoroughly in GraphQL resolvers (ensure unauthorized access attempts fail, mocking auth context as needed).
     *   *Source: ROADMAP.md (Post-Refactor Plan #5)*
     *   *Priority: CRITICAL*
 *   **Task:** `[ ]` Write Unit tests for `activityService.ts`.
     *   *Source: CIO Report (Gap)*
+    *   *Priority: HIGH*
+*   **Task:** `[ ]` Write Unit tests for `customFieldDefinitionService.ts`.
+    *   *Source: Code Review (`CODE_REVIEW_0517.md`)*
     *   *Priority: HIGH*
 
 ### 2.2. CI/CD Pipeline - Enhancements
@@ -163,7 +195,7 @@
     *   *Source: ROADMAP.md (Post-Refactor Plan #1)*
     *   *Priority: MEDIUM*
 *   **Task:** `[ ]` Implement Specific Service Layer Error Handling: Enhance `lib/serviceUtils.ts#handleSupabaseError` for more granular error mapping from Supabase errors to application-specific errors.
-    *   *Source: ROADMAP.md (Post-Code-Analysis Action Plan #12)*
+    *   *Source: ROADMAP.md (Post-Code-Analysis Action Plan #12). Note: Current handling is good, this task implies further refinement.*
     *   *Priority: LOW*
 
 ### 2.4. Completing Core Features (Technical Aspects & Testing)
@@ -174,47 +206,18 @@
     *   *Status based on existing code and previous roadmap updates.*
 *   **Task:** `[ ]` Ensure comprehensive RLS policies are in place and verified for Pipelines, Stages, and Activities tables.
     *   *Priority: HIGH*
-*   **Task:** `[ ]` Resolve `Organization.people` resolver TODO to correctly fetch people associated with an organization.
-    *   *Source: CIO Report (Gap)*
+*   **Task:** `[ ]` Resolve `Organization.people` resolver TODO to correctly fetch people associated with an organization (Service update needed).
+    *   *Source: CIO Report (Gap), Verified in `netlify/functions/graphql/resolvers/organization.ts`*
     *   *Priority: HIGH*
 *   **Task:** `[ ]` Frontend UI: Display linked activities on Deal, Person, Organization detail views/pages.
     *   *Source: Original Roadmap (Phase 6 Activities)*
     *   *Priority: MEDIUM (Considered technical debt if data model supports it but UI is missing)*
-
----
-
-## Phase 3: Advanced Technical Enhancements & Future Feature Enablement (Target: Future Sprints)
-*Focus: Implement advanced technical patterns for performance and scalability, further harden the system, and prepare for more complex features.*
-
-### 3.1. Performance & Scalability
-*   **Task:** `[ ]` GraphQL Layer: Review all resolvers for N+1 issues and implement `dataloader` pattern where beneficial (e.g., fetching related entities like `Person.organization`, `Deal.contact`, `Deal.stage`).
-    *   *Source: ROADMAP.md (Post-Refactor Plan #2, Post-Code-Analysis Action Plan #13)*
-    *   *Priority: MEDIUM*
-*   **Task:** `[ ]` GraphQL Layer: Implement cursor-based pagination for all list queries (e.g., `people`, `deals`, `activities`) to handle large datasets efficiently.
-    *   *Source: ROADMAP.md (Post-Refactor Plan #2)*
-    *   *Priority: MEDIUM*
-
-### 3.2. Advanced DX & Maintainability
-*   **Task:** `[ ]` Frontend Enhancements:
-    *   `[ ]` Implement a global, consistent loading indicators system (e.g., for page transitions, full data loads).
-    *   `[ ]` Implement a global, consistent toast notifications system for user feedback (success, error, info). (Some auth toasts exist, make it generic).
-    *   `[ ]` Evaluate and implement optimistic updates in Zustand stores for critical mutations to improve perceived performance.
-    *   *Source: Post-Refactor Plan #3*
-    *   *Priority: MEDIUM*
-*   **Task:** `[ ]` Inngest:
-    *   `[ ]` Resolve `TODO` for client ID in `netlify/functions/inngest.ts` if still present; ensure production readiness.
-    *   `[ ]` Review main Netlify handler export in `inngest.ts`; ensure it's robust for production Inngest event handling.
-    *   `[ ]` Implement more meaningful Inngest functions beyond simple logging (e.g., sending a welcome email on user signup - requires email service, or data sync tasks if applicable). This borders on functional, prioritize technical enablers.
-    *   *Source: ROADMAP.md (Post-Refactor Plan #4), CIO Report (Gap)*
-    *   *Priority: MEDIUM (for core Inngest setup), LOW (for new complex functions unless technically enabling)*
-
-### 3.3. New Feature Technical Enablement
 *   **Task:** `[x]` User Profile Feature - Technical Foundation:
     *   `[x]` Database Schema: `user_profiles` table created (distinct from `auth.users` or `people`).
     *   `[x]` Backend Logic: `userProfileService.ts` created and functional.
     *   `[x]` GraphQL API: `User` type augmented, `Query.me` and `Mutation.updateUserProfile` implemented.
     *   *This feature has been implemented, providing user profile view/edit capabilities and integration with Deal History for user name display.*
-    *   *Priority: Was LOW, Now DONE*
+    *   *Priority: Was LOW, Now COMPLETED*
 *   **Task:** `[ ]` Full Text Search - Investigation & PoC: Investigate Supabase FTS capabilities or alternative search solutions for core entities.
     *   *Priority: LOW*
 *   **Task:** `[ ]` Email Integration (Basic) - Technical PoC: Investigate options for sending transactional emails (e.g., via Supabase an external SMTP service triggered by Inngest).
@@ -231,7 +234,7 @@
 ## Technical Epic: Custom Fields Architecture
 
 **ID:** TECH-EPIC-001
-**Status:** To Do
+**Status:** Done
 **Priority:** High
 **Related Features:** FEATURE-004
 
@@ -456,3 +459,15 @@ Develop the backend API endpoints and service logic necessary for administrative
 *   Changes are reflected in the permissions available to the target user.
 
 --- 
+## Technical Task: Refactoring Mutation.ts resolvers
+
+**ID:** TECH-TASK-012
+**Status:** Done
+**Priority:** Medium
+**Related Features:** Backend Logic
+
+## Technical Task: Refactoring Plan: `lib/dealService.ts`
+
+**ID:** TECH-TASK-14
+**Status:** Done
+**Priority:** Medium

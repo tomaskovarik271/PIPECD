@@ -3,8 +3,10 @@ import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { GraphQLContext, requireAuthentication, getAccessToken, processZodError } from '../helpers';
 import { personService } from '../../../../lib/personService';
 import * as stageService from '../../../../lib/stageService';
-import type { DealResolvers, Person, Stage as GraphQLStage, Deal as GraphQLDealParent } from '../../../../lib/generated/graphql'; // Import generated types
+import type { DealResolvers, Person, Stage as GraphQLStage, Deal as GraphQLDealParent, CustomFieldValue as GraphQLCustomFieldValue, CustomFieldDefinition as GraphQLCustomFieldDefinition } from '../../../../lib/generated/graphql'; // Import generated types
+import { CustomFieldEntityType, CustomFieldType } from '../../../../lib/generated/graphql'; // Ensure enums are imported as values
 import { getAuthenticatedClient } from '../../../../lib/serviceUtils'; // Added import for getAuthenticatedClient
+import * as customFieldDefinitionService from '../../../../lib/customFieldDefinitionService';
 
 // Define the parent type for Deal field resolvers to ensure all fields are available
 // type ParentDeal = Pick<GraphQLDealParent, 'id' | 'person_id' | 'stage_id' | 'amount' | 'deal_specific_probability'> & {
@@ -113,6 +115,113 @@ export const Deal: DealResolvers<GraphQLContext> = {
         return null; // If no probability can be determined
     },
     // TODO: Add resolver for Deal.activities if not already present or handled by default
+
+    customFieldValues: async (parent: any, _args: any, context: GraphQLContext): Promise<GraphQLCustomFieldValue[]> => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context)!;
+      const supabase = getAuthenticatedClient(accessToken);
+
+      // Read from the db_custom_field_values property passed by the parent resolver
+      const dealSpecificValues = parent.db_custom_field_values as Record<string, any> || {};
+
+      if (Object.keys(dealSpecificValues).length === 0) {
+        // If we want to show all applicable CFs for a Deal, even if not set,
+        // we would fetch all definitions here and map them, setting values to null.
+        // For now, if the deal has no custom_field_values, we return empty.
+        return [];
+      }
+
+      try {
+        // Fetch active definitions for DEAL entity type
+        const definitions: GraphQLCustomFieldDefinition[] = await customFieldDefinitionService.getCustomFieldDefinitions(
+          supabase, // Pass the Supabase client
+          CustomFieldEntityType.Deal, // Use the imported enum value
+          false // includeInactive = false (default, but explicit)
+        );
+
+        if (!definitions || definitions.length === 0) {
+          // This means there are no active field definitions for Deals, 
+          // so even if parent.custom_field_values has data (e.g. for old/inactive fields), 
+          // we can't resolve them to a known active definition.
+          return [];
+        }
+
+        const resolvedValues: GraphQLCustomFieldValue[] = definitions
+          .map((definition: GraphQLCustomFieldDefinition) => {
+            const rawValue = dealSpecificValues[definition.fieldName];
+
+            // Construct the CustomFieldValue, which now expects a 'definition' object
+            const fieldValue: GraphQLCustomFieldValue = {
+              definition: definition, // The full definition object
+              stringValue: null,
+              numberValue: null,
+              booleanValue: null,
+              dateValue: null,
+              selectedOptionValues: null,
+            };
+
+            if (rawValue === undefined || rawValue === null) {
+              // No value for this specific custom field on this deal
+              // Return the fieldValue with nulls, but with the definition included
+              return fieldValue; 
+            }
+
+            switch (definition.fieldType) {
+              case CustomFieldType.Text:
+                fieldValue.stringValue = String(rawValue);
+                break;
+              case CustomFieldType.Number:
+                // Ensure rawValue is a number or can be parsed to one.
+                const num = parseFloat(rawValue);
+                if (!isNaN(num)) {
+                  fieldValue.numberValue = num;
+                }
+                break;
+              case CustomFieldType.Boolean:
+                fieldValue.booleanValue = Boolean(rawValue);
+                break;
+              case CustomFieldType.Date:
+                // rawValue should be an ISO string from the DB.
+                // The GraphQL DateTime scalar will handle parsing/validation on output.
+                fieldValue.dateValue = rawValue; 
+                // Optionally, also provide stringValue for Date for easier direct display if needed
+                fieldValue.stringValue = String(rawValue); 
+                break;
+              case CustomFieldType.Dropdown:
+                if (Array.isArray(rawValue) && rawValue.length > 0) {
+                  fieldValue.selectedOptionValues = [String(rawValue[0])];
+                  fieldValue.stringValue = String(rawValue[0]);
+                } else if (typeof rawValue === 'string') { 
+                  fieldValue.selectedOptionValues = [rawValue];
+                  fieldValue.stringValue = rawValue;
+                }
+                break;
+              case CustomFieldType.MultiSelect:
+                if (Array.isArray(rawValue)) {
+                  fieldValue.selectedOptionValues = rawValue.map(String);
+                }
+                break;
+              default:
+                console.warn(`Unhandled custom field type: ${definition.fieldType} for field ${definition.fieldName}`);
+            }
+            return fieldValue;
+          })
+          // Filter out definitions for which the deal doesn't have a value stored in custom_field_values.
+          // This means we only return custom fields that are *set* on the deal.
+          // If we wanted to return all active definitions for the deal, with null values for those not set,
+          // we would remove this filter and the initial check for Object.keys(dealSpecificValues).length === 0.
+          .filter(fv => fv.stringValue !== null || fv.numberValue !== null || fv.booleanValue !== null || fv.dateValue !== null || (fv.selectedOptionValues && fv.selectedOptionValues.length > 0));
+
+        return resolvedValues;
+
+      } catch (error) {
+        console.error('Error resolving customFieldValues for deal:', parent.id, error);
+        if (error instanceof GraphQLError) throw error;
+        throw new GraphQLError('Could not resolve custom field values for the deal.', {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        });
+      }
+    },
 
     history: async (parent: GraphQLDealParent, args: any, context: GraphQLContext, info: GraphQLResolveInfo) => {
       requireAuthentication(context);

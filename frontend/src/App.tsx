@@ -11,6 +11,7 @@ import StagesPage from './pages/StagesPage';
 import ActivitiesPage from './pages/ActivitiesPage';
 import DealDetailPage from './pages/DealDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import CustomFieldsPage from './pages/admin/CustomFieldsPage';
 import { 
   Box, 
   Heading, 
@@ -37,6 +38,7 @@ function AppContent() {
             <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
             <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
           </Routes>
     </Box>

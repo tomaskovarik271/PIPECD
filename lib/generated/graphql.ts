@@ -54,6 +54,7 @@ export type Activity = {
   subject: Scalars["String"]["output"];
   type: ActivityType;
   updated_at: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
   user_id: Scalars["ID"]["output"];
 };
 
@@ -92,11 +93,82 @@ export type CreateStageInput = {
   stage_type?: InputMaybe<StageType>;
 };
 
+export type CustomFieldDefinition = {
+  __typename?: "CustomFieldDefinition";
+  createdAt: Scalars["DateTime"]["output"];
+  displayOrder: Scalars["Int"]["output"];
+  dropdownOptions?: Maybe<Array<CustomFieldOption>>;
+  entityType: CustomFieldEntityType;
+  fieldLabel: Scalars["String"]["output"];
+  fieldName: Scalars["String"]["output"];
+  fieldType: CustomFieldType;
+  id: Scalars["ID"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  isRequired: Scalars["Boolean"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type CustomFieldDefinitionInput = {
+  displayOrder?: InputMaybe<Scalars["Int"]["input"]>;
+  dropdownOptions?: InputMaybe<Array<CustomFieldOptionInput>>;
+  entityType: CustomFieldEntityType;
+  fieldLabel: Scalars["String"]["input"];
+  fieldName: Scalars["String"]["input"];
+  fieldType: CustomFieldType;
+  isRequired?: InputMaybe<Scalars["Boolean"]["input"]>;
+};
+
+export enum CustomFieldEntityType {
+  Deal = "DEAL",
+  Organization = "ORGANIZATION",
+  Person = "PERSON",
+}
+
+export type CustomFieldOption = {
+  __typename?: "CustomFieldOption";
+  label: Scalars["String"]["output"];
+  value: Scalars["String"]["output"];
+};
+
+export type CustomFieldOptionInput = {
+  label: Scalars["String"]["input"];
+  value: Scalars["String"]["input"];
+};
+
+export enum CustomFieldType {
+  Boolean = "BOOLEAN",
+  Date = "DATE",
+  Dropdown = "DROPDOWN",
+  MultiSelect = "MULTI_SELECT",
+  Number = "NUMBER",
+  Text = "TEXT",
+}
+
+export type CustomFieldValue = {
+  __typename?: "CustomFieldValue";
+  booleanValue?: Maybe<Scalars["Boolean"]["output"]>;
+  dateValue?: Maybe<Scalars["DateTime"]["output"]>;
+  definition: CustomFieldDefinition;
+  numberValue?: Maybe<Scalars["Float"]["output"]>;
+  selectedOptionValues?: Maybe<Array<Scalars["String"]["output"]>>;
+  stringValue?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type CustomFieldValueInput = {
+  booleanValue?: InputMaybe<Scalars["Boolean"]["input"]>;
+  dateValue?: InputMaybe<Scalars["DateTime"]["input"]>;
+  definitionId: Scalars["ID"]["input"];
+  numberValue?: InputMaybe<Scalars["Float"]["input"]>;
+  selectedOptionValues?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  stringValue?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type Deal = {
   __typename?: "Deal";
   activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
+  customFieldValues: Array<CustomFieldValue>;
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
   history?: Maybe<Array<DealHistoryEntry>>;
@@ -131,6 +203,7 @@ export type DealHistoryEntry = {
 
 export type DealInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   name: Scalars["String"]["input"];
@@ -140,21 +213,36 @@ export type DealInput = {
   stage_id: Scalars["ID"]["input"];
 };
 
+export type DealUpdateInput = {
+  amount?: InputMaybe<Scalars["Float"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
+  expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
+  person_id?: InputMaybe<Scalars["ID"]["input"]>;
+  stage_id?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
 export type Mutation = {
   __typename?: "Mutation";
   createActivity: Activity;
+  createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
   createOrganization: Organization;
   createPerson: Person;
   createPipeline: Pipeline;
   createStage: Stage;
+  deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteActivity: Scalars["ID"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   deletePipeline: Scalars["Boolean"]["output"];
   deleteStage: Scalars["Boolean"]["output"];
+  reactivateCustomFieldDefinition: CustomFieldDefinition;
   updateActivity: Activity;
+  updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
@@ -166,6 +254,10 @@ export type Mutation = {
 
 export type MutationCreateActivityArgs = {
   input: CreateActivityInput;
+};
+
+export type MutationCreateCustomFieldDefinitionArgs = {
+  input: CustomFieldDefinitionInput;
 };
 
 export type MutationCreateDealArgs = {
@@ -186,6 +278,10 @@ export type MutationCreatePipelineArgs = {
 
 export type MutationCreateStageArgs = {
   input: CreateStageInput;
+};
+
+export type MutationDeactivateCustomFieldDefinitionArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationDeleteActivityArgs = {
@@ -212,9 +308,18 @@ export type MutationDeleteStageArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationReactivateCustomFieldDefinitionArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationUpdateActivityArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateActivityInput;
+};
+
+export type MutationUpdateCustomFieldDefinitionArgs = {
+  id: Scalars["ID"]["input"];
+  input: CustomFieldDefinitionInput;
 };
 
 export type MutationUpdateDealArgs = {
@@ -252,6 +357,7 @@ export type Organization = {
   activities: Array<Activity>;
   address?: Maybe<Scalars["String"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
+  customFieldValues: Array<CustomFieldValue>;
   deals: Array<Deal>;
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
@@ -263,7 +369,15 @@ export type Organization = {
 
 export type OrganizationInput = {
   address?: InputMaybe<Scalars["String"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   name: Scalars["String"]["input"];
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type OrganizationUpdateInput = {
+  address?: InputMaybe<Scalars["String"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -272,6 +386,7 @@ export type Person = {
   __typename?: "Person";
   activities: Array<Activity>;
   created_at: Scalars["DateTime"]["output"];
+  customFieldValues: Array<CustomFieldValue>;
   deals?: Maybe<Array<Deal>>;
   email?: Maybe<Scalars["String"]["output"]>;
   first_name?: Maybe<Scalars["String"]["output"]>;
@@ -286,6 +401,7 @@ export type Person = {
 };
 
 export type PersonInput = {
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   email?: InputMaybe<Scalars["String"]["input"]>;
   first_name?: InputMaybe<Scalars["String"]["input"]>;
   last_name?: InputMaybe<Scalars["String"]["input"]>;
@@ -298,6 +414,16 @@ export type PersonListItem = {
   __typename?: "PersonListItem";
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
+};
+
+export type PersonUpdateInput = {
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  email?: InputMaybe<Scalars["String"]["input"]>;
+  first_name?: InputMaybe<Scalars["String"]["input"]>;
+  last_name?: InputMaybe<Scalars["String"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
+  phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type Pipeline = {
@@ -317,6 +443,8 @@ export type Query = {
   __typename?: "Query";
   activities: Array<Activity>;
   activity?: Maybe<Activity>;
+  customFieldDefinition?: Maybe<CustomFieldDefinition>;
+  customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   health: Scalars["String"]["output"];
@@ -340,6 +468,15 @@ export type QueryActivitiesArgs = {
 
 export type QueryActivityArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryCustomFieldDefinitionArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryCustomFieldDefinitionsArgs = {
+  entityType: CustomFieldEntityType;
+  includeInactive?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type QueryDealArgs = {
@@ -536,10 +673,19 @@ export type ResolversTypes = {
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
   CreateActivityInput: CreateActivityInput;
   CreateStageInput: CreateStageInput;
+  CustomFieldDefinition: ResolverTypeWrapper<CustomFieldDefinition>;
+  CustomFieldDefinitionInput: CustomFieldDefinitionInput;
+  CustomFieldEntityType: CustomFieldEntityType;
+  CustomFieldOption: ResolverTypeWrapper<CustomFieldOption>;
+  CustomFieldOptionInput: CustomFieldOptionInput;
+  CustomFieldType: CustomFieldType;
+  CustomFieldValue: ResolverTypeWrapper<CustomFieldValue>;
+  CustomFieldValueInput: CustomFieldValueInput;
   DateTime: ResolverTypeWrapper<Scalars["DateTime"]["output"]>;
   Deal: ResolverTypeWrapper<Deal>;
   DealHistoryEntry: ResolverTypeWrapper<DealHistoryEntry>;
   DealInput: DealInput;
+  DealUpdateInput: DealUpdateInput;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
   Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
@@ -547,9 +693,11 @@ export type ResolversTypes = {
   Mutation: ResolverTypeWrapper<{}>;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationInput: OrganizationInput;
+  OrganizationUpdateInput: OrganizationUpdateInput;
   Person: ResolverTypeWrapper<Person>;
   PersonInput: PersonInput;
   PersonListItem: ResolverTypeWrapper<PersonListItem>;
+  PersonUpdateInput: PersonUpdateInput;
   Pipeline: ResolverTypeWrapper<Pipeline>;
   PipelineInput: PipelineInput;
   Query: ResolverTypeWrapper<{}>;
@@ -569,10 +717,17 @@ export type ResolversParentTypes = {
   Boolean: Scalars["Boolean"]["output"];
   CreateActivityInput: CreateActivityInput;
   CreateStageInput: CreateStageInput;
+  CustomFieldDefinition: CustomFieldDefinition;
+  CustomFieldDefinitionInput: CustomFieldDefinitionInput;
+  CustomFieldOption: CustomFieldOption;
+  CustomFieldOptionInput: CustomFieldOptionInput;
+  CustomFieldValue: CustomFieldValue;
+  CustomFieldValueInput: CustomFieldValueInput;
   DateTime: Scalars["DateTime"]["output"];
   Deal: Deal;
   DealHistoryEntry: DealHistoryEntry;
   DealInput: DealInput;
+  DealUpdateInput: DealUpdateInput;
   Float: Scalars["Float"]["output"];
   ID: Scalars["ID"]["output"];
   Int: Scalars["Int"]["output"];
@@ -580,9 +735,11 @@ export type ResolversParentTypes = {
   Mutation: {};
   Organization: Organization;
   OrganizationInput: OrganizationInput;
+  OrganizationUpdateInput: OrganizationUpdateInput;
   Person: Person;
   PersonInput: PersonInput;
   PersonListItem: PersonListItem;
+  PersonUpdateInput: PersonUpdateInput;
   Pipeline: Pipeline;
   PipelineInput: PipelineInput;
   Query: {};
@@ -625,7 +782,87 @@ export type ActivityResolvers<
   subject?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   type?: Resolver<ResolversTypes["ActivityType"], ParentType, ContextType>;
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CustomFieldDefinitionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["CustomFieldDefinition"] = ResolversParentTypes["CustomFieldDefinition"],
+> = {
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  displayOrder?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  dropdownOptions?: Resolver<
+    Maybe<Array<ResolversTypes["CustomFieldOption"]>>,
+    ParentType,
+    ContextType
+  >;
+  entityType?: Resolver<
+    ResolversTypes["CustomFieldEntityType"],
+    ParentType,
+    ContextType
+  >;
+  fieldLabel?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fieldName?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fieldType?: Resolver<
+    ResolversTypes["CustomFieldType"],
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isActive?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  isRequired?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CustomFieldOptionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["CustomFieldOption"] = ResolversParentTypes["CustomFieldOption"],
+> = {
+  label?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  value?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CustomFieldValueResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["CustomFieldValue"] = ResolversParentTypes["CustomFieldValue"],
+> = {
+  booleanValue?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  dateValue?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  definition?: Resolver<
+    ResolversTypes["CustomFieldDefinition"],
+    ParentType,
+    ContextType
+  >;
+  numberValue?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  selectedOptionValues?: Resolver<
+    Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  stringValue?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -646,6 +883,11 @@ export type DealResolvers<
   >;
   amount?: Resolver<Maybe<ResolversTypes["Float"]>, ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  customFieldValues?: Resolver<
+    Array<ResolversTypes["CustomFieldValue"]>,
+    ParentType,
+    ContextType
+  >;
   deal_specific_probability?: Resolver<
     Maybe<ResolversTypes["Float"]>,
     ParentType,
@@ -719,6 +961,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateActivityArgs, "input">
   >;
+  createCustomFieldDefinition?: Resolver<
+    ResolversTypes["CustomFieldDefinition"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateCustomFieldDefinitionArgs, "input">
+  >;
   createDeal?: Resolver<
     ResolversTypes["Deal"],
     ParentType,
@@ -748,6 +996,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateStageArgs, "input">
+  >;
+  deactivateCustomFieldDefinition?: Resolver<
+    ResolversTypes["CustomFieldDefinition"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeactivateCustomFieldDefinitionArgs, "id">
   >;
   deleteActivity?: Resolver<
     ResolversTypes["ID"],
@@ -785,11 +1039,23 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteStageArgs, "id">
   >;
+  reactivateCustomFieldDefinition?: Resolver<
+    ResolversTypes["CustomFieldDefinition"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationReactivateCustomFieldDefinitionArgs, "id">
+  >;
   updateActivity?: Resolver<
     ResolversTypes["Activity"],
     ParentType,
     ContextType,
     RequireFields<MutationUpdateActivityArgs, "id" | "input">
+  >;
+  updateCustomFieldDefinition?: Resolver<
+    ResolversTypes["CustomFieldDefinition"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateCustomFieldDefinitionArgs, "id" | "input">
   >;
   updateDeal?: Resolver<
     Maybe<ResolversTypes["Deal"]>,
@@ -841,6 +1107,11 @@ export type OrganizationResolvers<
   >;
   address?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  customFieldValues?: Resolver<
+    Array<ResolversTypes["CustomFieldValue"]>,
+    ParentType,
+    ContextType
+  >;
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
@@ -866,6 +1137,11 @@ export type PersonResolvers<
     ContextType
   >;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  customFieldValues?: Resolver<
+    Array<ResolversTypes["CustomFieldValue"]>,
+    ParentType,
+    ContextType
+  >;
   deals?: Resolver<
     Maybe<Array<ResolversTypes["Deal"]>>,
     ParentType,
@@ -939,6 +1215,21 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryActivityArgs, "id">
+  >;
+  customFieldDefinition?: Resolver<
+    Maybe<ResolversTypes["CustomFieldDefinition"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryCustomFieldDefinitionArgs, "id">
+  >;
+  customFieldDefinitions?: Resolver<
+    Array<ResolversTypes["CustomFieldDefinition"]>,
+    ParentType,
+    ContextType,
+    RequireFields<
+      QueryCustomFieldDefinitionsArgs,
+      "entityType" | "includeInactive"
+    >
   >;
   deal?: Resolver<
     Maybe<ResolversTypes["Deal"]>,
@@ -1051,6 +1342,9 @@ export type UserResolvers<
 
 export type Resolvers<ContextType = GraphQLContext> = {
   Activity?: ActivityResolvers<ContextType>;
+  CustomFieldDefinition?: CustomFieldDefinitionResolvers<ContextType>;
+  CustomFieldOption?: CustomFieldOptionResolvers<ContextType>;
+  CustomFieldValue?: CustomFieldValueResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;

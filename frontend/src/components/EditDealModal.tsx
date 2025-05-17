@@ -19,6 +19,10 @@ import {
   Alert, 
   AlertIcon,
   Spinner,
+  Textarea,
+  CheckboxGroup,
+  Checkbox,
+  Switch,
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
@@ -26,6 +30,13 @@ import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore';
 import { useStagesStore } from '../stores/useStagesStore';
 import type { DealInput, Stage } from '../generated/graphql/graphql';
+import { 
+  CustomFieldDefinition, 
+  CustomFieldEntityType, 
+  CustomFieldType, 
+  CustomFieldValueInput,
+} from '../generated/graphql/graphql';
+import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
 
 interface EditDealModalProps {
   isOpen: boolean;
@@ -44,6 +55,10 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   const [personId, setPersonId] = useState<string>(''); 
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
 
+  // Custom Fields State
+  const [activeDealCustomFields, setActiveDealCustomFields] = useState<CustomFieldDefinition[]>([]);
+  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, any>>({});
+
   // Store State & Actions
   const { pipelines, fetchPipelines, pipelinesLoading, pipelinesError } = usePipelinesStore();
 
@@ -58,6 +73,14 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   // Deals state & actions from useDealsStore
   const { updateDeal: updateDealAction, dealsError, dealsLoading } = useDealsStore();
 
+  // Custom Field Definitions store
+  const { 
+    definitions: customFieldDefinitions,
+    fetchCustomFieldDefinitions, 
+    loading: customFieldDefinitionsLoading,
+    error: customFieldDefinitionsError
+  } = useCustomFieldDefinitionStore();
+
   // People state from usePeopleStore
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
 
@@ -68,13 +91,18 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     if (isOpen) {
       fetchPeople(); 
       fetchPipelines();
+      // Fetch active custom field definitions for Deals
+      fetchCustomFieldDefinitions(CustomFieldEntityType.Deal, false); 
       // Clear stages using useStagesStore when modal opens, before potentially fetching new ones
       useStagesStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
-  }, [isOpen, fetchPeople, fetchPipelines]); 
+  }, [isOpen, fetchPeople, fetchPipelines, fetchCustomFieldDefinitions]); 
 
   useEffect(() => {
     if (deal) {
+      console.log("[EditDealModal] Initializing form. Deal data:", JSON.stringify(deal, null, 2));
+      console.log("[EditDealModal] Initializing form. Active Deal Custom Field Definitions:", JSON.stringify(activeDealCustomFields, null, 2));
+
       setName(deal.name || '');
       setAmount(deal.amount != null ? String(deal.amount) : '');
       setPersonId(deal.person_id || ''); 
@@ -94,6 +122,63 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       setSelectedPipelineId(pipelineIdFromDeal || '');
       setSelectedStageId(''); 
       
+      // Initialize custom field form values
+      if (activeDealCustomFields.length > 0) {
+        const initialCfValues: Record<string, any> = {};
+        activeDealCustomFields.forEach(def => {
+          const cfValueFromDeal = deal.customFieldValues?.find(
+            cfv => cfv.definition.id === def.id
+          );
+          console.log(`[EditDealModal] For def ${def.fieldName} (ID: ${def.id}), found cfValueFromDeal:`, JSON.stringify(cfValueFromDeal, null, 2));
+
+          if (cfValueFromDeal) {
+            switch (def.fieldType) {
+              case CustomFieldType.Text:
+              case CustomFieldType.Dropdown: 
+                initialCfValues[def.fieldName] = cfValueFromDeal.stringValue || '';
+                break;
+              case CustomFieldType.Number:
+                initialCfValues[def.fieldName] = cfValueFromDeal.numberValue !== null && cfValueFromDeal.numberValue !== undefined 
+                  ? cfValueFromDeal.numberValue 
+                  : '';
+                break;
+              case CustomFieldType.Boolean:
+                initialCfValues[def.fieldName] = cfValueFromDeal.booleanValue ?? false;
+                break;
+              case CustomFieldType.Date:
+                initialCfValues[def.fieldName] = cfValueFromDeal.dateValue 
+                  ? new Date(cfValueFromDeal.dateValue).toISOString().split('T')[0] // Format to YYYY-MM-DD
+                  : '';
+                break;
+              case CustomFieldType.MultiSelect:
+                initialCfValues[def.fieldName] = cfValueFromDeal.selectedOptionValues || [];
+                break;
+              default:
+                initialCfValues[def.fieldName] = '';
+            }
+          } else {
+            // Default empty values if not found on deal
+            switch (def.fieldType) {
+              case CustomFieldType.Boolean:
+                initialCfValues[def.fieldName] = false;
+                break;
+              case CustomFieldType.MultiSelect:
+                initialCfValues[def.fieldName] = [];
+                break;
+              case CustomFieldType.Number:
+                 initialCfValues[def.fieldName] = ''; // Or null / undefined, to be handled by NumberInput
+                 break;
+              default:
+                initialCfValues[def.fieldName] = '';
+            }
+          }
+        });
+        setCustomFieldFormValues(initialCfValues);
+      } else {
+        // No active custom fields, reset form values
+        setCustomFieldFormValues({});
+      }
+      
     } else {
         setName('');
         setAmount('');
@@ -103,8 +188,10 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
         setInitialPipelineId(null);
         setInitialStageId(null);
         setDealSpecificProbability('');
+        // Reset custom field form values if deal is null
+        setCustomFieldFormValues({});
     }
-  }, [deal]);
+  }, [deal, activeDealCustomFields]); // Depend on activeDealCustomFields to re-init if they load after deal
 
   useEffect(() => {
     // This effect is responsible for fetching stages for the pipeline
@@ -149,6 +236,18 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     // Keep `setSelectedStageId` out of deps as per React guidelines for setters if not strictly needed for logic re-evaluation based on its change
   }, [stages, initialStageId, initialPipelineId, selectedPipelineId]);
 
+  // Effect to filter and set activeDealCustomFields once definitions are loaded from store
+  useEffect(() => {
+    if (customFieldDefinitions && customFieldDefinitions.length > 0) {
+      const activeDefsForDeal = customFieldDefinitions.filter(
+        def => def.entityType === CustomFieldEntityType.Deal && def.isActive
+      );
+      setActiveDealCustomFields(activeDefsForDeal);
+    } else {
+      setActiveDealCustomFields([]);
+    }
+  }, [customFieldDefinitions]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!deal) return; 
@@ -186,6 +285,68 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
         updateInput.deal_specific_probability = probPercent / 100;
       } else if (dealSpecificProbability.trim() === '') {
         updateInput.deal_specific_probability = null;
+      }
+
+      // Prepare custom fields for submission
+      const customFieldsToSubmit: CustomFieldValueInput[] = [];
+      if (activeDealCustomFields.length > 0) {
+        for (const def of activeDealCustomFields) {
+          const rawValue = customFieldFormValues[def.fieldName];
+          let valueToSet: CustomFieldValueInput | null = null;
+
+          // Only include the field if it has a value or if it's required (even if empty, to allow backend validation)
+          // Or if it's boolean (false is a valid value)
+          // Or if it's a multi-select (empty array is a valid value to clear it)
+          const isValueSet = rawValue !== undefined && rawValue !== null && rawValue !== '';
+          const isMultiSelectWithValue = def.fieldType === CustomFieldType.MultiSelect && Array.isArray(rawValue);
+          const isBoolean = def.fieldType === CustomFieldType.Boolean;
+
+          if (isValueSet || isBoolean || isMultiSelectWithValue || def.isRequired) {
+            valueToSet = { definitionId: def.id };
+            switch (def.fieldType) {
+              case CustomFieldType.Text:
+                valueToSet.stringValue = String(rawValue || '');
+                break;
+              case CustomFieldType.Number:
+                const num = parseFloat(String(rawValue));
+                valueToSet.numberValue = !isNaN(num) ? num : null;
+                // If required and empty/invalid, backend Zod schema should catch it if it expects a number.
+                // Frontend could also add validation here.
+                if (valueToSet.numberValue === null && String(rawValue).trim() !== '') {
+                    // If it was not an empty string but failed to parse, treat as explicit null.
+                    // Or, if required, this might be an error state to flag earlier.
+                } else if (String(rawValue).trim() === '' && !def.isRequired) {
+                    valueToSet = null; // Don't submit if optional and empty
+                }
+                break;
+              case CustomFieldType.Date:
+                valueToSet.dateValue = rawValue ? new Date(rawValue).toISOString() : null;
+                 if (!rawValue && !def.isRequired) valueToSet = null;
+                break;
+              case CustomFieldType.Boolean:
+                valueToSet.booleanValue = Boolean(rawValue || false);
+                break;
+              case CustomFieldType.Dropdown:
+                valueToSet.stringValue = String(rawValue || '');
+                 if (!rawValue && !def.isRequired) valueToSet = null; // Don't submit if optional and unselected
+                break;
+              case CustomFieldType.MultiSelect:
+                valueToSet.selectedOptionValues = Array.isArray(rawValue) ? rawValue.map(String) : [];
+                // For multi-select, an empty array is a valid value (means nothing selected)
+                // So, we don't nullify `valueToSet` even if `rawValue` is empty array.
+                break;
+            }
+          }
+          if (valueToSet) {
+            customFieldsToSubmit.push(valueToSet);
+          }
+        }
+        updateInput.customFields = customFieldsToSubmit;
+      } else {
+        // If there are no active custom fields, ensure customFields is not part of payload 
+        // or explicitly an empty array if the backend expects it for updates to clear all.
+        // Based on current backend, sending undefined is fine (it won't try to update custom_field_values).
+        // If we wanted to clear all CFs, we'd send `customFields: []`.
       }
 
       const updatedDeal = await updateDealAction(deal.id, updateInput);
@@ -326,6 +487,112 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                   ))}
                 </Select>
             </FormControl>
+
+            {/* Custom Fields Section */}
+            {customFieldDefinitionsLoading && <Spinner size="md" />}
+            {customFieldDefinitionsError && (
+              <Alert status="error" mb={4}>
+                <AlertIcon />
+                Error loading custom field definitions: {customFieldDefinitionsError}
+              </Alert>
+            )}
+            {activeDealCustomFields.map((def: CustomFieldDefinition) => (
+              <FormControl key={def.id} isRequired={def.isRequired} mb={4}>
+                <FormLabel htmlFor={def.fieldName}>{def.fieldLabel}</FormLabel>
+                {def.fieldType === CustomFieldType.Text && (
+                  <Input
+                    id={def.fieldName}
+                    value={customFieldFormValues[def.fieldName] || ''}
+                    onChange={(e) =>
+                      setCustomFieldFormValues(prev => ({
+                        ...prev,
+                        [def.fieldName]: e.target.value,
+                      }))
+                    }
+                    placeholder={def.fieldLabel}
+                  />
+                )}
+                {def.fieldType === CustomFieldType.Number && (
+                  <NumberInput
+                    id={def.fieldName}
+                    value={customFieldFormValues[def.fieldName] || ''}
+                    onChange={(valueString) =>
+                      setCustomFieldFormValues(prev => ({
+                        ...prev,
+                        [def.fieldName]: valueString, // Store as string, will be parsed on submit
+                      }))
+                    }
+                    precision={2} // Example precision, adjust as needed
+                  >
+                    <NumberInputField placeholder={def.fieldLabel} />
+                  </NumberInput>
+                )}
+                {def.fieldType === CustomFieldType.Date && (
+                  <Input
+                    type="date"
+                    id={def.fieldName}
+                    value={customFieldFormValues[def.fieldName] || ''}
+                    onChange={(e) =>
+                      setCustomFieldFormValues(prev => ({
+                        ...prev,
+                        [def.fieldName]: e.target.value,
+                      }))
+                    }
+                  />
+                )}
+                {def.fieldType === CustomFieldType.Boolean && (
+                  <Switch
+                    id={def.fieldName}
+                    isChecked={customFieldFormValues[def.fieldName] || false}
+                    onChange={(e) =>
+                      setCustomFieldFormValues(prev => ({
+                        ...prev,
+                        [def.fieldName]: e.target.checked,
+                      }))
+                    }
+                  />
+                )}
+                {def.fieldType === CustomFieldType.Dropdown && def.dropdownOptions && (
+                  <Select
+                    id={def.fieldName}
+                    placeholder={`Select ${def.fieldLabel}`}
+                    value={customFieldFormValues[def.fieldName] || ''}
+                    onChange={(e) =>
+                      setCustomFieldFormValues(prev => ({
+                        ...prev,
+                        [def.fieldName]: e.target.value,
+                      }))
+                    }
+                  >
+                    {def.dropdownOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+                {def.fieldType === CustomFieldType.MultiSelect && def.dropdownOptions && (
+                  <CheckboxGroup
+                    value={customFieldFormValues[def.fieldName] || []}
+                    onChange={(values) =>
+                      setCustomFieldFormValues(prev => ({
+                        ...prev,
+                        [def.fieldName]: values,
+                      }))
+                    }
+                  >
+                    <VStack spacing={2} alignItems="flex-start">
+                      {def.dropdownOptions.map(option => (
+                        <Checkbox key={option.value} value={option.value}>
+                          {option.label}
+                        </Checkbox>
+                      ))}
+                    </VStack>
+                  </CheckboxGroup>
+                )}
+                {/* TODO: Add FormErrorMessage for custom field validation if needed */}
+              </FormControl>
+            ))}
           </VStack>
         </ModalBody>
         <ModalFooter>

@@ -25,6 +25,10 @@ import {
   Mutation as ActivityMutation
 } from './graphql/resolvers/activity';
 import { DealHistoryEntry } from './graphql/resolvers/history';
+import {
+  queryResolvers as CustomFieldQueryResolvers,
+  mutationResolvers as CustomFieldMutationResolvers,
+} from './graphql/resolvers/customFields';
 
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
@@ -55,10 +59,12 @@ export const resolvers = {
   Query: {
     ...BaseQuery,
     ...ActivityQuery,
+    ...CustomFieldQueryResolvers,
   },
   Mutation: {
     ...BaseMutation,
     ...ActivityMutation,
+    ...CustomFieldMutationResolvers,
   },
   Person,
   Deal,

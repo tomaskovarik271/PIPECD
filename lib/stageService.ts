@@ -2,12 +2,6 @@ import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils';
 // import { Stage } from './types'; // REMOVED: Import of local Stage type
 import type { Stage, CreateStageInput, UpdateStageInput } from './generated/graphql'; // ADDED: Import generated types
 
-// REMOVED: Local CreateStageInput type
-// export type CreateStageInput = Pick<Stage, 'pipeline_id' | 'name' | 'order'> & Partial<Pick<Stage, 'deal_probability'>>;
-
-// REMOVED: Local UpdateStageInput type
-// export type UpdateStageInput = Partial<Pick<Stage, 'name' | 'order' | 'deal_probability'>>;
-
 
 /**
  * Fetches all stages belonging to a specific pipeline for the authenticated user.

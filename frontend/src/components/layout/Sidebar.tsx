@@ -14,7 +14,7 @@ import {
   // LockIcon, // Placeholder for Organizations
   // CopyIcon, // Placeholder for Pipelines
   // TimeIcon, // Placeholder for Activities
-  SettingsIcon, // Uncommented for Profile
+  SettingsIcon, // Used for Profile and Admin items now
   // RepeatIcon // Example
 } from '@chakra-ui/icons'; // Use appropriate icons
 
@@ -24,8 +24,16 @@ const NAV_ITEMS = [
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
   { path: '/pipelines', label: 'Pipelines', icon: <ArrowRightIcon /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
-  { path: '/profile', label: 'My Profile', icon: <SettingsIcon /> }, // Added Profile link
-  // Add other items like Settings if needed
+];
+
+// Added Admin Nav Items
+const ADMIN_NAV_ITEMS = [
+  { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon /> },
+];
+
+// User specific items (like profile) can be separate or at the end of NAV_ITEMS
+const USER_NAV_ITEMS = [
+    { path: '/profile', label: 'My Profile', icon: <SettingsIcon /> },
 ];
 
 function Sidebar() {
@@ -80,6 +88,47 @@ function Sidebar() {
               <Box as="span" mr={3}>{item.icon}</Box>
               {item.label}
             </Flex> // CHANGED from ChakraLink
+          )}
+        </RouterNavLink>
+      ))}
+
+      {/* Admin Section */}
+      <Box mt={4} pt={2} borderTopWidth="1px" sx={{ borderColor: containerStyles.borderColor === "transparent" ? "gray.200" : containerStyles.borderColor }}>
+        <Text fontSize="xs" fontWeight="semibold" mb={2} color="gray.500" sx={{ _dark: { color: "gray.400"} }}>ADMIN</Text>
+        {ADMIN_NAV_ITEMS.map((item) => (
+            <RouterNavLink key={item.path} to={item.path} end={item.path === '/'}> 
+            {({ isActive }) => (
+                <Flex
+                as="span"
+                display="flex"
+                alignItems="center"
+                p="8px 12px"
+                borderRadius="md"
+                sx={isActive ? activeNavLinkStyles : navLinkStyles}
+                >
+                <Box as="span" mr={3}>{item.icon}</Box>
+                {item.label}
+                </Flex>
+            )}
+            </RouterNavLink>
+        ))}
+      </Box>
+
+      {/* User Profile Link - moved here for better separation before user info block */}
+      {USER_NAV_ITEMS.map((item) => (
+        <RouterNavLink key={item.path} to={item.path} end={item.path === '/'}> 
+          {({ isActive }) => (
+            <Flex
+              as="span"
+              display="flex"
+              alignItems="center"
+              p="8px 12px"
+              borderRadius="md"
+              sx={isActive ? activeNavLinkStyles : navLinkStyles}
+            >
+              <Box as="span" mr={3}>{item.icon}</Box>
+              {item.label}
+            </Flex>
           )}
         </RouterNavLink>
       ))}

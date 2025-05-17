@@ -18,6 +18,7 @@ type Deal {
   deal_specific_probability: Float # Nullable, actual probability (0.0 to 1.0)
   weighted_amount: Float          # Calculated: amount * effective_probability
   history(limit: Int, offset: Int): [DealHistoryEntry!]
+  customFieldValues: [CustomFieldValue!]!
 }
 
 input DealInput {
@@ -29,9 +30,10 @@ input DealInput {
   person_id: ID
   organization_id: ID
   deal_specific_probability: Float # Nullable, for setting/unsetting
+  customFields: [CustomFieldValueInput!]
 }
 
-input DealInput {
+input DealUpdateInput {
   name: String
   amount: Float
   expected_close_date: DateTime
@@ -39,4 +41,5 @@ input DealInput {
   person_id: ID
   organization_id: ID
   deal_specific_probability: Float # Nullable, for setting/unsetting
+  customFields: [CustomFieldValueInput!]
 } 

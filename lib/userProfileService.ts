@@ -8,9 +8,81 @@ export interface DbUserProfile {
   user_id: string;
   display_name: string | null;
   avatar_url: string | null;
+  email?: string | null; // Added optional email
   created_at: string; // Assuming TIMESTAMPTZ is stringified
   updated_at: string;
 }
+
+// New interface for the combined data
+export interface ServiceLevelUserProfile {
+    user_id: string;
+    display_name: string | null;
+    avatar_url: string | null;
+    email: string; // Email is expected to be non-null from auth.users
+}
+
+/**
+ * Fetches a user's profile (display_name, avatar_url) from user_profiles table
+ * AND their email from auth.users table.
+ * This function is intended for service-level backend use, using the default/service Supabase client.
+ * @param userId The UUID of the user.
+ * @returns Combined profile and email data, or null if user or profile not found. Email is non-null if user found.
+ */
+export const getServiceLevelUserProfileData = async (userId: string): Promise<ServiceLevelUserProfile | null> => {
+  if (!userId) {
+    console.warn('[userProfileService] getServiceLevelUserProfileData: User ID is required.');
+    return null;
+  }
+
+  console.log(`[userProfileService] getServiceLevelUserProfileData: Fetching data for user_id: ${userId}`);
+
+  // Fetch email from auth.users table
+  // Assuming 'supabase' client has appropriate (e.g. service_role) permissions
+  const { data: authUser, error: authError } = await supabase
+    .from('users') // Correct table name in auth schema is 'users'
+    .select('email')
+    .eq('id', userId)
+    .single();
+
+  if (authError) {
+    console.error(`[userProfileService] getServiceLevelUserProfileData: Error fetching email from auth.users for ${userId}:`, authError.message);
+    // Don't throw, allow profile fetching to proceed if desired, or return null
+    // For now, if email can't be fetched, we can't satisfy GraphQL User.email!
+    return null;
+  }
+
+  if (!authUser || !authUser.email) {
+    console.warn(`[userProfileService] getServiceLevelUserProfileData: User not found in auth.users or email is null for ${userId}.`);
+    // This is critical if GraphQL User.email is non-nullable.
+    return null; 
+  }
+
+  const email = authUser.email;
+
+  // Fetch display_name and avatar_url from user_profiles table
+  const { data: profileData, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('display_name, avatar_url')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error(`[userProfileService] getServiceLevelUserProfileData: Error fetching profile from user_profiles for ${userId}:`, profileError.message);
+    // If profile fetch fails but email was found, decide on behavior.
+    // For now, consider it a failure to construct the full object.
+    return null;
+  }
+
+  // profileData can be null if the user has an auth.users entry but no user_profiles entry yet.
+  // This is acceptable; display_name and avatar_url will be null in that case.
+
+  return {
+    user_id: userId,
+    display_name: profileData?.display_name || null,
+    avatar_url: profileData?.avatar_url || null,
+    email: email, // Email is guaranteed non-null if we reached here
+  };
+};
 
 /**
  * Fetches a user's profile from the user_profiles table.

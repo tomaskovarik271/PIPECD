@@ -48,6 +48,18 @@ const GET_DEALS_QUERY = gql`
       user_id
       deal_specific_probability
       weighted_amount
+      customFieldValues {
+        definition {
+          id
+          fieldName
+          fieldType
+        }
+        stringValue
+        numberValue
+        booleanValue
+        dateValue
+        selectedOptionValues
+      }
     }
   }
 `;

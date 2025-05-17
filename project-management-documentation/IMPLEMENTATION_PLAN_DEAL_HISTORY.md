@@ -1,5 +1,7 @@
 # Implementation Plan: Deal History / Audit Trail
 
+**Status:** Done 
+
 **Feature Goal:** To track and display a chronological history of significant changes made to a deal, including its creation, updates to key fields (with old and new values), and deletion. This history should indicate what changed, when it changed, and who made the change.
 
 This plan focuses on an application-level approach for recording history, primarily within `dealService.ts`, and using a JavaScript library for diffing object changes.

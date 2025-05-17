@@ -27,20 +27,7 @@ import type {
     // Argument types (e.g., QueryPersonArgs) are inferred by QueryResolvers
 } from '../../../../lib/generated/graphql';
 
-// REMOVE: Old frontend type imports
-// import type {
-//     Person,
-//     Organization,
-//     Deal,
-//     Pipeline,
-//     Stage,
-//     QueryPersonArgs,
-//     QueryOrganizationArgs,
-//     QueryDealArgs,
-//     QueryPipelineArgs,
-//     QueryStagesArgs,
-//     QueryStageArgs
-// } from '../../../../frontend/src/generated/graphql/graphql.js' with { "resolution-mode": "import" };
+
 
 export const Query: QueryResolvers<GraphQLContext> = {
     health: () => 'OK',
@@ -116,8 +103,10 @@ export const Query: QueryResolvers<GraphQLContext> = {
             phone: p.phone,
             notes: p.notes,
             organization_id: p.organization_id,
+            // Make raw DB data available for the Person.customFieldValues resolver
+            db_custom_field_values: (p as any).custom_field_values,
             // organization, deals, activities resolved by Person type resolvers
-          })) as GraphQLPerson[];
+          })) as any; // Cast to any to allow db_custom_field_values
       } catch (e) {
          throw processZodError(e, action);
       }
@@ -141,7 +130,9 @@ export const Query: QueryResolvers<GraphQLContext> = {
             phone: p.phone,
             notes: p.notes,
             organization_id: p.organization_id,
-          } as GraphQLPerson;
+            // Make raw DB data available for the Person.customFieldValues resolver
+            db_custom_field_values: (p as any).custom_field_values,
+          } as any; // Cast to any to allow db_custom_field_values
       } catch (e) {
          throw processZodError(e, action);
       }
@@ -175,8 +166,9 @@ export const Query: QueryResolvers<GraphQLContext> = {
             name: o.name,
             address: o.address,
             notes: o.notes,
+            db_custom_field_values: (o as any).custom_field_values,
             // activities, deals, people resolved by Organization type resolvers
-         })) as GraphQLOrganization[];
+         })) as any; // Cast to any to allow db_custom_field_values
        } catch (e) {
           throw processZodError(e, 'fetching organizations list');
        }
@@ -196,7 +188,8 @@ export const Query: QueryResolvers<GraphQLContext> = {
             name: o.name,
             address: o.address,
             notes: o.notes,
-          } as GraphQLOrganization;
+            db_custom_field_values: (o as any).custom_field_values,
+          } as any; // Cast to any to allow db_custom_field_values
        } catch (e) {
            throw processZodError(e, 'fetching organization by ID');
        }
@@ -208,7 +201,6 @@ export const Query: QueryResolvers<GraphQLContext> = {
        const accessToken = getAccessToken(context)!;
        try {
            const dealList = await dealService.getDeals(context.currentUser!.id, accessToken);
-           // Map Deal[] from service to GraphQLDeal[]
            return dealList.map(d => ({
                 id: d.id,
                 user_id: d.user_id!,
@@ -222,7 +214,9 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 person_id: d.person_id,
                 organization_id: d.organization_id,
                 deal_specific_probability: d.deal_specific_probability,
-           })) as GraphQLDeal[];
+                // Make raw DB data available for the Deal.customFieldValues resolver
+                db_custom_field_values: (d as any).custom_field_values, 
+           })) as any; // Cast to any to allow db_custom_field_values, field resolvers will complete the type
        } catch (e) {
            throw processZodError(e, 'fetching deals list');
        }
@@ -233,7 +227,6 @@ export const Query: QueryResolvers<GraphQLContext> = {
        try {
            const d = await dealService.getDealById(context.currentUser!.id, args.id, accessToken);
            if (!d) return null;
-           // Map Deal from service to GraphQLDeal
            return {
                 id: d.id,
                 user_id: d.user_id!,
@@ -247,7 +240,9 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 person_id: d.person_id,
                 organization_id: d.organization_id,
                 deal_specific_probability: d.deal_specific_probability,
-           } as GraphQLDeal;
+                // Make raw DB data available for the Deal.customFieldValues resolver
+                db_custom_field_values: (d as any).custom_field_values, 
+           } as any; // Cast to any, field resolvers will complete the type
        } catch (e) {
            throw processZodError(e, 'fetching deal by ID');
        }

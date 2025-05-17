@@ -13,10 +13,19 @@ type Organization {
     people: [Person!] # People belonging to this organization
     deals: [Deal!]! # List of associated deals
     activities: [Activity!]! # ADDED list of related activities
+    customFieldValues: [CustomFieldValue!]! # ADDED
 }
 
 input OrganizationInput {
     name: String!
     address: String
     notes: String
+    customFields: [CustomFieldValueInput!] # ADDED
+}
+
+input OrganizationUpdateInput {
+    name: String
+    address: String
+    notes: String
+    customFields: [CustomFieldValueInput!] # ADDED
 } 

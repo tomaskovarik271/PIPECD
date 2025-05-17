@@ -383,7 +383,7 @@ Empower users to segment and analyze their data more effectively, improving work
 ## Task: Implement User-Definable Custom Fields
 
 **ID:** FEATURE-004
-**Status:** To Do
+**Status:** Almost done
 **Priority:** High
 **Reporter:** System (GAP Analysis)
 **Assignee:** TBD

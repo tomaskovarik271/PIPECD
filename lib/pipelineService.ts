@@ -1,23 +1,8 @@
-// Placeholder for Pipeline Service
+
 // Functions for CRUD operations on pipelines will be implemented here.
 
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils';
 import type { Pipeline, PipelineInput } from './generated/graphql'; // ADDED: Import generated types
-
-// REMOVED: Local Pipeline interface
-// export interface Pipeline {
-//     id: string;         
-//     name: string;       
-//     created_at: string; 
-//     updated_at: string; 
-//     user_id: string;    
-// }
-
-// REMOVED: Local CreatePipelineInput type
-// export type CreatePipelineInput = Pick<Pipeline, 'name'>;
-
-// REMOVED: Local UpdatePipelineInput type
-// export type UpdatePipelineInput = Partial<Pick<Pipeline, 'name'>>;
 
 
 /**

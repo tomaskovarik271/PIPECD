@@ -4,39 +4,94 @@ import { /* createClient, SupabaseClient, */ } from '@supabase/supabase-js'; // 
 import { GraphQLError } from 'graphql';
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils'; // Import shared helpers
 import type { Person, PersonInput } from './generated/graphql'; // ADDED: Import generated types
+// Import CustomFieldValueInput for processing
+import type { CustomFieldValueInput } from './generated/graphql';
+import { getCustomFieldDefinitionById } from './customFieldDefinitionService';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
-// REMOVED: Redundant env var loading
-// import dotenv from 'dotenv';
-// dotenv.config();
-// const supabaseUrl = process.env.SUPABASE_URL;
-// const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-// if (!supabaseUrl) { ... }
-// if (!supabaseAnonKey) { ... }
 
-// REMOVED: Helper Functions (now in serviceUtils.ts)
-// function getAuthenticatedClient(accessToken: string): SupabaseClient { ... }
-// function handleSupabaseError(error: PostgrestError | null, context: string) { ... }
+// Helper to process custom fields for creation
+async function processCustomFieldsForPersonCreate(
+  customFieldsInput: CustomFieldValueInput[] | undefined | null,
+  supabaseClient: SupabaseClient
+): Promise<Record<string, any> | null> {
+  if (!customFieldsInput || customFieldsInput.length === 0) {
+    return null;
+  }
 
-// --- Person Data Shape ---
+  const dbCustomFieldValues: Record<string, any> = {};
+  for (const cfInput of customFieldsInput) {
+    try {
+      const definition = await getCustomFieldDefinitionById(supabaseClient, cfInput.definitionId);
+      if (definition && definition.entityType === 'PERSON' && definition.isActive) { // Ensure for Person and active
+        const fieldName = definition.fieldName;
+        let valueToStore: any = undefined;
 
-// REMOVED: Old PersonInput interface
-// interface PersonInput {
-//   first_name?: string | null;
-//   last_name?: string | null;
-//   email?: string | null;
-//   phone?: string | null;
-//   company?: string | null; 
-//   notes?: string | null;
-//   organization_id?: string | null; 
-// }
+        if (cfInput.stringValue !== undefined && cfInput.stringValue !== null) valueToStore = cfInput.stringValue;
+        else if (cfInput.numberValue !== undefined && cfInput.numberValue !== null) valueToStore = cfInput.numberValue;
+        else if (cfInput.booleanValue !== undefined && cfInput.booleanValue !== null) valueToStore = cfInput.booleanValue;
+        else if (cfInput.dateValue !== undefined && cfInput.dateValue !== null) valueToStore = cfInput.dateValue;
+        else if (cfInput.selectedOptionValues !== undefined && cfInput.selectedOptionValues !== null) valueToStore = cfInput.selectedOptionValues;
+        
+        if (valueToStore !== undefined) {
+             dbCustomFieldValues[fieldName] = valueToStore;
+        }
+      } else if (definition && (definition.entityType !== 'PERSON' || !definition.isActive)) {
+        console.warn(`[personService.processCustomFieldsForPersonCreate] Custom field definition ${cfInput.definitionId} (${definition.fieldName}) is not for PERSON or not active. Skipping.`);
+      }
+       else {
+        console.warn(`[personService.processCustomFieldsForPersonCreate] Custom field definition ${cfInput.definitionId} not found. Skipping.`);
+      }
+    } catch (defError: any) {
+        console.error(`[personService.processCustomFieldsForPersonCreate] Error fetching/processing definition ${cfInput.definitionId}:`, defError.message);
+    }
+  }
+  return Object.keys(dbCustomFieldValues).length > 0 ? dbCustomFieldValues : null;
+}
 
-// REMOVED: Old PersonRecord interface
-// export interface PersonRecord extends PersonInput {
-//     id: string;
-//     created_at: string;
-//     updated_at: string;
-//     user_id: string;
-// }
+// Helper to process custom fields for update
+async function processCustomFieldsForPersonUpdate(
+  currentDbCustomFieldValues: Record<string, any> | null,
+  customFieldsInput: CustomFieldValueInput[] | undefined | null,
+  supabaseClient: SupabaseClient
+): Promise<{ finalCustomFieldValues: Record<string, any> | null }> {
+  let finalCustomFieldValues: Record<string, any> | null = currentDbCustomFieldValues || {};
+
+  if (!customFieldsInput || customFieldsInput.length === 0) {
+    return { finalCustomFieldValues: finalCustomFieldValues }; 
+  }
+  
+  const customFieldsToUpdate: Record<string, any> = {};
+
+  for (const cfInput of customFieldsInput) {
+    try {
+      const definition = await getCustomFieldDefinitionById(supabaseClient, cfInput.definitionId);
+      if (definition && definition.entityType === 'PERSON' && definition.isActive) { // Ensure for Person and active
+        const fieldName = definition.fieldName;
+        let valueToStore: any = null; 
+
+        if ('stringValue' in cfInput) valueToStore = cfInput.stringValue;
+        else if ('numberValue' in cfInput) valueToStore = cfInput.numberValue;
+        else if ('booleanValue' in cfInput) valueToStore = cfInput.booleanValue;
+        else if ('dateValue' in cfInput) valueToStore = cfInput.dateValue;
+        else if ('selectedOptionValues' in cfInput) valueToStore = cfInput.selectedOptionValues;
+        
+        customFieldsToUpdate[fieldName] = valueToStore;
+      } else if (definition && (definition.entityType !== 'PERSON' || !definition.isActive)) {
+        console.warn(`[personService.processCustomFieldsForPersonUpdate] Custom field definition ${cfInput.definitionId} (${definition.fieldName}) is not for PERSON or not active. Skipping update for this field.`);
+      }
+       else {
+        console.warn(`[personService.processCustomFieldsForPersonUpdate] Custom field definition ${cfInput.definitionId} not found. Skipping update for this field.`);
+      }
+    } catch (defError: any) {
+        console.error(`[personService.processCustomFieldsForPersonUpdate] Error fetching/processing definition ${cfInput.definitionId}:`, defError.message);
+    }
+  }
+  
+  finalCustomFieldValues = { ...(currentDbCustomFieldValues || {}), ...customFieldsToUpdate };
+  
+  return { finalCustomFieldValues };
+}
 
 
 // --- Person Service --- 
@@ -60,7 +115,7 @@ export const personService = {
     const supabase = getAuthenticatedClient(accessToken); 
     const { data, error } = await supabase
       .from('people') 
-      .select('*')
+      .select('*') // Ensure custom_field_values is selected if present
       .eq('id', id) 
       .single(); 
 
@@ -74,10 +129,23 @@ export const personService = {
   async createPerson(userId: string, input: PersonInput, accessToken: string): Promise<Person> { // CHANGED: input type to PersonInput, return type to Person
     console.log('[personService.createPerson] called for user:', userId, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); 
+    
+    const { customFields, ...personData } = input;
+    const processedCustomFieldValues = await processCustomFieldsForPersonCreate(customFields, supabase);
+
+    const dbInput: any = { 
+      ...personData, 
+      user_id: userId 
+    };
+
+    if (processedCustomFieldValues) {
+      dbInput.custom_field_values = processedCustomFieldValues;
+    }
+    
     const { data, error } = await supabase
       .from('people') 
-      .insert({ ...input, user_id: userId }) 
-      .select() 
+      .insert(dbInput) 
+      .select('*') // Select all fields including custom_field_values
       .single(); 
 
     handleSupabaseError(error, 'creating person'); 
@@ -91,11 +159,35 @@ export const personService = {
   async updatePerson(userId: string, id: string, input: Partial<PersonInput>, accessToken: string): Promise<Person> { // CHANGED: input type to Partial<PersonInput>, return type to Person
     console.log('[personService.updatePerson] called for user:', userId, 'id:', id, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); 
+
+    // 1. Fetch current person data to get existing custom_field_values
+    const currentPersonData = await this.getPersonById(userId, id, accessToken);
+    if (!currentPersonData) {
+        throw new GraphQLError('Person not found for update', { extensions: { code: 'NOT_FOUND' } });
+    }
+    const currentDbCustomFieldValues = (currentPersonData as any).custom_field_values || {};
+    
+    const { customFields, ...personDataToUpdate } = input;
+    
+    const { finalCustomFieldValues } = await processCustomFieldsForPersonUpdate(
+      currentDbCustomFieldValues,
+      customFields, 
+      supabase
+    );
+
+    const dbUpdatePayload: any = { ...personDataToUpdate };
+    if (finalCustomFieldValues !== null) { // Ensure we only set it if it's not null (could be {} )
+        dbUpdatePayload.custom_field_values = finalCustomFieldValues;
+    } else {
+        // If finalCustomFieldValues is null (e.g. all fields cleared and none existed before), set to empty object
+        dbUpdatePayload.custom_field_values = {}; 
+    }
+    
     const { data, error } = await supabase
       .from('people') 
-      .update(input) 
+      .update(dbUpdatePayload) 
       .eq('id', id) 
-      .select() 
+      .select('*') // Select all fields including custom_field_values
       .single(); 
 
     if (error && error.code === 'PGRST116') { 

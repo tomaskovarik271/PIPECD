@@ -1,6 +1,30 @@
 import { z } from 'zod';
 import { StageType as GeneratedStageType } from '../../../lib/generated/graphql'; // Adjusted path
 
+// Zod schema for CustomFieldValueInput
+const CustomFieldValueInputSchema = z.object({
+  definitionId: z.string().uuid("Invalid Definition ID format for custom field value"),
+  stringValue: z.string().optional().nullable(),
+  numberValue: z.number().optional().nullable(),
+  booleanValue: z.boolean().optional().nullable(),
+  dateValue: z.coerce.date({ errorMap: () => ({ message: "Invalid date for custom field. Expected a valid date string." }) }).optional().nullable(), 
+  selectedOptionValues: z.array(z.string()).optional().nullable(),
+}).refine(data => {
+  const valueFields = [
+    data.stringValue,
+    data.numberValue,
+    data.booleanValue,
+    data.dateValue,
+    data.selectedOptionValues
+  ];
+  const providedValueFields = valueFields.filter(v => v !== undefined && v !== null && (!Array.isArray(v) || v.length > 0));
+  // Ensure at most one value field is provided (0 is okay for optional, 1 is for a set value)
+  return providedValueFields.length <= 1;
+}, {
+  message: "If providing a custom field value, only one of stringValue, numberValue, booleanValue, dateValue, or selectedOptionValues should be set.",
+  // path: [], // General error, or pick one field e.g., 'stringValue'
+});
+
 // --- Person Schemas ---
 const PersonBaseSchema = z.object({
   first_name: z.string().trim().min(1, { message: "First name cannot be empty if provided" }).optional().nullable(),
@@ -9,6 +33,7 @@ const PersonBaseSchema = z.object({
   phone: z.string().trim().optional().nullable(),
   notes: z.string().trim().optional().nullable(),
   organization_id: z.string().uuid({ message: "Invalid Organization ID format" }).optional().nullable(),
+  customFields: z.array(CustomFieldValueInputSchema).optional().nullable(),
 });
 
 export const PersonCreateSchema = PersonBaseSchema.refine(data => data.first_name || data.last_name || data.email, {
@@ -23,9 +48,11 @@ export const OrganizationInputSchema = z.object({
     name: z.string().trim().min(1, { message: "Organization name cannot be empty" }),
     address: z.string().trim().optional().nullable(),
     notes: z.string().trim().optional().nullable(),
+    customFields: z.array(CustomFieldValueInputSchema).optional().nullable(),
 });
 
 // --- Deal Schemas ---
+
 export const DealBaseSchema = z.object({
   name: z.string().min(1, { message: "Deal name is required" }).optional(),
   amount: z.number().positive("Amount must be positive").optional().nullable(),
@@ -35,6 +62,7 @@ export const DealBaseSchema = z.object({
   person_id: z.string().uuid("Valid Person ID is required").optional().nullable(),
   organization_id: z.string().uuid("Valid Organization ID is required").optional().nullable(),
   deal_specific_probability: z.number().min(0).max(1).optional().nullable(),
+  customFields: z.array(CustomFieldValueInputSchema).optional().nullable(), // Added customFields to Zod schema
 });
 
 export const DealCreateSchema = DealBaseSchema.merge(z.object({
@@ -82,7 +110,7 @@ const ActivityTypeEnum = z.enum([
 export const CreateActivityInputSchema = z.object({
   type: ActivityTypeEnum,
   subject: z.string().trim().min(1, { message: 'Subject cannot be empty' }),
-  due_date: z.string().datetime({ message: 'Invalid datetime string for due date. Use ISO 8601 format.' }).optional().nullable(),
+  due_date: z.coerce.date().optional().nullable(),
   notes: z.string().trim().optional().nullable(), // Trim notes
   is_done: z.boolean().optional(), // Defaults false in DB
   deal_id: z.string().uuid({ message: 'Invalid UUID for deal ID' }).optional().nullable(),
@@ -97,7 +125,7 @@ export const UpdateActivityInputSchema = z.object({
   // All fields are optional for update
   type: ActivityTypeEnum.optional(),
   subject: z.string().trim().min(1, { message: 'Subject cannot be empty when provided' }).optional(), // Validate non-empty only if provided
-  due_date: z.string().datetime({ message: 'Invalid datetime string for due date. Use ISO 8601 format.' }).optional().nullable(),
+  due_date: z.coerce.date().optional().nullable(),
   notes: z.string().trim().nullable().optional(), // Allow explicitly setting notes to null or empty string after trim
   is_done: z.boolean().optional(),
   deal_id: z.string().uuid({ message: 'Invalid UUID for deal ID' }).optional().nullable(),

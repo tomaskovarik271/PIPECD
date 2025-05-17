@@ -66,21 +66,21 @@ Okay, here's a list of manual tests you can perform to verify the User Profile M
 
 5.  **Test Case:** Edit Profile - Invalid Avatar URL
     *   **Steps:**
-        1.  Go to "My Profile", click "Edit Profile".
-        2.  Enter an invalid string in "Avatar URL" (e.g., "not_a_url").
+        1.  Go to "My Profile", click "Edit Profile". OK
+        2.  Enter an invalid string in "Avatar URL" (e.g., "not_a_url").OK
         3.  Click "Save Changes".
     *   **Expected Result:**
-        *   A form validation error message appears below the Avatar URL field (e.g., "Please enter a valid URL.").
-        *   The profile is not saved. No API call is made.
+        *   A form validation error message appears below the Avatar URL field (e.g., "Please enter a valid URL."). OK
+        *   The profile is not saved. No API call is made. OK
 
 6.  **Test Case:** Edit Profile - No Changes Made
     *   **Steps:**
-        1.  Go to "My Profile", click "Edit Profile".
-        2.  Make no changes to the pre-filled form.
-        3.  Click "Save Changes".
+        1.  Go to "My Profile", click "Edit Profile". OK
+        2.  Make no changes to the pre-filled form.OK
+        3.  Click "Save Changes".OK
     *   **Expected Result:**
-        *   An informational toast notification appears ("No Changes").
-        *   The form might close or stay in edit mode (current `ProfileEditForm` logic closes it if `onCancel` is used, which it is).
+        *   An informational toast notification appears ("No Changes").OK
+        *   The form might close or stay in edit mode (current `ProfileEditForm` logic closes it if `onCancel` is used, which it is).OK
         *   No API call to update the profile is made.
 
 7.  **Test Case:** Edit Profile - Cancel Editing

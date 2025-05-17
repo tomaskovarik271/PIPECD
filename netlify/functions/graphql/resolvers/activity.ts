@@ -17,6 +17,7 @@ import { inngest } from '../../../../lib/inngestClient';
 import { dealService } from '../../../../lib/dealService';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
+import { getServiceLevelUserProfileData } from '../../../../lib/userProfileService';
 
 // Correctly import types from our backend generated types
 import type { 
@@ -27,6 +28,7 @@ import type {
     Deal as GraphQLDeal,
     Person as GraphQLPerson,
     Organization as GraphQLOrganization,
+    User as GraphQLUser,
     CreateActivityInput as GraphQLCreateActivityInput,
     UpdateActivityInput as GraphQLUpdateActivityInput,
     ActivityType as GraphQLActivityType
@@ -111,7 +113,39 @@ export const Activity: ActivityResolvers<GraphQLContext> = {
         console.error(`Error ${action}:`, e);
         return null;
       }
-    }
+    },
+    user: async (parent: { id: string, user_id: string }, _args: unknown, _context: GraphQLContext): Promise<GraphQLUser | null> => {
+      if (!parent.user_id) {
+        console.warn(`[ActivityResolver] Activity ${parent.id} has no user_id`);
+        return null;
+      }
+      const action = `[ActivityResolver] Fetching user ${parent.user_id} for activity ${parent.id}`;
+      try {
+        // Call the new service function which uses a service-level client
+        const userProfileData = await getServiceLevelUserProfileData(parent.user_id);
+
+        if (!userProfileData) {
+          console.warn(`${action}: User profile data not found for user_id ${parent.user_id}.`);
+          // HIST-001: Consider how to represent deleted/missing users.
+          // For now, returning null. Frontend can display 'Unknown User' or handle as needed.
+          return null; 
+        }
+        
+        // userProfileData contains: user_id, display_name, avatar_url, email (non-null)
+        // Map to GraphQLUser type
+        return {
+            id: userProfileData.user_id, 
+            display_name: userProfileData.display_name,
+            avatar_url: userProfileData.avatar_url,
+            email: userProfileData.email, // This should now be correctly populated and non-null
+        } as GraphQLUser; // Cast might not be needed if types align perfectly
+
+      } catch (e: any) {
+        console.error(`Error ${action}:`, e.message);
+        // It's important not to throw here typically, as it might break entire list queries if one user fails.
+        return null; 
+      }
+    },
 };
 
 export const Query: QueryResolvers<GraphQLContext> = {

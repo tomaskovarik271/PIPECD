@@ -16,6 +16,7 @@ type Person { # Renamed from Contact
   organization: Organization # Associated organization
   deals: [Deal!] # Associated deals 
   activities: [Activity!]! # ADDED list of related activities
+  customFieldValues: [CustomFieldValue!]! # ADDED
 }
 
 # Simplified type for person dropdowns
@@ -31,4 +32,15 @@ input PersonInput { # Renamed from ContactInput
   phone: String
   notes: String
   organization_id: ID # Added field
+  customFields: [CustomFieldValueInput!] # ADDED
+}
+
+input PersonUpdateInput {
+  first_name: String
+  last_name: String
+  email: String
+  phone: String
+  notes: String
+  organization_id: ID
+  customFields: [CustomFieldValueInput!] # ADDED
 } 

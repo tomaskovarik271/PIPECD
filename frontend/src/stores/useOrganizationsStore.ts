@@ -14,8 +14,34 @@ import type {
 // Re-export core Organization types
 export type { Organization, OrganizationInput, Maybe };
 
+// --- GraphQL Fragment for Custom Field Values ---
+// This ensures consistency in fetching custom field data
+const CUSTOM_FIELD_VALUES_FRAGMENT = gql`
+  fragment CustomFieldValuesData on CustomFieldValue {
+    definition {
+      id
+      fieldName
+      fieldLabel
+      fieldType
+      displayOrder
+      isRequired
+      isActive
+      dropdownOptions {
+        value
+        label
+      }
+    }
+    stringValue
+    numberValue
+    booleanValue
+    dateValue
+    selectedOptionValues
+  }
+`;
+
 // --- GraphQL Queries/Mutations for Organizations ---
 const GET_ORGANIZATIONS_QUERY = gql`
+  ${CUSTOM_FIELD_VALUES_FRAGMENT}
   query GetOrganizations {
     organizations {
       id
@@ -25,11 +51,15 @@ const GET_ORGANIZATIONS_QUERY = gql`
       created_at
       updated_at
       # user_id might be present if returned by resolver
+      customFieldValues {
+        ...CustomFieldValuesData
+      }
     }
   }
 `;
 
 const CREATE_ORGANIZATION_MUTATION = gql`
+  ${CUSTOM_FIELD_VALUES_FRAGMENT}
   mutation CreateOrganization($input: OrganizationInput!) {
     createOrganization(input: $input) {
       id
@@ -38,11 +68,15 @@ const CREATE_ORGANIZATION_MUTATION = gql`
       notes
       created_at
       updated_at
+      customFieldValues {
+        ...CustomFieldValuesData
+      }
     }
   }
 `;
 
 const UPDATE_ORGANIZATION_MUTATION = gql`
+  ${CUSTOM_FIELD_VALUES_FRAGMENT}
   mutation UpdateOrganization($id: ID!, $input: OrganizationInput!) {
     updateOrganization(id: $id, input: $input) {
       id
@@ -51,6 +85,9 @@ const UPDATE_ORGANIZATION_MUTATION = gql`
       notes
       created_at
       updated_at
+      customFieldValues {
+        ...CustomFieldValuesData
+      }
     }
   }
 `;
@@ -79,7 +116,6 @@ export const useOrganizationsStore = create<OrganizationsState>((set, get) => ({
   fetchOrganizations: async () => {
     set({ organizationsLoading: true, organizationsError: null });
     try {
-      // Type GetOrganizationsQueryVariables is not used here as the query takes no arguments
       const data = await gqlClient.request<{ organizations: Organization[] }>(GET_ORGANIZATIONS_QUERY);
       set({ organizations: data.organizations || [], organizationsLoading: false });
     } catch (error: unknown) {
