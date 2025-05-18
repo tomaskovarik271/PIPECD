@@ -57,7 +57,7 @@ const warholColors = {
 };
 
 export const andyWarholTheme = extendTheme({
-  config: { ...baseThemeConfig, initialColorMode: 'light' } as ThemeConfig,
+  config: { ...baseThemeConfig, initialColorMode: 'dark' } as ThemeConfig,
   fonts: {
     heading: `'Bebas Neue', cursive`,
     body: `'Montserrat', sans-serif`,
@@ -75,6 +75,7 @@ export const andyWarholTheme = extendTheme({
       50: warholColors.white,
       100: warholColors.lightGray,
       200: '#E0E0E0',
+      700: '#4A4A4A',
       800: warholColors.darkGray,
       900: warholColors.black,
     },
@@ -85,8 +86,8 @@ export const andyWarholTheme = extendTheme({
   styles: {
     global: (props: StyleFunctionProps) => ({
       body: {
-        bg: 'gray.50',
-        color: 'gray.800',
+        bg: 'gray.900',
+        color: 'gray.50',
       },
     }),
   },
@@ -95,7 +96,7 @@ export const andyWarholTheme = extendTheme({
       baseStyle: {
         container: {
           bg: 'gray.900',
-          borderColor: 'gray.900',
+          borderColor: 'gray.800',
         },
         navLink: {
           color: 'gray.50',
@@ -105,14 +106,14 @@ export const andyWarholTheme = extendTheme({
           bg: 'primary.500',
           color: 'gray.900',
           fontWeight: 'bold',
-           _hover: { bg: 'primary.500' },
+           _hover: { bg: 'primary.600' },
         },
         headerText: {
           color: 'primary.500',
           fontFamily: `'Bebas Neue', cursive`,
         },
         userInfoText: {
-            color: 'gray.200'
+            color: 'gray.100'
         }
       },
     },
@@ -132,15 +133,15 @@ export const andyWarholTheme = extendTheme({
             };
           }
           if (props.colorScheme === 'pink') {
-            return { bg: 'pink.500', color: 'white', _hover: { bg: 'pink.600' } };
+            return { bg: 'pink.500', color: 'gray.900', _hover: { bg: 'pink.600' } };
           }
           if (props.colorScheme === 'blue') {
-            return { bg: 'blue.500', color: 'white', _hover: { bg: 'blue.600' } };
+            return { bg: 'blue.500', color: 'gray.900', _hover: { bg: 'blue.600' } };
           }
           return { 
-            bg: 'gray.900',
-            color: 'gray.50',
-            _hover: { bg: 'gray.800'}
+            bg: 'gray.50',
+            color: 'gray.900',
+            _hover: { bg: 'gray.100'}
           };
         },
         outline: (props: StyleFunctionProps) => {
@@ -149,14 +150,37 @@ export const andyWarholTheme = extendTheme({
           if (scheme === 'blue') color = warholColors.popBlue[500];
           else if (scheme === 'yellow') color = warholColors.popYellow[500];
           else if (scheme === 'green') color = warholColors.popGreen[500];
-          else if (scheme === 'gray' || scheme === 'black') color = warholColors.black;
+          else if (scheme === 'gray' || scheme === 'black') color = warholColors.lightGray;
 
           return {
             borderColor: color,
             color: color,
             borderRadius: '0',
             textTransform: 'uppercase',
-            _hover: { bg: color, color: warholColors.white },
+            _hover: { bg: color, color: warholColors.darkGray },
+          };
+        },
+        ghost: (props: StyleFunctionProps) => {
+          let color = warholColors.popPink[500];
+          if (props.colorScheme === 'blue') color = warholColors.popBlue[500];
+          else if (props.colorScheme === 'yellow') color = warholColors.popYellow[500];
+          else if (props.colorScheme === 'green') color = warholColors.popGreen[500];
+          else if (props.colorScheme === 'gray' || !props.colorScheme) color = warholColors.lightGray;
+
+          return {
+            color: color,
+            bg: 'transparent',
+            _hover: {
+              bg: warholColors.darkGray,
+              color: warholColors.popYellow[500],
+            },
+            _active: {
+              bg: warholColors.black,
+              color: warholColors.popYellow[500],
+            },
+            _focus: {
+              boxShadow: `0 0 0 2px ${warholColors.popPink[500]}`,
+            }
           };
         },
       },
@@ -165,46 +189,47 @@ export const andyWarholTheme = extendTheme({
       baseStyle: {
         fontFamily: `'Bebas Neue', cursive`,
         textTransform: 'uppercase',
-        color: 'gray.900',
+        color: 'gray.50',
       },
     },
     Card: {
         baseStyle: {
-            bg: 'gray.100',
+            bg: 'gray.800',
             borderWidth: '2px',
-            borderColor: 'gray.900',
+            borderColor: 'gray.50',
             borderRadius: '0',
             padding: 4,
-            color: 'gray.900', // Ensure text in card is dark
+            color: 'gray.50',
         }
     },
     Table: {
       variants: {
-        simple: (props: StyleFunctionProps) => ({ // Added props
+        simple: (props: StyleFunctionProps) => ({
           th: {
             fontFamily: `'Bebas Neue', cursive`,
             textTransform: 'uppercase',
-            color: 'gray.50',
-            bg: 'gray.900',
+            color: 'gray.900',
+            bg: 'yellow.500',
             border: '2px solid', 
             borderColor: 'gray.900',
           },
           td: {
             border: '2px solid', 
-            borderColor: 'gray.900',
-            color: 'gray.900',
+            borderColor: 'gray.700',
+            color: 'gray.50',
+            bg: 'gray.800',
           },
         }),
       },
     },
     Modal: {
-      baseStyle: (props: StyleFunctionProps) => ({ // Added props
+      baseStyle: (props: StyleFunctionProps) => ({
         dialog: {
-          bg: 'white',
+          bg: 'gray.800',
           border: '4px solid', 
-          borderColor: 'black',
+          borderColor: 'yellow.500',
           borderRadius: '0',
-          color: 'black',
+          color: 'gray.50',
         },
         header: {
           fontFamily: `'Bebas Neue', cursive`,
@@ -212,27 +237,61 @@ export const andyWarholTheme = extendTheme({
           bg: 'yellow.500',
           color: 'black',
           padding: 4,
-          borderBottom: '2px solid black', // Add border to header
+          borderBottom: '2px solid black',
         },
         body: {
           padding: 6,
-          color: 'black',
+          color: 'gray.50',
         },
         footer: {
-            borderTop: '2px solid black', // Add border to footer
+            borderTop: '2px solid black',
             padding: 4,
         },
         closeButton: {
             color: 'black',
+            bg: 'yellow.500',
             border: '2px solid black',
             borderRadius: '0',
-            top: 2, // Adjust position slightly
-            right: 2,
+            top: '10px',
+            right: '10px',
             _hover: {
-                bg: 'yellow.500'
+                bg: 'pink.500',
+                color: 'black'
             }
         }
       })
+    },
+    Menu: {
+      baseStyle: (props: StyleFunctionProps) => ({
+        list: {
+          bg: 'gray.800',
+          border: '2px solid',
+          borderColor: 'yellow.500',
+          borderRadius: '0',
+          color: 'gray.50',
+          boxShadow: `5px 5px 0px ${warholColors.popPink[500]}`,
+        },
+        item: {
+          bg: 'gray.800',
+          color: 'gray.50',
+          fontFamily: `'Montserrat', sans-serif`,
+          textTransform: 'uppercase',
+          borderRadius: '0',
+          _hover: {
+            bg: 'pink.500',
+            color: 'black',
+          },
+          _focus: {
+            bg: 'pink.600',
+            color: 'black',
+          },
+          icon: {
+            color: 'yellow.500',
+            marginRight: '12px',
+            fontSize: '1.2em',
+          }
+        },
+      }),
     },
   }
 }); 

@@ -49,6 +49,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>('');
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
+  const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
   
   // State for Custom Fields
   const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, any>>({});
@@ -88,6 +89,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       setPersonId('');
       setError(null);
       setDealSpecificProbability('');
+      setExpectedCloseDate('');
       setIsLoading(false);
       
       // Reset custom field states
@@ -157,6 +159,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         pipeline_id: localSelectedPipelineId,
         amount: amount ? parseFloat(amount) : null,
         person_id: personId || null,
+        expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : null,
         // customFields: [] // Initialize customFields array - will be populated below
       };
 
@@ -433,9 +436,19 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
 
             <FormControl>
               <FormLabel>Amount</FormLabel>
-              <NumberInput value={amount} onChange={(valueAsString) => setAmount(valueAsString)}>
-                <NumberInputField placeholder='Enter amount (optional)' />
+              <NumberInput value={amount} onChange={(valueString) => setAmount(valueString)} precision={2}>
+                <NumberInputField id='amount' placeholder='e.g., 5000.00' />
               </NumberInput>
+            </FormControl>
+
+            <FormControl mt={4}>
+              <FormLabel htmlFor='expected_close_date'>Expected Close Date</FormLabel>
+              <Input 
+                id='expected_close_date'
+                type='date' 
+                value={expectedCloseDate}
+                onChange={(e) => setExpectedCloseDate(e.target.value)}
+              />
             </FormControl>
 
             <FormControl>

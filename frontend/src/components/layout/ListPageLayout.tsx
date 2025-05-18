@@ -7,6 +7,9 @@ import {
   Alert,
   AlertIcon,
   VStack,
+  Spacer,
+  HStack,
+  Box,
 } from '@chakra-ui/react';
 import EmptyState from '../common/EmptyState'; // Assuming EmptyState is in common
 
@@ -29,6 +32,7 @@ interface ListPageLayoutProps {
   isEmpty: boolean;
   emptyStateProps: EmptyStateProps;
   children: React.ReactNode; // Main content (e.g., the table)
+  customControls?: React.ReactNode; // Optional prop for custom controls
 }
 
 const ListPageLayout: React.FC<ListPageLayoutProps> = ({
@@ -41,6 +45,7 @@ const ListPageLayout: React.FC<ListPageLayoutProps> = ({
   isEmpty,
   emptyStateProps,
   children,
+  customControls,
 }) => {
   return (
     <VStack spacing={4} align="stretch">
@@ -49,13 +54,16 @@ const ListPageLayout: React.FC<ListPageLayoutProps> = ({
         <Heading as="h2" size="lg">
           {title}
         </Heading>
-        <Button 
-          colorScheme="blue"
-          onClick={onNewButtonClick}
-          isDisabled={isNewButtonDisabled}
-        >
-          {newButtonLabel}
-        </Button>
+        <HStack spacing={2}>
+          {customControls && <Box>{customControls}</Box>}
+          <Button 
+            colorScheme="blue"
+            onClick={onNewButtonClick}
+            isDisabled={isNewButtonDisabled}
+          >
+            {newButtonLabel}
+          </Button>
+        </HStack>
       </Flex>
 
       {/* Conditional Content */}
@@ -77,14 +85,14 @@ const ListPageLayout: React.FC<ListPageLayoutProps> = ({
           icon={emptyStateProps.icon}
           title={emptyStateProps.title}
           message={emptyStateProps.message}
-          actionButtonLabel={newButtonLabel} // Reuse button label
-          onActionButtonClick={onNewButtonClick} // Reuse button action
-          isActionButtonDisabled={isNewButtonDisabled} // Reuse button disabled state
+          actionButtonLabel={newButtonLabel}
+          onActionButtonClick={onNewButtonClick}
+          isActionButtonDisabled={isNewButtonDisabled}
         />
       )}
 
       {!isLoading && !error && !isEmpty && (
-        <>{children}</> // Render the main content (table)
+        <>{children}</>
       )}
     </VStack>
   );

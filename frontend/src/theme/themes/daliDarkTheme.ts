@@ -100,10 +100,10 @@ export const daliDarkTheme = extendTheme({
     global: (props: StyleFunctionProps) => ({
       body: {
         bg: 'neutral.900',
-        color: 'neutral.100',
+        color: 'neutral.50',
       },
       '*::placeholder': {
-        color: 'neutral.300',
+        color: 'neutral.200',
       },
     }),
   },
@@ -268,7 +268,7 @@ export const daliDarkTheme = extendTheme({
     Text: {
         baseStyle: {
             fontFamily: `'Lato', sans-serif`,
-            color: 'neutral.200',
+            color: 'neutral.100',
         }
     },
     Modal: {
@@ -296,12 +296,13 @@ export const daliDarkTheme = extendTheme({
         simple: {
           th: {
             fontFamily: `'Lato', sans-serif`,
-            color: 'neutral.200',
+            color: 'neutral.100',
             borderColor: 'neutral.600',
             bg: 'neutral.700'
           },
           td: {
             borderColor: 'neutral.700',
+            color: 'neutral.50',
           },
           tbody: {
             tr: {

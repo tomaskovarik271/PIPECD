@@ -1,8 +1,9 @@
 import React from 'react';
-import { Box, Text, VStack, Heading, Tooltip, useColorModeValue } from '@chakra-ui/react';
+import { Box, Text, VStack, Heading, Tooltip, useColorModeValue, useTheme } from '@chakra-ui/react';
 import { Deal } from '../../stores/useDealsStore';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'; // Import Draggable & its types
 import { Link as RouterLink } from 'react-router-dom'; // Import Link
+import { useThemeStore } from '../../stores/useThemeStore'; // Import theme store
 
 interface DealCardKanbanProps {
   deal: Deal;
@@ -10,6 +11,9 @@ interface DealCardKanbanProps {
 }
 
 const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
+  const { currentTheme } = useThemeStore();
+  const theme = useTheme();
+
   // Function to calculate effective probability for display (can be expanded)
   const getEffectiveProbabilityDisplay = () => {
     let probability = deal.deal_specific_probability;
@@ -22,16 +26,30 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
     return `${Math.round(probability * 100)}% (${source})`;
   };
 
-  // Theme-aware colors
-  const cardBgBase = useColorModeValue('white', 'gray.800');
-  const cardBgDragging = useColorModeValue('green.50', 'green.800'); // Darker green for dark mode dragging
-  const cardBorderColor = useColorModeValue('gray.200', 'gray.600');
-  
-  const amountTextColor = useColorModeValue('gray.700', 'gray.200');
-  const secondaryTextColor = useColorModeValue('gray.500', 'gray.400');
-  const probabilityTextColor = useColorModeValue('purple.600', 'purple.300');
-  // For Bowie, these will pick up mapped gray (neutral) and purple colors.
-  // Heading color will inherit, should be light on dark backgrounds.
+  // Default Theme-aware colors
+  const defaultCardBgBase = useColorModeValue('white', 'gray.800');
+  const defaultCardBgDragging = useColorModeValue('green.50', 'green.800');
+  const defaultCardBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const defaultAmountTextColor = useColorModeValue('gray.700', 'gray.200');
+  const defaultSecondaryTextColor = useColorModeValue('gray.500', 'gray.400');
+  const defaultProbabilityTextColor = useColorModeValue('purple.600', 'purple.300');
+
+  // Warhol-specific dark theme colors
+  const warholCardBgBase = theme.colors.gray[900]; // black
+  const warholCardBgDragging = theme.colors.blue[800]; // dark popBlue
+  const warholCardBorderColor = theme.colors.yellow[500]; // popYellow
+  const warholAmountTextColor = theme.colors.gray[50];
+  const warholSecondaryTextColor = theme.colors.gray[100];
+  const warholProbabilityTextColor = theme.colors.green[500]; // popGreen
+  const warholHeadingColor = theme.colors.gray[50];
+
+  const cardBgBase = currentTheme === 'andyWarhol' ? warholCardBgBase : defaultCardBgBase;
+  const cardBgDragging = currentTheme === 'andyWarhol' ? warholCardBgDragging : defaultCardBgDragging;
+  const cardBorderColor = currentTheme === 'andyWarhol' ? warholCardBorderColor : defaultCardBorderColor;
+  const amountTextColor = currentTheme === 'andyWarhol' ? warholAmountTextColor : defaultAmountTextColor;
+  const secondaryTextColor = currentTheme === 'andyWarhol' ? warholSecondaryTextColor : defaultSecondaryTextColor;
+  const probabilityTextColor = currentTheme === 'andyWarhol' ? warholProbabilityTextColor : defaultProbabilityTextColor;
+  const headingColor = currentTheme === 'andyWarhol' ? warholHeadingColor : useColorModeValue(theme.colors.gray[900], theme.colors.gray[50]);
 
   return (
     <Draggable draggableId={deal.id} index={index}>
@@ -55,7 +73,7 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
           <VStack align="stretch" spacing={1}>
             <Tooltip label={deal.name} placement="top" openDelay={500}>
                 <RouterLink to={`/deals/${deal.id}`} style={{ textDecoration: 'none', display: 'block', color: 'inherit' }}>
-                    <Heading size="xs" isTruncated _hover={{ textDecoration: 'underline' }}>{deal.name}</Heading>
+                    <Heading size="xs" isTruncated _hover={{ textDecoration: 'underline' }} color={headingColor}>{deal.name}</Heading>
                 </RouterLink>
             </Tooltip>
             <Text fontSize="sm" color={amountTextColor}>

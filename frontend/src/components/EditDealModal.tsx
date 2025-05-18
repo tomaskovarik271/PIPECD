@@ -54,6 +54,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>(''); 
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
+  const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
 
   // Custom Fields State
   const [activeDealCustomFields, setActiveDealCustomFields] = useState<CustomFieldDefinition[]>([]);
@@ -111,6 +112,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
           ? String(Math.round(deal.deal_specific_probability * 100)) 
           : ''
       );
+      setExpectedCloseDate(deal.expected_close_date ? new Date(deal.expected_close_date).toISOString().split('T')[0] : '');
       setError(null);
       setIsLoading(false);
       
@@ -188,6 +190,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
         setInitialPipelineId(null);
         setInitialStageId(null);
         setDealSpecificProbability('');
+        setExpectedCloseDate('');
         // Reset custom field form values if deal is null
         setCustomFieldFormValues({});
     }
@@ -272,19 +275,20 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     }
 
     try {
-      const updateInput: DealInput = {
+      const dealInput: DealInput = {
         name: name.trim(),
         stage_id: selectedStageId,
         pipeline_id: selectedPipelineId,
-        amount: amount ? parseFloat(amount) : null,
-        person_id: personId || null,
+        amount: amount ? parseFloat(amount) : undefined,
+        person_id: personId || undefined,
+        expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : undefined,
       };
 
       const probPercent = parseFloat(dealSpecificProbability);
       if (!isNaN(probPercent) && probPercent >= 0 && probPercent <= 100) {
-        updateInput.deal_specific_probability = probPercent / 100;
+        dealInput.deal_specific_probability = probPercent / 100;
       } else if (dealSpecificProbability.trim() === '') {
-        updateInput.deal_specific_probability = null;
+        dealInput.deal_specific_probability = null;
       }
 
       // Prepare custom fields for submission
@@ -341,7 +345,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
             customFieldsToSubmit.push(valueToSet);
           }
         }
-        updateInput.customFields = customFieldsToSubmit;
+        dealInput.customFields = customFieldsToSubmit;
       } else {
         // If there are no active custom fields, ensure customFields is not part of payload 
         // or explicitly an empty array if the backend expects it for updates to clear all.
@@ -349,7 +353,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
         // If we wanted to clear all CFs, we'd send `customFields: []`.
       }
 
-      const updatedDeal = await updateDealAction(deal.id, updateInput);
+      const updatedDeal = await updateDealAction(deal.id, dealInput);
 
       if (updatedDeal) {
           onDealUpdated(); 
@@ -486,6 +490,16 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                       </option>
                   ))}
                 </Select>
+            </FormControl>
+
+            <FormControl mt={4}>
+              <FormLabel htmlFor='expected_close_date'>Expected Close Date</FormLabel>
+              <Input 
+                id='expected_close_date'
+                type='date' 
+                value={expectedCloseDate}
+                onChange={(e) => setExpectedCloseDate(e.target.value)}
+              />
             </FormControl>
 
             {/* Custom Fields Section */}

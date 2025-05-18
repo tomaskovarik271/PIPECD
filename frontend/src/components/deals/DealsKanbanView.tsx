@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { Box, Heading, Spinner, Alert, AlertIcon, VStack, Text, Flex, useToast, useColorModeValue } from '@chakra-ui/react';
+import { Box, Heading, Spinner, Alert, AlertIcon, VStack, Text, Flex, useToast, useColorModeValue, useTheme } from '@chakra-ui/react';
 import { useDealsStore, Deal } from '../../stores/useDealsStore';
 import { useStagesStore, Stage } from '../../stores/useStagesStore';
 import PipelineSelectorDropdown from './PipelineSelectorDropdown';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import StageColumn from './StageColumn';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 const DealsKanbanView: React.FC = () => {
   const {
@@ -18,10 +19,18 @@ const DealsKanbanView: React.FC = () => {
   } = useDealsStore();
   const { stages, stagesLoading, stagesError, fetchStages, hasInitiallyFetchedStages } = useStagesStore();
   const toast = useToast();
+  const { currentTheme } = useThemeStore();
+  const theme = useTheme();
 
   // Theme-aware scrollbar colors for the main Kanban container
-  const kanbanScrollbarThumbBg = useColorModeValue('gray.300', 'gray.500');
-  const kanbanScrollbarTrackBg = useColorModeValue('gray.100', 'gray.600');
+  const defaultKanbanScrollbarThumbBg = useColorModeValue('gray.300', 'gray.500');
+  const defaultKanbanScrollbarTrackBg = useColorModeValue('gray.100', 'gray.600');
+
+  const warholKanbanScrollbarThumbBg = theme.colors.pink[500];
+  const warholKanbanScrollbarTrackBg = theme.colors.gray[800];
+
+  const kanbanScrollbarThumbBg = currentTheme === 'andyWarhol' ? warholKanbanScrollbarThumbBg : defaultKanbanScrollbarThumbBg;
+  const kanbanScrollbarTrackBg = currentTheme === 'andyWarhol' ? warholKanbanScrollbarTrackBg : defaultKanbanScrollbarTrackBg;
 
   useEffect(() => {
     if (!hasInitiallyFetchedDeals && !dealsLoading && !dealsError) {
@@ -138,16 +147,17 @@ const DealsKanbanView: React.FC = () => {
           <Box 
               p={2} 
               overflowX="auto"
-              css={{
+              sx={{
                   '&::-webkit-scrollbar': {
                       height: '8px',
                   },
                   '&::-webkit-scrollbar-thumb': {
-                      background: kanbanScrollbarThumbBg, // Theme-aware
+                      background: kanbanScrollbarThumbBg, 
                       borderRadius: '8px',
+                      border: currentTheme === 'andyWarhol' ? `2px solid ${theme.colors.black}` : 'none',
                   },
                   '&::-webkit-scrollbar-track': {
-                      background: kanbanScrollbarTrackBg, // Theme-aware
+                      background: kanbanScrollbarTrackBg, 
                   },
               }}
           >

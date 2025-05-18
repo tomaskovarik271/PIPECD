@@ -13,16 +13,108 @@ import type {
   MutationDeleteActivityArgs,
   Maybe,
   ActivityType,
+  CustomFieldValue,
 } from '../generated/graphql/graphql';
 
 // Re-export core Activity types for convenience if components need them
 export type { Activity, GeneratedCreateActivityInput, GeneratedUpdateActivityInput, GeneratedActivityFilterInput, Maybe, ActivityType };
 
+// --- GraphQL Fragment for Custom Field Values ---
+// const CUSTOM_FIELD_VALUES_FRAGMENT = gql`
+//   fragment CustomFieldValuesDataActivity on CustomFieldValue {
+//     definition {
+//       id
+//       fieldName
+//       fieldLabel
+//       fieldType
+//       displayOrder
+//       isRequired
+//       isActive
+//       dropdownOptions {
+//         value
+//         label
+//       }
+//     }
+//     stringValue
+//     numberValue
+//     booleanValue
+//     dateValue
+//     selectedOptionValues
+//   }
+// `;
+
 // GQL Constants (copied from useAppStore)
-const GET_ACTIVITIES_QUERY = gql` query GetActivities($filter: ActivityFilterInput) { activities(filter: $filter) { id user_id created_at updated_at type subject due_date is_done notes deal_id person_id organization_id deal { id name } person { id first_name last_name } organization { id name } } }`;
-const CREATE_ACTIVITY_MUTATION = gql` mutation CreateActivity($input: CreateActivityInput!) { createActivity(input: $input) { id user_id created_at updated_at type subject due_date is_done notes deal_id person_id organization_id deal { id name } person { id first_name last_name } organization { id name } } }`;
-const UPDATE_ACTIVITY_MUTATION = gql` mutation UpdateActivity($id: ID!, $input: UpdateActivityInput!) { updateActivity(id: $id, input: $input) { id user_id created_at updated_at type subject due_date is_done notes deal_id person_id organization_id deal { id name } person { id first_name last_name } organization { id name } } }`;
-const DELETE_ACTIVITY_MUTATION = gql` mutation DeleteActivity($id: ID!) { deleteActivity(id: $id) }`;
+const GET_ACTIVITIES_QUERY = gql`
+  query GetActivities($filter: ActivityFilterInput) {
+    activities(filter: $filter) {
+      id
+      user_id
+      created_at
+      updated_at
+      type
+      subject
+      due_date
+      is_done
+      notes
+      deal_id
+      person_id
+      organization_id
+      deal { id name }
+      person { id first_name last_name }
+      organization { id name }
+    }
+  }
+`;
+
+const CREATE_ACTIVITY_MUTATION = gql`
+  mutation CreateActivity($input: CreateActivityInput!) {
+    createActivity(input: $input) {
+      id
+      user_id
+      created_at
+      updated_at
+      type
+      subject
+      due_date
+      is_done
+      notes
+      deal_id
+      person_id
+      organization_id
+      deal { id name }
+      person { id first_name last_name }
+      organization { id name }
+    }
+  }
+`;
+
+const UPDATE_ACTIVITY_MUTATION = gql`
+  mutation UpdateActivity($id: ID!, $input: UpdateActivityInput!) {
+    updateActivity(id: $id, input: $input) {
+      id
+      user_id
+      created_at
+      updated_at
+      type
+      subject
+      due_date
+      is_done
+      notes
+      deal_id
+      person_id
+      organization_id
+      deal { id name }
+      person { id first_name last_name }
+      organization { id name }
+    }
+  }
+`;
+
+const DELETE_ACTIVITY_MUTATION = gql`
+  mutation DeleteActivity($id: ID!) {
+    deleteActivity(id: $id)
+  }
+`;
 
 // State Interface
 export interface ActivitiesState {
