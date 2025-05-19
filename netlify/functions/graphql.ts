@@ -29,17 +29,68 @@ import {
   queryResolvers as CustomFieldQueryResolvers,
   mutationResolvers as CustomFieldMutationResolvers,
 } from './graphql/resolvers/customFields';
+import { Query as PricingQuery, PriceQuoteResolver } from './graphql/resolvers/pricing';
 
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
+
+  // List of all your .graphql schema files in the schema directory
+  // Ensure this list is accurate and complete.
+  const allSchemaFiles = [
+    'activity.graphql', 
+    'base.graphql', 
+    'customFields.graphql', 
+    'deal.graphql', 
+    'enums.graphql', 
+    'history.graphql', 
+    'organization.graphql', 
+    'person.graphql', 
+    'pipeline.graphql', 
+    'pricing.graphql', 
+    'scalars.graphql', 
+    'schema.graphql', 
+    'stage.graphql', 
+    'user.graphql', 
+    'user_profile.graphql'
+  ];
+
+  // !!! --- DEBUGGING: SELECT FILES TO LOAD --- !!!
+  // To debug, comment out files from this list to try and isolate the problematic one.
+  // Start by commenting out half, then a quarter, etc. (binary search).
+  // Example: load only a few critical files to see if the base schema works.
+  const filesToLoad = [
+    'activity.graphql', 
+    'base.graphql', 
+    'customFields.graphql', 
+    'deal.graphql', 
+    'enums.graphql', 
+    'history.graphql', 
+    'organization.graphql', 
+    'person.graphql', 
+    'pipeline.graphql', 
+    'pricing.graphql', 
+    'scalars.graphql', 
+    'schema.graphql', 
+    'stage.graphql', 
+    'user.graphql', 
+    'user_profile.graphql'
+    // To test with a minimal set, you might try just:
+    // 'scalars.graphql',
+    // 'base.graphql', // Defines Query, Mutation
+    // 'user.graphql', // Defines User type for base.graphql
+    // 'activity.graphql', // Extends Query/Mutation
+  ];
+
   try {
-    const files = fs.readdirSync(schemaDir);
+    // const files = fs.readdirSync(schemaDir); // Original way
     let typeDefs = '';
-    files.forEach(file => {
-      if (file.endsWith('.graphql')) {
+    // files.forEach(file => { // Original way
+    filesToLoad.forEach(file => { // Modified to use the selective list
+      // if (file.endsWith('.graphql')) { // No longer needed as filesToLoad is explicit
         typeDefs += fs.readFileSync(path.join(schemaDir, file), 'utf-8') + '\n';
-      }
+      // }
     });
+    console.log('Concatenated GraphQL Schema (potentially partial if filesToLoad is modified):\n', typeDefs);
     return typeDefs;
   } catch (error: unknown) {
       console.error("Failed to load GraphQL schema files:", error);
@@ -60,6 +111,7 @@ export const resolvers = {
     ...BaseQuery,
     ...ActivityQuery,
     ...CustomFieldQueryResolvers,
+    ...PricingQuery,
   },
   Mutation: {
     ...BaseMutation,
@@ -72,6 +124,7 @@ export const resolvers = {
   Stage,
   Activity,
   DealHistoryEntry,
+  PriceQuote: PriceQuoteResolver,
 }; 
 
 const yoga = createYoga<GraphQLContext>({

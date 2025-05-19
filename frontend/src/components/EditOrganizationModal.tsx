@@ -257,7 +257,7 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
       if (err instanceof Error) {
         const gqlError = (err as any).graphQLErrors?.[0];
         if (gqlError) {
-            const originalError = gqlError.extensions?.originalError as any;
+            const originalError = gqlError.extensions?.originalError;
             if (originalError?.issues) message = originalError.issues.map((issue: any) => issue.message).join(', ');
             else if (originalError?.message) message = originalError.message;
             else if (gqlError.message) message = gqlError.message;

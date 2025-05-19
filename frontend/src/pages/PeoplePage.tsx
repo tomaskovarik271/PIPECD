@@ -149,7 +149,7 @@ function PeoplePage() {
       sortAccessor: (person: Person) => {
         const cfValue = person.customFieldValues?.find(cf => cf.definition.fieldName === def.fieldName);
         if (!cfValue) return '';
-        switch (def.fieldType as GQLCustomFieldType) {
+        switch (def.fieldType) {
           case 'TEXT': return cfValue.stringValue?.toLowerCase() || '';
           case 'NUMBER': return cfValue.numberValue || 0;
           case 'DATE': return cfValue.dateValue ? new Date(cfValue.dateValue).getTime() : 0;
@@ -162,7 +162,7 @@ function PeoplePage() {
         if (!cfValue) return '-';
 
         let displayValue: React.ReactNode = '-';
-        switch (def.fieldType as GQLCustomFieldType) {
+        switch (def.fieldType) {
           case 'TEXT':
             displayValue = cfValue.stringValue || '-';
             if (cfValue.stringValue && isUrl(cfValue.stringValue)) {

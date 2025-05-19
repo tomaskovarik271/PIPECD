@@ -122,7 +122,7 @@ export const personService = {
     if (error && error.code !== 'PGRST116') { 
        handleSupabaseError(error, 'fetching person by ID'); 
     }
-    return data as Person | null; // CHANGED: Cast to Person | null
+    return data; // CHANGED: Cast to Person | null
   },
 
   // Create a new person - Needs authenticated client for INSERT RLS policy

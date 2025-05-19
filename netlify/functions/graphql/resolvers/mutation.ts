@@ -1,27 +1,23 @@
-import { GraphQLContext } from '../helpers'; // Only GraphQLContext might be needed if all specific helpers moved
-// import { GraphQLError } from 'graphql'; // No longer needed here
-// import { requireAuthentication, getAccessToken, processZodError } from '../helpers'; // Moved to individual files
-// import {} from '../validators'; // All validator schemas moved
-// import * as userProfileService from '../../../../lib/userProfileService'; // Moved
+import type { MutationResolvers } from '../../../lib/generated/graphql'; // Adjusted path
+import type { GraphQLContext } from '../helpers';
 
-import type { 
-    MutationResolvers,
-    // User as GraphQLUser, // Moved
-    // UpdateUserProfileInput // Moved
-} from '../../../../lib/generated/graphql';
-
-import { personMutations } from './mutations/personMutations';
-import { organizationMutations } from './mutations/organizationMutations';
+// Import specific mutation resolver groups from ./mutations/ directory
 import { dealMutations } from './mutations/dealMutations';
+import { organizationMutations } from './mutations/organizationMutations';
+import { personMutations } from './mutations/personMutations';
 import { pipelineMutations } from './mutations/pipelineMutations';
 import { stageMutations } from './mutations/stageMutations';
-import { userProfileMutations } from './mutations/userProfileMutations'; // Import user profile mutations
+import { userProfileMutations } from './mutations/userProfileMutations';
+import { pricingMutationResolvers } from './mutations/pricingMutations'; // Added pricing mutations
 
+// This file primarily aggregates mutations from the ./mutations subdirectory.
+// Other mutations (like Activity or CustomFields) seem to be aggregated directly in graphql.ts
 export const Mutation: MutationResolvers<GraphQLContext> = {
+  ...dealMutations,
+  ...organizationMutations,
     ...personMutations,
-    ...organizationMutations,
-    ...dealMutations,
     ...pipelineMutations,
     ...stageMutations,
-    ...userProfileMutations, // Spread user profile mutations
+  ...userProfileMutations,
+  ...pricingMutationResolvers,
 }; 

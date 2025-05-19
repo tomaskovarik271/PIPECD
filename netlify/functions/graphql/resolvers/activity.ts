@@ -168,7 +168,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
         requireAuthentication(context);
         const accessToken = getAccessToken(context)!;
         const userId = context.currentUser!.id;
-        return await getActivityByIdService(userId, args.id, accessToken) as GraphQLActivity | null; // Cast service result
+        return await getActivityByIdService(userId, args.id, accessToken); // Cast service result
       } catch (error) {
         throw processZodError(error, action);
       }

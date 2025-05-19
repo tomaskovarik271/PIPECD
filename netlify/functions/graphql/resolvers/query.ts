@@ -104,7 +104,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
             notes: p.notes,
             organization_id: p.organization_id,
             // Make raw DB data available for the Person.customFieldValues resolver
-            db_custom_field_values: (p as any).custom_field_values,
+            db_custom_field_values: (p).custom_field_values,
             // organization, deals, activities resolved by Person type resolvers
           })) as any; // Cast to any to allow db_custom_field_values
       } catch (e) {
@@ -166,7 +166,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
             name: o.name,
             address: o.address,
             notes: o.notes,
-            db_custom_field_values: (o as any).custom_field_values,
+            db_custom_field_values: (o).custom_field_values,
             // activities, deals, people resolved by Organization type resolvers
          })) as any; // Cast to any to allow db_custom_field_values
        } catch (e) {
@@ -215,7 +215,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 organization_id: d.organization_id,
                 deal_specific_probability: d.deal_specific_probability,
                 // Make raw DB data available for the Deal.customFieldValues resolver
-                db_custom_field_values: (d as any).custom_field_values, 
+                db_custom_field_values: (d).custom_field_values, 
            })) as any; // Cast to any to allow db_custom_field_values, field resolvers will complete the type
        } catch (e) {
            throw processZodError(e, 'fetching deals list');
@@ -248,45 +248,24 @@ export const Query: QueryResolvers<GraphQLContext> = {
        }
     },
     // Pipeline Resolvers
-    pipelines: async (_parent, _args, context) => {
-        const action = 'fetching pipelines';
-        try {
-            requireAuthentication(context);
-            const accessToken = getAccessToken(context)!;
-            const pipelineList = await pipelineService.getPipelines(accessToken);
-            // Explicitly map Pipeline from lib/types to GraphQLPipeline
-            return pipelineList.map(p => ({
-                id: p.id,
-                user_id: p.user_id,
-                name: p.name,
-                created_at: p.created_at,
-                updated_at: p.updated_at,
-            })) as GraphQLPipeline[];
-        } catch (error) { 
-            console.error('[Query.pipelines] Error during ' + action + ':', error);
-            throw processZodError(error, action); 
-        }
+    pipelines: async (_parent, _args, context: GraphQLContext): Promise<GraphQLPipeline[]> => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context)!;
+      try {
+        const pipelineList = await pipelineService.getPipelines(accessToken);
+        return pipelineList.map(p => ({
+          id: p.id,
+          user_id: p.user_id,
+          name: p.name,
+          created_at: p.created_at, 
+          updated_at: p.updated_at,
+        })) as GraphQLPipeline[];
+      } catch (e) {
+        throw processZodError(e, 'fetching pipelines list');
+      }
     },
-    pipeline: async (_parent, args, context) => {
-        const action = 'fetching pipeline ' + args.id;
-        try {
-            requireAuthentication(context);
-            const accessToken = getAccessToken(context)!;
-            const p = await pipelineService.getPipelineById(accessToken, args.id);
-            if (!p) return null;
-            // Explicitly map Pipeline from lib/types to GraphQLPipeline
-            return {
-                id: p.id,
-                user_id: p.user_id,
-                name: p.name,
-                created_at: p.created_at,
-                updated_at: p.updated_at,
-            } as GraphQLPipeline;
-        } catch (error) {
-            console.error('[Query.pipeline] Error during ' + action + ':', error);
-            throw processZodError(error, action); 
-        }
-    },
+    // Ensure there isn't a singular 'pipeline(id: ID!)' resolver here unless also defined in schema
+
     // Stage Resolvers
     stages: async (_parent, args, context) => {
         const action = 'fetching stages for pipeline ' + args.pipelineId;

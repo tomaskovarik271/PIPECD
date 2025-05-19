@@ -355,13 +355,13 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
               {def.fieldType === 'TEXT' && (
                 <Input
                   value={customFieldData[def.fieldName] || ''}
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType as GQLCustomFieldType)}
+                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
                 />
               )}
               {def.fieldType === 'NUMBER' && (
                 <NumberInput
                   value={customFieldData[def.fieldName] || ''}
-                  onChange={(valueString) => handleCustomFieldChange(def.fieldName, valueString, def.fieldType as GQLCustomFieldType)}
+                  onChange={(valueString) => handleCustomFieldChange(def.fieldName, valueString, def.fieldType)}
                 >
                   <NumberInputField />
                   <NumberInputStepper>
@@ -373,7 +373,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
               {def.fieldType === 'BOOLEAN' && (
                 <Checkbox
                   isChecked={customFieldData[def.fieldName] || false}
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e, def.fieldType as GQLCustomFieldType)}
+                  onChange={(e) => handleCustomFieldChange(def.fieldName, e, def.fieldType)}
                 >
                   Enabled
                 </Checkbox>
@@ -382,14 +382,14 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
                 <Input
                   type="date"
                   value={customFieldData[def.fieldName] || ''}
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType as GQLCustomFieldType)}
+                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
                 />
               )}
               {def.fieldType === 'DROPDOWN' && (
                 <Select
                   placeholder={`Select ${def.fieldLabel}`}
                   value={customFieldData[def.fieldName] || ''}
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType as GQLCustomFieldType)}
+                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
                 >
                   {def.dropdownOptions?.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -400,7 +400,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
                  <Textarea
                   placeholder={`Enter values for ${def.fieldLabel}, comma-separated`}
                   value={Array.isArray(customFieldData[def.fieldName]) ? customFieldData[def.fieldName].join(', ') : (customFieldData[def.fieldName] || '')} 
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value.split(',').map(s => s.trim()), def.fieldType as GQLCustomFieldType)}
+                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value.split(',').map(s => s.trim()), def.fieldType)}
                 />
               )}
               {localError && def.isRequired && (customFieldData[def.fieldName] === undefined || customFieldData[def.fieldName] === null || customFieldData[def.fieldName] === '') && 

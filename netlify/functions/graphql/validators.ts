@@ -141,3 +141,33 @@ export const ActivityFilterInputSchema = z.object({
     organizationId: z.string().uuid({ message: 'Invalid UUID for filter organizationId' }).optional(),
     isDone: z.boolean().optional(),
 }).optional(); // The whole filter object is optional 
+
+// --- Pricing Module Schemas ---
+
+// Corresponds to AdditionalCostInput in GraphQL
+export const AdditionalCostInputSchema = z.object({
+  description: z.string().trim().min(1, { message: "Description for additional cost cannot be empty" }),
+  amount: z.number().positive({ message: "Amount for additional cost must be a positive number" }),
+});
+
+// Corresponds to PriceQuoteCreateInput in GraphQL
+export const PriceQuoteCreateInputSchema = z.object({
+  name: z.string().trim().min(1, { message: "Quote name cannot be empty" }).optional().nullable(),
+  // status is typically defaulted by the backend
+  base_minimum_price_mp: z.number().min(0, { message: "Base minimum price cannot be negative" }).optional().nullable(),
+  target_markup_percentage: z.number().min(0, { message: "Target markup percentage cannot be negative" }).optional().nullable(),
+  final_offer_price_fop: z.number().min(0, { message: "Final offer price cannot be negative" }).optional().nullable(),
+  overall_discount_percentage: z.number().min(0).max(100, { message: "Overall discount must be between 0 and 100" }).optional().nullable(),
+  upfront_payment_percentage: z.number().min(0).max(100, { message: "Upfront payment percentage must be between 0 and 100" }).optional().nullable(),
+  upfront_payment_due_days: z.number().int().min(0, { message: "Upfront payment due days cannot be negative" }).optional().nullable(),
+  subsequent_installments_count: z.number().int().min(0, { message: "Subsequent installments count cannot be negative" }).optional().nullable(),
+  subsequent_installments_interval_days: z.number().int().min(1, { message: "Subsequent installments interval must be at least 1 day" }).optional().nullable(),
+  additional_costs: z.array(AdditionalCostInputSchema).optional().nullable(),
+});
+
+// Corresponds to PriceQuoteUpdateInput in GraphQL
+export const PriceQuoteUpdateInputSchema = PriceQuoteCreateInputSchema.extend({
+  // For updates, most fields are optional and covered by PriceQuoteCreateInputSchema being mostly optional.
+  // We explicitly add status here as it can be changed during an update.
+  status: z.string().trim().min(1, { message: "Status cannot be empty if provided"}).optional().nullable(), // e.g., 'draft', 'proposed', 'archived'
+}).partial(); // .partial() makes all fields in the extended schema optional, suitable for updates. 

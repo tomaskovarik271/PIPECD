@@ -73,7 +73,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
     setValue
   } = useForm<UpdateActivityInput>({
       defaultValues: {
-      type: activity.type as ActivityType,
+      type: activity.type,
           subject: activity.subject,
       due_date: activity.due_date ? new Date(activity.due_date).toISOString().substring(0, 16) : null,
       notes: activity.notes || '',
@@ -87,7 +87,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
   // Reset form if activity prop changes (e.g. modal is reused for different activities)
   useEffect(() => {
     reset({
-      type: activity.type as ActivityType,
+      type: activity.type,
       subject: activity.subject,
       due_date: activity.due_date ? new Date(activity.due_date).toISOString().substring(0, 16) : null,
       notes: activity.notes || '',

@@ -218,7 +218,7 @@ export const organizationService = {
     if (error && error.code !== 'PGRST116') {
       handleSupabaseError(error, 'fetching organization by ID'); 
     }
-    return data as Organization | null; 
+    return data; 
   },
 
   // Create a new organization (RLS requires authenticated client)

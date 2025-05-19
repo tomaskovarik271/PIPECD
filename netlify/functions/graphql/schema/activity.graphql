@@ -70,7 +70,7 @@ input ActivityFilterInput {
 
 # Extend Query and Mutation types defined elsewhere
 
-type Query {
+extend type Query {
   # Fetches activities based on optional filters.
   activities(filter: ActivityFilterInput): [Activity!]!
   
@@ -78,7 +78,7 @@ type Query {
   activity(id: ID!): Activity # Returns null or Activity
 }
 
-type Mutation {
+extend type Mutation {
   # Creates a new activity.
   createActivity(input: CreateActivityInput!): Activity!
 

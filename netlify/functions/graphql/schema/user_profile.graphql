@@ -19,4 +19,4 @@ input UpdateUserProfileInput {
 extend type Mutation {
   "Updates the profile for the currently authenticated user."
   updateUserProfile(input: UpdateUserProfileInput!): User # Return type changed to User
-} 
+}

@@ -16,9 +16,9 @@ export const stageMutations: Pick<MutationResolvers<GraphQLContext>, 'createStag
         }
         const serviceInput = {
           ...validatedInput,
-          stage_type: validatedInput.stage_type as GeneratedStageType | undefined,
+          stage_type: validatedInput.stage_type,
         };
-        const newStage = await stageService.createStage(accessToken, serviceInput as any);
+        const newStage = await stageService.createStage(accessToken, serviceInput);
             return {
                 id: newStage.id,
                 user_id: newStage.user_id,
@@ -45,9 +45,9 @@ export const stageMutations: Pick<MutationResolvers<GraphQLContext>, 'createStag
         }
         const serviceInput = {
             ...validatedInput,
-            stage_type: validatedInput.stage_type as GeneratedStageType | undefined,
+            stage_type: validatedInput.stage_type,
         };
-        const updatedStage = await stageService.updateStage(accessToken, args.id, serviceInput as any);
+        const updatedStage = await stageService.updateStage(accessToken, args.id, serviceInput);
             return {
                 id: updatedStage.id,
                 user_id: updatedStage.user_id,

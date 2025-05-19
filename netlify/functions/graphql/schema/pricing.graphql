@@ -1,0 +1,134 @@
+# netlify/functions/graphql/schema/pricing.graphql
+
+# Corresponds to the 'price_quotes' table and lib/pricingTypes.ts:PriceQuote
+# Reflects Stage 1 requirements
+
+"Represents a price quotation for a deal, including calculated financial metrics and payment terms."
+type PriceQuote {
+  id: ID!
+  deal_id: ID! # The deal this quote is associated with (resolver will fetch Deal object)
+  user_id: ID! # The user who created/owns this quote (resolver will fetch User object)
+  version_number: Int!
+  name: String
+  status: String! # e.g., 'draft', 'proposed', 'archived'
+  base_minimum_price_mp: Float
+  target_markup_percentage: Float
+  final_offer_price_fop: Float
+  overall_discount_percentage: Float # e.g., 0.05 for 5%
+  upfront_payment_percentage: Float # e.g., 0.50 for 50%
+  upfront_payment_due_days: Int
+  subsequent_installments_count: Int
+  subsequent_installments_interval_days: Int
+  created_at: DateTime!
+  updated_at: DateTime!
+
+  # Calculated Output Fields (denormalized in DB or calculated by resolver)
+  calculated_total_direct_cost: Float
+  calculated_target_price_tp: Float
+  calculated_full_target_price_ftp: Float
+  calculated_discounted_offer_price: Float
+  calculated_effective_markup_fop_over_mp: Float
+  escalation_status: String # e.g., 'ok', 'requires_committee_approval', 'requires_ceo_approval'
+  escalation_details: JSON # Details of breached thresholds
+
+  # Resolved Relations
+  "Associated deal for this price quote."
+  deal: Deal # Assuming Deal type is defined elsewhere
+  "User who created or owns this price quote."
+  user: User # Assuming User type is defined elsewhere
+  "List of additional costs associated with this price quote."
+  additional_costs: [AdditionalCost!]!
+  "Generated invoice payment schedule for this price quote."
+  invoice_schedule_entries: [InvoiceScheduleEntry!]!
+  
+  # MarkupFactor type is deferred as per Stage 1 plan if target_markup_percentage is direct input
+  # markup_factors: [MarkupFactor!]
+}
+
+"Represents an additional cost item associated with a price quote."
+type AdditionalCost {
+  id: ID!
+  # price_quote_id: ID! # Implicitly linked via PriceQuote.additional_costs resolver
+  description: String!
+  amount: Float!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+"Represents a single entry in the invoice payment schedule for a price quote."
+type InvoiceScheduleEntry {
+  id: ID!
+  # price_quote_id: ID! # Implicitly linked via PriceQuote.invoice_schedule_entries resolver
+  entry_type: String! # e.g., 'upfront', 'installment_1', 'milestone_fee'
+  due_date: String! # Representing as Date string (YYYY-MM-DD), resolver handles Date object from DB
+  amount_due: Float!
+  description: String
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+# --- Input Types ---
+
+"Input for creating an additional cost item."
+input AdditionalCostInput {
+  description: String!
+  amount: Float!
+}
+
+"Input for creating a new price quote."
+input PriceQuoteCreateInput {
+  name: String
+  # status is typically defaulted to 'draft' on creation by the backend
+  base_minimum_price_mp: Float
+  target_markup_percentage: Float
+  final_offer_price_fop: Float
+  overall_discount_percentage: Float
+  upfront_payment_percentage: Float
+  upfront_payment_due_days: Int
+  subsequent_installments_count: Int
+  subsequent_installments_interval_days: Int
+  additional_costs: [AdditionalCostInput!]
+}
+
+"Input for updating an existing price quote."
+input PriceQuoteUpdateInput {
+  name: String
+  status: String # Allow status changes, e.g., 'draft' -> 'proposed'
+  base_minimum_price_mp: Float
+  target_markup_percentage: Float
+  final_offer_price_fop: Float
+  overall_discount_percentage: Float
+  upfront_payment_percentage: Float
+  upfront_payment_due_days: Int
+  subsequent_installments_count: Int
+  subsequent_installments_interval_days: Int
+  # For updating additional_costs, it's often simpler to replace them all,
+  # or handle more granular updates in the resolver/service if needed (e.g. with IDs for existing costs)
+  # For Stage 1, replacing all additional_costs based on this input is acceptable.
+  additional_costs: [AdditionalCostInput!]
+}
+
+# --- Query Extensions ---
+
+extend type Query {
+  "Retrieves a single price quote by its ID."
+  priceQuote(id: ID!): PriceQuote
+  "Retrieves all price quotes associated with a specific deal."
+  priceQuotesForDeal(dealId: ID!): [PriceQuote!]!
+}
+
+# --- Mutation Extensions ---
+
+extend type Mutation {
+  "Creates a new price quote for a given deal."
+  createPriceQuote(dealId: ID!, input: PriceQuoteCreateInput!): PriceQuote!
+  
+  "Updates an existing price quote."
+  updatePriceQuote(id: ID!, input: PriceQuoteUpdateInput!): PriceQuote!
+  
+  "Deletes a price quote."
+  deletePriceQuote(id: ID!): Boolean # Returns true if successful
+  
+  "Calculates a preview of a price quote. dealId is optional."
+  calculatePriceQuotePreview(dealId: ID, input: PriceQuoteUpdateInput!): PriceQuote!
+} 

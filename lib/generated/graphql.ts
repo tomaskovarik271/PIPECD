@@ -74,6 +74,27 @@ export enum ActivityType {
   Task = "TASK",
 }
 
+export type AddTeamMembersInput = {
+  memberUserIds: Array<Scalars["ID"]["input"]>;
+  teamId: Scalars["ID"]["input"];
+};
+
+/** Represents an additional cost item associated with a price quote. */
+export type AdditionalCost = {
+  __typename?: "AdditionalCost";
+  amount: Scalars["Float"]["output"];
+  created_at: Scalars["DateTime"]["output"];
+  description: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  updated_at: Scalars["DateTime"]["output"];
+};
+
+/** Input for creating an additional cost item. */
+export type AdditionalCostInput = {
+  amount: Scalars["Float"]["input"];
+  description: Scalars["String"]["input"];
+};
+
 export type CreateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -91,6 +112,13 @@ export type CreateStageInput = {
   order: Scalars["Int"]["input"];
   pipeline_id: Scalars["ID"]["input"];
   stage_type?: InputMaybe<StageType>;
+};
+
+export type CreateTeamInput = {
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  memberUserIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  name: Scalars["String"]["input"];
+  teamLeadUserId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type CustomFieldDefinition = {
@@ -224,32 +252,71 @@ export type DealUpdateInput = {
   stage_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+/** Represents a single entry in the invoice payment schedule for a price quote. */
+export type InvoiceScheduleEntry = {
+  __typename?: "InvoiceScheduleEntry";
+  amount_due: Scalars["Float"]["output"];
+  created_at: Scalars["DateTime"]["output"];
+  description?: Maybe<Scalars["String"]["output"]>;
+  due_date: Scalars["String"]["output"];
+  entry_type: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  updated_at: Scalars["DateTime"]["output"];
+};
+
 export type Mutation = {
   __typename?: "Mutation";
+  /** Adds members to a team. */
+  addTeamMembers: TeamWithMembers;
+  /** Calculates a preview of a price quote. dealId is optional. */
+  calculatePriceQuotePreview: PriceQuote;
   createActivity: Activity;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
   createOrganization: Organization;
   createPerson: Person;
   createPipeline: Pipeline;
+  /** Creates a new price quote for a given deal. */
+  createPriceQuote: PriceQuote;
   createStage: Stage;
+  /** Creates a new team. */
+  createTeam: Team;
   deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteActivity: Scalars["ID"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   deletePipeline: Scalars["Boolean"]["output"];
+  /** Deletes a price quote. */
+  deletePriceQuote?: Maybe<Scalars["Boolean"]["output"]>;
   deleteStage: Scalars["Boolean"]["output"];
+  /** Deletes a team. */
+  deleteTeam: Scalars["Boolean"]["output"];
   reactivateCustomFieldDefinition: CustomFieldDefinition;
+  /** Removes members from a team. */
+  removeTeamMembers: TeamWithMembers;
   updateActivity: Activity;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
   updatePipeline: Pipeline;
+  /** Updates an existing price quote. */
+  updatePriceQuote: PriceQuote;
   updateStage: Stage;
+  /** Updates an existing team. */
+  updateTeam: Team;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
+};
+
+export type MutationAddTeamMembersArgs = {
+  input: AddTeamMembersInput;
+};
+
+export type MutationCalculatePriceQuotePreviewArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  input: PriceQuoteUpdateInput;
 };
 
 export type MutationCreateActivityArgs = {
@@ -276,8 +343,17 @@ export type MutationCreatePipelineArgs = {
   input: PipelineInput;
 };
 
+export type MutationCreatePriceQuoteArgs = {
+  dealId: Scalars["ID"]["input"];
+  input: PriceQuoteCreateInput;
+};
+
 export type MutationCreateStageArgs = {
   input: CreateStageInput;
+};
+
+export type MutationCreateTeamArgs = {
+  input: CreateTeamInput;
 };
 
 export type MutationDeactivateCustomFieldDefinitionArgs = {
@@ -304,12 +380,24 @@ export type MutationDeletePipelineArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeletePriceQuoteArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteStageArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteTeamArgs = {
   id: Scalars["ID"]["input"];
 };
 
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveTeamMembersArgs = {
+  input: RemoveTeamMembersInput;
 };
 
 export type MutationUpdateActivityArgs = {
@@ -342,9 +430,19 @@ export type MutationUpdatePipelineArgs = {
   input: PipelineInput;
 };
 
+export type MutationUpdatePriceQuoteArgs = {
+  id: Scalars["ID"]["input"];
+  input: PriceQuoteUpdateInput;
+};
+
 export type MutationUpdateStageArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateStageInput;
+};
+
+export type MutationUpdateTeamArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateTeamInput;
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -439,6 +537,71 @@ export type PipelineInput = {
   name: Scalars["String"]["input"];
 };
 
+/** Represents a price quotation for a deal, including calculated financial metrics and payment terms. */
+export type PriceQuote = {
+  __typename?: "PriceQuote";
+  /** List of additional costs associated with this price quote. */
+  additional_costs: Array<AdditionalCost>;
+  base_minimum_price_mp?: Maybe<Scalars["Float"]["output"]>;
+  calculated_discounted_offer_price?: Maybe<Scalars["Float"]["output"]>;
+  calculated_effective_markup_fop_over_mp?: Maybe<Scalars["Float"]["output"]>;
+  calculated_full_target_price_ftp?: Maybe<Scalars["Float"]["output"]>;
+  calculated_target_price_tp?: Maybe<Scalars["Float"]["output"]>;
+  calculated_total_direct_cost?: Maybe<Scalars["Float"]["output"]>;
+  created_at: Scalars["DateTime"]["output"];
+  /** Associated deal for this price quote. */
+  deal?: Maybe<Deal>;
+  deal_id: Scalars["ID"]["output"];
+  escalation_details?: Maybe<Scalars["JSON"]["output"]>;
+  escalation_status?: Maybe<Scalars["String"]["output"]>;
+  final_offer_price_fop?: Maybe<Scalars["Float"]["output"]>;
+  id: Scalars["ID"]["output"];
+  /** Generated invoice payment schedule for this price quote. */
+  invoice_schedule_entries: Array<InvoiceScheduleEntry>;
+  name?: Maybe<Scalars["String"]["output"]>;
+  overall_discount_percentage?: Maybe<Scalars["Float"]["output"]>;
+  status: Scalars["String"]["output"];
+  subsequent_installments_count?: Maybe<Scalars["Int"]["output"]>;
+  subsequent_installments_interval_days?: Maybe<Scalars["Int"]["output"]>;
+  target_markup_percentage?: Maybe<Scalars["Float"]["output"]>;
+  updated_at: Scalars["DateTime"]["output"];
+  upfront_payment_due_days?: Maybe<Scalars["Int"]["output"]>;
+  upfront_payment_percentage?: Maybe<Scalars["Float"]["output"]>;
+  /** User who created or owns this price quote. */
+  user?: Maybe<User>;
+  user_id: Scalars["ID"]["output"];
+  version_number: Scalars["Int"]["output"];
+};
+
+/** Input for creating a new price quote. */
+export type PriceQuoteCreateInput = {
+  additional_costs?: InputMaybe<Array<AdditionalCostInput>>;
+  base_minimum_price_mp?: InputMaybe<Scalars["Float"]["input"]>;
+  final_offer_price_fop?: InputMaybe<Scalars["Float"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  overall_discount_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+  subsequent_installments_count?: InputMaybe<Scalars["Int"]["input"]>;
+  subsequent_installments_interval_days?: InputMaybe<Scalars["Int"]["input"]>;
+  target_markup_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+  upfront_payment_due_days?: InputMaybe<Scalars["Int"]["input"]>;
+  upfront_payment_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+};
+
+/** Input for updating an existing price quote. */
+export type PriceQuoteUpdateInput = {
+  additional_costs?: InputMaybe<Array<AdditionalCostInput>>;
+  base_minimum_price_mp?: InputMaybe<Scalars["Float"]["input"]>;
+  final_offer_price_fop?: InputMaybe<Scalars["Float"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  overall_discount_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+  status?: InputMaybe<Scalars["String"]["input"]>;
+  subsequent_installments_count?: InputMaybe<Scalars["Int"]["input"]>;
+  subsequent_installments_interval_days?: InputMaybe<Scalars["Int"]["input"]>;
+  target_markup_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+  upfront_payment_due_days?: InputMaybe<Scalars["Int"]["input"]>;
+  upfront_payment_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+};
+
 export type Query = {
   __typename?: "Query";
   activities: Array<Activity>;
@@ -449,17 +612,28 @@ export type Query = {
   deals: Array<Deal>;
   health: Scalars["String"]["output"];
   me?: Maybe<User>;
+  /** Fetches all teams the currently authenticated user leads. */
+  myLedTeams: Array<Team>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
+  /** Fetches all teams the currently authenticated user is a member of. */
+  myTeams: Array<Team>;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
-  pipeline?: Maybe<Pipeline>;
   pipelines: Array<Pipeline>;
+  /** Retrieves a single price quote by its ID. */
+  priceQuote?: Maybe<PriceQuote>;
+  /** Retrieves all price quotes associated with a specific deal. */
+  priceQuotesForDeal: Array<PriceQuote>;
   stage?: Maybe<Stage>;
   stages: Array<Stage>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  /** Fetches a specific team by ID, including its members. */
+  team?: Maybe<TeamWithMembers>;
+  /** Fetches all teams accessible to the current user (admins see all, leads see their teams, members see teams they belong to). */
+  teams: Array<Team>;
 };
 
 export type QueryActivitiesArgs = {
@@ -491,8 +665,12 @@ export type QueryPersonArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type QueryPipelineArgs = {
+export type QueryPriceQuoteArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryPriceQuotesForDealArgs = {
+  dealId: Scalars["ID"]["input"];
 };
 
 export type QueryStageArgs = {
@@ -501,6 +679,15 @@ export type QueryStageArgs = {
 
 export type QueryStagesArgs = {
   pipelineId: Scalars["ID"]["input"];
+};
+
+export type QueryTeamArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type RemoveTeamMembersInput = {
+  memberUserIds: Array<Scalars["ID"]["input"]>;
+  teamId: Scalars["ID"]["input"];
 };
 
 export type Stage = {
@@ -523,6 +710,48 @@ export enum StageType {
   Won = "WON",
 }
 
+/** GraphQL schema for Teams functionality */
+export type Team = {
+  __typename?: "Team";
+  createdAt: Scalars["DateTime"]["output"];
+  createdBy?: Maybe<User>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  members: Array<User>;
+  name: Scalars["String"]["output"];
+  teamLead?: Maybe<User>;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+/** Represents a user's membership in a team, primarily for paginated member lists. */
+export type TeamMemberEdge = {
+  __typename?: "TeamMemberEdge";
+  joinedAt: Scalars["DateTime"]["output"];
+  user: User;
+};
+
+/** Connection type for paginated lists of team members. */
+export type TeamMembersConnection = {
+  __typename?: "TeamMembersConnection";
+  edges: Array<TeamMemberEdge>;
+};
+
+/**
+ * Comprehensive Team object, potentially including paginated member lists.
+ * Used when fetching a single team's details.
+ */
+export type TeamWithMembers = {
+  __typename?: "TeamWithMembers";
+  createdAt: Scalars["DateTime"]["output"];
+  createdBy?: Maybe<User>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  membersConnection: TeamMembersConnection;
+  name: Scalars["String"]["output"];
+  teamLead?: Maybe<User>;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
 export type UpdateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -539,6 +768,12 @@ export type UpdateStageInput = {
   name?: InputMaybe<Scalars["String"]["input"]>;
   order?: InputMaybe<Scalars["Int"]["input"]>;
   stage_type?: InputMaybe<StageType>;
+};
+
+export type UpdateTeamInput = {
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  teamLeadUserId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 /**
@@ -670,9 +905,13 @@ export type ResolversTypes = {
   Activity: ResolverTypeWrapper<Activity>;
   ActivityFilterInput: ActivityFilterInput;
   ActivityType: ActivityType;
+  AddTeamMembersInput: AddTeamMembersInput;
+  AdditionalCost: ResolverTypeWrapper<AdditionalCost>;
+  AdditionalCostInput: AdditionalCostInput;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
   CreateActivityInput: CreateActivityInput;
   CreateStageInput: CreateStageInput;
+  CreateTeamInput: CreateTeamInput;
   CustomFieldDefinition: ResolverTypeWrapper<CustomFieldDefinition>;
   CustomFieldDefinitionInput: CustomFieldDefinitionInput;
   CustomFieldEntityType: CustomFieldEntityType;
@@ -689,6 +928,7 @@ export type ResolversTypes = {
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
   Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
+  InvoiceScheduleEntry: ResolverTypeWrapper<InvoiceScheduleEntry>;
   JSON: ResolverTypeWrapper<Scalars["JSON"]["output"]>;
   Mutation: ResolverTypeWrapper<{}>;
   Organization: ResolverTypeWrapper<Organization>;
@@ -700,12 +940,21 @@ export type ResolversTypes = {
   PersonUpdateInput: PersonUpdateInput;
   Pipeline: ResolverTypeWrapper<Pipeline>;
   PipelineInput: PipelineInput;
+  PriceQuote: ResolverTypeWrapper<PriceQuote>;
+  PriceQuoteCreateInput: PriceQuoteCreateInput;
+  PriceQuoteUpdateInput: PriceQuoteUpdateInput;
   Query: ResolverTypeWrapper<{}>;
+  RemoveTeamMembersInput: RemoveTeamMembersInput;
   Stage: ResolverTypeWrapper<Stage>;
   StageType: StageType;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
+  Team: ResolverTypeWrapper<Team>;
+  TeamMemberEdge: ResolverTypeWrapper<TeamMemberEdge>;
+  TeamMembersConnection: ResolverTypeWrapper<TeamMembersConnection>;
+  TeamWithMembers: ResolverTypeWrapper<TeamWithMembers>;
   UpdateActivityInput: UpdateActivityInput;
   UpdateStageInput: UpdateStageInput;
+  UpdateTeamInput: UpdateTeamInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   User: ResolverTypeWrapper<User>;
 };
@@ -714,9 +963,13 @@ export type ResolversTypes = {
 export type ResolversParentTypes = {
   Activity: Activity;
   ActivityFilterInput: ActivityFilterInput;
+  AddTeamMembersInput: AddTeamMembersInput;
+  AdditionalCost: AdditionalCost;
+  AdditionalCostInput: AdditionalCostInput;
   Boolean: Scalars["Boolean"]["output"];
   CreateActivityInput: CreateActivityInput;
   CreateStageInput: CreateStageInput;
+  CreateTeamInput: CreateTeamInput;
   CustomFieldDefinition: CustomFieldDefinition;
   CustomFieldDefinitionInput: CustomFieldDefinitionInput;
   CustomFieldOption: CustomFieldOption;
@@ -731,6 +984,7 @@ export type ResolversParentTypes = {
   Float: Scalars["Float"]["output"];
   ID: Scalars["ID"]["output"];
   Int: Scalars["Int"]["output"];
+  InvoiceScheduleEntry: InvoiceScheduleEntry;
   JSON: Scalars["JSON"]["output"];
   Mutation: {};
   Organization: Organization;
@@ -742,11 +996,20 @@ export type ResolversParentTypes = {
   PersonUpdateInput: PersonUpdateInput;
   Pipeline: Pipeline;
   PipelineInput: PipelineInput;
+  PriceQuote: PriceQuote;
+  PriceQuoteCreateInput: PriceQuoteCreateInput;
+  PriceQuoteUpdateInput: PriceQuoteUpdateInput;
   Query: {};
+  RemoveTeamMembersInput: RemoveTeamMembersInput;
   Stage: Stage;
   String: Scalars["String"]["output"];
+  Team: Team;
+  TeamMemberEdge: TeamMemberEdge;
+  TeamMembersConnection: TeamMembersConnection;
+  TeamWithMembers: TeamWithMembers;
   UpdateActivityInput: UpdateActivityInput;
   UpdateStageInput: UpdateStageInput;
+  UpdateTeamInput: UpdateTeamInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   User: User;
 };
@@ -784,6 +1047,19 @@ export type ActivityResolvers<
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AdditionalCostResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AdditionalCost"] = ResolversParentTypes["AdditionalCost"],
+> = {
+  amount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -945,6 +1221,25 @@ export type DealHistoryEntryResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type InvoiceScheduleEntryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["InvoiceScheduleEntry"] = ResolversParentTypes["InvoiceScheduleEntry"],
+> = {
+  amount_due?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  due_date?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  entry_type?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export interface JsonScalarConfig
   extends GraphQLScalarTypeConfig<ResolversTypes["JSON"], any> {
   name: "JSON";
@@ -955,6 +1250,18 @@ export type MutationResolvers<
   ParentType extends
     ResolversParentTypes["Mutation"] = ResolversParentTypes["Mutation"],
 > = {
+  addTeamMembers?: Resolver<
+    ResolversTypes["TeamWithMembers"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAddTeamMembersArgs, "input">
+  >;
+  calculatePriceQuotePreview?: Resolver<
+    ResolversTypes["PriceQuote"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCalculatePriceQuotePreviewArgs, "input">
+  >;
   createActivity?: Resolver<
     ResolversTypes["Activity"],
     ParentType,
@@ -991,11 +1298,23 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreatePipelineArgs, "input">
   >;
+  createPriceQuote?: Resolver<
+    ResolversTypes["PriceQuote"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreatePriceQuoteArgs, "dealId" | "input">
+  >;
   createStage?: Resolver<
     ResolversTypes["Stage"],
     ParentType,
     ContextType,
     RequireFields<MutationCreateStageArgs, "input">
+  >;
+  createTeam?: Resolver<
+    ResolversTypes["Team"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateTeamArgs, "input">
   >;
   deactivateCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
@@ -1033,17 +1352,35 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeletePipelineArgs, "id">
   >;
+  deletePriceQuote?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeletePriceQuoteArgs, "id">
+  >;
   deleteStage?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
     ContextType,
     RequireFields<MutationDeleteStageArgs, "id">
   >;
+  deleteTeam?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteTeamArgs, "id">
+  >;
   reactivateCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
     ParentType,
     ContextType,
     RequireFields<MutationReactivateCustomFieldDefinitionArgs, "id">
+  >;
+  removeTeamMembers?: Resolver<
+    ResolversTypes["TeamWithMembers"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRemoveTeamMembersArgs, "input">
   >;
   updateActivity?: Resolver<
     ResolversTypes["Activity"],
@@ -1081,11 +1418,23 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdatePipelineArgs, "id" | "input">
   >;
+  updatePriceQuote?: Resolver<
+    ResolversTypes["PriceQuote"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdatePriceQuoteArgs, "id" | "input">
+  >;
   updateStage?: Resolver<
     ResolversTypes["Stage"],
     ParentType,
     ContextType,
     RequireFields<MutationUpdateStageArgs, "id" | "input">
+  >;
+  updateTeam?: Resolver<
+    ResolversTypes["Team"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateTeamArgs, "id" | "input">
   >;
   updateUserProfile?: Resolver<
     Maybe<ResolversTypes["User"]>,
@@ -1199,6 +1548,109 @@ export type PipelineResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type PriceQuoteResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["PriceQuote"] = ResolversParentTypes["PriceQuote"],
+> = {
+  additional_costs?: Resolver<
+    Array<ResolversTypes["AdditionalCost"]>,
+    ParentType,
+    ContextType
+  >;
+  base_minimum_price_mp?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  calculated_discounted_offer_price?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  calculated_effective_markup_fop_over_mp?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  calculated_full_target_price_ftp?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  calculated_target_price_tp?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  calculated_total_direct_cost?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  deal?: Resolver<Maybe<ResolversTypes["Deal"]>, ParentType, ContextType>;
+  deal_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  escalation_details?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  escalation_status?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  final_offer_price_fop?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  invoice_schedule_entries?: Resolver<
+    Array<ResolversTypes["InvoiceScheduleEntry"]>,
+    ParentType,
+    ContextType
+  >;
+  name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  overall_discount_percentage?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  status?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  subsequent_installments_count?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
+  subsequent_installments_interval_days?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
+  target_markup_percentage?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  upfront_payment_due_days?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
+  upfront_payment_percentage?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  version_number?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type QueryResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -1240,11 +1692,13 @@ export type QueryResolvers<
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
   health?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  myLedTeams?: Resolver<Array<ResolversTypes["Team"]>, ParentType, ContextType>;
   myPermissions?: Resolver<
     Maybe<Array<ResolversTypes["String"]>>,
     ParentType,
     ContextType
   >;
+  myTeams?: Resolver<Array<ResolversTypes["Team"]>, ParentType, ContextType>;
   organization?: Resolver<
     Maybe<ResolversTypes["Organization"]>,
     ParentType,
@@ -1268,16 +1722,22 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
-  pipeline?: Resolver<
-    Maybe<ResolversTypes["Pipeline"]>,
-    ParentType,
-    ContextType,
-    RequireFields<QueryPipelineArgs, "id">
-  >;
   pipelines?: Resolver<
     Array<ResolversTypes["Pipeline"]>,
     ParentType,
     ContextType
+  >;
+  priceQuote?: Resolver<
+    Maybe<ResolversTypes["PriceQuote"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryPriceQuoteArgs, "id">
+  >;
+  priceQuotesForDeal?: Resolver<
+    Array<ResolversTypes["PriceQuote"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryPriceQuotesForDealArgs, "dealId">
   >;
   stage?: Resolver<
     Maybe<ResolversTypes["Stage"]>,
@@ -1296,6 +1756,13 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  team?: Resolver<
+    Maybe<ResolversTypes["TeamWithMembers"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTeamArgs, "id">
+  >;
+  teams?: Resolver<Array<ResolversTypes["Team"]>, ParentType, ContextType>;
 };
 
 export type StageResolvers<
@@ -1317,6 +1784,73 @@ export type StageResolvers<
   stage_type?: Resolver<ResolversTypes["StageType"], ParentType, ContextType>;
   updated_at?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TeamResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["Team"] = ResolversParentTypes["Team"],
+> = {
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  members?: Resolver<Array<ResolversTypes["User"]>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  teamLead?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TeamMemberEdgeResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TeamMemberEdge"] = ResolversParentTypes["TeamMemberEdge"],
+> = {
+  joinedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  user?: Resolver<ResolversTypes["User"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TeamMembersConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TeamMembersConnection"] = ResolversParentTypes["TeamMembersConnection"],
+> = {
+  edges?: Resolver<
+    Array<ResolversTypes["TeamMemberEdge"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TeamWithMembersResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TeamWithMembers"] = ResolversParentTypes["TeamWithMembers"],
+> = {
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  membersConnection?: Resolver<
+    ResolversTypes["TeamMembersConnection"],
+    ParentType,
+    ContextType
+  >;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  teamLead?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1342,19 +1876,26 @@ export type UserResolvers<
 
 export type Resolvers<ContextType = GraphQLContext> = {
   Activity?: ActivityResolvers<ContextType>;
+  AdditionalCost?: AdditionalCostResolvers<ContextType>;
   CustomFieldDefinition?: CustomFieldDefinitionResolvers<ContextType>;
   CustomFieldOption?: CustomFieldOptionResolvers<ContextType>;
   CustomFieldValue?: CustomFieldValueResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
+  InvoiceScheduleEntry?: InvoiceScheduleEntryResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   Mutation?: MutationResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   Person?: PersonResolvers<ContextType>;
   PersonListItem?: PersonListItemResolvers<ContextType>;
   Pipeline?: PipelineResolvers<ContextType>;
+  PriceQuote?: PriceQuoteResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Stage?: StageResolvers<ContextType>;
+  Team?: TeamResolvers<ContextType>;
+  TeamMemberEdge?: TeamMemberEdgeResolvers<ContextType>;
+  TeamMembersConnection?: TeamMembersConnectionResolvers<ContextType>;
+  TeamWithMembers?: TeamWithMembersResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
 };

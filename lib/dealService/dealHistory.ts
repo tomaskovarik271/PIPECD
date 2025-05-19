@@ -65,8 +65,8 @@ export const generateDealChanges = (
             }
           } else {
             // Standard flat field change
-            const oldValue = oldDealForDiff[key as keyof Deal];
-            const newValue = updatedDealForDiff[key as keyof Deal];
+            const oldValue = oldDealForDiff[key];
+            const newValue = updatedDealForDiff[key];
             if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
               actualChanges[key as string] = { oldValue, newValue };
             }

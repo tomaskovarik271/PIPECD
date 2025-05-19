@@ -102,7 +102,7 @@ const CreateStageModal: React.FC<CreateStageModalProps> = ({ isOpen, onClose, pi
             name: stageName.trim(),
             order: orderNum,
             // Convert percentage (0-100 or null) to decimal (0-1 or null)
-            deal_probability: probabilityNum === null ? null : probabilityNum! / 100, 
+            deal_probability: probabilityNum === null ? null : probabilityNum / 100, 
             stage_type: stageType, // Added stage_type to input
         };
         
@@ -110,7 +110,7 @@ const CreateStageModal: React.FC<CreateStageModalProps> = ({ isOpen, onClose, pi
       
       if (newStage) {
         toast({ title: "Stage created successfully.", status: 'success', duration: 3000, isClosable: true });
-        onSuccess?.(newStage!.id);
+        onSuccess?.(newStage.id);
         onClose(); // Close modal
       } else {
         toast({ title: "Failed to create stage.", description: stagesError || "Please check console or try again.", status: 'error', duration: 5000, isClosable: true });

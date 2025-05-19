@@ -34,6 +34,8 @@ input UpdateStageInput {
 extend type Query {
   # Fetch stages for a specific pipeline
   stages(pipelineId: ID!): [Stage!]!
+  # Fetches a single stage by its ID.
+  stage(id: ID!): Stage
 }
 
 extend type Mutation {

@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import DealHistoryList from '../components/deals/DealHistoryList';
+import DealPricingSection from '../components/pricing/DealPricingSection';
 
 const DealDetailPage = () => {
   const { dealId } = useParams<{ dealId: string }>();
@@ -102,6 +103,15 @@ const DealDetailPage = () => {
         </Box>
       )}
       {/* End of Custom Fields Display Section */}
+
+      {/* ADDED Pricing Section */}
+      {dealId && (
+        <Box mt={6} p={4} borderWidth="1px" borderRadius="lg" bg={{ base: 'white', _dark: 'gray.700' }} borderColor={{ base: 'gray.200', _dark: 'gray.600' }}>
+          <Heading size="md" mb={3}>Pricing & Quotes</Heading>
+          <DealPricingSection dealId={dealId} />
+        </Box>
+      )}
+      {/* End of Pricing Section */}
 
       <Box mt={6} p={4} borderWidth="1px" borderRadius="lg" bg={{ base: 'white', _dark: 'gray.700' }} borderColor={{ base: 'gray.200', _dark: 'gray.600' }}>
         <Heading size="md" mb={3}>History / Audit Trail</Heading>

@@ -143,7 +143,7 @@ function OrganizationsPage() {
       sortAccessor: (org: Organization) => {
         const cfValue = org.customFieldValues?.find(cf => cf.definition.fieldName === def.fieldName);
         if (!cfValue) return '';
-        switch (def.fieldType as GQLCustomFieldType) {
+        switch (def.fieldType) {
           case 'TEXT': return cfValue.stringValue?.toLowerCase() || '';
           case 'NUMBER': return cfValue.numberValue || 0;
           case 'DATE': return cfValue.dateValue ? new Date(cfValue.dateValue).getTime() : 0;
@@ -156,7 +156,7 @@ function OrganizationsPage() {
         if (!cfValue) return '-';
         let displayValue: React.ReactNode = '-';
         const { stringValue, numberValue, booleanValue, dateValue, selectedOptionValues } = cfValue;
-        switch (def.fieldType as GQLCustomFieldType) {
+        switch (def.fieldType) {
           case 'TEXT': displayValue = stringValue || '-'; if (stringValue && isUrl(stringValue)) displayValue = <a href={stringValue} target="_blank" rel="noopener noreferrer" style={{color: 'blue.500', textDecoration: 'underline'}}>{stringValue}</a>; break;
           case 'NUMBER': displayValue = numberValue?.toString() ?? '-'; break;
           case 'DATE': displayValue = dateValue ? new Date(dateValue).toLocaleDateString() : '-'; break;

@@ -40,7 +40,7 @@ export async function getDealById(userId: string, id: string, accessToken:string
   if (error && error.code !== 'PGRST116') { 
      handleSupabaseError(error, 'fetching deal by ID');
   }
-  return data as Deal | null;
+  return data;
 }
 
 export async function createDeal(userId: string, input: DealInput, accessToken: string): Promise<Deal> {

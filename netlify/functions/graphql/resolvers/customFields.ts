@@ -22,7 +22,7 @@ export const queryResolvers: Pick<QueryResolvers, 'customFieldDefinitions' | 'cu
     try {
       requireAuthentication(context);
       const { entityType, includeInactive = false } = args;
-      const supabase = getAuthenticatedClient(context.token!);
+      const supabase = getAuthenticatedClient(context.token);
 
       // Verify that the service and function exist before calling
       if (!customFieldDefinitionService || typeof customFieldDefinitionService.getCustomFieldDefinitions !== 'function') {
@@ -71,7 +71,7 @@ export const queryResolvers: Pick<QueryResolvers, 'customFieldDefinitions' | 'cu
   ): Promise<GraphQLCustomFieldDefinition | null> => {
     requireAuthentication(context);
     const { id } = args;
-    const supabase = getAuthenticatedClient(context.token!);
+    const supabase = getAuthenticatedClient(context.token);
 
     // console.log(`[Query.customFieldDefinition] Fetching for id: ${id}`);
     return customFieldDefinitionService.getCustomFieldDefinitionById(supabase, id);
@@ -93,7 +93,7 @@ export const mutationResolvers: Pick<
     requireAuthentication(context);
     // TODO: Add permission check for 'custom_fields:manage_definitions'
     const { input } = args;
-    const supabase = getAuthenticatedClient(context.token!);
+    const supabase = getAuthenticatedClient(context.token);
     const currentUser = context.currentUser!;
 
     // console.log(`[Mutation.createCustomFieldDefinition] User: ${currentUser.id}, Input:`, input);
@@ -108,7 +108,7 @@ export const mutationResolvers: Pick<
     requireAuthentication(context);
     // TODO: Add permission check
     const { id, input } = args;
-    const supabase = getAuthenticatedClient(context.token!);
+    const supabase = getAuthenticatedClient(context.token);
     const currentUser = context.currentUser!;
 
     // console.log(`[Mutation.updateCustomFieldDefinition] User: ${currentUser.id}, ID: ${id}, Input:`, input);
@@ -122,7 +122,7 @@ export const mutationResolvers: Pick<
     requireAuthentication(context);
     // TODO: Add permission check
     const { id } = args;
-    const supabase = getAuthenticatedClient(context.token!);
+    const supabase = getAuthenticatedClient(context.token);
     const currentUser = context.currentUser!;
 
     // console.log(`[Mutation.deactivateCustomFieldDefinition] User: ${currentUser.id}, ID: ${id}`);
@@ -136,7 +136,7 @@ export const mutationResolvers: Pick<
     requireAuthentication(context);
     // TODO: Add permission check
     const { id } = args;
-    const supabase = getAuthenticatedClient(context.token!);
+    const supabase = getAuthenticatedClient(context.token);
     const currentUser = context.currentUser!;
 
     // console.log(`[Mutation.reactivateCustomFieldDefinition] User: ${currentUser.id}, ID: ${id}`);

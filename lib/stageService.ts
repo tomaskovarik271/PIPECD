@@ -45,7 +45,7 @@ export async function getStageById(accessToken: string, id: string): Promise<Sta
 
     handleSupabaseError(error, `fetching stage with id ${id}`);
 
-    return data as Stage | null; // CHANGED: Cast to generated Stage | null
+    return data; // CHANGED: Cast to generated Stage | null
 }
 
 /**

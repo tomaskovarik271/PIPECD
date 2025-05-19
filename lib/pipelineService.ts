@@ -41,7 +41,7 @@ export async function getPipelineById(accessToken: string, id: string): Promise<
 
     handleSupabaseError(error, `fetching pipeline with id ${id}`);
 
-    return data as Pipeline | null; // CHANGED: Cast to Pipeline | null (from generated type)
+    return data; // CHANGED: Cast to Pipeline | null (from generated type)
 }
 
 /**

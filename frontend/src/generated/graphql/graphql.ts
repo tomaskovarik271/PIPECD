@@ -65,6 +65,27 @@ export enum ActivityType {
   Task = "TASK",
 }
 
+export type AddTeamMembersInput = {
+  memberUserIds: Array<Scalars["ID"]["input"]>;
+  teamId: Scalars["ID"]["input"];
+};
+
+/** Represents an additional cost item associated with a price quote. */
+export type AdditionalCost = {
+  __typename?: "AdditionalCost";
+  amount: Scalars["Float"]["output"];
+  created_at: Scalars["DateTime"]["output"];
+  description: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  updated_at: Scalars["DateTime"]["output"];
+};
+
+/** Input for creating an additional cost item. */
+export type AdditionalCostInput = {
+  amount: Scalars["Float"]["input"];
+  description: Scalars["String"]["input"];
+};
+
 export type CreateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -82,6 +103,13 @@ export type CreateStageInput = {
   order: Scalars["Int"]["input"];
   pipeline_id: Scalars["ID"]["input"];
   stage_type?: InputMaybe<StageType>;
+};
+
+export type CreateTeamInput = {
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  memberUserIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  name: Scalars["String"]["input"];
+  teamLeadUserId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type CustomFieldDefinition = {
@@ -215,32 +243,71 @@ export type DealUpdateInput = {
   stage_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+/** Represents a single entry in the invoice payment schedule for a price quote. */
+export type InvoiceScheduleEntry = {
+  __typename?: "InvoiceScheduleEntry";
+  amount_due: Scalars["Float"]["output"];
+  created_at: Scalars["DateTime"]["output"];
+  description?: Maybe<Scalars["String"]["output"]>;
+  due_date: Scalars["String"]["output"];
+  entry_type: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  updated_at: Scalars["DateTime"]["output"];
+};
+
 export type Mutation = {
   __typename?: "Mutation";
+  /** Adds members to a team. */
+  addTeamMembers: TeamWithMembers;
+  /** Calculates a preview of a price quote. dealId is optional. */
+  calculatePriceQuotePreview: PriceQuote;
   createActivity: Activity;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
   createOrganization: Organization;
   createPerson: Person;
   createPipeline: Pipeline;
+  /** Creates a new price quote for a given deal. */
+  createPriceQuote: PriceQuote;
   createStage: Stage;
+  /** Creates a new team. */
+  createTeam: Team;
   deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteActivity: Scalars["ID"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   deletePipeline: Scalars["Boolean"]["output"];
+  /** Deletes a price quote. */
+  deletePriceQuote?: Maybe<Scalars["Boolean"]["output"]>;
   deleteStage: Scalars["Boolean"]["output"];
+  /** Deletes a team. */
+  deleteTeam: Scalars["Boolean"]["output"];
   reactivateCustomFieldDefinition: CustomFieldDefinition;
+  /** Removes members from a team. */
+  removeTeamMembers: TeamWithMembers;
   updateActivity: Activity;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
   updatePipeline: Pipeline;
+  /** Updates an existing price quote. */
+  updatePriceQuote: PriceQuote;
   updateStage: Stage;
+  /** Updates an existing team. */
+  updateTeam: Team;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
+};
+
+export type MutationAddTeamMembersArgs = {
+  input: AddTeamMembersInput;
+};
+
+export type MutationCalculatePriceQuotePreviewArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  input: PriceQuoteUpdateInput;
 };
 
 export type MutationCreateActivityArgs = {
@@ -267,8 +334,17 @@ export type MutationCreatePipelineArgs = {
   input: PipelineInput;
 };
 
+export type MutationCreatePriceQuoteArgs = {
+  dealId: Scalars["ID"]["input"];
+  input: PriceQuoteCreateInput;
+};
+
 export type MutationCreateStageArgs = {
   input: CreateStageInput;
+};
+
+export type MutationCreateTeamArgs = {
+  input: CreateTeamInput;
 };
 
 export type MutationDeactivateCustomFieldDefinitionArgs = {
@@ -295,12 +371,24 @@ export type MutationDeletePipelineArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeletePriceQuoteArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteStageArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteTeamArgs = {
   id: Scalars["ID"]["input"];
 };
 
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveTeamMembersArgs = {
+  input: RemoveTeamMembersInput;
 };
 
 export type MutationUpdateActivityArgs = {
@@ -333,9 +421,19 @@ export type MutationUpdatePipelineArgs = {
   input: PipelineInput;
 };
 
+export type MutationUpdatePriceQuoteArgs = {
+  id: Scalars["ID"]["input"];
+  input: PriceQuoteUpdateInput;
+};
+
 export type MutationUpdateStageArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateStageInput;
+};
+
+export type MutationUpdateTeamArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateTeamInput;
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -430,6 +528,71 @@ export type PipelineInput = {
   name: Scalars["String"]["input"];
 };
 
+/** Represents a price quotation for a deal, including calculated financial metrics and payment terms. */
+export type PriceQuote = {
+  __typename?: "PriceQuote";
+  /** List of additional costs associated with this price quote. */
+  additional_costs: Array<AdditionalCost>;
+  base_minimum_price_mp?: Maybe<Scalars["Float"]["output"]>;
+  calculated_discounted_offer_price?: Maybe<Scalars["Float"]["output"]>;
+  calculated_effective_markup_fop_over_mp?: Maybe<Scalars["Float"]["output"]>;
+  calculated_full_target_price_ftp?: Maybe<Scalars["Float"]["output"]>;
+  calculated_target_price_tp?: Maybe<Scalars["Float"]["output"]>;
+  calculated_total_direct_cost?: Maybe<Scalars["Float"]["output"]>;
+  created_at: Scalars["DateTime"]["output"];
+  /** Associated deal for this price quote. */
+  deal?: Maybe<Deal>;
+  deal_id: Scalars["ID"]["output"];
+  escalation_details?: Maybe<Scalars["JSON"]["output"]>;
+  escalation_status?: Maybe<Scalars["String"]["output"]>;
+  final_offer_price_fop?: Maybe<Scalars["Float"]["output"]>;
+  id: Scalars["ID"]["output"];
+  /** Generated invoice payment schedule for this price quote. */
+  invoice_schedule_entries: Array<InvoiceScheduleEntry>;
+  name?: Maybe<Scalars["String"]["output"]>;
+  overall_discount_percentage?: Maybe<Scalars["Float"]["output"]>;
+  status: Scalars["String"]["output"];
+  subsequent_installments_count?: Maybe<Scalars["Int"]["output"]>;
+  subsequent_installments_interval_days?: Maybe<Scalars["Int"]["output"]>;
+  target_markup_percentage?: Maybe<Scalars["Float"]["output"]>;
+  updated_at: Scalars["DateTime"]["output"];
+  upfront_payment_due_days?: Maybe<Scalars["Int"]["output"]>;
+  upfront_payment_percentage?: Maybe<Scalars["Float"]["output"]>;
+  /** User who created or owns this price quote. */
+  user?: Maybe<User>;
+  user_id: Scalars["ID"]["output"];
+  version_number: Scalars["Int"]["output"];
+};
+
+/** Input for creating a new price quote. */
+export type PriceQuoteCreateInput = {
+  additional_costs?: InputMaybe<Array<AdditionalCostInput>>;
+  base_minimum_price_mp?: InputMaybe<Scalars["Float"]["input"]>;
+  final_offer_price_fop?: InputMaybe<Scalars["Float"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  overall_discount_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+  subsequent_installments_count?: InputMaybe<Scalars["Int"]["input"]>;
+  subsequent_installments_interval_days?: InputMaybe<Scalars["Int"]["input"]>;
+  target_markup_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+  upfront_payment_due_days?: InputMaybe<Scalars["Int"]["input"]>;
+  upfront_payment_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+};
+
+/** Input for updating an existing price quote. */
+export type PriceQuoteUpdateInput = {
+  additional_costs?: InputMaybe<Array<AdditionalCostInput>>;
+  base_minimum_price_mp?: InputMaybe<Scalars["Float"]["input"]>;
+  final_offer_price_fop?: InputMaybe<Scalars["Float"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  overall_discount_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+  status?: InputMaybe<Scalars["String"]["input"]>;
+  subsequent_installments_count?: InputMaybe<Scalars["Int"]["input"]>;
+  subsequent_installments_interval_days?: InputMaybe<Scalars["Int"]["input"]>;
+  target_markup_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+  upfront_payment_due_days?: InputMaybe<Scalars["Int"]["input"]>;
+  upfront_payment_percentage?: InputMaybe<Scalars["Float"]["input"]>;
+};
+
 export type Query = {
   __typename?: "Query";
   activities: Array<Activity>;
@@ -440,17 +603,28 @@ export type Query = {
   deals: Array<Deal>;
   health: Scalars["String"]["output"];
   me?: Maybe<User>;
+  /** Fetches all teams the currently authenticated user leads. */
+  myLedTeams: Array<Team>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
+  /** Fetches all teams the currently authenticated user is a member of. */
+  myTeams: Array<Team>;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
-  pipeline?: Maybe<Pipeline>;
   pipelines: Array<Pipeline>;
+  /** Retrieves a single price quote by its ID. */
+  priceQuote?: Maybe<PriceQuote>;
+  /** Retrieves all price quotes associated with a specific deal. */
+  priceQuotesForDeal: Array<PriceQuote>;
   stage?: Maybe<Stage>;
   stages: Array<Stage>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  /** Fetches a specific team by ID, including its members. */
+  team?: Maybe<TeamWithMembers>;
+  /** Fetches all teams accessible to the current user (admins see all, leads see their teams, members see teams they belong to). */
+  teams: Array<Team>;
 };
 
 export type QueryActivitiesArgs = {
@@ -482,8 +656,12 @@ export type QueryPersonArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type QueryPipelineArgs = {
+export type QueryPriceQuoteArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryPriceQuotesForDealArgs = {
+  dealId: Scalars["ID"]["input"];
 };
 
 export type QueryStageArgs = {
@@ -492,6 +670,15 @@ export type QueryStageArgs = {
 
 export type QueryStagesArgs = {
   pipelineId: Scalars["ID"]["input"];
+};
+
+export type QueryTeamArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type RemoveTeamMembersInput = {
+  memberUserIds: Array<Scalars["ID"]["input"]>;
+  teamId: Scalars["ID"]["input"];
 };
 
 export type Stage = {
@@ -514,6 +701,48 @@ export enum StageType {
   Won = "WON",
 }
 
+/** GraphQL schema for Teams functionality */
+export type Team = {
+  __typename?: "Team";
+  createdAt: Scalars["DateTime"]["output"];
+  createdBy?: Maybe<User>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  members: Array<User>;
+  name: Scalars["String"]["output"];
+  teamLead?: Maybe<User>;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+/** Represents a user's membership in a team, primarily for paginated member lists. */
+export type TeamMemberEdge = {
+  __typename?: "TeamMemberEdge";
+  joinedAt: Scalars["DateTime"]["output"];
+  user: User;
+};
+
+/** Connection type for paginated lists of team members. */
+export type TeamMembersConnection = {
+  __typename?: "TeamMembersConnection";
+  edges: Array<TeamMemberEdge>;
+};
+
+/**
+ * Comprehensive Team object, potentially including paginated member lists.
+ * Used when fetching a single team's details.
+ */
+export type TeamWithMembers = {
+  __typename?: "TeamWithMembers";
+  createdAt: Scalars["DateTime"]["output"];
+  createdBy?: Maybe<User>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  membersConnection: TeamMembersConnection;
+  name: Scalars["String"]["output"];
+  teamLead?: Maybe<User>;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
 export type UpdateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -530,6 +759,12 @@ export type UpdateStageInput = {
   name?: InputMaybe<Scalars["String"]["input"]>;
   order?: InputMaybe<Scalars["Int"]["input"]>;
   stage_type?: InputMaybe<StageType>;
+};
+
+export type UpdateTeamInput = {
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  teamLeadUserId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 /**

@@ -163,7 +163,7 @@ function DealsPage() {
       sortAccessor: (deal: Deal) => {
         const cfValue = deal.customFieldValues?.find(cf => cf.definition.fieldName === def.fieldName);
         if (!cfValue) return '';
-        switch (def.fieldType as GQLCustomFieldType) {
+        switch (def.fieldType) {
           case 'TEXT': return cfValue.stringValue?.toLowerCase() || '';
           case 'NUMBER': return cfValue.numberValue || 0;
           case 'DATE': return cfValue.dateValue ? new Date(cfValue.dateValue).getTime() : 0;
@@ -177,7 +177,7 @@ function DealsPage() {
         let displayValue: React.ReactNode = '-';
         const { stringValue, numberValue, booleanValue, dateValue, selectedOptionValues } = cfValue;
 
-        switch (def.fieldType as GQLCustomFieldType) {
+        switch (def.fieldType) {
           case 'TEXT': 
             displayValue = stringValue || '-'; 
             if (stringValue && isUrl(stringValue)) {
