@@ -43,6 +43,14 @@ module.exports = {
     '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_$' }],
     '@typescript-eslint/no-explicit-any': 'warn',
   },
+  overrides: [
+    {
+      files: ['lib/generated/graphql.ts'],
+      rules: {
+        '@typescript-eslint/ban-types': 'off',
+      },
+    },
+  ],
   ignorePatterns: [
     'node_modules/',
     '.netlify/',

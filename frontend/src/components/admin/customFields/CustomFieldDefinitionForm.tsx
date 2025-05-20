@@ -179,7 +179,7 @@ const CustomFieldDefinitionForm: React.FC<CustomFieldDefinitionFormProps> = ({
                 />
               </SimpleGrid>
             ))}
-            {fields.length === 0 && <Text fontSize="sm" color="gray.500">No options defined. Click "Add Option".</Text>}
+            {fields.length === 0 && <Text fontSize="sm" color="gray.500">No options defined. Click &quot;Add Option&quot;.</Text>}
           </Box>
         )}
 

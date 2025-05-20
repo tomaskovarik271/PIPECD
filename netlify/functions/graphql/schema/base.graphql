@@ -1,6 +1,11 @@
 scalar DateTime
 scalar Float # Ensure Float is available if using it
 
+input PaginationInput {
+  limit: Int
+  offset: Int
+}
+
 type Query {
   health: String!
   supabaseConnectionTest: String!
@@ -42,4 +47,11 @@ type Mutation {
   createStage(input: StageInput!): Stage!
   updateStage(id: ID!, input: StageUpdateInput!): Stage # Use specific update input
   deleteStage(id: ID!): Boolean
+
+  # Deal Reassignment
+  reassignDeal(dealId: ID!, newOwnerUserId: ID!, addPreviousOwnerAsFollower: Boolean): Deal
+
+  # Deal Followers
+  addDealFollower(dealId: ID!, userId: ID!): Deal
+  removeDealFollower(dealId: ID!, userId: ID!): Deal
 } 

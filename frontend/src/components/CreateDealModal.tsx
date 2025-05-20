@@ -198,7 +198,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
             case CustomFieldType.Dropdown: // Single select dropdown
               valueInputPayload.stringValue = String(rawValue);
               break;
-            case CustomFieldType.Number:
+            case CustomFieldType.Number: {
               const num = parseFloat(String(rawValue));
               if (!isNaN(num)) {
                 valueInputPayload.numberValue = num;
@@ -212,6 +212,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
                  return null; // Don't submit this custom field if number is invalid
               }
               break;
+            }
             case CustomFieldType.Boolean:
               valueInputPayload.booleanValue = Boolean(rawValue);
               break;
@@ -256,7 +257,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         console.log('Deal created via store action:', createdDeal);
         toast({
           title: "Deal Created",
-          description: `Deal "${createdDeal.name}" created${stageOfCreatedDeal ? ` in stage "${stageOfCreatedDeal.name}"` : ''}.`,
+          description: `Deal &quot;${createdDeal.name}&quot; created${stageOfCreatedDeal ? ` in stage &quot;${stageOfCreatedDeal.name}&quot;` : ''}.`,
           status: "success",
           duration: 5000,
           isClosable: true,

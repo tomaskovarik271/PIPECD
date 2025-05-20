@@ -254,4 +254,109 @@ export async function deleteDeal(userId: string, id: string, accessToken: string
   
   console.log('[dealCrud.deleteDeal] Deleted count (informational):', count);
   return !error;
+}
+
+// --- Deal Reassignment ---
+
+export async function reassignDeal(
+  actingUserId: string, 
+  dealId: string, 
+  newOwnerUserId: string, 
+  accessToken: string,
+  addPreviousOwnerAsFollower: boolean = true // Optionally add previous owner as a follower
+): Promise<Deal> {
+  console.log(`[dealCrud.reassignDeal] User ${actingUserId} reassigning deal ${dealId} to user ${newOwnerUserId}`);
+  const supabase = getAuthenticatedClient(accessToken);
+
+  // 1. Fetch the current deal to get old_owner_user_id and ensure it exists
+  // Note: RLS via getAuthenticatedClient() should ensure actingUserId can see this deal
+  // if they are to reassign it. If not, this will fail or return null.
+  const oldDealData = await getDealById(actingUserId, dealId, accessToken); // Use external getter
+  if (!oldDealData) {
+    throw new GraphQLError('Deal not found for reassignment.', { extensions: { code: 'NOT_FOUND' } });
+  }
+
+  const oldOwnerUserId = oldDealData.user_id;
+
+  if (oldOwnerUserId === newOwnerUserId) {
+    console.log(`[dealCrud.reassignDeal] Deal ${dealId} is already owned by user ${newOwnerUserId}. No action taken.`);
+    return oldDealData as Deal; // Return current deal data
+  }
+
+  // 2. Update the deal's user_id
+  // RLS: The `update` operation on `deals` table will be subject to RLS.
+  // The `actingUserId` must have permissions to update this deal (e.g. via 'update_any' or a specific 'reassign'
+  // permission that translates to RLS allowing the update of user_id).
+  // The 'deal:reassign' permission check is expected to be done at the GraphQL resolver level.
+  const { data: updatedDeal, error: updateError } = await supabase
+    .from('deals')
+    .update({ user_id: newOwnerUserId })
+    .eq('id', dealId)
+    .select()
+    .single();
+
+  handleSupabaseError(updateError, 'reassigning deal owner');
+  if (!updatedDeal) {
+    throw new GraphQLError('Failed to reassign deal owner, no data returned.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+  }
+
+  // 3. Record the reassignment in deal_history
+  await recordEntityHistory(
+    supabase,
+    'deal_history',
+    'deal_id',
+    dealId,
+    actingUserId, // User who performed the reassignment
+    'DEAL_REASSIGNED',
+    { 
+      old_owner_user_id: oldOwnerUserId, 
+      new_owner_user_id: newOwnerUserId 
+    }
+  );
+
+  // 4. Optionally, add the previous owner as a follower
+  if (addPreviousOwnerAsFollower && oldOwnerUserId) {
+    // Check if previous owner is different from new owner to avoid self-following if not desired
+    if (oldOwnerUserId !== newOwnerUserId) {
+      try {
+        // RLS on deal_followers: The actingUserId must have permission to add followers.
+        // This typically means they can update the deal (owner/admin).
+        // If the reassign permission itself doesn't grant this, this step might fail RLS.
+        // A specific 'deal_follower:manage_own' (for actingUser on behalf of prev owner) or 'deal_follower:manage_any' (for admin) might be needed.
+        // For simplicity, we assume RLS allows this if the reassignment itself was permitted.
+        const { error: followerError } = await supabase
+          .from('deal_followers')
+          .insert({ deal_id: dealId, user_id: oldOwnerUserId })
+          .select(); // Minimal select
+        
+        if (followerError) {
+          // Log non-critical error, reassignment itself was successful
+          console.error(`[dealCrud.reassignDeal] Failed to add previous owner ${oldOwnerUserId} as follower for deal ${dealId}: ${followerError.message}`);
+        } else {
+          console.log(`[dealCrud.reassignDeal] Previous owner ${oldOwnerUserId} added as follower for deal ${dealId}.`);
+        }
+      } catch (e:any) {
+         console.error(`[dealCrud.reassignDeal] Exception while adding previous owner ${oldOwnerUserId} as follower for deal ${dealId}: ${e.message}`);
+      }
+    }
+  }
+  
+  // Consider sending an Inngest event for deal reassignment
+  try {
+    await inngest.send({
+      name: 'crm/deal.reassigned',
+      user: { id: actingUserId }, 
+      data: {
+        dealId: dealId,
+        oldOwnerUserId: oldOwnerUserId,
+        newOwnerUserId: newOwnerUserId,
+        reassignedByUserId: actingUserId,
+      },
+    });
+    console.log(`[dealCrud.reassignDeal] Sent 'crm/deal.reassigned' event for deal ID: ${dealId}`);
+  } catch (eventError: any) {
+    console.error(`[dealCrud.reassignDeal] Failed to send 'crm/deal.reassigned' event for deal ID: ${dealId}:`, eventError.message);
+  }
+
+  return updatedDeal as Deal;
 } 

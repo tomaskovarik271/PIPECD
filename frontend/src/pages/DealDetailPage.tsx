@@ -1,5 +1,5 @@
-import { Box, Heading, Spinner, Text, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
-import { useParams } from 'react-router-dom';
+import { Box, Heading, Spinner, Text, Alert, AlertIcon, AlertTitle, AlertDescription, Button } from '@chakra-ui/react';
+import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import DealHistoryList from '../components/deals/DealHistoryList';
@@ -46,6 +46,9 @@ const DealDetailPage = () => {
 
   return (
     <Box>
+      <Button as={RouterLink} to="/deals" mb={4} variant="outline" size="sm">
+        &larr; Back to Deals
+      </Button>
       <Heading mb={1}>Deal: {currentDeal.name}</Heading>
       <Text fontSize="sm" color={{ base: 'gray.500', _dark: 'gray.400' }} mb={4}>ID: {currentDeal.id}</Text>
       
@@ -115,8 +118,8 @@ const DealDetailPage = () => {
 
       <Box mt={6} p={4} borderWidth="1px" borderRadius="lg" bg={{ base: 'white', _dark: 'gray.700' }} borderColor={{ base: 'gray.200', _dark: 'gray.600' }}>
         <Heading size="md" mb={3}>History / Audit Trail</Heading>
-        {currentDeal.history ? (
-          <DealHistoryList historyEntries={currentDeal.history} />
+        {currentDeal.history && dealId ? (
+          <DealHistoryList historyEntries={currentDeal.history} dealId={dealId} />
         ) : (
           <Text>No history available.</Text>
         )}

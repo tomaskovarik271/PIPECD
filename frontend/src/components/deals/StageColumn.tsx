@@ -35,13 +35,15 @@ const StageColumn: React.FC<StageColumnProps> = ({ stage, deals, index }) => {
   const columnBgBase = currentTheme === 'andyWarhol' ? warholColumnBgBase : defaultColumnBgBase;
   const columnBgHover = currentTheme === 'andyWarhol' ? warholColumnBgHover : defaultColumnBgHover;
   
+  const defaultHeadingBorderColor = useColorModeValue('gray.200', 'gray.600');
+
   const columnHeaderText = useColorModeValue(
     theme.colors.gray[900], // Default light mode: black
     currentTheme === 'andyWarhol' ? theme.colors.yellow[500] : theme.colors.gray[50] // Warhol dark: popYellow, Default dark: white
   );
 
   return (
-    // @ts-ignore TS2786: 'Droppable' cannot be used as a JSX component.
+    // @ts-expect-error TS2786: 'Droppable' cannot be used as a JSX component.
     <Droppable droppableId={stage.id} type="DEAL">
       {(provided: DroppableProvided, snapshot: DroppableStateSnapshot) => {
         const currentColumnBg = snapshot.isDraggingOver ? columnBgHover : columnBgBase;
@@ -84,7 +86,7 @@ const StageColumn: React.FC<StageColumnProps> = ({ stage, deals, index }) => {
               bg={currentColumnBg} 
               zIndex={1}
               color={columnHeaderText} // Apply dynamic header text color
-              borderColor={currentTheme === 'andyWarhol' ? theme.colors.yellow[500] : useColorModeValue('gray.200', 'gray.600')} // Warhol: Yellow border
+              borderColor={currentTheme === 'andyWarhol' ? theme.colors.yellow[500] : defaultHeadingBorderColor} // Warhol: Yellow border
             >
               {stage.name} ({deals.length})
             </Heading>
@@ -96,8 +98,7 @@ const StageColumn: React.FC<StageColumnProps> = ({ stage, deals, index }) => {
                   index={idx} // Use idx from map for Draggable index
                 />
               ))}
-              // @ts-ignore TS2322: react-beautiful-dnd placeholder type issue
-              {provided.placeholder}
+              {provided.placeholder as any}
               {deals.length === 0 && !snapshot.isDraggingOver && (
                   <Text fontSize="sm" color={placeholderTextColor} textAlign="center" mt={4} p={2}>
                       Drag deals here or create new ones.

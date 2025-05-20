@@ -360,7 +360,7 @@ const CustomFieldDefinitionList: React.FC = () => {
               </AlertDialogHeader>
 
               <AlertDialogBody>
-                Are you sure you want to {actionToConfirm.type} the custom field definition "{actionToConfirm.label}"?
+                {'Are you sure you want to '}{actionToConfirm.type}{' the custom field definition '}{actionToConfirm.label}{'?'}
               </AlertDialogBody>
 
               <AlertDialogFooter>

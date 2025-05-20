@@ -67,6 +67,7 @@ export enum ActivityType {
 
 export type AddTeamMembersInput = {
   memberUserIds: Array<Scalars["ID"]["input"]>;
+  role?: InputMaybe<Scalars["String"]["input"]>;
   teamId: Scalars["ID"]["input"];
 };
 
@@ -107,7 +108,6 @@ export type CreateStageInput = {
 
 export type CreateTeamInput = {
   description?: InputMaybe<Scalars["String"]["input"]>;
-  memberUserIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
   name: Scalars["String"]["input"];
   teamLeadUserId?: InputMaybe<Scalars["ID"]["input"]>;
 };
@@ -190,11 +190,13 @@ export type Deal = {
   customFieldValues: Array<CustomFieldValue>;
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
+  followers?: Maybe<Array<User>>;
   history?: Maybe<Array<DealHistoryEntry>>;
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
   organization?: Maybe<Organization>;
   organization_id?: Maybe<Scalars["ID"]["output"]>;
+  owner?: Maybe<User>;
   person?: Maybe<Person>;
   person_id?: Maybe<Scalars["ID"]["output"]>;
   pipeline: Pipeline;
@@ -257,7 +259,7 @@ export type InvoiceScheduleEntry = {
 
 export type Mutation = {
   __typename?: "Mutation";
-  /** Adds members to a team. */
+  addDealFollower?: Maybe<Deal>;
   addTeamMembers: TeamWithMembers;
   /** Calculates a preview of a price quote. dealId is optional. */
   calculatePriceQuotePreview: PriceQuote;
@@ -270,7 +272,6 @@ export type Mutation = {
   /** Creates a new price quote for a given deal. */
   createPriceQuote: PriceQuote;
   createStage: Stage;
-  /** Creates a new team. */
   createTeam: Team;
   deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteActivity: Scalars["ID"]["output"];
@@ -281,10 +282,10 @@ export type Mutation = {
   /** Deletes a price quote. */
   deletePriceQuote?: Maybe<Scalars["Boolean"]["output"]>;
   deleteStage: Scalars["Boolean"]["output"];
-  /** Deletes a team. */
   deleteTeam: Scalars["Boolean"]["output"];
   reactivateCustomFieldDefinition: CustomFieldDefinition;
-  /** Removes members from a team. */
+  reassignDeal?: Maybe<Deal>;
+  removeDealFollower?: Maybe<Deal>;
   removeTeamMembers: TeamWithMembers;
   updateActivity: Activity;
   updateCustomFieldDefinition: CustomFieldDefinition;
@@ -295,10 +296,14 @@ export type Mutation = {
   /** Updates an existing price quote. */
   updatePriceQuote: PriceQuote;
   updateStage: Stage;
-  /** Updates an existing team. */
   updateTeam: Team;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
+};
+
+export type MutationAddDealFollowerArgs = {
+  dealId: Scalars["ID"]["input"];
+  userId: Scalars["ID"]["input"];
 };
 
 export type MutationAddTeamMembersArgs = {
@@ -387,6 +392,17 @@ export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationReassignDealArgs = {
+  addPreviousOwnerAsFollower?: InputMaybe<Scalars["Boolean"]["input"]>;
+  dealId: Scalars["ID"]["input"];
+  newOwnerUserId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveDealFollowerArgs = {
+  dealId: Scalars["ID"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
 export type MutationRemoveTeamMembersArgs = {
   input: RemoveTeamMembersInput;
 };
@@ -432,7 +448,6 @@ export type MutationUpdateStageArgs = {
 };
 
 export type MutationUpdateTeamArgs = {
-  id: Scalars["ID"]["input"];
   input: UpdateTeamInput;
 };
 
@@ -468,6 +483,11 @@ export type OrganizationUpdateInput = {
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type PaginationInput = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 /** Defines the Person type and related queries/mutations. */
@@ -603,10 +623,8 @@ export type Query = {
   deals: Array<Deal>;
   health: Scalars["String"]["output"];
   me?: Maybe<User>;
-  /** Fetches all teams the currently authenticated user leads. */
   myLedTeams: Array<Team>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
-  /** Fetches all teams the currently authenticated user is a member of. */
   myTeams: Array<Team>;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
@@ -621,9 +639,7 @@ export type Query = {
   stage?: Maybe<Stage>;
   stages: Array<Stage>;
   supabaseConnectionTest: Scalars["String"]["output"];
-  /** Fetches a specific team by ID, including its members. */
-  team?: Maybe<TeamWithMembers>;
-  /** Fetches all teams accessible to the current user (admins see all, leads see their teams, members see teams they belong to). */
+  team?: Maybe<Team>;
   teams: Array<Team>;
 };
 
@@ -676,6 +692,11 @@ export type QueryTeamArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type QueryTeamsArgs = {
+  filter?: InputMaybe<TeamsFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+};
+
 export type RemoveTeamMembersInput = {
   memberUserIds: Array<Scalars["ID"]["input"]>;
   teamId: Scalars["ID"]["input"];
@@ -701,7 +722,6 @@ export enum StageType {
   Won = "WON",
 }
 
-/** GraphQL schema for Teams functionality */
 export type Team = {
   __typename?: "Team";
   createdAt: Scalars["DateTime"]["output"];
@@ -714,23 +734,17 @@ export type Team = {
   updatedAt: Scalars["DateTime"]["output"];
 };
 
-/** Represents a user's membership in a team, primarily for paginated member lists. */
 export type TeamMemberEdge = {
   __typename?: "TeamMemberEdge";
   joinedAt: Scalars["DateTime"]["output"];
   user: User;
 };
 
-/** Connection type for paginated lists of team members. */
 export type TeamMembersConnection = {
   __typename?: "TeamMembersConnection";
   edges: Array<TeamMemberEdge>;
 };
 
-/**
- * Comprehensive Team object, potentially including paginated member lists.
- * Used when fetching a single team's details.
- */
 export type TeamWithMembers = {
   __typename?: "TeamWithMembers";
   createdAt: Scalars["DateTime"]["output"];
@@ -741,6 +755,10 @@ export type TeamWithMembers = {
   name: Scalars["String"]["output"];
   teamLead?: Maybe<User>;
   updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type TeamsFilterInput = {
+  placeholder?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type UpdateActivityInput = {
@@ -763,6 +781,7 @@ export type UpdateStageInput = {
 
 export type UpdateTeamInput = {
   description?: InputMaybe<Scalars["String"]["input"]>;
+  id: Scalars["ID"]["input"];
   name?: InputMaybe<Scalars["String"]["input"]>;
   teamLeadUserId?: InputMaybe<Scalars["ID"]["input"]>;
 };
@@ -784,4 +803,5 @@ export type User = {
   display_name?: Maybe<Scalars["String"]["output"]>;
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+  teams?: Maybe<Array<Team>>;
 };

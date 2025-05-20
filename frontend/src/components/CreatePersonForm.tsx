@@ -125,11 +125,12 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
           case 'TEXT':
             cfInput.stringValue = String(rawValue);
             break;
-          case 'NUMBER':
+          case 'NUMBER': {
             const num = parseFloat(rawValue);
             if (!isNaN(num)) cfInput.numberValue = num;
             else setLocalError((prev) => (prev ? prev + `\n` : ``) + `Invalid number for '${def.fieldLabel}'.`);
             break;
+          }
           case 'BOOLEAN':
             cfInput.booleanValue = Boolean(rawValue);
             break;
@@ -294,7 +295,6 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
                   onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value.split(',').map(s => s.trim()), def.fieldType)}
                 />
               )}
-               {/* Display error for this specific field if its required and not filled */} 
               {localError && def.isRequired && (customFieldData[def.fieldName] === undefined || customFieldData[def.fieldName] === null || customFieldData[def.fieldName] === '') && 
                 <FormErrorMessage>{`Field '${def.fieldLabel}' is required.`}</FormErrorMessage>}
             </FormControl>

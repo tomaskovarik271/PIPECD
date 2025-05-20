@@ -1,5 +1,5 @@
 import { YogaInitialContext } from 'graphql-yoga';
-import { User } from '@supabase/supabase-js';
+import { User, SupabaseClient } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 import { ZodError } from 'zod';
 
@@ -16,6 +16,7 @@ export interface GraphQLContext extends YogaInitialContext {
   currentUser: User | null;
   token: string | null;
   userPermissions: string[] | null;
+  supabase: SupabaseClient;
   request: Request; // Made non-optional to match YogaInitialContext
   // Add other potential context fields if needed (e.g., event, context from Netlify func?)
 }
@@ -71,3 +72,75 @@ export const convertToDateOrNull = (dateStr: string | null | undefined): Date | 
   }
   return null; // Return null for empty strings, null, undefined, or invalid date strings
 }; 
+
+/**
+ * Fetches all permissions for a given user.
+ */
+export async function getUserPermissions(supabase: SupabaseClient, userId: string): Promise<string[] | null> {
+  if (!userId) {
+    return null;
+  }
+  try {
+    const { data, error } = await supabase
+      .from('user_roles')
+      .select(`
+        role_id,
+        roles (
+          name,
+          role_permissions (
+            permission_id,
+            permissions (
+              resource,
+              action
+            )
+          )
+        )
+      `)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error fetching user permissions:', error);
+      return null;
+    }
+
+    if (!data) {
+      return [];
+    }
+
+    const permissionsSet = new Set<string>();
+    data.forEach((userRole: any) => {
+      if (userRole.roles && userRole.roles.role_permissions) {
+        userRole.roles.role_permissions.forEach((rp: any) => {
+          if (rp.permissions) {
+            permissionsSet.add(`${rp.permissions.resource}:${rp.permissions.action}`);
+          }
+        });
+      }
+    });
+    // Also handle cases where a user might have multiple roles directly assigned
+    // The above structure assumes roles table is joined correctly.
+    // If data is an array of user_role entries, each with a nested roles object.
+    data.forEach((entry: any) => {
+      if (entry.roles && Array.isArray(entry.roles.role_permissions)) {
+        entry.roles.role_permissions.forEach((rp: any) => {
+          if (rp.permissions) {
+            permissionsSet.add(`${rp.permissions.resource}:${rp.permissions.action}`);
+          }
+        });
+      } else if (Array.isArray(entry.role_permissions)) { // Fallback if roles is not an object but role_permissions is directly on user_roles join
+         entry.role_permissions.forEach((rp: any) => {
+           if (rp.permissions) {
+             permissionsSet.add(`${rp.permissions.resource}:${rp.permissions.action}`);
+           }
+         });
+      }
+    });
+
+
+    console.log(`[getUserPermissions] Permissions for user ${userId}:`, Array.from(permissionsSet));
+    return Array.from(permissionsSet);
+  } catch (e) {
+    console.error('Unexpected error in getUserPermissions:', e);
+    return null;
+  }
+} 

@@ -214,18 +214,23 @@ function OrganizationsPage() {
     let filteredOrgs = organizations;
     if (activeQuickFilterKey && activeQuickFilterKey !== 'all') {
       filteredOrgs = organizations.filter(org => {
+        // eslint-disable-next-line no-case-declarations
         switch (activeQuickFilterKey) {
-          case 'recent':
+          case 'recent': {
             if (!org.created_at) return false;
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
             return new Date(org.created_at) > sevenDaysAgo;
-          case 'noPeople':
+          }
+          case 'noPeople': {
             return !org.people || org.people.length === 0;
-          case 'noDeals':
+          }
+          case 'noDeals': {
             return !org.deals || org.deals.length === 0;
-          default:
+          }
+          default: {
             return true;
+          }
         }
       });
     }
@@ -287,7 +292,7 @@ function OrganizationsPage() {
         onClose={onConfirmDeleteClose}
         onConfirm={handleConfirmDelete}
         headerText="Delete Organization"
-        bodyText="Are you sure you want to delete this organization? Associated people will have their organization link removed. This action cannot be undone."
+        bodyText={"Are you sure you want to delete this organization? Associated people will have their organization link removed. This action cannot be undone."}
         confirmButtonText="Delete"
         confirmButtonColorScheme="red"
         isLoading={!!deletingRowId}

@@ -218,7 +218,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
         } else if (rawValue !== undefined) {
             switch (def.fieldType) {
                 case 'TEXT': cfInput.stringValue = String(rawValue); break;
-                case 'NUMBER':
+                case 'NUMBER': {
                     const num = parseFloat(String(rawValue));
                     if (!isNaN(num)) {
                         cfInput.numberValue = num;
@@ -227,6 +227,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
                         fieldHasError = true;
                     }
                     break;
+                }
                 case 'BOOLEAN': cfInput.booleanValue = Boolean(rawValue); break;
                 case 'DATE': cfInput.dateValue = rawValue; break;
                 case 'DROPDOWN': cfInput.selectedOptionValues = [String(rawValue)]; break;

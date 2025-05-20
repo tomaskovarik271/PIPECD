@@ -5,4 +5,5 @@ type User {
   email: String!
   display_name: String # Renamed from 'name', represents combined or preferred display name
   avatar_url: String # Added avatar URL
+  teams: [Team!] # Teams the user is a member of
 } 

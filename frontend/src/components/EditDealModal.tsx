@@ -136,14 +136,13 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
           if (cfValueFromDeal) {
             switch (def.fieldType) {
               case CustomFieldType.Text:
-              case CustomFieldType.Dropdown: 
                 initialCfValues[def.fieldName] = cfValueFromDeal.stringValue || '';
                 break;
-              case CustomFieldType.Number:
-                initialCfValues[def.fieldName] = cfValueFromDeal.numberValue !== null && cfValueFromDeal.numberValue !== undefined 
-                  ? cfValueFromDeal.numberValue 
-                  : '';
+              case CustomFieldType.Number: {
+                const num = parseFloat(String(cfValueFromDeal.numberValue));
+                initialCfValues[def.fieldName] = !isNaN(num) ? num : null;
                 break;
+              }
               case CustomFieldType.Boolean:
                 initialCfValues[def.fieldName] = cfValueFromDeal.booleanValue ?? false;
                 break;
@@ -168,7 +167,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                 initialCfValues[def.fieldName] = [];
                 break;
               case CustomFieldType.Number:
-                 initialCfValues[def.fieldName] = ''; // Or null / undefined, to be handled by NumberInput
+                 initialCfValues[def.fieldName] = null; // Or null / undefined, to be handled by NumberInput
                  break;
               default:
                 initialCfValues[def.fieldName] = '';
@@ -311,7 +310,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
               case CustomFieldType.Text:
                 valueToSet.stringValue = String(rawValue || '');
                 break;
-              case CustomFieldType.Number:
+              case CustomFieldType.Number: {
                 const num = parseFloat(String(rawValue));
                 valueToSet.numberValue = !isNaN(num) ? num : null;
                 // If required and empty/invalid, backend Zod schema should catch it if it expects a number.
@@ -323,6 +322,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                     valueToSet = null; // Don't submit if optional and empty
                 }
                 break;
+              }
               case CustomFieldType.Date:
                 valueToSet.dateValue = rawValue ? new Date(rawValue).toISOString() : null;
                  if (!rawValue && !def.isRequired) valueToSet = null;
@@ -388,7 +388,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     <Modal isOpen={isOpen} onClose={onClose} isCentered>
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>Edit Deal: {deal.name}</ModalHeader>
+        <ModalHeader>{'Edit Deal: '}{deal.name}</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           {error && (

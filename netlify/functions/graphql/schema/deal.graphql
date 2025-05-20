@@ -19,6 +19,7 @@ type Deal {
   weighted_amount: Float          # Calculated: amount * effective_probability
   history(limit: Int, offset: Int): [DealHistoryEntry!]
   customFieldValues: [CustomFieldValue!]!
+  followers: [User!] # Users following this deal
 }
 
 input DealInput {

@@ -101,6 +101,81 @@ export type Database = {
           },
         ]
       }
+      custom_field_definitions: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          dropdown_options: Json | null
+          entity_type: Database["public"]["Enums"]["entity_type"]
+          field_label: string
+          field_name: string
+          field_type: Database["public"]["Enums"]["custom_field_type"]
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          dropdown_options?: Json | null
+          entity_type: Database["public"]["Enums"]["entity_type"]
+          field_label: string
+          field_name: string
+          field_type: Database["public"]["Enums"]["custom_field_type"]
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          dropdown_options?: Json | null
+          entity_type?: Database["public"]["Enums"]["entity_type"]
+          field_label?: string
+          field_name?: string
+          field_type?: Database["public"]["Enums"]["custom_field_type"]
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      deal_followers: {
+        Row: {
+          deal_id: string
+          followed_at: string
+          user_id: string
+        }
+        Insert: {
+          deal_id: string
+          followed_at?: string
+          user_id: string
+        }
+        Update: {
+          deal_id?: string
+          followed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_followers_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_followers_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       deal_history: {
         Row: {
           changes: Json | null
@@ -140,6 +215,7 @@ export type Database = {
         Row: {
           amount: number | null
           created_at: string
+          custom_field_values: Json
           deal_specific_probability: number | null
           expected_close_date: string | null
           id: string
@@ -155,6 +231,7 @@ export type Database = {
         Insert: {
           amount?: number | null
           created_at?: string
+          custom_field_values?: Json
           deal_specific_probability?: number | null
           expected_close_date?: string | null
           id?: string
@@ -170,6 +247,7 @@ export type Database = {
         Update: {
           amount?: number | null
           created_at?: string
+          custom_field_values?: Json
           deal_specific_probability?: number | null
           expected_close_date?: string | null
           id?: string
@@ -203,6 +281,7 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          custom_field_values: Json
           id: string
           name: string
           notes: string | null
@@ -212,6 +291,7 @@ export type Database = {
         Insert: {
           address?: string | null
           created_at?: string
+          custom_field_values?: Json
           id?: string
           name: string
           notes?: string | null
@@ -221,6 +301,7 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          custom_field_values?: Json
           id?: string
           name?: string
           notes?: string | null
@@ -233,6 +314,7 @@ export type Database = {
         Row: {
           company: string | null
           created_at: string
+          custom_field_values: Json
           email: string | null
           first_name: string | null
           id: string
@@ -246,6 +328,7 @@ export type Database = {
         Insert: {
           company?: string | null
           created_at?: string
+          custom_field_values?: Json
           email?: string | null
           first_name?: string | null
           id?: string
@@ -259,6 +342,7 @@ export type Database = {
         Update: {
           company?: string | null
           created_at?: string
+          custom_field_values?: Json
           email?: string | null
           first_name?: string | null
           id?: string
@@ -323,6 +407,168 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      price_quotes: {
+        Row: {
+          base_minimum_price_mp: number | null
+          calculated_discounted_offer_price: number | null
+          calculated_effective_markup_fop_over_mp: number | null
+          calculated_full_target_price_ftp: number | null
+          calculated_target_price_tp: number | null
+          calculated_total_direct_cost: number | null
+          created_at: string
+          deal_id: string
+          escalation_details: Json | null
+          escalation_status: string | null
+          final_offer_price_fop: number | null
+          id: string
+          name: string | null
+          overall_discount_percentage: number | null
+          status: string
+          subsequent_installments_count: number | null
+          subsequent_installments_interval_days: number | null
+          target_markup_percentage: number | null
+          updated_at: string
+          upfront_payment_due_days: number | null
+          upfront_payment_percentage: number | null
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          base_minimum_price_mp?: number | null
+          calculated_discounted_offer_price?: number | null
+          calculated_effective_markup_fop_over_mp?: number | null
+          calculated_full_target_price_ftp?: number | null
+          calculated_target_price_tp?: number | null
+          calculated_total_direct_cost?: number | null
+          created_at?: string
+          deal_id: string
+          escalation_details?: Json | null
+          escalation_status?: string | null
+          final_offer_price_fop?: number | null
+          id?: string
+          name?: string | null
+          overall_discount_percentage?: number | null
+          status?: string
+          subsequent_installments_count?: number | null
+          subsequent_installments_interval_days?: number | null
+          target_markup_percentage?: number | null
+          updated_at?: string
+          upfront_payment_due_days?: number | null
+          upfront_payment_percentage?: number | null
+          user_id: string
+          version_number?: number
+        }
+        Update: {
+          base_minimum_price_mp?: number | null
+          calculated_discounted_offer_price?: number | null
+          calculated_effective_markup_fop_over_mp?: number | null
+          calculated_full_target_price_ftp?: number | null
+          calculated_target_price_tp?: number | null
+          calculated_total_direct_cost?: number | null
+          created_at?: string
+          deal_id?: string
+          escalation_details?: Json | null
+          escalation_status?: string | null
+          final_offer_price_fop?: number | null
+          id?: string
+          name?: string | null
+          overall_discount_percentage?: number | null
+          status?: string
+          subsequent_installments_count?: number | null
+          subsequent_installments_interval_days?: number | null
+          target_markup_percentage?: number | null
+          updated_at?: string
+          upfront_payment_due_days?: number | null
+          upfront_payment_percentage?: number | null
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_quotes_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_additional_costs: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          price_quote_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          price_quote_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          price_quote_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_additional_costs_price_quote_id_fkey"
+            columns: ["price_quote_id"]
+            isOneToOne: false
+            referencedRelation: "price_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_invoice_schedule_entries: {
+        Row: {
+          amount_due: number
+          created_at: string
+          description: string | null
+          due_date: string
+          entry_type: string
+          id: string
+          price_quote_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_due: number
+          created_at?: string
+          description?: string | null
+          due_date: string
+          entry_type: string
+          id?: string
+          price_quote_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_due?: number
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          entry_type?: string
+          id?: string
+          price_quote_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_invoice_schedule_entries_price_quote_id_fkey"
+            columns: ["price_quote_id"]
+            isOneToOne: false
+            referencedRelation: "price_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -416,36 +662,105 @@ export type Database = {
           },
         ]
       }
+      team_members: {
+        Row: {
+          joined_at: string
+          team_id: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          team_id: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          team_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      teams: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          id: string
+          name: string
+          team_lead_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          team_lead_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          team_lead_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teams_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "teams_team_lead_user_id_fkey"
+            columns: ["team_lead_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       user_profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           display_name: string | null
-          email: string | null
-          first_name: string | null
-          id: string
-          last_name: string | null
           updated_at: string
+          user_id: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
-          email?: string | null
-          first_name?: string | null
-          id: string
-          last_name?: string | null
           updated_at?: string
+          user_id: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
-          email?: string | null
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -481,13 +796,28 @@ export type Database = {
         Args: { p_user_id: string; p_action: string; p_resource: string }
         Returns: boolean
       }
+      check_user_has_permission: {
+        Args: { checking_user_id: string; required_permission_code: string }
+        Returns: boolean
+      }
       get_my_permissions: {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      is_team_lead_of_item_owner: {
+        Args: { viewer_user_id: string; item_owner_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      custom_field_type:
+        | "TEXT"
+        | "NUMBER"
+        | "DATE"
+        | "BOOLEAN"
+        | "DROPDOWN"
+        | "MULTI_SELECT"
+      entity_type: "DEAL" | "PERSON" | "ORGANIZATION"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -605,7 +935,17 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      custom_field_type: [
+        "TEXT",
+        "NUMBER",
+        "DATE",
+        "BOOLEAN",
+        "DROPDOWN",
+        "MULTI_SELECT",
+      ],
+      entity_type: ["DEAL", "PERSON", "ORGANIZATION"],
+    },
   },
 } as const
 

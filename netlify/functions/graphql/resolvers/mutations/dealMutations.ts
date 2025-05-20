@@ -3,9 +3,9 @@ import { GraphQLContext, requireAuthentication, getAccessToken, processZodError,
 import { DealCreateSchema, DealUpdateSchema } from '../../validators';
 import { inngest } from '../../../../../lib/inngestClient';
 import { dealService } from '../../../../../lib/dealService';
-import type { MutationResolvers, Deal as GraphQLDeal, DealInput as GraphQLDealInput, DealUpdateInput as GraphQLDealUpdateInput } from '../../../../../lib/generated/graphql';
+import type { MutationResolvers, Deal as GraphQLDeal, DealInput as GraphQLDealInput, MutationReassignDealArgs } from '../../../../../lib/generated/graphql';
 
-export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal' | 'updateDeal' | 'deleteDeal'> = {
+export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal' | 'updateDeal' | 'deleteDeal' | 'reassignDeal'> = {
     createDeal: async (_parent, args, context) => {
       const action = 'creating deal';
       try {
@@ -33,7 +33,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
           
           inngest.send({
             name: 'crm/deal.created',
-            data: { deal: newDealRecord as any }, 
+            data: { deal: newDealRecord },
             user: { id: userId, email: context.currentUser!.email! }
           }).catch((err: unknown) => console.error('Failed to send deal.created event to Inngest:', err));
 
@@ -71,7 +71,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
             throw new GraphQLError('Update input cannot be empty.', { extensions: { code: 'BAD_USER_INPUT' } });
           }
 
-          const { pipeline_id, ...dealDataFromZod } = validatedInput;
+          const { ...dealDataFromZod } = validatedInput;
           
           // Ensure customFields is an array or undefined
           const customFieldsForService = Array.isArray(dealDataFromZod.customFields) 
@@ -126,6 +126,52 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
           return success;
       } catch (error) {
           throw processZodError(error, action);
+      }
+    },
+    reassignDeal: async (_parent: unknown, args: MutationReassignDealArgs, context: GraphQLContext) => {
+      const action = `reassigning deal ${args.dealId}`;
+      try {
+        requireAuthentication(context);
+        const actingUserId = context.currentUser!.id;
+        const accessToken = getAccessToken(context)!;
+
+        // Permission Check
+        if (!context.userPermissions?.includes('deal:reassign')) {
+          throw new GraphQLError('Forbidden: You do not have permission to reassign deals.', { 
+            extensions: { code: 'FORBIDDEN' } 
+          });
+        }
+
+        const { dealId, newOwnerUserId, addPreviousOwnerAsFollower } = args;
+
+        const reassignedDeal = await dealService.reassignDeal(
+          actingUserId, 
+          dealId, 
+          newOwnerUserId, 
+          accessToken,
+          addPreviousOwnerAsFollower ?? true // Default to true if not provided
+        );
+        
+        // The service function already returns a Deal compatible type, but we ensure all non-nullable GraphQL fields are present.
+        // This mapping might be more robust if the service always returns all necessary fields or if we re-fetch.
+        // For now, trust the service layer's return matches GraphQLDeal structure for core fields.
+        return {
+          ...reassignedDeal,
+          id: reassignedDeal.id!,
+          user_id: reassignedDeal.user_id!,
+          created_at: reassignedDeal.created_at!,
+          updated_at: reassignedDeal.updated_at!,
+          name: reassignedDeal.name!,
+          stage_id: reassignedDeal.stage_id!,
+          // Ensure optional fields are correctly handled (e.g. person, organization might be null)
+          // The `as GraphQLDeal` cast below assumes the service returns a compatible structure.
+        } as GraphQLDeal;
+
+      } catch (error: unknown) {
+        console.error(`[Mutation.reassignDeal] Error during ${action}:`, error);
+        // processZodError might not be relevant here unless input validation is added.
+        if (error instanceof GraphQLError) throw error;
+        throw new GraphQLError(`Error ${action}.`, { extensions: { code: 'INTERNAL_SERVER_ERROR'} });
       }
     },
 }; 

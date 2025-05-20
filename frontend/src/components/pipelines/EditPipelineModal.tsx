@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Modal, 
   ModalOverlay, 
@@ -27,6 +27,7 @@ interface EditPipelineModalProps {
 
 const EditPipelineModal: React.FC<EditPipelineModalProps> = ({ isOpen, onClose, pipeline, onSuccess }) => {
   const [pipelineName, setPipelineName] = useState('');
+  const initialFieldRef = useRef(null);
   const {
     updatePipeline,
     pipelinesLoading,
@@ -83,7 +84,7 @@ const EditPipelineModal: React.FC<EditPipelineModalProps> = ({ isOpen, onClose, 
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered>
+    <Modal isOpen={isOpen} onClose={onClose} isCentered initialFocusRef={initialFieldRef}>
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
         <ModalHeader>Edit Pipeline</ModalHeader>
@@ -99,10 +100,10 @@ const EditPipelineModal: React.FC<EditPipelineModalProps> = ({ isOpen, onClose, 
             <FormControl isRequired>
               <FormLabel>Pipeline Name</FormLabel>
               <Input 
+                ref={initialFieldRef}
                 placeholder="e.g., Sales Pipeline Q3"
                 value={pipelineName}
                 onChange={(e) => setPipelineName(e.target.value)}
-                autoFocus
               />
             </FormControl>
           </VStack>

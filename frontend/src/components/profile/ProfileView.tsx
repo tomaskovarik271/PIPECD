@@ -23,7 +23,7 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, isLoading }) => {
           Profile Not Found
         </Heading>
         <Text color={'gray.500'}>
-          We couldn't find your profile information.
+          We couldn&apos;t find your profile information.
         </Text>
       </Box>
     );

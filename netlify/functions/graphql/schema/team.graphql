@@ -1,0 +1,84 @@
+type Team {
+  id: ID!
+  name: String!
+  description: String
+  teamLead: User
+  members: [User!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: User
+}
+
+# --- Types for bulk operations and potentially paginated members --- 
+type TeamMemberEdge {
+  user: User!      # The user who is a member
+  joinedAt: DateTime! # When the user joined the team
+  # role: String! # Consider adding role if it becomes part of GraphQL visible team membership details
+}
+
+type TeamMembersConnection {
+  edges: [TeamMemberEdge!]!
+  # pageInfo: PageInfo! # Add if pagination is implemented for members
+  # totalCount: Int! # Add if total count is needed
+}
+
+# Team type that includes a connection for members, suitable for detailed views
+type TeamWithMembers {
+  id: ID!
+  name: String!
+  description: String
+  teamLead: User
+  membersConnection: TeamMembersConnection! # Connection for members, allows for edges with more data like joinedAt
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: User
+}
+# --- End Types for bulk operations --- 
+
+input CreateTeamInput {
+  name: String!
+  description: String
+  teamLeadUserId: ID
+}
+
+input UpdateTeamInput {
+  id: ID!
+  name: String
+  description: String
+  teamLeadUserId: ID
+}
+
+input TeamsFilterInput {
+  # Add filter fields as needed, e.g., nameContains: String
+  placeholder: Boolean # Remove if actual filters are added
+}
+
+# --- Inputs for bulk member operations --- 
+input AddTeamMembersInput {
+  teamId: ID!
+  memberUserIds: [ID!]!
+  role: String # Optional: Specify a role for all members being added. Defaults to 'member' in service if not provided.
+}
+
+input RemoveTeamMembersInput {
+  teamId: ID!
+  memberUserIds: [ID!]!
+}
+# --- End Inputs for bulk member operations --- 
+
+extend type Query {
+  team(id: ID!): Team
+  teams(filter: TeamsFilterInput, pagination: PaginationInput): [Team!]!
+  myTeams: [Team!]!
+  myLedTeams: [Team!]!
+}
+
+extend type Mutation {
+  createTeam(input: CreateTeamInput!): Team!
+  updateTeam(input: UpdateTeamInput!): Team!
+  deleteTeam(id: ID!): Boolean!
+  
+  # Changed from single add/remove to bulk operations
+  addTeamMembers(input: AddTeamMembersInput!): TeamWithMembers! # Returns TeamWithMembers
+  removeTeamMembers(input: RemoveTeamMembersInput!): TeamWithMembers! # Returns TeamWithMembers
+} 

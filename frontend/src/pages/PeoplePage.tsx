@@ -272,15 +272,20 @@ function PeoplePage() {
       return people;
     }
     return people.filter(person => {
+      // eslint-disable-next-line no-case-declarations
       switch (activeQuickFilterKey) {
-        case 'noOrg':
+        case 'noOrg': {
           return !person.organization_id && !person.organization;
-        case 'withEmail':
+        }
+        case 'withEmail': {
           return !!person.email;
-        case 'noPhone':
+        }
+        case 'noPhone': {
           return !person.phone;
-        default:
+        }
+        default: {
           return true;
+        }
       }
     });
   }, [people, activeQuickFilterKey]);
@@ -357,7 +362,7 @@ function PeoplePage() {
       onClose={onConfirmDeleteClose}
       onConfirm={handleConfirmDelete}
       headerText="Delete Person"
-      bodyText="Are you sure you want to delete this person? This action cannot be undone."
+      bodyText={"Are you sure you want to delete this person? This action cannot be undone."}
       confirmButtonText="Delete"
       confirmButtonColorScheme="red"
     />

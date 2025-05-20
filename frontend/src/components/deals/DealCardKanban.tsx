@@ -49,7 +49,10 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
   const amountTextColor = currentTheme === 'andyWarhol' ? warholAmountTextColor : defaultAmountTextColor;
   const secondaryTextColor = currentTheme === 'andyWarhol' ? warholSecondaryTextColor : defaultSecondaryTextColor;
   const probabilityTextColor = currentTheme === 'andyWarhol' ? warholProbabilityTextColor : defaultProbabilityTextColor;
-  const headingColor = currentTheme === 'andyWarhol' ? warholHeadingColor : useColorModeValue(theme.colors.gray[900], theme.colors.gray[50]);
+  
+  // Call useColorModeValue at the top level for headingColor
+  const defaultHeadingColor = useColorModeValue(theme.colors.gray[900], theme.colors.gray[50]);
+  const headingColor = currentTheme === 'andyWarhol' ? warholHeadingColor : defaultHeadingColor;
 
   return (
     <Draggable draggableId={deal.id} index={index}>

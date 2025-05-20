@@ -148,7 +148,7 @@ function ColumnSelector<T>({
                 ))}
                 
                 {filteredColumns.length === 0 && searchTerm && (
-                    <Text textAlign="center" color="gray.500">No columns match "{searchTerm}".</Text>
+                    <Text textAlign="center" color="gray.500">{`No columns match "${searchTerm}".`}</Text>
                 )}
               </VStack>
             </Box>

@@ -14,7 +14,8 @@ import {
     getDealById as getDealByIdInternal,
     createDeal as createDealInternal,
     updateDeal as updateDealInternal,
-    deleteDeal as deleteDealInternal
+    deleteDeal as deleteDealInternal,
+    reassignDeal as reassignDealInternal
 } from './dealService/dealCrud';
 
 
@@ -42,4 +43,7 @@ export const dealService = {
   
   deleteDeal: (userId: string, id: string, accessToken: string): Promise<boolean> => 
     deleteDealInternal(userId, id, accessToken),
+
+  reassignDeal: (actingUserId: string, dealId: string, newOwnerUserId: string, accessToken: string, addPreviousOwnerAsFollower?: boolean): Promise<Deal> => 
+    reassignDealInternal(actingUserId, dealId, newOwnerUserId, accessToken, addPreviousOwnerAsFollower),
 }; 
