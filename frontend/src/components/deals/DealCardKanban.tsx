@@ -1,9 +1,11 @@
 import React from 'react';
-import { Box, Text, VStack, Heading, Tooltip, useColorModeValue, useTheme } from '@chakra-ui/react';
+import { Box, Text, VStack, Heading, Tooltip, useColorModeValue, useTheme, Badge, Icon, HStack, Flex } from '@chakra-ui/react';
 import { Deal } from '../../stores/useDealsStore';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'; // Import Draggable & its types
 import { Link as RouterLink } from 'react-router-dom'; // Import Link
 import { useThemeStore } from '../../stores/useThemeStore'; // Import theme store
+import { TimeIcon, CheckCircleIcon } from '@chakra-ui/icons'; // Added icons
+import { ActivityType } from '../../generated/graphql/graphql'; // Import ActivityType enum if needed for specific icons
 
 interface DealCardKanbanProps {
   deal: Deal;
@@ -42,6 +44,9 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
   const warholSecondaryTextColor = theme.colors.gray[100];
   const warholProbabilityTextColor = theme.colors.green[500]; // popGreen
   const warholHeadingColor = theme.colors.gray[50];
+  const activityIconColor = useColorModeValue('gray.600', 'gray.300');
+  const warholActivityIconColor = theme.colors.cyan[400]; // Example for Warhol
+  const finalActivityIconColor = currentTheme === 'andyWarhol' ? warholActivityIconColor : activityIconColor;
 
   const cardBgBase = currentTheme === 'andyWarhol' ? warholCardBgBase : defaultCardBgBase;
   const cardBgDragging = currentTheme === 'andyWarhol' ? warholCardBgDragging : defaultCardBgDragging;
@@ -50,6 +55,18 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
   const secondaryTextColor = currentTheme === 'andyWarhol' ? warholSecondaryTextColor : defaultSecondaryTextColor;
   const probabilityTextColor = currentTheme === 'andyWarhol' ? warholProbabilityTextColor : defaultProbabilityTextColor;
   const headingColor = currentTheme === 'andyWarhol' ? warholHeadingColor : useColorModeValue(theme.colors.gray[900], theme.colors.gray[50]);
+
+  // Process activities
+  const openActivities = deal.activities?.filter(a => !a.is_done) || [];
+  const nextOpenActivity = openActivities
+    .filter(a => a.due_date) // Only consider activities with a due date
+    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())[0];
+
+  const getIconForActivityType = (activityType?: ActivityType | null) => {
+    // Placeholder for more specific icons based on activity.type if desired
+    // For now, using TimeIcon for open and CheckCircleIcon for general idea
+    return TimeIcon; 
+  };
 
   return (
     <Draggable draggableId={deal.id} index={index}>
@@ -94,7 +111,46 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
             <Text fontSize="xs" color={probabilityTextColor}>
                 Prob: {getEffectiveProbabilityDisplay()}
             </Text>
-            {/* Add more compact deal info as needed */}
+            
+            {/* Activities Section */}
+            {deal.activities && deal.activities.length > 0 && (
+              <Box mt={2} pt={1} borderTopWidth="1px" borderColor={cardBorderColor}>
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text fontSize="xs" fontWeight="medium" color={secondaryTextColor}>Activities</Text>
+                  {openActivities.length > 0 && (
+                    <Badge colorScheme="orange" size="sm">{openActivities.length} open</Badge>
+                  )}
+                  {openActivities.length === 0 && deal.activities.length > 0 && (
+                     <Badge colorScheme="green" size="sm">All done</Badge>
+                  )}
+                </HStack>
+                {nextOpenActivity && (
+                  <Tooltip label={`Due: ${new Date(nextOpenActivity.due_date!).toLocaleDateString()} - ${nextOpenActivity.type}`} placement="bottom-start" openDelay={300}>
+                    <RouterLink to={`/activities/${nextOpenActivity.id}`} style={{ textDecoration: 'none', display: 'block', color: 'inherit' }}>
+                      <Flex alignItems="center" mt={1} _hover={{ textDecoration: 'underline' }}>
+                        <Icon as={getIconForActivityType(nextOpenActivity.type)} color={finalActivityIconColor} w={3} h={3} mr={1.5} />
+                        <Text fontSize="xs" color={secondaryTextColor} isTruncated>
+                          {nextOpenActivity.subject}
+                        </Text>
+                      </Flex>
+                    </RouterLink>
+                  </Tooltip>
+                )}
+                {openActivities.length > 0 && !nextOpenActivity && openActivities[0] && (
+                  // Show first open activity if no 'nextOpenActivity' with a due date was found
+                  <RouterLink to={`/activities/${openActivities[0].id}`} style={{ textDecoration: 'none', display: 'block', color: 'inherit' }}>
+                    <Flex alignItems="center" mt={1} _hover={{ textDecoration: 'underline' }}>
+                      <Icon as={getIconForActivityType(openActivities[0].type)} color={finalActivityIconColor} w={3} h={3} mr={1.5} />
+                      <Text fontSize="xs" color={secondaryTextColor} isTruncated>
+                        {openActivities[0].subject} (No due date)
+                      </Text>
+                    </Flex>
+                  </RouterLink>
+                )}
+              </Box>
+            )}
+            {/* End Activities Section */}
+
           </VStack>
         </Box>
       )}

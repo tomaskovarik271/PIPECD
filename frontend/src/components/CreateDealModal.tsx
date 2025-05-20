@@ -32,6 +32,7 @@ import { usePeopleStore, Person } from '../stores/usePeopleStore';
 import { useDealsStore } from '../stores/useDealsStore';
 import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore';
 import { useStagesStore, Stage } from '../stores/useStagesStore';
+import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
 import { DealInput, CustomFieldType } from '../generated/graphql/graphql';
 import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
 import { CustomFieldEntityType, CustomFieldDefinition as GraphQLCustomFieldDefinition, CustomFieldValueInput } from '../generated/graphql/graphql';
@@ -48,6 +49,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [selectedStageId, setSelectedStageId] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>('');
+  const [organizationId, setOrganizationId] = useState<string>('');
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
   
@@ -75,6 +77,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const { createDeal: createDealAction, dealsError, dealsLoading } = useDealsStore(); 
 
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
+  const { organizations, fetchOrganizations, organizationsLoading, organizationsError } = useOrganizationsStore();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +90,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       setSelectedStageId('');
       setAmount('');
       setPersonId('');
+      setOrganizationId('');
       setError(null);
       setDealSpecificProbability('');
       setExpectedCloseDate('');
@@ -98,10 +102,11 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
 
       fetchPeople(); 
       fetchPipelines(); 
+      fetchOrganizations();
       // Fetch active custom field definitions for Deals
       fetchDefinitions(CustomFieldEntityType.Deal, false);
     }
-  }, [isOpen, fetchPeople, fetchPipelines, fetchDefinitions]);
+  }, [isOpen, fetchPeople, fetchPipelines, fetchOrganizations, fetchDefinitions]);
 
   useEffect(() => {
     // Update activeDealCustomFields when definitions are fetched from the store
@@ -159,6 +164,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         pipeline_id: localSelectedPipelineId,
         amount: amount ? parseFloat(amount) : null,
         person_id: personId || null,
+        organization_id: organizationId || null,
         expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : null,
         // customFields: [] // Initialize customFields array - will be populated below
       };
@@ -462,6 +468,23 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
               >
                 <NumberInputField placeholder="Optional (e.g., 75)" />
               </NumberInput>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Link to Organization (Optional)</FormLabel>
+              <Select 
+                placeholder={organizationsLoading ? 'Loading organizations...' : 'Select organization'}
+                value={organizationId}
+                onChange={(e) => setOrganizationId(e.target.value)}
+                isDisabled={organizationsLoading || !!organizationsError}
+              >
+                 {!organizationsLoading && !organizationsError && organizations.map((org: Organization) => (
+                    <option key={org.id} value={org.id}>
+                        {org.name || `Org ID: ${org.id}`}
+                    </option>
+                ))}
+              </Select>
+              {organizationsError && <FormErrorMessage>Error loading organizations: {organizationsError}</FormErrorMessage>}
             </FormControl>
 
             <FormControl>

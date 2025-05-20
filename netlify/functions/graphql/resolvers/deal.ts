@@ -2,8 +2,10 @@
 import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { GraphQLContext, requireAuthentication, getAccessToken, processZodError } from '../helpers';
 import { personService } from '../../../../lib/personService';
+import { organizationService } from '../../../../lib/organizationService';
 import * as stageService from '../../../../lib/stageService';
-import type { DealResolvers, Person, Stage as GraphQLStage, Deal as GraphQLDealParent, CustomFieldValue as GraphQLCustomFieldValue, CustomFieldDefinition as GraphQLCustomFieldDefinition } from '../../../../lib/generated/graphql'; // Import generated types
+import * as activityService from '../../../../lib/activityService'; // Added import for activityService
+import type { DealResolvers, Person, Organization, Stage as GraphQLStage, Deal as GraphQLDealParent, CustomFieldValue as GraphQLCustomFieldValue, CustomFieldDefinition as GraphQLCustomFieldDefinition, Activity as GraphQLActivity } from '../../../../lib/generated/graphql'; // Added Activity to imports
 import { CustomFieldEntityType, CustomFieldType } from '../../../../lib/generated/graphql'; // Ensure enums are imported as values
 import { getAuthenticatedClient } from '../../../../lib/serviceUtils'; // Added import for getAuthenticatedClient
 import * as customFieldDefinitionService from '../../../../lib/customFieldDefinitionService';
@@ -37,6 +39,27 @@ export const Deal: DealResolvers<GraphQLContext> = {
       } catch (e) {
           console.error(`Error fetching person ${parent.person_id} for deal ${parent.id}:`, e);
           return null; 
+      }
+    },
+    organization: async (parent, _args, context) => {
+      if (!parent.organization_id) return null;
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context)!;
+      try {
+        const orgRecord = await organizationService.getOrganizationById(context.currentUser!.id, parent.organization_id, accessToken);
+        if (!orgRecord) return null;
+        return {
+          id: orgRecord.id,
+          name: orgRecord.name,
+          address: orgRecord.address,
+          notes: orgRecord.notes,
+          user_id: orgRecord.user_id,
+          created_at: orgRecord.created_at,
+          updated_at: orgRecord.updated_at,
+        } as Organization;
+      } catch (e) {
+        console.error(`Error fetching organization ${parent.organization_id} for deal ${parent.id}:`, e);
+        return null;
       }
     },
     // Resolver for the 'stage' field on Deal
@@ -115,6 +138,52 @@ export const Deal: DealResolvers<GraphQLContext> = {
         return null; // If no probability can be determined
     },
     // TODO: Add resolver for Deal.activities if not already present or handled by default
+
+    activities: async (parent: GraphQLDealParent, _args: any, context: GraphQLContext): Promise<GraphQLActivity[]> => {
+      if (!parent.id) {
+        console.error('Deal ID missing in parent object for activities resolver.');
+        return [];
+      }
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context)!;
+      const currentUserId = context.currentUser!.id;
+
+      try {
+        const activitiesFromService = await activityService.getActivities(currentUserId, accessToken, { dealId: parent.id });
+        
+        return activitiesFromService.map((activity): GraphQLActivity => {
+          // The Activity type from the service might already be compatible or nearly compatible
+          // with GraphQLActivity. We need to ensure date fields are correctly formatted/typed.
+          // The GraphQL DateTime scalar usually expects a Date object or an ISO string it can parse.
+          // The linter error suggests GraphQLActivity expects Date objects for its DateTime fields.
+          
+          // Assuming activityService returns objects where date fields might be strings or Date objects.
+          // We will ensure they are Date objects if not null.
+          const mappedActivity: GraphQLActivity = {
+            ...activity,
+            // Ensure that fields expected by GraphQLActivity are present and correctly typed
+            // id, user_id, type, subject, is_done, notes, deal_id, person_id, organization_id should map directly
+            // if their types are compatible from the service's Activity type to GraphQLActivity.
+            
+            // Handle User, Deal, Person, Organization complex objects if they are part of GraphQLActivity
+            // and need explicit resolution or mapping from the service activity object.
+            // For now, assuming they are either correctly returned by service or resolved by their own type resolvers.
+            user: activity.user, // Assuming service returns a compatible User object or null
+            deal: activity.deal,   // Assuming service returns a compatible Deal object or null
+            person: activity.person, // Assuming service returns a compatible Person object or null
+            organization: activity.organization, // Assuming service returns compatible Org object or null
+
+            created_at: new Date(activity.created_at), // Convert to Date object
+            updated_at: new Date(activity.updated_at), // Convert to Date object
+            due_date: activity.due_date ? new Date(activity.due_date) : null, // Convert to Date object or keep null
+          };
+          return mappedActivity;
+        });
+      } catch (error) {
+        console.error(`Error fetching activities for deal ${parent.id}:`, error);
+        return [];
+      }
+    },
 
     customFieldValues: async (parent: any, _args: any, context: GraphQLContext): Promise<GraphQLCustomFieldValue[]> => {
       requireAuthentication(context);

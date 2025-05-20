@@ -1,9 +1,45 @@
-import { Box, Heading, Spinner, Text, Alert, AlertIcon, AlertTitle, AlertDescription } from '@chakra-ui/react';
-import { useParams } from 'react-router-dom';
+import { Box, Heading, Spinner, Text, Alert, AlertIcon, AlertTitle, AlertDescription, Flex, IconButton, VStack, Link, Icon } from '@chakra-ui/react';
+import { Link as RouterLink, useParams } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import DealHistoryList from '../components/deals/DealHistoryList';
 import DealPricingSection from '../components/pricing/DealPricingSection';
+import { ArrowBackIcon, LinkIcon } from '@chakra-ui/icons';
+
+interface LinkDisplayDetails {
+  isUrl: boolean;
+  displayText: string;
+  fullUrl?: string;
+  isKnownService?: boolean;
+  icon?: React.ElementType;
+}
+
+const getLinkDisplayDetails = (str: string | null | undefined): LinkDisplayDetails => {
+  if (!str) return { isUrl: false, displayText: '-' };
+
+  try {
+    const url = new URL(str);
+    if (!(url.protocol === 'http:' || url.protocol === 'https:')) {
+      return { isUrl: false, displayText: str };
+    }
+
+    if (url.hostname.includes('docs.google.com')) {
+      if (url.pathname.includes('/spreadsheets/')) {
+        return { isUrl: true, displayText: 'Google Sheet', fullUrl: str, isKnownService: true, icon: LinkIcon };
+      }
+      if (url.pathname.includes('/document/')) {
+        return { isUrl: true, displayText: 'Google Doc', fullUrl: str, isKnownService: true, icon: LinkIcon };
+      }
+      if (url.pathname.includes('/presentation/') || url.pathname.includes('/drawings/')) {
+        return { isUrl: true, displayText: 'Google Slides/Drawing', fullUrl: str, isKnownService: true, icon: LinkIcon };
+      }
+    }
+    return { isUrl: true, displayText: str, fullUrl: str, isKnownService: false };
+
+  } catch (_) {
+    return { isUrl: false, displayText: str };
+  }
+};
 
 const DealDetailPage = () => {
   const { dealId } = useParams<{ dealId: string }>();
@@ -46,8 +82,23 @@ const DealDetailPage = () => {
 
   return (
     <Box>
-      <Heading mb={1}>Deal: {currentDeal.name}</Heading>
-      <Text fontSize="sm" color={{ base: 'gray.500', _dark: 'gray.400' }} mb={4}>ID: {currentDeal.id}</Text>
+      <Flex alignItems="center" mb={4}>
+        <IconButton
+          as={RouterLink}
+          to="/deals"
+          aria-label="Back to Deals"
+          icon={<ArrowBackIcon />}
+          variant="outline"
+          size="lg"
+          mr={3}
+        />
+        <VStack alignItems="flex-start" spacing={0.5}>
+          <Heading size="lg">Deal: {currentDeal.name}</Heading>
+          <Text fontSize="sm" color={{ base: 'gray.500', _dark: 'gray.400' }}>
+            ID: {currentDeal.id}
+          </Text>
+        </VStack>
+      </Flex>
       
       <Box mb={6} p={4} borderWidth="1px" borderRadius="lg" bg={{ base: 'white', _dark: 'gray.700' }} borderColor={{ base: 'gray.200', _dark: 'gray.600' }}>
         <Heading size="sm" mb={2}>Details</Heading>
@@ -69,7 +120,35 @@ const DealDetailPage = () => {
             const { fieldType, dropdownOptions } = cfValue.definition;
 
             if (fieldType === 'TEXT' && cfValue.stringValue) {
-              displayValue = cfValue.stringValue;
+              const linkDetails = getLinkDisplayDetails(cfValue.stringValue);
+              if (linkDetails.isUrl && linkDetails.fullUrl) {
+                displayValue = (
+                  <Link 
+                    href={linkDetails.fullUrl} 
+                    isExternal 
+                    color={{ base: 'blue.500', _dark: 'blue.300' }}
+                    textDecoration="underline"
+                    display="inline-flex"
+                    alignItems="center"
+                  >
+                    {linkDetails.icon && <Icon as={linkDetails.icon} mr={1.5} />}
+                    <Text
+                      as="span"
+                      style={!linkDetails.isKnownService ? {
+                        display: 'inline-block',
+                        maxWidth: '300px', // Adjust max width as needed for detail page
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      } : {}}
+                    >
+                      {linkDetails.displayText}
+                    </Text>
+                  </Link>
+                );
+              } else {
+                displayValue = cfValue.stringValue;
+              }
             } else if (fieldType === 'NUMBER' && cfValue.numberValue !== null && cfValue.numberValue !== undefined) {
               displayValue = cfValue.numberValue.toString();
             } else if (fieldType === 'BOOLEAN') {

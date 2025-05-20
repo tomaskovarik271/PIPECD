@@ -11,12 +11,13 @@ import { getCustomFieldDefinitionById } from '../customFieldDefinitionService';
 export const processCustomFieldsForCreate = async (
   customFieldsInput: CustomFieldValueInput[] | undefined | null,
   supabaseClient: SupabaseClient
-): Promise<Record<string, any> | null> => {
+): Promise<Record<string, any>> => {
+  const dbCustomFieldValues: Record<string, any> = {};
+
   if (!customFieldsInput || customFieldsInput.length === 0) {
-    return null;
+    return dbCustomFieldValues;
   }
 
-  const dbCustomFieldValues: Record<string, any> = {};
   console.log('[dealCustomFields.processCustomFieldsForCreate] Processing customFields input count:', customFieldsInput.length);
 
   for (const cfInput of customFieldsInput) {
@@ -47,7 +48,7 @@ export const processCustomFieldsForCreate = async (
   }
   
   console.log('[dealCustomFields.processCustomFieldsForCreate] Constructed dbCustomFieldValues:', JSON.stringify(dbCustomFieldValues, null, 2));
-  return Object.keys(dbCustomFieldValues).length > 0 ? dbCustomFieldValues : null;
+  return dbCustomFieldValues;
 };
 
 /**

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -14,13 +14,14 @@ import {
   Box,
   Button
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, SettingsIcon } from '@chakra-ui/icons';
+import { AddIcon, EditIcon, DeleteIcon, SettingsIcon, ViewIcon } from '@chakra-ui/icons';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
 import { useAppStore } from '../stores/useAppStore';
 import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
 import type { CustomFieldDefinition, CustomFieldValue, CustomFieldEntityType, CustomFieldType as GQLCustomFieldType } from '../generated/graphql/graphql';
 import { gqlClient } from '../lib/graphqlClient';
 import { gql } from 'graphql-request';
+import { Link as RouterLink } from 'react-router-dom';
 
 import CreatePersonForm from '../components/CreatePersonForm';
 import EditPersonForm from '../components/EditPersonForm';
@@ -74,6 +75,11 @@ function PeoplePage() {
 
   const [activeQuickFilterKey, setActiveQuickFilterKey] = useState<string | null>(null);
 
+  const handleEditClick = useCallback((person: Person) => {
+    setPersonToEdit(person);
+    onEditOpen();
+  }, [onEditOpen, setPersonToEdit]);
+
   // Define Quick Filters for People
   const availableQuickFilters = useMemo((): QuickFilter[] => [
     { key: 'all', label: 'All People' },
@@ -109,7 +115,10 @@ function PeoplePage() {
       { 
         key: 'name', 
         header: 'Name', 
-        renderCell: (person) => `${person.first_name || ''} ${person.last_name || ''}`.trim() || '-', 
+        renderCell: (person) => {
+          const name = `${person.first_name || ''} ${person.last_name || ''}`.trim() || '-';
+          return name;
+        },
         isSortable: true, 
         sortAccessor: (p) => `${p.first_name || ''} ${p.last_name || ''}`.toLowerCase().trim()
       },
@@ -198,11 +207,20 @@ function PeoplePage() {
       key: 'actions',
       header: 'Actions',
       renderCell: (person) => (
-        <HStack spacing={2}>
+        <HStack spacing={1}>
+          <IconButton
+            as={RouterLink}
+            to={`/people/${person.id}`}
+            aria-label="View person details"
+            icon={<ViewIcon />}
+            size="sm"
+            variant="ghost"
+          />
           <IconButton 
             icon={<EditIcon />} 
             aria-label="Edit person" 
             size="sm" 
+            variant="ghost"
             onClick={() => handleEditClick(person)} 
             isDisabled={!userPermissions?.includes('person:update_any') && !userPermissions?.includes('person:update_own')} 
           />
@@ -212,7 +230,7 @@ function PeoplePage() {
             size="sm" 
             variant="ghost"
             colorScheme="red" 
-            onClick={() => handleDeleteClick(person.id)} 
+            onClick={() => setPersonIdToDelete(person.id)} 
             isDisabled={!userPermissions?.includes('person:delete_any') && !userPermissions?.includes('person:delete_own')} 
           />
         </HStack>
@@ -221,15 +239,19 @@ function PeoplePage() {
     };
     
     return [...standardColumns, ...customFieldColumns, actionsColumn];
-  }, [personCustomFieldDefinitions, userPermissions]);
+  }, [personCustomFieldDefinitions, userPermissions, handleEditClick, setPersonIdToDelete]);
 
-  const defaultVisibleColumnKeys = useMemo(() => [
-    'name', 
-    'email', 
-    'phone', 
-    'organization',
-    'actions'
-  ], []);
+  const defaultVisibleColumnKeys = useMemo(() => {
+    const standardKeys = [
+      'name', 
+      'email', 
+      'phone', 
+      'organization',
+      'actions'
+    ];
+    const customFieldKeys = personCustomFieldDefinitions.map(def => `cf_${def.fieldName}`);
+    return [...standardKeys, ...customFieldKeys];
+  }, [personCustomFieldDefinitions]);
 
   useEffect(() => {
     if (allAvailableColumns.length > 0) {
@@ -243,16 +265,6 @@ function PeoplePage() {
     if (customFieldsLoading || allAvailableColumns.length === 0) return [];
     return allAvailableColumns.filter(col => currentVisibleColumnKeys.includes(String(col.key)));
   }, [allAvailableColumns, currentVisibleColumnKeys, customFieldsLoading]);
-
-  const handleEditClick = (person: Person) => {
-    setPersonToEdit(person);
-    onEditOpen();
-  };
-
-  const handleDeleteClick = (personId: string) => {
-    setPersonIdToDelete(personId);
-    onConfirmDeleteOpen();
-  };
 
   const handleConfirmDelete = async () => {
     if (personIdToDelete) {

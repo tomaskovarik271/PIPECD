@@ -29,6 +29,7 @@ import { usePeopleStore, Person } from '../stores/usePeopleStore';
 import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore';
 import { useStagesStore } from '../stores/useStagesStore';
+import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
 import type { DealInput, Stage } from '../generated/graphql/graphql';
 import { 
   CustomFieldDefinition, 
@@ -53,6 +54,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   const [initialStageId, setInitialStageId] = useState<string | null>(null);
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>(''); 
+  const [organizationId, setOrganizationId] = useState<string>('');
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
 
@@ -84,6 +86,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
 
   // People state from usePeopleStore
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
+  const { organizations, fetchOrganizations, organizationsLoading, organizationsError } = useOrganizationsStore();
 
   const [isLoading, setIsLoading] = useState(false); 
   const [error, setError] = useState<string | null>(null); 
@@ -92,12 +95,13 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     if (isOpen) {
       fetchPeople(); 
       fetchPipelines();
+      fetchOrganizations();
       // Fetch active custom field definitions for Deals
       fetchCustomFieldDefinitions(CustomFieldEntityType.Deal, false); 
       // Clear stages using useStagesStore when modal opens, before potentially fetching new ones
       useStagesStore.setState({ stages: [], stagesError: null, stagesLoading: false });
     }
-  }, [isOpen, fetchPeople, fetchPipelines, fetchCustomFieldDefinitions]); 
+  }, [isOpen, fetchPeople, fetchPipelines, fetchCustomFieldDefinitions, fetchOrganizations]); 
 
   useEffect(() => {
     if (deal) {
@@ -107,6 +111,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       setName(deal.name || '');
       setAmount(deal.amount != null ? String(deal.amount) : '');
       setPersonId(deal.person_id || ''); 
+      setOrganizationId(deal.organization_id || deal.organization?.id || '');
       setDealSpecificProbability(
         deal.deal_specific_probability != null 
           ? String(Math.round(deal.deal_specific_probability * 100)) 
@@ -189,6 +194,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
         setSelectedStageId('');
         setInitialPipelineId(null);
         setInitialStageId(null);
+        setOrganizationId('');
         setDealSpecificProbability('');
         setExpectedCloseDate('');
         // Reset custom field form values if deal is null
@@ -281,6 +287,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
         pipeline_id: selectedPipelineId,
         amount: amount ? parseFloat(amount) : undefined,
         person_id: personId || undefined,
+        organization_id: organizationId || undefined,
         expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : undefined,
       };
 
@@ -474,6 +481,23 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
               >
                 <NumberInputField placeholder="Optional (e.g., 75)" />
               </NumberInput>
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Link to Organization (Optional)</FormLabel>
+                <Select 
+                  placeholder={organizationsLoading ? 'Loading organizations...' : 'Select organization'}
+                  value={organizationId}
+                  onChange={(e) => setOrganizationId(e.target.value)}
+                  isDisabled={organizationsLoading || !!organizationsError}
+                >
+                 {!organizationsLoading && !organizationsError && Array.isArray(organizations) && organizations.map((org: Organization) => (
+                      <option key={org.id} value={org.id}>
+                        {org.name || `Org ID: ${org.id}`}
+                      </option>
+                  ))}
+                </Select>
+                {organizationsError && <FormErrorMessage>Error loading organizations: {organizationsError}</FormErrorMessage>}
             </FormControl>
 
             <FormControl>

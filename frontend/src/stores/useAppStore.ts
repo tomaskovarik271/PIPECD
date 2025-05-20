@@ -1,22 +1,26 @@
 import { create } from 'zustand';
-import type { Session, User } from '@supabase/supabase-js';
+import type { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { gqlClient } from '../lib/graphqlClient';
 import { gql } from 'graphql-request';
 import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
 import type {
-  Stage,
+  // Stage, // No longer needed if only Pipeline is exported by name
   Maybe,
   Pipeline,
   Deal as GraphQLDeal,
   DealHistoryEntry as GraphQLDealHistoryEntry,
   User as GraphQLUser
+  // Activity as GraphQLActivity, // Removed, handled by useActivitiesStore
+  // Person as GraphQLPerson, // Removed
+  // Organization as GraphQLOrganization // Removed
 } from '../generated/graphql/graphql';
 
 // Re-export core entity and input types for external use
 export type {
   Pipeline,
-  Maybe
+  Maybe,
+  // GraphQLActivity as Activity, // Removed, re-exported from useActivitiesStore if needed elsewhere
 };
 
 // --- GraphQL Queries/Mutations ---
@@ -80,22 +84,21 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
   }
 `;
 
-// Define a more specific type for the deal we expect from GetDealWithHistory
-// This helps with typing in the component that uses this data.
-// We can use Pick or extend GraphQLDeal if needed, but for now, let's assume this structure matches the query.
 export interface DealWithHistory extends GraphQLDeal {
     history: (Pick<GraphQLDealHistoryEntry, 'id' | 'eventType' | 'changes' | 'createdAt'> & {
         user: Pick<GraphQLUser, 'id' | 'email' | 'display_name'> | null;
     })[];
-    // Ensure other fields from the query like person, organization are also strongly typed if not already by GraphQLDeal
     person: GraphQLDeal['person'];
     organization: GraphQLDeal['organization'];
 }
 
+// Removed GET_ACTIVITY_BY_ID_QUERY
+// Removed ActivityWithDetails interface
+
 export interface AppState {
   // Auth
   session: Session | null;
-  user: User | null;
+  user: SupabaseUser | null; 
   isLoadingAuth: boolean;
   userPermissions: string[] | null;
   permissionsLoading: boolean;
@@ -109,13 +112,19 @@ export interface AppState {
   currentDealLoading: boolean;
   currentDealError: string | null;
   fetchDealById: (dealId: string) => Promise<void>; 
+
+  // Removed Current Activity Detail state
+  // currentActivity: ActivityWithDetails | null;
+  // currentActivityLoading: boolean;
+  // currentActivityError: string | null;
+  // fetchActivityById: (activityId: string) => Promise<void>;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Initial Auth State
   session: null,
   user: null,
-  isLoadingAuth: true, // Start with true, checkAuth will set it
+  isLoadingAuth: true, 
   userPermissions: null,
   permissionsLoading: false,
 
@@ -123,6 +132,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentDeal: null,
   currentDealLoading: false,
   currentDealError: null,
+
+  // Removed Initial Activity Detail State
+  // currentActivity: null,
+  // currentActivityLoading: false,
+  // currentActivityError: null,
 
   // Auth Action Implementations
   setSession: (session) => set({ session, user: session?.user ?? null, isLoadingAuth: false }),
@@ -133,33 +147,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (error) throw error;
       set({ session, user: session?.user ?? null, isLoadingAuth: false });
       if (session) {
-        // gqlClient.setHeader('Authorization', `Bearer ${session.access_token}`);
-        // Set up a listener for auth changes AFTER initial check
         supabase.auth.onAuthStateChange((_event, currentSession) => {
           set({ session: currentSession, user: currentSession?.user ?? null });
-          // if (currentSession?.access_token) {
-          //   gqlClient.setHeader('Authorization', `Bearer ${currentSession.access_token}`);
-          // } else {
-          //    gqlClient.setHeader('Authorization', '');
-          // }
           if (_event === 'SIGNED_IN' || _event === 'TOKEN_REFRESHED' || _event === 'USER_UPDATED') {
             get().fetchUserPermissions();
           }
           if (_event === 'SIGNED_OUT') {
             set({ userPermissions: null });
-            // gqlClient.setHeader('Authorization', '');
           }
         });
-        await get().fetchUserPermissions(); // Fetch initial permissions
+        await get().fetchUserPermissions();
       } else {
-        // No session, clear auth header and permissions
         set({ userPermissions: null });
-        // gqlClient.setHeader('Authorization', '');
       }
     } catch (error: any) {
       console.error('Auth check error:', error.message);
       set({ session: null, user: null, isLoadingAuth: false, userPermissions: null });
-      // gqlClient.setHeader('Authorization', '');
     }
   },
   handleSignOut: async () => {
@@ -167,7 +170,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await supabase.auth.signOut();
       set({ session: null, user: null, userPermissions: null, isLoadingAuth: false });
-      // gqlClient.setHeader('Authorization', '');
     } catch (error: any) {
       console.error('Sign out error:', error.message);
       set({ isLoadingAuth: false });
@@ -181,8 +183,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     set({ permissionsLoading: true });
     try {
-      // Ensure gqlClient has the latest token before this call specifically
-      // gqlClient.setHeader('Authorization', `Bearer ${session.access_token}`);
       const data = await gqlClient.request<{ myPermissions: string[] }>(GET_MY_PERMISSIONS_QUERY);
       set({ userPermissions: data.myPermissions || [], permissionsLoading: false });
     } catch (error) {
@@ -194,7 +194,6 @@ export const useAppStore = create<AppState>((set, get) => ({
         );
         if (authError) {
           console.warn("Permissions fetch failed due to auth error, potentially stale session.");
-          // Consider auto sign-out or token refresh attempt here if this becomes a recurring issue.
       }
     }
     }
@@ -220,7 +219,6 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.error(`Error fetching deal ${dealId}:`, error);
       let errorMessage = 'Failed to fetch deal details.';
       if (isGraphQLErrorWithMessage(error)) {
-        // Check for specific GraphQL errors (e.g., NOT_FOUND)
         const notFoundError = error.response?.errors?.find((e: any) => e.extensions?.code === 'NOT_FOUND');
         if (notFoundError) {
           errorMessage = 'Deal not found.';
@@ -233,6 +231,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ currentDealLoading: false, currentDealError: errorMessage, currentDeal: null });
     }
   },
+
+  // Removed fetchActivityById action
 }));
 
 // Initialize auth check when store is loaded (client-side only)

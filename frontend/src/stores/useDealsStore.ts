@@ -45,6 +45,10 @@ const GET_DEALS_QUERY = gql`
         email
       }
       organization_id
+      organization {
+        id
+        name
+      }
       user_id
       deal_specific_probability
       weighted_amount
@@ -59,6 +63,13 @@ const GET_DEALS_QUERY = gql`
         booleanValue
         dateValue
         selectedOptionValues
+      }
+      activities {
+        id
+        type
+        subject
+        due_date
+        is_done
       }
     }
   }

@@ -18,7 +18,8 @@ import {
   ModalContent,
   ModalHeader,
   ModalCloseButton,
-  Alert, AlertIcon
+  Alert, AlertIcon,
+  Link as ChakraLink,
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore';
 import { useActivitiesStore, Activity } from '../stores/useActivitiesStore';
@@ -27,12 +28,13 @@ import CreateActivityForm from '../components/activities/CreateActivityForm';
 import EmptyState from '../components/common/EmptyState';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import EditActivityModal from '../components/activities/EditActivityModal';
-import { TimeIcon, EditIcon, DeleteIcon, SettingsIcon } from '@chakra-ui/icons';
+import { TimeIcon, EditIcon, DeleteIcon, SettingsIcon, ViewIcon } from '@chakra-ui/icons';
 import ListPageLayout from '../components/layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import ColumnSelector from '../components/common/ColumnSelector';
 import QuickFilterControls, { QuickFilter } from '../components/common/QuickFilterControls';
 import type { ActivityFilterInput } from '../generated/graphql/graphql';
+import { Link as RouterLink } from 'react-router-dom';
 
 // Helper to check if a string is a URL (basic version)
 const isUrl = (str: string): boolean => {
@@ -280,6 +282,14 @@ function ActivitiesPage() {
           const canDelete = userPermissions?.includes('activity:delete_any') || (userPermissions?.includes('activity:delete_own') && activityItem.user_id === currentUserId);
           return (
             <HStack spacing={1}>
+              <IconButton
+                as={RouterLink}
+                to={`/activities/${activityItem.id}`}
+                aria-label="View activity details"
+                icon={<ViewIcon />}
+                size="sm"
+                variant="ghost"
+              />
               <IconButton
                 aria-label="Edit activity"
                 icon={<EditIcon />}

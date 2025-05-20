@@ -14,6 +14,10 @@ import type {
   Maybe,
   ActivityType,
   CustomFieldValue,
+  User,
+  Deal,
+  Person,
+  Organization,
 } from '../generated/graphql/graphql';
 
 // Re-export core Activity types for convenience if components need them
@@ -116,11 +120,56 @@ const DELETE_ACTIVITY_MUTATION = gql`
   }
 `;
 
+const GET_ACTIVITY_BY_ID_QUERY = gql`
+  query GetActivityById($id: ID!) {
+    activity(id: $id) {
+      id
+      type
+      subject
+      due_date
+      is_done
+      notes
+      created_at
+      updated_at
+      user { 
+        id
+        email 
+        display_name
+      }
+      deal { 
+        id
+        name
+      }
+      person { 
+        id
+        first_name
+        last_name
+      }
+      organization { 
+        id
+        name
+      }
+    }
+  }
+`;
+
+// Interface for single activity with details (aligns with GET_ACTIVITY_BY_ID_QUERY)
+export interface ActivityWithDetails extends Omit<Activity, 'user' | 'deal' | 'person' | 'organization'> {
+  user?: Maybe<Partial<Pick<User, 'id' | 'email' | 'display_name'> >>;
+  deal?: Maybe<Pick<Deal, 'id' | 'name'> >;
+  person?: Maybe<Pick<Person, 'id' | 'first_name' | 'last_name'> >;
+  organization?: Maybe<Pick<Organization, 'id' | 'name'> >;
+}
+
 // State Interface
 export interface ActivitiesState {
   activities: Activity[];
   activitiesLoading: boolean;
   activitiesError: string | null;
+  currentActivity: ActivityWithDetails | null;
+  currentActivityLoading: boolean;
+  currentActivityError: string | null;
+  fetchActivityById: (activityId: string) => Promise<void>;
   fetchActivities: (filter?: GeneratedActivityFilterInput) => Promise<void>;
   createActivity: (input: GeneratedCreateActivityInput) => Promise<Activity | null>;
   updateActivity: (id: string, input: GeneratedUpdateActivityInput) => Promise<Activity | null>;
@@ -132,6 +181,9 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
   activities: [],
   activitiesLoading: false,
   activitiesError: null,
+  currentActivity: null,
+  currentActivityLoading: false,
+  currentActivityError: null,
 
   fetchActivities: async (filter?: GeneratedActivityFilterInput) => {
     set({ activitiesLoading: true, activitiesError: null });
@@ -257,6 +309,27 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       }
       set({ activities: originalActivities, activitiesError: message }); // Revert optimistic update
       return false;
+    }
+  },
+
+  fetchActivityById: async (activityId: string) => {
+    set({ currentActivityLoading: true, currentActivityError: null, currentActivity: null });
+    try {
+      type GetActivityByIdQueryResponse = { activity: ActivityWithDetails | null };
+      const response = await gqlClient.request<
+        GetActivityByIdQueryResponse,
+        { id: string } // Explicitly type variables for request
+      >(GET_ACTIVITY_BY_ID_QUERY, { id: activityId });
+      set({ currentActivity: response.activity || null, currentActivityLoading: false });
+    } catch (error: unknown) {
+      console.error(`Error fetching activity ${activityId}:`, error);
+      let message = `Failed to fetch activity ${activityId}`;
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+        message = error.response.errors[0].message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+      set({ currentActivityError: message, currentActivityLoading: false });
     }
   },
 }));

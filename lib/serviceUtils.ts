@@ -3,6 +3,15 @@ import { GraphQLError } from 'graphql';
 
 // --- Helper Functions ---
 
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Supabase URL or Anon Key is not defined in environment variables.');
+}
+
+export const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey);
+
 /**
  * Creates a Supabase client instance authenticated with the provided user access token.
  * This ensures RLS policies relying on auth.uid() are correctly enforced.
@@ -12,17 +21,21 @@ import { GraphQLError } from 'graphql';
  * @throws Error if SUPABASE_URL or SUPABASE_ANON_KEY are not set.
  */
 export function getAuthenticatedClient(accessToken: string): SupabaseClient {
-  console.log('[getAuthenticatedClient] AccessToken:', accessToken); // DEBUG LOG
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    // Throw a configuration error if essential env vars are missing
-    throw new Error('Server configuration error: Supabase URL or Anon Key is not set.');
-  }
-  return createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    // auth: { persistSession: false } // Ensure no session persistence on server-side clients
+  // console.log('[getAuthenticatedClient] AccessToken:', accessToken); // DEBUG LOG
+  // Create a new Supabase client with the user's access token
+  return createClient(supabaseUrl!, supabaseAnonKey!, {
+    global: {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+    auth: {
+      // It's important to disable auto-refreshing of tokens for a client that is specific to a single request.
+      // The token is already short-lived and managed by the frontend/auth provider.
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false
+    }
   });
 }
 

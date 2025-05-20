@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Heading,
@@ -15,10 +15,12 @@ import {
   VStack,
   Flex,
   ButtonGroup,
+  Link,
+  Icon,
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
-import { EditIcon, DeleteIcon, ViewIcon, SettingsIcon } from '@chakra-ui/icons';
+import { EditIcon, DeleteIcon, ViewIcon, SettingsIcon, LinkIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
@@ -34,12 +36,42 @@ import DealsKanbanView from '../components/deals/DealsKanbanView';
 import QuickFilterControls, { QuickFilter } from '../components/common/QuickFilterControls';
 import type { StageType } from '../generated/graphql/graphql';
 
-const isUrl = (str: string): boolean => {
+interface LinkDisplayDetails {
+  isUrl: boolean;
+  displayText: string;
+  fullUrl?: string;
+  isKnownService?: boolean;
+  icon?: React.ElementType;
+}
+
+const getLinkDisplayDetails = (str: string | null | undefined): LinkDisplayDetails => {
+  if (!str) return { isUrl: false, displayText: '-' };
+
   try {
-    new URL(str);
-    return str.startsWith('http://') || str.startsWith('https://');
+    const url = new URL(str);
+    if (!(url.protocol === 'http:' || url.protocol === 'https:')) {
+      return { isUrl: false, displayText: str }; // Not a http/https URL
+    }
+
+    if (url.hostname.includes('docs.google.com')) {
+      if (url.pathname.includes('/spreadsheets/')) {
+        return { isUrl: true, displayText: 'Google Sheet', fullUrl: str, isKnownService: true, icon: LinkIcon };
+      }
+      if (url.pathname.includes('/document/')) {
+        return { isUrl: true, displayText: 'Google Doc', fullUrl: str, isKnownService: true, icon: LinkIcon };
+      }
+      if (url.pathname.includes('/presentation/') || url.pathname.includes('/drawings/')) {
+        return { isUrl: true, displayText: 'Google Slides/Drawing', fullUrl: str, isKnownService: true, icon: LinkIcon };
+      }
+      // Add more Google services if needed
+    }
+    // Add other known services here, e.g., Dropbox, Figma, etc.
+    
+    // For generic URLs, prepare for truncation
+    return { isUrl: true, displayText: str, fullUrl: str, isKnownService: false };
+
   } catch (_) {
-    return false;
+    return { isUrl: false, displayText: str }; // Not a valid URL
   }
 };
 
@@ -179,9 +211,34 @@ function DealsPage() {
 
         switch (def.fieldType) {
           case 'TEXT': 
-            displayValue = stringValue || '-'; 
-            if (stringValue && isUrl(stringValue)) {
-              displayValue = <a href={stringValue} target="_blank" rel="noopener noreferrer" style={{color: 'blue.500', textDecoration: 'underline'}}>{stringValue}</a>;
+            const linkDetails = getLinkDisplayDetails(stringValue);
+            if (linkDetails.isUrl && linkDetails.fullUrl) {
+              displayValue = (
+                <Link 
+                  href={linkDetails.fullUrl} 
+                  isExternal
+                  color={{ base: 'blue.500', _dark: 'blue.300' }}
+                  textDecoration="underline"
+                  display="inline-flex"
+                  alignItems="center"
+                >
+                  {linkDetails.icon && <Icon as={linkDetails.icon} mr={1.5} />}
+                  <Text
+                    as="span"
+                    style={!linkDetails.isKnownService ? {
+                      display: 'inline-block',
+                      maxWidth: '200px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    } : { /* verticalAlign: 'bottom' */ } }
+                  >
+                    {linkDetails.displayText}
+                  </Text>
+                </Link>
+              );
+            } else {
+              displayValue = stringValue || '-'; 
             }
             break;
           case 'NUMBER': displayValue = numberValue?.toString() ?? '-'; break;
@@ -207,7 +264,7 @@ function DealsPage() {
       header: 'Actions',
       renderCell: (deal) => (
         <HStack spacing={2}>
-          <IconButton as={Link} to={`/deals/${deal.id}`} aria-label="View deal" icon={<ViewIcon />} size="sm" variant="ghost" />
+          <IconButton as={RouterLink} to={`/deals/${deal.id}`} aria-label="View deal" icon={<ViewIcon />} size="sm" variant="ghost" />
           <IconButton 
             aria-label="Edit deal" 
             icon={<EditIcon />} 

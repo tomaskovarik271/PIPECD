@@ -78,10 +78,16 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
   const finalInsertPayload: any = {
     ...explicitDealCoreData,
     user_id: userId,
-    custom_field_values: processedCustomFields, // This can be null
+    custom_field_values: processedCustomFields, 
   };
 
-  console.log('[dealCrud.createDeal] Final insert payload for Supabase:', JSON.stringify(finalInsertPayload, null, 2));
+  // Enhanced logging before insert
+  console.log(
+    '[dealCrud.createDeal] Preparing to insert. finalInsertPayload:',
+    JSON.stringify(finalInsertPayload, null, 2),
+    'Type of custom_field_values:', typeof finalInsertPayload.custom_field_values,
+    'Is custom_field_values null?', finalInsertPayload.custom_field_values === null
+  );
 
   const { data: newDealRecord, error } = await supabase
     .from('deals')

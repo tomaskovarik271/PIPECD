@@ -5,10 +5,12 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import DealsPage from './pages/DealsPage';
 import PeoplePage from './pages/PeoplePage';
+import PersonDetailPage from './pages/PersonDetailPage';
 import OrganizationsPage from './pages/OrganizationsPage'; 
 import PipelinesPage from './pages/PipelinesPage';
 import StagesPage from './pages/StagesPage';
 import ActivitiesPage from './pages/ActivitiesPage';
+import ActivityDetailPage from './pages/ActivityDetailPage';
 import DealDetailPage from './pages/DealDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import CustomFieldsPage from './pages/admin/CustomFieldsPage';
@@ -31,12 +33,14 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Heading size="lg">Home</Heading>} />
             <Route path="/people" element={<PeoplePage />} />
+            <Route path="/people/:personId" element={<PersonDetailPage />} />
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/deals/:dealId" element={<DealDetailPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
             <Route path="/pipelines" element={<PipelinesPage />} />
             <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
+            <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
             <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
