@@ -9,7 +9,7 @@ import {
   CheckCircleIcon,   // Deals (Represents closing deal?)
   CalendarIcon,      // Activities (Represents scheduling?)
   ArrowRightIcon,    // Pipelines (Represents flow?)
-  // ViewIcon, // Placeholder for Deals
+  ViewIcon, // Added ViewIcon for Project Board
   // StarIcon, // Placeholder for People
   // LockIcon, // Placeholder for Organizations
   // CopyIcon, // Placeholder for Pipelines
@@ -39,6 +39,8 @@ const NAV_ITEMS = [
 // Added Admin Nav Items
 const ADMIN_NAV_ITEMS = [
   { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon /> },
+  { path: '/admin/wfm', label: 'Workflow Management', icon: <SettingsIcon /> }, // Main WFM link
+  { path: '/project-board', label: 'Project Board', icon: <ViewIcon /> }, // Added Project Board link
 ];
 
 // User specific items (like profile) can be separate or at the end of NAV_ITEMS

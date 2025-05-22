@@ -30,10 +30,13 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Optional: For operations requiring elevated privileges (use with extreme caution!)
 // Ensure SERVICE_ROLE_KEY is set if you uncomment this
-/*
+
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseServiceRoleKey) {
-  console.warn('SUPABASE_SERVICE_ROLE_KEY not set. Admin client will not be available.');
+  // Changed from console.warn to throw an error if not set, as it might be critical for some operations
+  // Or, keep as console.warn if the admin client is truly optional for most of the app.
+  // For getServiceLevelUserProfileData to work as intended, it is now required.
+  console.warn('SUPABASE_SERVICE_ROLE_KEY not set. Admin client will not be available. Some user data lookups will fail.');
 }
 export const supabaseAdmin = supabaseServiceRoleKey
   ? createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -42,5 +45,4 @@ export const supabaseAdmin = supabaseServiceRoleKey
         persistSession: false,
       },
     })
-  : null;
-*/ 
+  : null; 

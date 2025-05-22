@@ -14,6 +14,11 @@ import ActivityDetailPage from './pages/ActivityDetailPage';
 import DealDetailPage from './pages/DealDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import CustomFieldsPage from './pages/admin/CustomFieldsPage';
+import WfmAdminPage from './pages/admin/WfmAdminPage';
+import WFMStatusesPage from './pages/admin/WFMStatusesPage';
+import WFMWorkflowsPage from './pages/admin/WFMWorkflowsPage';
+import WFMProjectTypesPage from './pages/admin/WFMProjectTypesPage';
+import ProjectBoardPage from './pages/ProjectBoardPage';
 import { 
   Box, 
   Heading, 
@@ -43,6 +48,13 @@ function AppContent() {
             <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
+            <Route path="/admin/wfm" element={<WfmAdminPage />}>
+              <Route index element={<WFMStatusesPage />} />
+              <Route path="statuses" element={<WFMStatusesPage />} />
+              <Route path="workflows" element={<WFMWorkflowsPage />} />
+              <Route path="project-types" element={<WFMProjectTypesPage />} />
+            </Route>
+            <Route path="/project-board" element={<ProjectBoardPage />} />
             <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
           </Routes>
     </Box>

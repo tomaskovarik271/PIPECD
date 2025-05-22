@@ -65,11 +65,6 @@ export enum ActivityType {
   Task = "TASK",
 }
 
-export type AddTeamMembersInput = {
-  memberUserIds: Array<Scalars["ID"]["input"]>;
-  teamId: Scalars["ID"]["input"];
-};
-
 /** Represents an additional cost item associated with a price quote. */
 export type AdditionalCost = {
   __typename?: "AdditionalCost";
@@ -105,11 +100,38 @@ export type CreateStageInput = {
   stage_type?: InputMaybe<StageType>;
 };
 
-export type CreateTeamInput = {
+export type CreateWfmProjectTypeInput = {
+  defaultWorkflowId?: InputMaybe<Scalars["ID"]["input"]>;
   description?: InputMaybe<Scalars["String"]["input"]>;
-  memberUserIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  iconName?: InputMaybe<Scalars["String"]["input"]>;
   name: Scalars["String"]["input"];
-  teamLeadUserId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type CreateWfmStatusInput = {
+  color?: InputMaybe<Scalars["String"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  name: Scalars["String"]["input"];
+};
+
+export type CreateWfmWorkflowInput = {
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  name: Scalars["String"]["input"];
+};
+
+export type CreateWfmWorkflowStepInput = {
+  isFinalStep?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isInitialStep?: InputMaybe<Scalars["Boolean"]["input"]>;
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  statusId: Scalars["ID"]["input"];
+  stepOrder: Scalars["Int"]["input"];
+  workflowId: Scalars["ID"]["input"];
+};
+
+export type CreateWfmWorkflowTransitionInput = {
+  fromStepId: Scalars["ID"]["input"];
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  toStepId: Scalars["ID"]["input"];
+  workflowId: Scalars["ID"]["input"];
 };
 
 export type CustomFieldDefinition = {
@@ -257,8 +279,6 @@ export type InvoiceScheduleEntry = {
 
 export type Mutation = {
   __typename?: "Mutation";
-  /** Adds members to a team. */
-  addTeamMembers: TeamWithMembers;
   /** Calculates a preview of a price quote. dealId is optional. */
   calculatePriceQuotePreview: PriceQuote;
   createActivity: Activity;
@@ -270,8 +290,11 @@ export type Mutation = {
   /** Creates a new price quote for a given deal. */
   createPriceQuote: PriceQuote;
   createStage: Stage;
-  /** Creates a new team. */
-  createTeam: Team;
+  createWFMProjectType: WfmProjectType;
+  createWFMStatus: WfmStatus;
+  createWFMWorkflow: WfmWorkflow;
+  createWFMWorkflowStep: WfmWorkflowStep;
+  createWFMWorkflowTransition: WfmWorkflowTransition;
   deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteActivity: Scalars["ID"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
@@ -281,11 +304,10 @@ export type Mutation = {
   /** Deletes a price quote. */
   deletePriceQuote?: Maybe<Scalars["Boolean"]["output"]>;
   deleteStage: Scalars["Boolean"]["output"];
-  /** Deletes a team. */
-  deleteTeam: Scalars["Boolean"]["output"];
+  deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
+  deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
+  deleteWfmStatus: WfmStatusMutationResponse;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
-  /** Removes members from a team. */
-  removeTeamMembers: TeamWithMembers;
   updateActivity: Activity;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
@@ -295,14 +317,14 @@ export type Mutation = {
   /** Updates an existing price quote. */
   updatePriceQuote: PriceQuote;
   updateStage: Stage;
-  /** Updates an existing team. */
-  updateTeam: Team;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
-};
-
-export type MutationAddTeamMembersArgs = {
-  input: AddTeamMembersInput;
+  updateWFMProjectType: WfmProjectType;
+  updateWFMStatus: WfmStatus;
+  updateWFMWorkflow: WfmWorkflow;
+  updateWFMWorkflowStep: WfmWorkflowStep;
+  updateWFMWorkflowStepsOrder?: Maybe<WfmWorkflow>;
+  updateWFMWorkflowTransition: WfmWorkflowTransition;
 };
 
 export type MutationCalculatePriceQuotePreviewArgs = {
@@ -343,8 +365,24 @@ export type MutationCreateStageArgs = {
   input: CreateStageInput;
 };
 
-export type MutationCreateTeamArgs = {
-  input: CreateTeamInput;
+export type MutationCreateWfmProjectTypeArgs = {
+  input: CreateWfmProjectTypeInput;
+};
+
+export type MutationCreateWfmStatusArgs = {
+  input: CreateWfmStatusInput;
+};
+
+export type MutationCreateWfmWorkflowArgs = {
+  input: CreateWfmWorkflowInput;
+};
+
+export type MutationCreateWfmWorkflowStepArgs = {
+  input: CreateWfmWorkflowStepInput;
+};
+
+export type MutationCreateWfmWorkflowTransitionArgs = {
+  input: CreateWfmWorkflowTransitionInput;
 };
 
 export type MutationDeactivateCustomFieldDefinitionArgs = {
@@ -379,16 +417,20 @@ export type MutationDeleteStageArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type MutationDeleteTeamArgs = {
+export type MutationDeleteWfmWorkflowStepArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteWfmWorkflowTransitionArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteWfmStatusArgs = {
   id: Scalars["ID"]["input"];
 };
 
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
-};
-
-export type MutationRemoveTeamMembersArgs = {
-  input: RemoveTeamMembersInput;
 };
 
 export type MutationUpdateActivityArgs = {
@@ -431,13 +473,38 @@ export type MutationUpdateStageArgs = {
   input: UpdateStageInput;
 };
 
-export type MutationUpdateTeamArgs = {
-  id: Scalars["ID"]["input"];
-  input: UpdateTeamInput;
-};
-
 export type MutationUpdateUserProfileArgs = {
   input: UpdateUserProfileInput;
+};
+
+export type MutationUpdateWfmProjectTypeArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmProjectTypeInput;
+};
+
+export type MutationUpdateWfmStatusArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmStatusInput;
+};
+
+export type MutationUpdateWfmWorkflowArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmWorkflowInput;
+};
+
+export type MutationUpdateWfmWorkflowStepArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmWorkflowStepInput;
+};
+
+export type MutationUpdateWfmWorkflowStepsOrderArgs = {
+  orderedStepIds: Array<Scalars["ID"]["input"]>;
+  workflowId: Scalars["ID"]["input"];
+};
+
+export type MutationUpdateWfmWorkflowTransitionArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmWorkflowTransitionInput;
 };
 
 /** Defines the Organization type and related queries/mutations. */
@@ -603,11 +670,7 @@ export type Query = {
   deals: Array<Deal>;
   health: Scalars["String"]["output"];
   me?: Maybe<User>;
-  /** Fetches all teams the currently authenticated user leads. */
-  myLedTeams: Array<Team>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
-  /** Fetches all teams the currently authenticated user is a member of. */
-  myTeams: Array<Team>;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
   people: Array<Person>;
@@ -621,10 +684,12 @@ export type Query = {
   stage?: Maybe<Stage>;
   stages: Array<Stage>;
   supabaseConnectionTest: Scalars["String"]["output"];
-  /** Fetches a specific team by ID, including its members. */
-  team?: Maybe<TeamWithMembers>;
-  /** Fetches all teams accessible to the current user (admins see all, leads see their teams, members see teams they belong to). */
-  teams: Array<Team>;
+  wfmProjectType?: Maybe<WfmProjectType>;
+  wfmProjectTypes: Array<WfmProjectType>;
+  wfmStatus?: Maybe<WfmStatus>;
+  wfmStatuses: Array<WfmStatus>;
+  wfmWorkflow?: Maybe<WfmWorkflow>;
+  wfmWorkflows: Array<WfmWorkflow>;
 };
 
 export type QueryActivitiesArgs = {
@@ -672,13 +737,28 @@ export type QueryStagesArgs = {
   pipelineId: Scalars["ID"]["input"];
 };
 
-export type QueryTeamArgs = {
+export type QueryWfmProjectTypeArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type RemoveTeamMembersInput = {
-  memberUserIds: Array<Scalars["ID"]["input"]>;
-  teamId: Scalars["ID"]["input"];
+export type QueryWfmProjectTypesArgs = {
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+};
+
+export type QueryWfmStatusArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryWfmStatusesArgs = {
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+};
+
+export type QueryWfmWorkflowArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryWfmWorkflowsArgs = {
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type Stage = {
@@ -701,48 +781,6 @@ export enum StageType {
   Won = "WON",
 }
 
-/** GraphQL schema for Teams functionality */
-export type Team = {
-  __typename?: "Team";
-  createdAt: Scalars["DateTime"]["output"];
-  createdBy?: Maybe<User>;
-  description?: Maybe<Scalars["String"]["output"]>;
-  id: Scalars["ID"]["output"];
-  members: Array<User>;
-  name: Scalars["String"]["output"];
-  teamLead?: Maybe<User>;
-  updatedAt: Scalars["DateTime"]["output"];
-};
-
-/** Represents a user's membership in a team, primarily for paginated member lists. */
-export type TeamMemberEdge = {
-  __typename?: "TeamMemberEdge";
-  joinedAt: Scalars["DateTime"]["output"];
-  user: User;
-};
-
-/** Connection type for paginated lists of team members. */
-export type TeamMembersConnection = {
-  __typename?: "TeamMembersConnection";
-  edges: Array<TeamMemberEdge>;
-};
-
-/**
- * Comprehensive Team object, potentially including paginated member lists.
- * Used when fetching a single team's details.
- */
-export type TeamWithMembers = {
-  __typename?: "TeamWithMembers";
-  createdAt: Scalars["DateTime"]["output"];
-  createdBy?: Maybe<User>;
-  description?: Maybe<Scalars["String"]["output"]>;
-  id: Scalars["ID"]["output"];
-  membersConnection: TeamMembersConnection;
-  name: Scalars["String"]["output"];
-  teamLead?: Maybe<User>;
-  updatedAt: Scalars["DateTime"]["output"];
-};
-
 export type UpdateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -761,12 +799,6 @@ export type UpdateStageInput = {
   stage_type?: InputMaybe<StageType>;
 };
 
-export type UpdateTeamInput = {
-  description?: InputMaybe<Scalars["String"]["input"]>;
-  name?: InputMaybe<Scalars["String"]["input"]>;
-  teamLeadUserId?: InputMaybe<Scalars["ID"]["input"]>;
-};
-
 /**
  * Input type for updating a user's profile.
  * Only fields intended for update should be included.
@@ -778,10 +810,127 @@ export type UpdateUserProfileInput = {
   display_name?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type UpdateWfmProjectTypeInput = {
+  defaultWorkflowId?: InputMaybe<Scalars["ID"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  iconName?: InputMaybe<Scalars["String"]["input"]>;
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UpdateWfmStatusInput = {
+  color?: InputMaybe<Scalars["String"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UpdateWfmWorkflowInput = {
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UpdateWfmWorkflowStepInput = {
+  isFinalStep?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isInitialStep?: InputMaybe<Scalars["Boolean"]["input"]>;
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  statusId?: InputMaybe<Scalars["ID"]["input"]>;
+  stepOrder?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type UpdateWfmWorkflowTransitionInput = {
+  name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type User = {
   __typename?: "User";
   avatar_url?: Maybe<Scalars["String"]["output"]>;
   display_name?: Maybe<Scalars["String"]["output"]>;
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+};
+
+export type WfmProjectType = {
+  __typename?: "WFMProjectType";
+  createdAt: Scalars["DateTime"]["output"];
+  createdByUser?: Maybe<User>;
+  defaultWorkflow?: Maybe<WfmWorkflow>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  iconName?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isArchived: Scalars["Boolean"]["output"];
+  name: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  updatedByUser?: Maybe<User>;
+};
+
+export type WfmStatus = {
+  __typename?: "WFMStatus";
+  color?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  createdByUser?: Maybe<User>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isArchived: Scalars["Boolean"]["output"];
+  name: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  updatedByUser?: Maybe<User>;
+};
+
+export type WfmStatusMutationResponse = {
+  __typename?: "WFMStatusMutationResponse";
+  message?: Maybe<Scalars["String"]["output"]>;
+  status?: Maybe<WfmStatus>;
+  success: Scalars["Boolean"]["output"];
+};
+
+export type WfmWorkflow = {
+  __typename?: "WFMWorkflow";
+  createdAt: Scalars["DateTime"]["output"];
+  createdByUser?: Maybe<User>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isArchived: Scalars["Boolean"]["output"];
+  name: Scalars["String"]["output"];
+  steps?: Maybe<Array<WfmWorkflowStep>>;
+  transitions?: Maybe<Array<WfmWorkflowTransition>>;
+  updatedAt: Scalars["DateTime"]["output"];
+  updatedByUser?: Maybe<User>;
+};
+
+export type WfmWorkflowStep = {
+  __typename?: "WFMWorkflowStep";
+  createdAt: Scalars["DateTime"]["output"];
+  id: Scalars["ID"]["output"];
+  isFinalStep: Scalars["Boolean"]["output"];
+  isInitialStep: Scalars["Boolean"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  status: WfmStatus;
+  stepOrder: Scalars["Int"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type WfmWorkflowStepMutationResponse = {
+  __typename?: "WFMWorkflowStepMutationResponse";
+  message?: Maybe<Scalars["String"]["output"]>;
+  stepId?: Maybe<Scalars["ID"]["output"]>;
+  success: Scalars["Boolean"]["output"];
+};
+
+export type WfmWorkflowTransition = {
+  __typename?: "WFMWorkflowTransition";
+  createdAt: Scalars["DateTime"]["output"];
+  fromStep: WfmWorkflowStep;
+  id: Scalars["ID"]["output"];
+  name?: Maybe<Scalars["String"]["output"]>;
+  toStep: WfmWorkflowStep;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type WfmWorkflowTransitionMutationResponse = {
+  __typename?: "WFMWorkflowTransitionMutationResponse";
+  message?: Maybe<Scalars["String"]["output"]>;
+  success: Scalars["Boolean"]["output"];
+  transitionId?: Maybe<Scalars["ID"]["output"]>;
 };

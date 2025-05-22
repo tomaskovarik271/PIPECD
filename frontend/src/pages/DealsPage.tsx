@@ -447,7 +447,16 @@ function DealsPage() {
       {/* Modals and Dialogs are siblings to the view content */}
       <CreateDealModal isOpen={isCreateModalOpen} onClose={onCreateModalClose} onDealCreated={handleDataChanged} />
       {isEditModalOpen && dealToEdit && <EditDealModal deal={dealToEdit} isOpen={isEditModalOpen} onClose={onEditModalClose} onDealUpdated={handleDataChanged} />}
-      <ConfirmationDialog isOpen={isConfirmDeleteDialogOpen} onClose={onConfirmDeleteClose} onConfirm={handleConfirmDelete} headerText="Delete Deal" bodyText="Are you sure you want to delete this deal?" confirmButtonText="Delete" confirmButtonColorScheme="red" />
+      <ConfirmationDialog 
+        isOpen={isConfirmDeleteDialogOpen} 
+        onClose={onConfirmDeleteClose} 
+        onConfirm={handleConfirmDelete} 
+        title="Delete Deal"
+        body="Are you sure you want to delete this deal?"
+        confirmButtonText="Delete" 
+        confirmButtonColor="red" 
+        isConfirmLoading={!!deletingRowId}
+      />
       
       {isColumnSelectorOpen && allAvailableColumns.length > 0 && dealsViewMode === 'table' && (
         <ColumnSelector<Deal>

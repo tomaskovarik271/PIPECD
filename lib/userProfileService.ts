@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { supabase, supabaseAdmin } from './supabaseClient';
 import type { UpdateUserProfileInput } from './generated/graphql'; // Adjust path as necessary based on final codegen output location
 import { getAuthenticatedClient } from './serviceUtils'; // ADDED: Import for authenticated client
 import type { SupabaseClient } from '@supabase/supabase-js'; // ADDED: For type safety
@@ -37,27 +37,30 @@ export const getServiceLevelUserProfileData = async (userId: string): Promise<Se
   console.log(`[userProfileService] getServiceLevelUserProfileData: Fetching data for user_id: ${userId}`);
 
   // Fetch email from auth.users table
-  // Assuming 'supabase' client has appropriate (e.g. service_role) permissions
-  const { data: authUser, error: authError } = await supabase
-    .from('users') // Correct table name in auth schema is 'users'
-    .select('email')
-    .eq('id', userId)
-    .single();
+  let email: string;
+  try {
+    if (!supabaseAdmin) {
+      console.error('[userProfileService] Supabase Admin client is not available. Ensure SUPABASE_SERVICE_ROLE_KEY is set and the server has restarted.');
+      return null;
+    }
+    // Use the admin API to get user details, which includes email and works across schemas correctly.
+    // This requires the Supabase client to be initialized with the service_role key.
+    const { data: userResponse, error: adminUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
 
-  if (authError) {
-    console.error(`[userProfileService] getServiceLevelUserProfileData: Error fetching email from auth.users for ${userId}:`, authError.message);
-    // Don't throw, allow profile fetching to proceed if desired, or return null
-    // For now, if email can't be fetched, we can't satisfy GraphQL User.email!
+    if (adminUserError) {
+      console.error(`[userProfileService] getServiceLevelUserProfileData: Error fetching user with supabase.auth.admin.getUserById for ${userId}:`, adminUserError.message);
+      return null;
+    }
+    // Check if user and user.email exist. Log the user object if email is missing for more context.
+    if (!userResponse?.user || !userResponse.user.email) {
+      console.warn(`[userProfileService] getServiceLevelUserProfileData: User not found via admin API or email is null for ${userId}. User object:`, userResponse?.user);
+      return null; 
+    }
+    email = userResponse.user.email;
+  } catch (e: any) {
+    console.error(`[userProfileService] getServiceLevelUserProfileData: Exception during supabase.auth.admin.getUserById for ${userId}:`, e.message);
     return null;
   }
-
-  if (!authUser || !authUser.email) {
-    console.warn(`[userProfileService] getServiceLevelUserProfileData: User not found in auth.users or email is null for ${userId}.`);
-    // This is critical if GraphQL User.email is non-nullable.
-    return null; 
-  }
-
-  const email = authUser.email;
 
   // Fetch display_name and avatar_url from user_profiles table
   const { data: profileData, error: profileError } = await supabase

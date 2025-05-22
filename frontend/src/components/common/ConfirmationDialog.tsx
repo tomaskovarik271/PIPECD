@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import {
   AlertDialog,
   AlertDialogBody,
@@ -12,55 +12,52 @@ import {
 interface ConfirmationDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void; // Consider making async if needed by caller
-  headerText: string;
-  bodyText: string;
+  onConfirm: () => void;
+  title: string;
+  body: string;
   confirmButtonText?: string;
-  confirmButtonColorScheme?: string;
   cancelButtonText?: string;
-  isLoading?: boolean;
+  confirmButtonColor?: string;
+  leastDestructiveRef?: React.RefObject<any>;
+  isConfirmLoading?: boolean;
 }
 
-function ConfirmationDialog({
+const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,
-  headerText,
-  bodyText,
+  title,
+  body,
   confirmButtonText = 'Confirm',
-  confirmButtonColorScheme = 'red',
   cancelButtonText = 'Cancel',
-  isLoading = false,
-}: ConfirmationDialogProps) {
-  const cancelRef = useRef<HTMLButtonElement>(null);
+  confirmButtonColor = 'red',
+  leastDestructiveRef,
+  isConfirmLoading = false,
+}) => {
+  const cancelRef = leastDestructiveRef || React.createRef<HTMLButtonElement>();
 
   return (
     <AlertDialog
       isOpen={isOpen}
-      leastDestructiveRef={cancelRef} // Focuses cancel button by default
+      leastDestructiveRef={cancelRef}
       onClose={onClose}
-      isCentered // Center the dialog
+      isCentered
     >
       <AlertDialogOverlay>
         <AlertDialogContent>
           <AlertDialogHeader fontSize="lg" fontWeight="bold">
-            {headerText}
+            {title}
           </AlertDialogHeader>
 
           <AlertDialogBody>
-            {bodyText}
+            {body}
           </AlertDialogBody>
 
           <AlertDialogFooter>
-            <Button ref={cancelRef} onClick={onClose} isDisabled={isLoading}>
+            <Button ref={cancelRef} onClick={onClose} isDisabled={isConfirmLoading}>
               {cancelButtonText}
             </Button>
-            <Button 
-              colorScheme={confirmButtonColorScheme} 
-              onClick={onConfirm} 
-              ml={3}
-              isLoading={isLoading}
-            >
+            <Button colorScheme={confirmButtonColor} onClick={onConfirm} ml={3} isLoading={isConfirmLoading}>
               {confirmButtonText}
             </Button>
           </AlertDialogFooter>
@@ -68,6 +65,6 @@ function ConfirmationDialog({
       </AlertDialogOverlay>
     </AlertDialog>
   );
-}
+};
 
 export default ConfirmationDialog; 

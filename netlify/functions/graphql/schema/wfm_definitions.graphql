@@ -1,0 +1,197 @@
+# In netlify/functions/graphql/schema/wfm_definitions.graphql
+
+type WFMStatus {
+  id: ID!
+  name: String!
+  description: String
+  color: String
+  isArchived: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdByUser: User # Assuming a User type exists and can be resolved
+  updatedByUser: User # Assuming a User type exists and can be resolved
+}
+
+type WFMWorkflow {
+  id: ID!
+  name: String!
+  description: String
+  isArchived: Boolean!
+  steps: [WFMWorkflowStep!] # Resolver needed
+  transitions: [WFMWorkflowTransition!] # Resolver needed
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdByUser: User
+  updatedByUser: User
+}
+
+type WFMWorkflowStep {
+  id: ID!
+  # workflow: WFMWorkflow! # Avoid circular dependency or resolve carefully if needed
+  status: WFMStatus! # Resolver needed to link status_id to WFMStatus
+  stepOrder: Int!
+  isInitialStep: Boolean!
+  isFinalStep: Boolean!
+  metadata: JSON # Assuming JSON scalar is defined
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type WFMWorkflowTransition {
+  id: ID!
+  # workflow: WFMWorkflow! # Avoid circular dependency
+  fromStep: WFMWorkflowStep! # Resolver needed
+  toStep: WFMWorkflowStep!   # Resolver needed
+  name: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type WFMProjectType {
+  id: ID!
+  name: String!
+  description: String
+  defaultWorkflow: WFMWorkflow # Resolver needed to link default_workflow_id
+  iconName: String
+  isArchived: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdByUser: User
+  updatedByUser: User
+}
+
+# --- Input Types ---
+
+input CreateWFMStatusInput {
+  name: String!
+  description: String
+  color: String
+}
+
+input UpdateWFMStatusInput {
+  name: String
+  description: String
+  color: String
+  isArchived: Boolean
+}
+
+input CreateWFMWorkflowInput {
+  name: String!
+  description: String
+}
+
+input UpdateWFMWorkflowInput {
+  name: String
+  description: String
+  isArchived: Boolean
+}
+
+input CreateWFMWorkflowStepInput {
+  workflowId: ID!
+  statusId: ID!
+  stepOrder: Int!
+  isInitialStep: Boolean
+  isFinalStep: Boolean
+  metadata: JSON
+}
+
+input UpdateWFMWorkflowStepInput {
+  # workflowId and statusId are part of the unique key, typically not updatable directly
+  # For reordering or changing status, might involve deleting and recreating, or specific mutations
+  statusId: ID # Added to allow changing the step's status
+  stepOrder: Int
+  isInitialStep: Boolean
+  isFinalStep: Boolean
+  metadata: JSON
+}
+
+input CreateWFMWorkflowTransitionInput {
+  workflowId: ID!
+  fromStepId: ID!
+  toStepId: ID!
+  name: String
+}
+
+input CreateWFMProjectTypeInput {
+  name: String!
+  description: String
+  defaultWorkflowId: ID
+  iconName: String
+}
+
+input UpdateWFMProjectTypeInput {
+  name: String
+  description: String
+  defaultWorkflowId: ID
+  iconName: String
+  isArchived: Boolean
+}
+
+input UpdateWfmWorkflowTransitionInput {
+  name: String
+}
+
+# --- Response Types for Mutations (Optional but good practice) ---
+
+# Generic response for simple success/failure messages for mutations
+# We can use more specific types if we need to return the mutated object
+
+type WFMStatusMutationResponse {
+  success: Boolean!
+  message: String
+  status: WFMStatus # Optional: Can return the object if needed, or null after deletion
+}
+
+type WFMWorkflowStepMutationResponse {
+  success: Boolean!
+  message: String
+  stepId: ID # Returns the ID of the deleted step
+}
+
+type WFMWorkflowTransitionMutationResponse {
+  success: Boolean!
+  message: String
+  transitionId: ID
+}
+
+# --- Queries --- Extending existing Query type
+
+extend type Query {
+  # Statuses
+  wfmStatuses(isArchived: Boolean = false): [WFMStatus!]!
+  wfmStatus(id: ID!): WFMStatus
+
+  # Workflows
+  wfmWorkflows(isArchived: Boolean = false): [WFMWorkflow!]!
+  wfmWorkflow(id: ID!): WFMWorkflow # Will include its steps and transitions
+
+  # Project Types
+  wfmProjectTypes(isArchived: Boolean = false): [WFMProjectType!]!
+  wfmProjectType(id: ID!): WFMProjectType
+}
+
+# --- Mutations --- Extending existing Mutation type
+
+extend type Mutation {
+  # Statuses
+  createWFMStatus(input: CreateWFMStatusInput!): WFMStatus!
+  updateWFMStatus(id: ID!, input: UpdateWFMStatusInput!): WFMStatus!
+  deleteWfmStatus(id: ID!): WFMStatusMutationResponse!
+
+  # Workflows
+  createWFMWorkflow(input: CreateWFMWorkflowInput!): WFMWorkflow!
+  updateWFMWorkflow(id: ID!, input: UpdateWFMWorkflowInput!): WFMWorkflow!
+  createWFMWorkflowStep(input: CreateWFMWorkflowStepInput!): WFMWorkflowStep!
+  updateWFMWorkflowStep(id: ID!, input: UpdateWFMWorkflowStepInput!): WFMWorkflowStep!
+  deleteWFMWorkflowStep(id: ID!): WFMWorkflowStepMutationResponse!
+  updateWFMWorkflowStepsOrder(workflowId: ID!, orderedStepIds: [ID!]!): WFMWorkflow # Returns the workflow with reordered steps
+  
+  # Transitions
+  createWFMWorkflowTransition(input: CreateWFMWorkflowTransitionInput!): WFMWorkflowTransition!
+  updateWFMWorkflowTransition(id: ID!, input: UpdateWfmWorkflowTransitionInput!): WFMWorkflowTransition!
+  deleteWFMWorkflowTransition(id: ID!): WFMWorkflowTransitionMutationResponse!
+
+  # Project Types
+  createWFMProjectType(input: CreateWFMProjectTypeInput!): WFMProjectType!
+  updateWFMProjectType(id: ID!, input: UpdateWFMProjectTypeInput!): WFMProjectType!
+} 

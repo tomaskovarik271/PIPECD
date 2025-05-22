@@ -242,6 +242,7 @@ function OrganizationsPage() {
   const pageIsLoading = organizationsLoading || customFieldsLoading;
 
   return (
+    <>
     <ListPageLayout
       title="Organizations"
       newButtonLabel="New Organization"
@@ -250,7 +251,7 @@ function OrganizationsPage() {
       isLoading={pageIsLoading}
       error={organizationsError}
       isEmpty={!pageIsLoading && !organizationsError && displayedOrganizations.length === 0}
-      emptyStateProps={emptyStatePropsForLayout} // Use the simplified props
+        emptyStateProps={emptyStatePropsForLayout}
       customControls={
         <HStack spacing={4} my={2}>
           <QuickFilterControls
@@ -266,32 +267,42 @@ function OrganizationsPage() {
     >
       {!pageIsLoading && !organizationsError && displayedOrganizations.length > 0 && (
         <SortableTable<Organization> 
+            columns={visibleColumns}
           data={displayedOrganizations} 
-          columns={visibleColumns} 
           initialSortKey="name" 
-          initialSortDirection="ascending" // Added to match other tables
+            initialSortDirection="ascending"
+        />
+      )}
+      </ListPageLayout>
+
+      {isCreateModalOpen && (
+        <CreateOrganizationModal
+          isOpen={isCreateModalOpen}
+          onClose={onCreateModalClose}
+          onOrganizationCreated={handleDataChanged}
         />
       )}
 
-      <CreateOrganizationModal isOpen={isCreateModalOpen} onClose={onCreateModalClose} onOrganizationCreated={handleDataChanged} />
-      {orgToEdit && (
+      {isEditModalOpen && orgToEdit && (
         <EditOrganizationModal 
+          isOpen={isEditModalOpen}
+          onClose={() => { setOrgToEdit(null); onEditModalClose(); }}
           organization={orgToEdit} 
-          isOpen={isEditModalOpen} 
-          onClose={() => { onEditModalClose(); setOrgToEdit(null); }} 
           onOrganizationUpdated={() => { handleDataChanged(); onEditModalClose(); setOrgToEdit(null); }} 
         />
       )}
+
       <ConfirmationDialog 
         isOpen={isConfirmDeleteDialogOpen}
         onClose={onConfirmDeleteClose}
         onConfirm={handleConfirmDelete}
-        headerText="Delete Organization"
-        bodyText="Are you sure you want to delete this organization? Associated people will have their organization link removed. This action cannot be undone."
+        title="Delete Organization"
+        body="Are you sure you want to delete this organization? Associated people will have their organization link removed. This action cannot be undone."
         confirmButtonText="Delete"
-        confirmButtonColorScheme="red"
-        isLoading={!!deletingRowId}
+        confirmButtonColor="red"
+        isConfirmLoading={!!deletingRowId}
       />
+
       {isColumnSelectorOpen && allAvailableColumns.length > 0 && (
         <ColumnSelector<Organization>
           isOpen={isColumnSelectorOpen}
@@ -299,11 +310,17 @@ function OrganizationsPage() {
           allAvailableColumns={allAvailableColumns}
           currentVisibleColumnKeys={currentVisibleColumnKeys}
           defaultVisibleColumnKeys={defaultVisibleColumnKeys}
-          onApply={(newKeys) => setVisibleColumnKeys(TABLE_KEY, newKeys)}
-          onReset={() => resetTableToDefaults(TABLE_KEY, defaultVisibleColumnKeys)}
+          onApply={(newVisibleKeys: string[]) => {
+            setVisibleColumnKeys(TABLE_KEY, newVisibleKeys);
+            onColumnSelectorClose();
+          }}
+          onReset={() => {
+            resetTableToDefaults(TABLE_KEY, defaultVisibleColumnKeys);
+            onColumnSelectorClose();
+          }}
         />
       )}
-    </ListPageLayout>
+    </>
   );
 }
 

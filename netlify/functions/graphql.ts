@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabaseClient';
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 import {
   GraphQLContext, 
@@ -31,6 +32,11 @@ import {
 } from './graphql/resolvers/customFields';
 import { Query as PricingQuery, PriceQuoteResolver } from './graphql/resolvers/pricing';
 
+// Import WFM Resolvers
+import { WFMStatusResolvers } from './graphql/resolvers/wfmStatus';
+import { WFMWorkflowResolvers } from './graphql/resolvers/wfmWorkflow';
+import { WFMProjectTypeResolvers } from './graphql/resolvers/wfmProjectType';
+
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
 
@@ -51,7 +57,8 @@ const loadTypeDefs = (): string => {
     'schema.graphql', 
     'stage.graphql', 
     'user.graphql', 
-    'user_profile.graphql'
+    'user_profile.graphql',
+    'wfm_definitions.graphql'
   ];
 
   // !!! --- DEBUGGING: SELECT FILES TO LOAD --- !!!
@@ -73,7 +80,8 @@ const loadTypeDefs = (): string => {
     'schema.graphql', 
     'stage.graphql', 
     'user.graphql', 
-    'user_profile.graphql'
+    'user_profile.graphql',
+    'wfm_definitions.graphql'
     // To test with a minimal set, you might try just:
     // 'scalars.graphql',
     // 'base.graphql', // Defines Query, Mutation
@@ -112,11 +120,17 @@ export const resolvers = {
     ...ActivityQuery,
     ...CustomFieldQueryResolvers,
     ...PricingQuery,
+    ...WFMStatusResolvers.Query,
+    ...WFMWorkflowResolvers.Query,
+    ...WFMProjectTypeResolvers.Query,
   },
   Mutation: {
     ...BaseMutation,
     ...ActivityMutation,
     ...CustomFieldMutationResolvers,
+    ...WFMStatusResolvers.Mutation,
+    ...WFMWorkflowResolvers.Mutation,
+    ...WFMProjectTypeResolvers.Mutation,
   },
   Person,
   Deal,
@@ -125,6 +139,11 @@ export const resolvers = {
   Activity,
   DealHistoryEntry,
   PriceQuote: PriceQuoteResolver,
+  WFMStatus: WFMStatusResolvers.WFMStatus,
+  WFMWorkflow: WFMWorkflowResolvers.WFMWorkflow,
+  WFMWorkflowStep: WFMWorkflowResolvers.WFMWorkflowStep,
+  WFMWorkflowTransition: WFMWorkflowResolvers.WFMWorkflowTransition,
+  WFMProjectType: WFMProjectTypeResolvers.WFMProjectType,
 }; 
 
 const yoga = createYoga<GraphQLContext>({
@@ -136,6 +155,7 @@ const yoga = createYoga<GraphQLContext>({
     let currentUser: User | null = null;
     let token: string | null = null;
     let userPermissions: string[] | null = null;
+    let clientForRequest: SupabaseClient<any, "public", any> = supabase; // Default to the global client
     
     const authHeader = initialContext.request.headers.get('authorization');
     if (authHeader?.startsWith('Bearer ')) {
@@ -154,6 +174,7 @@ const yoga = createYoga<GraphQLContext>({
           const authenticatedSupabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!, {
               global: { headers: { Authorization: `Bearer ${token}` } },
           });
+          clientForRequest = authenticatedSupabase; // Use authenticated client for this request
           
           const { data: permissionsData, error: permissionsError } = await authenticatedSupabase.rpc('get_my_permissions');
 
@@ -178,6 +199,7 @@ const yoga = createYoga<GraphQLContext>({
       currentUser,
       token,
       userPermissions,
+      supabaseClient: clientForRequest, // Provide the determined Supabase client
     };
   },
   graphqlEndpoint: '/.netlify/functions/graphql',

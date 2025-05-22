@@ -1,5 +1,5 @@
 import { YogaInitialContext } from 'graphql-yoga';
-import { User } from '@supabase/supabase-js';
+import { User, SupabaseClient } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 import { ZodError } from 'zod';
 
@@ -16,6 +16,7 @@ export interface GraphQLContext extends YogaInitialContext {
   currentUser: User | null;
   token: string | null;
   userPermissions: string[] | null;
+  supabaseClient: SupabaseClient<any, "public", any>;
   request: Request; // Made non-optional to match YogaInitialContext
   // Add other potential context fields if needed (e.g., event, context from Netlify func?)
 }
