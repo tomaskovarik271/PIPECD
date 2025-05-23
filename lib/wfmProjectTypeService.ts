@@ -73,6 +73,23 @@ export const wfmProjectTypeService = {
     return data ? mapDbProjectTypeToGraphqlProjectType(data as DbWfmProjectType) : null;
   },
 
+  async getWFMProjectTypeByName(name: string, context: GraphQLContext): Promise<WfmProjectType | null> {
+    console.log(`wfmProjectTypeService.getWFMProjectTypeByName called with name: ${name}, user: ${context.currentUser?.id}`);
+    const { data, error } = await context.supabaseClient
+      .from('project_types')
+      .select(WFM_PROJECT_TYPE_DB_COLUMNS)
+      .eq('name', name)
+      .maybeSingle(); // Use maybeSingle as name should be unique but we want to handle null gracefully
+    
+    if (error) {
+      // Don't throw if PGROST116 (not found), just return null
+      if (error.code === 'PGRST116') return null;
+      console.error('Error fetching project type by name:', error);
+      throw error;
+    }
+    return data ? mapDbProjectTypeToGraphqlProjectType(data as DbWfmProjectType) : null;
+  },
+
   async create(input: CreateWfmProjectTypeInput, userId: string, context: GraphQLContext): Promise<WfmProjectType> {
     console.log(`wfmProjectTypeService.create called with input:`, input, `by user: ${userId}`);
     const recordToInsert = {

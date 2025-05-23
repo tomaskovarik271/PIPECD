@@ -15,10 +15,6 @@ type Query {
   # Deals
   deals: [Deal!]!            
   deal(id: ID!): Deal        
-  # Pipelines
-  pipelines: [Pipeline!]!
-  # Stages
-  stages(pipelineId: ID!): [Stage!]!
 }
 
 type Mutation {
@@ -32,14 +28,8 @@ type Mutation {
   deleteOrganization(id: ID!): Boolean
   # Deals
   createDeal(input: DealInput!): Deal!
-  updateDeal(id: ID!, input: DealInput!): Deal
+  updateDeal(id: ID!, input: DealUpdateInput!): Deal
   deleteDeal(id: ID!): Boolean
-  # Pipelines
-  createPipeline(input: PipelineInput!): Pipeline!
-  updatePipeline(id: ID!, input: PipelineInput!): Pipeline
-  deletePipeline(id: ID!): Boolean
-  # Stages
-  createStage(input: StageInput!): Stage!
-  updateStage(id: ID!, input: StageUpdateInput!): Stage # Use specific update input
-  deleteStage(id: ID!): Boolean
+  # WFM-specific mutation for deal progression
+  updateDealWFMProgress(dealId: ID!, targetWfmWorkflowStepId: ID!): Deal!
 } 

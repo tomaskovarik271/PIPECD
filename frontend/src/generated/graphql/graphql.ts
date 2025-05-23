@@ -25,6 +25,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
+  Date: { input: any; output: any };
   DateTime: { input: string; output: string };
   JSON: { input: Record<string, any>; output: Record<string, any> };
 };
@@ -90,14 +91,6 @@ export type CreateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject: Scalars["String"]["input"];
   type: ActivityType;
-};
-
-export type CreateStageInput = {
-  deal_probability?: InputMaybe<Scalars["Float"]["input"]>;
-  name: Scalars["String"]["input"];
-  order: Scalars["Int"]["input"];
-  pipeline_id: Scalars["ID"]["input"];
-  stage_type?: InputMaybe<StageType>;
 };
 
 export type CreateWfmProjectTypeInput = {
@@ -209,6 +202,8 @@ export type Deal = {
   activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
+  currentWfmStatus?: Maybe<WfmStatus>;
+  currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
@@ -219,13 +214,11 @@ export type Deal = {
   organization_id?: Maybe<Scalars["ID"]["output"]>;
   person?: Maybe<Person>;
   person_id?: Maybe<Scalars["ID"]["output"]>;
-  pipeline: Pipeline;
-  pipeline_id: Scalars["ID"]["output"];
-  stage: Stage;
-  stage_id: Scalars["ID"]["output"];
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
   weighted_amount?: Maybe<Scalars["Float"]["output"]>;
+  wfmProject?: Maybe<WfmProject>;
+  wfm_project_id?: Maybe<Scalars["ID"]["output"]>;
 };
 
 export type DealHistoryArgs = {
@@ -250,8 +243,7 @@ export type DealInput = {
   name: Scalars["String"]["input"];
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  pipeline_id: Scalars["ID"]["input"];
-  stage_id: Scalars["ID"]["input"];
+  wfmProjectTypeId: Scalars["ID"]["input"];
 };
 
 export type DealUpdateInput = {
@@ -262,7 +254,6 @@ export type DealUpdateInput = {
   name?: InputMaybe<Scalars["String"]["input"]>;
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  stage_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 /** Represents a single entry in the invoice payment schedule for a price quote. */
@@ -286,10 +277,8 @@ export type Mutation = {
   createDeal: Deal;
   createOrganization: Organization;
   createPerson: Person;
-  createPipeline: Pipeline;
   /** Creates a new price quote for a given deal. */
   createPriceQuote: PriceQuote;
-  createStage: Stage;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
   createWFMWorkflow: WfmWorkflow;
@@ -300,10 +289,8 @@ export type Mutation = {
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
-  deletePipeline: Scalars["Boolean"]["output"];
   /** Deletes a price quote. */
   deletePriceQuote?: Maybe<Scalars["Boolean"]["output"]>;
-  deleteStage: Scalars["Boolean"]["output"];
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
@@ -311,12 +298,11 @@ export type Mutation = {
   updateActivity: Activity;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
+  updateDealWFMProgress: Deal;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
-  updatePipeline: Pipeline;
   /** Updates an existing price quote. */
   updatePriceQuote: PriceQuote;
-  updateStage: Stage;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -352,17 +338,9 @@ export type MutationCreatePersonArgs = {
   input: PersonInput;
 };
 
-export type MutationCreatePipelineArgs = {
-  input: PipelineInput;
-};
-
 export type MutationCreatePriceQuoteArgs = {
   dealId: Scalars["ID"]["input"];
   input: PriceQuoteCreateInput;
-};
-
-export type MutationCreateStageArgs = {
-  input: CreateStageInput;
 };
 
 export type MutationCreateWfmProjectTypeArgs = {
@@ -405,15 +383,7 @@ export type MutationDeletePersonArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type MutationDeletePipelineArgs = {
-  id: Scalars["ID"]["input"];
-};
-
 export type MutationDeletePriceQuoteArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type MutationDeleteStageArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -445,7 +415,12 @@ export type MutationUpdateCustomFieldDefinitionArgs = {
 
 export type MutationUpdateDealArgs = {
   id: Scalars["ID"]["input"];
-  input: DealInput;
+  input: DealUpdateInput;
+};
+
+export type MutationUpdateDealWfmProgressArgs = {
+  dealId: Scalars["ID"]["input"];
+  targetWfmWorkflowStepId: Scalars["ID"]["input"];
 };
 
 export type MutationUpdateOrganizationArgs = {
@@ -458,19 +433,9 @@ export type MutationUpdatePersonArgs = {
   input: PersonInput;
 };
 
-export type MutationUpdatePipelineArgs = {
-  id: Scalars["ID"]["input"];
-  input: PipelineInput;
-};
-
 export type MutationUpdatePriceQuoteArgs = {
   id: Scalars["ID"]["input"];
   input: PriceQuoteUpdateInput;
-};
-
-export type MutationUpdateStageArgs = {
-  id: Scalars["ID"]["input"];
-  input: UpdateStageInput;
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -582,19 +547,6 @@ export type PersonUpdateInput = {
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
-export type Pipeline = {
-  __typename?: "Pipeline";
-  created_at: Scalars["String"]["output"];
-  id: Scalars["ID"]["output"];
-  name: Scalars["String"]["output"];
-  updated_at: Scalars["String"]["output"];
-  user_id: Scalars["ID"]["output"];
-};
-
-export type PipelineInput = {
-  name: Scalars["String"]["input"];
-};
-
 /** Represents a price quotation for a deal, including calculated financial metrics and payment terms. */
 export type PriceQuote = {
   __typename?: "PriceQuote";
@@ -668,6 +620,7 @@ export type Query = {
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
+  getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   me?: Maybe<User>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
@@ -676,15 +629,13 @@ export type Query = {
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
-  pipelines: Array<Pipeline>;
   /** Retrieves a single price quote by its ID. */
   priceQuote?: Maybe<PriceQuote>;
   /** Retrieves all price quotes associated with a specific deal. */
   priceQuotesForDeal: Array<PriceQuote>;
-  stage?: Maybe<Stage>;
-  stages: Array<Stage>;
   supabaseConnectionTest: Scalars["String"]["output"];
   wfmProjectType?: Maybe<WfmProjectType>;
+  wfmProjectTypeByName?: Maybe<WfmProjectType>;
   wfmProjectTypes: Array<WfmProjectType>;
   wfmStatus?: Maybe<WfmStatus>;
   wfmStatuses: Array<WfmStatus>;
@@ -713,6 +664,11 @@ export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type QueryGetWfmAllowedTransitionsArgs = {
+  fromStepId: Scalars["ID"]["input"];
+  workflowId: Scalars["ID"]["input"];
+};
+
 export type QueryOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -729,16 +685,12 @@ export type QueryPriceQuotesForDealArgs = {
   dealId: Scalars["ID"]["input"];
 };
 
-export type QueryStageArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type QueryStagesArgs = {
-  pipelineId: Scalars["ID"]["input"];
-};
-
 export type QueryWfmProjectTypeArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryWfmProjectTypeByNameArgs = {
+  name: Scalars["String"]["input"];
 };
 
 export type QueryWfmProjectTypesArgs = {
@@ -761,20 +713,6 @@ export type QueryWfmWorkflowsArgs = {
   isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
-export type Stage = {
-  __typename?: "Stage";
-  created_at: Scalars["String"]["output"];
-  deal_probability?: Maybe<Scalars["Float"]["output"]>;
-  id: Scalars["ID"]["output"];
-  name: Scalars["String"]["output"];
-  order: Scalars["Int"]["output"];
-  pipeline: Pipeline;
-  pipeline_id: Scalars["ID"]["output"];
-  stage_type: StageType;
-  updated_at: Scalars["String"]["output"];
-  user_id: Scalars["ID"]["output"];
-};
-
 export enum StageType {
   Lost = "LOST",
   Open = "OPEN",
@@ -790,13 +728,6 @@ export type UpdateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject?: InputMaybe<Scalars["String"]["input"]>;
   type?: InputMaybe<ActivityType>;
-};
-
-export type UpdateStageInput = {
-  deal_probability?: InputMaybe<Scalars["Float"]["input"]>;
-  name?: InputMaybe<Scalars["String"]["input"]>;
-  order?: InputMaybe<Scalars["Int"]["input"]>;
-  stage_type?: InputMaybe<StageType>;
 };
 
 /**
@@ -849,6 +780,25 @@ export type User = {
   display_name?: Maybe<Scalars["String"]["output"]>;
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+};
+
+/** Represents a specific instance of a workflow being executed for a particular entity (e.g., a deal, a task). */
+export type WfmProject = {
+  __typename?: "WFMProject";
+  completedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  completedBy?: Maybe<User>;
+  createdAt: Scalars["DateTime"]["output"];
+  createdBy?: Maybe<User>;
+  currentStep?: Maybe<WfmWorkflowStep>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  name: Scalars["String"]["output"];
+  projectType: WfmProjectType;
+  updatedAt: Scalars["DateTime"]["output"];
+  updatedBy?: Maybe<User>;
+  workflow: WfmWorkflow;
 };
 
 export type WfmProjectType = {
@@ -933,4 +883,1588 @@ export type WfmWorkflowTransitionMutationResponse = {
   message?: Maybe<Scalars["String"]["output"]>;
   success: Scalars["Boolean"]["output"];
   transitionId?: Maybe<Scalars["ID"]["output"]>;
+};
+
+export type UpdateUserProfileMutationVariables = Exact<{
+  input: UpdateUserProfileInput;
+}>;
+
+export type UpdateUserProfileMutation = {
+  __typename?: "Mutation";
+  updateUserProfile?: {
+    __typename?: "User";
+    id: string;
+    email: string;
+    display_name?: string | null;
+    avatar_url?: string | null;
+  } | null;
+};
+
+export type GetCustomFieldDefinitionsQueryVariables = Exact<{
+  entityType: CustomFieldEntityType;
+  includeInactive?: InputMaybe<Scalars["Boolean"]["input"]>;
+}>;
+
+export type GetCustomFieldDefinitionsQuery = {
+  __typename?: "Query";
+  customFieldDefinitions: Array<{
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    entityType: CustomFieldEntityType;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    isRequired: boolean;
+    isActive: boolean;
+    displayOrder: number;
+    createdAt: string;
+    updatedAt: string;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  }>;
+};
+
+export type GetCustomFieldDefinitionQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetCustomFieldDefinitionQuery = {
+  __typename?: "Query";
+  customFieldDefinition?: {
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    entityType: CustomFieldEntityType;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    isRequired: boolean;
+    isActive: boolean;
+    displayOrder: number;
+    createdAt: string;
+    updatedAt: string;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  } | null;
+};
+
+export type CreateCustomFieldDefinitionMutationVariables = Exact<{
+  input: CustomFieldDefinitionInput;
+}>;
+
+export type CreateCustomFieldDefinitionMutation = {
+  __typename?: "Mutation";
+  createCustomFieldDefinition: {
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    entityType: CustomFieldEntityType;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    isRequired: boolean;
+    isActive: boolean;
+    displayOrder: number;
+    createdAt: string;
+    updatedAt: string;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  };
+};
+
+export type UpdateCustomFieldDefinitionMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: CustomFieldDefinitionInput;
+}>;
+
+export type UpdateCustomFieldDefinitionMutation = {
+  __typename?: "Mutation";
+  updateCustomFieldDefinition: {
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    entityType: CustomFieldEntityType;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    isRequired: boolean;
+    isActive: boolean;
+    displayOrder: number;
+    createdAt: string;
+    updatedAt: string;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  };
+};
+
+export type DeactivateCustomFieldDefinitionMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeactivateCustomFieldDefinitionMutation = {
+  __typename?: "Mutation";
+  deactivateCustomFieldDefinition: {
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    isActive: boolean;
+    updatedAt: string;
+  };
+};
+
+export type ReactivateCustomFieldDefinitionMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type ReactivateCustomFieldDefinitionMutation = {
+  __typename?: "Mutation";
+  reactivateCustomFieldDefinition: {
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    isActive: boolean;
+    updatedAt: string;
+  };
+};
+
+export type GetMeQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetMeQuery = {
+  __typename?: "Query";
+  me?: {
+    __typename?: "User";
+    id: string;
+    email: string;
+    display_name?: string | null;
+    avatar_url?: string | null;
+  } | null;
+};
+
+export type GetWfmProjectTypesQueryVariables = Exact<{
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+}>;
+
+export type GetWfmProjectTypesQuery = {
+  __typename?: "Query";
+  wfmProjectTypes: Array<{
+    __typename?: "WFMProjectType";
+    id: string;
+    name: string;
+    description?: string | null;
+    iconName?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    defaultWorkflow?: {
+      __typename?: "WFMWorkflow";
+      id: string;
+      name: string;
+    } | null;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  }>;
+};
+
+export type GetWfmProjectTypeByIdQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetWfmProjectTypeByIdQuery = {
+  __typename?: "Query";
+  wfmProjectType?: {
+    __typename?: "WFMProjectType";
+    id: string;
+    name: string;
+    description?: string | null;
+    iconName?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    defaultWorkflow?: {
+      __typename?: "WFMWorkflow";
+      id: string;
+      name: string;
+    } | null;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  } | null;
+};
+
+export type CreateWfmProjectTypeMutationVariables = Exact<{
+  input: CreateWfmProjectTypeInput;
+}>;
+
+export type CreateWfmProjectTypeMutation = {
+  __typename?: "Mutation";
+  createWFMProjectType: {
+    __typename?: "WFMProjectType";
+    id: string;
+    name: string;
+    description?: string | null;
+    iconName?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    defaultWorkflow?: {
+      __typename?: "WFMWorkflow";
+      id: string;
+      name: string;
+    } | null;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  };
+};
+
+export type UpdateWfmProjectTypeMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmProjectTypeInput;
+}>;
+
+export type UpdateWfmProjectTypeMutation = {
+  __typename?: "Mutation";
+  updateWFMProjectType: {
+    __typename?: "WFMProjectType";
+    id: string;
+    name: string;
+    description?: string | null;
+    iconName?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    defaultWorkflow?: {
+      __typename?: "WFMWorkflow";
+      id: string;
+      name: string;
+    } | null;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  };
+};
+
+export type GetWfmStatusesQueryVariables = Exact<{
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+}>;
+
+export type GetWfmStatusesQuery = {
+  __typename?: "Query";
+  wfmStatuses: Array<{
+    __typename?: "WFMStatus";
+    id: string;
+    name: string;
+    description?: string | null;
+    color?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  }>;
+};
+
+export type GetWfmStatusByIdQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetWfmStatusByIdQuery = {
+  __typename?: "Query";
+  wfmStatus?: {
+    __typename?: "WFMStatus";
+    id: string;
+    name: string;
+    description?: string | null;
+    color?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+  } | null;
+};
+
+export type CreateWfmStatusMutationVariables = Exact<{
+  input: CreateWfmStatusInput;
+}>;
+
+export type CreateWfmStatusMutation = {
+  __typename?: "Mutation";
+  createWFMStatus: {
+    __typename?: "WFMStatus";
+    id: string;
+    name: string;
+    description?: string | null;
+    color?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  };
+};
+
+export type UpdateWfmStatusMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmStatusInput;
+}>;
+
+export type UpdateWfmStatusMutation = {
+  __typename?: "Mutation";
+  updateWFMStatus: {
+    __typename?: "WFMStatus";
+    id: string;
+    name: string;
+    description?: string | null;
+    color?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  };
+};
+
+export type DeleteWfmStatusMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteWfmStatusMutation = {
+  __typename?: "Mutation";
+  deleteWfmStatus: {
+    __typename?: "WFMStatusMutationResponse";
+    success: boolean;
+    message?: string | null;
+  };
+};
+
+export type GetWfmWorkflowsQueryVariables = Exact<{
+  isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
+}>;
+
+export type GetWfmWorkflowsQuery = {
+  __typename?: "Query";
+  wfmWorkflows: Array<{
+    __typename?: "WFMWorkflow";
+    id: string;
+    name: string;
+    description?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  }>;
+};
+
+export type GetWfmWorkflowByIdQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetWfmWorkflowByIdQuery = {
+  __typename?: "Query";
+  wfmWorkflow?: {
+    __typename?: "WFMWorkflow";
+    id: string;
+    name: string;
+    description?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+    createdByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    updatedByUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+    steps?: Array<{
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      stepOrder: number;
+      isInitialStep: boolean;
+      isFinalStep: boolean;
+      metadata?: Record<string, any> | null;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    }> | null;
+    transitions?: Array<{
+      __typename?: "WFMWorkflowTransition";
+      id: string;
+      name?: string | null;
+      fromStep: {
+        __typename?: "WFMWorkflowStep";
+        id: string;
+        status: { __typename?: "WFMStatus"; id: string; name: string };
+      };
+      toStep: {
+        __typename?: "WFMWorkflowStep";
+        id: string;
+        status: { __typename?: "WFMStatus"; id: string; name: string };
+      };
+    }> | null;
+  } | null;
+};
+
+export type CreateWfmWorkflowMutationVariables = Exact<{
+  input: CreateWfmWorkflowInput;
+}>;
+
+export type CreateWfmWorkflowMutation = {
+  __typename?: "Mutation";
+  createWFMWorkflow: {
+    __typename?: "WFMWorkflow";
+    id: string;
+    name: string;
+    description?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
+};
+
+export type UpdateWfmWorkflowMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmWorkflowInput;
+}>;
+
+export type UpdateWfmWorkflowMutation = {
+  __typename?: "Mutation";
+  updateWFMWorkflow: {
+    __typename?: "WFMWorkflow";
+    id: string;
+    name: string;
+    description?: string | null;
+    isArchived: boolean;
+    createdAt: string;
+    updatedAt: string;
+  };
+};
+
+export type CreateWfmWorkflowStepMutationVariables = Exact<{
+  input: CreateWfmWorkflowStepInput;
+}>;
+
+export type CreateWfmWorkflowStepMutation = {
+  __typename?: "Mutation";
+  createWFMWorkflowStep: {
+    __typename?: "WFMWorkflowStep";
+    id: string;
+    stepOrder: number;
+    isInitialStep: boolean;
+    isFinalStep: boolean;
+    metadata?: Record<string, any> | null;
+    createdAt: string;
+    updatedAt: string;
+    status: { __typename?: "WFMStatus"; id: string; name: string };
+  };
+};
+
+export type UpdateWfmWorkflowStepMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmWorkflowStepInput;
+}>;
+
+export type UpdateWfmWorkflowStepMutation = {
+  __typename?: "Mutation";
+  updateWFMWorkflowStep: {
+    __typename?: "WFMWorkflowStep";
+    id: string;
+    stepOrder: number;
+    isInitialStep: boolean;
+    isFinalStep: boolean;
+    metadata?: Record<string, any> | null;
+    createdAt: string;
+    updatedAt: string;
+    status: {
+      __typename?: "WFMStatus";
+      id: string;
+      name: string;
+      color?: string | null;
+    };
+  };
+};
+
+export type RemoveWfmWorkflowStepMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type RemoveWfmWorkflowStepMutation = {
+  __typename?: "Mutation";
+  deleteWFMWorkflowStep: {
+    __typename?: "WFMWorkflowStepMutationResponse";
+    success: boolean;
+    message?: string | null;
+    stepId?: string | null;
+  };
+};
+
+export type UpdateWfmWorkflowStepsOrderMutationVariables = Exact<{
+  workflowId: Scalars["ID"]["input"];
+  orderedStepIds: Array<Scalars["ID"]["input"]> | Scalars["ID"]["input"];
+}>;
+
+export type UpdateWfmWorkflowStepsOrderMutation = {
+  __typename?: "Mutation";
+  updateWFMWorkflowStepsOrder?: {
+    __typename?: "WFMWorkflow";
+    id: string;
+    name: string;
+    description?: string | null;
+    updatedAt: string;
+    steps?: Array<{
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      stepOrder: number;
+      isInitialStep: boolean;
+      isFinalStep: boolean;
+      metadata?: Record<string, any> | null;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    }> | null;
+  } | null;
+};
+
+export type CreateWfmWorkflowTransitionMutationVariables = Exact<{
+  input: CreateWfmWorkflowTransitionInput;
+}>;
+
+export type CreateWfmWorkflowTransitionMutation = {
+  __typename?: "Mutation";
+  createWFMWorkflowTransition: {
+    __typename?: "WFMWorkflowTransition";
+    id: string;
+    name?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    fromStep: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    };
+    toStep: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    };
+  };
+};
+
+export type DeleteWfmWorkflowTransitionMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteWfmWorkflowTransitionMutation = {
+  __typename?: "Mutation";
+  deleteWFMWorkflowTransition: {
+    __typename?: "WFMWorkflowTransitionMutationResponse";
+    success: boolean;
+    message?: string | null;
+    transitionId?: string | null;
+  };
+};
+
+export type UpdateWfmWorkflowTransitionMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: UpdateWfmWorkflowTransitionInput;
+}>;
+
+export type UpdateWfmWorkflowTransitionMutation = {
+  __typename?: "Mutation";
+  updateWFMWorkflowTransition: {
+    __typename?: "WFMWorkflowTransition";
+    id: string;
+    name?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    fromStep: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    };
+    toStep: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    };
+  };
+};
+
+export type GetDealCustomFieldDefinitionsQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetDealCustomFieldDefinitionsQuery = {
+  __typename?: "Query";
+  customFieldDefinitions: Array<{
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  }>;
+};
+
+export type GetOrganizationCustomFieldDefinitionsQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetOrganizationCustomFieldDefinitionsQuery = {
+  __typename?: "Query";
+  customFieldDefinitions: Array<{
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  }>;
+};
+
+export type GetPersonCustomFieldDefinitionsQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetPersonCustomFieldDefinitionsQuery = {
+  __typename?: "Query";
+  customFieldDefinitions: Array<{
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  }>;
+};
+
+export type GetActivitiesQueryVariables = Exact<{
+  filter?: InputMaybe<ActivityFilterInput>;
+}>;
+
+export type GetActivitiesQuery = {
+  __typename?: "Query";
+  activities: Array<{
+    __typename?: "Activity";
+    id: string;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+    type: ActivityType;
+    subject: string;
+    due_date?: string | null;
+    is_done: boolean;
+    notes?: string | null;
+    deal_id?: string | null;
+    person_id?: string | null;
+    organization_id?: string | null;
+    deal?: { __typename?: "Deal"; id: string; name: string } | null;
+    person?: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+    } | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+  }>;
+};
+
+export type CreateActivityMutationVariables = Exact<{
+  input: CreateActivityInput;
+}>;
+
+export type CreateActivityMutation = {
+  __typename?: "Mutation";
+  createActivity: {
+    __typename?: "Activity";
+    id: string;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+    type: ActivityType;
+    subject: string;
+    due_date?: string | null;
+    is_done: boolean;
+    notes?: string | null;
+    deal_id?: string | null;
+    person_id?: string | null;
+    organization_id?: string | null;
+    deal?: { __typename?: "Deal"; id: string; name: string } | null;
+    person?: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+    } | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+  };
+};
+
+export type UpdateActivityMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: UpdateActivityInput;
+}>;
+
+export type UpdateActivityMutation = {
+  __typename?: "Mutation";
+  updateActivity: {
+    __typename?: "Activity";
+    id: string;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+    type: ActivityType;
+    subject: string;
+    due_date?: string | null;
+    is_done: boolean;
+    notes?: string | null;
+    deal_id?: string | null;
+    person_id?: string | null;
+    organization_id?: string | null;
+    deal?: { __typename?: "Deal"; id: string; name: string } | null;
+    person?: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+    } | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+  };
+};
+
+export type DeleteActivityMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteActivityMutation = {
+  __typename?: "Mutation";
+  deleteActivity: string;
+};
+
+export type GetActivityByIdQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetActivityByIdQuery = {
+  __typename?: "Query";
+  activity?: {
+    __typename?: "Activity";
+    id: string;
+    type: ActivityType;
+    subject: string;
+    due_date?: string | null;
+    is_done: boolean;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    user?: {
+      __typename?: "User";
+      id: string;
+      email: string;
+      display_name?: string | null;
+    } | null;
+    deal?: { __typename?: "Deal"; id: string; name: string } | null;
+    person?: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+    } | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+  } | null;
+};
+
+export type GetMyPermissionsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetMyPermissionsQuery = {
+  __typename?: "Query";
+  myPermissions?: Array<string> | null;
+};
+
+export type GetDealWithHistoryQueryVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+}>;
+
+export type GetDealWithHistoryQuery = {
+  __typename?: "Query";
+  deal?: {
+    __typename?: "Deal";
+    id: string;
+    name: string;
+    amount?: number | null;
+    expected_close_date?: string | null;
+    created_at: string;
+    updated_at: string;
+    deal_specific_probability?: number | null;
+    weighted_amount?: number | null;
+    currentWfmStatus?: {
+      __typename?: "WFMStatus";
+      id: string;
+      name: string;
+      color?: string | null;
+    } | null;
+    currentWfmStep?: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      stepOrder: number;
+      isInitialStep: boolean;
+      isFinalStep: boolean;
+      metadata?: Record<string, any> | null;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    } | null;
+    person?: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+    } | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+    history?: Array<{
+      __typename?: "DealHistoryEntry";
+      id: string;
+      eventType: string;
+      changes?: Record<string, any> | null;
+      createdAt: string;
+      user?: {
+        __typename?: "User";
+        id: string;
+        email: string;
+        display_name?: string | null;
+      } | null;
+    }> | null;
+  } | null;
+};
+
+export type GetDealsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetDealsQuery = {
+  __typename?: "Query";
+  deals: Array<{
+    __typename?: "Deal";
+    id: string;
+    name: string;
+    amount?: number | null;
+    expected_close_date?: string | null;
+    created_at: string;
+    updated_at: string;
+    person_id?: string | null;
+    organization_id?: string | null;
+    user_id: string;
+    deal_specific_probability?: number | null;
+    weighted_amount?: number | null;
+    wfm_project_id?: string | null;
+    person?: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+    } | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldType: CustomFieldType;
+      };
+    }>;
+    activities: Array<{
+      __typename?: "Activity";
+      id: string;
+      type: ActivityType;
+      subject: string;
+      due_date?: string | null;
+      is_done: boolean;
+    }>;
+    currentWfmStep?: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      stepOrder: number;
+      isInitialStep: boolean;
+      isFinalStep: boolean;
+      metadata?: Record<string, any> | null;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    } | null;
+    currentWfmStatus?: {
+      __typename?: "WFMStatus";
+      id: string;
+      name: string;
+      color?: string | null;
+    } | null;
+  }>;
+};
+
+export type CreateDealMutationVariables = Exact<{
+  input: DealInput;
+}>;
+
+export type CreateDealMutation = {
+  __typename?: "Mutation";
+  createDeal: {
+    __typename?: "Deal";
+    id: string;
+    name: string;
+    amount?: number | null;
+    expected_close_date?: string | null;
+    created_at: string;
+    updated_at: string;
+    person_id?: string | null;
+    organization_id?: string | null;
+    user_id: string;
+    deal_specific_probability?: number | null;
+    weighted_amount?: number | null;
+    wfm_project_id?: string | null;
+    person?: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+    } | null;
+    currentWfmStep?: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      stepOrder: number;
+      metadata?: Record<string, any> | null;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    } | null;
+    currentWfmStatus?: {
+      __typename?: "WFMStatus";
+      id: string;
+      name: string;
+      color?: string | null;
+    } | null;
+  };
+};
+
+export type UpdateDealMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: DealUpdateInput;
+}>;
+
+export type UpdateDealMutation = {
+  __typename?: "Mutation";
+  updateDeal?: {
+    __typename?: "Deal";
+    id: string;
+    name: string;
+    amount?: number | null;
+    expected_close_date?: string | null;
+    created_at: string;
+    updated_at: string;
+    person_id?: string | null;
+    organization_id?: string | null;
+    user_id: string;
+    deal_specific_probability?: number | null;
+    weighted_amount?: number | null;
+    person?: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+    } | null;
+  } | null;
+};
+
+export type DeleteDealMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteDealMutation = {
+  __typename?: "Mutation";
+  deleteDeal?: boolean | null;
+};
+
+export type UpdateDealWfmProgressMutationVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+  targetWfmWorkflowStepId: Scalars["ID"]["input"];
+}>;
+
+export type UpdateDealWfmProgressMutation = {
+  __typename?: "Mutation";
+  updateDealWFMProgress: {
+    __typename?: "Deal";
+    id: string;
+    name: string;
+    amount?: number | null;
+    expected_close_date?: string | null;
+    deal_specific_probability?: number | null;
+    weighted_amount?: number | null;
+    wfm_project_id?: string | null;
+    currentWfmStep?: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      stepOrder: number;
+      isInitialStep: boolean;
+      isFinalStep: boolean;
+      metadata?: Record<string, any> | null;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    } | null;
+    currentWfmStatus?: {
+      __typename?: "WFMStatus";
+      id: string;
+      name: string;
+      color?: string | null;
+    } | null;
+  };
+};
+
+export type CustomFieldValuesDataFragment = {
+  __typename?: "CustomFieldValue";
+  stringValue?: string | null;
+  numberValue?: number | null;
+  booleanValue?: boolean | null;
+  dateValue?: string | null;
+  selectedOptionValues?: Array<string> | null;
+  definition: {
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    displayOrder: number;
+    isRequired: boolean;
+    isActive: boolean;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  };
+};
+
+export type GetOrganizationsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetOrganizationsQuery = {
+  __typename?: "Query";
+  organizations: Array<{
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    address?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        displayOrder: number;
+        isRequired: boolean;
+        isActive: boolean;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+  }>;
+};
+
+export type CreateOrganizationMutationVariables = Exact<{
+  input: OrganizationInput;
+}>;
+
+export type CreateOrganizationMutation = {
+  __typename?: "Mutation";
+  createOrganization: {
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    address?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        displayOrder: number;
+        isRequired: boolean;
+        isActive: boolean;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+  };
+};
+
+export type UpdateOrganizationMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: OrganizationInput;
+}>;
+
+export type UpdateOrganizationMutation = {
+  __typename?: "Mutation";
+  updateOrganization?: {
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    address?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        displayOrder: number;
+        isRequired: boolean;
+        isActive: boolean;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+  } | null;
+};
+
+export type DeleteOrganizationMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteOrganizationMutation = {
+  __typename?: "Mutation";
+  deleteOrganization?: boolean | null;
+};
+
+export type GetPeopleQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetPeopleQuery = {
+  __typename?: "Query";
+  people: Array<{
+    __typename?: "Person";
+    id: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    organization_id?: string | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        isRequired: boolean;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+  }>;
+};
+
+export type GetPersonByIdQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetPersonByIdQuery = {
+  __typename?: "Query";
+  person?: {
+    __typename?: "Person";
+    id: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    organization_id?: string | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+    deals?: Array<{
+      __typename?: "Deal";
+      id: string;
+      name: string;
+      amount?: number | null;
+    }> | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        isRequired: boolean;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+  } | null;
+};
+
+export type CreatePersonMutationVariables = Exact<{
+  input: PersonInput;
+}>;
+
+export type CreatePersonMutation = {
+  __typename?: "Mutation";
+  createPerson: {
+    __typename?: "Person";
+    id: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    organization_id?: string | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        isRequired: boolean;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+  };
+};
+
+export type UpdatePersonMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: PersonInput;
+}>;
+
+export type UpdatePersonMutation = {
+  __typename?: "Mutation";
+  updatePerson?: {
+    __typename?: "Person";
+    id: string;
+    first_name?: string | null;
+    last_name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    organization_id?: string | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        isRequired: boolean;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+  } | null;
+};
+
+export type DeletePersonMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeletePersonMutation = {
+  __typename?: "Mutation";
+  deletePerson?: boolean | null;
+};
+
+export type GetWfmProjectTypeByNameQueryVariables = Exact<{
+  name: Scalars["String"]["input"];
+}>;
+
+export type GetWfmProjectTypeByNameQuery = {
+  __typename?: "Query";
+  wfmProjectTypeByName?: {
+    __typename?: "WFMProjectType";
+    id: string;
+    name: string;
+    defaultWorkflow?: { __typename?: "WFMWorkflow"; id: string } | null;
+  } | null;
 };

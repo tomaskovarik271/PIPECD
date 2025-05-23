@@ -1,4 +1,4 @@
-import { createYoga, createSchema } from 'graphql-yoga';
+import { createYoga, createSchema, Plugin } from 'graphql-yoga';
 import type { Handler, HandlerContext } from '@netlify/functions';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabaseClient';
@@ -19,7 +19,6 @@ import { Mutation as BaseMutation } from './graphql/resolvers/mutation';
 import { Person } from './graphql/resolvers/person';
 import { Deal } from './graphql/resolvers/deal';
 import { Organization } from './graphql/resolvers/organization';
-import { Stage } from './graphql/resolvers/stage';
 import {
   Activity,
   Query as ActivityQuery,
@@ -36,6 +35,8 @@ import { Query as PricingQuery, PriceQuoteResolver } from './graphql/resolvers/p
 import { WFMStatusResolvers } from './graphql/resolvers/wfmStatus';
 import { WFMWorkflowResolvers } from './graphql/resolvers/wfmWorkflow';
 import { WFMProjectTypeResolvers } from './graphql/resolvers/wfmProjectType';
+import { WFMProject } from './graphql/resolvers/wfmProject';
+import { WFMWorkflowStep as WFMWorkflowStepResolver } from './graphql/resolvers/wfmWorkflowStep';
 
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
@@ -51,14 +52,13 @@ const loadTypeDefs = (): string => {
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
-    'pipeline.graphql', 
     'pricing.graphql', 
     'scalars.graphql', 
     'schema.graphql', 
-    'stage.graphql', 
     'user.graphql', 
     'user_profile.graphql',
-    'wfm_definitions.graphql'
+    'wfm_definitions.graphql',
+    'wfm_project.graphql'
   ];
 
   // !!! --- DEBUGGING: SELECT FILES TO LOAD --- !!!
@@ -74,14 +74,13 @@ const loadTypeDefs = (): string => {
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
-    'pipeline.graphql', 
     'pricing.graphql', 
     'scalars.graphql', 
     'schema.graphql', 
-    'stage.graphql', 
     'user.graphql', 
     'user_profile.graphql',
-    'wfm_definitions.graphql'
+    'wfm_definitions.graphql',
+    'wfm_project.graphql'
     // To test with a minimal set, you might try just:
     // 'scalars.graphql',
     // 'base.graphql', // Defines Query, Mutation
@@ -135,15 +134,15 @@ export const resolvers = {
   Person,
   Deal,
   Organization,
-  Stage,
   Activity,
   DealHistoryEntry,
   PriceQuote: PriceQuoteResolver,
   WFMStatus: WFMStatusResolvers.WFMStatus,
   WFMWorkflow: WFMWorkflowResolvers.WFMWorkflow,
-  WFMWorkflowStep: WFMWorkflowResolvers.WFMWorkflowStep,
+  WFMWorkflowStep: WFMWorkflowStepResolver,
   WFMWorkflowTransition: WFMWorkflowResolvers.WFMWorkflowTransition,
   WFMProjectType: WFMProjectTypeResolvers.WFMProjectType,
+  WFMProject,
 }; 
 
 const yoga = createYoga<GraphQLContext>({
@@ -205,6 +204,13 @@ const yoga = createYoga<GraphQLContext>({
   graphqlEndpoint: '/.netlify/functions/graphql',
   healthCheckEndpoint: '/.netlify/functions/graphql/health',
   landingPage: process.env.NODE_ENV !== 'production',
+  plugins: [
+    {
+      onParams({ params }) {
+        console.log('[Yoga onParams] Received parameters:', JSON.stringify(params, null, 2));
+      }
+    } as Plugin
+  ]
 });
 
 export const handler: Handler = async (event, _: HandlerContext) => {

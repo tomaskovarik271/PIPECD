@@ -6,27 +6,28 @@ type Deal {
   expected_close_date: DateTime
   created_at: DateTime!
   updated_at: DateTime!
-  pipeline_id: ID!
-  pipeline: Pipeline!
-  stage_id: ID!
-  stage: Stage!
   person_id: ID
   person: Person
   organization_id: ID
   organization: Organization
   activities: [Activity!]!
-  deal_specific_probability: Float # Nullable, actual probability (0.0 to 1.0)
-  weighted_amount: Float          # Calculated: amount * effective_probability
+  deal_specific_probability: Float # Nullable, if null, use probability from WFM step
+  weighted_amount: Float # Calculated: amount * (deal_specific_probability || wfm_step_probability)
   history(limit: Int, offset: Int): [DealHistoryEntry!]
   customFieldValues: [CustomFieldValue!]!
+
+  # WFM Fields
+  wfm_project_id: ID # The ID of the associated WFMProject
+  wfmProject: WFMProject
+  currentWfmStep: WFMWorkflowStep
+  currentWfmStatus: WFMStatus
 }
 
 input DealInput {
   name: String!
   amount: Float
   expected_close_date: DateTime
-  stage_id: ID!
-  pipeline_id: ID!
+  wfmProjectTypeId: ID!
   person_id: ID
   organization_id: ID
   deal_specific_probability: Float # Nullable, for setting/unsetting
@@ -37,7 +38,6 @@ input DealUpdateInput {
   name: String
   amount: Float
   expected_close_date: DateTime
-  stage_id: ID
   person_id: ID
   organization_id: ID
   deal_specific_probability: Float # Nullable, for setting/unsetting

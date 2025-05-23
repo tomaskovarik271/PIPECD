@@ -10,9 +10,11 @@ import {
   CreateWfmWorkflowTransitionInput, // Added for the new transition service method
   UpdateWfmWorkflowTransitionInput
 } from './generated/graphql';
+import { GraphQLError } from 'graphql';
 
 // --- Database Column Definitions ---
 const WFM_WORKFLOW_DB_COLUMNS = 'id, name, description, is_archived, created_at, updated_at, created_by_user_id, updated_by_user_id';
+const WFM_WORKFLOW_STEP_TABLE_NAME = 'workflow_steps';
 const WFM_WORKFLOW_STEP_DB_COLUMNS = 'id, workflow_id, status_id, step_order, is_initial_step, is_final_step, metadata, created_at, updated_at';
 const WFM_WORKFLOW_TRANSITION_DB_COLUMNS = 'id, workflow_id, from_step_id, to_step_id, name, created_at, updated_at';
 
@@ -52,7 +54,7 @@ interface DbWfmWorkflowTransition {
 
 // This is what the service layer will return for steps.
 // It includes status_id for the GraphQL field resolver.
-interface ServiceLayerWfmWorkflowStep extends Omit<WfmWorkflowStep, 'status'> {
+export interface ServiceLayerWfmWorkflowStep extends Omit<WfmWorkflowStep, 'status'> {
   status_id: string;
 }
 
@@ -204,7 +206,7 @@ export const wfmWorkflowService = {
   async getStepsByWorkflowId(workflowId: string, context: GraphQLContext): Promise<ServiceLayerWfmWorkflowStep[]> {
     console.log(`wfmWorkflowService.getStepsByWorkflowId called for workflowId: ${workflowId}, user: ${context.currentUser?.id}`);
     const { data, error } = await context.supabaseClient
-      .from('workflow_steps')
+      .from(WFM_WORKFLOW_STEP_TABLE_NAME)
       .select(WFM_WORKFLOW_STEP_DB_COLUMNS)
       .eq('workflow_id', workflowId)
       .order('step_order', { ascending: true });
@@ -219,7 +221,7 @@ export const wfmWorkflowService = {
   async getStepById(stepId: string, context: GraphQLContext): Promise<ServiceLayerWfmWorkflowStep | null> {
     console.log(`wfmWorkflowService.getStepById called for stepId: ${stepId}, user: ${context.currentUser?.id}`);
     const { data, error } = await context.supabaseClient
-      .from('workflow_steps')
+      .from(WFM_WORKFLOW_STEP_TABLE_NAME)
       .select(WFM_WORKFLOW_STEP_DB_COLUMNS)
       .eq('id', stepId)
       .single();
@@ -245,6 +247,28 @@ export const wfmWorkflowService = {
     return (data as DbWfmWorkflowTransition[]).map(mapDbTransitionToGraphqlTransition);
   },
 
+  async getAllowedTransitions(workflowId: string, fromStepId: string, context: GraphQLContext): Promise<WfmWorkflowTransition[]> {
+    console.log(`wfmWorkflowService.getAllowedTransitions called for workflow: ${workflowId}, from step: ${fromStepId}`);
+    const { supabaseClient } = context;
+
+    const { data: transitionsData, error: transitionsError } = await supabaseClient
+      .from('workflow_transitions')
+      .select(WFM_WORKFLOW_TRANSITION_DB_COLUMNS) // Select all DB columns for mapping
+      .eq('workflow_id', workflowId)
+      .eq('from_step_id', fromStepId);
+
+    if (transitionsError) {
+      console.error('Error fetching allowed transitions:', transitionsError);
+      throw new GraphQLError('Database error while fetching allowed transitions.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+    }
+
+    if (!transitionsData) {
+      return []; // No allowed transitions found
+    }
+
+    return (transitionsData as DbWfmWorkflowTransition[]).map(mapDbTransitionToGraphqlTransition);
+  },
+
   async addStepToWorkflow(input: CreateWfmWorkflowStepInput, userId: string, context: GraphQLContext): Promise<ServiceLayerWfmWorkflowStep> {
     console.log(`wfmWorkflowService.addStepToWorkflow called with input:`, input, `by user: ${userId}`);
     // In a real scenario, you might want to add created_by_user_id, updated_by_user_id to workflow_steps table
@@ -263,7 +287,7 @@ export const wfmWorkflowService = {
     };
 
     const { data, error } = await context.supabaseClient
-      .from('workflow_steps')
+      .from(WFM_WORKFLOW_STEP_TABLE_NAME)
       .insert([recordToInsert])
       .select(WFM_WORKFLOW_STEP_DB_COLUMNS)
       .single();
@@ -304,7 +328,7 @@ export const wfmWorkflowService = {
     }
 
     const { data, error } = await context.supabaseClient
-      .from('workflow_steps')
+      .from(WFM_WORKFLOW_STEP_TABLE_NAME)
       .update(recordToUpdate)
       .eq('id', stepId)
       .select(WFM_WORKFLOW_STEP_DB_COLUMNS)
@@ -322,16 +346,32 @@ export const wfmWorkflowService = {
   },
 
   async removeStepFromWorkflow(stepId: string, context: GraphQLContext): Promise<{ success: boolean; message?: string; stepId?: string }> {
-    console.log(`wfmWorkflowService.removeStepFromWorkflow called for stepId: ${stepId}, user: ${context.currentUser?.id}`);
+    console.log(`wfmWorkflowService.removeStepFromWorkflow called for stepId: ${stepId}, by user: ${context.currentUser?.id}`);
     
+    // Check if the step is part of any transitions first
+    // const { data: fromTransitions, error: fromError } = await context.supabaseClient
+    //   .from('workflow_transitions') 
+    //   .select('id')
+    //   .eq('from_step_id', stepId);
+
+    // // TODO: Handle fromError or if fromTransitions.length > 0 (prevent deletion or reassign transitions)
+
+    // const { data: toTransitions, error: toError } = await context.supabaseClient
+    //   .from('workflow_transitions') 
+    //   .select('id')
+    //   .eq('to_step_id', stepId);
+    
+    // // TODO: Handle toError or if toTransitions.length > 0 (prevent deletion or reassign transitions)
+
+    // For now, proceed with deletion. Robust implementation would check/handle active transitions.
     const { error: deleteError } = await context.supabaseClient
-      .from('workflow_steps')
-      .delete()
-      .match({ id: stepId });
+        .from(WFM_WORKFLOW_STEP_TABLE_NAME) // Use constant
+        .delete()
+        .match({ id: stepId });
 
     if (deleteError) {
-      console.error('Error deleting workflow step:', deleteError);
-      return { success: false, message: deleteError.message };
+        console.error('Error deleting workflow step:', deleteError);
+        return { success: false, message: deleteError.message };
     }
 
     return { success: true, stepId: stepId };
@@ -355,7 +395,7 @@ export const wfmWorkflowService = {
       const temporaryOrder = -(i + 1); // e.g., -1 for first ID, -2 for second
 
       const { error: tempUpdateError } = await context.supabaseClient
-        .from('workflow_steps')
+        .from(WFM_WORKFLOW_STEP_TABLE_NAME)
         .update({ step_order: temporaryOrder, updated_at: new Date().toISOString() })
         .eq('id', stepId)
         .eq('workflow_id', workflowId);
@@ -374,7 +414,7 @@ export const wfmWorkflowService = {
       const finalOrder = i + 1; // 1-based indexing for step_order
 
       const { error: finalUpdateError } = await context.supabaseClient
-        .from('workflow_steps')
+        .from(WFM_WORKFLOW_STEP_TABLE_NAME)
         .update({ step_order: finalOrder, updated_at: new Date().toISOString() })
         .eq('id', stepId)
         .eq('workflow_id', workflowId)
@@ -509,6 +549,110 @@ export const wfmWorkflowService = {
     }
 
     return mapDbTransitionToGraphqlTransition(data as DbWfmWorkflowTransition);
+  },
+
+  /**
+   * Validates if a transition is allowed between two steps in a given workflow.
+   * @param workflowId The ID of the workflow.
+   * @param currentStepId The ID of the current step.
+   * @param targetStepId The ID of the target step.
+   * @param context GraphQL context.
+   * @returns True if the transition is allowed, false otherwise.
+   * @throws GraphQLError if referenced entities (workflow, steps) are not found or if there's a DB error.
+   */
+  async validateTransition(workflowId: string, currentStepId: string, targetStepId: string, context: GraphQLContext): Promise<boolean> {
+    console.log(`wfmWorkflowService.validateTransition called for workflow: ${workflowId}, from: ${currentStepId}, to: ${targetStepId}`);
+    const { supabaseClient } = context;
+
+    // 1. Fetch current and target step details, including status_id
+    const { data: stepsData, error: stepsError } = await supabaseClient
+      .from(WFM_WORKFLOW_STEP_TABLE_NAME)
+      .select('id, workflow_id, status_id')
+      .in('id', [currentStepId, targetStepId]);
+
+    if (stepsError) {
+      console.error('Error fetching steps for validation:', stepsError);
+      throw new GraphQLError('Database error while validating transition steps.', { extensions: { code: 'INTERNAL_SERVER_ERROR' }, originalError: stepsError });
+    }
+
+    const currentStepDb = stepsData?.find(s => s.id === currentStepId);
+    const targetStepDb = stepsData?.find(s => s.id === targetStepId);
+
+    // Basic validation for step existence and workflow membership
+    if (!currentStepDb) throw new GraphQLError(`Current step (ID: ${currentStepId}) not found.`, { extensions: { code: 'NOT_FOUND' } });
+    if (currentStepDb.workflow_id !== workflowId) throw new GraphQLError(`Current step '${currentStepDb.status_id}' does not belong to the specified workflow.`, { extensions: { code: 'BAD_USER_INPUT' } });
+    if (!targetStepDb) throw new GraphQLError(`Target step (ID: ${targetStepId}) not found.`, { extensions: { code: 'NOT_FOUND' } });
+    if (targetStepDb.workflow_id !== workflowId) throw new GraphQLError(`Target step '${targetStepDb.status_id}' does not belong to the specified workflow.`, { extensions: { code: 'BAD_USER_INPUT' } });
+    if (!currentStepDb.status_id || !targetStepDb.status_id) throw new GraphQLError('Status ID missing for one or both steps.', { extensions: { code: 'INTERNAL_SERVER_ERROR'} });
+
+    // 2. Fetch names for current and target step statuses
+    let currentStepName = `Step (ID: ${currentStepId})`; // Fallback name
+    let targetStepName = `Step (ID: ${targetStepId})`;   // Fallback name
+    const statusIdsToFetch = [currentStepDb.status_id, targetStepDb.status_id].filter(Boolean) as string[];
+    
+    if (statusIdsToFetch.length > 0) {
+        const { data: statuses, error: statusErr } = await supabaseClient.from('statuses').select('id, name').in('id', statusIdsToFetch);
+        if (statusErr) console.warn('Could not fetch status names for error message:', statusErr);
+        else {
+            currentStepName = statuses?.find(s => s.id === currentStepDb.status_id)?.name || currentStepName;
+            targetStepName = statuses?.find(s => s.id === targetStepDb.status_id)?.name || targetStepName;
+        }
+    }
+
+    // 3. Check if the direct transition exists
+    const { data: transition, error: transitionErr } = await supabaseClient
+      .from('workflow_transitions')
+      .select('id', { count: 'exact' })
+      .eq('workflow_id', workflowId)
+      .eq('from_step_id', currentStepId)
+      .eq('to_step_id', targetStepId)
+      .maybeSingle();
+
+    if (transitionErr) {
+      console.error('Error checking transition existence:', transitionErr);
+      throw new GraphQLError('Database error while verifying transition.', { extensions: { code: 'INTERNAL_SERVER_ERROR' }, originalError: transitionErr });
+    }
+
+    if (!transition) {
+      // 4. If transition doesn't exist, fetch allowed next steps for a richer error message
+      let allowedNextStepNames: string[] = [];
+      const { data: allowedTransitions, error: allowedErr } = await supabaseClient
+        .from('workflow_transitions')
+        .select('to_step_id')
+        .eq('workflow_id', workflowId)
+        .eq('from_step_id', currentStepId);
+
+      if (allowedErr) {
+        console.warn('Could not fetch allowed transitions for error message:', allowedErr);
+      } else if (allowedTransitions && allowedTransitions.length > 0) {
+        const allowedToStepIds = allowedTransitions.map(t => t.to_step_id).filter(Boolean) as string[];
+        if (allowedToStepIds.length > 0) {
+          const { data: allowedStatuses, error: allowedStatusesErr } = await supabaseClient
+            .from('statuses')
+            .select('id, name')
+            .in('id', (
+                await supabaseClient
+                    .from(WFM_WORKFLOW_STEP_TABLE_NAME) // Use constant
+                    .select('status_id')
+                    .in('id', allowedToStepIds)
+                ).data?.map(s => s.status_id).filter(Boolean) || []
+            );
+            
+          if (allowedStatusesErr) console.warn('Could not fetch names for allowed next steps:', allowedStatusesErr);
+          else if (allowedStatuses) allowedNextStepNames = allowedStatuses.map(s => s.name).filter(Boolean) as string[];
+        }
+      }
+
+      let errorMessage = `Transition from '${currentStepName}' to '${targetStepName}' is not allowed.`;
+      if (allowedNextStepNames.length > 0) {
+        errorMessage += ` Allowed next steps from '${currentStepName}' are: ${allowedNextStepNames.join(', ')}.`;
+      } else {
+        errorMessage += ` There are no defined transitions from '${currentStepName}'.`;
+      }
+      throw new GraphQLError(errorMessage, { extensions: { code: 'BAD_USER_INPUT' } });
+    }
+
+    return true; // Transition exists
   },
 
   // TODO: Implement transition management methods (create, delete)

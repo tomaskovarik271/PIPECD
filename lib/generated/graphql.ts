@@ -34,6 +34,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
+  Date: { input: any; output: any };
   DateTime: { input: Date; output: Date };
   JSON: { input: { [key: string]: any }; output: { [key: string]: any } };
 };
@@ -99,14 +100,6 @@ export type CreateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject: Scalars["String"]["input"];
   type: ActivityType;
-};
-
-export type CreateStageInput = {
-  deal_probability?: InputMaybe<Scalars["Float"]["input"]>;
-  name: Scalars["String"]["input"];
-  order: Scalars["Int"]["input"];
-  pipeline_id: Scalars["ID"]["input"];
-  stage_type?: InputMaybe<StageType>;
 };
 
 export type CreateWfmProjectTypeInput = {
@@ -218,6 +211,8 @@ export type Deal = {
   activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
+  currentWfmStatus?: Maybe<WfmStatus>;
+  currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
@@ -228,13 +223,11 @@ export type Deal = {
   organization_id?: Maybe<Scalars["ID"]["output"]>;
   person?: Maybe<Person>;
   person_id?: Maybe<Scalars["ID"]["output"]>;
-  pipeline: Pipeline;
-  pipeline_id: Scalars["ID"]["output"];
-  stage: Stage;
-  stage_id: Scalars["ID"]["output"];
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
   weighted_amount?: Maybe<Scalars["Float"]["output"]>;
+  wfmProject?: Maybe<WfmProject>;
+  wfm_project_id?: Maybe<Scalars["ID"]["output"]>;
 };
 
 export type DealHistoryArgs = {
@@ -259,8 +252,7 @@ export type DealInput = {
   name: Scalars["String"]["input"];
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  pipeline_id: Scalars["ID"]["input"];
-  stage_id: Scalars["ID"]["input"];
+  wfmProjectTypeId: Scalars["ID"]["input"];
 };
 
 export type DealUpdateInput = {
@@ -271,7 +263,6 @@ export type DealUpdateInput = {
   name?: InputMaybe<Scalars["String"]["input"]>;
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  stage_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 /** Represents a single entry in the invoice payment schedule for a price quote. */
@@ -295,10 +286,8 @@ export type Mutation = {
   createDeal: Deal;
   createOrganization: Organization;
   createPerson: Person;
-  createPipeline: Pipeline;
   /** Creates a new price quote for a given deal. */
   createPriceQuote: PriceQuote;
-  createStage: Stage;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
   createWFMWorkflow: WfmWorkflow;
@@ -309,10 +298,8 @@ export type Mutation = {
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
-  deletePipeline: Scalars["Boolean"]["output"];
   /** Deletes a price quote. */
   deletePriceQuote?: Maybe<Scalars["Boolean"]["output"]>;
-  deleteStage: Scalars["Boolean"]["output"];
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
@@ -320,12 +307,11 @@ export type Mutation = {
   updateActivity: Activity;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
+  updateDealWFMProgress: Deal;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
-  updatePipeline: Pipeline;
   /** Updates an existing price quote. */
   updatePriceQuote: PriceQuote;
-  updateStage: Stage;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -361,17 +347,9 @@ export type MutationCreatePersonArgs = {
   input: PersonInput;
 };
 
-export type MutationCreatePipelineArgs = {
-  input: PipelineInput;
-};
-
 export type MutationCreatePriceQuoteArgs = {
   dealId: Scalars["ID"]["input"];
   input: PriceQuoteCreateInput;
-};
-
-export type MutationCreateStageArgs = {
-  input: CreateStageInput;
 };
 
 export type MutationCreateWfmProjectTypeArgs = {
@@ -414,15 +392,7 @@ export type MutationDeletePersonArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type MutationDeletePipelineArgs = {
-  id: Scalars["ID"]["input"];
-};
-
 export type MutationDeletePriceQuoteArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type MutationDeleteStageArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -454,7 +424,12 @@ export type MutationUpdateCustomFieldDefinitionArgs = {
 
 export type MutationUpdateDealArgs = {
   id: Scalars["ID"]["input"];
-  input: DealInput;
+  input: DealUpdateInput;
+};
+
+export type MutationUpdateDealWfmProgressArgs = {
+  dealId: Scalars["ID"]["input"];
+  targetWfmWorkflowStepId: Scalars["ID"]["input"];
 };
 
 export type MutationUpdateOrganizationArgs = {
@@ -467,19 +442,9 @@ export type MutationUpdatePersonArgs = {
   input: PersonInput;
 };
 
-export type MutationUpdatePipelineArgs = {
-  id: Scalars["ID"]["input"];
-  input: PipelineInput;
-};
-
 export type MutationUpdatePriceQuoteArgs = {
   id: Scalars["ID"]["input"];
   input: PriceQuoteUpdateInput;
-};
-
-export type MutationUpdateStageArgs = {
-  id: Scalars["ID"]["input"];
-  input: UpdateStageInput;
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -591,19 +556,6 @@ export type PersonUpdateInput = {
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
-export type Pipeline = {
-  __typename?: "Pipeline";
-  created_at: Scalars["String"]["output"];
-  id: Scalars["ID"]["output"];
-  name: Scalars["String"]["output"];
-  updated_at: Scalars["String"]["output"];
-  user_id: Scalars["ID"]["output"];
-};
-
-export type PipelineInput = {
-  name: Scalars["String"]["input"];
-};
-
 /** Represents a price quotation for a deal, including calculated financial metrics and payment terms. */
 export type PriceQuote = {
   __typename?: "PriceQuote";
@@ -677,6 +629,7 @@ export type Query = {
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
+  getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   me?: Maybe<User>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
@@ -685,15 +638,13 @@ export type Query = {
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
-  pipelines: Array<Pipeline>;
   /** Retrieves a single price quote by its ID. */
   priceQuote?: Maybe<PriceQuote>;
   /** Retrieves all price quotes associated with a specific deal. */
   priceQuotesForDeal: Array<PriceQuote>;
-  stage?: Maybe<Stage>;
-  stages: Array<Stage>;
   supabaseConnectionTest: Scalars["String"]["output"];
   wfmProjectType?: Maybe<WfmProjectType>;
+  wfmProjectTypeByName?: Maybe<WfmProjectType>;
   wfmProjectTypes: Array<WfmProjectType>;
   wfmStatus?: Maybe<WfmStatus>;
   wfmStatuses: Array<WfmStatus>;
@@ -722,6 +673,11 @@ export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type QueryGetWfmAllowedTransitionsArgs = {
+  fromStepId: Scalars["ID"]["input"];
+  workflowId: Scalars["ID"]["input"];
+};
+
 export type QueryOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -738,16 +694,12 @@ export type QueryPriceQuotesForDealArgs = {
   dealId: Scalars["ID"]["input"];
 };
 
-export type QueryStageArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type QueryStagesArgs = {
-  pipelineId: Scalars["ID"]["input"];
-};
-
 export type QueryWfmProjectTypeArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryWfmProjectTypeByNameArgs = {
+  name: Scalars["String"]["input"];
 };
 
 export type QueryWfmProjectTypesArgs = {
@@ -770,20 +722,6 @@ export type QueryWfmWorkflowsArgs = {
   isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
-export type Stage = {
-  __typename?: "Stage";
-  created_at: Scalars["String"]["output"];
-  deal_probability?: Maybe<Scalars["Float"]["output"]>;
-  id: Scalars["ID"]["output"];
-  name: Scalars["String"]["output"];
-  order: Scalars["Int"]["output"];
-  pipeline: Pipeline;
-  pipeline_id: Scalars["ID"]["output"];
-  stage_type: StageType;
-  updated_at: Scalars["String"]["output"];
-  user_id: Scalars["ID"]["output"];
-};
-
 export enum StageType {
   Lost = "LOST",
   Open = "OPEN",
@@ -799,13 +737,6 @@ export type UpdateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject?: InputMaybe<Scalars["String"]["input"]>;
   type?: InputMaybe<ActivityType>;
-};
-
-export type UpdateStageInput = {
-  deal_probability?: InputMaybe<Scalars["Float"]["input"]>;
-  name?: InputMaybe<Scalars["String"]["input"]>;
-  order?: InputMaybe<Scalars["Int"]["input"]>;
-  stage_type?: InputMaybe<StageType>;
 };
 
 /**
@@ -858,6 +789,25 @@ export type User = {
   display_name?: Maybe<Scalars["String"]["output"]>;
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+};
+
+/** Represents a specific instance of a workflow being executed for a particular entity (e.g., a deal, a task). */
+export type WfmProject = {
+  __typename?: "WFMProject";
+  completedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  completedBy?: Maybe<User>;
+  createdAt: Scalars["DateTime"]["output"];
+  createdBy?: Maybe<User>;
+  currentStep?: Maybe<WfmWorkflowStep>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  name: Scalars["String"]["output"];
+  projectType: WfmProjectType;
+  updatedAt: Scalars["DateTime"]["output"];
+  updatedBy?: Maybe<User>;
+  workflow: WfmWorkflow;
 };
 
 export type WfmProjectType = {
@@ -1058,7 +1008,6 @@ export type ResolversTypes = {
   AdditionalCostInput: AdditionalCostInput;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
   CreateActivityInput: CreateActivityInput;
-  CreateStageInput: CreateStageInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
   CreateWFMWorkflowInput: CreateWfmWorkflowInput;
@@ -1072,6 +1021,7 @@ export type ResolversTypes = {
   CustomFieldType: CustomFieldType;
   CustomFieldValue: ResolverTypeWrapper<CustomFieldValue>;
   CustomFieldValueInput: CustomFieldValueInput;
+  Date: ResolverTypeWrapper<Scalars["Date"]["output"]>;
   DateTime: ResolverTypeWrapper<Scalars["DateTime"]["output"]>;
   Deal: ResolverTypeWrapper<Deal>;
   DealHistoryEntry: ResolverTypeWrapper<DealHistoryEntry>;
@@ -1090,17 +1040,13 @@ export type ResolversTypes = {
   PersonInput: PersonInput;
   PersonListItem: ResolverTypeWrapper<PersonListItem>;
   PersonUpdateInput: PersonUpdateInput;
-  Pipeline: ResolverTypeWrapper<Pipeline>;
-  PipelineInput: PipelineInput;
   PriceQuote: ResolverTypeWrapper<PriceQuote>;
   PriceQuoteCreateInput: PriceQuoteCreateInput;
   PriceQuoteUpdateInput: PriceQuoteUpdateInput;
   Query: ResolverTypeWrapper<{}>;
-  Stage: ResolverTypeWrapper<Stage>;
   StageType: StageType;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
   UpdateActivityInput: UpdateActivityInput;
-  UpdateStageInput: UpdateStageInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
@@ -1108,6 +1054,7 @@ export type ResolversTypes = {
   UpdateWFMWorkflowStepInput: UpdateWfmWorkflowStepInput;
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
   User: ResolverTypeWrapper<User>;
+  WFMProject: ResolverTypeWrapper<WfmProject>;
   WFMProjectType: ResolverTypeWrapper<WfmProjectType>;
   WFMStatus: ResolverTypeWrapper<WfmStatus>;
   WFMStatusMutationResponse: ResolverTypeWrapper<WfmStatusMutationResponse>;
@@ -1126,7 +1073,6 @@ export type ResolversParentTypes = {
   AdditionalCostInput: AdditionalCostInput;
   Boolean: Scalars["Boolean"]["output"];
   CreateActivityInput: CreateActivityInput;
-  CreateStageInput: CreateStageInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
   CreateWFMWorkflowInput: CreateWfmWorkflowInput;
@@ -1138,6 +1084,7 @@ export type ResolversParentTypes = {
   CustomFieldOptionInput: CustomFieldOptionInput;
   CustomFieldValue: CustomFieldValue;
   CustomFieldValueInput: CustomFieldValueInput;
+  Date: Scalars["Date"]["output"];
   DateTime: Scalars["DateTime"]["output"];
   Deal: Deal;
   DealHistoryEntry: DealHistoryEntry;
@@ -1156,16 +1103,12 @@ export type ResolversParentTypes = {
   PersonInput: PersonInput;
   PersonListItem: PersonListItem;
   PersonUpdateInput: PersonUpdateInput;
-  Pipeline: Pipeline;
-  PipelineInput: PipelineInput;
   PriceQuote: PriceQuote;
   PriceQuoteCreateInput: PriceQuoteCreateInput;
   PriceQuoteUpdateInput: PriceQuoteUpdateInput;
   Query: {};
-  Stage: Stage;
   String: Scalars["String"]["output"];
   UpdateActivityInput: UpdateActivityInput;
-  UpdateStageInput: UpdateStageInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
@@ -1173,6 +1116,7 @@ export type ResolversParentTypes = {
   UpdateWFMWorkflowStepInput: UpdateWfmWorkflowStepInput;
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
   User: User;
+  WFMProject: WfmProject;
   WFMProjectType: WfmProjectType;
   WFMStatus: WfmStatus;
   WFMStatusMutationResponse: WfmStatusMutationResponse;
@@ -1311,6 +1255,11 @@ export type CustomFieldValueResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export interface DateScalarConfig
+  extends GraphQLScalarTypeConfig<ResolversTypes["Date"], any> {
+  name: "Date";
+}
+
 export interface DateTimeScalarConfig
   extends GraphQLScalarTypeConfig<ResolversTypes["DateTime"], any> {
   name: "DateTime";
@@ -1328,6 +1277,16 @@ export type DealResolvers<
   >;
   amount?: Resolver<Maybe<ResolversTypes["Float"]>, ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  currentWfmStatus?: Resolver<
+    Maybe<ResolversTypes["WFMStatus"]>,
+    ParentType,
+    ContextType
+  >;
+  currentWfmStep?: Resolver<
+    Maybe<ResolversTypes["WFMWorkflowStep"]>,
+    ParentType,
+    ContextType
+  >;
   customFieldValues?: Resolver<
     Array<ResolversTypes["CustomFieldValue"]>,
     ParentType,
@@ -1363,14 +1322,20 @@ export type DealResolvers<
   >;
   person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
   person_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
-  pipeline?: Resolver<ResolversTypes["Pipeline"], ParentType, ContextType>;
-  pipeline_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  stage?: Resolver<ResolversTypes["Stage"], ParentType, ContextType>;
-  stage_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   weighted_amount?: Resolver<
     Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  wfmProject?: Resolver<
+    Maybe<ResolversTypes["WFMProject"]>,
+    ParentType,
+    ContextType
+  >;
+  wfm_project_id?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
     ParentType,
     ContextType
   >;
@@ -1455,23 +1420,11 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreatePersonArgs, "input">
   >;
-  createPipeline?: Resolver<
-    ResolversTypes["Pipeline"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationCreatePipelineArgs, "input">
-  >;
   createPriceQuote?: Resolver<
     ResolversTypes["PriceQuote"],
     ParentType,
     ContextType,
     RequireFields<MutationCreatePriceQuoteArgs, "dealId" | "input">
-  >;
-  createStage?: Resolver<
-    ResolversTypes["Stage"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationCreateStageArgs, "input">
   >;
   createWFMProjectType?: Resolver<
     ResolversTypes["WFMProjectType"],
@@ -1533,23 +1486,11 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeletePersonArgs, "id">
   >;
-  deletePipeline?: Resolver<
-    ResolversTypes["Boolean"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationDeletePipelineArgs, "id">
-  >;
   deletePriceQuote?: Resolver<
     Maybe<ResolversTypes["Boolean"]>,
     ParentType,
     ContextType,
     RequireFields<MutationDeletePriceQuoteArgs, "id">
-  >;
-  deleteStage?: Resolver<
-    ResolversTypes["Boolean"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationDeleteStageArgs, "id">
   >;
   deleteWFMWorkflowStep?: Resolver<
     ResolversTypes["WFMWorkflowStepMutationResponse"],
@@ -1593,6 +1534,15 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateDealArgs, "id" | "input">
   >;
+  updateDealWFMProgress?: Resolver<
+    ResolversTypes["Deal"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationUpdateDealWfmProgressArgs,
+      "dealId" | "targetWfmWorkflowStepId"
+    >
+  >;
   updateOrganization?: Resolver<
     Maybe<ResolversTypes["Organization"]>,
     ParentType,
@@ -1605,23 +1555,11 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdatePersonArgs, "id" | "input">
   >;
-  updatePipeline?: Resolver<
-    ResolversTypes["Pipeline"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationUpdatePipelineArgs, "id" | "input">
-  >;
   updatePriceQuote?: Resolver<
     ResolversTypes["PriceQuote"],
     ParentType,
     ContextType,
     RequireFields<MutationUpdatePriceQuoteArgs, "id" | "input">
-  >;
-  updateStage?: Resolver<
-    ResolversTypes["Stage"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationUpdateStageArgs, "id" | "input">
   >;
   updateUserProfile?: Resolver<
     Maybe<ResolversTypes["User"]>,
@@ -1758,19 +1696,6 @@ export type PersonListItemResolvers<
 > = {
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type PipelineResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["Pipeline"] = ResolversParentTypes["Pipeline"],
-> = {
-  created_at?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  updated_at?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1916,6 +1841,15 @@ export type QueryResolvers<
     RequireFields<QueryDealArgs, "id">
   >;
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
+  getWfmAllowedTransitions?: Resolver<
+    Array<ResolversTypes["WFMWorkflowTransition"]>,
+    ParentType,
+    ContextType,
+    RequireFields<
+      QueryGetWfmAllowedTransitionsArgs,
+      "fromStepId" | "workflowId"
+    >
+  >;
   health?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
   myPermissions?: Resolver<
@@ -1946,11 +1880,6 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
-  pipelines?: Resolver<
-    Array<ResolversTypes["Pipeline"]>,
-    ParentType,
-    ContextType
-  >;
   priceQuote?: Resolver<
     Maybe<ResolversTypes["PriceQuote"]>,
     ParentType,
@@ -1963,18 +1892,6 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryPriceQuotesForDealArgs, "dealId">
   >;
-  stage?: Resolver<
-    Maybe<ResolversTypes["Stage"]>,
-    ParentType,
-    ContextType,
-    RequireFields<QueryStageArgs, "id">
-  >;
-  stages?: Resolver<
-    Array<ResolversTypes["Stage"]>,
-    ParentType,
-    ContextType,
-    RequireFields<QueryStagesArgs, "pipelineId">
-  >;
   supabaseConnectionTest?: Resolver<
     ResolversTypes["String"],
     ParentType,
@@ -1985,6 +1902,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryWfmProjectTypeArgs, "id">
+  >;
+  wfmProjectTypeByName?: Resolver<
+    Maybe<ResolversTypes["WFMProjectType"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryWfmProjectTypeByNameArgs, "name">
   >;
   wfmProjectTypes?: Resolver<
     Array<ResolversTypes["WFMProjectType"]>,
@@ -2018,28 +1941,6 @@ export type QueryResolvers<
   >;
 };
 
-export type StageResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["Stage"] = ResolversParentTypes["Stage"],
-> = {
-  created_at?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  deal_probability?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  order?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  pipeline?: Resolver<ResolversTypes["Pipeline"], ParentType, ContextType>;
-  pipeline_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  stage_type?: Resolver<ResolversTypes["StageType"], ParentType, ContextType>;
-  updated_at?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
 export type UserResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -2057,6 +1958,48 @@ export type UserResolvers<
   >;
   email?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type WfmProjectResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["WFMProject"] = ResolversParentTypes["WFMProject"],
+> = {
+  completedAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  completedBy?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  currentStep?: Resolver<
+    Maybe<ResolversTypes["WFMWorkflowStep"]>,
+    ParentType,
+    ContextType
+  >;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isActive?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  projectType?: Resolver<
+    ResolversTypes["WFMProjectType"],
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  updatedBy?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  workflow?: Resolver<ResolversTypes["WFMWorkflow"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2238,6 +2181,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   CustomFieldDefinition?: CustomFieldDefinitionResolvers<ContextType>;
   CustomFieldOption?: CustomFieldOptionResolvers<ContextType>;
   CustomFieldValue?: CustomFieldValueResolvers<ContextType>;
+  Date?: GraphQLScalarType;
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
@@ -2247,11 +2191,10 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Organization?: OrganizationResolvers<ContextType>;
   Person?: PersonResolvers<ContextType>;
   PersonListItem?: PersonListItemResolvers<ContextType>;
-  Pipeline?: PipelineResolvers<ContextType>;
   PriceQuote?: PriceQuoteResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
-  Stage?: StageResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
+  WFMProject?: WfmProjectResolvers<ContextType>;
   WFMProjectType?: WfmProjectTypeResolvers<ContextType>;
   WFMStatus?: WfmStatusResolvers<ContextType>;
   WFMStatusMutationResponse?: WfmStatusMutationResponseResolvers<ContextType>;

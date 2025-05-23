@@ -1,10 +1,11 @@
-import { Box, Heading, Spinner, Text, Alert, AlertIcon, AlertTitle, AlertDescription, Flex, IconButton, VStack, Link, Icon } from '@chakra-ui/react';
+import { Box, Heading, Spinner, Text, Alert, AlertIcon, AlertTitle, AlertDescription, Flex, IconButton, VStack, Link, Icon, Button, HStack, Input, useToast } from '@chakra-ui/react';
 import { Link as RouterLink, useParams } from 'react-router-dom';
-import { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useAppStore } from '../stores/useAppStore';
+import { useDealsStore } from '../stores/useDealsStore';
 import DealHistoryList from '../components/deals/DealHistoryList';
 import DealPricingSection from '../components/pricing/DealPricingSection';
-import { ArrowBackIcon, LinkIcon } from '@chakra-ui/icons';
+import { ArrowBackIcon, LinkIcon, EditIcon } from '@chakra-ui/icons';
 
 interface LinkDisplayDetails {
   isUrl: boolean;
@@ -47,8 +48,14 @@ const DealDetailPage = () => {
   const currentDeal = useAppStore((state) => state.currentDeal);
   const isLoading = useAppStore((state) => state.currentDealLoading);
   const error = useAppStore((state) => state.currentDealError);
+  const updateDeal = useDealsStore((state) => state.updateDeal);
+  const toast = useToast();
+
+  const [isEditingProbability, setIsEditingProbability] = useState(false);
+  const [newProbability, setNewProbability] = useState<string>("");
 
   useEffect(() => {
+    console.log('[DealDetailPage] dealId from useParams:', dealId);
     if (dealId) {
       fetchDealById(dealId);
     }
@@ -57,6 +64,65 @@ const DealDetailPage = () => {
       // useAppStore.setState({ currentDeal: null, currentDealError: null }); // Optional: Reset on unmount
     };
   }, [dealId, fetchDealById]);
+
+  // Add this useEffect to log currentDeal changes
+  useEffect(() => {
+    console.log('[DealDetailPage] currentDeal state:', currentDeal);
+  }, [currentDeal]);
+
+  // Adapted from DealCardKanban.tsx
+  const getEffectiveProbabilityDisplay = useMemo(() => {
+    if (!currentDeal) return { display: 'N/A', value: null, source: '' };
+
+    let probability = currentDeal.deal_specific_probability;
+    let source = 'manual';
+
+    if (probability == null) {
+      if (currentDeal.currentWfmStep && 
+          currentDeal.currentWfmStep.metadata && 
+          typeof currentDeal.currentWfmStep.metadata === 'object' && 
+          'deal_probability' in currentDeal.currentWfmStep.metadata) {
+        const stepProbability = (currentDeal.currentWfmStep.metadata as { deal_probability?: number }).deal_probability;
+        if (stepProbability != null) {
+          probability = stepProbability;
+          source = 'step';
+        }
+      }
+    }
+    if (probability == null) return { display: 'N/A', value: null, source: '' };;
+    return {
+      display: `${Math.round(probability * 100)}% (${source})`,
+      value: probability,
+      source
+    };
+  }, [currentDeal]);
+
+  const handleProbabilityUpdate = async () => {
+    if (!dealId) return;
+
+    let probabilityToSet: number | null = null;
+
+    if (newProbability === "") {
+      // User cleared the input, so set probability to null (revert to WFM step default)
+      probabilityToSet = null;
+    } else {
+      const numericProbability = parseFloat(newProbability) / 100;
+      if (isNaN(numericProbability) || numericProbability < 0 || numericProbability > 1) {
+        toast({ title: "Invalid Probability", description: "Please enter a value between 0 and 100.", status: "error", duration: 3000, isClosable: true });
+        return;
+      }
+      probabilityToSet = numericProbability;
+    }
+
+    try {
+      await updateDeal(dealId, { deal_specific_probability: probabilityToSet });
+      toast({ title: "Probability Updated", status: "success", duration: 2000, isClosable: true });
+      setIsEditingProbability(false);
+      fetchDealById(dealId); // Re-fetch to get updated weighted_amount and ensure UI consistency
+    } catch (e) {
+      toast({ title: "Error Updating Probability", description: (e as Error).message, status: "error", duration: 3000, isClosable: true });
+    }
+  };
 
   if (isLoading) {
     return (
@@ -103,7 +169,37 @@ const DealDetailPage = () => {
       <Box mb={6} p={4} borderWidth="1px" borderRadius="lg" bg={{ base: 'white', _dark: 'gray.700' }} borderColor={{ base: 'gray.200', _dark: 'gray.600' }}>
         <Heading size="sm" mb={2}>Details</Heading>
         <Text><strong>Amount:</strong> {currentDeal.amount ? `$${currentDeal.amount.toLocaleString()}` : 'N/A'}</Text>
-        <Text><strong>Stage:</strong> {currentDeal.stage?.name || 'N/A'}</Text>
+        <Text><strong>Stage (Status):</strong> {currentDeal.currentWfmStatus?.name || 'N/A'}</Text>
+        <HStack alignItems="center">
+          <Text><strong>Probability:</strong> {getEffectiveProbabilityDisplay.display}</Text>
+          {!isEditingProbability && (
+            <IconButton 
+              icon={<Icon as={EditIcon} />}
+              size="xs"
+              variant="ghost"
+              aria-label="Edit Deal Probability"
+              onClick={() => {
+                setNewProbability(getEffectiveProbabilityDisplay.value !== null ? (getEffectiveProbabilityDisplay.value * 100).toString() : "");
+                setIsEditingProbability(true);
+              }}
+            />
+          )}
+        </HStack>
+        {isEditingProbability && (
+          <HStack mt={1} mb={2}>
+            <Input 
+              type="number" 
+              value={newProbability} 
+              onChange={(e) => setNewProbability(e.target.value)} 
+              placeholder="Enter % (e.g., 75)"
+              size="sm"
+              width="150px"
+            />
+            <Button size="sm" colorScheme="green" onClick={handleProbabilityUpdate}>Save</Button>
+            <Button size="sm" variant="outline" onClick={() => setIsEditingProbability(false)}>Cancel</Button>
+          </HStack>
+        )}
+        <Text><strong>Weighted Amount:</strong> {currentDeal.weighted_amount ? `$${currentDeal.weighted_amount.toLocaleString()}` : 'N/A'}</Text>
         <Text><strong>Expected Close Date:</strong> {currentDeal.expected_close_date ? new Date(currentDeal.expected_close_date).toLocaleDateString() : 'N/A'}</Text>
         <Text><strong>Person:</strong> {currentDeal.person ? `${currentDeal.person.first_name} ${currentDeal.person.last_name}` : 'N/A'}</Text>
         <Text><strong>Organization:</strong> {currentDeal.organization?.name || 'N/A'}</Text>

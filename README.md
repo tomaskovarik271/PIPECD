@@ -12,7 +12,8 @@ The system utilizes a serverless architecture based on:
 *   **Frontend GraphQL Types:** GraphQL Code Generator (`frontend/codegen.ts`, see `DEVELOPER_GUIDE_V2.md`)
 *   **UI Library:** Chakra UI
 *   **API:** GraphQL Gateway (**GraphQL Yoga**) running as a Netlify Function (`netlify/functions/graphql.ts`); Schema defined in `.graphql` files within `netlify/functions/graphql/schema/`.
-*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`, `pipelineService.ts`), utilities in `lib/serviceUtils.ts`, shared types in `lib/types.ts`.
+*   **Backend Logic:** TypeScript modules in `/lib` (e.g., `personService.ts`, `dealService.ts`), WFM services (e.g., `wfmWorkflowService.ts`, `wfmProjectService.ts`), utilities in `lib/serviceUtils.ts`.
+*   **Work Flow Management (WFM):** A flexible system for managing multi-step processes, currently used for Sales Deals (see `DEVELOPER_GUIDE_V2.md` Section 6 and `ADR-006`). Replaces the legacy Pipeline/Stage system.
 *   **Database:** Supabase (PostgreSQL) with RLS
 *   **Authentication:** Supabase Auth (Email/Password, GitHub configured)
 *   **User Profile Management:** Users can manage their display name and avatar URL, stored in a dedicated `user_profiles` table with RLS. Profile information is integrated into features like Deal History.
@@ -20,21 +21,27 @@ The system utilizes a serverless architecture based on:
 *   **Testing:** Vitest (Unit/Integration), Playwright (E2E)
 *   **Hosting/Deployment:** Netlify (`netlify.toml`)
 
-**Current Status (As of GraphQL Refactor & Pipeline/Stage Implementation):**
+**Current Status (As of WFM Implementation for Sales Deals):**
 
 *   Core infrastructure is set up (Supabase, Netlify, Inngest).
 *   Authentication (Email/Password, GitHub) is working, managed via Zustand store.
-*   Full CRUD implemented for **People**, **Organizations**, **Deals**, **Pipelines**, and **Stages** (Backend services, GraphQL API, Frontend Zustand store, Frontend UI Pages/Modals).
-*   Backend service layer refactored with shared utilities (`lib/serviceUtils.ts`).
-*   GraphQL API layer refactored: Resolvers moved into modular files (`netlify/functions/graphql/resolvers/`).
-*   Full CRUD implemented for **Activities** (Backend service, GraphQL API, Frontend Zustand store, Frontend UI Page/Modals).
+*   Full CRUD implemented for **People**, **Organizations**, and **Activities** (Backend services, GraphQL API, Frontend Zustand store, Frontend UI Pages/Modals).
+*   **Work Flow Management (WFM) System implemented:**
+    *   Core WFM entities (`WFMStatus`, `WFMWorkflow`, `WFMWorkflowStep`, `WFMProjectType`, `WFMProject`, `WFMWorkflowTransition`) and services are in place.
+    *   **Sales Deals are now managed by the WFM system:**
+        *   Legacy **Pipeline** and **Stage** systems have been deprecated and removed.
+        *   Deals are associated with `WFMProject`s.
+        *   Kanban board (`DealsKanbanView`) is driven by WFM workflow steps.
+        *   Deal creation and progression use WFM logic (`updateDealWFMProgress` mutation).
+        *   Deal history logs WFM status changes.
+        *   `WFM_Sales_Kanban_User_Manual.md` created.
 *   **User Profile Management** implemented:
     *   Users can view and edit their `display_name` and `avatar_url`.
     *   Profile data is stored in `user_profiles` table in Supabase.
     *   GraphQL `Query.me` and `Mutation.updateUserProfile` handle profile data.
     *   Deal history now displays the `display_name` of the user who performed the action, leveraging updated RLS policies for `user_profiles` to allow authenticated reads.
 *   Inngest event sending implemented for Person & Deal creation (simple logging handlers).
-*   Basic UI (Chakra UI) implemented for Auth and all core CRUD entities.
+*   Basic UI (Chakra UI) implemented for Auth and all core CRUD entities, including WFM-driven Deal Kanban.
 *   Unit/Integration tests implemented for backend services (`lib/`).
 *   Basic E2E testing setup (Playwright) with login flow.
 *   Production deployment is live on Netlify.

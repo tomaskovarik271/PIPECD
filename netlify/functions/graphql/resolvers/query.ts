@@ -4,8 +4,6 @@ import { supabase } from '../../../../lib/supabaseClient';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 import { dealService } from '../../../../lib/dealService';
-import * as pipelineService from '../../../../lib/pipelineService';
-import * as stageService from '../../../../lib/stageService';
 import * as userProfileService from '../../../../lib/userProfileService';
 import {
   GraphQLContext, 
@@ -13,6 +11,9 @@ import {
   processZodError, 
   requireAuthentication
 } from '../helpers';
+import { wfmStatusService } from '../../../../lib/wfmStatusService';
+import { wfmWorkflowService } from '../../../../lib/wfmWorkflowService';
+import { wfmProjectTypeService } from '../../../../lib/wfmProjectTypeService';
 
 // Import generated types from backend codegen
 import type {
@@ -20,11 +21,10 @@ import type {
     Person as GraphQLPerson,
     Organization as GraphQLOrganization,
     Deal as GraphQLDeal,
-    Pipeline as GraphQLPipeline,
-    Stage as GraphQLStage,
     User as GraphQLUser,
-    PersonListItem as GraphQLPersonListItem
-    // Argument types (e.g., QueryPersonArgs) are inferred by QueryResolvers
+    PersonListItem as GraphQLPersonListItem,
+    WfmWorkflowTransition as GraphQLWfmWorkflowTransition,
+    QueryGetWfmAllowedTransitionsArgs
 } from '../../../../lib/generated/graphql';
 
 
@@ -91,7 +91,6 @@ export const Query: QueryResolvers<GraphQLContext> = {
           requireAuthentication(context);
           const accessToken = getAccessToken(context)!;
           const peopleList = await personService.getPeople(context.currentUser!.id, accessToken);
-          // Map PersonRecord[] to GraphQLPerson[]
           return peopleList.map(p => ({
             id: p.id,
             created_at: p.created_at,
@@ -103,10 +102,8 @@ export const Query: QueryResolvers<GraphQLContext> = {
             phone: p.phone,
             notes: p.notes,
             organization_id: p.organization_id,
-            // Make raw DB data available for the Person.customFieldValues resolver
-            db_custom_field_values: (p).custom_field_values,
-            // organization, deals, activities resolved by Person type resolvers
-          })) as any; // Cast to any to allow db_custom_field_values
+            db_custom_field_values: (p as any).custom_field_values,
+          })) as any; 
       } catch (e) {
          throw processZodError(e, action);
       }
@@ -118,7 +115,6 @@ export const Query: QueryResolvers<GraphQLContext> = {
           const accessToken = getAccessToken(context)!;
           const p = await personService.getPersonById(context.currentUser!.id, args.id, accessToken);
           if (!p) return null;
-          // Map PersonRecord to GraphQLPerson
           return {
             id: p.id,
             created_at: p.created_at,
@@ -130,9 +126,8 @@ export const Query: QueryResolvers<GraphQLContext> = {
             phone: p.phone,
             notes: p.notes,
             organization_id: p.organization_id,
-            // Make raw DB data available for the Person.customFieldValues resolver
             db_custom_field_values: (p as any).custom_field_values,
-          } as any; // Cast to any to allow db_custom_field_values
+          } as any; 
       } catch (e) {
          throw processZodError(e, action);
       }
@@ -157,7 +152,6 @@ export const Query: QueryResolvers<GraphQLContext> = {
        const accessToken = getAccessToken(context)!;
        try {
          const orgs = await organizationService.getOrganizations(context.currentUser!.id, accessToken);
-         // Map OrganizationRecord[] to GraphQLOrganization[]
          return orgs.map(o => ({
             id: o.id,
             created_at: o.created_at,
@@ -166,9 +160,8 @@ export const Query: QueryResolvers<GraphQLContext> = {
             name: o.name,
             address: o.address,
             notes: o.notes,
-            db_custom_field_values: (o).custom_field_values,
-            // activities, deals, people resolved by Organization type resolvers
-         })) as any; // Cast to any to allow db_custom_field_values
+            db_custom_field_values: (o as any).custom_field_values,
+         })) as any; 
        } catch (e) {
           throw processZodError(e, 'fetching organizations list');
        }
@@ -179,7 +172,6 @@ export const Query: QueryResolvers<GraphQLContext> = {
        try {
           const o = await organizationService.getOrganizationById(context.currentUser!.id, args.id, accessToken);
           if (!o) return null;
-          // Map OrganizationRecord to GraphQLOrganization
           return {
             id: o.id,
             created_at: o.created_at,
@@ -189,7 +181,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
             address: o.address,
             notes: o.notes,
             db_custom_field_values: (o as any).custom_field_values,
-          } as any; // Cast to any to allow db_custom_field_values
+          } as any; 
        } catch (e) {
            throw processZodError(e, 'fetching organization by ID');
        }
@@ -209,19 +201,22 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 name: d.name!, 
                 amount: d.amount,
                 expected_close_date: d.expected_close_date,
-                pipeline_id: d.pipeline_id!,
-                stage_id: d.stage_id!, 
+                wfm_project_id: d.wfm_project_id,
                 person_id: d.person_id,
                 organization_id: d.organization_id,
                 deal_specific_probability: d.deal_specific_probability,
-                // Make raw DB data available for the Deal.customFieldValues resolver
-                db_custom_field_values: (d).custom_field_values, 
-           })) as any; // Cast to any to allow db_custom_field_values, field resolvers will complete the type
+                weighted_amount: d.weighted_amount,
+                db_custom_field_values: (d as any).custom_field_values, 
+           })) as any; 
        } catch (e) {
            throw processZodError(e, 'fetching deals list');
        }
     },
     deal: async (_parent, args, context) => {
+       console.log('[Plain Resolver Query.deal] Received args:', JSON.stringify(args, null, 2));
+       if (!args || args.id === undefined || args.id === null) { 
+         console.error('[Plain Resolver Query.deal] args.id is MISSING or null/undefined!', args);
+       }
        requireAuthentication(context);
        const accessToken = getAccessToken(context)!;
        try {
@@ -235,90 +230,62 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 name: d.name!, 
                 amount: d.amount,
                 expected_close_date: d.expected_close_date,
-                pipeline_id: d.pipeline_id!,
-                stage_id: d.stage_id!, 
+                wfm_project_id: d.wfm_project_id,
                 person_id: d.person_id,
                 organization_id: d.organization_id,
                 deal_specific_probability: d.deal_specific_probability,
-                // Make raw DB data available for the Deal.customFieldValues resolver
+                weighted_amount: d.weighted_amount,
                 db_custom_field_values: (d as any).custom_field_values, 
-           } as any; // Cast to any, field resolvers will complete the type
+           } as any; 
        } catch (e) {
            throw processZodError(e, 'fetching deal by ID');
        }
-    },
-    // Pipeline Resolvers
-    pipelines: async (_parent, _args, context: GraphQLContext): Promise<GraphQLPipeline[]> => {
-      requireAuthentication(context);
-      const accessToken = getAccessToken(context)!;
-      try {
-        const pipelineList = await pipelineService.getPipelines(accessToken);
-        return pipelineList.map(p => ({
-          id: p.id,
-          user_id: p.user_id,
-          name: p.name,
-          created_at: p.created_at, 
-          updated_at: p.updated_at,
-        })) as GraphQLPipeline[];
-      } catch (e) {
-        throw processZodError(e, 'fetching pipelines list');
-      }
-    },
-    // Ensure there isn't a singular 'pipeline(id: ID!)' resolver here unless also defined in schema
-
-    // Stage Resolvers
-    stages: async (_parent, args, context) => {
-        const action = 'fetching stages for pipeline ' + args.pipelineId;
-        try {
-            requireAuthentication(context);
-            const accessToken = getAccessToken(context)!;
-            if (!args.pipelineId) throw new GraphQLError("pipelineId is required", { extensions: { code: 'BAD_USER_INPUT' } });
-            const stageList = await stageService.getStagesByPipelineId(accessToken, args.pipelineId);
-            // Map Stage from lib/types to GraphQLStage
-            return stageList.map(s => ({
-                id: s.id,
-                user_id: s.user_id,
-                pipeline_id: s.pipeline_id,
-                name: s.name,
-                order: s.order,
-                deal_probability: s.deal_probability,
-                stage_type: s.stage_type,
-                created_at: s.created_at,
-                updated_at: s.updated_at,
-                // pipeline field resolved by Stage type resolver
-            })) as GraphQLStage[];
-        } catch (error) { 
-            console.error('[Query.stages] Error during ' + action + ':', error);
-            throw processZodError(error, action); 
-        }
-    },
-    stage: async (_parent, args, context) => {
-        const action = 'fetching stage ' + args.id;
-        try {
-            requireAuthentication(context);
-            const accessToken = getAccessToken(context)!;
-            const s = await stageService.getStageById(accessToken, args.id);
-            if (!s) return null;
-            // Map Stage from lib/types to GraphQLStage
-             return {
-                id: s.id,
-                user_id: s.user_id,
-                pipeline_id: s.pipeline_id,
-                name: s.name,
-                order: s.order,
-                deal_probability: s.deal_probability,
-                stage_type: s.stage_type,
-                created_at: s.created_at,
-                updated_at: s.updated_at,
-            } as GraphQLStage;
-        } catch (error) {
-            console.error('[Query.stage] Error during ' + action + ':', error);
-            throw processZodError(error, action);
-        }
     },
     // --- My Permissions Query ---\
     myPermissions: (_parent, _args, context) => {
         requireAuthentication(context);
         return context.userPermissions ?? []; // Already returns string[]
+    },
+    wfmProjectTypeByName: async (_parent, args, context) => {
+      requireAuthentication(context);
+      return wfmProjectTypeService.getWFMProjectTypeByName(args.name, context);
+    },
+    getWfmAllowedTransitions: async (
+      _parent,
+      args: QueryGetWfmAllowedTransitionsArgs, 
+      context: GraphQLContext
+    ): Promise<GraphQLWfmWorkflowTransition[]> => {
+      requireAuthentication(context);
+      const { workflowId, fromStepId } = args;
+      return wfmWorkflowService.getAllowedTransitions(workflowId, fromStepId, context);
+    },
+    // --- WFM Status Resolvers ---
+    wfmStatuses: async (_parent, args, context: GraphQLContext) => {
+      requireAuthentication(context);
+      return wfmStatusService.getAll(args.isArchived || false, context);
+    },
+    wfmStatus: async (_parent, args, context: GraphQLContext) => {
+      requireAuthentication(context);
+      return wfmStatusService.getById(args.id, context);
+    },
+
+    // --- WFM Workflow Resolvers ---
+    wfmWorkflows: async (_parent, args, context: GraphQLContext) => {
+      requireAuthentication(context);
+      return wfmWorkflowService.getAll(args.isArchived || false, context);
+    },
+    wfmWorkflow: async (_parent, args, context: GraphQLContext) => {
+      requireAuthentication(context);
+      return wfmWorkflowService.getById(args.id, context);
+    },
+
+    // --- WFM Project Type Resolvers ---
+    wfmProjectTypes: async (_parent, args, context: GraphQLContext) => {
+      requireAuthentication(context);
+      return wfmProjectTypeService.getAll(args.isArchived || false, context);
+    },
+    wfmProjectType: async (_parent, args, context: GraphQLContext) => {
+      requireAuthentication(context);
+      return wfmProjectTypeService.getById(args.id, context);
     },
 }; 

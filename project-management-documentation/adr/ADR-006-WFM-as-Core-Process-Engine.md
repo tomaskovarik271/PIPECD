@@ -123,22 +123,100 @@ The following tables will be created, adhering to existing database patterns (UU
 
 ### 4.2. Phase 2: Refactoring Sales Pipeline & Deal Management (Future)
 
-This phase will occur after the core WFM is implemented and stable.
+This phase will occur after the core WFM is implemented and stable. The goal is to transition the existing Sales Pipeline functionality to be powered by the WFM system.
 
-1.  **Status Migration/Creation:**
-    *   Analyze existing sales `Stages`.
-    *   Create corresponding global `Statuses` in the WFM (e.g., "Lead," "Qualified," "Proposal Sent," "Negotiation," "Closed Won," "Closed Lost") using the WFM Admin UI.
-2.  **Sales Workflow Definition:**
-    *   Define one or more "Sales Workflows" within WFM using the WFM Admin UI.
-3.  **Deal Entity Adaptation (Option A Preferred):**
-    *   Add a `wfm_project_id` FK to the `deals` table, linking to a `projects` record in WFM.
-    *   When a `Deal` is created, a corresponding WFM `Project` (of `ProjectType` "Sales Deal") is automatically created.
-    *   The `deals.stage_id` column will be deprecated.
-4.  **UI Refactoring:**
-    *   Adapt Sales Pipeline UI (deal board, list views) to fetch deal data along with its associated WFM `Project` status.
-    *   Utilize or adapt the WFM `ProjectBoard.tsx` component.
-5.  **Data Migration:**
-    *   Develop a script to migrate existing `deals` and their `stage_id` values (from the current `stages` table) to the new WFM-based structure. Deprecate `pipelines` and `stages` tables.
+1.  **Prerequisites & WFM Configuration for Sales:**
+    *   **DONE:** Verify WFM Stability: Confirm all Phase 1 WFM components (DB, API, Admin UIs) are stable.
+    *   **DONE:** Analyze Existing Sales `stages`: Query the `public.stages` table to understand current stage names, typical order, probabilities, and types (OPEN, WON, LOST).
+    *   **DONE:** Create Global `WFMStatus` Records: Using the WFM Admin UI, create `WFMStatus` entries for each distinct sales stage (e.g., "Lead", "Qualification", "Proposal Sent", "Negotiation", "Closed Won", "Closed Lost").
+    *   **DONE:** Define "Sales" `WFMWorkflow`(s):
+        *   Using the WFM Admin UI, create `WFMWorkflow`(s) (e.g., "Standard Sales Process").
+        *   Within each workflow, add `WFMWorkflowSteps` using the created `WFMStatus` records, define `stepOrder`, `isInitialStep`, `isFinalStep` flags.
+        *   Populate `WFMWorkflowStep.metadata` for sales-specific attributes (e.g., `{"deal_probability": 0.25}`, `{"outcome_type": "WON"}`). (Initial population done, UI for easy editing is **TODO** in Sprint 1.3 WFM Admin).
+        *   Define all necessary `WFMWorkflowTransitions` between these steps.
+    *   **DONE:** Define "Sales Deal" `WFMProjectType`: Using the WFM Admin UI, create a `WFMProjectType` (e.g., "Sales Deal") and assign the relevant "Sales Workflow" as its default.
+
+2.  **Database Schema Changes:**
+    *   **DONE:** Create `wfm_projects` Table: This table will store instances of WFM-managed processes.
+        *   Key columns: `id` (PK), `project_type_id` (FK to `project_types`), `workflow_id` (FK to `workflows`), `current_step_id` (FK to `workflow_steps`), `name`, `created_at`, `updated_at`.
+        *   Implement RLS (initially service role, future user-based if needed).
+    *   **DONE:** Add `wfm_project_id` to `deals` Table: Add a nullable FK column `wfm_project_id` to `public.deals` referencing `public.wfm_projects(id)`.
+    *   **DONE:** Apply Migrations: Create and run Supabase migration scripts for these schema changes.
+
+3.  **Backend: API & Service Layer Refactoring:**
+    *   **DONE:** Create `WFMProjectService` (`lib/wfmProjectService.ts`):
+        *   Implement functions:
+            *   `createWFMProject(input: { projectTypeId: string, workflowId: string, name: string, initialStepId?: string, description?: string, createdByUserId?: string }, context: Context): Promise<WFMProject>`
+            *   `getWFMProjectById(id: string, context: Context): Promise<WFMProject | null>`
+            *   `updateWFMProjectStep(projectId: string, targetStepId: string, userId: string, context: Context): Promise<WFMProject>` (This service will be responsible for updating `wfm_projects.current_step_id`).
+    *   **DONE:** Refactor `DealService` (primarily in `lib/dealService/dealCrud.ts` and `lib/dealService/dealProbability.ts`):
+        *   Modify **`createDealInternal`** (in `dealCrud.ts`):
+            *   After successfully creating a `Deal` record:
+                *   Fetch the "Sales Deal" `WFMProjectType` to get its `defaultWorkflowId`.
+                *   Fetch the default `WFMWorkflow` to find its `isInitialStep` `WFMWorkflowStep`.
+                *   Call `wfmProjectService.createWFMProject` to create a linked WFM project, passing the deal's name, project type ID, workflow ID, initial step ID, and user ID.
+                *   Update the newly created `Deal` record with the `wfm_project_id` from the created WFM project.
+                *   **Cease populating `deals.stage_id`**. The deal's stage/status will be derived from the linked WFM project's current step.
+        *   Modify **`updateDealInternal`** (in `dealCrud.ts`):
+            *   This function **must no longer accept or process `stage_id` or `pipeline_id` for deal progression**. It should focus on updates to core `Deal` attributes (e.g., `name`, `amount`, `customFields`).
+            *   If `stage_id` or `pipeline_id` are passed, they should be ignored, or a warning logged, to enforce the new progression mechanism.
+        *   Refactor **`calculateDealProbabilityFields`** (in `dealProbability.ts`):
+            *   **DONE:** This function (or a new complementary function) will need to operate based on WFM data.
+            *   **DONE:** It should take a `targetWfmWorkflowStep: WFMWorkflowStep` (which includes its `metadata` like `deal_probability` and `outcome_type`) as input, instead of relying on `dealUpdateInput.stage_id` to fetch from the `stages` table.
+            *   **DONE:** When determining `oldDealData`'s probability context, it must fetch the linked `WFMProject`, its `current_step_id`, and that step's `metadata`.
+    *   **DONE (Schema updated, deprecation directive TODO):** GraphQL Schema Changes (`netlify/functions/graphql/schema/`):
+        *   In `deal.graphql`:
+            *   Add `wfmProject: WFMProject`, `currentWfmStep: WFMWorkflowStep`, `currentWfmStatus: WFMStatus` to the `Deal` type.
+            *   Mark `pipeline_id`, `pipeline`, `stage_id`, `stage` fields as `@deprecated`. (**TODO:** Add actual `@deprecated` directives).
+        *   Create `wfm_project.graphql` (or similar) defining the `WFMProject` type (if not already covered by WFM definitions, likely just needs to ensure it's resolvable).
+        *   Extend `Mutation` type with `updateDealWFMProgress(dealId: ID!, targetWfmWorkflowStepId: ID!): Deal!`.
+    *   **DONE:** Implement/Update GraphQL Resolvers (`netlify/functions/graphql/resolvers/`):
+        *   In `deal.ts`:
+            *   Add resolvers for `Deal.wfmProject`, `Deal.currentWfmStep`, `Deal.currentWfmStatus` using `deal.wfm_project_id` to fetch data via services.
+            *   **DONE (Implicit):** The `Deal.weighted_amount` field resolver was simplified to directly pass through the value from its parent (the `Query.deal` or `Mutation.updateDeal` resolver), as the backend service layer already correctly calculates and stores this value.
+            *   The resolver for `Mutation.updateDeal` should no longer pass `stage_id` or `pipeline_id` from `args.input` to the underlying service for progression.
+        *   Implement the resolver for **`Mutation.updateDealWFMProgress`**:
+            1.  Fetch the `Deal` to get `deal.wfm_project_id`. If no project, handle error (deal not set up for WFM).
+            2.  Fetch the `WFMProject` using `wfm_project_id` to get its `workflow_id` and `current_step_id`.
+            3.  Call `wfmWorkflowService.validateTransition(workflow_id, current_step_id, args.targetWfmWorkflowStepId, context)` (ensure this validation function exists and is robust in `wfmWorkflowService`).
+            4.  If valid, call `wfmProjectService.updateWFMProjectStep(wfm_project_id, args.targetWfmWorkflowStepId, userId, context)`.
+            5.  Fetch the updated `WFMWorkflowStep` (the `targetWfmWorkflowStepId`).
+            6.  Call the refactored `calculateDealProbabilityFields` (passing the target WFM step's data including metadata) to get new probability/weighted amount.
+            7.  Update `deals.deal_specific_probability` and `deals.weighted_amount` based on the calculation.
+            8.  Return the updated `Deal`.
+    *   **DONE:** Run Codegen: Update generated GraphQL types (`npm run codegen`).
+
+4.  **Frontend: UI Refactoring:**
+    *   **Deal Kanban Board:**
+        *   **DONE:** Columns: Fetch `WFMWorkflowSteps` from the "Sales Deal" `WFMProjectType`'s default `WFMWorkflow`.
+        *   **DONE:** Card Rendering: Use `Deal.currentWfmStep.id` (or status ID) for column placement.
+        *   **DONE:** Drag-and-Drop: Call `updateDealWFMProgress` mutation.
+        *   **TODO:** Adapt display of `deal_probability` on Deal Cards based on `Deal.deal_specific_probability` (which is influenced by `WFMWorkflowStep.metadata` or manual override).
+    *   **Deal Detail Page/View:**
+        *   **TODO:** Refactor the existing Deal Detail page/view.
+            *   Display `Deal.currentWfmStatus.name` prominently as the current stage.
+            *   Display `Deal.deal_specific_probability` (e.g., as a percentage) and `Deal.weighted_amount`. (**Note:** The issue where `weighted_amount` showed "N/A" when `deal_specific_probability` was null has been **RESOLVED**. The backend service correctly calculates and stores it, and the GraphQL resolver chain ensures this value is passed to the frontend.)
+            *   Provide a mechanism to manually override `Deal.deal_specific_probability` if business rules allow (this may require a new mutation or an extension to `updateDeal`).
+            *   Implement UI elements (e.g., buttons like "Move to Next Step: [Step Name]" or a dropdown of valid next steps) to trigger `updateDealWFMProgress`. These elements must only show valid transitions based on `wfmWorkflowService.getAllowedTransitions(workflowId, currentStepId)`.
+            *   Ensure all other existing deal information (e.g., amount, contacts, company, custom field values, activities) remains visible and editable as appropriate.
+            *   Remove any UI elements related to the old `pipeline_id` or `stage_id` selection for progression.
+    *   **Deal Create/Edit Modals:**
+        *   **DONE:** Remove old `Pipeline`/`Stage` selectors.
+        *   **DONE:** New deals automatically use default WFM setup for "Sales Deal" `ProjectType` (via `wfmProjectTypeId` passed in `createDeal` mutation).
+        *   **TODO:** The "Edit Deal" modal should also reflect WFM status and not allow direct stage editing (progression only via WFM actions, potentially on Detail Page or Kanban). Core deal attributes (name, amount) remain editable.
+    *   **Deal List Views:**
+        *   **DONE:** Update table columns to show `Deal.currentWfmStatus.name` instead of the old stage.
+        *   **TODO:** Update filtering and sorting options to use `Deal.currentWfmStatus.name` or other WFM-derived fields.
+
+5.  **Testing & Validation:**
+    *   **IN PROGRESS:** Conduct comprehensive backend (unit, integration) and frontend (E2E) testing.
+    *   **TODO:** Perform post-migration data validation and User Acceptance Testing (UAT) (relevant once data migration is performed in a future phase, but general UAT for new functionality is ongoing).
+
+6.  **Deprecation & Cleanup (Post-Rollout & Stabilization):**
+    *   **TODO:** After a stability period, add `@deprecated` directives to GraphQL fields (`Deal.pipeline_id`, etc.).
+    *   **TODO:** Remove old database columns (`deals.pipeline_id`, `deals.stage_id`).
+    *   **TODO:** Archive and then delete old `public.pipelines` and `public.stages` tables.
+    *   **TODO:** Clean up unused code related to the old system.
 
 ### 4.3. Development Plan & Sequencing Priorities
 
@@ -169,18 +247,20 @@ This phase will occur after the core WFM is implemented and stable.
                 *   **DONE:** Deleting `workflow_steps` (frontend calls exist, backend implications verified).
             *   **DONE:** Implement UI for creating/deleting `workflow_transitions` between steps (Frontend UI, modals, and store actions `createWorkflowTransition` and `deleteWorkflowTransition` are implemented and functional).
             *   **TODO:** Implement UI for editing `workflow_transitions` (e.g., changing the transition name).
+            *   **TODO:** Enhance `WorkflowStepForm` (or a dedicated section in `EditWorkflowStepsModal`) to allow admins to easily configure sales-specific metadata like `deal_probability` and `outcome_type` (e.g. WON, LOST, OPEN) when a step is part of a "Sales" workflow or used by "Sales Deal" project type. This makes setting up sales processes more intuitive.
             *   **DONE:** Implement "Save" functionality for all step/transition changes (Step order saving is DONE. Saving for transitions is handled by individual create/delete/update actions. This item is now considered complete).
     *   **Sprint 1.4 (Project Board & Enforcement):**
-        *   Develop initial `ProjectBoard.tsx` (rendering based on workflow, basic drag-drop).
-        *   Implement `updateProjectStatus` (or similar) mutation with workflow transition enforcement.
-2.  **Phase 2: Sales Pipeline Refactor (Details in Section 4.2):** To be planned after Phase 1 completion.
+        *   **TODO:** Develop initial `ProjectBoard.tsx` (rendering based on workflow, basic drag-drop) - *Note: This overlaps with Sales Kanban refactor and can be considered partially done for Sales. A generic project board is still TODO.*
+        *   **TODO:** Implement `updateProjectStatus` (or similar) mutation with workflow transition enforcement for generic WFM Projects.
+2.  **Phase 2: Sales Pipeline Refactor (Details in Section 4.2):**
+    *   **IN PROGRESS** (significant portions DONE as detailed in section 4.2)
 3.  **Ongoing:** Continue with other WFM features as per `feature_enterprise_task_workflow_system_plan.md` (Comments, History, etc.), which will now benefit all modules using WFM.
 
 ## 5. Risks
 
 *   **Greenfield Development Alignment:** Ensuring new WFM components integrate smoothly with existing application structures and that assumptions are validated.
 *   **Refactoring Complexity (Future Phase):** Modifying existing Sales Pipeline functionality carries risk.
-*   **Data Migration Challenges (Future Phase):** Migrating live deal/stage data.
+*   **Data Migration Challenges (Future Phase):** Migrating live deal/stage data (Note: Data migration section removed for now as per request, but risk remains if/when it becomes necessary).
 *   **Performance:** A highly generic WFM engine, if not optimized, could face challenges.
 *   **User Experience (UX) for Sales (Future Phase):** Changes to Sales Pipeline UI will require user training.
 *   **Scope Creep for WFM Core:** Defining "core" WFM vs. domain-specific layers is important.

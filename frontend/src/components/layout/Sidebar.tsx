@@ -32,7 +32,6 @@ const NAV_ITEMS = [
   { path: '/deals', label: 'Deals', icon: <CheckCircleIcon /> },
   { path: '/people', label: 'People', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
-  { path: '/pipelines', label: 'Pipelines', icon: <ArrowRightIcon /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
 ];
 

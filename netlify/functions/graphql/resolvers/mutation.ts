@@ -1,12 +1,12 @@
-import type { MutationResolvers } from '../../../lib/generated/graphql'; // Adjusted path
+import type { MutationResolvers } from '../../../../lib/generated/graphql'; // Adjusted path
 import type { GraphQLContext } from '../helpers';
 
 // Import specific mutation resolver groups from ./mutations/ directory
 import { dealMutations } from './mutations/dealMutations';
 import { organizationMutations } from './mutations/organizationMutations';
 import { personMutations } from './mutations/personMutations';
-import { pipelineMutations } from './mutations/pipelineMutations';
-import { stageMutations } from './mutations/stageMutations';
+// import { pipelineMutations } from './mutations/pipelineMutations'; // REMOVED
+// import { stageMutations } from './mutations/stageMutations'; // REMOVED
 import { userProfileMutations } from './mutations/userProfileMutations';
 import { pricingMutationResolvers } from './mutations/pricingMutations'; // Added pricing mutations
 
@@ -16,8 +16,8 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
   ...dealMutations,
   ...organizationMutations,
     ...personMutations,
-    ...pipelineMutations,
-    ...stageMutations,
+    // ...pipelineMutations, // REMOVED
+    // ...stageMutations, // REMOVED
   ...userProfileMutations,
   ...pricingMutationResolvers,
 }; 

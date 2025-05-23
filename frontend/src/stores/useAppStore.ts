@@ -7,7 +7,7 @@ import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
 import type {
   // Stage, // No longer needed if only Pipeline is exported by name
   Maybe,
-  Pipeline,
+  // Pipeline, // REMOVED
   Deal as GraphQLDeal,
   DealHistoryEntry as GraphQLDealHistoryEntry,
   User as GraphQLUser
@@ -18,7 +18,7 @@ import type {
 
 // Re-export core entity and input types for external use
 export type {
-  Pipeline,
+  // Pipeline, // REMOVED
   Maybe,
   // GraphQLActivity as Activity, // Removed, re-exported from useActivitiesStore if needed elsewhere
 };
@@ -37,10 +37,23 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
       created_at
       updated_at
       deal_specific_probability
-      stage {
+      weighted_amount
+      currentWfmStatus {
         id
         name
-        pipeline_id
+        color
+      }
+      currentWfmStep {
+        id
+        stepOrder
+        isInitialStep
+        isFinalStep
+        metadata
+        status {
+          id
+          name
+          color
+        }
       }
       person {
           id
@@ -201,18 +214,21 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Deal Detail Actions
   fetchDealById: async (dealId: string) => {
-    set({ currentDealLoading: true, currentDealError: null, currentDeal: null });
+    console.log('[useAppStore.fetchDealById] Received dealId:', dealId);
+    set({ currentDealLoading: true, currentDealError: null });
     if (!get().session?.access_token) {
       set({ currentDealLoading: false, currentDealError: 'User not authenticated to fetch deal.' });
       return;
     }
     try {
+      const variables = { dealId };
+      console.log('[useAppStore.fetchDealById] Variables for gqlClient.request:', variables);
       const data = await gqlClient.request<
         { deal: DealWithHistory }, 
         { dealId: string } 
       >(
         GET_DEAL_WITH_HISTORY_QUERY, 
-        { dealId } 
+        variables 
       );
       set({ currentDeal: data.deal, currentDealLoading: false });
     } catch (error: any) {

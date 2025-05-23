@@ -44,6 +44,11 @@ export const WFMProjectTypeResolvers = {
       const projectType = await wfmProjectTypeService.getById(args.id, context);
       return projectType as WfmProjectTypeWithResolvedIds | null;
     },
+    wfmProjectTypeByName: async (_parent: unknown, args: { name: string }, context: GraphQLContext): Promise<WfmProjectType | null> => {
+      console.log('Resolving Query.wfmProjectTypeByName with name:', args.name, 'user:', context.currentUser?.id);
+      const projectType = await wfmProjectTypeService.getWFMProjectTypeByName(args.name, context);
+      return projectType as WfmProjectTypeWithResolvedIds | null;
+    },
   },
   Mutation: {
     createWFMProjectType: async (_parent: unknown, args: { input: CreateWfmProjectTypeInput }, context: GraphQLContext): Promise<WfmProjectType> => {

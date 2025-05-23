@@ -136,6 +136,36 @@ export const getCustomFieldDefinitionById = async (
   return mapDbDefinitionToGraphQL(data);
 };
 
+export const getCustomFieldDefinitionsByIds = async (
+  supabase: SupabaseClient,
+  ids: string[]
+): Promise<GraphQLCustomFieldDefinition[]> => {
+  if (!ids || ids.length === 0) {
+    return [];
+  }
+  const { data, error } = await supabase
+    .from(CUSTOM_FIELD_DEFINITIONS_TABLE)
+    .select('*')
+    .in('id', ids);
+
+  handleSupabaseError(error, `fetching custom field definitions by ids ${ids.join(', ')}`);
+
+  if (!data) {
+    return [];
+  }
+  try {
+    return data.map(mapDbDefinitionToGraphQL);
+  } catch (mappingError: any) {
+    console.error('[Service Error] Failed to map custom field definitions by IDs:', mappingError.message, mappingError.stack);
+    throw new GraphQLError('Error processing custom field definitions data by IDs.', {
+      extensions: {
+        code: 'DATA_PROCESSING_ERROR',
+        details: mappingError.message,
+      },
+    });
+  }
+};
+
 export const createCustomFieldDefinition = async (
   supabase: SupabaseClient,
   input: GraphQLCustomFieldDefinitionInput

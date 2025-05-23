@@ -1,0 +1,25 @@
+"""
+Represents a specific instance of a workflow being executed for a particular entity (e.g., a deal, a task).
+"""
+type WFMProject {
+  id: ID!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdBy: User
+  updatedBy: User
+  projectType: WFMProjectType! # Link to the WFMProjectType definition
+  workflow: WFMWorkflow!      # Link to the WFMWorkflow definition
+  currentStep: WFMWorkflowStep # The current step the project is in, can be null if not started or in an edge case
+  name: String!
+  description: String
+  completedAt: DateTime
+  completedBy: User
+  isActive: Boolean!
+  metadata: JSON
+  
+  # Fields mapping to DB columns like project_type_id, workflow_id, current_step_id, created_by_user_id, updated_by_user_id
+  # will be resolved to the objects above (projectType, workflow, currentStep, createdBy, updatedBy)
+}
+
+# Inputs for WFMProject (if needed for direct mutations later, not strictly for Deal linkage initially)
+# We might not need direct mutations on WFMProject if it's always managed via an owning entity like Deal. 

@@ -3,17 +3,26 @@ import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { GraphQLContext, requireAuthentication, getAccessToken, processZodError } from '../helpers';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
-import * as stageService from '../../../../lib/stageService';
 import * as activityService from '../../../../lib/activityService'; // Added import for activityService
-import type { DealResolvers, Person, Organization, Stage as GraphQLStage, Deal as GraphQLDealParent, CustomFieldValue as GraphQLCustomFieldValue, CustomFieldDefinition as GraphQLCustomFieldDefinition, Activity as GraphQLActivity } from '../../../../lib/generated/graphql'; // Added Activity to imports
+import type { DealResolvers, Person, Organization, Deal as GraphQLDealParent, CustomFieldValue as GraphQLCustomFieldValue, CustomFieldDefinition as GraphQLCustomFieldDefinition, Activity as GraphQLActivity, WfmProject, WfmWorkflowStep, WfmStatus } from '../../../../lib/generated/graphql'; // CORRECTED CASING
 import { CustomFieldEntityType, CustomFieldType } from '../../../../lib/generated/graphql'; // Ensure enums are imported as values
 import { getAuthenticatedClient } from '../../../../lib/serviceUtils'; // Added import for getAuthenticatedClient
 import * as customFieldDefinitionService from '../../../../lib/customFieldDefinitionService';
+import * as wfmProjectService from '../../../../lib/wfmProjectService'; // ADDED
+import { wfmWorkflowService } from '../../../../lib/wfmWorkflowService'; // CHANGED
+import { wfmStatusService } from '../../../../lib/wfmStatusService'; // CHANGED
 
-// Define the parent type for Deal field resolvers to ensure all fields are available
-// type ParentDeal = Pick<GraphQLDealParent, 'id' | 'person_id' | 'stage_id' | 'amount' | 'deal_specific_probability'> & {
-//   stage?: Pick<GraphQLStage, 'deal_probability'> | null; // Ensure stage with deal_probability can be part of parent
-// };
+// This interface should match the actual object returned by Query.deals/Query.deal resolvers
+interface DealResolverParent extends Pick<GraphQLDealParent, 'id' | 'wfm_project_id'> {
+  // Add other fields from Deal if necessary for other resolvers on Deal type
+}
+
+// This interface represents the raw data for a WFM Project as fetched from the database
+interface RawDbWfmProject {
+  id: string;
+  current_step_id?: string | null; // from wfm_projects table
+  // other raw fields from wfm_projects table ...
+}
 
 export const Deal: DealResolvers<GraphQLContext> = {
     // Resolver for the 'person' field on Deal
@@ -62,80 +71,16 @@ export const Deal: DealResolvers<GraphQLContext> = {
         return null;
       }
     },
-    // Resolver for the 'stage' field on Deal
-    stage: async (parent, _args, context) => { 
-        if (!parent.stage_id) {
-            console.error(`Deal ${parent.id} is missing stage_id.`);
-            throw new GraphQLError('Internal Error: Deal is missing stage information.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
-        }
-        requireAuthentication(context); 
-        const accessToken = getAccessToken(context)!; 
-        
-        try {
-            const stageRecord = await stageService.getStageById(accessToken, parent.stage_id);
-            if (!stageRecord) {
-                console.error(`Stage ${parent.stage_id} not found for deal ${parent.id}.`);
-                 throw new GraphQLError('Stage associated with this deal not found.', { extensions: { code: 'NOT_FOUND' } });
-            }
-            return {
-                id: stageRecord.id,
-                user_id: stageRecord.user_id,
-                pipeline_id: stageRecord.pipeline_id,
-                name: stageRecord.name,
-                order: stageRecord.order,
-                deal_probability: stageRecord.deal_probability,
-                created_at: stageRecord.created_at,
-                updated_at: stageRecord.updated_at,
-            } as GraphQLStage;
-        } catch (e) {
-            console.error(`Error fetching stage ${parent.stage_id} for deal ${parent.id}:`, e);
-             if (e instanceof GraphQLError && e.extensions?.code === 'NOT_FOUND') {
-                 throw e; 
-             }
-             throw processZodError(e, `fetching stage ${parent.stage_id}`);
-        }
-    },
     // Resolver for the 'weighted_amount' field on Deal
-    weighted_amount: async (parent: GraphQLDealParent, _args: any, context: GraphQLContext) => {
-        if (parent.amount == null) {
-            return null;
+    weighted_amount: (parent: GraphQLDealParent, _args: any, _context: GraphQLContext, _info: GraphQLResolveInfo): number | null => {
+        // The 'parent' object is the result from the Query.deal or Mutation.updateDeal resolver.
+        // We've already ensured that those parent resolvers correctly include the 
+        // 'weighted_amount' as calculated and stored by the dealService.
+        // So, we just pass it through.
+        if (typeof parent.weighted_amount === 'number') {
+            return parent.weighted_amount;
         }
-
-        let probabilityToUse: number | null | undefined = parent.deal_specific_probability;
-
-        if (probabilityToUse == null) {
-            let stageDealProbability: number | null | undefined = null;
-
-            // Check if stage is already resolved on the parent and has deal_probability
-            if (parent.stage && typeof parent.stage.deal_probability === 'number') { 
-                stageDealProbability = parent.stage.deal_probability;
-            } else if (parent.stage_id) {
-                // If stage is not resolved, or doesn't have probability, and we have stage_id, fetch the stage
-                requireAuthentication(context); // Ensure context is authenticated for service call
-                const accessToken = getAccessToken(context);
-                if (!accessToken) {
-                    // This case should ideally be caught by requireAuthentication, but as a safeguard:
-                    console.error('Authentication token not found in weighted_amount resolver.');
-                    throw new GraphQLError('User not authenticated', { extensions: { code: 'UNAUTHENTICATED' } });
-                }
-                try {
-                    const stageRecord = await stageService.getStageById(accessToken, parent.stage_id);
-                    if (stageRecord && typeof stageRecord.deal_probability === 'number') {
-                        stageDealProbability = stageRecord.deal_probability;
-                    }
-                } catch (e) {
-                    console.error(`Error fetching stage ${parent.stage_id} for deal ${parent.id} within weighted_amount resolver:`, e);
-                    // If stage fetch fails, proceed without stage probability (probabilityToUse remains null)
-                }
-            }
-            probabilityToUse = stageDealProbability;
-        }
-
-        if (probabilityToUse != null) {
-            // Ensure parent.amount is still valid if any async operations occurred, though it shouldn't change.
-            return parent.amount * probabilityToUse;
-        }
-        return null; // If no probability can be determined
+        return null;
     },
     // TODO: Add resolver for Deal.activities if not already present or handled by default
 
@@ -215,7 +160,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
           return [];
         }
 
-        const resolvedValues: GraphQLCustomFieldValue[] = definitions
+        const mappedValues: GraphQLCustomFieldValue[] = definitions
           .map((definition: GraphQLCustomFieldDefinition) => {
             const rawValue = dealSpecificValues[definition.fieldName];
 
@@ -271,20 +216,14 @@ export const Deal: DealResolvers<GraphQLContext> = {
                 }
                 break;
               default:
-                console.warn(`Unhandled custom field type: ${definition.fieldType} for field ${definition.fieldName}`);
+                console.warn(`Unhandled custom field type: ${definition.fieldType as string} for definition ${definition.fieldName}`);
             }
             return fieldValue;
-          })
-          // Filter out definitions for which the deal doesn't have a value stored in custom_field_values.
-          // This means we only return custom fields that are *set* on the deal.
-          // If we wanted to return all active definitions for the deal, with null values for those not set,
-          // we would remove this filter and the initial check for Object.keys(dealSpecificValues).length === 0.
-          .filter(fv => fv.stringValue !== null || fv.numberValue !== null || fv.booleanValue !== null || fv.dateValue !== null || (fv.selectedOptionValues && fv.selectedOptionValues.length > 0));
-
-        return resolvedValues;
-
+          });
+        console.log(`[Resolver Deal.customFieldValues] For Deal ${parent.id}, resolvedValues (before any accidental filter):`, JSON.stringify(mappedValues, null, 2)); 
+        return mappedValues; // Return mappedValues directly
       } catch (error) {
-        console.error('Error resolving customFieldValues for deal:', parent.id, error);
+        console.error(`Error resolving customFieldValues for deal ${parent.id}:`, error);
         if (error instanceof GraphQLError) throw error;
         throw new GraphQLError('Could not resolve custom field values for the deal.', {
           extensions: { code: 'INTERNAL_SERVER_ERROR' },
@@ -321,5 +260,80 @@ export const Deal: DealResolvers<GraphQLContext> = {
       // Log the raw data from the database
       console.log('[Deal.history resolver] Raw data for deal_id', parent.id, ':', JSON.stringify(data, null, 2));
       return data || [];
+    },
+
+    // ADDING NEW WFM-RELATED RESOLVERS
+    wfmProject: async (parent: DealResolverParent, _args, context: GraphQLContext): Promise<WfmProject | null> => {
+      if (!parent.wfm_project_id) {
+        return null;
+      }
+      console.log(`[Resolver.Deal.wfmProject] For deal ${parent.id}, fetching WFMProject ID: ${parent.wfm_project_id}`);
+      try {
+        // wfmProjectService.getWFMProjectById is assumed to return the raw DB object (or an object closely matching it)
+        // which will serve as the parent for WFMProject type resolvers.
+        const projectData = await wfmProjectService.getWFMProjectById(parent.wfm_project_id, context);
+        if (!projectData) {
+          console.error(`[Resolver.Deal.wfmProject] WFMProject not found with ID: ${parent.wfm_project_id} for deal ${parent.id}`);
+          return null;
+        }
+        return projectData as any; // Cast to allow GQL to use WFMProject resolvers on this raw data
+      } catch (error) {
+        console.error(`[Resolver.Deal.wfmProject] Error fetching WFMProject ID ${parent.wfm_project_id} for deal ${parent.id}:`, error);
+        return null;
+      }
+    },
+
+    currentWfmStep: async (parent: DealResolverParent, _args, context: GraphQLContext): Promise<WfmWorkflowStep | null> => {
+      if (!parent.wfm_project_id) {
+        return null;
+      }
+      console.log(`[Resolver.Deal.currentWfmStep] For deal ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
+      try {
+        const projectData = await wfmProjectService.getWFMProjectById(parent.wfm_project_id, context) as RawDbWfmProject | null;
+        if (!projectData || !projectData.current_step_id) {
+          console.log(`[Resolver.Deal.currentWfmStep] WFMProject ${parent.wfm_project_id} or its current_step_id not found.`);
+          return null;
+        }
+        console.log(`[Resolver.Deal.currentWfmStep] Found current_step_id: ${projectData.current_step_id}`);
+        const step = await wfmWorkflowService.getStepById(projectData.current_step_id, context);
+        if (!step) {
+             console.warn(`[Resolver.Deal.currentWfmStep] Step object not found for ID: ${projectData.current_step_id} (via Deal ${parent.id})`);
+             return null;
+        }
+        return step as unknown as WfmWorkflowStep; // WFMWorkflowStep.status will be resolved by its own resolver
+      } catch (error) {
+        console.error(`[Resolver.Deal.currentWfmStep] Error deriving currentWfmStep for deal ${parent.id}:`, error);
+        return null;
+      }
+    },
+
+    currentWfmStatus: async (parent: DealResolverParent, _args, context: GraphQLContext): Promise<WfmStatus | null> => {
+      if (!parent.wfm_project_id) {
+        return null;
+      }
+      console.log(`[Resolver.Deal.currentWfmStatus] For deal ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
+      try {
+        const projectData = await wfmProjectService.getWFMProjectById(parent.wfm_project_id, context) as RawDbWfmProject | null;
+        if (!projectData || !projectData.current_step_id) {
+          console.log(`[Resolver.Deal.currentWfmStatus] WFMProject ${parent.wfm_project_id} or its current_step_id not found.`);
+          return null;
+        }
+        console.log(`[Resolver.Deal.currentWfmStatus] Found current_step_id: ${projectData.current_step_id}`);
+        const stepData = await wfmWorkflowService.getStepById(projectData.current_step_id, context);
+        if (!stepData || !stepData.status_id) {
+          console.log(`[Resolver.Deal.currentWfmStatus] Step ${projectData.current_step_id} or its status_id not found.`);
+          return null;
+        }
+        console.log(`[Resolver.Deal.currentWfmStatus] Found status_id: ${stepData.status_id}`);
+        const status = await wfmStatusService.getById(stepData.status_id, context);
+        if (!status) {
+            console.warn(`[Resolver.Deal.currentWfmStatus] Status object not found for ID: ${stepData.status_id} (via Deal ${parent.id})`);
+            return null;
+        }
+        return status;
+      } catch (error) {
+        console.error(`[Resolver.Deal.currentWfmStatus] Error deriving currentWfmStatus for deal ${parent.id}:`, error);
+        return null;
+      }
     },
 }; 

@@ -1,6 +1,6 @@
 import type { CustomFieldValueInput } from '../generated/graphql';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getCustomFieldDefinitionById } from '../customFieldDefinitionService';
+import { getCustomFieldDefinitionsByIds } from '../customFieldDefinitionService';
 
 /**
  * Processes custom field inputs for deal creation.
@@ -18,32 +18,38 @@ export const processCustomFieldsForCreate = async (
     return dbCustomFieldValues;
   }
 
-  console.log('[dealCustomFields.processCustomFieldsForCreate] Processing customFields input count:', customFieldsInput.length);
+  const definitionIds = customFieldsInput.map(cf => cf.definitionId);
+  let definitions = [];
+  try {
+    definitions = await getCustomFieldDefinitionsByIds(supabaseClient, definitionIds);
+  } catch (defError: any) {
+    console.error(`[dealCustomFields.processCustomFieldsForCreate] Error fetching definitions in bulk:`, defError.message);
+    // Depending on desired behavior, you might throw here or return empty/partial results
+    return dbCustomFieldValues; // Return empty if bulk fetch fails
+  }
+
+  const definitionsMap = new Map(definitions.map(def => [def.id, def]));
 
   for (const cfInput of customFieldsInput) {
-    try {
-      const definition = await getCustomFieldDefinitionById(supabaseClient, cfInput.definitionId);
-      if (definition) {
-        const fieldName = definition.fieldName;
-        let valueToStore: any = undefined; 
+    const definition = definitionsMap.get(cfInput.definitionId);
+    if (definition) {
+      const fieldName = definition.fieldName;
+      let valueToStore: any = undefined; 
 
-        if (cfInput.stringValue !== undefined && cfInput.stringValue !== null) valueToStore = cfInput.stringValue;
-        else if (cfInput.numberValue !== undefined && cfInput.numberValue !== null) valueToStore = cfInput.numberValue;
-        else if (cfInput.booleanValue !== undefined && cfInput.booleanValue !== null) valueToStore = cfInput.booleanValue;
-        else if (cfInput.dateValue !== undefined && cfInput.dateValue !== null) valueToStore = cfInput.dateValue; 
-        else if (cfInput.selectedOptionValues !== undefined && cfInput.selectedOptionValues !== null) valueToStore = cfInput.selectedOptionValues;
-        
-        if (valueToStore !== undefined) {
-             dbCustomFieldValues[fieldName] = valueToStore;
-             console.log(`[dealCustomFields.processCustomFieldsForCreate] Storing for ${fieldName}:`, valueToStore);
-        } else {
-             console.log(`[dealCustomFields.processCustomFieldsForCreate] No value provided for custom field based on definition ${definition.id} (${fieldName}), skipping.`);
-        }
+      if (cfInput.stringValue !== undefined && cfInput.stringValue !== null) valueToStore = cfInput.stringValue;
+      else if (cfInput.numberValue !== undefined && cfInput.numberValue !== null) valueToStore = cfInput.numberValue;
+      else if (cfInput.booleanValue !== undefined && cfInput.booleanValue !== null) valueToStore = cfInput.booleanValue;
+      else if (cfInput.dateValue !== undefined && cfInput.dateValue !== null) valueToStore = cfInput.dateValue; 
+      else if (cfInput.selectedOptionValues !== undefined && cfInput.selectedOptionValues !== null) valueToStore = cfInput.selectedOptionValues;
+      
+      if (valueToStore !== undefined) {
+           dbCustomFieldValues[fieldName] = valueToStore;
+           console.log(`[dealCustomFields.processCustomFieldsForCreate] Storing for ${fieldName}:`, valueToStore);
       } else {
-        console.warn(`[dealCustomFields.processCustomFieldsForCreate] Custom field definition ${cfInput.definitionId} not found. Skipping.`);
+           console.log(`[dealCustomFields.processCustomFieldsForCreate] No value provided for custom field based on definition ${definition.id} (${fieldName}), skipping.`);
       }
-    } catch (defError: any) {
-        console.error(`[dealCustomFields.processCustomFieldsForCreate] Error fetching/processing definition ${cfInput.definitionId}:`, defError.message);
+    } else {
+      console.warn(`[dealCustomFields.processCustomFieldsForCreate] Custom field definition ${cfInput.definitionId} not found (possibly from failed bulk fetch or invalid ID). Skipping.`);
     }
   }
   
@@ -66,33 +72,38 @@ export const processCustomFieldsForUpdate = async (
   let finalCustomFieldValues: Record<string, any> | null = currentDbCustomFieldValues || {};
 
   if (!customFieldsInput || customFieldsInput.length === 0) {
-    // If no new input, return current values (could be null if nothing existed)
     return { finalCustomFieldValues: finalCustomFieldValues }; 
   }
   
-  console.log('[dealCustomFields.processCustomFieldsForUpdate] Processing customFields input count:', customFieldsInput.length);
   const customFieldsToUpdate: Record<string, any> = {};
 
-  for (const cfInput of customFieldsInput) {
-    try {
-      const definition = await getCustomFieldDefinitionById(supabaseClient, cfInput.definitionId);
-      if (definition) {
-        const fieldName = definition.fieldName;
-        let valueToStore: any = null; // Default to null for updates, to allow clearing fields
+  const definitionIds = customFieldsInput.map(cf => cf.definitionId);
+  let definitions = [];
+  try {
+    definitions = await getCustomFieldDefinitionsByIds(supabaseClient, definitionIds);
+  } catch (defError: any) {
+    console.error(`[dealCustomFields.processCustomFieldsForUpdate] Error fetching definitions in bulk:`, defError.message);
+    return { finalCustomFieldValues }; // Return current values if bulk fetch fails
+  }
 
-        if ('stringValue' in cfInput) valueToStore = cfInput.stringValue;
-        else if ('numberValue' in cfInput) valueToStore = cfInput.numberValue;
-        else if ('booleanValue' in cfInput) valueToStore = cfInput.booleanValue;
-        else if ('dateValue' in cfInput) valueToStore = cfInput.dateValue;
-        else if ('selectedOptionValues' in cfInput) valueToStore = cfInput.selectedOptionValues;
-        
-        customFieldsToUpdate[fieldName] = valueToStore;
-        console.log(`[dealCustomFields.processCustomFieldsForUpdate] Queuing update for custom field ${fieldName}:`, valueToStore);
-      } else {
-        console.warn(`[dealCustomFields.processCustomFieldsForUpdate] Custom field definition ${cfInput.definitionId} not found. Skipping.`);
-      }
-    } catch (defError: any) {
-        console.error(`[dealCustomFields.processCustomFieldsForUpdate] Error fetching/processing definition ${cfInput.definitionId}:`, defError.message);
+  const definitionsMap = new Map(definitions.map(def => [def.id, def]));
+
+  for (const cfInput of customFieldsInput) {
+    const definition = definitionsMap.get(cfInput.definitionId);
+    if (definition) {
+      const fieldName = definition.fieldName;
+      let valueToStore: any = null; 
+
+      if ('stringValue' in cfInput) valueToStore = cfInput.stringValue;
+      else if ('numberValue' in cfInput) valueToStore = cfInput.numberValue;
+      else if ('booleanValue' in cfInput) valueToStore = cfInput.booleanValue;
+      else if ('dateValue' in cfInput) valueToStore = cfInput.dateValue;
+      else if ('selectedOptionValues' in cfInput) valueToStore = cfInput.selectedOptionValues;
+      
+      customFieldsToUpdate[fieldName] = valueToStore;
+      console.log(`[dealCustomFields.processCustomFieldsForUpdate] Queuing update for custom field ${fieldName}:`, valueToStore);
+    } else {
+      console.warn(`[dealCustomFields.processCustomFieldsForUpdate] Custom field definition ${cfInput.definitionId} not found (possibly from failed bulk fetch or invalid ID). Skipping.`);
     }
   }
   

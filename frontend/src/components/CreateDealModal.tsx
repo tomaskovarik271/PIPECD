@@ -27,11 +27,9 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import { useAppStore } from '../stores/useAppStore';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
 import { useDealsStore } from '../stores/useDealsStore';
-import { usePipelinesStore, Pipeline } from '../stores/usePipelinesStore';
-import { useStagesStore, Stage } from '../stores/useStagesStore';
+import { useWFMProjectTypeStore, WfmProjectType } from '../stores/useWFMProjectTypeStore';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
 import { DealInput, CustomFieldType } from '../generated/graphql/graphql';
 import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
@@ -43,30 +41,28 @@ interface CreateDealModalProps {
   onDealCreated: () => void;
 }
 
+// Default "Sales Deal" Project Type Name - could be moved to a config
+const DEFAULT_SALES_PROJECT_TYPE_NAME = "Sales Deal";
+
 function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProps) {
   const [name, setName] = useState('');
-  const [localSelectedPipelineId, setLocalSelectedPipelineId] = useState<string>('');
-  const [selectedStageId, setSelectedStageId] = useState<string>('');
+  const [selectedWFMProjectTypeId, setSelectedWFMProjectTypeId] = useState<string>('');
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>('');
   const [organizationId, setOrganizationId] = useState<string>('');
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
   
-  // State for Custom Fields
   const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, any>>({});
   const [activeDealCustomFields, setActiveDealCustomFields] = useState<GraphQLCustomFieldDefinition[]>([]);
 
-  const { pipelines, fetchPipelines, pipelinesLoading, pipelinesError } = usePipelinesStore();
-
   const { 
-    stages,
-    fetchStages,
-    stagesLoading,
-    stagesError
-  } = useStagesStore();
+    projectTypes, 
+    fetchWFMProjectTypes, 
+    loading: wfmProjectTypesLoading, 
+    error: wfmProjectTypesError 
+  } = useWFMProjectTypeStore();
 
-  // Custom Field Definitions Store
   const { 
     definitions: allCustomFieldDefs, 
     fetchCustomFieldDefinitions: fetchDefinitions, 
@@ -75,7 +71,6 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   } = useCustomFieldDefinitionStore();
 
   const { createDeal: createDealAction, dealsError, dealsLoading } = useDealsStore(); 
-
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
   const { organizations, fetchOrganizations, organizationsLoading, organizationsError } = useOrganizationsStore();
 
@@ -86,8 +81,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   useEffect(() => {
     if (isOpen) {
       setName('');
-      setLocalSelectedPipelineId('');
-      setSelectedStageId('');
+      setSelectedWFMProjectTypeId('');
       setAmount('');
       setPersonId('');
       setOrganizationId('');
@@ -95,22 +89,30 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       setDealSpecificProbability('');
       setExpectedCloseDate('');
       setIsLoading(false);
-      
-      // Reset custom field states
       setCustomFieldFormValues({});
-      setActiveDealCustomFields([]); // Clear previous active fields
+      setActiveDealCustomFields([]);
 
       fetchPeople(); 
-      fetchPipelines(); 
       fetchOrganizations();
-      // Fetch active custom field definitions for Deals
       fetchDefinitions(CustomFieldEntityType.Deal, false);
+      fetchWFMProjectTypes({ isArchived: false });
     }
-  }, [isOpen, fetchPeople, fetchPipelines, fetchOrganizations, fetchDefinitions]);
+  }, [isOpen, fetchPeople, fetchOrganizations, fetchDefinitions, fetchWFMProjectTypes]);
 
   useEffect(() => {
-    // Update activeDealCustomFields when definitions are fetched from the store
-    // We filter here to ensure we only use DEAL definitions and they are active (though fetchDefinitions should handle active state)
+    // Auto-select "Sales Deal" project type if available
+    if (projectTypes.length > 0 && !selectedWFMProjectTypeId) {
+      const salesDealType = projectTypes.find(pt => pt.name === DEFAULT_SALES_PROJECT_TYPE_NAME);
+      if (salesDealType) {
+        setSelectedWFMProjectTypeId(salesDealType.id);
+      } else if (projectTypes.length === 1) {
+        // If only one project type exists, select it by default
+        setSelectedWFMProjectTypeId(projectTypes[0].id);
+      }
+    }
+  }, [projectTypes, selectedWFMProjectTypeId]);
+
+  useEffect(() => {
     const activeDealDefs = allCustomFieldDefs.filter(
       def => def.entityType === CustomFieldEntityType.Deal && def.isActive
     );
@@ -118,7 +120,6 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   }, [allCustomFieldDefs]);
 
   useEffect(() => {
-    // Initialize customFieldFormValues with default values when activeDealCustomFields are loaded
     const initialCustomValues: Record<string, any> = {};
     activeDealCustomFields.forEach(def => {
       if (def.fieldType === CustomFieldType.Boolean) {
@@ -132,15 +133,6 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     setCustomFieldFormValues(initialCustomValues);
   }, [activeDealCustomFields]);
 
-  useEffect(() => {
-    if (localSelectedPipelineId) {
-        setSelectedStageId('');
-        fetchStages(localSelectedPipelineId);
-    } else {
-        useStagesStore.setState({ stages: [], stagesError: null, stagesLoading: false });
-    }
-  }, [localSelectedPipelineId, fetchStages]);
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setIsLoading(true);
@@ -151,8 +143,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         setIsLoading(false);
         return;
     }
-    if (!selectedStageId) {
-        setError('Stage selection is required.');
+    if (!selectedWFMProjectTypeId) {
+        setError('WFM Project Type selection is required.');
         setIsLoading(false);
         return;
     }
@@ -160,365 +152,268 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     try {
       const dealInput: DealInput = {
         name: name.trim(),
-        stage_id: selectedStageId,
-        pipeline_id: localSelectedPipelineId,
+        wfmProjectTypeId: selectedWFMProjectTypeId,
         amount: amount ? parseFloat(amount) : null,
         person_id: personId || null,
         organization_id: organizationId || null,
         expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : null,
-        // customFields: [] // Initialize customFields array - will be populated below
       };
-
-      // Populate customFields for submission
+      
       const customFieldsSubmission: CustomFieldValueInput[] = activeDealCustomFields
         .map(def => {
           const rawValue = customFieldFormValues[def.fieldName];
-          
           const valueInputPayload: Omit<CustomFieldValueInput, 'definitionId'> = {};
 
-          // Skip if the rawValue is undefined or null, unless it's a boolean (which defaults to false)
-          // or an empty array for multi-select (which is a valid empty state).
-          // For empty strings in required text fields, validation should catch it, but we might send it.
           if (rawValue === undefined || rawValue === null) {
             if (def.fieldType === CustomFieldType.Boolean) {
-              // Booleans always have a value (true/false)
-              valueInputPayload.booleanValue = false; // Default to false if null/undefined somehow
+              valueInputPayload.booleanValue = false; 
             } else if (def.fieldType === CustomFieldType.MultiSelect && Array.isArray(rawValue) && rawValue.length === 0) {
-              valueInputPayload.selectedOptionValues = []; // Send empty array for multi-select
+              valueInputPayload.selectedOptionValues = [];
             } else if (def.isRequired) {
-              // A required field is null/undefined and not a boolean/empty multi-select - this is a validation issue
-              // For now, we'll let it pass and backend validation or GraphQL type system might catch it if we send nothing.
-              // Or, we could return null here to not send this field value at all if it's truly empty for a required field.
-              // Let's try to send what we have, or nothing if truly empty and not boolean/multi-select.
-               if (rawValue === undefined || rawValue === null) return null; // Skip if no value for non-boolean/non-multiselect
+               if (rawValue === undefined || rawValue === null) return null;
             } else {
-                 // Optional field with no value
                  return null; 
             }
           }
 
           switch (def.fieldType) {
-            case CustomFieldType.Text:
-              valueInputPayload.stringValue = String(rawValue);
-              break;
-            case CustomFieldType.Dropdown: // Single select dropdown
-              valueInputPayload.stringValue = String(rawValue);
-              break;
+            case CustomFieldType.Text: valueInputPayload.stringValue = String(rawValue); break;
+            case CustomFieldType.Dropdown: valueInputPayload.stringValue = String(rawValue); break;
             case CustomFieldType.Number:
               const num = parseFloat(String(rawValue));
-              if (!isNaN(num)) {
-                valueInputPayload.numberValue = num;
-              } else if (String(rawValue).trim() === '' && !def.isRequired) {
-                // Optional number field, cleared by user, send nothing for this value part
-              } else if (def.isRequired || String(rawValue).trim() !== '') {
-                // Required number or optional with invalid data - this is a validation issue.
-                // For now, don't set numberValue if invalid to let GraphQL validation catch missing required or wrong type.
-                // Or, set an error and prevent submission. For now, we omit if invalid.
-                 console.warn(`Invalid number for required field ${def.fieldName}: ${rawValue}`);
-                 return null; // Don't submit this custom field if number is invalid
-              }
+              if (!isNaN(num)) { valueInputPayload.numberValue = num; } 
+              else if (String(rawValue).trim() === '' && !def.isRequired) { /* omit */ } 
+              else { console.warn(`Invalid number for field ${def.fieldName}: ${rawValue}`); return null; }
               break;
-            case CustomFieldType.Boolean:
-              valueInputPayload.booleanValue = Boolean(rawValue);
-              break;
-            case CustomFieldType.Date:
-              // Ensure YYYY-MM-DD format if that's what your DateTime scalar expects for date-only
-              valueInputPayload.dateValue = String(rawValue); 
-              break;
+            case CustomFieldType.Boolean: valueInputPayload.booleanValue = Boolean(rawValue); break;
+            case CustomFieldType.Date: valueInputPayload.dateValue = String(rawValue); break;
             case CustomFieldType.MultiSelect:
-              if (Array.isArray(rawValue)) {
-                valueInputPayload.selectedOptionValues = rawValue.map(String);
-              }
+              if (Array.isArray(rawValue)) { valueInputPayload.selectedOptionValues = rawValue.map(String); }
               break;
-            default:
-              console.warn(`Unhandled custom field type: ${def.fieldType} for field ${def.fieldName}`);
-              return null; // Skip unhandled types
+            default: console.warn(`Unhandled custom field type: ${def.fieldType}`); return null;
           }
           
-          // Only return an entry if at least one value field was set in valueInputPayload
           if (Object.keys(valueInputPayload).length > 0) {
             return { definitionId: def.id, ...valueInputPayload };
           }
-          return null; // If no value field was set (e.g. optional empty number)
+          return null;
         })
-        .filter(cf => cf !== null) as CustomFieldValueInput[]; // Filter out any nulls from map
+        .filter(cf => cf !== null) as CustomFieldValueInput[];
       
       dealInput.customFields = customFieldsSubmission;
 
       const probPercent = parseFloat(dealSpecificProbability);
       if (!isNaN(probPercent) && probPercent >= 0 && probPercent <= 100) {
         dealInput.deal_specific_probability = probPercent / 100;
-      } else if (dealSpecificProbability.trim() === '') {
-        dealInput.deal_specific_probability = null;
+      } else if (dealSpecificProbability.trim() !== '') {
+        // If field is not empty and not a valid percentage, it's an error.
+        // If empty, it's fine (nullable).
+        setError('Deal Specific Probability must be a number between 0 and 100.');
+        setIsLoading(false);
+        return;
       }
-
-      console.log('Calling createDealAction with input:', dealInput);
-
+      
+      console.log("Submitting DealInput:", JSON.stringify(dealInput, null, 2));
       const createdDeal = await createDealAction(dealInput);
 
       if (createdDeal) {
-        const stageOfCreatedDeal = stages.find(s => s.id === createdDeal.stage_id);
-
-        console.log('Deal created via store action:', createdDeal);
-        toast({
-          title: "Deal Created",
-          description: `Deal "${createdDeal.name}" created${stageOfCreatedDeal ? ` in stage "${stageOfCreatedDeal.name}"` : ''}.`,
-          status: "success",
-          duration: 5000,
-          isClosable: true,
-        });
+        toast({ title: 'Deal Created', description: 'The new deal has been successfully created.', status: 'success', duration: 3000, isClosable: true });
         onDealCreated();
         onClose();
       } else {
-        setError(dealsError || 'Failed to create deal. Please check store errors.');
+        setError(dealsError || 'Failed to create deal. Unknown error.');
       }
-
-    } catch (err: unknown) {
-      console.error('Unexpected error during handleSubmit:', err);
-      let message = 'An unexpected error occurred.';
-      if (err instanceof Error) {
-        message = err.message;
-      } else if (typeof err === 'string') {
-        message = err;
-      }
-      setError(message);
+    } catch (e: any) {
+      console.error("Error submitting deal:", e);
+      setError(e.message || 'An unexpected error occurred.');
     } finally {
       setIsLoading(false);
     }
   };
+  
+  // Loading state for dropdowns
+  const dataLoading = peopleLoading || organizationsLoading || customFieldsLoading || wfmProjectTypesLoading;
+
+  // Render Custom Field
+  const renderCustomField = (def: GraphQLCustomFieldDefinition) => {
+    const fieldName = def.fieldName;
+    const commonProps = {
+      value: customFieldFormValues[fieldName],
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement> | string[] | boolean) => {
+        let newValue: any;
+        if (typeof e === 'boolean') { // For Switch
+            newValue = e;
+        } else if (Array.isArray(e)) { // For CheckboxGroup (MultiSelect)
+            newValue = e;
+        } else { // For Input, Select, Textarea
+            newValue = e.target.value;
+        }
+        setCustomFieldFormValues(prev => ({ ...prev, [fieldName]: newValue }));
+      },
+    };
+
+    switch (def.fieldType) {
+      case CustomFieldType.Text:
+        return <Input placeholder={def.fieldLabel || def.fieldName} {...commonProps} />;
+      case CustomFieldType.Number:
+        return (
+          <NumberInput precision={2} value={String(commonProps.value)} onChange={(valueString) => commonProps.onChange({ target: { value: valueString } } as any)}>
+            <NumberInputField placeholder={def.fieldLabel || def.fieldName} />
+          </NumberInput>
+        );
+      case CustomFieldType.Boolean:
+        return (
+          <Switch 
+            isChecked={Boolean(commonProps.value)} 
+            onChange={(e) => commonProps.onChange(e.target.checked)} 
+          />
+        );
+      case CustomFieldType.Date:
+        return <Input type="date" placeholder={def.fieldLabel || def.fieldName} {...commonProps} />;
+      case CustomFieldType.Dropdown: // Single Select Dropdown
+        return (
+          <Select placeholder={`Select ${def.fieldLabel || def.fieldName}...`} {...commonProps}>
+            {def.dropdownOptions?.map((opt: {label: string, value: string}) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </Select>
+        );
+      case CustomFieldType.MultiSelect: // Checkbox Group
+        return (
+          <CheckboxGroup 
+            value={commonProps.value || []} 
+            onChange={(values) => commonProps.onChange(values as string[])}
+          >
+            <Stack direction="column">
+              {def.dropdownOptions?.map((opt: {label: string, value: string}) => <Checkbox key={opt.value} value={opt.value}>{opt.label}</Checkbox>)}
+            </Stack>
+          </CheckboxGroup>
+        );
+      default:
+        return <Text fontSize="sm" color="red.500">Unsupported custom field type: {def.fieldType}</Text>;
+    }
+  };
+
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered>
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
         <ModalHeader>Create New Deal</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
-          {error && (
-             <Alert status="error" mb={4} whiteSpace="pre-wrap"> 
-                <AlertIcon />
-                {error}
-            </Alert>
-          )}
-          {peopleError && (
-             <Alert status="warning" mb={4}>
-                <AlertIcon />
-                {peopleError}
-            </Alert>
-          )}
           <VStack spacing={4}>
-            <FormControl isRequired isInvalid={!name.trim() && error?.includes('name')}>
+            <FormControl isRequired isInvalid={!!error && error.includes('Deal name')}>
               <FormLabel>Deal Name</FormLabel>
-              <Input 
-                placeholder='Enter deal name' 
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-              {error?.toLowerCase().includes('name') && <FormErrorMessage>{error}</FormErrorMessage>}
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter deal name" />
+              {!!error && error.includes('Deal name') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
-            {/* Custom Fields Rendering */}
-            {customFieldsLoading && <Spinner label="Loading custom fields..." />}
-            {customFieldsError && <Alert status="error" mb={4}><AlertIcon />Error loading custom fields: {customFieldsError}</Alert>}
-            
-            {activeDealCustomFields.map((def) => (
-              <FormControl key={def.fieldName} isRequired={def.isRequired} mb={4}>
-                <FormLabel htmlFor={def.fieldName}>{def.fieldLabel}</FormLabel>
-                {(() => {
-                  switch (def.fieldType) {
-                    case CustomFieldType.Text:
-                      return (
-                        <Input
-                          id={def.fieldName}
-                          placeholder={def.fieldLabel}
-                          value={customFieldFormValues[def.fieldName] || ''}
-                          onChange={(e) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: e.target.value }))}
-                        />
-                      );
-                    case CustomFieldType.Number:
-                      return (
-                        <NumberInput
-                          id={def.fieldName}
-                          value={customFieldFormValues[def.fieldName] || ''}
-                          onChange={(valueString) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: valueString }))}
-                          allowMouseWheel
-                        >
-                          <NumberInputField placeholder={def.fieldLabel} />
-                        </NumberInput>
-                      );
-                    case CustomFieldType.Date:
-                      return (
-                        <Input
-                          id={def.fieldName}
-                          type="date"
-                          value={customFieldFormValues[def.fieldName] || ''}
-                          onChange={(e) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: e.target.value }))}
-                        />
-                      );
-                    case CustomFieldType.Boolean:
-                      return (
-                        <Switch
-                          id={def.fieldName}
-                          isChecked={customFieldFormValues[def.fieldName] || false}
-                          onChange={(e) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: e.target.checked }))}
-                        />
-                      );
-                    case CustomFieldType.Dropdown:
-                      return (
-                        <Select
-                          id={def.fieldName}
-                          placeholder={`Select ${def.fieldLabel}...`}
-                          value={customFieldFormValues[def.fieldName] || ''}
-                          onChange={(e) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: e.target.value }))}
-                        >
-                          {def.dropdownOptions?.map(opt => (
-                            <option key={opt.value} value={opt.value}>{opt.label}</option>
-                          ))}
-                        </Select>
-                      );
-                    case CustomFieldType.MultiSelect:
-                      return (
-                        <CheckboxGroup 
-                          value={customFieldFormValues[def.fieldName] || []} 
-                          onChange={(values) => setCustomFieldFormValues(prev => ({ ...prev, [def.fieldName]: values }))}
-                        >
-                          <Stack direction="column">
-                            {def.dropdownOptions?.map(opt => (
-                              <Checkbox key={opt.value} value={opt.value}>{opt.label}</Checkbox>
-                            ))}
-                          </Stack>
-                        </CheckboxGroup>
-                      );
-                    default:
-                      return <Text color="red">Unsupported field type: {def.fieldType}</Text>;
-                  }
-                })()}
-                {def.isRequired && 
-                  (!customFieldFormValues[def.fieldName] || 
-                    (Array.isArray(customFieldFormValues[def.fieldName]) && customFieldFormValues[def.fieldName].length === 0) ||
-                    (typeof customFieldFormValues[def.fieldName] === 'string' && customFieldFormValues[def.fieldName].trim() === '')
-                  ) && (
-                  <Text fontSize="sm" color="red.500" mt={1}>This field is required.</Text>
-                )}
-              </FormControl>
-            ))}
-
-            <FormControl isRequired isInvalid={!localSelectedPipelineId && error?.toLowerCase().includes('pipeline')}>
-              <FormLabel>Pipeline</FormLabel>
+            <FormControl isRequired isInvalid={!!error && error.includes('WFM Project Type')}>
+              <FormLabel>WFM Project Type</FormLabel>
               <Select 
-                placeholder={pipelinesLoading ? 'Loading pipelines...' : 'Select pipeline'}
-                value={localSelectedPipelineId}
-                onChange={(e) => setLocalSelectedPipelineId(e.target.value)}
-                isDisabled={pipelinesLoading || !!pipelinesError}
+                placeholder="Select WFM Project Type..."
+                value={selectedWFMProjectTypeId}
+                onChange={(e) => setSelectedWFMProjectTypeId(e.target.value)}
+                isDisabled={wfmProjectTypesLoading || projectTypes.length === 0}
               >
-                 {!pipelinesLoading && !pipelinesError && pipelines.map((pipeline: Pipeline) => (
-                    <option key={pipeline.id} value={pipeline.id}>
-                        {pipeline.name}
-                    </option>
+                {projectTypes.map((pt: WfmProjectType) => (
+                  <option key={pt.id} value={pt.id}>{pt.name}</option>
                 ))}
               </Select>
-              {pipelinesError && <FormErrorMessage>Error loading pipelines: {pipelinesError}</FormErrorMessage>}
-              {!localSelectedPipelineId && error?.toLowerCase().includes('pipeline') && <FormErrorMessage>{error}</FormErrorMessage>}
+              {wfmProjectTypesLoading && <Spinner size="sm" />}
+              {wfmProjectTypesError && <Text color="red.500" fontSize="sm">Error: {wfmProjectTypesError}</Text>}
+              {!!error && error.includes('WFM Project Type') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
-            <FormControl isRequired isInvalid={!selectedStageId && error?.toLowerCase().includes('stage')}>
-              <FormLabel>Stage</FormLabel>
-              <Select 
-                placeholder={stagesLoading ? 'Loading stages...' : (localSelectedPipelineId ? 'Select stage' : 'Select pipeline first') }
-                value={selectedStageId}
-                onChange={(e) => setSelectedStageId(e.target.value)}
-                isDisabled={!localSelectedPipelineId || stagesLoading || !!stagesError || stages.length === 0}
-              >
-                 {!stagesLoading && !stagesError && stages.map((stage: Stage) => (
-                    <option key={stage.id} value={stage.id}>
-                        {stage.name} (Order: {stage.order})
-                    </option>
-                ))}
-              </Select>
-              {stagesError && <FormErrorMessage>Error loading stages: {stagesError}</FormErrorMessage>}
-              {!localSelectedPipelineId && stages.length === 0 && !stagesLoading && <FormErrorMessage>Select a pipeline to see stages.</FormErrorMessage>}
-              {!selectedStageId && error?.toLowerCase().includes('stage') && <FormErrorMessage>{error}</FormErrorMessage>}
-            </FormControl>
-
+            {/* Amount */}
             <FormControl>
               <FormLabel>Amount</FormLabel>
               <NumberInput value={amount} onChange={(valueString) => setAmount(valueString)} precision={2}>
-                <NumberInputField id='amount' placeholder='e.g., 5000.00' />
+                <NumberInputField placeholder="Enter deal amount (optional)" />
               </NumberInput>
             </FormControl>
 
-            <FormControl mt={4}>
-              <FormLabel htmlFor='expected_close_date'>Expected Close Date</FormLabel>
-              <Input 
-                id='expected_close_date'
-                type='date' 
-                value={expectedCloseDate}
-                onChange={(e) => setExpectedCloseDate(e.target.value)}
-              />
+            {/* Expected Close Date */}
+            <FormControl>
+              <FormLabel>Expected Close Date</FormLabel>
+              <Input type="date" value={expectedCloseDate} onChange={(e) => setExpectedCloseDate(e.target.value)} />
             </FormControl>
 
-            <FormControl>
+            {/* Deal Specific Probability */}
+            <FormControl isInvalid={!!error && error.includes('Probability')}>
               <FormLabel>Deal Specific Probability (%)</FormLabel>
-              <NumberInput
-                min={0}
-                max={100}
-                value={dealSpecificProbability}
+              <NumberInput 
+                min={0} 
+                max={100} 
+                value={dealSpecificProbability} 
                 onChange={(valueString) => setDealSpecificProbability(valueString)}
-                allowMouseWheel
+                precision={2}
               >
-                <NumberInputField placeholder="Optional (e.g., 75)" />
+                <NumberInputField placeholder="Enter probability (0-100, optional)" />
               </NumberInput>
+              {!!error && error.includes('Probability') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
+            {/* Person Selector */}
             <FormControl>
-              <FormLabel>Link to Organization (Optional)</FormLabel>
-              <Select 
-                placeholder={organizationsLoading ? 'Loading organizations...' : 'Select organization'}
-                value={organizationId}
-                onChange={(e) => setOrganizationId(e.target.value)}
-                isDisabled={organizationsLoading || !!organizationsError}
-              >
-                 {!organizationsLoading && !organizationsError && organizations.map((org: Organization) => (
-                    <option key={org.id} value={org.id}>
-                        {org.name || `Org ID: ${org.id}`}
-                    </option>
+              <FormLabel>Person</FormLabel>
+              <Select placeholder="Select person (optional)" value={personId} onChange={(e) => setPersonId(e.target.value)} isDisabled={peopleLoading}>
+                {people.map((person) => (
+                  <option key={person.id} value={person.id}>
+                    {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email}
+                  </option>
                 ))}
               </Select>
-              {organizationsError && <FormErrorMessage>Error loading organizations: {organizationsError}</FormErrorMessage>}
+              {peopleLoading && <Spinner size="sm" />}
+              {peopleError && <Text color="red.500" fontSize="sm">Error: {peopleError}</Text>}
             </FormControl>
 
+            {/* Organization Selector */}
             <FormControl>
-              <FormLabel>Link to Person (Optional)</FormLabel>
-              <Select 
-                placeholder={peopleLoading ? 'Loading people...' : 'Select person'}
-                value={personId}
-                onChange={(e) => setPersonId(e.target.value)}
-                isDisabled={peopleLoading || !!peopleError}
-              >
-                 {!peopleLoading && !peopleError && people.map((person: Person) => (
-                    <option key={person.id} value={person.id}>
-                        {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email || `Person ID: ${person.id}`}
-                    </option>
+              <FormLabel>Organization</FormLabel>
+              <Select placeholder="Select organization (optional)" value={organizationId} onChange={(e) => setOrganizationId(e.target.value)} isDisabled={organizationsLoading}>
+                {organizations.map((org) => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
                 ))}
               </Select>
+              {organizationsLoading && <Spinner size="sm" />}
+              {organizationsError && <Text color="red.500" fontSize="sm">Error: {organizationsError}</Text>}
             </FormControl>
+            
+            {/* Divider or Heading for Custom Fields */}
+            {activeDealCustomFields.length > 0 && (
+                <Text fontWeight="bold" mt={6} mb={2} alignSelf="flex-start">Custom Fields</Text>
+            )}
 
+            {/* Custom Fields */}
+            {customFieldsLoading && <Spinner />}
+            {customFieldsError && <Alert status="error"><AlertIcon />Error loading custom fields: {customFieldsError}</Alert>}
+            {!customFieldsLoading && !customFieldsError && activeDealCustomFields.map(def => (
+              <FormControl key={def.id} isRequired={def.isRequired}>
+                <FormLabel>{def.fieldName}{def.isRequired ? '*' : ''}</FormLabel>
+                {renderCustomField(def)}
+                {/* TODO: Add FormErrorMessage for custom field validation */}
+              </FormControl>
+            ))}
+
+            {error && (
+              <Alert status="error" mt={4}>
+                <AlertIcon />
+                {error}
+              </Alert>
+            )}
+            {dealsError && !error && ( // Show dealsError from store if no local form error
+                 <Alert status="error" mt={4}>
+                    <AlertIcon />
+                    {dealsError}
+                </Alert>
+            )}
           </VStack>
         </ModalBody>
 
         <ModalFooter>
-          <Button 
-            colorScheme='blue'
-            mr={3} 
-            type="submit"
-            isLoading={isLoading || dealsLoading}
-            leftIcon={(isLoading || dealsLoading) ? <Spinner size="sm" /> : undefined}
-            onClick={handleSubmit}
-          >
-            Save Deal
-          </Button>
-          <Button variant='ghost' onClick={onClose} isDisabled={isLoading}>
-            Cancel
+          <Button onClick={onClose} mr={3} variant="ghost" isDisabled={isLoading || dealsLoading}>Cancel</Button>
+          <Button colorScheme="blue" type="submit" isLoading={isLoading || dealsLoading} isDisabled={dataLoading}>
+            Create Deal
           </Button>
         </ModalFooter>
       </ModalContent>

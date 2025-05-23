@@ -180,7 +180,13 @@ function DealsPage() {
       { key: 'name', header: 'Name', renderCell: (d) => d.name, isSortable: true },
       { key: 'person', header: 'Person', renderCell: (d) => formatPersonName(d.person as GeneratedPerson | null | undefined), isSortable: true, sortAccessor: (d) => formatPersonName(d.person as GeneratedPerson | null | undefined).toLowerCase() },
       { key: 'organization', header: 'Organization', renderCell: (d) => d.organization?.name || '-', isSortable: true, sortAccessor: (d) => d.organization?.name?.toLowerCase() },
-      { key: 'stage', header: 'Stage / Pipeline', renderCell: (d) => (<VStack align="start" spacing={0}><Text fontWeight="medium">{d.stage?.name || '-'}</Text><Text fontSize="xs" color="gray.500">{d.stage?.pipeline?.name || 'N/A'}</Text></VStack>), isSortable: true, sortAccessor: (d) => d.stage?.name?.toLowerCase() ?? '' },
+      { 
+        key: 'stage',
+        header: 'Status', 
+        renderCell: (d) => d.currentWfmStatus?.name || '-', 
+        isSortable: true, 
+        sortAccessor: (d) => d.currentWfmStatus?.name?.toLowerCase() ?? '' 
+      },
       { key: 'amount', header: 'Amount', renderCell: (d) => formatCurrency(d.amount), isSortable: true, isNumeric: true, sortAccessor: (d) => d.amount },
       { key: 'deal_specific_probability', header: 'Specific Prob. (%)', renderCell: (d) => d.deal_specific_probability != null ? `${Math.round(d.deal_specific_probability * 100)}%` : '-', isSortable: true, sortAccessor: (d) => d.deal_specific_probability },
       { key: 'weighted_amount', header: 'Weighted Amount', renderCell: (d) => formatCurrency(d.weighted_amount), isSortable: true, isNumeric: true, sortAccessor: (d) => d.weighted_amount },

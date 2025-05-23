@@ -16,14 +16,27 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
   const { currentTheme } = useThemeStore();
   const theme = useTheme();
 
-  // Function to calculate effective probability for display (can be expanded)
+  // Function to calculate effective probability for display
   const getEffectiveProbabilityDisplay = () => {
     let probability = deal.deal_specific_probability;
-    let source = 'deal';
-    if (probability == null && deal.stage?.deal_probability != null) {
-      probability = deal.stage.deal_probability;
-      source = 'stage';
+    let source = 'manual'; // Or 'override' if it's a direct setting
+
+    if (probability == null) {
+      // Check WFM step metadata for probability
+      // Ensure currentWfmStep and its metadata exist, and metadata is an object
+      if (deal.currentWfmStep && 
+          deal.currentWfmStep.metadata && 
+          typeof deal.currentWfmStep.metadata === 'object' && 
+          'deal_probability' in deal.currentWfmStep.metadata) {
+        // Assuming deal_probability in metadata is a number (0 to 1)
+        const stepProbability = (deal.currentWfmStep.metadata as { deal_probability?: number }).deal_probability;
+        if (stepProbability != null) {
+          probability = stepProbability;
+          source = 'step';
+        }
+      }
     }
+
     if (probability == null) return 'N/A';
     return `${Math.round(probability * 100)}% (${source})`;
   };

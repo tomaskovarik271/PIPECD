@@ -101,17 +101,19 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
       
       console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, mappedValues before filter (${mappedValues.length} items):`, JSON.stringify(mappedValues.map(fv => ({ def: fv.definition.fieldName, sv: fv.stringValue, nv: fv.numberValue, bv: fv.booleanValue, dv: fv.dateValue, sov: fv.selectedOptionValues }))));
 
-      const resolvedValues = mappedValues.filter(fv => 
-          fv.stringValue !== null || 
-          fv.numberValue !== null || 
-          fv.booleanValue !== null || 
-          fv.dateValue !== null || 
-          (fv.selectedOptionValues && fv.selectedOptionValues.length > 0)
-      );
+      // const resolvedValues = mappedValues.filter(fv => 
+      //     fv.stringValue !== null || 
+      //     fv.numberValue !== null || 
+      //     fv.booleanValue !== null || 
+      //     fv.dateValue !== null || 
+      //     (fv.selectedOptionValues && fv.selectedOptionValues.length > 0)
+      // );
       
-      console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, resolvedValues after filter (${resolvedValues.length} items):`, JSON.stringify(resolvedValues.map(fv => ({ def: fv.definition.fieldName, val: fv.stringValue || fv.numberValue || fv.booleanValue || fv.dateValue || fv.selectedOptionValues }))));
+      // The following log is now also commented out as it refers to resolvedValues
+      // console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, resolvedValues after filter (${resolvedValues.length} items):`, JSON.stringify(resolvedValues.map(fv => ({ def: fv.definition.fieldName, val: fv.stringValue || fv.numberValue || fv.booleanValue || fv.dateValue || fv.selectedOptionValues }))));
+      
       console.log(`[Organization.customFieldValues] Resolver END for organization: ${organizationIdForLog}`);
-      return resolvedValues;
+      return mappedValues; // RETURN mappedValues directly
 
     } catch (error) {
       console.error(`Error resolving customFieldValues for organization ${organizationIdForLog}:`, error);
@@ -121,4 +123,4 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
       });
     }
   }
-}; 
+};

@@ -16,15 +16,12 @@ import {
     updateDeal as updateDealInternal,
     deleteDeal as deleteDealInternal
 } from './dealService/dealCrud';
+import type { DealServiceUpdateData } from './dealService/dealCrud'; // Import the type
 
 
 
 // Define a more specific type for the update payload to include weighted_amount
-interface DealUpdatePayload extends Partial<DealInput> {
-  user_id?: string; // user_id is added by create, but not typically in DealInput for updates from client
-  weighted_amount?: number | null;
-  custom_field_values?: Record<string, any> | null; // Added for direct DB update
-}
+// Removed DealUpdatePayload as DealServiceUpdateData is now used.
 
 // --- Deal Service ---
 export const dealService = {
@@ -37,7 +34,7 @@ export const dealService = {
   createDeal: (userId: string, input: DealInput, accessToken: string): Promise<Deal> => 
     createDealInternal(userId, input, accessToken),
   
-  updateDeal: (userId: string, id: string, input: Partial<DealInput>, accessToken: string): Promise<Deal> => 
+  updateDeal: (userId: string, id: string, input: DealServiceUpdateData, accessToken: string): Promise<Deal> => 
     updateDealInternal(userId, id, input, accessToken),
   
   deleteDeal: (userId: string, id: string, accessToken: string): Promise<boolean> => 

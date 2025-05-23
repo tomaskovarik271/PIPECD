@@ -5,12 +5,13 @@ import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
 import type {
   Deal,
   DealInput,
+  DealUpdateInput,
   Maybe,
   MutationCreateDealArgs,
   MutationUpdateDealArgs,
   MutationDeleteDealArgs,
+  MutationUpdateDealWfmProgressArgs,
 } from '../generated/graphql/graphql';
-import { useStagesStore } from './useStagesStore';
 
 // Re-export core Deal types
 export type { Deal, DealInput, Maybe };
@@ -21,18 +22,6 @@ const GET_DEALS_QUERY = gql`
     deals {
       id
       name
-      stage {
-        id
-        name
-        pipeline_id
-        pipeline {
-          id
-          name
-        }
-        order
-        deal_probability
-      }
-      stage_id
       amount
       expected_close_date
       created_at
@@ -71,6 +60,24 @@ const GET_DEALS_QUERY = gql`
         due_date
         is_done
       }
+      wfm_project_id
+      currentWfmStep {
+        id
+        stepOrder
+        isInitialStep
+        isFinalStep
+        metadata
+        status {
+          id
+          name
+          color
+        }
+      }
+      currentWfmStatus {
+        id
+        name
+        color
+      }
     }
   }
 `;
@@ -80,18 +87,6 @@ const CREATE_DEAL_MUTATION = gql`
     createDeal(input: $input) {
       id
       name
-      stage {
-        id
-        name
-        pipeline_id
-        pipeline {
-          id
-          name
-        }
-        order
-        deal_probability
-      }
-      stage_id
       amount
       expected_close_date
       created_at
@@ -107,27 +102,23 @@ const CREATE_DEAL_MUTATION = gql`
       user_id
       deal_specific_probability
       weighted_amount
+      wfm_project_id
+      currentWfmStep {
+        id
+        stepOrder
+        metadata
+        status { id name color }
+      }
+      currentWfmStatus { id name color }
     }
   }
 `;
 
 const UPDATE_DEAL_MUTATION = gql`
-  mutation UpdateDeal($id: ID!, $input: DealInput!) {
+  mutation UpdateDeal($id: ID!, $input: DealUpdateInput!) {
     updateDeal(id: $id, input: $input) {
       id
       name
-      stage {
-        id
-        name
-        pipeline_id
-        pipeline {
-          id
-          name
-        }
-        order
-        deal_probability
-      }
-      stage_id
       amount
       expected_close_date
       created_at
@@ -153,6 +144,48 @@ const DELETE_DEAL_MUTATION = gql`
   }
 `;
 
+// New Mutation for WFM Progress
+const UPDATE_DEAL_WFM_PROGRESS_MUTATION = gql`
+  mutation UpdateDealWFMProgress($dealId: ID!, $targetWfmWorkflowStepId: ID!) {
+    updateDealWFMProgress(dealId: $dealId, targetWfmWorkflowStepId: $targetWfmWorkflowStepId) {
+      id # Fetched updated deal fields relevant to Kanban or list views
+      name
+      amount
+      expected_close_date
+      deal_specific_probability
+      weighted_amount
+      wfm_project_id
+      currentWfmStep {
+        id
+        stepOrder
+        isInitialStep
+        isFinalStep
+        metadata # Includes deal_probability, outcome_type, name etc.
+        status { # Ensure status is fetched for display name
+            id
+            name
+            color
+        }
+      }
+      currentWfmStatus {
+        id
+        name
+        color
+      }
+      # Add other fields you might need after a WFM update, e.g., custom fields if they change
+      # For example, if custom fields are linked to WFM steps:
+      # customFieldValues {
+      #   definition { id fieldName fieldType }
+      #   stringValue numberValue booleanValue dateValue selectedOptionValues
+      # }
+      # Also activities if they might change
+      # activities {
+      #   id type subject due_date is_done
+      # }
+    }
+  }
+`;
+
 interface DealsState {
   deals: Deal[];
   dealsLoading: boolean;
@@ -160,13 +193,12 @@ interface DealsState {
   hasInitiallyFetchedDeals: boolean;
   fetchDeals: () => Promise<void>;
   createDeal: (input: DealInput) => Promise<Deal | null>;
-  updateDeal: (id: string, input: DealInput) => Promise<Deal | null>;
+  updateDeal: (id: string, input: Partial<DealUpdateInput>) => Promise<Deal | null>;
   deleteDeal: (id: string) => Promise<boolean>;
+  updateDealWFMProgress: (dealId: string, targetWfmWorkflowStepId: string) => Promise<Deal | null>;
 
   // Kanban View State and Actions
-  selectedKanbanPipelineId: string | null;
   dealsViewMode: 'table' | 'kanban';
-  setSelectedKanbanPipelineId: (pipelineId: string | null) => void;
   setDealsViewMode: (mode: 'table' | 'kanban') => void;
 }
 
@@ -187,9 +219,6 @@ export const useDealsStore = create<DealsState>((set, get) => ({
   dealsLoading: false,
   dealsError: null,
   hasInitiallyFetchedDeals: false,
-
-  // Initialize Kanban state
-  selectedKanbanPipelineId: null,
   dealsViewMode: getDealsViewModeFromLocalStorage(),
 
   fetchDeals: async () => {
@@ -214,17 +243,18 @@ export const useDealsStore = create<DealsState>((set, get) => ({
     set({ dealsLoading: true, dealsError: null });
     try {
       type CreateDealMutationResponse = { createDeal: Deal };
-      const response = await gqlClient.request<CreateDealMutationResponse, MutationCreateDealArgs>(
+      const variables: MutationCreateDealArgs = { input };
+
+      const data = await gqlClient.request<CreateDealMutationResponse, MutationCreateDealArgs>(
         CREATE_DEAL_MUTATION,
-        { input }
+        variables
       );
-      if (response.createDeal) {
-        set((state) => ({ deals: [...state.deals, response.createDeal], dealsLoading: false }));
-        return response.createDeal;
-      } else {
-        set({ dealsLoading: false, dealsError: 'Create operation did not return a deal.' });
-        return null;
-      }
+      const newDeal = data.createDeal;
+      set((state) => ({ 
+        deals: [newDeal, ...state.deals], 
+        dealsLoading: false 
+      }));
+      return newDeal;
     } catch (error: unknown) {
       console.error("Error creating deal:", error);
       let message = 'Failed to create deal';
@@ -233,25 +263,24 @@ export const useDealsStore = create<DealsState>((set, get) => ({
       } else if (error instanceof Error) {
         message = error.message;
       }
-      set({ dealsError: message, dealsLoading: false });
+      set({ dealsLoading: false, dealsError: message });
       return null;
     }
   },
 
-  updateDeal: async (id: string, input: DealInput): Promise<Deal | null> => {
+  updateDeal: async (id: string, input: Partial<DealUpdateInput>): Promise<Deal | null> => {
     set({ dealsLoading: true, dealsError: null });
     try {
+      const variables: MutationUpdateDealArgs = { id, input: input as DealUpdateInput };
       type UpdateDealMutationResponse = { updateDeal?: Maybe<Deal> };
-      const response = await gqlClient.request<UpdateDealMutationResponse, MutationUpdateDealArgs>(
-        UPDATE_DEAL_MUTATION,
-        { id, input }
-      );
-      if (response.updateDeal) {
+      const response = await gqlClient.request<UpdateDealMutationResponse>(UPDATE_DEAL_MUTATION, variables);
+      const updatedDeal = response.updateDeal;
+      if (updatedDeal) {
         set((state) => ({
-          deals: state.deals.map((d) => (d.id === id ? response.updateDeal! : d)),
+          deals: state.deals.map((d) => (d.id === id ? updatedDeal : d)),
           dealsLoading: false,
         }));
-        return response.updateDeal;
+        return updatedDeal;
       } else {
         set({ dealsLoading: false, dealsError: 'Update operation did not return a deal.' });
         return null;
@@ -302,36 +331,55 @@ export const useDealsStore = create<DealsState>((set, get) => ({
     }
   },
 
-  // Kanban View Actions
-  setSelectedKanbanPipelineId: (pipelineId: string | null) => {
-    set({ selectedKanbanPipelineId: pipelineId });
-
-    if (pipelineId) {
-      // Always reset stage fetching state when a pipeline is actively selected for Kanban,
-      // to ensure its stages are fetched/re-fetched for this new context.
-      useStagesStore.setState({
-        hasInitiallyFetchedStages: false,
-        stagesError: null,
-        stages: [], // Clear current stages to ensure only the selected pipeline's stages are shown
-        stagesLoading: false // Reset loading state before DealsKanbanView attempts to fetch
-      });
-    } else {
-      // No pipeline selected, clear stages and reset flags appropriately
-      useStagesStore.setState({
-        hasInitiallyFetchedStages: false, // Or true, if "no pipeline" implies fetched state is "empty and done"
-        stagesError: null,
-        stages: [],
-        stagesLoading: false
-      });
-    }
-  },
-
   setDealsViewMode: (mode: 'table' | 'kanban') => {
     set({ dealsViewMode: mode });
     try {
       localStorage.setItem('dealsViewMode', mode);
     } catch (error) {
       console.warn('Could not access localStorage to set dealsViewMode.', error);
+    }
+  },
+
+  // This is optimistic update: it replaces the deal in the store immediately.
+  // For a more robust solution, you might want to revert on error.
+  updateDealWFMProgress: async (dealId: string, targetWfmWorkflowStepId: string): Promise<Deal | null> => {
+    set({ dealsLoading: true, dealsError: null }); // Keep dealsError null here or clear specific operational error
+    const originalDeals = get().deals;
+    // Optimistic update: Find the deal and update its currentWfmStep immediately for responsiveness.
+    // This requires more detailed optimistic update logic if you want to reflect the change in the UI before server confirmation.
+    // For now, we'll rely on the server to return the updated deal, and then update the store.
+    // Consider a more specific loading state, e.g., `updatingWfmProgressDealId: dealId`
+
+    try {
+      type UpdateDealWFMProgressResponse = { updateDealWFMProgress: Deal };
+      const response = await gqlClient.request<
+        UpdateDealWFMProgressResponse,
+        MutationUpdateDealWfmProgressArgs 
+      >(UPDATE_DEAL_WFM_PROGRESS_MUTATION, { dealId, targetWfmWorkflowStepId });
+
+      const updatedDeal = response.updateDealWFMProgress;
+      if (updatedDeal) {
+        set((state) => ({
+          deals: state.deals.map((d) => (d.id === dealId ? updatedDeal : d)),
+          dealsLoading: false,
+          // dealsError: null, // Ensure no error is set on success
+        }));
+        return updatedDeal;
+      } else {
+        // This case might indicate a successful HTTP request but GraphQL operation error not caught by the catch block below,
+        // or the mutation resolved to null unexpectedly.
+        set({ dealsLoading: false, deals: originalDeals }); // Revert
+        // Do not set main dealsError here, rely on toast from component
+        console.warn('[useDealsStore.updateDealWFMProgress] WFM progress update did not return a deal, but no GraphQL error caught.');
+        return null;
+      }
+    } catch (error: unknown) {
+      console.error("[useDealsStore.updateDealWFMProgress] Error updating deal WFM progress:", error);
+      // Revert optimistic changes and ensure loading is false.
+      set({ dealsLoading: false, deals: originalDeals }); 
+      // Re-throw the error so the calling component (DealsKanbanView) can catch it 
+      // and use its specific message for the toast.
+      throw error; 
     }
   },
 }));

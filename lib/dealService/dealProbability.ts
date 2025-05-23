@@ -1,4 +1,4 @@
-import type { Deal, DealInput } from '../generated/graphql';
+import type { Deal, DealInput, WfmWorkflowStep } from '../generated/graphql';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { handleSupabaseError } from '../serviceUtils'; // For consistent error handling
 import { GraphQLError } from 'graphql';
@@ -8,120 +8,121 @@ interface DealProbabilityCalculationResult {
   weighted_amount_to_set?: number | null;
 }
 
+// New interface for WFM step metadata relevant to probability
+interface WfmStepProbabilityContext {
+  name: string; // For logging/debugging
+  probability: number | null;
+  outcome: 'OPEN' | 'WON' | 'LOST' | null; // Assuming these are the possible values in metadata
+}
+
 /**
- * Calculates deal probability and weighted amount based on stage or amount changes.
- * @param dealUpdateInput The partial input for the deal update.
+ * Calculates deal probability and weighted amount based on WFM step context or explicit amount/probability changes.
+ * @param dealUpdateInput The partial input for the deal update (e.g., new amount or specific probability).
  * @param oldDealData The current state of the deal from the database.
  * @param supabaseClient Authenticated Supabase client instance.
+ * @param targetWfmStepMetadata Optional: If provided, this WFM step's metadata is used as the primary context for probability.
+ *                              Used when the deal is transitioning to a new WFM step.
  * @returns An object with `deal_specific_probability_to_set` and `weighted_amount_to_set`.
  */
 export const calculateDealProbabilityFields = async (
-  dealUpdateInput: Partial<DealInput>,
+  dealUpdateInput: Partial<Omit<DealInput, 'stage_id' | 'pipeline_id'>>, // stage_id is no longer used here
   oldDealData: Deal, 
-  supabaseClient: SupabaseClient
+  supabaseClient: SupabaseClient,
+  targetWfmStepMetadata?: WfmStepProbabilityContext 
 ): Promise<DealProbabilityCalculationResult> => {
   const result: DealProbabilityCalculationResult = {};
+  let currentWfmStepContext: WfmStepProbabilityContext | null = targetWfmStepMetadata || null;
 
-  // 1. Handle stage change and associated probability adjustments
-  if (dealUpdateInput.stage_id && dealUpdateInput.stage_id !== oldDealData.stage_id) {
-    console.log(`[dealProbability.calculate] Stage changed from ${oldDealData.stage_id} to ${dealUpdateInput.stage_id}`);
-    const { data: newStage, error: stageError } = await supabaseClient
-        .from('stages')
-        .select('stage_type, deal_probability') 
-        .eq('id', dealUpdateInput.stage_id)
+  // 1. Determine the WFM step context if not explicitly provided
+  if (!currentWfmStepContext) {
+    if (!oldDealData.wfm_project_id) {
+      console.warn(`[dealProbability.calculate] Deal ${oldDealData.id} has no wfm_project_id. Cannot determine WFM step for probability.`);
+      // Fallback: if amount is changing, but no WFM context, weighted amount will likely be null unless specific probability is set.
+    } else {
+      const { data: wfmProject, error: projectError } = await supabaseClient
+        .from('wfm_projects')
+        .select('current_step_id')
+        .eq('id', oldDealData.wfm_project_id)
         .single();
 
-    if (stageError) {
-        handleSupabaseError(stageError, `fetching new stage ${dealUpdateInput.stage_id} for deal update`);
-        // Throwing here ensures the operation stops if the target stage is invalid.
-        throw new GraphQLError(`Target stage ${dealUpdateInput.stage_id} not found.`, { extensions: { code: 'BAD_USER_INPUT' } });
-    }
+      if (projectError || !wfmProject || !wfmProject.current_step_id) {
+        handleSupabaseError(projectError, `fetching WFM project ${oldDealData.wfm_project_id} for deal ${oldDealData.id}`);
+        throw new GraphQLError(`Failed to fetch WFM project or current step for deal ${oldDealData.id}. Probability calculation depends on it.`);
+      }
 
-    if (newStage) {
-        console.log('[dealProbability.calculate] New stage properties:', newStage);
-        let effectiveProbability: number | null = null;
+      const { data: wfmStep, error: stepError } = await supabaseClient
+        .from('workflow_steps') 
+        .select('metadata') // Select only metadata, as 'name' is not on workflow_steps
+        .eq('id', wfmProject.current_step_id)
+        .single();
+      
+      if (stepError || !wfmStep) {
+        handleSupabaseError(stepError, `fetching WFM step ${wfmProject.current_step_id} for deal ${oldDealData.id}`);
+        throw new GraphQLError(`Failed to fetch WFM step ${wfmProject.current_step_id} for deal ${oldDealData.id}.`);
+      }
 
-        if (newStage.stage_type === 'WON') {
-            result.deal_specific_probability_to_set = 1.0;
-            effectiveProbability = 1.0;
-            console.log('[dealProbability.calculate] Setting deal_specific_probability to 1.0 for WON stage');
-        } else if (newStage.stage_type === 'LOST') {
-            result.deal_specific_probability_to_set = 0.0;
-            effectiveProbability = 0.0;
-            console.log('[dealProbability.calculate] Setting deal_specific_probability to 0.0 for LOST stage');
-        } else { // OPEN stage
-            result.deal_specific_probability_to_set = null; 
-            effectiveProbability = newStage.deal_probability; 
-            console.log('[dealProbability.calculate] Clearing deal_specific_probability for OPEN stage, effective probability from stage:', effectiveProbability);
-        }
+      // Ensure metadata is an object and has the expected properties
+      const metadata = wfmStep.metadata as any;
+      if (typeof metadata !== 'object' || metadata === null) {
+        // Use current_step_id for error message if name is not available
+        throw new GraphQLError(`WFM step ${wfmProject.current_step_id} has invalid or missing metadata.`);
+      }
 
-        const currentAmount = typeof dealUpdateInput.amount === 'number' ? dealUpdateInput.amount : oldDealData.amount;
-        if (typeof currentAmount === 'number' && effectiveProbability !== null) {
-            result.weighted_amount_to_set = currentAmount * effectiveProbability;
-            console.log('[dealProbability.calculate] Calculated weighted_amount:', result.weighted_amount_to_set);
-        } else {
-            result.weighted_amount_to_set = null; 
-            console.log('[dealProbability.calculate] Setting weighted_amount to null due to missing amount or probability for new stage.');
-        }
-    } else {
-         console.warn(`[dealProbability.calculate] New stage ${dealUpdateInput.stage_id} not found, probability not adjusted. Weighted amount not calculated.`);
-    }
-  // 2. Handle amount change if stage did not change (or if stage change logic didn't set weighted_amount)
-  } else if (typeof dealUpdateInput.amount === 'number' && dealUpdateInput.amount !== oldDealData.amount) {
-    console.log('[dealProbability.calculate] Amount changed. Recalculating weighted_amount.');
-    let existingEffectiveProbability: number | null = null;
-
-    // Use the probability that would result from the current update input if stage also changed,
-    // otherwise use old deal's probability logic.
-    if (result.deal_specific_probability_to_set !== undefined) { // Stage change has determined new specific probability
-        if (result.deal_specific_probability_to_set === 1.0 || result.deal_specific_probability_to_set === 0.0) {
-            existingEffectiveProbability = result.deal_specific_probability_to_set;
-        } else { // deal_specific_probability is null (OPEN stage), need stage's default probability
-            // This requires fetching the stage if stage_id isn't changing or already fetched. This is complex if stage is not changing.
-            // For simplicity, if stage is not changing, use existing oldDealData probability logic.
-            // This case is primarily when ONLY amount changes.
-            if (oldDealData.deal_specific_probability !== null && oldDealData.deal_specific_probability !== undefined) {
-                existingEffectiveProbability = oldDealData.deal_specific_probability;
-            } else if (oldDealData.stage_id) {
-                const { data: currentStage } = await supabaseClient
-                    .from('stages')
-                    .select('deal_probability, stage_type') 
-                    .eq('id', oldDealData.stage_id)
-                    .single(); // Error handling might be needed here too
-                if (currentStage) {
-                    if (currentStage.stage_type === 'WON') existingEffectiveProbability = 1.0;
-                    else if (currentStage.stage_type === 'LOST') existingEffectiveProbability = 0.0;
-                    else existingEffectiveProbability = currentStage.deal_probability;
-                }
-            }
-        }
-    } else { // Stage is not changing, use old deal's probability context
-        if (oldDealData.deal_specific_probability !== null && oldDealData.deal_specific_probability !== undefined) {
-            existingEffectiveProbability = oldDealData.deal_specific_probability;
-        } else if (oldDealData.stage_id) {
-            const { data: currentStage, error: currentStageError } = await supabaseClient
-                .from('stages')
-                .select('deal_probability, stage_type') 
-                .eq('id', oldDealData.stage_id)
-                .single();
-            
-            if (currentStage && !currentStageError) {
-                if (currentStage.stage_type === 'WON') existingEffectiveProbability = 1.0;
-                else if (currentStage.stage_type === 'LOST') existingEffectiveProbability = 0.0;
-                else existingEffectiveProbability = currentStage.deal_probability;
-            } else {
-                console.warn(`[dealProbability.calculate] Could not fetch current stage ${oldDealData.stage_id} to recalculate weighted_amount.`);
-            }
-        }
-    }
-
-    if (typeof dealUpdateInput.amount === 'number' && existingEffectiveProbability !== null) {
-        result.weighted_amount_to_set = dealUpdateInput.amount * existingEffectiveProbability;
-        console.log('[dealProbability.calculate] Amount changed, recalculated weighted_amount:', result.weighted_amount_to_set);
-    } else {
-        result.weighted_amount_to_set = null;
-        console.log('[dealProbability.calculate] Amount changed, but weighted_amount set to null due to missing effective probability or new amount.');
+      currentWfmStepContext = {
+        name: `StepID: ${wfmProject.current_step_id}`, // Use Step ID for logging if name is not available
+        probability: typeof metadata.deal_probability === 'number' ? metadata.deal_probability : null,
+        outcome: metadata.outcome_type as WfmStepProbabilityContext['outcome'] || 'OPEN', // Default to OPEN if not specified
+      };
+      console.log(`[dealProbability.calculate] Fetched current WFM context for deal ${oldDealData.id}:`, currentWfmStepContext);
     }
   }
+
+  // 2. Determine deal_specific_probability_to_set
+  // An explicit probability in the input always overrides WFM-derived settings.
+  if (typeof dealUpdateInput.deal_specific_probability === 'number' || dealUpdateInput.deal_specific_probability === null) {
+    result.deal_specific_probability_to_set = dealUpdateInput.deal_specific_probability;
+    console.log(`[dealProbability.calculate] Using explicit deal_specific_probability from input: ${result.deal_specific_probability_to_set}`);
+  } else if (currentWfmStepContext) {
+    if (currentWfmStepContext.outcome === 'WON') {
+      result.deal_specific_probability_to_set = 1.0;
+    } else if (currentWfmStepContext.outcome === 'LOST') {
+      result.deal_specific_probability_to_set = 0.0;
+    } else { // OPEN or other/default
+      result.deal_specific_probability_to_set = null; // Indicates system should use stage default, not override
+    }
+    console.log(`[dealProbability.calculate] Based on WFM context (${currentWfmStepContext.name}, outcome: ${currentWfmStepContext.outcome}), deal_specific_probability_to_set: ${result.deal_specific_probability_to_set}`);
+  } else {
+    // No explicit input probability, no WFM context found (e.g. deal not linked or WFM data missing)
+    // Retain old deal_specific_probability if no other information is available
+    result.deal_specific_probability_to_set = oldDealData.deal_specific_probability;
+    console.log(`[dealProbability.calculate] No explicit probability input and no WFM context. Retaining old deal_specific_probability: ${result.deal_specific_probability_to_set}`);
+  }
+
+  // 3. Calculate weighted_amount_to_set
+  const currentAmount = typeof dealUpdateInput.amount === 'number' ? dealUpdateInput.amount : oldDealData.amount;
+  let effectiveProbability: number | null = null;
+
+  if (result.deal_specific_probability_to_set !== undefined && result.deal_specific_probability_to_set !== null) {
+    // This means an explicit probability is set (either from input or WON/LOST WFM outcome)
+    effectiveProbability = result.deal_specific_probability_to_set;
+  } else if (currentWfmStepContext && currentWfmStepContext.outcome === 'OPEN') {
+    // deal_specific_probability is null (for OPEN stages), so use the WFM step's default probability
+    effectiveProbability = currentWfmStepContext.probability;
+  } else if (!currentWfmStepContext && result.deal_specific_probability_to_set === null){
+    // Edge case: no WFM context, and old specific probability was null. Try to use old stage probability if possible (legacy fallback)
+    // This part is tricky without stage_id. If the deal is very old and not WFM-linked, and had no specific probability.
+    // For now, if no WFM context and specific probability is null, effective probability remains null.
+    console.warn(`[dealProbability.calculate] No WFM context and deal_specific_probability is null. Cannot determine effective probability for weighted amount without legacy stage info.`);
+  }
+
+  console.log(`[dealProbability.calculate] Amount for calc: ${currentAmount}, Effective probability for calc: ${effectiveProbability}`);
+
+  if (typeof currentAmount === 'number' && effectiveProbability !== null) {
+    result.weighted_amount_to_set = currentAmount * effectiveProbability;
+  } else {
+    result.weighted_amount_to_set = null; // Set to null if amount or effective probability is missing
+  }
+  console.log(`[dealProbability.calculate] Final weighted_amount_to_set: ${result.weighted_amount_to_set}, Final deal_specific_probability_to_set: ${result.deal_specific_probability_to_set}`);
+
   return result;
 }; 

@@ -168,6 +168,10 @@ extend type Query {
   # Project Types
   wfmProjectTypes(isArchived: Boolean = false): [WFMProjectType!]!
   wfmProjectType(id: ID!): WFMProjectType
+  wfmProjectTypeByName(name: String!): WFMProjectType
+
+  # Allowed Transitions for a specific step in a workflow
+  getWfmAllowedTransitions(workflowId: ID!, fromStepId: ID!): [WFMWorkflowTransition!]!
 }
 
 # --- Mutations --- Extending existing Mutation type

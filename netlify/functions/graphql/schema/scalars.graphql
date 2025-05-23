@@ -1,2 +1,3 @@
 scalar JSON
-scalar DateTime 
+scalar DateTime
+scalar Date

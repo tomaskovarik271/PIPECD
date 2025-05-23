@@ -20,6 +20,9 @@ import type {
     // GraphQLError, // Removed import as it's not directly available or needed here
 } from '../generated/graphql/graphql';
 
+// Re-export WfmProjectType for use in components
+export type { WfmProjectType };
+
 // No need for a separate GQLError interface here if we inspect err.response directly
 
 export interface WFMProjectTypeState {

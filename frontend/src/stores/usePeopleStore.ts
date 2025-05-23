@@ -65,10 +65,6 @@ const GET_PERSON_BY_ID_QUERY = gql`
         id
         name
         amount
-        stage {
-          id
-          name
-        }
         # created_at # Example: if needed
       }
       # activities {

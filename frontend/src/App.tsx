@@ -7,8 +7,6 @@ import DealsPage from './pages/DealsPage';
 import PeoplePage from './pages/PeoplePage';
 import PersonDetailPage from './pages/PersonDetailPage';
 import OrganizationsPage from './pages/OrganizationsPage'; 
-import PipelinesPage from './pages/PipelinesPage';
-import StagesPage from './pages/StagesPage';
 import ActivitiesPage from './pages/ActivitiesPage';
 import ActivityDetailPage from './pages/ActivityDetailPage';
 import DealDetailPage from './pages/DealDetailPage';
@@ -28,6 +26,7 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { useAppStore } from './stores/useAppStore';
+import { useWFMConfigStore } from './stores/useWFMConfigStore';
 import Sidebar from './components/layout/Sidebar';
 
 function AppContent() {
@@ -42,8 +41,6 @@ function AppContent() {
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/deals/:dealId" element={<DealDetailPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
-            <Route path="/pipelines" element={<PipelinesPage />} />
-            <Route path="/pipelines/:pipelineId/stages" element={<StagesPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />
@@ -67,10 +64,12 @@ function App() {
   const isLoadingAuth = useAppStore((state) => state.isLoadingAuth);
   const setSession = useAppStore((state) => state.setSession);
   const checkAuth = useAppStore((state) => state.checkAuth);
+  const fetchSalesDealWorkflowId = useWFMConfigStore((state) => state.fetchSalesDealWorkflowId);
   const toast = useToast();
 
   useEffect(() => {
     checkAuth();
+    fetchSalesDealWorkflowId();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         console.log('Auth state changed:', _event, session ? 'Session exists' : 'No session');
@@ -87,7 +86,7 @@ function App() {
         console.log('Unsubscribing from auth changes.');
         subscription.unsubscribe();
     }
-  }, [checkAuth, setSession, toast]);
+  }, [checkAuth, setSession, toast, fetchSalesDealWorkflowId]);
 
   if (isLoadingAuth) {
     return (

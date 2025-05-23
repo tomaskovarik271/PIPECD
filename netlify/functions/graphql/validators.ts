@@ -1,5 +1,10 @@
 import { z } from 'zod';
-import { StageType as GeneratedStageType } from '../../../lib/generated/graphql'; // Adjusted path
+// import { StageType as GeneratedStageType } from '../../../lib/generated/graphql'; // REMOVED
+import type { 
+    PriceQuoteCreateInput as GeneratedPriceQuoteCreateInput,
+    PriceQuoteUpdateInput as GeneratedPriceQuoteUpdateInput,
+    AdditionalCostInput as GeneratedAdditionalCostInput 
+} from '../../../lib/generated/graphql';
 
 // Zod schema for CustomFieldValueInput
 const CustomFieldValueInputSchema = z.object({
@@ -56,45 +61,21 @@ export const OrganizationInputSchema = z.object({
 export const DealBaseSchema = z.object({
   name: z.string().min(1, { message: "Deal name is required" }).optional(),
   amount: z.number().positive("Amount must be positive").optional().nullable(),
-  expected_close_date: z.string().datetime().optional().nullable(),
-  stage_id: z.string().uuid("Valid Stage ID is required").optional(),
-  pipeline_id: z.string().uuid("Valid Pipeline ID is required").optional(),
+  expected_close_date: z.string().optional().nullable(),
+  wfmProjectTypeId: z.string().uuid("Valid WFM Project Type ID is required").optional(),
   person_id: z.string().uuid("Valid Person ID is required").optional().nullable(),
   organization_id: z.string().uuid("Valid Organization ID is required").optional().nullable(),
   deal_specific_probability: z.number().min(0).max(1).optional().nullable(),
-  customFields: z.array(CustomFieldValueInputSchema).optional().nullable(), // Added customFields to Zod schema
+  customFields: z.array(CustomFieldValueInputSchema).optional().nullable(),
 });
 
 export const DealCreateSchema = DealBaseSchema.merge(z.object({
   name: z.string().min(1, { message: "Deal name is required" }),
-  stage_id: z.string().uuid("Valid Stage ID is required"),
-  pipeline_id: z.string().uuid("Valid Pipeline ID is required"),
+  wfmProjectTypeId: z.string().uuid("Valid WFM Project Type ID is required"),
 }));
 export const DealUpdateSchema = DealBaseSchema.partial();
 
 // --- Pipeline Schemas ---
-export const PipelineInputSchema = z.object({
-    name: z.string().trim().min(1, { message: "Pipeline name cannot be empty" }),
-});
-
-// Define StageType enum for Zod validation, using imported GraphQL enum members
-const StageTypeZodEnum = z.enum([
-    GeneratedStageType.Open,
-    GeneratedStageType.Won,
-    GeneratedStageType.Lost
-], { errorMap: () => ({ message: 'Invalid stage type' }) });
-
-// --- Stage Schemas ---
-const StageBaseSchema = z.object({
-    name: z.string().trim().min(1, { message: "Stage name cannot be empty" }),
-    order: z.number().int().nonnegative({ message: "Order must be a non-negative integer"}),
-    pipeline_id: z.string().uuid({ message: "Invalid Pipeline ID format" }),
-    deal_probability: z.number().min(0).max(1, { message: "Probability must be between 0.0 and 1.0" }).optional().nullable(),
-    stage_type: StageTypeZodEnum.optional(), // Use the new Zod enum
-});
-
-export const StageCreateSchema = StageBaseSchema;
-export const StageUpdateSchema = StageBaseSchema.partial().omit({ pipeline_id: true });
 
 // === Activity Validators ===
 
@@ -145,15 +126,19 @@ export const ActivityFilterInputSchema = z.object({
 // --- Pricing Module Schemas ---
 
 // Corresponds to AdditionalCostInput in GraphQL
+// This Zod schema should match the structure of GeneratedAdditionalCostInput
 export const AdditionalCostInputSchema = z.object({
   description: z.string().trim().min(1, { message: "Description for additional cost cannot be empty" }),
   amount: z.number().positive({ message: "Amount for additional cost must be a positive number" }),
+  // Add other fields from GeneratedAdditionalCostInput if they exist and need validation
+  // For example, if GeneratedAdditionalCostInput had an optional 'id' for updates:
+  // id: z.string().uuid().optional().nullable(), 
 });
 
 // Corresponds to PriceQuoteCreateInput in GraphQL
+// This Zod schema should match the structure of GeneratedPriceQuoteCreateInput
 export const PriceQuoteCreateInputSchema = z.object({
   name: z.string().trim().min(1, { message: "Quote name cannot be empty" }).optional().nullable(),
-  // status is typically defaulted by the backend
   base_minimum_price_mp: z.number().min(0, { message: "Base minimum price cannot be negative" }).optional().nullable(),
   target_markup_percentage: z.number().min(0, { message: "Target markup percentage cannot be negative" }).optional().nullable(),
   final_offer_price_fop: z.number().min(0, { message: "Final offer price cannot be negative" }).optional().nullable(),
@@ -162,12 +147,25 @@ export const PriceQuoteCreateInputSchema = z.object({
   upfront_payment_due_days: z.number().int().min(0, { message: "Upfront payment due days cannot be negative" }).optional().nullable(),
   subsequent_installments_count: z.number().int().min(0, { message: "Subsequent installments count cannot be negative" }).optional().nullable(),
   subsequent_installments_interval_days: z.number().int().min(1, { message: "Subsequent installments interval must be at least 1 day" }).optional().nullable(),
-  additional_costs: z.array(AdditionalCostInputSchema).optional().nullable(),
+  additional_costs: z.array(AdditionalCostInputSchema).optional().nullable(), // Uses the Zod schema above
+  // Ensure all fields from GeneratedPriceQuoteCreateInput are represented here
 });
 
 // Corresponds to PriceQuoteUpdateInput in GraphQL
-export const PriceQuoteUpdateInputSchema = PriceQuoteCreateInputSchema.extend({
-  // For updates, most fields are optional and covered by PriceQuoteCreateInputSchema being mostly optional.
-  // We explicitly add status here as it can be changed during an update.
-  status: z.string().trim().min(1, { message: "Status cannot be empty if provided"}).optional().nullable(), // e.g., 'draft', 'proposed', 'archived'
-}).partial(); // .partial() makes all fields in the extended schema optional, suitable for updates. 
+// This Zod schema should match the structure of GeneratedPriceQuoteUpdateInput
+export const PriceQuoteUpdateInputSchema = z.object({
+  name: z.string().trim().min(1, { message: "Quote name cannot be empty if provided" }).optional().nullable(),
+  base_minimum_price_mp: z.number().min(0).optional().nullable(),
+  target_markup_percentage: z.number().min(0).optional().nullable(),
+  final_offer_price_fop: z.number().min(0).optional().nullable(),
+  overall_discount_percentage: z.number().min(0).max(100).optional().nullable(),
+  upfront_payment_percentage: z.number().min(0).max(100).optional().nullable(),
+  upfront_payment_due_days: z.number().int().min(0).optional().nullable(),
+  subsequent_installments_count: z.number().int().min(0).optional().nullable(),
+  subsequent_installments_interval_days: z.number().int().min(1).optional().nullable(),
+  additional_costs: z.array(AdditionalCostInputSchema).optional().nullable(),
+  status: z.string().trim().min(1, { message: "Status cannot be empty if provided"}).optional().nullable(),
+  // Ensure all fields from GeneratedPriceQuoteUpdateInput are represented here
+  // If PriceQuoteUpdateInput in GraphQL has an `id` field, it should NOT be here 
+  // as the ID for update usually comes from args.id, not args.input.id
+}).partial(); // .partial() makes all fields optional, which is typical for update inputs. 

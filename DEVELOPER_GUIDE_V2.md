@@ -329,7 +329,91 @@ The system allows users to manage basic profile information, which is also lever
             *   If the history entry's `user_id` is a *different* user, it also calls `userProfileService.getUserProfile` (using the *viewing* user's access token) to fetch the actor's profile. This is possible due to the updated RLS policy allowing authenticated reads on `user_profiles`.
             *   A placeholder email (e.g., `user@system.local`) is used for users other than `currentUser` to satisfy the `User.email: String!` schema requirement, as actual emails of other users are not exposed through this path.
 
-## 6. Frontend Development
+## 6. Work Flow Management (WFM) System (NEW SECTION)
+
+The project implements a flexible Work Flow Management (WFM) system designed to replace the previous Sales Pipeline system and provide a more generic way to manage multi-step processes for various entities.
+
+### 6.1 Core WFM Concepts & Entities
+
+The WFM system is built around the following core database tables and corresponding GraphQL types:
+
+*   **`WFMStatus` (`wfm_statuses` table)**:
+    *   Represents generic, reusable statuses (e.g., "Open", "In Progress", "Pending Approval", "Closed Won", "Closed Lost").
+    *   Each status has a name, description, color, and an archived flag.
+    *   This entity is foundational and used by `WFMWorkflowStep`.
+
+*   **`WFMWorkflow` (`wfm_workflows` table)**:
+    *   Defines a template for a specific process, comprising a sequence of steps.
+    *   Examples: "Standard Sales Process", "Enterprise Sales Process", "Support Ticket Resolution Workflow".
+    *   Workflows have a name, description, and can be associated with a default `WFMProjectType`.
+
+*   **`WFMWorkflowStep` (`wfm_workflow_steps` table)**:
+    *   Represents a distinct step within a `WFMWorkflow`.
+    *   Links a specific `WFMStatus` to a workflow, defining its role in that particular process.
+    *   Key attributes include:
+        *   `workflow_id`: The workflow this step belongs to.
+        *   `status_id`: The underlying `WFMStatus` for this step.
+        *   `step_order`: Defines the sequence of the step within the workflow.
+        *   `is_initial_step`: Boolean flag indicating if this is a starting step for the workflow.
+        *   `is_final_step`: Boolean flag indicating if this is a terminal step.
+        *   `metadata` (JSONB): Stores step-specific information. For Sales Deals, this includes:
+            *   `name`: The display name of the step (e.g., "Qualification", "Proposal Sent"). This is distinct from the `WFMStatus` name.
+            *   `deal_probability`: The probability of a Deal closing when it reaches this step.
+            *   `outcome_type`: Indicates if the step represents an 'OPEN', 'WON', or 'LOST' outcome for the deal.
+
+*   **`WFMWorkflowTransition` (`wfm_workflow_transitions` table)**:
+    *   Defines the allowed transitions between `WFMWorkflowStep`s within a specific `WFMWorkflow`.
+    *   Ensures that processes follow a predefined path (e.g., a deal can only move from "Prospecting" to "Qualification" or "Closed Lost").
+
+*   **`WFMProjectType` (`wfm_project_types` table)**:
+    *   Defines a category of work that will be managed using the WFM system (e.g., "Sales Deal", "Support Ticket", "Client Onboarding").
+    *   Each project type can have a `default_workflow_id`, specifying which `WFMWorkflow` to use when a new project of this type is initiated.
+    *   The "Sales Deal" project type is pre-configured to use a sales-specific workflow.
+
+*   **`WFMProject` (`wfm_projects` table)**:
+    *   An instance of a WFM-managed process for a specific application entity (e.g., a particular Deal is associated with one `WFMProject`).
+    *   Tracks:
+        *   `project_type_id`: The type of this project (e.g., "Sales Deal").
+        *   `workflow_id`: The specific `WFMWorkflow` this project is following.
+        *   `current_step_id`: The current `WFMWorkflowStep` the project is in.
+        *   `source_entity_id` (optional): Could be used to link back to the primary entity (e.g., `deal_id`), although in the current Deal implementation, the `deals` table has a `wfm_project_id` foreign key pointing to this table.
+
+Refer to `ADR-006` for further details on the WFM system design.
+
+### 6.2 Integration with Sales Deals
+
+The initial application of the WFM system is the refactoring of the Sales Pipeline:
+
+*   **Deprecated Entities**: The old `Pipeline` and `Stage` entities (and their associated tables, services, GraphQL elements) have been deprecated and removed.
+*   **Deal Association**: The `deals` table now has a `wfm_project_id` column, linking each deal to its corresponding `WFMProject` instance.
+*   **Deal Creation**: When a new Deal is created:
+    *   A `WFMProjectType` is selected (defaults to "Sales Deal").
+    *   A new `WFMProject` is automatically created, using the default `WFMWorkflow` and its initial `WFMWorkflowStep` associated with the chosen `WFMProjectType`.
+    *   The `deal.wfm_project_id` is set to this new WFMProject.
+*   **Deal Progression**: Changes to a Deal's sales status are now managed by updating its `WFMProject`:
+    *   The `updateDealWFMProgress` GraphQL mutation is used to move a deal to a `targetWfmWorkflowStepId`.
+    *   This mutation validates the requested transition against defined `WFMWorkflowTransition`s.
+    *   It updates the `current_step_id` on the `WFMProject` record.
+*   **Probability & Weighted Amount**: The `deal_specific_probability` can still be set on a deal, but the effective probability used for `weighted_amount` calculation is now primarily driven by the `deal_probability` defined in the `metadata` of the Deal's current `WFMWorkflowStep`.
+*   **Deal History**: Changes to a Deal's WFM status are recorded in the `deal_history` table with an event type of `DEAL_WFM_STATUS_CHANGED`. The history log includes the names and IDs of the old and new WFM statuses (derived from the `WFMStatus` linked to the `WFMWorkflowStep`).
+
+### 6.3 Backend Implementation (WFM)
+
+*   **Service Layers (`lib/wfm*.service.ts`)**: Dedicated services manage CRUD operations and business logic for each WFM entity (e.g., `wfmWorkflowService.ts`, `wfmProjectService.ts`, `wfmStatusService.ts`, `wfmProjectTypeService.ts`).
+*   **GraphQL Schema (`netlify/functions/graphql/schema/wfm*.graphql`)**: Schema files define the GraphQL types, queries, and mutations for WFM entities.
+*   **Resolvers (`netlify/functions/graphql/resolvers/*`)**: Resolvers implement the GraphQL API for WFM, often calling the respective service layers.
+
+### 6.4 Frontend Implementation (WFM for Deals)
+
+*   **Kanban Board (`DealsKanbanView.tsx`)**: Dynamically generates columns based on the `WFMWorkflowStep`s of the active "Sales" workflow. Drag-and-drop actions call the `updateDealWFMProgress` mutation.
+*   **Deal Creation/Editing Modals**:
+    *   Pipeline/Stage selection UI is removed.
+    *   `CreateDealModal.tsx` includes a `WFMProjectType` selection (hidden or defaulted for "Sales Deal" type initially).
+*   **Deal Detail Page (`DealDetailPage.tsx`)**: Displays the WFM status name (from the `WFMStatus` linked to the current `WFMWorkflowStep`).
+*   **State Management**: Potentially new Zustand stores (`useWFMConfigStore.ts`, `useWFMWorkflowStore.ts`) or updates to existing stores (`useDealsStore.ts`) manage WFM-related data and state for the frontend.
+*   **User Manual**: A user manual (`WFM_Sales_Kanban_User_Manual.md`) has been created to guide users on the new WFM-based Kanban board for Sales Deals.
+
+## 7. Frontend Development
 
 ### Core Libraries
 
@@ -397,7 +481,7 @@ The system allows users to manage basic profile information, which is also lever
 *   **Global Styles**: Global CSS resets or base styles can be applied via Chakra's global style object or in `main.tsx`/`index.css`.
 *   Prefer Chakra's style props and `sx` prop for component-specific styling over custom CSS files where possible.
 
-### 6.6 User Profile Management (Frontend)
+### 7.6 User Profile Management (Frontend)
 
 The frontend provides a dedicated page for users to view and manage their profiles, and integrates profile information (like display names) into other relevant parts of the UI, such as Deal History.
 
@@ -429,7 +513,7 @@ The frontend provides a dedicated page for users to view and manage their profil
     *   The component now uses `entry.user?.display_name` to show the name of the user who performed an action on a deal.
     *   This leverages the backend resolver updates and new RLS policies that allow fetching display names for any authenticated user associated with a history entry.
 
-## 7. Testing
+## 8. Testing
 
 ### Overall Strategy
 
@@ -466,7 +550,7 @@ The project aims for a balanced testing approach:
 *   Aim for high test coverage for critical business logic (services, store actions).
 *   Use `npm run coverage` (configure in `package.json` for Vitest) to check coverage reports.
 
-## 8. Code Quality & Style
+## 9. Code Quality & Style
 
 ### TypeScript
 
@@ -499,7 +583,7 @@ The project aims for a balanced testing approach:
 *   Use JSDoc-style comments for functions and classes where appropriate, especially for shared library code.
 *   Avoid over-commenting obvious code. Well-named variables and functions often make comments unnecessary.
 
-## 9. Code Generation
+## 10. Code Generation
 
 *   **Tooling**: The project uses `@graphql-codegen/cli` to automatically generate TypeScript types for the backend.
 *   **Configuration**: The generation process is configured in `codegen.ts` at the project root.
@@ -507,7 +591,7 @@ The project aims for a balanced testing approach:
 *   **Usage**: These generated types are used throughout the backend, particularly in GraphQL resolvers (`netlify/functions/graphql/resolvers/`) and service layers (`lib/`), to ensure type safety and consistency with the GraphQL schema.
 *   **Running**: The generation can be triggered manually using the `npm run codegen` script. This should be done after any changes to the GraphQL schema files (`*.graphql`).
 
-## X. Key Development Learnings & Best Practices (NEW SECTION)
+## 11. Key Development Learnings & Best Practices (NEW SECTION)
 
 This section consolidates key learnings and best practices derived from feature implementations, such as the Deal History / Audit Trail. Applying these can help improve development efficiency, code quality, and reduce common pitfalls.
 
@@ -560,7 +644,7 @@ This section consolidates key learnings and best practices derived from feature 
 *   **Plan Adherence & Adaptation**: While a good implementation plan is invaluable, be prepared to adapt and troubleshoot unforeseen issues. The initial plan for Deal History was a strong guide, but practical implementation always reveals nuances.
 *   **Verify Assumptions**: Early verification of assumptions about existing schema, naming conventions, and library/SDK behavior can save significant time.
 
-## 10. Role-Based Access Control (RBAC)
+## 12. Role-Based Access Control (RBAC)
 
 The project implements a database-driven RBAC system.
 
@@ -584,7 +668,7 @@ The project implements a database-driven RBAC system.
     *   UI elements (buttons, links, fields) are conditionally rendered or disabled based on these permissions.
         *   Example: `<Button isDisabled={!userPermissions.includes('deal:create')}>Create Deal</Button>`
 
-## 11. Environment Variables
+## 13. Environment Variables
 
 *   **`env.example.txt` (Root)**: Template for the root `.env` file.
 *   **Root `.env` (Gitignored)**:
@@ -604,7 +688,7 @@ The project implements a database-driven RBAC system.
     *   `VITE_SUPABASE_ANON_KEY`: Production Supabase public anon key (for frontend build).
     *   `NODE_VERSION`: (e.g., "18" or "20")
 
-## 12. Deployment
+## 14. Deployment
 
 ### Netlify
 
@@ -628,7 +712,7 @@ The project implements a database-driven RBAC system.
     *   Configure Auth providers (Google, GitHub, etc.) in the Supabase Dashboard.
     *   Set Site URL, additional redirect URLs in Supabase Auth settings.
 
-## 13. Contribution Workflow
+## 15. Contribution Workflow
 
 1.  **Branching Strategy**:
     *   Use feature branches. Create your branch from the latest `main` (or `develop` if used as an integration branch).
@@ -656,7 +740,7 @@ The project implements a database-driven RBAC system.
         ```
     *   Resolve any merge conflicts carefully.
 
-## 14. Common Pitfalls & Troubleshooting
+## 16. Common Pitfalls & Troubleshooting
 
 *   **Supabase Local Issues**:
     *   Docker not running or port conflicts: Ensure Docker is running. Check `supabase/config.toml` for ports; stop other services if conflicting.
@@ -675,7 +759,7 @@ The project implements a database-driven RBAC system.
     *   Temporarily simplify policies to isolate issues. `EXPLAIN (ANALYZE, VERBOSE)` can be helpful.
 *   **CORS Issues**: Usually handled by Netlify Dev and GraphQL Yoga defaults for local. For prod, ensure Netlify function responses have correct CORS headers if accessed from unexpected origins.
 
-## 15. Further Reading & Resources
+## 17. Further Reading & Resources
 
 *   [React](https://react.dev/)
 *   [Vite](https://vitejs.dev/)

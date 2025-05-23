@@ -27,9 +27,13 @@ const config: CodegenConfig = {
     },
     'frontend/src/generated/graphql/graphql.ts': {
       plugins: [
-        'typescript', // Generates base TypeScript types from the schema
-        // Consider 'typescript-operations' if you have .graphql files for frontend ops
+        'typescript',
+        'typescript-operations',
         // Consider 'typescript-graphql-request' for a typed SDK if using graphql-request extensively with operations files
+      ],
+      documents: [
+        'frontend/src/**/*.ts',
+        'frontend/src/**/*.tsx',
       ],
       config: {
         // Ensure scalars are mapped correctly if needed for frontend (e.g., DateTime to string)
