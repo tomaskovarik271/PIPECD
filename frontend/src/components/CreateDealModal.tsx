@@ -27,7 +27,8 @@ import {
   Stack,
   Text,
 } from '@chakra-ui/react';
-import { usePeopleStore, Person } from '../stores/usePeopleStore';
+import { usePeopleStore, Person } from '../stores/usePeopleStore'; // PeopleStore is used for Person/Org selectors, keep for now
+import { useUserStore, AssignableUser } from '../stores/useUserStore'; // Import the new user store
 import { useDealsStore } from '../stores/useDealsStore';
 import { useWFMProjectTypeStore, WfmProjectType } from '../stores/useWFMProjectTypeStore';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
@@ -50,6 +51,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>('');
   const [organizationId, setOrganizationId] = useState<string>('');
+  const [assignedToUserId, setAssignedToUserId] = useState<string>(''); // State for assigned user
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
   
@@ -73,6 +75,12 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const { createDeal: createDealAction, dealsError, dealsLoading } = useDealsStore(); 
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
   const { organizations, fetchOrganizations, organizationsLoading, organizationsError } = useOrganizationsStore();
+  const { 
+    assignableUsers, 
+    fetchAssignableUsers, 
+    isLoading: usersLoading, // Renamed to avoid conflict with dealsLoading
+    error: usersError 
+  } = useUserStore();
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,6 +93,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       setAmount('');
       setPersonId('');
       setOrganizationId('');
+      setAssignedToUserId(''); // Reset assigned user
       setError(null);
       setDealSpecificProbability('');
       setExpectedCloseDate('');
@@ -94,10 +103,11 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
 
       fetchPeople(); 
       fetchOrganizations();
+      fetchAssignableUsers(); // Fetch assignable users when modal opens
       fetchDefinitions(CustomFieldEntityType.Deal, false);
       fetchWFMProjectTypes({ isArchived: false });
     }
-  }, [isOpen, fetchPeople, fetchOrganizations, fetchDefinitions, fetchWFMProjectTypes]);
+  }, [isOpen, fetchPeople, fetchOrganizations, fetchAssignableUsers, fetchDefinitions, fetchWFMProjectTypes]);
 
   useEffect(() => {
     // Auto-select "Sales Deal" project type if available
@@ -154,8 +164,9 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         name: name.trim(),
         wfmProjectTypeId: selectedWFMProjectTypeId,
         amount: amount ? parseFloat(amount) : null,
-        person_id: personId || null,
+        person_id: personId || null, // Assuming person_id is still relevant, distinct from assignedToUserId
         organization_id: organizationId || null,
+        assignedToUserId: assignedToUserId || null, // Add assignedToUserId to the input
         expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : null,
       };
       
@@ -232,7 +243,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   };
   
   // Loading state for dropdowns
-  const dataLoading = peopleLoading || organizationsLoading || customFieldsLoading || wfmProjectTypesLoading;
+  const dataLoading = peopleLoading || organizationsLoading || customFieldsLoading || wfmProjectTypesLoading || usersLoading;
 
   // Render Custom Field
   const renderCustomField = (def: GraphQLCustomFieldDefinition) => {
@@ -377,6 +388,26 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
               </Select>
               {organizationsLoading && <Spinner size="sm" />}
               {organizationsError && <Text color="red.500" fontSize="sm">Error: {organizationsError}</Text>}
+            </FormControl>
+
+            {/* Assigned To User Selector */}
+            <FormControl>
+              <FormLabel>Assign To</FormLabel>
+              <Select 
+                placeholder="Select user to assign (optional)" 
+                value={assignedToUserId} 
+                onChange={(e) => setAssignedToUserId(e.target.value)} 
+                isDisabled={usersLoading}
+              >
+                <option value="">Unassigned</option> {/* Option for unassigning */}
+                {assignableUsers.map((user: AssignableUser) => (
+                  <option key={user.id} value={user.id}>
+                    {user.display_name}
+                  </option>
+                ))}
+              </Select>
+              {usersLoading && <Spinner size="sm" />}
+              {usersError && <Text color="red.500" fontSize="sm">Error: {usersError.message}</Text>}
             </FormControl>
             
             {/* Divider or Heading for Custom Fields */}

@@ -65,6 +65,8 @@ INSERT INTO public.permissions (resource, action, description) VALUES
 ('deal', 'update_any', 'Update any deal'),
 ('deal', 'delete_own', 'Delete deals owned by self'),
 ('deal', 'delete_any', 'Delete any deal'),
+('deal', 'assign', 'Assign a deal to a user'), -- New permission for assigning deals
+('deal', 'read_assigned', 'Read deals assigned to self'), -- New permission for reading assigned deals
 -- Pipelines
 ('pipeline', 'create', 'Create a new pipeline'),
 ('pipeline', 'read_any', 'Read any pipeline'),
@@ -91,6 +93,7 @@ CREATE TEMP TABLE temp_roles AS SELECT id, name FROM public.roles;
 CREATE TEMP TABLE temp_permissions AS SELECT id, resource, action FROM public.permissions;
 
 -- Assign all permissions to 'admin' role
+-- This will automatically include the new 'deal:assign' and 'deal:read_assigned' permissions
 INSERT INTO public.role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM temp_roles r
@@ -106,8 +109,8 @@ WHERE r.name = 'member' AND (
     -- People/Org: Read/Create/Update (Can be modified later)
     (p.resource = 'person' AND p.action IN ('create', 'read_any', 'update_any')) OR 
     (p.resource = 'organization' AND p.action IN ('create', 'read_any', 'update_any')) OR
-    -- Deals: Create, Read/Update/Delete Own
-    (p.resource = 'deal' AND p.action IN ('create', 'read_own', 'update_own', 'delete_own')) OR
+    -- Deals: Create, Read/Update/Delete Own, Read Assigned
+    (p.resource = 'deal' AND p.action IN ('create', 'read_own', 'update_own', 'delete_own', 'read_assigned')) OR -- Added 'read_assigned'
     -- Pipelines/Stages: Read Only
     (p.resource = 'pipeline' AND p.action = 'read_any') OR
     (p.resource = 'stage' AND p.action = 'read_any') OR
@@ -217,13 +220,17 @@ CREATE POLICY "Allow access based on RBAC permissions for deals" ON public.deals
     FOR ALL
     USING (
         (check_permission(auth.uid(), 'read_own', 'deal') AND auth.uid() = user_id) OR
+        (check_permission(auth.uid(), 'read_assigned', 'deal') AND auth.uid() = assigned_to_user_id) OR -- Added for assigned deals
         (check_permission(auth.uid(), 'read_any', 'deal'))
     )
     WITH CHECK (
         -- INSERT check: requires 'create' permission AND user_id must match authenticated user
         (check_permission(auth.uid(), 'create', 'deal') AND auth.uid() = user_id) OR 
-        -- UPDATE check: requires 'update_own' and ownership OR 'update_any'
-        ( (check_permission(auth.uid(), 'update_own', 'deal') AND auth.uid() = user_id) OR check_permission(auth.uid(), 'update_any', 'deal') ) OR
+        -- UPDATE check: requires 'update_own' and ownership OR 'update_any' OR ('assign' and the deal is being assigned)
+        ( (check_permission(auth.uid(), 'update_own', 'deal') AND auth.uid() = user_id) OR 
+          check_permission(auth.uid(), 'update_any', 'deal') OR
+          check_permission(auth.uid(), 'assign', 'deal') -- Added for assigning deals
+        ) OR
         -- DELETE check: requires 'delete_own' and ownership OR 'delete_any'
         ( (check_permission(auth.uid(), 'delete_own', 'deal') AND auth.uid() = user_id) OR check_permission(auth.uid(), 'delete_any', 'deal') )
     );

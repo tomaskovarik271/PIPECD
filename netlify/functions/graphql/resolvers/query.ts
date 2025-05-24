@@ -206,6 +206,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 organization_id: d.organization_id,
                 deal_specific_probability: d.deal_specific_probability,
                 weighted_amount: d.weighted_amount,
+                assignedToUserId: d.assigned_to_user_id, // Added mapping for assignedToUserId
                 db_custom_field_values: (d as any).custom_field_values, 
            })) as any; 
        } catch (e) {
@@ -235,6 +236,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 organization_id: d.organization_id,
                 deal_specific_probability: d.deal_specific_probability,
                 weighted_amount: d.weighted_amount,
+                assignedToUserId: d.assigned_to_user_id, // Added mapping for assignedToUserId
                 db_custom_field_values: (d as any).custom_field_values, 
            } as any; 
        } catch (e) {

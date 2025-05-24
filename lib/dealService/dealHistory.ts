@@ -11,6 +11,7 @@ export const TRACKED_DEAL_FIELDS: (keyof Deal | 'custom_field_values')[] = [
   'person_id', 
   'organization_id', 
   'deal_specific_probability',
+  'assigned_to_user_id', // Added to track changes in deal assignment
   'custom_field_values' 
 ];
 

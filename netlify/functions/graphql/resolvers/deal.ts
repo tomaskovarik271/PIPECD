@@ -4,7 +4,8 @@ import { GraphQLContext, requireAuthentication, getAccessToken, processZodError 
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 import * as activityService from '../../../../lib/activityService'; // Added import for activityService
-import type { DealResolvers, Person, Organization, Deal as GraphQLDealParent, CustomFieldValue as GraphQLCustomFieldValue, CustomFieldDefinition as GraphQLCustomFieldDefinition, Activity as GraphQLActivity, WfmProject, WfmWorkflowStep, WfmStatus } from '../../../../lib/generated/graphql'; // CORRECTED CASING
+import * as userProfileService from '../../../../lib/userProfileService'; // Added import for userProfileService
+import type { DealResolvers, Person, Organization, User, Deal as GraphQLDealParent, CustomFieldValue as GraphQLCustomFieldValue, CustomFieldDefinition as GraphQLCustomFieldDefinition, Activity as GraphQLActivity, WfmProject, WfmWorkflowStep, WfmStatus } from '../../../../lib/generated/graphql'; // CORRECTED CASING
 import { CustomFieldEntityType, CustomFieldType } from '../../../../lib/generated/graphql'; // Ensure enums are imported as values
 import { getAuthenticatedClient } from '../../../../lib/serviceUtils'; // Added import for getAuthenticatedClient
 import * as customFieldDefinitionService from '../../../../lib/customFieldDefinitionService';
@@ -15,6 +16,7 @@ import { wfmStatusService } from '../../../../lib/wfmStatusService'; // CHANGED
 // This interface should match the actual object returned by Query.deals/Query.deal resolvers
 interface DealResolverParent extends Pick<GraphQLDealParent, 'id' | 'wfm_project_id'> {
   // Add other fields from Deal if necessary for other resolvers on Deal type
+  assignedToUserId?: string | null; // Added to ensure parent type includes this for the resolver
 }
 
 // This interface represents the raw data for a WFM Project as fetched from the database
@@ -334,6 +336,43 @@ export const Deal: DealResolvers<GraphQLContext> = {
       } catch (error) {
         console.error(`[Resolver.Deal.currentWfmStatus] Error deriving currentWfmStatus for deal ${parent.id}:`, error);
         return null;
+      }
+    },
+
+    // Resolver for the 'assignedToUser' field on Deal
+    assignedToUser: async (parent: DealResolverParent, _args: any, context: GraphQLContext): Promise<User | null> => {
+      if (!parent.assignedToUserId) {
+        return null; // No user assigned
+      }
+      requireAuthentication(context); // Ensure user is authenticated to fetch profile
+      const accessToken = getAccessToken(context);
+      if (!accessToken) {
+        // Should be caught by requireAuthentication, but as a safeguard
+        throw new GraphQLError('Authentication token not found.', { extensions: { code: 'UNAUTHENTICATED' } });
+      }
+
+      try {
+        // Fetch the user profile using the assignedToUserId
+        const userProfile = await userProfileService.getUserProfile(parent.assignedToUserId, accessToken);
+        
+        if (!userProfile) {
+          console.warn(`[Resolver.Deal.assignedToUser] User profile not found for ID: ${parent.assignedToUserId} (Deal ID: ${parent.id})`);
+          return null;
+        }
+
+        // Map the fetched user profile to the GraphQL User type
+        // Assuming userProfileService.getUserProfile returns an object that includes id, email, display_name, and avatar_url
+        return {
+          id: userProfile.id,
+          email: userProfile.email, // Ensure this is available from userProfileService
+          display_name: userProfile.display_name,
+          avatar_url: userProfile.avatar_url,
+          // Any other fields required by the GraphQL User type that are available on userProfile
+        };
+      } catch (error) {
+        console.error(`[Resolver.Deal.assignedToUser] Error fetching user profile for ID ${parent.assignedToUserId} (Deal ID: ${parent.id}):`, error);
+        // Do not throw an error that would break the entire deal query if one user profile fails to load; return null instead.
+        return null; 
       }
     },
 }; 

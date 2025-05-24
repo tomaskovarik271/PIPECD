@@ -18,6 +18,7 @@ export interface DealServiceUpdateData {
   person_id?: string | null;
   organization_id?: string | null;
   deal_specific_probability?: number | null;
+  assigned_to_user_id?: string | null; // Added to allow updating the assigned user
   customFields?: CustomFieldValueInput[];
 }
 
@@ -54,7 +55,8 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
   console.log('[dealCrud.createDeal] called for user:', userId /*, 'input:', JSON.stringify(input, null, 2)*/);
   const supabase = getAuthenticatedClient(accessToken);
   
-  const { customFields, wfmProjectTypeId, ...dealCoreData } = input; 
+  // Extract assigned_to_user_id along with other fields
+  const { customFields, wfmProjectTypeId, assigned_to_user_id, ...dealCoreData } = input; 
 
   if (!wfmProjectTypeId) {
     throw new GraphQLError('wfmProjectTypeId is required to create a deal.', { extensions: { code: 'BAD_USER_INPUT' } });
@@ -69,11 +71,13 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
     person_id: dealCoreData.person_id,
     organization_id: dealCoreData.organization_id,
     deal_specific_probability: dealCoreData.deal_specific_probability,
+    // assigned_to_user_id is handled below
   };
 
   const finalDealInsertPayload: any = {
     ...explicitDealCoreData,
-    user_id: userId,
+    user_id: userId, // The user who created the deal
+    assigned_to_user_id: assigned_to_user_id || userId, // Assign to provided user or default to creator
     custom_field_values: processedCustomFields,
     wfm_project_id: null, 
   };
@@ -243,6 +247,8 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
   if (otherCoreInputFieldsFromInput.person_id !== undefined) coreDataForDb.person_id = otherCoreInputFieldsFromInput.person_id;
   if (otherCoreInputFieldsFromInput.organization_id !== undefined) coreDataForDb.organization_id = otherCoreInputFieldsFromInput.organization_id;
   if (otherCoreInputFieldsFromInput.deal_specific_probability !== undefined) coreDataForDb.deal_specific_probability = otherCoreInputFieldsFromInput.deal_specific_probability;
+  // Add assigned_to_user_id to coreDataForDb if provided in the input
+  if (otherCoreInputFieldsFromInput.assigned_to_user_id !== undefined) coreDataForDb.assigned_to_user_id = otherCoreInputFieldsFromInput.assigned_to_user_id;
   
   let dbUpdatePayload: any = { ...coreDataForDb }; 
   

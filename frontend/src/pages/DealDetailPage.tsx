@@ -203,6 +203,11 @@ const DealDetailPage = () => {
         <Text><strong>Expected Close Date:</strong> {currentDeal.expected_close_date ? new Date(currentDeal.expected_close_date).toLocaleDateString() : 'N/A'}</Text>
         <Text><strong>Person:</strong> {currentDeal.person ? `${currentDeal.person.first_name} ${currentDeal.person.last_name}` : 'N/A'}</Text>
         <Text><strong>Organization:</strong> {currentDeal.organization?.name || 'N/A'}</Text>
+        <Text>
+          <strong>Assigned To:</strong>{' '}
+          {currentDeal.assignedToUser?.display_name || 
+           (currentDeal.assignedToUserId ? `User ID: ${currentDeal.assignedToUserId}` : 'Unassigned')}
+        </Text>
       </Box>
 
       {/* Custom Fields Display Section Added Below */}

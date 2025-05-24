@@ -7,11 +7,12 @@ import * as wfmProjectService from '../../../../../lib/wfmProjectService';
 import { wfmWorkflowService } from '../../../../../lib/wfmWorkflowService';
 import { wfmStatusService } from '../../../../../lib/wfmStatusService';
 import { calculateDealProbabilityFields } from '../../../../../lib/dealService/dealProbability';
-import type { MutationResolvers, Deal as GraphQLDeal, DealInput as GraphQLDealInput, DealUpdateInput as GraphQLDealUpdateInput, WfmWorkflowStep } from '../../../../../lib/generated/graphql';
+import type { MutationResolvers, Deal as GraphQLDeal, DealInput as GraphQLDealInput, DealUpdateInput as GraphQLDealUpdateInput, WfmWorkflowStep, AssignDealMutationArgs } from '../../../../../lib/generated/graphql'; // Added AssignDealMutationArgs
 import type { DealServiceUpdateData } from '../../../../../lib/dealService/dealCrud';
 import { recordEntityHistory, getAuthenticatedClient } from '../../../../../lib/serviceUtils';
 
-export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal' | 'updateDeal' | 'deleteDeal' | 'updateDealWFMProgress'> = {
+// Extend the Pick to include 'assignDeal'
+export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal' | 'updateDeal' | 'deleteDeal' | 'updateDealWFMProgress' | 'assignDeal'> = {
     createDeal: async (_parent, args, context) => {
       const action = 'creating deal';
       try {
@@ -22,7 +23,9 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
           // The DealCreateSchema will need to be updated to expect wfmProjectTypeId
           // and not pipeline_id/stage_id. For now, we cast and manually handle.
           const validatedInput = DealCreateSchema.parse(args.input);
-          const { pipeline_id, stage_id, ...restOfValidatedInput } = validatedInput as any;
+          // pipeline_id and stage_id are not part of DealCreateSchema anymore.
+          // assignedToUserId should be part of args.input if the schema was updated.
+          const { pipeline_id, stage_id, assignedToUserId, ...restOfValidatedInput } = validatedInput as any; // assignedToUserId might be undefined if optional
           const wfmProjectTypeIdFromInput = (args.input as any).wfmProjectTypeId;
 
           if (!wfmProjectTypeIdFromInput) {
@@ -42,13 +45,15 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
             wfmProjectTypeId: wfmProjectTypeIdFromInput, // Add wfmProjectTypeId
             expected_close_date: convertToDateOrNull(restOfValidatedInput.expected_close_date),
             customFields: customFieldsForService,
+            assignedToUserId: args.input.assignedToUserId, // Pass assignedToUserId to the service
           };
           // Remove pipeline_id and stage_id explicitly if they are still present from spread
           delete (serviceInput as any).pipeline_id;
           delete (serviceInput as any).stage_id;
 
-          // Cast to GraphQLDealInput for the service, which now expects wfmProjectTypeId
-          const newDealRecord = await dealService.createDeal(userId, serviceInput as unknown as GraphQLDealInput, accessToken);
+          // The service's DealInput type should now accept assignedToUserId.
+          // Ensure GraphQLDealInput (from generated types) also reflects this if used for casting.
+          const newDealRecord = await dealService.createDeal(userId, serviceInput as GraphQLDealInput, accessToken);
           
           inngest.send({
             name: 'crm/deal.created',
@@ -69,6 +74,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
             user_id: newDealRecord.user_id!, 
             person_id: newDealRecord.person_id, 
             organization_id: newDealRecord.organization_id,
+            assignedToUserId: newDealRecord.assigned_to_user_id, // Ensure this is returned from service and mapped
             // pipeline_id: newDealRecord.pipeline_id, // Legacy, now should be null from service
             // stage_id: newDealRecord.stage_id!, // Legacy, now should be null from service
             wfm_project_id: newDealRecord.wfm_project_id,
@@ -103,16 +109,26 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
 
           // stage_id is not part of dealDataFromZod anymore.
           // The warning for stage_id is removed as it is not expected from validatedInput.
+          // assignedToUserId should be available on dealDataFromZod if included in DealUpdateSchema and GraphQL input
           const finalServiceCoreData = { ...dealDataFromZod };
           delete (finalServiceCoreData as any).customFields; // customFields are handled separately for service input
 
-          const serviceInput = {
+          const serviceInput: DealServiceUpdateData = { // Explicitly type for clarity
             ...finalServiceCoreData, 
             expected_close_date: convertToDateOrNull(dealDataFromZod.expected_close_date),
-            customFields: customFieldsForService, 
+            customFields: customFieldsForService,
+            // assigned_to_user_id is snake_case for the service layer
+            assigned_to_user_id: args.input.assignedToUserId !== undefined ? args.input.assignedToUserId : undefined,
           };
+          
+          // Remove properties that are undefined to avoid overwriting existing values with null if not provided
+          Object.keys(serviceInput).forEach(key => {
+            if (serviceInput[key as keyof DealServiceUpdateData] === undefined) {
+              delete serviceInput[key as keyof DealServiceUpdateData];
+            }
+          });
 
-          const updatedDealRecord = await dealService.updateDeal(userId, args.id, serviceInput as DealServiceUpdateData, accessToken);
+          const updatedDealRecord = await dealService.updateDeal(userId, args.id, serviceInput, accessToken);
           
           return {
             id: updatedDealRecord.id,
@@ -126,6 +142,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
             user_id: updatedDealRecord.user_id!, 
             person_id: updatedDealRecord.person_id, 
             organization_id: updatedDealRecord.organization_id,
+            assignedToUserId: updatedDealRecord.assigned_to_user_id, // Ensure this is returned from service and mapped
             // pipeline_id: updatedDealRecord.pipeline_id || null, // Legacy field, removed
             // stage_id: updatedDealRecord.stage_id || null,    // Legacy field, removed
             wfm_project_id: updatedDealRecord.wfm_project_id,
@@ -282,6 +299,61 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
         // processZodError might not be relevant if not using Zod for args here directly
         if (error instanceof GraphQLError) throw error;
         throw new GraphQLError(action + ' failed.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+    },
+    assignDeal: async (_parent, args: AssignDealMutationArgs, context: GraphQLContext): Promise<GraphQLDeal | null> => {
+      const action = `assigning deal ${args.dealId} to user ${args.assignedToUserId}`;
+      try {
+        requireAuthentication(context);
+        const userId = context.currentUser!.id; // User performing the assignment
+        const accessToken = getAccessToken(context)!;
+
+        // Check for 'deal:assign' permission
+        if (!context.userPermissions?.includes('deal:assign')) {
+          throw new GraphQLError('Not authorized to assign deals', { extensions: { code: 'FORBIDDEN' } });
+        }
+
+        // Prepare the update payload for the dealService
+        // The service expects snake_case: assigned_to_user_id
+        const updatePayload: DealServiceUpdateData = {
+          assigned_to_user_id: args.assignedToUserId,
+        };
+
+        // Call the dealService to update the deal
+        const updatedDealRecord = await dealService.updateDeal(userId, args.dealId, updatePayload, accessToken);
+
+        if (!updatedDealRecord) {
+          // This case should ideally be handled by dealService.updateDeal throwing an error if not found
+          throw new GraphQLError(`Failed to assign deal or deal not found: ${args.dealId}`, { extensions: { code: 'NOT_FOUND' } });
+        }
+        
+        // Map the service layer deal object to the GraphQL Deal type
+        return {
+          id: updatedDealRecord.id,
+          created_at: updatedDealRecord.created_at,
+          updated_at: updatedDealRecord.updated_at,
+          name: updatedDealRecord.name!,
+          amount: updatedDealRecord.amount,
+          expected_close_date: updatedDealRecord.expected_close_date,
+          deal_specific_probability: updatedDealRecord.deal_specific_probability,
+          weighted_amount: updatedDealRecord.weighted_amount,
+          user_id: updatedDealRecord.user_id!, // Creator of the deal
+          assignedToUserId: updatedDealRecord.assigned_to_user_id, // The newly assigned user ID
+          person_id: updatedDealRecord.person_id,
+          organization_id: updatedDealRecord.organization_id,
+          wfm_project_id: updatedDealRecord.wfm_project_id,
+          db_custom_field_values: (updatedDealRecord as any).custom_field_values, // For customFieldValues resolver
+          // assignedToUser will be resolved by its own field resolver on the Deal type
+        } as unknown as GraphQLDeal; // Cast to GraphQLDeal, complex fields resolved by Deal field resolvers
+
+      } catch (error) {
+        console.error(`[Mutation.assignDeal] Error during ${action}:`, error);
+        if (error instanceof GraphQLError) throw error; // Re-throw known GraphQL errors
+        // For other errors, process them (e.g., ZodError if input validation was added, though not for these simple args)
+        // or wrap them in a generic GraphQL error.
+        throw new GraphQLError(`Failed to assign deal: ${error instanceof Error ? error.message : 'Unknown error'}`, {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        });
       }
     }
 }; 

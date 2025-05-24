@@ -15,6 +15,9 @@ type Deal {
   weighted_amount: Float # Calculated: amount * (deal_specific_probability || wfm_step_probability)
   history(limit: Int, offset: Int): [DealHistoryEntry!]
   customFieldValues: [CustomFieldValue!]!
+  
+  assignedToUserId: ID # ID of the user this deal is assigned to
+  assignedToUser: User   # Resolved User object for the assignee
 
   # WFM Fields
   wfm_project_id: ID # The ID of the associated WFMProject
@@ -31,6 +34,7 @@ input DealInput {
   person_id: ID
   organization_id: ID
   deal_specific_probability: Float # Nullable, for setting/unsetting
+  assignedToUserId: ID # Optional: ID of the user to assign this deal to (defaults to creator if not set)
   customFields: [CustomFieldValueInput!]
 }
 
@@ -41,5 +45,6 @@ input DealUpdateInput {
   person_id: ID
   organization_id: ID
   deal_specific_probability: Float # Nullable, for setting/unsetting
+  assignedToUserId: ID # Optional: ID of the user to assign/reassign this deal to
   customFields: [CustomFieldValueInput!]
 } 

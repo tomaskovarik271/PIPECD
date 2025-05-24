@@ -32,4 +32,7 @@ type Mutation {
   deleteDeal(id: ID!): Boolean
   # WFM-specific mutation for deal progression
   updateDealWFMProgress(dealId: ID!, targetWfmWorkflowStepId: ID!): Deal!
+  
+  "Assigns a deal to a specific user. Requires 'deal:assign' permission."
+  assignDeal(dealId: ID!, assignedToUserId: ID!): Deal
 } 

@@ -23,8 +23,10 @@ import {
   CheckboxGroup,
   Checkbox,
   Switch,
+  Text, // Import Text for error messages
 } from '@chakra-ui/react';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
+import { useUserStore, AssignableUser } from '../stores/useUserStore'; // Import the new user store
 import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
 import type { 
@@ -50,6 +52,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   const [amount, setAmount] = useState<string>('');
   const [personId, setPersonId] = useState<string>('');
   const [organizationId, setOrganizationId] = useState<string>('');
+  const [assignedToUserId, setAssignedToUserId] = useState<string>(''); // State for assigned user
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
 
@@ -71,6 +74,12 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   // People state from usePeopleStore
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
   const { organizations, fetchOrganizations, organizationsLoading, organizationsError } = useOrganizationsStore();
+  const { 
+    assignableUsers, 
+    fetchAssignableUsers, 
+    isLoading: usersLoading, 
+    error: usersError 
+  } = useUserStore();
 
   const [isLoading, setIsLoading] = useState(false); 
   const [error, setError] = useState<string | null>(null); 
@@ -79,9 +88,10 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     if (isOpen) {
       fetchPeople();
       fetchOrganizations();
+      fetchAssignableUsers(); // Fetch assignable users
       fetchCustomFieldDefinitions(CustomFieldEntityType.Deal, false);
     }
-  }, [isOpen, fetchPeople, fetchOrganizations, fetchCustomFieldDefinitions]);
+  }, [isOpen, fetchPeople, fetchOrganizations, fetchAssignableUsers, fetchCustomFieldDefinitions]);
 
   useEffect(() => {
     if (deal) {
@@ -92,6 +102,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       setAmount(deal.amount != null ? String(deal.amount) : '');
       setPersonId(deal.person_id || ''); 
       setOrganizationId(deal.organization_id || deal.organization?.id || '');
+      setAssignedToUserId((deal as any).assignedToUserId || ''); // Set assigned user ID from deal
       setDealSpecificProbability(
         deal.deal_specific_probability != null 
           ? String(Math.round(deal.deal_specific_probability * 100)) 
@@ -163,6 +174,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
         setAmount('');
         setPersonId('');
         setOrganizationId('');
+        setAssignedToUserId(''); // Reset assigned user ID
         setDealSpecificProbability('');
         setExpectedCloseDate('');
         // Reset custom field form values if deal is null
@@ -203,8 +215,9 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       const dealUpdateData: Partial<DealUpdateInput> = {
         name: name.trim(),
         amount: amount ? parseFloat(amount) : undefined,
-        person_id: personId || undefined,
+        person_id: personId || undefined, // Keep person_id if it's distinct from assignedToUserId
         organization_id: organizationId || undefined,
+        assignedToUserId: assignedToUserId || undefined, // Add assignedToUserId to the update input
         expected_close_date: expectedCloseDate || undefined,
         deal_specific_probability: dealSpecificProbability ? parseFloat(dealSpecificProbability) / 100 : undefined,
       };
@@ -367,6 +380,25 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
                       </option>
                   ))}
                 </Select>
+            </FormControl>
+            
+            {/* Assigned To User Selector */}
+            <FormControl>
+              <FormLabel>Assign To</FormLabel>
+              <Select 
+                placeholder={usersLoading ? "Loading users..." : "Select user to assign (optional)"}
+                value={assignedToUserId} 
+                onChange={(e) => setAssignedToUserId(e.target.value)} 
+                isDisabled={usersLoading || !!usersError}
+              >
+                <option value="">Unassigned</option>
+                {!usersLoading && !usersError && assignableUsers.map((user: AssignableUser) => (
+                  <option key={user.id} value={user.id}>
+                    {user.display_name}
+                  </option>
+                ))}
+              </Select>
+              {usersError && <Text color="red.500" fontSize="sm">Error: {usersError.message}</Text>}
             </FormControl>
 
             <FormControl mt={4}>

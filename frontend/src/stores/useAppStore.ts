@@ -38,6 +38,12 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
       updated_at
       deal_specific_probability
       weighted_amount
+      assignedToUserId # Added field
+      assignedToUser {   # Added related user object
+        id
+        display_name
+        email
+      }
       currentWfmStatus {
         id
         name
@@ -103,6 +109,8 @@ export interface DealWithHistory extends GraphQLDeal {
     })[];
     person: GraphQLDeal['person'];
     organization: GraphQLDeal['organization'];
+    assignedToUserId: string | null; // Added field
+    assignedToUser: Pick<GraphQLUser, 'id' | 'display_name' | 'email'> | null; // Added field
 }
 
 // Removed GET_ACTIVITY_BY_ID_QUERY
