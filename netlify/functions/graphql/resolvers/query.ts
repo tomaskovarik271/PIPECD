@@ -14,6 +14,7 @@ import {
 import { wfmStatusService } from '../../../../lib/wfmStatusService';
 import { wfmWorkflowService } from '../../../../lib/wfmWorkflowService';
 import { wfmProjectTypeService } from '../../../../lib/wfmProjectTypeService';
+import type { UserProfileListData } from '../../../../lib/userProfileService'; // Import the interface for the service response
 
 // Import generated types from backend codegen
 import type {
@@ -289,5 +290,37 @@ export const Query: QueryResolvers<GraphQLContext> = {
     wfmProjectType: async (_parent, args, context: GraphQLContext) => {
       requireAuthentication(context);
       return wfmProjectTypeService.getById(args.id, context);
+    },
+
+    // --- System Users Query ---
+    systemUsers: async (_parent, _args, context: GraphQLContext): Promise<GraphQLUser[]> => {
+      const action = 'fetching system users';
+      try {
+        requireAuthentication(context); // Ensure user is authenticated
+        const accessToken = getAccessToken(context)!; // Get access token
+
+        // Call the service function to get all user profiles
+        const userProfiles: UserProfileListData[] = await userProfileService.getAllUserProfiles(accessToken);
+
+        // Map the service layer data to the GraphQL User type
+        return userProfiles.map(profile => ({
+          id: profile.user_id, // Map user_id to id
+          email: profile.email || '', // Ensure email is not null, GraphQL schema might expect non-null
+          display_name: profile.display_name,
+          avatar_url: profile.avatar_url,
+          // Note: other fields on GraphQLUser (like permissions, roles) are not populated here
+          // as they are not part of the user_profiles table directly or not needed for this query.
+        }));
+      } catch (e: any) {
+        console.error(`[Query.systemUsers] Error during ${action}:`, e.message);
+        // Use processZodError or a similar helper if you expect Zod validation errors,
+        // otherwise, throw a generic GraphQLError.
+        if (e instanceof GraphQLError) {
+          throw e;
+        }
+        throw new GraphQLError(`Failed to fetch system users: ${e.message}`, {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        });
+      }
     },
 }; 

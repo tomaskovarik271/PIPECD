@@ -192,4 +192,48 @@ export const updateUserProfile = async (
 
   console.log(`[userProfileService] Successfully updated profile for ${userId}:`, data);
   return data as DbUserProfile;
-}; 
+};
+
+/**
+ * Interface for the data structure of user profiles as returned by getAllUserProfiles.
+ */
+export interface UserProfileListData {
+  user_id: string;
+  display_name: string | null;
+  email: string | null; // Assuming email is available on user_profiles table as per task context
+  avatar_url: string | null;
+}
+
+/**
+ * Fetches all user profiles from the user_profiles table.
+ * This is intended for populating lists of users, e.g., for assignment dropdowns.
+ * @param accessToken The access token for authenticated operations.
+ * @returns A promise that resolves to an array of UserProfileListData.
+ */
+export const getAllUserProfiles = async (accessToken: string): Promise<UserProfileListData[]> => {
+  if (!accessToken) {
+    console.error('[userProfileService.getAllUserProfiles] Access token is required.');
+    // Depending on desired strictness, could throw or return empty array.
+    // For now, logging and returning empty, but resolver should catch this via requireAuthentication.
+    return []; 
+  }
+
+  console.log('[userProfileService.getAllUserProfiles] Fetching all user profiles.');
+  const authenticatedSupabase = getAuthenticatedClient(accessToken);
+
+  const { data, error } = await authenticatedSupabase
+    .from('user_profiles') // Ensure this table name matches your Supabase schema
+    .select('user_id, display_name, email, avatar_url'); // Select specified fields
+
+  if (error) {
+    console.error('[userProfileService.getAllUserProfiles] Error fetching all user profiles:', error.message);
+    // Consider using handleSupabaseError or a similar utility if available and appropriate
+    throw new Error(`Failed to fetch all user profiles: ${error.message}`);
+  }
+
+  console.log('[userProfileService.getAllUserProfiles] Successfully fetched all user profiles. Count:', data?.length || 0);
+  
+  // Ensure data is not null, and cast to UserProfileListData[]
+  // Supabase client should return an array, even if empty.
+  return (data || []) as UserProfileListData[];
+};

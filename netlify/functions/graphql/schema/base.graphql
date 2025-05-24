@@ -15,6 +15,9 @@ type Query {
   # Deals
   deals: [Deal!]!            
   deal(id: ID!): Deal        
+  
+  "Fetches a list of system users, typically for assignment dropdowns."
+  systemUsers: [User!]!
 }
 
 type Mutation {
