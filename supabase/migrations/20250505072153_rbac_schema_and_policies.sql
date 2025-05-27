@@ -58,13 +58,15 @@ INSERT INTO public.permissions (resource, action, description) VALUES
 ('organization', 'update_any', 'Update any organization'),
 ('organization', 'delete_any', 'Delete any organization'),
 -- Deals
-('deal', 'create', 'Create a new deal (assigned to self)'),
-('deal', 'read_own', 'Read deals owned by self'),
+('deal', 'create', 'Create a new deal'),
+('deal', 'read_own', 'Read deals created by or assigned to self'),
 ('deal', 'read_any', 'Read any deal'),
-('deal', 'update_own', 'Update deals owned by self'),
+('deal', 'update_own', 'Update deals created by or assigned to self'),
 ('deal', 'update_any', 'Update any deal'),
-('deal', 'delete_own', 'Delete deals owned by self'),
+('deal', 'delete_own', 'Delete deals created by or assigned to self'),
 ('deal', 'delete_any', 'Delete any deal'),
+('deal', 'assign_own', 'Assign a deal to oneself or unassign from oneself'),
+('deal', 'assign_any', 'Assign any deal to any user'),
 -- Pipelines
 ('pipeline', 'create', 'Create a new pipeline'),
 ('pipeline', 'read_any', 'Read any pipeline'),
@@ -106,8 +108,8 @@ WHERE r.name = 'member' AND (
     -- People/Org: Read/Create/Update (Can be modified later)
     (p.resource = 'person' AND p.action IN ('create', 'read_any', 'update_any')) OR 
     (p.resource = 'organization' AND p.action IN ('create', 'read_any', 'update_any')) OR
-    -- Deals: Create, Read/Update/Delete Own
-    (p.resource = 'deal' AND p.action IN ('create', 'read_own', 'update_own', 'delete_own')) OR
+    -- Deals: Create, Read/Update/Delete Own, Assign Own
+    (p.resource = 'deal' AND p.action IN ('create', 'read_own', 'update_own', 'delete_own', 'assign_own')) OR
     -- Pipelines/Stages: Read Only
     (p.resource = 'pipeline' AND p.action = 'read_any') OR
     (p.resource = 'stage' AND p.action = 'read_any') OR
@@ -183,10 +185,7 @@ DROP POLICY IF EXISTS "Allow individual user INSERT access on organizations" ON 
 DROP POLICY IF EXISTS "Allow individual user UPDATE access on organizations" ON public.organizations;
 DROP POLICY IF EXISTS "Allow individual user DELETE access on organizations" ON public.organizations;
 -- Deals
-DROP POLICY IF EXISTS "Allow individual user SELECT access on deals" ON public.deals;
-DROP POLICY IF EXISTS "Allow individual user INSERT access on deals" ON public.deals;
-DROP POLICY IF EXISTS "Allow individual user UPDATE access on deals" ON public.deals;
-DROP POLICY IF EXISTS "Allow individual user DELETE access on deals" ON public.deals;
+DROP POLICY IF EXISTS "Allow access based on RBAC permissions for deals" ON public.deals;
 -- Pipelines
 DROP POLICY IF EXISTS "Users can manage their own pipelines" ON public.pipelines;
 -- Stages
@@ -212,20 +211,41 @@ CREATE POLICY "Allow access based on RBAC permissions for organizations" ON publ
                   check_permission(auth.uid(), 'update_any', 'organization') OR 
                   check_permission(auth.uid(), 'delete_any', 'organization') );
 
--- Deals Policies
-CREATE POLICY "Allow access based on RBAC permissions for deals" ON public.deals
-    FOR ALL
+-- Deals SELECT Policy
+CREATE POLICY "Allow SELECT based on RBAC permissions for deals" ON public.deals
+    FOR SELECT
     USING (
-        (check_permission(auth.uid(), 'read_own', 'deal') AND auth.uid() = user_id) OR
+        (check_permission(auth.uid(), 'read_own', 'deal') AND (auth.uid() = user_id OR auth.uid() = assigned_to_user_id)) OR
+        (check_permission(auth.uid(), 'read_any', 'deal'))
+    );
+
+-- Deals INSERT Policy
+CREATE POLICY "Allow INSERT based on RBAC permissions for deals" ON public.deals
+    FOR INSERT
+    WITH CHECK (
+        check_permission(auth.uid(), 'create', 'deal') AND auth.uid() = user_id
+    );
+
+-- Deals UPDATE Policy
+CREATE POLICY "Allow UPDATE based on RBAC permissions for deals" ON public.deals
+    FOR UPDATE
+    USING (
+        -- Rows must be selectable under 'read_own' or 'read_any' to be targeted for update.
+        (check_permission(auth.uid(), 'read_own', 'deal') AND (auth.uid() = user_id OR auth.uid() = assigned_to_user_id)) OR
         (check_permission(auth.uid(), 'read_any', 'deal'))
     )
     WITH CHECK (
-        -- INSERT check: requires 'create' permission AND user_id must match authenticated user
-        (check_permission(auth.uid(), 'create', 'deal') AND auth.uid() = user_id) OR 
-        -- UPDATE check: requires 'update_own' and ownership OR 'update_any'
-        ( (check_permission(auth.uid(), 'update_own', 'deal') AND auth.uid() = user_id) OR check_permission(auth.uid(), 'update_any', 'deal') ) OR
-        -- DELETE check: requires 'delete_own' and ownership OR 'delete_any'
-        ( (check_permission(auth.uid(), 'delete_own', 'deal') AND auth.uid() = user_id) OR check_permission(auth.uid(), 'delete_any', 'deal') )
+        check_permission(auth.uid(), 'update_any', 'deal') OR
+        check_permission(auth.uid(), 'update_own', 'deal')
+    );
+
+-- Deals DELETE Policy
+CREATE POLICY "Allow DELETE based on RBAC permissions for deals" ON public.deals
+    FOR DELETE
+    USING (
+        -- Rows must be selectable and then further checked by delete permissions.
+        (check_permission(auth.uid(), 'delete_own', 'deal') AND (auth.uid() = user_id OR auth.uid() = assigned_to_user_id)) OR
+        check_permission(auth.uid(), 'delete_any', 'deal')
     );
 
 -- Pipelines Policies

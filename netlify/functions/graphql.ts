@@ -175,7 +175,7 @@ const yoga = createYoga<GraphQLContext>({
           });
           clientForRequest = authenticatedSupabase; // Use authenticated client for this request
           
-          const { data: permissionsData, error: permissionsError } = await authenticatedSupabase.rpc('get_my_permissions');
+          const { data: permissionsData, error: permissionsError } = await authenticatedSupabase.rpc('get_user_permissions', { p_user_id: user.id });
 
           if (permissionsError) {
             console.error('Error fetching user permissions:', permissionsError.message);

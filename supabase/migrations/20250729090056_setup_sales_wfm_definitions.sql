@@ -92,7 +92,7 @@ BEGIN
     -- 3. Create WFMWorkflowStep records
     IF workflow_sales_process_id IS NOT NULL AND status_qualified_lead_id IS NOT NULL THEN
         INSERT INTO public.workflow_steps (workflow_id, status_id, step_order, is_initial_step, is_final_step, metadata)
-        VALUES (workflow_sales_process_id, status_qualified_lead_id, 1, TRUE, FALSE, '{"deal_probability": 0.10}')
+        VALUES (workflow_sales_process_id, status_qualified_lead_id, 1, TRUE, FALSE, '{"deal_probability": 0.10, "outcome_type": "OPEN"}')
         ON CONFLICT (workflow_id, step_order) DO NOTHING
         RETURNING id INTO step_qualified_lead_id;
         IF step_qualified_lead_id IS NULL THEN SELECT id INTO step_qualified_lead_id FROM public.workflow_steps WHERE workflow_id = workflow_sales_process_id AND step_order = 1; END IF;
@@ -100,7 +100,7 @@ BEGIN
 
     IF workflow_sales_process_id IS NOT NULL AND status_opp_scoping_id IS NOT NULL THEN
         INSERT INTO public.workflow_steps (workflow_id, status_id, step_order, is_initial_step, is_final_step, metadata)
-        VALUES (workflow_sales_process_id, status_opp_scoping_id, 2, FALSE, FALSE, '{"deal_probability": 0.25}')
+        VALUES (workflow_sales_process_id, status_opp_scoping_id, 2, FALSE, FALSE, '{"deal_probability": 0.25, "outcome_type": "OPEN"}')
         ON CONFLICT (workflow_id, step_order) DO NOTHING
         RETURNING id INTO step_opp_scoping_id;
         IF step_opp_scoping_id IS NULL THEN SELECT id INTO step_opp_scoping_id FROM public.workflow_steps WHERE workflow_id = workflow_sales_process_id AND step_order = 2; END IF;
@@ -108,7 +108,7 @@ BEGIN
 
     IF workflow_sales_process_id IS NOT NULL AND status_prop_dev_id IS NOT NULL THEN
         INSERT INTO public.workflow_steps (workflow_id, status_id, step_order, is_initial_step, is_final_step, metadata)
-        VALUES (workflow_sales_process_id, status_prop_dev_id, 3, FALSE, FALSE, '{"deal_probability": 0.50}')
+        VALUES (workflow_sales_process_id, status_prop_dev_id, 3, FALSE, FALSE, '{"deal_probability": 0.50, "outcome_type": "OPEN"}')
         ON CONFLICT (workflow_id, step_order) DO NOTHING
         RETURNING id INTO step_prop_dev_id;
         IF step_prop_dev_id IS NULL THEN SELECT id INTO step_prop_dev_id FROM public.workflow_steps WHERE workflow_id = workflow_sales_process_id AND step_order = 3; END IF;
@@ -116,7 +116,7 @@ BEGIN
 
     IF workflow_sales_process_id IS NOT NULL AND status_prop_sent_id IS NOT NULL THEN
         INSERT INTO public.workflow_steps (workflow_id, status_id, step_order, is_initial_step, is_final_step, metadata)
-        VALUES (workflow_sales_process_id, status_prop_sent_id, 4, FALSE, FALSE, '{"deal_probability": 0.75}')
+        VALUES (workflow_sales_process_id, status_prop_sent_id, 4, FALSE, FALSE, '{"deal_probability": 0.75, "outcome_type": "OPEN"}')
         ON CONFLICT (workflow_id, step_order) DO NOTHING
         RETURNING id INTO step_prop_sent_id;
         IF step_prop_sent_id IS NULL THEN SELECT id INTO step_prop_sent_id FROM public.workflow_steps WHERE workflow_id = workflow_sales_process_id AND step_order = 4; END IF;
@@ -124,7 +124,7 @@ BEGIN
 
     IF workflow_sales_process_id IS NOT NULL AND status_contract_neg_id IS NOT NULL THEN
         INSERT INTO public.workflow_steps (workflow_id, status_id, step_order, is_initial_step, is_final_step, metadata)
-        VALUES (workflow_sales_process_id, status_contract_neg_id, 5, FALSE, FALSE, '{"deal_probability": 0.90}')
+        VALUES (workflow_sales_process_id, status_contract_neg_id, 5, FALSE, FALSE, '{"deal_probability": 0.90, "outcome_type": "OPEN"}')
         ON CONFLICT (workflow_id, step_order) DO NOTHING
         RETURNING id INTO step_contract_neg_id;
         IF step_contract_neg_id IS NULL THEN SELECT id INTO step_contract_neg_id FROM public.workflow_steps WHERE workflow_id = workflow_sales_process_id AND step_order = 5; END IF;

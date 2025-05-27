@@ -71,7 +71,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
 
   // Memoize personCustomFieldDefinitions
   const personCustomFieldDefinitions = useMemo(() => {
-    console.log("[EditPersonForm] Recalculating personCustomFieldDefinitions via useMemo.");
+    // console.log("[EditPersonForm] Recalculating personCustomFieldDefinitions via useMemo."); // Keep this commented log if desired, or remove
     return allDefinitions.filter(
       d => d.entityType === 'PERSON' && d.isActive
     );
@@ -82,7 +82,6 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
       fetchOrganizations();
     }
     if (!definitionsLoading && !definitionsError && !hasAttemptedPersonDefinitionsFetch && !allDefinitions.some(d => d.entityType === 'PERSON')) {
-      console.log("[EditPersonForm] Attempting to fetch PERSON definitions.");
       fetchDefinitions('PERSON' as CustomFieldEntityType).finally(() => {
         setHasAttemptedPersonDefinitionsFetch(true);
       });
@@ -101,52 +100,37 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
     });
     setLocalError(null);
 
-    console.log('[EditPersonForm] useEffect for customFieldData triggered.');
-    console.log('[EditPersonForm] person.id:', person.id);
-    console.log('[EditPersonForm] person.customFieldValues:', JSON.stringify(person.customFieldValues, null, 2));
-    console.log('[EditPersonForm] personCustomFieldDefinitions:', JSON.stringify(personCustomFieldDefinitions, null, 2));
-    console.log('[EditPersonForm] definitionsLoading:', definitionsLoading);
-    console.log('[EditPersonForm] hasAttemptedPersonDefinitionsFetch:', hasAttemptedPersonDefinitionsFetch);
-    console.log('[EditPersonForm] Calculated personCustomFieldDefinitions length:', personCustomFieldDefinitions.length);
-
-    // Condition to populate customFieldData:
-    // 1. Definitions are not currently loading.
-    // 2. EITHER a fetch for definitions has been attempted OR person-specific definitions are already available.
-    // 3. The person object has custom field values.
-    // 4. There are applicable custom field definitions to map against.
-    const canPopulate = 
-      !definitionsLoading && 
-      (hasAttemptedPersonDefinitionsFetch || personCustomFieldDefinitions.length > 0) && 
-      person.customFieldValues && 
-      person.customFieldValues.length > 0 &&
-      personCustomFieldDefinitions && // Ensure this isn't prematurely empty if hasAttempted is false but defs are there
-      personCustomFieldDefinitions.length > 0;
-
-    if (canPopulate) {
-      console.log('[EditPersonForm] Conditions met to populate customFieldData.');
+    if (person && person.customFieldValues && personCustomFieldDefinitions.length > 0 && !definitionsLoading && hasAttemptedPersonDefinitionsFetch) {
+      // console.log('[EditPersonForm] useEffect for customFieldData triggered.');
+      // console.log('[EditPersonForm] person.id:', person.id);
+      // console.log('[EditPersonForm] person.customFieldValues:', JSON.stringify(person.customFieldValues, null, 2));
+      // console.log('[EditPersonForm] personCustomFieldDefinitions:', JSON.stringify(personCustomFieldDefinitions, null, 2));
+      // console.log('[EditPersonForm] definitionsLoading:', definitionsLoading);
+      // console.log('[EditPersonForm] hasAttemptedPersonDefinitionsFetch:', hasAttemptedPersonDefinitionsFetch);
+      // console.log('[EditPersonForm] Calculated personCustomFieldDefinitions length:', personCustomFieldDefinitions.length);
       const initialCustomData: Record<string, any> = {};
-      person.customFieldValues.forEach(cfv => {
-        const def = personCustomFieldDefinitions.find(d => d.id === cfv.definition?.id);
-        if (def) {
-          console.log(`[EditPersonForm] Found matching definition: ID=${def.id}, fieldName=${def.fieldName}, fieldType=${def.fieldType}`);
+      personCustomFieldDefinitions.forEach(def => {
+        // console.log(`[EditPersonForm] Found matching definition: ID=${def.id}, fieldName=${def.fieldName}, fieldType=${def.fieldType}`);
+        const existingValue = person.customFieldValues?.find(val => val.definition.id === def.id);
+        if (existingValue) {
           let value: any;
           switch (def.fieldType) {
-            case 'TEXT': value = cfv.stringValue; break;
-            case 'NUMBER': value = cfv.numberValue; break;
-            case 'BOOLEAN': value = cfv.booleanValue; break;
-            case 'DATE': value = cfv.dateValue; break;
-            case 'DROPDOWN': value = cfv.selectedOptionValues?.[0]; break;
-            case 'MULTI_SELECT': value = cfv.selectedOptionValues; break;
+            case 'TEXT': value = existingValue.stringValue; break;
+            case 'NUMBER': value = existingValue.numberValue; break;
+            case 'BOOLEAN': value = existingValue.booleanValue; break;
+            case 'DATE': value = existingValue.dateValue; break;
+            case 'DROPDOWN': value = existingValue.selectedOptionValues?.[0]; break;
+            case 'MULTI_SELECT': value = existingValue.selectedOptionValues; break;
             default: value = null;
           }
           if (value !== undefined && value !== null) {
             initialCustomData[def.fieldName] = value;
           }
         } else {
-          console.warn(`[EditPersonForm] No matching active definition found in personCustomFieldDefinitions for cfv.definition.id: ${cfv.definition?.id}`);
+          console.warn(`[EditPersonForm] No matching active definition found in personCustomFieldDefinitions for cfv.definition.id: ${def.id}`);
         }
       });
-      console.log('[EditPersonForm] Final initialCustomData to be set:', initialCustomData);
+      // console.log('[EditPersonForm] Final initialCustomData to be set:', initialCustomData);
       setCustomFieldData(initialCustomData);
     } else {
       console.warn('[EditPersonForm] Conditions NOT met to populate customFieldData. Clearing. Details:',

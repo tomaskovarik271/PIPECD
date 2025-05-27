@@ -210,6 +210,9 @@ export type Deal = {
   __typename?: "Deal";
   activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
+  assignedToUser?: Maybe<User>;
+  assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
+  createdBy: User;
   created_at: Scalars["DateTime"]["output"];
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
@@ -246,6 +249,7 @@ export type DealHistoryEntry = {
 
 export type DealInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -257,6 +261,7 @@ export type DealInput = {
 
 export type DealUpdateInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -643,6 +648,7 @@ export type Query = {
   /** Retrieves all price quotes associated with a specific deal. */
   priceQuotesForDeal: Array<PriceQuote>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
   wfmProjectTypes: Array<WfmProjectType>;
@@ -1276,6 +1282,17 @@ export type DealResolvers<
     ContextType
   >;
   amount?: Resolver<Maybe<ResolversTypes["Float"]>, ParentType, ContextType>;
+  assignedToUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  assigned_to_user_id?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
+  createdBy?: Resolver<ResolversTypes["User"], ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   currentWfmStatus?: Resolver<
     Maybe<ResolversTypes["WFMStatus"]>,
@@ -1897,6 +1914,7 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  users?: Resolver<Array<ResolversTypes["User"]>, ParentType, ContextType>;
   wfmProjectType?: Resolver<
     Maybe<ResolversTypes["WFMProjectType"]>,
     ParentType,

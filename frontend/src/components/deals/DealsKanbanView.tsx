@@ -57,44 +57,44 @@ const DealsKanbanView: React.FC = () => {
   useEffect(() => {
     // Fetch the Sales Deal workflow if the ID is available
     if (salesDealWorkflowId && !currentWorkflowWithDetails && !wfmWorkflowLoading && !wfmWorkflowError) {
-      console.log('[DealsKanbanView] salesDealWorkflowId found:', salesDealWorkflowId, "Fetching workflow details...");
+      // console.log('[DealsKanbanView] salesDealWorkflowId found:', salesDealWorkflowId, "Fetching workflow details...");
       fetchWFMWorkflowWithDetails(salesDealWorkflowId);
     }
   }, [salesDealWorkflowId, fetchWFMWorkflowWithDetails, currentWorkflowWithDetails, wfmWorkflowLoading, wfmWorkflowError]);
   
-  useEffect(() => {
-    if (deals && deals.length > 0) {
-      console.log('[DealsKanbanView] Deals from store (FULL SAMPLE):', deals.map(d => ({ 
-        id: d.id, 
-        name: d.name, 
-        wfm_project_id: d.wfm_project_id,
-        currentWfmStep: d.currentWfmStep ? { 
-          id: d.currentWfmStep.id, 
-          stepOrder: d.currentWfmStep.stepOrder,
-          metadata: d.currentWfmStep.metadata,
-          status: d.currentWfmStep.status ? { 
-            id: d.currentWfmStep.status.id, 
-            name: d.currentWfmStep.status.name 
-          } : null
-        } : null,
-        currentWfmStatus: d.currentWfmStatus ? { 
-          id: d.currentWfmStatus.id, 
-          name: d.currentWfmStatus.name 
-        } : null 
-      })));
-    } else {
-      console.log('[DealsKanbanView] No deals in store or deals array is empty.');
-    }
-  }, [deals]);
+  // useEffect(() => {
+  //   if (deals && deals.length > 0) {
+  //     console.log('[DealsKanbanView] Deals from store (FULL SAMPLE):', deals.map(d => ({ 
+  //       id: d.id, 
+  //       name: d.name, 
+  //       wfm_project_id: d.wfm_project_id,
+  //       currentWfmStep: d.currentWfmStep ? { 
+  //         id: d.currentWfmStep.id, 
+  //         stepOrder: d.currentWfmStep.stepOrder,
+  //         metadata: d.currentWfmStep.metadata,
+  //         status: d.currentWfmStep.status ? { 
+  //           id: d.currentWfmStep.status.id, 
+  //           name: d.currentWfmStep.status.name 
+  //         } : null
+  //       } : null,
+  //       currentWfmStatus: d.currentWfmStatus ? { 
+  //         id: d.currentWfmStatus.id, 
+  //         name: d.currentWfmStatus.name 
+  //       } : null 
+  //     })));
+  //   } else {
+  //     console.log('[DealsKanbanView] No deals in store or deals array is empty.');
+  //   }
+  // }, [deals]);
 
   const workflowStepsForKanban: WfmWorkflowStep[] = useMemo(() => {
     return currentWorkflowWithDetails?.steps?.slice().sort((a, b) => a.stepOrder - b.stepOrder) || [];
   }, [currentWorkflowWithDetails]);
 
-  useEffect(() => {
-    console.log('[DealsKanbanView] Current Workflow with Details (after memo):', currentWorkflowWithDetails);
-    console.log('[DealsKanbanView] Workflow Steps for Kanban (after memo):', workflowStepsForKanban);
-  }, [currentWorkflowWithDetails, workflowStepsForKanban]);
+  // useEffect(() => {
+  //   console.log('[DealsKanbanView] Current Workflow with Details (after memo):', currentWorkflowWithDetails);
+  //   console.log('[DealsKanbanView] Workflow Steps for Kanban (after memo):', workflowStepsForKanban);
+  // }, [currentWorkflowWithDetails, workflowStepsForKanban]);
 
   const onDragEnd = async (result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -108,7 +108,7 @@ const DealsKanbanView: React.FC = () => {
     const dealId = draggableId;
     const targetWfmWorkflowStepId = destination.droppableId;
 
-    console.log(`Optimistically moving deal ${dealId} to WFM step ${targetWfmWorkflowStepId}`);
+    // console.log(`Optimistically moving deal ${dealId} to WFM step ${targetWfmWorkflowStepId}`);
 
     try {
       const updatedDeal = await updateDealWFMProgress(dealId, targetWfmWorkflowStepId);
@@ -130,7 +130,7 @@ const DealsKanbanView: React.FC = () => {
         displayMessage = error.message;
       }
       // Log the full error for debugging, but show cleaner message to user
-      console.error('[DealsKanbanView.onDragEnd] Error caught:', JSON.stringify(error, null, 2)); 
+      // console.error('[DealsKanbanView.onDragEnd] Error caught:', JSON.stringify(error, null, 2)); 
 
       toast({
         title: 'Error updating deal WFM step',
@@ -143,7 +143,7 @@ const DealsKanbanView: React.FC = () => {
   };
   
   const dealsByWfmStep = useMemo(() => {
-    console.log('[DealsKanbanView] Recalculating dealsByWfmStep. Deals count:', deals.length, 'Workflow steps count:', workflowStepsForKanban.length);
+    // console.log('[DealsKanbanView] Recalculating dealsByWfmStep. Deals count:', deals.length, 'Workflow steps count:', workflowStepsForKanban.length);
     const grouped = workflowStepsForKanban.reduce((acc, step) => {
       acc[step.id] = deals.filter(deal => deal.currentWfmStep?.id === step.id); 
       if(acc[step.id]) {
@@ -151,7 +151,7 @@ const DealsKanbanView: React.FC = () => {
       }
       return acc;
     }, {} as Record<string, Deal[]>);
-    console.log('[DealsKanbanView] Grouped dealsByWfmStep:', grouped);
+    // console.log('[DealsKanbanView] Grouped dealsByWfmStep:', grouped);
     return grouped;
   }, [workflowStepsForKanban, deals]);
 

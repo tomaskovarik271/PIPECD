@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, VStack, FormControl, FormLabel, Input, Button, useToast, FormErrorMessage } from '@chakra-ui/react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { gql } from 'graphql-request';
 import { gqlClient } from '../../lib/graphqlClient';
 import { isGraphQLErrorWithMessage } from '../../lib/graphqlUtils';
-import type { User, UpdateUserProfileInput } from '../../generated/graphql/graphql';
+import type { User, UpdateUserProfileInput as UserProfileUpdateInput } from '../../generated/graphql/graphql';
 
 interface ProfileEditFormProps {
   user: User;
@@ -30,8 +30,9 @@ const UPDATE_USER_PROFILE_MUTATION = gql`
 `;
 
 const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onUpdateSuccess, onCancel }) => {
-  console.log('[ProfileEditForm] Rendering, current user:', user);
+  // console.log('[ProfileEditForm] Rendering, current user:', user);
   const toast = useToast();
+  // const { updateProfile, loading, error: storeError } = useUserProfileStore(); // Ensure this is commented or removed
   const [mutationLoading, setMutationLoading] = useState(false);
   const {
     handleSubmit,
@@ -45,7 +46,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onUpdateSuccess
     },
   });
 
-  console.log('[ProfileEditForm] RHF errors object:', errors);
+  // console.log('[ProfileEditForm] RHF errors object:', errors);
 
   useEffect(() => {
     reset({
@@ -55,7 +56,10 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onUpdateSuccess
   }, [user, reset]);
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    const input: UpdateUserProfileInput = {};
+    // setFormError(null); // Ensure this is commented or removed
+    // console.log('[ProfileEditForm] RHF errors object:', errors);
+
+    const input: UserProfileUpdateInput = {};
     // Only include fields if they have changed or are being set
     // For simplicity, we send them if they are different or if they were empty and now have value.
     // More robust: check against initial values if truly only sending deltas is critical.
@@ -87,7 +91,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onUpdateSuccess
       // Replace useMutation call with gqlClient.request
       const { updateUserProfile: updatedUser } = await gqlClient.request<
         { updateUserProfile: User },
-        { input: UpdateUserProfileInput }
+        { input: UserProfileUpdateInput }
       >(UPDATE_USER_PROFILE_MUTATION, { input });
 
       if (updatedUser) {

@@ -34,56 +34,62 @@ export const getServiceLevelUserProfileData = async (userId: string): Promise<Se
     return null;
   }
 
+  // Ensure supabaseAdmin is available early
+  if (!supabaseAdmin) {
+    console.error('[userProfileService] Supabase Admin client is not available. Ensure SUPABASE_SERVICE_ROLE_KEY is set and the server has restarted.');
+    return null; // Or throw an error if admin client is critical for this function
+  }
+
   console.log(`[userProfileService] getServiceLevelUserProfileData: Fetching data for user_id: ${userId}`);
 
-  // Fetch email from auth.users table
-  let email: string;
+  // Fetch email from auth.users table using supabaseAdmin
+  let authUserEmail: string;
   try {
-    if (!supabaseAdmin) {
-      console.error('[userProfileService] Supabase Admin client is not available. Ensure SUPABASE_SERVICE_ROLE_KEY is set and the server has restarted.');
-      return null;
-    }
-    // Use the admin API to get user details, which includes email and works across schemas correctly.
-    // This requires the Supabase client to be initialized with the service_role key.
     const { data: userResponse, error: adminUserError } = await supabaseAdmin.auth.admin.getUserById(userId);
 
     if (adminUserError) {
-      console.error(`[userProfileService] getServiceLevelUserProfileData: Error fetching user with supabase.auth.admin.getUserById for ${userId}:`, adminUserError.message);
+      console.error(`[userProfileService] getServiceLevelUserProfileData: Error fetching user with supabaseAdmin.auth.admin.getUserById for ${userId}:`, adminUserError.message);
       return null;
     }
-    // Check if user and user.email exist. Log the user object if email is missing for more context.
     if (!userResponse?.user || !userResponse.user.email) {
-      console.warn(`[userProfileService] getServiceLevelUserProfileData: User not found via admin API or email is null for ${userId}. User object:`, userResponse?.user);
+      console.warn(`[userProfileService] getServiceLevelUserProfileData: User not found via admin API or email is null for ${userId}. User object from response:`, userResponse?.user);
       return null; 
     }
-    email = userResponse.user.email;
+    authUserEmail = userResponse.user.email;
   } catch (e: any) {
-    console.error(`[userProfileService] getServiceLevelUserProfileData: Exception during supabase.auth.admin.getUserById for ${userId}:`, e.message);
+    console.error(`[userProfileService] getServiceLevelUserProfileData: Exception during supabaseAdmin.auth.admin.getUserById for ${userId}:`, e.message);
     return null;
   }
 
-  // Fetch display_name and avatar_url from user_profiles table
-  const { data: profileData, error: profileError } = await supabase
+  // Fetch display_name and avatar_url from user_profiles table using supabaseAdmin for consistency and to bypass RLS
+  let profileDisplayName: string | null = null;
+  let profileAvatarUrl: string | null = null;
+
+  try {
+    const { data: profileData, error: profileError } = await supabaseAdmin // Use supabaseAdmin here
     .from('user_profiles')
     .select('display_name, avatar_url')
     .eq('user_id', userId)
     .maybeSingle();
 
   if (profileError) {
-    console.error(`[userProfileService] getServiceLevelUserProfileData: Error fetching profile from user_profiles for ${userId}:`, profileError.message);
+      console.error(`[userProfileService] getServiceLevelUserProfileData: Error fetching profile from user_profiles using supabaseAdmin for ${userId}:`, profileError.message);
     // If profile fetch fails but email was found, decide on behavior.
-    // For now, consider it a failure to construct the full object.
-    return null;
+      // For now, continue and use nulls for display_name/avatar_url, as email is the critical part for User!
+    } else if (profileData) {
+      profileDisplayName = profileData.display_name;
+      profileAvatarUrl = profileData.avatar_url;
+    }
+  } catch (e: any) {
+    console.error(`[userProfileService] getServiceLevelUserProfileData: Exception during user_profiles fetch using supabaseAdmin for ${userId}:`, e.message);
+    // Continue with nulls for display_name/avatar_url if an exception occurs here too.
   }
-
-  // profileData can be null if the user has an auth.users entry but no user_profiles entry yet.
-  // This is acceptable; display_name and avatar_url will be null in that case.
 
   return {
     user_id: userId,
-    display_name: profileData?.display_name || null,
-    avatar_url: profileData?.avatar_url || null,
-    email: email, // Email is guaranteed non-null if we reached here
+    display_name: profileDisplayName, // Will be null if profile not found or error during fetch
+    avatar_url: profileAvatarUrl,   // Will be null if profile not found or error during fetch
+    email: authUserEmail, // Email is guaranteed non-null if we reached here from the auth user fetch
   };
 };
 

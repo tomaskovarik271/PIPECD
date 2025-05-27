@@ -3,15 +3,15 @@ import { diff, Diff } from 'deep-diff';
 
 // Define which fields are tracked for history purposes.
 // Add 'custom_field_values' as it's a special case handled in diffing.
-export const TRACKED_DEAL_FIELDS: (keyof Deal | 'custom_field_values')[] = [
+export const TRACKED_DEAL_FIELDS: (keyof Deal | 'custom_field_values' | 'assigned_to_user_id')[] = [
   'name', 
-  'stage_id', 
   'amount', 
   'expected_close_date', 
   'person_id', 
   'organization_id', 
   'deal_specific_probability',
-  'custom_field_values' 
+  'custom_field_values',
+  'assigned_to_user_id' // Added for tracking assignment changes
 ];
 
 /**

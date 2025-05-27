@@ -4,11 +4,9 @@ import {
   Box,
   Heading,
   Button,
-  Text,
   Spinner,
   Alert,
   AlertIcon,
-  useDisclosure,
   IconButton,
   HStack,
   useToast,
@@ -20,13 +18,11 @@ import {
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
-import { EditIcon, DeleteIcon, ViewIcon, SettingsIcon, LinkIcon } from '@chakra-ui/icons';
+import { SettingsIcon, LinkIcon, ViewIcon as PageViewIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
-import type { Person as GeneratedPerson, CustomFieldDefinition, CustomFieldValue, CustomFieldType as GQLCustomFieldType } from '../generated/graphql/graphql';
-import { gqlClient } from '../lib/graphqlClient';
-import { gql } from 'graphql-request';
+import type { Person as GeneratedPerson, CustomFieldDefinition, CustomFieldValue, CustomFieldType as GQLCustomFieldType, StageType } from '../generated/graphql/graphql';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import ListPageLayout from '../components/layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
@@ -34,58 +30,18 @@ import ColumnSelector from '../components/common/ColumnSelector';
 import EmptyState from '../components/common/EmptyState';
 import DealsKanbanView from '../components/deals/DealsKanbanView';
 import QuickFilterControls, { QuickFilter } from '../components/common/QuickFilterControls';
-import type { StageType } from '../generated/graphql/graphql';
+import { getLinkDisplayDetails, LinkDisplayDetails } from '../lib/utils/linkUtils';
 
-interface LinkDisplayDetails {
-  isUrl: boolean;
-  displayText: string;
-  fullUrl?: string;
-  isKnownService?: boolean;
-  icon?: React.ElementType;
-}
+// Import the new hooks
+import { useDealsPageModals } from '../hooks/useDealsPageModals';
+import { useDealDataManagement } from '../hooks/useDealDataManagement';
 
-const getLinkDisplayDetails = (str: string | null | undefined): LinkDisplayDetails => {
-  if (!str) return { isUrl: false, displayText: '-' };
+// Import the new view components
+import DealsTableView from '../components/deals/DealsTableView';
+import DealsKanbanPageView from '../components/deals/DealsKanbanPageView';
 
-  try {
-    const url = new URL(str);
-    if (!(url.protocol === 'http:' || url.protocol === 'https:')) {
-      return { isUrl: false, displayText: str }; // Not a http/https URL
-    }
-
-    if (url.hostname.includes('docs.google.com')) {
-      if (url.pathname.includes('/spreadsheets/')) {
-        return { isUrl: true, displayText: 'Google Sheet', fullUrl: str, isKnownService: true, icon: LinkIcon };
-      }
-      if (url.pathname.includes('/document/')) {
-        return { isUrl: true, displayText: 'Google Doc', fullUrl: str, isKnownService: true, icon: LinkIcon };
-      }
-      if (url.pathname.includes('/presentation/') || url.pathname.includes('/drawings/')) {
-        return { isUrl: true, displayText: 'Google Slides/Drawing', fullUrl: str, isKnownService: true, icon: LinkIcon };
-      }
-      // Add more Google services if needed
-    }
-    // Add other known services here, e.g., Dropbox, Figma, etc.
-    
-    // For generic URLs, prepare for truncation
-    return { isUrl: true, displayText: str, fullUrl: str, isKnownService: false };
-
-  } catch (_) {
-    return { isUrl: false, displayText: str }; // Not a valid URL
-  }
-};
-
-const GET_DEAL_CUSTOM_FIELD_DEFS_QUERY = gql`
-  query GetDealCustomFieldDefinitions {
-    customFieldDefinitions(entityType: DEAL, includeInactive: false) {
-      id
-      fieldName
-      fieldLabel
-      fieldType
-      dropdownOptions { value label }
-    }
-  }
-`;
+// Import the new hook for columns
+import { useDealsTableColumns } from '../hooks/useDealsTableColumns.tsx';
 
 function DealsPage() {
   const { 
@@ -93,7 +49,7 @@ function DealsPage() {
     dealsLoading, 
     dealsError, 
     fetchDeals, 
-    deleteDeal: deleteDealAction,
+    deleteDeal: deleteDealActionFromStore, // Renamed for clarity
     dealsViewMode,
     setDealsViewMode
   } = useDealsStore();
@@ -101,6 +57,7 @@ function DealsPage() {
   const userPermissions = useAppStore((state) => state.userPermissions);
   const session = useAppStore((state) => state.session);
   const currentUserId = session?.user.id;
+  
   const { 
     tableColumnPreferences, 
     initializeTable, 
@@ -108,22 +65,31 @@ function DealsPage() {
     resetTableToDefaults 
   } = useViewPreferencesStore();
   
-  const { isOpen: isCreateModalOpen, onOpen: onCreateModalOpen, onClose: onCreateModalClose } = useDisclosure();
-  const { isOpen: isEditModalOpen, onOpen: onEditModalOpen, onClose: onEditModalClose } = useDisclosure();
-  const [dealToEdit, setDealToEdit] = useState<Deal | null>(null);
-  const [deletingRowId, setDeletingRowId] = useState<string | null>(null);
-  const toast = useToast();
+  // Use the new hooks
+  const {
+    isCreateModalOpen, openCreateModal, closeCreateModal,
+    isEditModalOpen, openEditModal, closeEditModal, dealToEdit,
+    isConfirmDeleteDialogOpen, openConfirmDeleteModal, closeConfirmDeleteModal,
+    isColumnSelectorOpen, openColumnSelectorModal, closeColumnSelectorModal
+  } = useDealsPageModals();
 
-  const { isOpen: isConfirmDeleteDialogOpen, onOpen: onConfirmDeleteOpen, onClose: onConfirmDeleteClose } = useDisclosure();
-  const [dealToDeleteId, setDealToDeleteId] = useState<string | null>(null);
-  const { isOpen: isColumnSelectorOpen, onOpen: onColumnSelectorOpen, onClose: onColumnSelectorClose } = useDisclosure();
+  const toast = useToast(); // Keep toast here if page-level notifications are still needed, or move if fully handled by hooks
 
-  const [dealCustomFieldDefinitions, setDealCustomFieldDefinitions] = useState<CustomFieldDefinition[]>([]);
-  const [customFieldsLoading, setCustomFieldsLoading] = useState<boolean>(true);
+  // dealToDeleteId for connecting modal open action with data management hook
+  const [dealIdPendingConfirmation, setDealIdPendingConfirmation] = useState<string | null>(null);
 
+  const {
+    dealCustomFieldDefinitions,
+    customFieldsLoading,
+    confirmDeleteHandler, // This is the async function that performs delete
+    isDeletingDeal,       // Boolean indicating if delete is in progress
+    dealToDeleteId: activeDeletingDealId, // ID of deal being processed by confirmDeleteHandler
+    clearDealToDeleteId
+  } = useDealDataManagement({ deleteDealActionFromStore, initialDealsError: dealsError });
+
+  // Local state for quick filters remains for now
   const [activeQuickFilterKey, setActiveQuickFilterKey] = useState<string | null>(null);
 
-  // Define Quick Filters for Deals
   const availableQuickFilters = useMemo((): QuickFilter[] => [
     { key: 'all', label: 'All Deals' },
     { key: 'myOpen', label: 'My Open Deals' },
@@ -134,176 +100,58 @@ function DealsPage() {
     fetchDeals();
   }, [fetchDeals]);
 
-  useEffect(() => {
-    const fetchCustomFieldDefs = async () => {
-      setCustomFieldsLoading(true);
-      try {
-        const data = await gqlClient.request<{ customFieldDefinitions: CustomFieldDefinition[] }>(GET_DEAL_CUSTOM_FIELD_DEFS_QUERY);
-        setDealCustomFieldDefinitions(data.customFieldDefinitions || []);
-      } catch (error) {
-        console.error("Error fetching deal custom field definitions:", error);
-        toast({ title: 'Error loading custom field definitions', status: 'error', duration: 3000, isClosable: true });
-      } finally {
-        setCustomFieldsLoading(false);
-      }
-    };
-    fetchCustomFieldDefs();
-  }, [toast]);
-
-  const handleCreateDealClick = () => onCreateModalOpen();
+  const handleCreateDealClick = () => openCreateModal();
   const handleDataChanged = useCallback(() => fetchDeals(), [fetchDeals]);
-  const handleEditClick = (deal: Deal) => { setDealToEdit(deal); onEditModalOpen(); };
-  const handleDeleteClick = (dealId: string) => { setDealToDeleteId(dealId); onConfirmDeleteOpen(); };
-
-  const handleConfirmDelete = async () => {
-    if (!dealToDeleteId) return;
-    setDeletingRowId(dealToDeleteId);
-    const success = await deleteDealAction(dealToDeleteId);
-    setDeletingRowId(null);
-    onConfirmDeleteClose();
-    setDealToDeleteId(null);
-    if (success) toast({ title: 'Deal deleted.', status: 'success', duration: 3000, isClosable: true });
-    else toast({ title: 'Error Deleting Deal', description: dealsError || 'An unknown error occurred', status: 'error', duration: 5000, isClosable: true });
+  
+  const handleEditClick = (deal: Deal) => openEditModal(deal);
+  
+  const handleDeleteClick = (dealId: string) => {
+    setDealIdPendingConfirmation(dealId); // Set the ID that we intend to delete
+    openConfirmDeleteModal();      // Open the confirmation dialog
   };
 
-  const formatPersonName = (person: GeneratedPerson | null | undefined): string => {
-    if (!person) return '-';
-    return person.last_name && person.first_name ? `${person.last_name}, ${person.first_name}` : person.first_name || person.last_name || person.email || 'Unnamed Person';
+  // handleConfirmDelete is now mostly within useDealDataManagement
+  // The page component orchestrates opening the dialog and then calling the handler
+  const onConfirmActualDelete = async () => {
+    if (dealIdPendingConfirmation) {
+      await confirmDeleteHandler(dealIdPendingConfirmation);
+      closeConfirmDeleteModal();
+      clearDealToDeleteId(); // Clear ID in the data management hook
+      setDealIdPendingConfirmation(null); // Clear our temporary pending ID
+    }
   };
-  const formatDate = (dateString: string | null | undefined) => dateString ? new Date(dateString).toLocaleDateString() : '-';
-  const formatCurrency = (amount: number | null | undefined) => amount != null ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount) : '-';
+
+  const onCancelDelete = () => {
+    closeConfirmDeleteModal();
+    clearDealToDeleteId(); // Clear ID in the data management hook if it was set
+    setDealIdPendingConfirmation(null); // Ensure this uses the correct setter
+  }
 
   const TABLE_KEY = 'deals_list';
 
+  // Get columns from the new hook
+  const { standardColumns, actionsColumn: actionsColumnFromHook, customFieldColumns: customFieldColumnsFromHook } = useDealsTableColumns({
+    dealCustomFieldDefinitions,
+    handleEditClick, // Pass the function
+    handleDeleteClick, // Pass the function
+    userPermissions,
+    currentUserId,
+    activeDeletingDealId,
+  });
+
   const allAvailableColumns = useMemo((): ColumnDefinition<Deal>[] => {
-    const standardColumns: ColumnDefinition<Deal>[] = [
-      { key: 'name', header: 'Name', renderCell: (d) => d.name, isSortable: true },
-      { key: 'person', header: 'Person', renderCell: (d) => formatPersonName(d.person as GeneratedPerson | null | undefined), isSortable: true, sortAccessor: (d) => formatPersonName(d.person as GeneratedPerson | null | undefined).toLowerCase() },
-      { key: 'organization', header: 'Organization', renderCell: (d) => d.organization?.name || '-', isSortable: true, sortAccessor: (d) => d.organization?.name?.toLowerCase() },
-      { 
-        key: 'stage',
-        header: 'Status', 
-        renderCell: (d) => d.currentWfmStatus?.name || '-', 
-        isSortable: true, 
-        sortAccessor: (d) => d.currentWfmStatus?.name?.toLowerCase() ?? '' 
-      },
-      { key: 'amount', header: 'Amount', renderCell: (d) => formatCurrency(d.amount), isSortable: true, isNumeric: true, sortAccessor: (d) => d.amount },
-      { key: 'deal_specific_probability', header: 'Specific Prob. (%)', renderCell: (d) => d.deal_specific_probability != null ? `${Math.round(d.deal_specific_probability * 100)}%` : '-', isSortable: true, sortAccessor: (d) => d.deal_specific_probability },
-      { key: 'weighted_amount', header: 'Weighted Amount', renderCell: (d) => formatCurrency(d.weighted_amount), isSortable: true, isNumeric: true, sortAccessor: (d) => d.weighted_amount },
-      { key: 'expected_close_date', header: 'Expected Close', renderCell: (d) => formatDate(d.expected_close_date), isSortable: true, sortAccessor: (d) => d.expected_close_date ? new Date(d.expected_close_date).getTime() : 0 },
-      { key: 'created_at', header: 'Created', renderCell: (d) => formatDate(d.created_at), isSortable: true, sortAccessor: (d) => d.created_at ? new Date(d.created_at).getTime() : 0 },
-    ];
-
-    const customFieldColumns: ColumnDefinition<Deal>[] = dealCustomFieldDefinitions.map(def => ({
-      key: `cf_${def.fieldName}`,
-      header: def.fieldLabel,
-      isSortable: true, 
-      sortAccessor: (deal: Deal) => {
-        const cfValue = deal.customFieldValues?.find(cf => cf.definition.fieldName === def.fieldName);
-        if (!cfValue) return '';
-        switch (def.fieldType) {
-          case 'TEXT': return cfValue.stringValue?.toLowerCase() || '';
-          case 'NUMBER': return cfValue.numberValue || 0;
-          case 'DATE': return cfValue.dateValue ? new Date(cfValue.dateValue).getTime() : 0;
-          case 'BOOLEAN': return cfValue.booleanValue ? 'true' : 'false';
-          default: return cfValue.stringValue?.toLowerCase() || '';
-        }
-      },
-      renderCell: (deal: Deal) => {
-        const cfValue = deal.customFieldValues?.find(cf => cf.definition.fieldName === def.fieldName);
-        if (!cfValue) return '-';
-        let displayValue: React.ReactNode = '-';
-        const { stringValue, numberValue, booleanValue, dateValue, selectedOptionValues } = cfValue;
-
-        switch (def.fieldType) {
-          case 'TEXT': 
-            const linkDetails = getLinkDisplayDetails(stringValue);
-            if (linkDetails.isUrl && linkDetails.fullUrl) {
-              displayValue = (
-                <Link 
-                  href={linkDetails.fullUrl} 
-                  isExternal
-                  color={{ base: 'blue.500', _dark: 'blue.300' }}
-                  textDecoration="underline"
-                  display="inline-flex"
-                  alignItems="center"
-                >
-                  {linkDetails.icon && <Icon as={linkDetails.icon} mr={1.5} />}
-                  <Text
-                    as="span"
-                    style={!linkDetails.isKnownService ? {
-                      display: 'inline-block',
-                      maxWidth: '200px',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                    } : { /* verticalAlign: 'bottom' */ } }
-                  >
-                    {linkDetails.displayText}
-                  </Text>
-                </Link>
-              );
-            } else {
-              displayValue = stringValue || '-'; 
-            }
-            break;
-          case 'NUMBER': displayValue = numberValue?.toString() ?? '-'; break;
-          case 'DATE': displayValue = dateValue ? new Date(dateValue).toLocaleDateString() : '-'; break;
-          case 'BOOLEAN': displayValue = booleanValue ? 'Yes' : 'No'; break;
-          case 'DROPDOWN': 
-            const optValD = stringValue; 
-            const optD = def.dropdownOptions?.find(o => o.value === optValD); 
-            displayValue = optD?.label || optValD || '-'; 
-            break;
-          case 'MULTI_SELECT': 
-            const sVals = selectedOptionValues || []; 
-            displayValue = sVals.map(v => def.dropdownOptions?.find(o => o.value === v)?.label || v).join(', ') || '-'; 
-            break;
-          default: displayValue = stringValue || '-';
-        }
-        return displayValue;
-      },
-    }));
-
-    const actionsColumn: ColumnDefinition<Deal> = {
-      key: 'actions',
-      header: 'Actions',
-      renderCell: (deal) => (
-        <HStack spacing={2}>
-          <IconButton as={RouterLink} to={`/deals/${deal.id}`} aria-label="View deal" icon={<ViewIcon />} size="sm" variant="ghost" />
-          <IconButton 
-            aria-label="Edit deal" 
-            icon={<EditIcon />} 
-            size="sm" 
-            variant="ghost" 
-            onClick={() => handleEditClick(deal)} 
-            isDisabled={
-              !!deletingRowId ||
-              !(userPermissions?.includes('deal:update_any') || (userPermissions?.includes('deal:update_own') && deal.user_id === currentUserId))
-            } 
-          />
-          <IconButton 
-            aria-label="Delete deal" 
-            icon={<DeleteIcon />} 
-            colorScheme="red" 
-            size="sm" 
-            variant="ghost" 
-            onClick={() => handleDeleteClick(deal.id)} 
-            isLoading={deletingRowId === deal.id}
-            isDisabled={
-              (!!deletingRowId && deletingRowId !== deal.id) ||
-              !(userPermissions?.includes('deal:delete_any') || (userPermissions?.includes('deal:delete_own') && deal.user_id === currentUserId))
-            } 
-          />
-        </HStack>
-      ),
-      isSortable: false,
-    };
-    return [...standardColumns, ...customFieldColumns, actionsColumn];
-  }, [dealCustomFieldDefinitions, userPermissions, currentUserId, deletingRowId, handleEditClick, handleDeleteClick]);
+    // customFieldColumns definition is now removed from here.
+    const columnsToUse: ColumnDefinition<Deal>[] = [];
+    if (standardColumns) columnsToUse.push(...standardColumns);
+    if (customFieldColumnsFromHook) columnsToUse.push(...customFieldColumnsFromHook);
+    if (actionsColumnFromHook) {
+      columnsToUse.push(actionsColumnFromHook);
+    }
+    return columnsToUse;
+  }, [standardColumns, customFieldColumnsFromHook, actionsColumnFromHook]);
 
   const defaultVisibleColumnKeys = useMemo(() => [
-    'name', 'person', 'organization', 'stage', 'amount', 'expected_close_date', 'actions'
+    'name', 'person', 'organization', 'assignedToUser', 'stage', 'amount', 'expected_close_date', 'actions'
   ], []);
 
   useEffect(() => {
@@ -315,8 +163,7 @@ function DealsPage() {
   const currentVisibleColumnKeys = tableColumnPreferences[TABLE_KEY]?.visibleColumnKeys || defaultVisibleColumnKeys;
   
   const visibleColumns = useMemo(() => {
-    if (customFieldsLoading || allAvailableColumns.length === 0) return [];
-    // Ensure that currentVisibleColumnKeys refers to existing columns in allAvailableColumns to prevent errors
+    if (customFieldsLoading || !allAvailableColumns || allAvailableColumns.length === 0) return [];
     const availableKeysSet = new Set(allAvailableColumns.map(col => String(col.key)));
     const validVisibleKeys = currentVisibleColumnKeys.filter(key => availableKeysSet.has(key));
     
@@ -328,10 +175,9 @@ function DealsPage() {
   }, [allAvailableColumns, currentVisibleColumnKeys, customFieldsLoading, defaultVisibleColumnKeys]);
 
   const emptyStatePropsForLayout = { 
-    icon: ViewIcon, // Consider a more specific icon for Deals
+    icon: PageViewIcon, 
     title: "No Deals Found", 
     message: "Get started by creating your first deal or try a different filter.",
-    // actionButtonLabel etc. are handled by ListPageLayout
   };
   
   const pageIsLoading = dealsLoading || customFieldsLoading;
@@ -342,7 +188,7 @@ function DealsPage() {
       filtered = deals.filter(deal => {
         switch (activeQuickFilterKey) {
           case 'myOpen':
-            return deal.user_id === currentUserId && deal.stage?.stage_type === 'OPEN' as StageType;
+            return deal.user_id === currentUserId && deal.currentWfmStep && !deal.currentWfmStep.isFinalStep;
           case 'closingThisMonth': {
             if (!deal.expected_close_date) return false;
             const closeDate = new Date(deal.expected_close_date);
@@ -379,7 +225,7 @@ function DealsPage() {
             activeFilterKey={activeQuickFilterKey}
             onSelectFilter={setActiveQuickFilterKey}
           />
-          <Button leftIcon={<SettingsIcon />} onClick={onColumnSelectorOpen} size="sm" variant="outline">
+          <Button leftIcon={<SettingsIcon />} onClick={openColumnSelectorModal} size="sm" variant="outline">
             Columns
           </Button>
         </HStack>
@@ -432,7 +278,7 @@ function DealsPage() {
       {!pageIsLoading && !dealsError && displayedDeals.length === 0 && (
         <Box mx={6}>
           <EmptyState 
-            icon={ViewIcon} 
+            icon={PageViewIcon} 
             title="No Deals Found" 
             message="Get started by creating your first deal or try a different filter." 
             actionButtonLabel="New Deal"
@@ -449,25 +295,54 @@ function DealsPage() {
 
   return (
     <Box w="100%">
-      {dealsViewMode === 'table' ? listPageContent : kanbanPageContent}
+      {dealsViewMode === 'table' ? (
+        <DealsTableView
+          deals={displayedDeals}
+          columns={visibleColumns}
+          isLoading={pageIsLoading}
+          error={dealsError}
+          onNewButtonClick={handleCreateDealClick}
+          userPermissions={userPermissions}
+          emptyStateProps={emptyStatePropsForLayout}
+          onOpenColumnSelector={openColumnSelectorModal}
+          dealsViewMode={dealsViewMode}
+          onSetDealsViewMode={setDealsViewMode}
+          availableQuickFilters={availableQuickFilters}
+          activeQuickFilterKey={activeQuickFilterKey}
+          onSelectQuickFilter={setActiveQuickFilterKey}
+        />
+      ) : (
+        <DealsKanbanPageView
+          deals={displayedDeals}
+          isLoading={pageIsLoading}
+          error={dealsError}
+          onNewButtonClick={handleCreateDealClick}
+          userPermissions={userPermissions}
+          dealsViewMode={dealsViewMode}
+          onSetDealsViewMode={setDealsViewMode}
+          availableQuickFilters={availableQuickFilters}
+          activeQuickFilterKey={activeQuickFilterKey}
+          onSelectQuickFilter={setActiveQuickFilterKey}
+        />
+      )}
       {/* Modals and Dialogs are siblings to the view content */}
-      <CreateDealModal isOpen={isCreateModalOpen} onClose={onCreateModalClose} onDealCreated={handleDataChanged} />
-      {isEditModalOpen && dealToEdit && <EditDealModal deal={dealToEdit} isOpen={isEditModalOpen} onClose={onEditModalClose} onDealUpdated={handleDataChanged} />}
+      <CreateDealModal isOpen={isCreateModalOpen} onClose={closeCreateModal} onDealCreated={handleDataChanged} />
+      {isEditModalOpen && dealToEdit && <EditDealModal deal={dealToEdit} isOpen={isEditModalOpen} onClose={closeEditModal} onDealUpdated={handleDataChanged} />}
       <ConfirmationDialog 
         isOpen={isConfirmDeleteDialogOpen} 
-        onClose={onConfirmDeleteClose} 
-        onConfirm={handleConfirmDelete} 
+        onClose={onCancelDelete}
+        onConfirm={onConfirmActualDelete}
         title="Delete Deal"
         body="Are you sure you want to delete this deal?"
         confirmButtonText="Delete" 
         confirmButtonColor="red" 
-        isConfirmLoading={!!deletingRowId}
+        isConfirmLoading={isDeletingDeal}
       />
       
       {isColumnSelectorOpen && allAvailableColumns.length > 0 && dealsViewMode === 'table' && (
         <ColumnSelector<Deal>
           isOpen={isColumnSelectorOpen}
-          onClose={onColumnSelectorClose}
+          onClose={closeColumnSelectorModal}
           allAvailableColumns={allAvailableColumns}
           currentVisibleColumnKeys={currentVisibleColumnKeys}
           defaultVisibleColumnKeys={defaultVisibleColumnKeys}

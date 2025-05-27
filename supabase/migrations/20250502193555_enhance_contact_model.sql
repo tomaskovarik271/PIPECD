@@ -1,28 +1,29 @@
--- 1. Create organizations table
-CREATE TABLE organizations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE, -- Link to owner user
-  name TEXT NOT NULL,
-  address TEXT,
-  -- Add other relevant organization fields here (e.g., website, industry)
-  notes TEXT
-);
+-- 1. Create organizations table -- This is now handled in initial_schema.sql
+-- CREATE TABLE organizations (
+--   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+--   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+--   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE, -- Link to owner user
+--   name TEXT NOT NULL,
+--   address TEXT,
+--   -- Add other relevant organization fields here (e.g., website, industry)
+--   notes TEXT
+-- );
 
--- Add index for user lookup
-CREATE INDEX idx_organizations_user_id ON organizations(user_id);
+-- Add index for user lookup -- This is now handled in initial_schema.sql
+-- CREATE INDEX idx_organizations_user_id ON organizations(user_id);
 
--- Trigger for organizations updated_at
-CREATE TRIGGER set_organizations_timestamp
-BEFORE UPDATE ON organizations
-FOR EACH ROW
-EXECUTE FUNCTION trigger_set_timestamp(); -- Reuse existing timestamp function
+-- Trigger for organizations updated_at -- This is now handled in initial_schema.sql
+-- CREATE TRIGGER set_organizations_timestamp
+-- BEFORE UPDATE ON organizations
+-- FOR EACH ROW
+-- EXECUTE FUNCTION trigger_set_timestamp(); -- Reuse existing timestamp function
 
 -- 2. Rename contacts table to people
 ALTER TABLE contacts RENAME TO people;
 
 -- 3. Add organization_id FK to people table
+-- This assumes organizations table exists (created by initial_schema.sql)
 ALTER TABLE people
 ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL; -- Allow people without organizations
 
@@ -30,6 +31,7 @@ ADD COLUMN organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL;
 CREATE INDEX idx_people_organization_id ON people(organization_id);
 
 -- 4. Enable RLS and define policies for organizations
+-- This assumes organizations table exists (created by initial_schema.sql)
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow individual user SELECT access on organizations" ON organizations
@@ -69,19 +71,51 @@ CREATE POLICY "Allow individual user DELETE access on people" ON people
 
 -- 6. Update foreign key constraint on 'deals' table to reference 'people'
 
--- Rename the column first
-ALTER TABLE deals RENAME COLUMN contact_id TO person_id;
+-- Rename the column first (In initial_schema.sql, deals.person_id already references contacts(id), and contacts is renamed to people)
+-- So, the column deals.person_id should already exist and correctly reference (what will be) people(id).
+-- The issue is that initial_schema.sql creates deals.person_id REFERENCES contacts(id).
+-- This script renames contacts to people. So the FK in deals should automatically point to people.
+-- The RENAME COLUMN line below is thus unnecessary and potentially harmful if person_id already exists.
 
--- Drop the old constraint first (It might reference the old column name implicitly, safer to drop)
--- If the constraint name was explicit, use that name. Assuming default naming convention.
--- We might need to find the actual constraint name if this fails.
-ALTER TABLE deals DROP CONSTRAINT IF EXISTS deals_contact_id_fkey;
+-- ALTER TABLE deals RENAME COLUMN contact_id TO person_id; -- REMOVE THIS LINE as deals.person_id is already created in initial_schema
 
--- Add the new constraint referencing the renamed 'people' table and the renamed column
-ALTER TABLE deals 
-ADD CONSTRAINT deals_person_id_fkey -- Use new column name in constraint name
-FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE SET NULL;
+-- The FK constraint name will be based on the original creation in initial_schema.
+-- Let's assume the FK from initial_schema.sql `person_id UUID REFERENCES contacts(id)` creates a constraint.
+-- When `contacts` is renamed to `people`, that constraint should automatically update its target table.
+-- So, no need to drop/add FK constraints here IF the initial schema correctly established it.
 
--- Add index on the renamed column (optional but good practice)
-DROP INDEX IF EXISTS idx_deals_contact_id;
-CREATE INDEX idx_deals_person_id ON deals(person_id);
+-- If `initial_schema.sql` created `deals.person_id REFERENCES contacts(id)`, then after `ALTER TABLE contacts RENAME TO people;`,
+-- `deals.person_id` will correctly reference `people(id)`.
+-- The existing FK constraint will just point to the renamed table.
+
+-- The index `idx_deals_person_id` is already created in `initial_schema.sql`.
+-- DROP INDEX IF EXISTS idx_deals_contact_id; -- Not needed if contact_id was never the name in deals table from initial_schema
+-- CREATE INDEX idx_deals_person_id ON deals(person_id); -- Already created in initial_schema
+
+-- The original script might have been written when initial_schema was different.
+-- Based on the current initial_schema, step 6 is largely simplified or not needed for FKs/indexes if already correct.
+-- However, the RENAME COLUMN contact_id TO person_id for deals table *is* present in the original of this script.
+-- My `initial_schema.sql` uses `person_id` from the start, referencing `contacts(id)`.
+-- So the `ALTER TABLE deals RENAME COLUMN contact_id TO person_id;` is problematic.
+-- I will comment out the parts of step 6 that are now redundant or conflicting.
+
+-- 6. Update foreign key constraint on 'deals' table to reference 'people'
+
+-- The `initial_schema.sql` creates `deals.person_id UUID REFERENCES contacts(id)`.
+-- After `ALTER TABLE contacts RENAME TO people;` (Step 2), this foreign key will correctly point to `people(id)`.
+-- The column name in `deals` is already `person_id`.
+
+-- ALTER TABLE deals RENAME COLUMN contact_id TO person_id; -- This is not needed as initial_schema uses person_id
+
+-- The foreign key constraint `deals_person_id_fkey` (or similar default name)
+-- established by `initial_schema.sql` pointing `deals.person_id` to `contacts.id`
+-- will automatically update to point to `people.id` after table rename. So no need to drop/add.
+
+-- ALTER TABLE deals DROP CONSTRAINT IF EXISTS deals_contact_id_fkey; -- Not applicable / default name might differ
+-- ALTER TABLE deals 
+-- ADD CONSTRAINT deals_person_id_fkey
+-- FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE SET NULL;
+
+-- The index `idx_deals_person_id` is already created in `initial_schema.sql`.
+-- DROP INDEX IF EXISTS idx_deals_contact_id;
+-- CREATE INDEX idx_deals_person_id ON deals(person_id);

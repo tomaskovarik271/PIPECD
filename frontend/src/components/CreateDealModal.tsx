@@ -26,14 +26,17 @@ import {
   Checkbox,
   Stack,
   Text,
+  Box,
 } from '@chakra-ui/react';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
-import { useDealsStore } from '../stores/useDealsStore';
+import { useDealsStore, DealInput, Maybe } from '../stores/useDealsStore';
 import { useWFMProjectTypeStore, WfmProjectType } from '../stores/useWFMProjectTypeStore';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
-import { DealInput, CustomFieldType } from '../generated/graphql/graphql';
+import { CustomFieldType } from '../generated/graphql/graphql';
 import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
 import { CustomFieldEntityType, CustomFieldDefinition as GraphQLCustomFieldDefinition, CustomFieldValueInput } from '../generated/graphql/graphql';
+import { useUserListStore, UserListItem } from '../stores/useUserListStore';
+import { useAppStore } from '../stores/useAppStore';
 
 interface CreateDealModalProps {
   isOpen: boolean;
@@ -52,6 +55,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [organizationId, setOrganizationId] = useState<string>('');
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
+  const [assignedToUserId, setAssignedToUserId] = useState<string | null>(null);
   
   const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, any>>({});
   const [activeDealCustomFields, setActiveDealCustomFields] = useState<GraphQLCustomFieldDefinition[]>([]);
@@ -73,6 +77,10 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const { createDeal: createDealAction, dealsError, dealsLoading } = useDealsStore(); 
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
   const { organizations, fetchOrganizations, organizationsLoading, organizationsError } = useOrganizationsStore();
+  const { users: userList, loading: userListLoading, error: userListError, fetchUsers: fetchUserList, hasFetched: userListHasFetched } = useUserListStore();
+  const { session, userPermissions } = useAppStore();
+  const currentUserId = session?.user?.id;
+  const isAdmin = userPermissions?.includes('deal:assign_any');
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -88,6 +96,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       setError(null);
       setDealSpecificProbability('');
       setExpectedCloseDate('');
+      setAssignedToUserId(null);
       setIsLoading(false);
       setCustomFieldFormValues({});
       setActiveDealCustomFields([]);
@@ -96,8 +105,9 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       fetchOrganizations();
       fetchDefinitions(CustomFieldEntityType.Deal, false);
       fetchWFMProjectTypes({ isArchived: false });
+      if (!userListHasFetched) fetchUserList();
     }
-  }, [isOpen, fetchPeople, fetchOrganizations, fetchDefinitions, fetchWFMProjectTypes]);
+  }, [isOpen, fetchPeople, fetchOrganizations, fetchDefinitions, fetchWFMProjectTypes, fetchUserList, userListHasFetched]);
 
   useEffect(() => {
     // Auto-select "Sales Deal" project type if available
@@ -157,44 +167,37 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         person_id: personId || null,
         organization_id: organizationId || null,
         expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : null,
+        assignedToUserId: assignedToUserId,
       };
       
       const customFieldsSubmission: CustomFieldValueInput[] = activeDealCustomFields
         .map(def => {
-          const rawValue = customFieldFormValues[def.fieldName];
-          const valueInputPayload: Omit<CustomFieldValueInput, 'definitionId'> = {};
-
-          if (rawValue === undefined || rawValue === null) {
-            if (def.fieldType === CustomFieldType.Boolean) {
-              valueInputPayload.booleanValue = false; 
-            } else if (def.fieldType === CustomFieldType.MultiSelect && Array.isArray(rawValue) && rawValue.length === 0) {
-              valueInputPayload.selectedOptionValues = [];
-            } else if (def.isRequired) {
-               if (rawValue === undefined || rawValue === null) return null;
-            } else {
-                 return null; 
-            }
-          }
+          const formValue = customFieldFormValues[def.fieldName];
+          let valueInput: Partial<CustomFieldValueInput> = { definitionId: def.id };
 
           switch (def.fieldType) {
-            case CustomFieldType.Text: valueInputPayload.stringValue = String(rawValue); break;
-            case CustomFieldType.Dropdown: valueInputPayload.stringValue = String(rawValue); break;
+            case CustomFieldType.Text:
+              valueInput.stringValue = formValue ? String(formValue) : undefined;
+              break;
             case CustomFieldType.Number:
-              const num = parseFloat(String(rawValue));
-              if (!isNaN(num)) { valueInputPayload.numberValue = num; } 
-              else if (String(rawValue).trim() === '' && !def.isRequired) { /* omit */ } 
-              else { console.warn(`Invalid number for field ${def.fieldName}: ${rawValue}`); return null; }
+              valueInput.numberValue = (formValue !== '' && formValue !== null && formValue !== undefined) ? parseFloat(String(formValue)) : undefined;
               break;
-            case CustomFieldType.Boolean: valueInputPayload.booleanValue = Boolean(rawValue); break;
-            case CustomFieldType.Date: valueInputPayload.dateValue = String(rawValue); break;
+            case CustomFieldType.Boolean:
+              valueInput.booleanValue = Boolean(formValue);
+              break;
+            case CustomFieldType.Date:
+              valueInput.dateValue = (formValue !== '' && formValue !== null && formValue !== undefined) ? new Date(formValue).toISOString() : undefined;
+              break;
+            case CustomFieldType.Dropdown:
+                valueInput.selectedOptionValues = (formValue !== '' && formValue !== null && formValue !== undefined) ? [String(formValue)] : undefined;
+                break;
             case CustomFieldType.MultiSelect:
-              if (Array.isArray(rawValue)) { valueInputPayload.selectedOptionValues = rawValue.map(String); }
+              valueInput.selectedOptionValues = Array.isArray(formValue) && formValue.length > 0 ? formValue.map(String) : undefined;
               break;
-            default: console.warn(`Unhandled custom field type: ${def.fieldType}`); return null;
           }
-          
-          if (Object.keys(valueInputPayload).length > 0) {
-            return { definitionId: def.id, ...valueInputPayload };
+          // Only return if some value is actually set, to avoid sending empty value objects
+          if (Object.keys(valueInput).length > 1) { // definitionId is always there
+            return valueInput as CustomFieldValueInput;
           }
           return null;
         })
@@ -206,14 +209,12 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       if (!isNaN(probPercent) && probPercent >= 0 && probPercent <= 100) {
         dealInput.deal_specific_probability = probPercent / 100;
       } else if (dealSpecificProbability.trim() !== '') {
-        // If field is not empty and not a valid percentage, it's an error.
-        // If empty, it's fine (nullable).
         setError('Deal Specific Probability must be a number between 0 and 100.');
         setIsLoading(false);
         return;
       }
       
-      console.log("Submitting DealInput:", JSON.stringify(dealInput, null, 2));
+      // console.log("Submitting DealInput:", JSON.stringify(dealInput, null, 2));
       const createdDeal = await createDealAction(dealInput);
 
       if (createdDeal) {
@@ -231,8 +232,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     }
   };
   
-  // Loading state for dropdowns
-  const dataLoading = peopleLoading || organizationsLoading || customFieldsLoading || wfmProjectTypesLoading;
+  const dataLoading = peopleLoading || organizationsLoading || customFieldsLoading || wfmProjectTypesLoading || userListLoading;
 
   // Render Custom Field
   const renderCustomField = (def: GraphQLCustomFieldDefinition) => {
@@ -300,6 +300,10 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
         <ModalHeader>Create New Deal</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
+          {dataLoading && <Spinner />}
+          {error && <Alert status="error" mb={4}><AlertIcon />{error}</Alert>}
+          {dealsError && <Alert status="error" mb={4}><AlertIcon />{dealsError}</Alert>}
+          {userListError && <Alert status="error" mb={4}><AlertIcon />User List: {userListError}</Alert>}
           <VStack spacing={4}>
             <FormControl isRequired isInvalid={!!error && error.includes('Deal name')}>
               <FormLabel>Deal Name</FormLabel>
@@ -377,6 +381,25 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
               </Select>
               {organizationsLoading && <Spinner size="sm" />}
               {organizationsError && <Text color="red.500" fontSize="sm">Error: {organizationsError}</Text>}
+            </FormControl>
+            
+            {/* Assigned To User Selector */}
+            <FormControl id="assignedToUserId">
+              <FormLabel>Assign To</FormLabel>
+              <Select 
+                placeholder="Unassigned"
+                value={assignedToUserId || ''}
+                onChange={(e) => setAssignedToUserId(e.target.value || null)}
+                isDisabled={userListLoading} // Only disable if users are loading
+              >
+                {userListError && <option value="">Error loading users</option>}
+                {userListLoading && <option value="">Loading users...</option>}
+                {!userListLoading && !userListError && userList.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.display_name || user.email}
+                  </option>
+                ))}
+              </Select>
             </FormControl>
             
             {/* Divider or Heading for Custom Fields */}

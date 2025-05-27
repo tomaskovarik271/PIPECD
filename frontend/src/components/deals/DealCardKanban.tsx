@@ -12,7 +12,8 @@ interface DealCardKanbanProps {
   index: number; // Required by react-beautiful-dnd for Draggable
 }
 
-const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
+// Wrap component with React.memo
+const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index }) => {
   const { currentTheme } = useThemeStore();
   const theme = useTheme();
 
@@ -121,6 +122,16 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
                 Org: {deal.organization.name}
               </Text>
             )}
+            {/* Display Assigned User */}
+            {deal.assignedToUser ? (
+              <Text fontSize="xs" color={secondaryTextColor} isTruncated>
+                Assigned: {deal.assignedToUser.display_name}
+              </Text>
+            ) : (
+              <Text fontSize="xs" color={secondaryTextColor} isTruncated>
+                Assigned: Unassigned
+              </Text>
+            )}
             <Text fontSize="xs" color={probabilityTextColor}>
                 Prob: {getEffectiveProbabilityDisplay()}
             </Text>
@@ -169,6 +180,9 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = ({ deal, index }) => {
       )}
     </Draggable>
   );
-};
+});
+
+// Add display name for better debugging with React.memo
+DealCardKanban.displayName = 'DealCardKanban';
 
 export default DealCardKanban; 

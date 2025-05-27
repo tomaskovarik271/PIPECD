@@ -105,56 +105,60 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
   };
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
-    console.log('Submitting activity:', values);
-    
-    // Ensure at least one link is present (client-side check mimicking backend)
-    if (!values.deal_id && !values.person_id && !values.organization_id) {
+    // console.log('Submitting activity:', values);
+    try {
+      // Ensure at least one link is present (client-side check mimicking backend)
+      if (!values.deal_id && !values.person_id && !values.organization_id) {
         toast({ title: 'Link Required', description: 'Please link the activity to a Deal, Person, or Organization.', status: 'warning', duration: 4000, isClosable: true });
         return; // Prevent submission
-    }
-
-    // Convert empty strings to null for optional fields if necessary (esp. links)
-    const submissionData = { ...values };
-    if (!submissionData.deal_id) submissionData.deal_id = null;
-    if (!submissionData.person_id) submissionData.person_id = null;
-    if (!submissionData.organization_id) submissionData.organization_id = null;
-    if (!submissionData.notes) submissionData.notes = null;
-
-    // Format due_date to ISO 8601 if it exists
-    if (submissionData.due_date) {
-      try {
-        // Create a Date object from the local datetime string
-        const date = new Date(submissionData.due_date);
-        // Check if the date is valid before converting
-        if (!isNaN(date.getTime())) {
-          submissionData.due_date = date.toISOString();
-        } else {
-          // Handle invalid date input from the browser - could clear or keep original string based on desired UX
-          console.warn("Invalid date string from datetime-local input:", submissionData.due_date);
-          // Setting to null to avoid sending invalid string to backend
-          submissionData.due_date = null; 
-        }
-      } catch (error) {
-          console.error("Error parsing date:", error);
-          // Handle potential errors during Date construction/conversion, set to null
-          submissionData.due_date = null;
       }
-    } else {
-       // Ensure it's explicitly null if not provided or cleared
-       submissionData.due_date = null;
-    }
 
-    const createdActivity = await createActivity(submissionData);
+      // Convert empty strings to null for optional fields if necessary (esp. links)
+      const submissionData = { ...values };
+      if (!submissionData.deal_id) submissionData.deal_id = null;
+      if (!submissionData.person_id) submissionData.person_id = null;
+      if (!submissionData.organization_id) submissionData.organization_id = null;
+      if (!submissionData.notes) submissionData.notes = null;
 
-    if (createdActivity) {
-      toast({ title: 'Activity created.', status: 'success', duration: 3000, isClosable: true });
-      reset(); // Reset form on success
-      onSuccess?.(); // Call optional success callback (e.g., refresh list)
-      onClose(); // Close modal
-    } else {
-      // Error toast is likely handled by the store hook or generic error boundary
-      // but we can add a specific one here if desired.
-      toast({ title: 'Failed to create activity', description: activitiesError || 'Please check the details and try again.', status: 'error', duration: 5000, isClosable: true });
+      // Format due_date to ISO 8601 if it exists
+      if (submissionData.due_date) {
+        try {
+          // Create a Date object from the local datetime string
+          const date = new Date(submissionData.due_date);
+          // Check if the date is valid before converting
+          if (!isNaN(date.getTime())) {
+            submissionData.due_date = date.toISOString();
+          } else {
+            // Handle invalid date input from the browser - could clear or keep original string based on desired UX
+            console.warn("Invalid date string from datetime-local input:", submissionData.due_date);
+            // Setting to null to avoid sending invalid string to backend
+            submissionData.due_date = null; 
+          }
+        } catch (error) {
+            console.error("Error parsing date:", error);
+            // Handle potential errors during Date construction/conversion, set to null
+            submissionData.due_date = null;
+        }
+      } else {
+         // Ensure it's explicitly null if not provided or cleared
+         submissionData.due_date = null;
+      }
+
+      const createdActivity = await createActivity(submissionData);
+
+      if (createdActivity) {
+        toast({ title: 'Activity created.', status: 'success', duration: 3000, isClosable: true });
+        reset(); // Reset form on success
+        onSuccess?.(); // Call optional success callback (e.g., refresh list)
+        onClose(); // Close modal
+      } else {
+        // Error toast is likely handled by the store hook or generic error boundary
+        // but we can add a specific one here if desired.
+        toast({ title: 'Failed to create activity', description: activitiesError || 'Please check the details and try again.', status: 'error', duration: 5000, isClosable: true });
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({ title: 'An error occurred', description: 'Please try again.', status: 'error', duration: 5000, isClosable: true });
     }
   };
 

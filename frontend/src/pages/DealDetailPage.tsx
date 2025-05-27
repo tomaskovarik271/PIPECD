@@ -55,7 +55,7 @@ const DealDetailPage = () => {
   const [newProbability, setNewProbability] = useState<string>("");
 
   useEffect(() => {
-    console.log('[DealDetailPage] dealId from useParams:', dealId);
+    // console.log('[DealDetailPage] dealId from useParams:', dealId);
     if (dealId) {
       fetchDealById(dealId);
     }
@@ -65,9 +65,9 @@ const DealDetailPage = () => {
     };
   }, [dealId, fetchDealById]);
 
-  // Add this useEffect to log currentDeal changes
+  // Log currentDeal whenever it changes
   useEffect(() => {
-    console.log('[DealDetailPage] currentDeal state:', currentDeal);
+    // console.log('[DealDetailPage] currentDeal state:', currentDeal);
   }, [currentDeal]);
 
   // Adapted from DealCardKanban.tsx

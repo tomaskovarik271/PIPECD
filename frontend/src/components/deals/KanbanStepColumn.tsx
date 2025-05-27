@@ -14,7 +14,8 @@ interface KanbanStepColumnProps { // Renamed interface
   index: number;
 }
 
-const KanbanStepColumn: React.FC<KanbanStepColumnProps> = ({ step, deals, index }) => { // Renamed component
+// Wrap component with React.memo
+const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, deals, index }) => {
   const { currentTheme } = useThemeStore();
   const theme = useTheme();
 
@@ -104,8 +105,9 @@ const KanbanStepColumn: React.FC<KanbanStepColumnProps> = ({ step, deals, index 
                   index={idx}
                 />
               ))}
-              {/* @ts-ignore Placeholder type issue with dnd library and ReactNode/bigint compatibility */}
-              {provided.placeholder} 
+              {/* @ts-ignore TS2786: 'Droppable' cannot be used as a JSX component. TODO: Investigate if @hello-pangea/dnd types are correctly installed/imported - Already present */}
+              {/* Placeholder type issue with dnd library and ReactNode/bigint compatibility is acknowledged */}
+              {provided.placeholder as any} 
               {deals.length === 0 && !snapshot.isDraggingOver && (
                   <Text fontSize="sm" color={placeholderTextColor} textAlign="center" mt={4} p={2}>
                       Drag deals here or create new ones.
@@ -117,6 +119,9 @@ const KanbanStepColumn: React.FC<KanbanStepColumnProps> = ({ step, deals, index 
       }}
     </Droppable>
   );
-};
+});
+
+// Add display name for better debugging with React.memo
+KanbanStepColumn.displayName = 'KanbanStepColumn';
 
 export default KanbanStepColumn; // Renamed export 

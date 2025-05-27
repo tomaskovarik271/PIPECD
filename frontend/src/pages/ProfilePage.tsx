@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Box, Heading, Button, VStack, useToast, Spinner, Text, Flex, IconButton } from '@chakra-ui/react';
 import { EditIcon, CloseIcon } from '@chakra-ui/icons';
 import { gql } from 'graphql-request';
@@ -21,7 +21,7 @@ const GET_ME_QUERY = gql`
 `;
 
 const ProfilePage: React.FC = () => {
-  console.log('[ProfilePage] Component rendering/rerendering'); // LIFECYCLE LOG
+  // console.log('[ProfilePage] Component rendering/rerendering'); // LIFECYCLE LOG
   const [isEditing, setIsEditing] = useState(false);
   const toast = useToast();
 
@@ -30,9 +30,9 @@ const ProfilePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchProfile = async () => {
-    console.log('[ProfilePage] fetchProfile called'); // FETCH LOG
+  const fetchProfile = useCallback(async () => {
     setLoading(true);
+    // console.log('[ProfilePage] fetchProfile called'); // FETCH LOG
     setError(null);
     try {
       const response = await gqlClient.request<{ me: User | null }>(GET_ME_QUERY);
@@ -56,20 +56,20 @@ const ProfilePage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  // Fetch profile data on component mount
+  // Initial fetch of profile
   useEffect(() => {
-    console.log('[ProfilePage] useEffect for fetchProfile triggered (dependency array: [])'); // EFFECT LOG
+    // console.log('[ProfilePage] useEffect for fetchProfile triggered (dependency array: [])'); // EFFECT LOG
     fetchProfile();
-  }, []); // RE-ADD dependency array: []
+  }, [fetchProfile]);
 
   const handleUpdateSuccess = (updatedUser: User) => {
     setIsEditing(false);
     setUser(updatedUser); // Update local state with the new user data
     // If ProfileEditForm also uses graphql-request, this is fine.
     // If it were using Apollo, it might update cache, but here we manually set user.
-    console.log('Profile updated successfully in page:', updatedUser);
+    // console.log('Profile updated successfully in page:', updatedUser);
     toast({
       title: 'Profile Updated',
       description: 'Your profile has been successfully updated.',

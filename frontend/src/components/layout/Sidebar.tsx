@@ -50,6 +50,7 @@ const USER_NAV_ITEMS = [
 function Sidebar() {
   const handleSignOutAction = useAppStore((state) => state.handleSignOut);
   const userEmail = useAppStore((state) => state.session?.user?.email);
+  const userPermissions = useAppStore((state) => state.userPermissions);
   const styles = useStyleConfig("Sidebar", {}) as Record<string, SystemStyleObject>; 
   const currentThemeName = useThemeStore((state) => state.currentTheme);
 
@@ -69,6 +70,14 @@ function Sidebar() {
   ].includes(currentThemeName);
   
   const selectedLogo = isDarkTheme ? logoNegative : logoPositive;
+
+  // Filter admin nav items based on permissions
+  const visibleAdminNavItems = ADMIN_NAV_ITEMS.filter(item => {
+    if (item.path === '/admin/custom-fields') {
+      return userPermissions?.includes('custom_fields:manage_definitions');
+    }
+    return true; // Keep other admin items visible by default
+  });
 
   return (
     <VStack 
@@ -116,7 +125,7 @@ function Sidebar() {
       {/* Admin Section */}
       <Box mt={4} pt={2} borderTopWidth="1px" sx={{ borderColor: containerStyles.borderColor === "transparent" ? "gray.200" : containerStyles.borderColor }}>
         <Text fontSize="xs" fontWeight="semibold" mb={2} color="gray.500" sx={{ _dark: { color: "gray.400"} }}>ADMIN</Text>
-        {ADMIN_NAV_ITEMS.map((item) => (
+        {visibleAdminNavItems.map((item) => (
             <RouterNavLink key={item.path} to={item.path} end={item.path === '/'}> 
             {({ isActive }) => (
                 <Flex

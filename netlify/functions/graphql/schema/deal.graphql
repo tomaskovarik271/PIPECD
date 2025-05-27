@@ -21,6 +21,11 @@ type Deal {
   wfmProject: WFMProject
   currentWfmStep: WFMWorkflowStep
   currentWfmStatus: WFMStatus
+
+  # Resolved fields
+  createdBy: User! # The user who created the deal
+  assigned_to_user_id: ID # ID of the user this deal is assigned to
+  assignedToUser: User # The user to whom the deal is currently assigned
 }
 
 input DealInput {
@@ -32,6 +37,7 @@ input DealInput {
   organization_id: ID
   deal_specific_probability: Float # Nullable, for setting/unsetting
   customFields: [CustomFieldValueInput!]
+  assignedToUserId: ID # Optional: ID of the user to assign this deal to upon creation
 }
 
 input DealUpdateInput {
@@ -42,4 +48,5 @@ input DealUpdateInput {
   organization_id: ID
   deal_specific_probability: Float # Nullable, for setting/unsetting
   customFields: [CustomFieldValueInput!]
+  assignedToUserId: ID # ID of the user to assign/reassign this deal to
 } 

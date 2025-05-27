@@ -656,7 +656,7 @@ The project implements a database-driven RBAC system.
     *   `public.user_roles`: Links users (`auth.users`) to roles (many-to-many).
 *   **SQL Helper Functions** (in `supabase/migrations/..._rbac_permission_helpers.sql`):
     *   `public.check_permission(p_user_id uuid, p_resource text, p_action text) RETURNS boolean`: Checks if a user has a specific permission. Used in RLS policies.
-    *   `public.get_my_permissions() RETURNS jsonb`: Returns all permissions for the currently authenticated user. Called by the GraphQL context factory.
+    *   `public.get_user_permissions(p_user_id UUID) RETURNS jsonb`: Returns all permissions for the specified user. Called by the GraphQL context factory, passing the authenticated user's ID.
 *   **RLS Policies**:
     *   Applied to core data tables (`deals`, `people`, etc.).
     *   Use the `check_permission` function with `auth.uid()` to enforce access control at the database level.

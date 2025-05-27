@@ -1,9 +1,10 @@
 // Resolvers for Query operations
 import { GraphQLError } from 'graphql';
-import { supabase } from '../../../../lib/supabaseClient';
+import { supabase, supabaseAdmin } from '../../../../lib/supabaseClient';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 import { dealService } from '../../../../lib/dealService';
+import type { DbDeal } from '../../../../lib/dealService/dealCrud';
 import * as userProfileService from '../../../../lib/userProfileService';
 import {
   GraphQLContext, 
@@ -205,7 +206,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 person_id: d.person_id,
                 organization_id: d.organization_id,
                 deal_specific_probability: d.deal_specific_probability,
-                weighted_amount: d.weighted_amount,
+                assigned_to_user_id: d.assigned_to_user_id,
                 db_custom_field_values: (d as any).custom_field_values, 
            })) as any; 
        } catch (e) {
@@ -234,7 +235,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
                 person_id: d.person_id,
                 organization_id: d.organization_id,
                 deal_specific_probability: d.deal_specific_probability,
-                weighted_amount: d.weighted_amount,
+                assigned_to_user_id: d.assigned_to_user_id,
                 db_custom_field_values: (d as any).custom_field_values, 
            } as any; 
        } catch (e) {
@@ -288,4 +289,34 @@ export const Query: QueryResolvers<GraphQLContext> = {
       requireAuthentication(context);
       return wfmProjectTypeService.getById(args.id, context);
     },
+
+    // Resolver for fetching all users
+    users: async (_parent, _args, context: GraphQLContext): Promise<GraphQLUser[]> => {
+      requireAuthentication(context); // Ensure user is logged in
+      // Potentially add permission check here if not all users should access the list
+      // e.g., if (!check_permission(context.currentUser!.id, 'read', 'userlist')) throw new GraphQLError('Forbidden');
+      
+      if (!supabaseAdmin) {
+        console.error('Error fetching users: supabaseAdmin client is not available. Check SUPABASE_SERVICE_ROLE_KEY.');
+        throw new GraphQLError('Could not fetch users due to server configuration error.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from('user_profiles')
+        .select('user_id, email, display_name, avatar_url');
+
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw new GraphQLError('Could not fetch users', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+
+      return data
+        .filter(profile => profile.email != null) // Filter out profiles with null email
+        .map(profile => ({
+          id: profile.user_id, // Map user_id to id for GraphQL User type
+          email: profile.email!, // Now safe due to the filter
+          display_name: profile.display_name,
+          avatar_url: profile.avatar_url,
+        })) as GraphQLUser[]; // Cast to GraphQLUser[] as User type in resolver can be more generic
+    }
 }; 

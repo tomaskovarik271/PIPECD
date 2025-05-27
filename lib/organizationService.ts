@@ -8,35 +8,6 @@ import { CustomFieldEntityType, CustomFieldType } from './generated/graphql'; //
 import * as customFieldDefinitionService from './customFieldDefinitionService'; // For fetching definitions
 import { SupabaseClient } from '@supabase/supabase-js'; // Ensure SupabaseClient is imported for type hints
 
-// REMOVED: Redundant env var loading
-// import dotenv from 'dotenv';
-// dotenv.config();
-// const supabaseUrl = process.env.SUPABASE_URL;
-// const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-// if (!supabaseUrl) { ... }
-// if (!supabaseAnonKey) { ... }
-
-// REMOVED: Helper Functions (now in serviceUtils.ts)
-// function getAuthenticatedClient(accessToken: string): SupabaseClient { ... }
-// function handleSupabaseError(error: PostgrestError | null, context: string) { ... }
-
-// --- Organization Data Shape ---
-
-// Input for creating/updating organizations
-// interface OrganizationInput { // REMOVED
-//   name: string; // Assuming name is required
-//   address?: string | null;
-//   notes?: string | null;
-//   // Add other fields from schema as needed (e.g., website)
-// }
-
-// Shape returned by the database (includes id, timestamps, user_id)
-// interface OrganizationRecord extends OrganizationInput { // REMOVED
-//   id: string;
-//   created_at: string;
-//   updated_at: string;
-//   user_id: string;
-// }
 
 // --- Organization Service ---
 

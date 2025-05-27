@@ -71,21 +71,21 @@ function App() {
     checkAuth();
     fetchSalesDealWorkflowId();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        console.log('Auth state changed:', _event, session ? 'Session exists' : 'No session');
-        setSession(session);
-      if (_event === 'SIGNED_IN') {
-          toast({ title: "Signed In", status: "success", duration: 3000, isClosable: true });
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      // console.log('Auth state changed:', _event, session ? 'Session exists' : 'No session');
+      setSession(session);
+      if (session?.user?.id && _event === 'SIGNED_IN') {
+        toast({ title: "Signed In", status: "success", duration: 3000, isClosable: true });
       }
       if (_event === 'SIGNED_OUT') {
-          toast({ title: "Signed Out", status: "info", duration: 3000, isClosable: true });
+        toast({ title: "Signed Out", status: "info", duration: 3000, isClosable: true });
       }
     });
 
     return () => {
-        console.log('Unsubscribing from auth changes.');
-        subscription.unsubscribe();
-    }
+      authListener?.subscription?.unsubscribe();
+      // console.log('Unsubscribing from auth changes.');
+    };
   }, [checkAuth, setSession, toast, fetchSalesDealWorkflowId]);
 
   if (isLoadingAuth) {

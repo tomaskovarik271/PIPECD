@@ -65,15 +65,20 @@ export const DealBaseSchema = z.object({
   wfmProjectTypeId: z.string().uuid("Valid WFM Project Type ID is required").optional(),
   person_id: z.string().uuid("Valid Person ID is required").optional().nullable(),
   organization_id: z.string().uuid("Valid Organization ID is required").optional().nullable(),
-  deal_specific_probability: z.number().min(0).max(1).optional().nullable(),
+  deal_specific_probability: z.number().min(0).max(100, "Probability must be between 0 and 100").optional().nullable(),
   customFields: z.array(CustomFieldValueInputSchema).optional().nullable(),
+  assignedToUserId: z.string().uuid("Valid User ID for assignee is required").optional().nullable(),
 });
 
 export const DealCreateSchema = DealBaseSchema.merge(z.object({
   name: z.string().min(1, { message: "Deal name is required" }),
   wfmProjectTypeId: z.string().uuid("Valid WFM Project Type ID is required"),
 }));
-export const DealUpdateSchema = DealBaseSchema.partial();
+
+export const DealUpdateSchema = DealBaseSchema.partial().refine(
+    (data) => Object.keys(data).length > 0,
+    { message: "Update input cannot be empty." }
+);
 
 // --- Pipeline Schemas ---
 

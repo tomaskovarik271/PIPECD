@@ -201,6 +201,9 @@ export type Deal = {
   __typename?: "Deal";
   activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
+  assignedToUser?: Maybe<User>;
+  assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
+  createdBy: User;
   created_at: Scalars["DateTime"]["output"];
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
@@ -237,6 +240,7 @@ export type DealHistoryEntry = {
 
 export type DealInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -248,6 +252,7 @@ export type DealInput = {
 
 export type DealUpdateInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -634,6 +639,7 @@ export type Query = {
   /** Retrieves all price quotes associated with a specific deal. */
   priceQuotesForDeal: Array<PriceQuote>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
   wfmProjectTypes: Array<WfmProjectType>;
@@ -898,6 +904,26 @@ export type UpdateUserProfileMutation = {
     display_name?: string | null;
     avatar_url?: string | null;
   } | null;
+};
+
+export type GetDealCustomFieldDefinitionsQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetDealCustomFieldDefinitionsQuery = {
+  __typename?: "Query";
+  customFieldDefinitions: Array<{
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  }>;
 };
 
 export type GetCustomFieldDefinitionsQueryVariables = Exact<{
@@ -1601,26 +1627,6 @@ export type UpdateWfmWorkflowTransitionMutation = {
   };
 };
 
-export type GetDealCustomFieldDefinitionsQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type GetDealCustomFieldDefinitionsQuery = {
-  __typename?: "Query";
-  customFieldDefinitions: Array<{
-    __typename?: "CustomFieldDefinition";
-    id: string;
-    fieldName: string;
-    fieldLabel: string;
-    fieldType: CustomFieldType;
-    dropdownOptions?: Array<{
-      __typename?: "CustomFieldOption";
-      value: string;
-      label: string;
-    }> | null;
-  }>;
-};
-
 export type GetOrganizationCustomFieldDefinitionsQueryVariables = Exact<{
   [key: string]: never;
 }>;
@@ -1919,6 +1925,7 @@ export type GetDealsQuery = {
     person_id?: string | null;
     organization_id?: string | null;
     user_id: string;
+    assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
     weighted_amount?: number | null;
     wfm_project_id?: string | null;
@@ -1933,6 +1940,13 @@ export type GetDealsQuery = {
       __typename?: "Organization";
       id: string;
       name: string;
+    } | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
     } | null;
     customFieldValues: Array<{
       __typename?: "CustomFieldValue";
@@ -1996,6 +2010,7 @@ export type CreateDealMutation = {
     person_id?: string | null;
     organization_id?: string | null;
     user_id: string;
+    assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
     weighted_amount?: number | null;
     wfm_project_id?: string | null;
@@ -2005,6 +2020,13 @@ export type CreateDealMutation = {
       first_name?: string | null;
       last_name?: string | null;
       email?: string | null;
+    } | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
     } | null;
     currentWfmStep?: {
       __typename?: "WFMWorkflowStep";
@@ -2045,6 +2067,7 @@ export type UpdateDealMutation = {
     person_id?: string | null;
     organization_id?: string | null;
     user_id: string;
+    assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
     weighted_amount?: number | null;
     person?: {
@@ -2053,6 +2076,13 @@ export type UpdateDealMutation = {
       first_name?: string | null;
       last_name?: string | null;
       email?: string | null;
+    } | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
     } | null;
   } | null;
 };
