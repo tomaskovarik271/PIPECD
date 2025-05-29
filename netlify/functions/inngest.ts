@@ -134,10 +134,19 @@ export const createDealAssignmentTask = inngest.createFunction(
 
 export const functions = [helloWorld, logContactCreation, logDealCreation, createDealAssignmentTask];
 
-// Export the handler using the lambda serve adapter
-export const handler: Handler = serve({
+// Determine serve options based on environment
+const serveOptions: Parameters<typeof serve>[0] = {
   client: inngest,
   functions,
-  // serveHost should not be set for Netlify production; it's auto-detected or handled by the plugin.
-  // signingKey is typically handled by the INNGEST_SIGNING_KEY environment variable.
-}) as any;
+};
+
+// IMPORTANT: Only set serveHost for local development to force HTTP
+// Netlify's `context` environment variable can also be 'dev', 'deploy-preview', 'branch-deploy', 'production'
+// Using NODE_ENV is also common. `netlify dev` sets NODE_ENV=development
+if (process.env.NODE_ENV === 'development') {
+  serveOptions.serveHost = 'http://localhost:8888'; // Or whatever your netlify dev port is
+  console.log('[Inngest Handler] Development mode: serveHost set to', serveOptions.serveHost);
+}
+
+// Export the handler using the lambda serve adapter
+export const handler: Handler = serve(serveOptions) as any;
