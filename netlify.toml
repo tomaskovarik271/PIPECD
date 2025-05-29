@@ -3,10 +3,8 @@
 # Add the Inngest plugin configuration
 [[plugins]]
   package = "netlify-plugin-inngest"
-  # Optional inputs if defaults aren't suitable:
-  # [plugins.inputs]
-  #   host = "https://my-specific-domain.com"
-  #   path = "/api/inngest" # Default is /.netlify/functions/inngest
+  [plugins.inputs] # Explicitly configure inputs for the plugin
+    path = "/.netlify/functions/inngest" # Tell the plugin the exact path to the Inngest function endpoint
 
 # Base settings for all contexts
 [build]
