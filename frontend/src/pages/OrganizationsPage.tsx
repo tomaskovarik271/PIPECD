@@ -157,12 +157,31 @@ function OrganizationsPage() {
         let displayValue: React.ReactNode = '-';
         const { stringValue, numberValue, booleanValue, dateValue, selectedOptionValues } = cfValue;
         switch (def.fieldType) {
-          case 'TEXT': displayValue = stringValue || '-'; if (stringValue && isUrl(stringValue)) displayValue = <a href={stringValue} target="_blank" rel="noopener noreferrer" style={{color: 'blue.500', textDecoration: 'underline'}}>{stringValue}</a>; break;
-          case 'NUMBER': displayValue = numberValue?.toString() ?? '-'; break;
-          case 'DATE': displayValue = dateValue ? new Date(dateValue).toLocaleDateString() : '-'; break;
-          case 'BOOLEAN': displayValue = booleanValue ? 'Yes' : 'No'; break;
-          case 'DROPDOWN': const optVal = stringValue; const opt = def.dropdownOptions?.find(o => o.value === optVal); displayValue = opt?.label || optVal || '-'; break;
-          case 'MULTI_SELECT': const selVals = selectedOptionValues || []; displayValue = selVals.map(v => def.dropdownOptions?.find(o => o.value === v)?.label || v).join(', ') || '-'; break;
+          case 'TEXT': 
+            displayValue = stringValue || '-'; 
+            if (stringValue && isUrl(stringValue)) 
+              displayValue = <a href={stringValue} target="_blank" rel="noopener noreferrer" style={{color: 'blue.500', textDecoration: 'underline'}}>{stringValue}</a>; 
+            break;
+          case 'NUMBER': 
+            displayValue = numberValue?.toString() ?? '-'; 
+            break;
+          case 'DATE': 
+            displayValue = dateValue ? new Date(dateValue).toLocaleDateString() : '-'; 
+            break;
+          case 'BOOLEAN': 
+            displayValue = booleanValue ? 'Yes' : 'No'; 
+            break;
+          case 'DROPDOWN': {
+            const optVal = stringValue; 
+            const opt = def.dropdownOptions?.find(o => o.value === optVal); 
+            displayValue = opt?.label || optVal || '-'; 
+            break;
+          }
+          case 'MULTI_SELECT': {
+            const selVals = selectedOptionValues || []; 
+            displayValue = selVals.map(v => def.dropdownOptions?.find(o => o.value === v)?.label || v).join(', ') || '-'; 
+            break;
+          }
           default: displayValue = stringValue || '-';
         }
         return displayValue;

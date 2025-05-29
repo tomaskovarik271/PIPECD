@@ -187,15 +187,17 @@ function PeoplePage() {
           case 'BOOLEAN':
             displayValue = cfValue.booleanValue ? 'Yes' : 'No';
             break;
-          case 'DROPDOWN':
+          case 'DROPDOWN': {
             const selectedOptVal = cfValue.stringValue;
             const selectedOpt = def.dropdownOptions?.find(opt => opt.value === selectedOptVal);
             displayValue = selectedOpt?.label || selectedOptVal || '-';
             break;
-          case 'MULTI_SELECT':
+          }
+          case 'MULTI_SELECT': {
             const selectedVals = cfValue.selectedOptionValues || [];
             displayValue = selectedVals.map(val => def.dropdownOptions?.find(opt => opt.value === val)?.label || val).join(', ') || '-';
             break;
+          }
           default:
             displayValue = cfValue.stringValue || '-';
         }
@@ -368,10 +370,10 @@ function PeoplePage() {
       isOpen={isConfirmDeleteDialogOpen}
       onClose={onConfirmDeleteClose}
       onConfirm={handleConfirmDelete}
-      headerText="Delete Person"
-      bodyText="Are you sure you want to delete this person? This action cannot be undone."
+      title="Delete Person"
+      body="Are you sure you want to delete this person? This action cannot be undone."
       confirmButtonText="Delete"
-      confirmButtonColorScheme="red"
+      confirmButtonColor="red"
     />
       
     {isColumnSelectorOpen && (

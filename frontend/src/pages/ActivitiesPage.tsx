@@ -1,31 +1,25 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
-  Box,
   Button,
-  Heading,
   Spinner,
   Text,
-  VStack,
+  Flex,
   useDisclosure,
   Checkbox,
   HStack,
   IconButton,
   Tag,
-  Flex,
   useToast,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
   ModalCloseButton,
-  Alert, AlertIcon,
-  Link as ChakraLink,
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore';
 import { useActivitiesStore, Activity } from '../stores/useActivitiesStore';
 import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
 import CreateActivityForm from '../components/activities/CreateActivityForm';
-import EmptyState from '../components/common/EmptyState';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import EditActivityModal from '../components/activities/EditActivityModal';
 import { TimeIcon, EditIcon, DeleteIcon, SettingsIcon, ViewIcon } from '@chakra-ui/icons';
@@ -35,16 +29,6 @@ import ColumnSelector from '../components/common/ColumnSelector';
 import QuickFilterControls, { QuickFilter } from '../components/common/QuickFilterControls';
 import type { ActivityFilterInput } from '../generated/graphql/graphql';
 import { Link as RouterLink } from 'react-router-dom';
-
-// Helper to check if a string is a URL (basic version)
-const isUrl = (str: string): boolean => {
-  try {
-    new URL(str);
-    return str.startsWith('http://') || str.startsWith('https://');
-  } catch (_) {
-    return false;
-  }
-};
 
 // --- Helper Functions (copied from ActivityListItem) ---
 const formatDateTime = (isoString: string | null | undefined): string => {
@@ -448,11 +432,11 @@ function ActivitiesPage() {
         isOpen={isConfirmDeleteDialogOpen}
         onClose={onConfirmDeleteClose}
         onConfirm={handleConfirmDelete}
-        headerText="Delete Activity"
-        bodyText="Are you sure you want to delete this activity? This action cannot be undone."
+        title="Delete Activity"
+        body="Are you sure you want to delete this activity? This action cannot be undone."
         confirmButtonText="Delete"
-        confirmButtonColorScheme="red"
-        isLoading={!!deletingRowId}
+        confirmButtonColor="red"
+        isConfirmLoading={!!deletingRowId}
     />
 
     {isColumnSelectorOpen && allAvailableColumns.length > 0 && (

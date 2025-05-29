@@ -172,7 +172,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
         let displayValue: React.ReactNode = '-';
         const { stringValue, numberValue, booleanValue, dateValue, selectedOptionValues } = cfValue;
         switch (def.fieldType) {
-          case 'TEXT':
+          case 'TEXT': {
             const linkDetails = getLinkDisplayDetails(stringValue);
             if (linkDetails.isUrl && linkDetails.fullUrl) {
               displayValue = (
@@ -185,19 +185,29 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
               );
             } else { displayValue = stringValue || '-'; }
             break;
-          case 'NUMBER': displayValue = numberValue?.toString() ?? '-'; break;
-          case 'DATE': displayValue = dateValue ? new Date(dateValue).toLocaleDateString() : '-'; break;
-          case 'BOOLEAN': displayValue = booleanValue ? 'Yes' : 'No'; break;
-          case 'DROPDOWN':
+          }
+          case 'NUMBER': 
+            displayValue = numberValue?.toString() ?? '-'; 
+            break;
+          case 'DATE': 
+            displayValue = dateValue ? new Date(dateValue).toLocaleDateString() : '-'; 
+            break;
+          case 'BOOLEAN': 
+            displayValue = booleanValue ? 'Yes' : 'No'; 
+            break;
+          case 'DROPDOWN': {
             const optValD = stringValue;
             const optD = def.dropdownOptions?.find(o => o.value === optValD);
             displayValue = optD?.label || optValD || '-';
             break;
-          case 'MULTI_SELECT':
+          }
+          case 'MULTI_SELECT': {
             const sVals = selectedOptionValues || [];
             displayValue = sVals.map(v => def.dropdownOptions?.find(o => o.value === v)?.label || v).join(', ') || '-';
             break;
-          default: displayValue = stringValue || '-';
+          }
+          default: 
+            displayValue = stringValue || '-';
         }
         return displayValue;
       },

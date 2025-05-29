@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useState, useMemo } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Heading,
@@ -7,14 +6,11 @@ import {
   Spinner,
   Alert,
   AlertIcon,
-  IconButton,
   HStack,
   useToast,
   VStack,
   Flex,
   ButtonGroup,
-  Link,
-  Icon,
   Select,
   Input,
   InputGroup,
@@ -26,25 +22,23 @@ import {
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
-import { SettingsIcon, LinkIcon, ViewIcon as PageViewIcon, SearchIcon, AddIcon } from '@chakra-ui/icons';
+import { SettingsIcon, ViewIcon as PageViewIcon, SearchIcon, AddIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
-import type { Person as GeneratedPerson, CustomFieldDefinition, CustomFieldValue, CustomFieldType as GQLCustomFieldType, StageType } from '../generated/graphql/graphql';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import ColumnSelector from '../components/common/ColumnSelector';
 import EmptyState from '../components/common/EmptyState';
 import DealsKanbanPageLayout from '../components/deals/DealsKanbanPageLayout';
 import QuickFilterControls, { QuickFilter } from '../components/common/QuickFilterControls';
-import { getLinkDisplayDetails, LinkDisplayDetails } from '../lib/utils/linkUtils';
 
 import { useDealsPageModals } from '../hooks/useDealsPageModals';
 import { useDealDataManagement } from '../hooks/useDealDataManagement';
 
 import { useDealsTableColumns } from '../hooks/useDealsTableColumns.tsx';
 
-import { useUserListStore, UserListItem } from '../stores/useUserListStore';
+import { useUserListStore } from '../stores/useUserListStore';
 import { useFilteredDeals } from '../hooks/useFilteredDeals';
 import { useThemeStore } from '../stores/useThemeStore';
 
