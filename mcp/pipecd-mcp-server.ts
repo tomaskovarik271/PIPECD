@@ -33,28 +33,27 @@ interface Deal {
   id: string;
   name: string;
   amount?: number;
-  stage: string;
   expected_close_date?: string;
   created_at: string;
   updated_at: string;
   assigned_to_user_id?: string;
+  person?: Person;
+  organization?: Organization;
 }
 
 interface Person {
   id: string;
-  first_name: string;
-  last_name: string;
+  first_name?: string;
+  last_name?: string;
   email?: string;
-  job_title?: string;
   organization_id?: string;
 }
 
 interface Organization {
   id: string;
   name: string;
-  industry?: string;
-  website?: string;
-  size?: string;
+  address?: string;
+  notes?: string;
 }
 
 interface Activity {
@@ -82,16 +81,16 @@ const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
  */
 async function executeGraphQL<T = any>(
   query: string, 
-  variables: Record<string, any> = {},
-  accessToken?: string
+  variables: Record<string, any> = {}
 ): Promise<GraphQLResponse<T>> {
   try {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
-    if (accessToken) {
-      headers['Authorization'] = `Bearer ${accessToken}`;
+    // Add authentication header if available
+    if (SUPABASE_JWT_SECRET) {
+      headers['Authorization'] = `Bearer ${SUPABASE_JWT_SECRET}`;
     }
 
     const response = await fetch(GRAPHQL_ENDPOINT, {
@@ -115,64 +114,49 @@ async function executeGraphQL<T = any>(
 }
 
 /**
- * Tool: Search deals with intelligent filtering
+ * Tool: Search deals with client-side filtering
  */
 server.tool(
   "search_deals",
   {
     search_term: z.string().optional().describe("Search term to filter deals by name"),
-    stage: z.string().optional().describe("Deal stage to filter by"),
     assigned_to: z.string().optional().describe("User ID to filter deals assigned to"),
     min_amount: z.number().optional().describe("Minimum deal amount"),
     max_amount: z.number().optional().describe("Maximum deal amount"),
     limit: z.number().optional().default(20).describe("Maximum number of deals to return"),
   },
-  async ({ search_term, stage, assigned_to, min_amount, max_amount, limit }) => {
+  async ({ search_term, assigned_to, min_amount, max_amount, limit }) => {
     const query = `
-      query SearchDeals($searchTerm: String, $stage: String, $assignedTo: String, $minAmount: Float, $maxAmount: Float, $limit: Int) {
-        deals(
-          where: {
-            ${search_term ? 'name: { ilike: $searchTerm }' : ''}
-            ${stage ? 'stage: { eq: $stage }' : ''}
-            ${assigned_to ? 'assigned_to_user_id: { eq: $assignedTo }' : ''}
-            ${min_amount ? 'amount: { gte: $minAmount }' : ''}
-            ${max_amount ? 'amount: { lte: $maxAmount }' : ''}
-          }
-          limit: $limit
-          order_by: { updated_at: desc }
-        ) {
+      query GetDeals {
+        deals {
           id
           name
           amount
-          stage
           expected_close_date
           created_at
           updated_at
           assigned_to_user_id
-          contact_person {
+          person {
+            id
             first_name
             last_name
             email
-            job_title
           }
           organization {
+            id
             name
-            industry
+            address
+          }
+          assignedToUser {
+            id
+            display_name
+            email
           }
         }
       }
     `;
 
-    const variables = {
-      searchTerm: search_term ? `%${search_term}%` : undefined,
-      stage,
-      assignedTo: assigned_to,
-      minAmount: min_amount,
-      maxAmount: max_amount,
-      limit,
-    };
-
-    const result = await executeGraphQL(query, variables);
+    const result = await executeGraphQL(query);
 
     if (result.errors) {
       return {
@@ -184,24 +168,51 @@ server.tool(
       };
     }
 
-    const deals = result.data?.deals || [];
-    const summary = `Found ${deals.length} deals${search_term ? ` matching "${search_term}"` : ''}${stage ? ` in stage "${stage}"` : ''}`;
+    let deals = result.data?.deals || [];
+
+    // Apply client-side filtering
+    if (search_term) {
+      deals = deals.filter((deal: any) => 
+        deal.name?.toLowerCase().includes(search_term.toLowerCase())
+      );
+    }
+
+    if (assigned_to) {
+      deals = deals.filter((deal: any) => deal.assigned_to_user_id === assigned_to);
+    }
+
+    if (min_amount !== undefined) {
+      deals = deals.filter((deal: any) => deal.amount && deal.amount >= min_amount);
+    }
+
+    if (max_amount !== undefined) {
+      deals = deals.filter((deal: any) => deal.amount && deal.amount <= max_amount);
+    }
+
+    // Sort by updated_at desc and limit
+    deals.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+    deals = deals.slice(0, limit);
+
+    const summary = `Found ${deals.length} deals${search_term ? ` matching "${search_term}"` : ''}`;
     
     const dealsList = deals.map((deal: any) => {
-      const contact = deal.contact_person ? `${deal.contact_person.first_name} ${deal.contact_person.last_name}` : 'No contact';
+      const contact = deal.person ? `${deal.person.first_name || ''} ${deal.person.last_name || ''}`.trim() : 'No contact';
       const org = deal.organization?.name || 'No organization';
       const amount = deal.amount ? `$${deal.amount.toLocaleString()}` : 'No amount';
+      const assignedTo = deal.assignedToUser?.display_name || 'Unassigned';
       
-      return `• ${deal.name} (${deal.stage}) - ${amount}
+      return `• ${deal.name} - ${amount}
   Contact: ${contact} at ${org}
-  Expected Close: ${deal.expected_close_date || 'Not set'}`;
+  Assigned to: ${assignedTo}
+  Expected Close: ${deal.expected_close_date || 'Not set'}
+  Updated: ${new Date(deal.updated_at).toLocaleDateString()}`;
     }).join('\n\n');
 
     return {
       content: [{
         type: "text",
-        text: `${summary}\n\n${dealsList || 'No deals found.'}`
-      }]
+        text: `${summary}\n\n${dealsList}`
+      }],
     };
   }
 );
@@ -212,7 +223,7 @@ server.tool(
 server.tool(
   "get_deal_details",
   {
-    deal_id: z.string().describe("The ID of the deal to retrieve details for"),
+    deal_id: z.string().describe("ID of the deal to get details for"),
   },
   async ({ deal_id }) => {
     const query = `
@@ -221,34 +232,50 @@ server.tool(
           id
           name
           amount
-          stage
           expected_close_date
           created_at
           updated_at
           assigned_to_user_id
-          notes
-          contact_person {
+          person {
             id
             first_name
             last_name
             email
-            job_title
             phone
+            notes
           }
           organization {
             id
             name
-            industry
-            website
-            size
+            address
+            notes
           }
-          activities(limit: 10, order_by: { created_at: desc }) {
+          activities {
             id
             type
             subject
             notes
             created_at
-            created_by_user_id
+            is_done
+            due_date
+            user {
+              display_name
+            }
+          }
+          assignedToUser {
+            id
+            display_name
+            email
+          }
+          customFieldValues {
+            definition {
+              fieldLabel
+              fieldType
+            }
+            stringValue
+            numberValue
+            booleanValue
+            dateValue
           }
         }
       }
@@ -271,57 +298,55 @@ server.tool(
       return {
         content: [{
           type: "text",
-          text: `Deal with ID "${deal_id}" not found.`
+          text: `Deal with ID ${deal_id} not found`
         }],
         isError: true,
       };
     }
 
-    const contact = deal.contact_person;
-    const org = deal.organization;
-    const activities = deal.activities || [];
+    const contact = deal.person ? 
+      `${deal.person.first_name || ''} ${deal.person.last_name || ''}`.trim() : 'No contact';
+    const org = deal.organization?.name || 'No organization';
+    const amount = deal.amount ? `$${deal.amount.toLocaleString()}` : 'No amount';
+    const assignedTo = deal.assignedToUser?.display_name || 'Unassigned';
 
-    const dealInfo = `# Deal: ${deal.name}
+    const activities = deal.activities?.slice(0, 5).map((activity: any) => 
+      `• ${activity.type}: ${activity.subject || 'No subject'} (${new Date(activity.created_at).toLocaleDateString()})`
+    ).join('\n') || 'No activities';
 
-## Basic Information
-- **ID**: ${deal.id}
-- **Stage**: ${deal.stage}
-- **Amount**: ${deal.amount ? `$${deal.amount.toLocaleString()}` : 'Not set'}
-- **Expected Close**: ${deal.expected_close_date || 'Not set'}
-- **Created**: ${new Date(deal.created_at).toLocaleDateString()}
-- **Last Updated**: ${new Date(deal.updated_at).toLocaleDateString()}
-
-## Contact Information
-${contact ? `
-- **Name**: ${contact.first_name} ${contact.last_name}
-- **Email**: ${contact.email || 'Not provided'}
-- **Job Title**: ${contact.job_title || 'Not provided'}
-- **Phone**: ${contact.phone || 'Not provided'}
-` : 'No contact assigned'}
-
-## Organization
-${org ? `
-- **Name**: ${org.name}
-- **Industry**: ${org.industry || 'Not specified'}
-- **Website**: ${org.website || 'Not provided'}
-- **Size**: ${org.size || 'Not specified'}
-` : 'No organization assigned'}
-
-## Recent Activities (${activities.length})
-${activities.length > 0 ? activities.map((activity: any) => `
-- **${activity.type}**: ${activity.subject || 'No subject'}
-  ${activity.notes ? `Notes: ${activity.notes}` : ''}
-  ${new Date(activity.created_at).toLocaleDateString()}
-`).join('\n') : 'No recent activities'}
-
-## Notes
-${deal.notes || 'No notes available'}`;
+    const customFields = deal.customFieldValues?.map((field: any) => {
+      const value = field.stringValue || field.numberValue || field.booleanValue || field.dateValue || 'No value';
+      return `• ${field.definition.fieldLabel}: ${value}`;
+    }).join('\n') || 'No custom fields';
 
     return {
       content: [{
         type: "text",
-        text: dealInfo
-      }]
+        text: `# Deal Details: ${deal.name}
+
+**Basic Information:**
+- Amount: ${amount}
+- Assigned to: ${assignedTo}
+- Expected Close: ${deal.expected_close_date || 'Not set'}
+- Created: ${new Date(deal.created_at).toLocaleDateString()}
+- Last Updated: ${new Date(deal.updated_at).toLocaleDateString()}
+
+**Contact Information:**
+- Primary Contact: ${contact}
+- Organization: ${org}
+${deal.person?.email ? `- Email: ${deal.person.email}` : ''}
+${deal.person?.phone ? `- Phone: ${deal.person.phone}` : ''}
+
+**Recent Activities:**
+${activities}
+
+**Custom Fields:**
+${customFields}
+
+**Notes:**
+${deal.organization?.notes ? `Organization: ${deal.organization.notes}` : ''}
+${deal.person?.notes ? `Contact: ${deal.person.notes}` : ''}`
+      }],
     };
   }
 );
@@ -338,40 +363,24 @@ server.tool(
   },
   async ({ search_term, organization_id, limit }) => {
     const query = `
-      query SearchContacts($searchTerm: String!, $organizationId: String, $limit: Int) {
-        people(
-          where: {
-            or: [
-              { first_name: { ilike: $searchTerm } }
-              { last_name: { ilike: $searchTerm } }
-              { email: { ilike: $searchTerm } }
-            ]
-            ${organization_id ? 'organization_id: { eq: $organizationId }' : ''}
-          }
-          limit: $limit
-        ) {
+      query GetPeople {
+        people {
           id
           first_name
           last_name
           email
-          job_title
           phone
+          notes
           organization {
             id
             name
-            industry
+            address
           }
         }
       }
     `;
 
-    const variables = {
-      searchTerm: `%${search_term}%`,
-      organizationId: organization_id,
-      limit,
-    };
-
-    const result = await executeGraphQL(query, variables);
+    const result = await executeGraphQL(query);
 
     if (result.errors) {
       return {
@@ -383,14 +392,33 @@ server.tool(
       };
     }
 
-    const contacts = result.data?.people || [];
-    const summary = `Found ${contacts.length} contacts matching "${search_term}"`;
+    let contacts = result.data?.people || [];
+
+    // Apply client-side filtering
+    if (search_term) {
+      const searchLower = search_term.toLowerCase();
+      contacts = contacts.filter((contact: any) => {
+        const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.toLowerCase();
+        const email = (contact.email || '').toLowerCase();
+        return fullName.includes(searchLower) || email.includes(searchLower);
+      });
+    }
+
+    if (organization_id) {
+      contacts = contacts.filter((contact: any) => contact.organization?.id === organization_id);
+    }
+
+    // Limit results
+    contacts = contacts.slice(0, limit);
+
+    const summary = `Found ${contacts.length} contacts${search_term ? ` matching "${search_term}"` : ''}`;
     
     const contactsList = contacts.map((contact: any) => {
       const org = contact.organization ? ` at ${contact.organization.name}` : '';
-      return `• ${contact.first_name} ${contact.last_name}${org}
-  ${contact.job_title || 'No title'} | ${contact.email || 'No email'}`;
-    }).join('\n\n');
+      const email = contact.email ? ` | ${contact.email}` : '';
+      const phone = contact.phone ? ` | ${contact.phone}` : '';
+      return `• ${contact.first_name || ''} ${contact.last_name || ''}${org}${email}${phone}`;
+    }).join('\n');
 
     return {
       content: [{
@@ -407,49 +435,26 @@ server.tool(
 server.tool(
   "analyze_pipeline",
   {
-    stage: z.string().optional().describe("Focus analysis on specific stage"),
     time_period_days: z.number().optional().default(30).describe("Number of days to analyze"),
   },
-  async ({ stage, time_period_days }) => {
+  async ({ time_period_days }) => {
     const query = `
-      query AnalyzePipeline($stage: String, $since: DateTime!) {
-        deals(
-          where: {
-            ${stage ? 'stage: { eq: $stage }' : ''}
-            updated_at: { gte: $since }
-          }
-        ) {
+      query AnalyzePipeline {
+        deals {
           id
           name
           amount
-          stage
           expected_close_date
           created_at
           updated_at
-        }
-        
-        deal_stats: deals_aggregate(
-          where: {
-            ${stage ? 'stage: { eq: $stage }' : ''}
-            updated_at: { gte: $since }
-          }
-        ) {
-          aggregate {
-            count
-            sum { amount }
-            avg { amount }
+          assignedToUser {
+            display_name
           }
         }
       }
     `;
 
-    const since = new Date();
-    since.setDate(since.getDate() - time_period_days);
-
-    const result = await executeGraphQL(query, { 
-      stage, 
-      since: since.toISOString() 
-    });
+    const result = await executeGraphQL(query);
 
     if (result.errors) {
       return {
@@ -461,46 +466,71 @@ server.tool(
       };
     }
 
-    const deals = result.data?.deals || [];
-    const stats = result.data?.deal_stats?.aggregate || {};
+    const allDeals = result.data?.deals || [];
+    
+    // Filter deals by time period
+    const sinceDate = new Date();
+    sinceDate.setDate(sinceDate.getDate() - time_period_days);
+    
+    const recentDeals = allDeals.filter((deal: any) => 
+      new Date(deal.updated_at) >= sinceDate
+    );
 
-    // Group deals by stage
-    const dealsByStage = deals.reduce((acc: Record<string, any[]>, deal: any) => {
-      if (!acc[deal.stage]) acc[deal.stage] = [];
-      acc[deal.stage].push(deal);
+    // Calculate statistics
+    const totalDeals = recentDeals.length;
+    const totalValue = recentDeals.reduce((sum: number, deal: any) => 
+      sum + (deal.amount || 0), 0
+    );
+    const avgDealSize = totalDeals > 0 ? totalValue / totalDeals : 0;
+
+    // Group by assigned user
+    const dealsByUser = recentDeals.reduce((acc: Record<string, any[]>, deal: any) => {
+      const user = deal.assignedToUser?.display_name || 'Unassigned';
+      if (!acc[user]) acc[user] = [];
+      acc[user].push(deal);
       return acc;
     }, {});
 
-    // Calculate stage metrics
-    const stageAnalysis = Object.entries(dealsByStage).map(([stageName, stageDeals]) => {
-      const typedStageDeals = stageDeals as any[];
-      const totalAmount = typedStageDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0);
-      const avgAmount = typedStageDeals.length > 0 ? totalAmount / typedStageDeals.length : 0;
-      
-      return `**${stageName}**: ${typedStageDeals.length} deals, $${totalAmount.toLocaleString()} total (avg: $${Math.round(avgAmount).toLocaleString()})`;
-    }).join('\n');
+    // Expected closes this month
+    const thisMonth = new Date();
+    thisMonth.setDate(1); // First of current month
+    const nextMonth = new Date(thisMonth);
+    nextMonth.setMonth(thisMonth.getMonth() + 1);
 
-    const analysis = `# Pipeline Analysis (Last ${time_period_days} days)
-${stage ? `Focus: ${stage} stage` : 'All stages'}
+    const closingThisMonth = allDeals.filter((deal: any) => {
+      if (!deal.expected_close_date) return false;
+      const closeDate = new Date(deal.expected_close_date);
+      return closeDate >= thisMonth && closeDate < nextMonth;
+    });
 
-## Overall Metrics
-- **Total Deals**: ${stats.count || 0}
-- **Total Value**: $${(stats.sum?.amount || 0).toLocaleString()}
-- **Average Deal Size**: $${Math.round(stats.avg?.amount || 0).toLocaleString()}
-
-## By Stage
-${stageAnalysis || 'No deals found in the specified period'}
-
-## Recent Deal Velocity
-${deals.length > 0 ? `
-Deals updated recently: ${deals.length}
-Most recent update: ${new Date(Math.max(...deals.map((d: any) => new Date(d.updated_at).getTime()))).toLocaleDateString()}
-` : 'No recent deal activity'}`;
+    const userBreakdown = Object.entries(dealsByUser)
+      .map(([user, deals]) => {
+        const dealsArray = deals as any[];
+        const userValue = dealsArray.reduce((sum: number, deal: any) => sum + (deal.amount || 0), 0);
+        return `• ${user}: ${dealsArray.length} deals, $${userValue.toLocaleString()}`;
+      })
+      .join('\n');
 
     return {
       content: [{
         type: "text",
-        text: analysis
+        text: `# Pipeline Analysis (Last ${time_period_days} days)
+
+**Overall Metrics:**
+- Total Active Deals: ${totalDeals}
+- Total Pipeline Value: $${totalValue.toLocaleString()}
+- Average Deal Size: $${avgDealSize.toLocaleString()}
+
+**Deals by User:**
+${userBreakdown || 'No deals assigned'}
+
+**Expected Closes This Month:**
+- ${closingThisMonth.length} deals expected to close
+- Total value: $${closingThisMonth.reduce((sum: number, deal: any) => sum + (deal.amount || 0), 0).toLocaleString()}
+
+**Recent Activity:**
+- ${recentDeals.length} deals updated in the last ${time_period_days} days
+- ${allDeals.length - recentDeals.length} deals have not been updated recently`
       }]
     };
   }
@@ -514,35 +544,40 @@ server.tool(
   {
     name: z.string().describe("Name of the new deal"),
     amount: z.number().optional().describe("Deal amount"),
-    stage: z.string().optional().default("DISCOVERY").describe("Initial deal stage"),
-    contact_person_id: z.string().optional().describe("ID of the contact person"),
+    person_id: z.string().optional().describe("ID of the contact person"),
     organization_id: z.string().optional().describe("ID of the organization"),
     expected_close_date: z.string().optional().describe("Expected close date (YYYY-MM-DD)"),
-    notes: z.string().optional().describe("Initial notes about the deal"),
+    assigned_to_user_id: z.string().optional().describe("ID of the user to assign the deal to"),
   },
-  async ({ name, amount, stage, contact_person_id, organization_id, expected_close_date, notes }) => {
+  async ({ name, amount, person_id, organization_id, expected_close_date, assigned_to_user_id }) => {
     const mutation = `
-      mutation CreateDeal($input: CreateDealInput!) {
+      mutation CreateDeal($input: DealInput!) {
         createDeal(input: $input) {
           id
           name
           amount
-          stage
           expected_close_date
           created_at
+          person {
+            first_name
+            last_name
+          }
+          organization {
+            name
+          }
         }
       }
     `;
 
-    const input = {
+    const input: any = {
       name,
-      amount,
-      stage,
-      contact_person_id,
-      organization_id,
-      expected_close_date,
-      notes,
     };
+
+    if (amount !== undefined) input.amount = amount;
+    if (person_id) input.person_id = person_id;
+    if (organization_id) input.organization_id = organization_id;
+    if (expected_close_date) input.expected_close_date = expected_close_date;
+    if (assigned_to_user_id) input.assigned_to_user_id = assigned_to_user_id;
 
     const result = await executeGraphQL(mutation, { input });
 
@@ -557,12 +592,16 @@ server.tool(
     }
 
     const deal = result.data?.createDeal;
+    const contact = deal.person ? `${deal.person.first_name} ${deal.person.last_name}` : 'No contact';
+    const org = deal.organization?.name || 'No organization';
+    
     return {
       content: [{
         type: "text",
         text: `✅ Successfully created deal "${deal.name}" (ID: ${deal.id})
-- Stage: ${deal.stage}
 - Amount: ${deal.amount ? `$${deal.amount.toLocaleString()}` : 'Not set'}
+- Contact: ${contact}
+- Organization: ${org}
 - Expected Close: ${deal.expected_close_date || 'Not set'}
 - Created: ${new Date(deal.created_at).toLocaleDateString()}`
       }]
@@ -583,14 +622,21 @@ server.tool(
       query GetActivityRecommendations($dealId: ID!) {
         getAIActivityRecommendations(dealId: $dealId) {
           contextSummary
+          primaryRecommendation {
+            type
+            subject
+            notes
+            suggestedDueDate
+            confidence
+            reasoning
+          }
           recommendations {
             type
-            title
-            description
-            reasoning
-            confidenceScore
+            subject
+            notes
             suggestedDueDate
-            priority
+            confidence
+            reasoning
           }
         }
       }
@@ -619,15 +665,24 @@ server.tool(
       };
     }
 
-    const formattedRecommendations = recommendations.recommendations.map((rec: any, index: number) => `
-${index + 1}. **${rec.title}** (${rec.type}, Priority: ${rec.priority})
-   Confidence: ${rec.confidenceScore}%
+    const primary = recommendations.primaryRecommendation;
+    const formattedPrimary = `**${primary.subject}** (${primary.type})
+Confidence: ${(primary.confidence * 100).toFixed(1)}%
+Due: ${primary.suggestedDueDate || 'Flexible'}
+
+${primary.notes}
+
+💡 *Reasoning*: ${primary.reasoning}`;
+
+    const formattedRecommendations = recommendations.recommendations?.map((rec: any, index: number) => `
+${index + 1}. **${rec.subject}** (${rec.type})
+   Confidence: ${(rec.confidence * 100).toFixed(1)}%
    Due: ${rec.suggestedDueDate || 'Flexible'}
    
-   ${rec.description}
+   ${rec.notes}
    
    💡 *Reasoning*: ${rec.reasoning}
-`).join('\n');
+`).join('\n') || 'No additional recommendations';
 
     return {
       content: [{
@@ -637,7 +692,10 @@ ${index + 1}. **${rec.title}** (${rec.type}, Priority: ${rec.priority})
 ## Context Summary
 ${recommendations.contextSummary}
 
-## Recommended Activities
+## 🎯 Primary Recommendation
+${formattedPrimary}
+
+## Additional Recommendations
 ${formattedRecommendations}`
       }]
     };
