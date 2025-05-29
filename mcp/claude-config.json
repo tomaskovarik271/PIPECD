@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "pipecd": {
+      "command": "node",
+      "args": [
+        "/Users/tomaskovarik/059_PIPECD/PIPECD/mcp/dist/pipecd-mcp-server.js"
+      ],
+      "env": {
+        "GRAPHQL_ENDPOINT": "http://localhost:3000/.netlify/functions/graphql",
+        "SUPABASE_JWT_SECRET": "your-jwt-secret-here"
+      }
+    }
+  }
+} 
