@@ -141,11 +141,14 @@ const serveOptions: Parameters<typeof serve>[0] = {
 };
 
 // IMPORTANT: Only set serveHost for local development to force HTTP
-// Netlify's `context` environment variable can also be 'dev', 'deploy-preview', 'branch-deploy', 'production'
-// Using NODE_ENV is also common. `netlify dev` sets NODE_ENV=development
-if (process.env.NODE_ENV === 'development') {
+// Netlify sets CONTEXT='dev' when running `netlify dev`
+if (process.env.CONTEXT === 'dev') {
   serveOptions.serveHost = 'http://localhost:8888'; // Or whatever your netlify dev port is
-  console.log('[Inngest Handler] Development mode: serveHost set to', serveOptions.serveHost);
+  console.log('[Inngest Handler] Netlify CONTEXT=dev: serveHost set to', serveOptions.serveHost);
+} else if (process.env.NODE_ENV === 'development') {
+  // Fallback for other local dev environments if CONTEXT isn't 'dev'
+  serveOptions.serveHost = 'http://localhost:8888'; 
+  console.log('[Inngest Handler] NODE_ENV=development: serveHost set to', serveOptions.serveHost);
 }
 
 // Export the handler using the lambda serve adapter
