@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -84,13 +84,15 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     error: customFieldsError,
     getDefinitionsForEntity 
   } = useOptimizedCustomFields({ 
-    entityTypes: ['DEAL' as CustomFieldEntityType] 
+    entityTypes: useMemo(() => ['DEAL' as CustomFieldEntityType], []) 
   });
 
   const toast = useToast();
 
   // Get active deal custom field definitions
-  const activeDealCustomFields = getDefinitionsForEntity('DEAL' as CustomFieldEntityType).filter(def => def.isActive);
+  const activeDealCustomFields = useMemo(() => {
+    return getDefinitionsForEntity('DEAL' as CustomFieldEntityType).filter(def => def.isActive);
+  }, [getDefinitionsForEntity]);
 
   const dataLoading = peopleLoading || organizationsLoading || customFieldsLoading || wfmProjectTypesLoading || userListLoading;
 

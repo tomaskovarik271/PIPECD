@@ -1,9 +1,9 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
+  Box,
   Button,
   Spinner,
   Text,
-  Flex,
   useDisclosure,
   Checkbox,
   HStack,
@@ -15,6 +15,9 @@ import {
   ModalContent,
   ModalHeader,
   ModalCloseButton,
+  VStack,
+  Alert,
+  AlertIcon,
 } from '@chakra-ui/react';
 import { useAppStore } from '../stores/useAppStore';
 import { useActivitiesStore, Activity } from '../stores/useActivitiesStore';
@@ -23,12 +26,16 @@ import CreateActivityForm from '../components/activities/CreateActivityForm';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import EditActivityModal from '../components/activities/EditActivityModal';
 import { TimeIcon, EditIcon, DeleteIcon, SettingsIcon, ViewIcon } from '@chakra-ui/icons';
-import ListPageLayout from '../components/layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import ColumnSelector from '../components/common/ColumnSelector';
-import QuickFilterControls, { QuickFilter } from '../components/common/QuickFilterControls';
-import type { ActivityFilterInput } from '../generated/graphql/graphql';
+import EmptyState from '../components/common/EmptyState';
+import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
+import { usePageLayoutStyles } from '../utils/headerUtils';
 import { Link as RouterLink } from 'react-router-dom';
+import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
+import { useOrganizationsStore } from '../stores/useOrganizationsStore';
+import { usePeopleStore } from '../stores/usePeopleStore';
+import { useDealsStore } from '../stores/useDealsStore';
 
 // --- Helper Functions (copied from ActivityListItem) ---
 const formatDateTime = (isoString: string | null | undefined): string => {
@@ -88,61 +95,46 @@ function ActivitiesPage() {
     resetTableToDefaults 
   } = useViewPreferencesStore();
 
-  const [activeQuickFilterKey, setActiveQuickFilterKey] = useState<string | null>(null);
+  // Search term state for unified header
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Define Quick Filters for Activities
-  const availableQuickFilters = useMemo((): QuickFilter[] => [
-    { key: 'all', label: 'All Activities' },
-    { key: 'myOpen', label: 'My Open' }, // Will fetch {isDone: false} and then filter by user_id client-side
-    { key: 'allDone', label: 'All Done' }, // Will fetch {isDone: true}
-  ], []);
+  // NEW: Use semantic tokens instead of manual theme checking
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
+  const pageLayoutStyles = usePageLayoutStyles(false); // false for no statistics
 
-  // Fetch activities on component mount and when activeQuickFilterKey changes
+  // Fetch activities on component mount
   useEffect(() => {
-    let filterCriteria: ActivityFilterInput | undefined = undefined;
-    // For 'myOpen', we fetch all open activities and then filter client-side by user.
-    // For 'allDone', we fetch based on isDone.
-    // For 'all', filterCriteria remains undefined.
-    if (activeQuickFilterKey) {
-      switch (activeQuickFilterKey) {
-        case 'myOpen':
-          filterCriteria = { isDone: false }; // Corrected field name
-          break;
-        case 'allDone':
-          filterCriteria = { isDone: true }; // Corrected field name
-          break;
-      }
-    }
-    fetchActivities(filterCriteria);
-  }, [fetchActivities, activeQuickFilterKey]); // currentUserId is not a direct dep for fetch, but for displayedActivities
+    fetchActivities(); // Remove quick filter dependency, just fetch all activities
+  }, [fetchActivities]);
 
+  // Filter activities based on search term
   const displayedActivities = useMemo(() => {
-    if (activeQuickFilterKey === 'myOpen' && currentUserId) {
-      // Ensure we only show activities for the current user that are also not done.
-      // The fetchActivities call for 'myOpen' already filters by isDone: false.
-      return activities.filter(act => act.user_id === currentUserId);
-    }
-    // For 'all' and 'allDone', the fetched data from useActivitiesStore is already correctly filtered by backend (or not filtered for 'all').
-    return activities;
-  }, [activities, activeQuickFilterKey, currentUserId]);
+    if (!searchTerm.trim()) return activities;
+    const lowerSearchTerm = searchTerm.toLowerCase();
+    return activities.filter(activity => 
+      activity.subject?.toLowerCase().includes(lowerSearchTerm) ||
+      activity.notes?.toLowerCase().includes(lowerSearchTerm) ||
+      activity.type?.toLowerCase().includes(lowerSearchTerm)
+    );
+  }, [activities, searchTerm]);
 
   const handleCreateSuccess = () => {
-    // The store should update the list, so potentially just close modal or show toast
-    // fetchActivities(); // Re-fetch if optimistic updates aren't fully covering linked data or complex sorts
-    onCreateClose(); // Assuming CreateActivityForm is in a modal handled by isCreateOpen
+    onCreateClose();
+    toast({ title: 'Activity created successfully', status: 'success', duration: 3000, isClosable: true });
   };
 
-  const handleToggleDone = async (activityId: string, currentStatus: boolean) => {
+  const handleToggleDone = useCallback(async (activityId: string, currentStatus: boolean) => {
     const success = await updateActivity(activityId, { is_done: !currentStatus });
     if (!success) {
         toast({ title: 'Failed to update activity status', description: activitiesError || 'Unknown error', status: 'error', duration: 3000, isClosable: true });
     }
-  };
+  }, [updateActivity, activitiesError, toast]);
 
-  const handleDeleteClick = (activityId: string) => {
+  const handleDeleteClick = useCallback((activityId: string) => {
     setActivityToDeleteId(activityId);
     onConfirmDeleteOpen();
-  };
+  }, [onConfirmDeleteOpen]);
 
   const handleConfirmDelete = async () => {
     if (!activityToDeleteId) return;
@@ -159,10 +151,10 @@ function ActivitiesPage() {
     }
   };
 
-  const handleEditClick = (activityItem: Activity) => { // Renamed to activityItem to avoid conflict
+  const handleEditClick = useCallback((activityItem: Activity) => {
     setActivityToEdit(activityItem);
     onEditOpen();
-  };
+  }, [onEditOpen]);
 
   const handleEditClose = () => {
     onEditClose();
@@ -201,46 +193,62 @@ function ActivitiesPage() {
           </HStack>
         ),
         isSortable: true,
-        sortAccessor: (activityItem) => activityItem.subject?.toLowerCase() ?? '',
+        sortAccessor: (activityItem) => activityItem.subject || '',
       },
       {
         key: 'due_date',
         header: 'Due Date',
-        renderCell: (activityItem) => formatDateTime(activityItem.due_date),
+        renderCell: (activityItem) => activityItem.due_date ? formatDateTime(activityItem.due_date) : '-',
         isSortable: true,
-        sortAccessor: (activityItem) => activityItem.due_date ? new Date(activityItem.due_date) : null, // Sort by Date or null
+        sortAccessor: (activityItem) => activityItem.due_date ? new Date(activityItem.due_date).getTime() : 0,
       },
       {
         key: 'linked_to',
-        header: 'Linked To',
+        header: 'Related To',
         renderCell: (activityItem) => {
-            const linkedEntity = activityItem.deal 
-              ? `Deal: ${activityItem.deal.name}` 
-              : activityItem.person 
-              ? `Person: ${activityItem.person.first_name || ''} ${activityItem.person.last_name || ''}`.trim()
-              : activityItem.organization
-              ? `Org: ${activityItem.organization.name}`
-              : '-';
-            return <Text fontSize="xs">{linkedEntity}</Text>;
+          if (activityItem.person) {
+            return (
+              <Text as={RouterLink} to={`/people/${activityItem.person.id}`} color="blue.500" textDecoration="underline">
+                {activityItem.person.first_name} {activityItem.person.last_name}
+              </Text>
+            );
+          } else if (activityItem.organization) {
+            return (
+              <Text as={RouterLink} to={`/organizations/${activityItem.organization.id}`} color="blue.500" textDecoration="underline">
+                {activityItem.organization.name}
+              </Text>
+            );
+          } else if (activityItem.deal) {
+            return (
+              <Text as={RouterLink} to={`/deals/${activityItem.deal.id}`} color="blue.500" textDecoration="underline">
+                {activityItem.deal.name}
+              </Text>
+            );
+          }
+          return '-';
         },
         isSortable: true,
-        sortAccessor: (activityItem) => { // Custom accessor for linked entity string
-            if (activityItem.deal) return `deal: ${activityItem.deal.name?.toLowerCase() ?? ''}`;
-            if (activityItem.person) return `person: ${activityItem.person.first_name?.toLowerCase() ?? ''} ${activityItem.person.last_name?.toLowerCase() ?? ''}`.trim();
-            if (activityItem.organization) return `organization: ${activityItem.organization.name?.toLowerCase() ?? ''}`;
-            return '';
+        sortAccessor: (activityItem) => {
+          if (activityItem.person) {
+            return `${activityItem.person.first_name || ''} ${activityItem.person.last_name || ''}`.trim().toLowerCase();
+          } else if (activityItem.organization) {
+            return activityItem.organization.name?.toLowerCase() || '';
+          } else if (activityItem.deal) {
+            return activityItem.deal.name?.toLowerCase() || '';
+          }
+          return '';
         },
       },
       {
         key: 'notes',
         header: 'Notes',
-        renderCell: (activityItem) => (
-            <Text fontSize="xs" maxW="200px" whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
-                {activityItem.notes || '-'}
-            </Text>
-        ),
+        renderCell: (activityItem) => activityItem.notes ? (
+          <Text noOfLines={2} maxW="200px" title={activityItem.notes}>
+            {activityItem.notes}
+          </Text>
+        ) : '-',
         isSortable: true,
-        sortAccessor: (activityItem) => activityItem.notes?.toLowerCase() ?? '',
+        sortAccessor: (activityItem) => activityItem.notes?.toLowerCase() || '',
       },
       {
         key: 'created_at',
@@ -248,13 +256,6 @@ function ActivitiesPage() {
         renderCell: (activityItem) => formatDateTime(activityItem.created_at),
         isSortable: true,
         sortAccessor: (activityItem) => activityItem.created_at ? new Date(activityItem.created_at).getTime() : 0,
-      },
-      {
-        key: 'updated_at',
-        header: 'Updated',
-        renderCell: (activityItem) => formatDateTime(activityItem.updated_at),
-        isSortable: true,
-        sortAccessor: (activityItem) => activityItem.updated_at ? new Date(activityItem.updated_at).getTime() : 0,
       },
     ];
 
@@ -325,90 +326,83 @@ function ActivitiesPage() {
     return allAvailableColumns.filter(col => currentVisibleColumnKeys.includes(String(col.key)));
   }, [allAvailableColumns, currentVisibleColumnKeys]);
 
-  // Define props for EmptyState
-  const emptyStateProps = {
-    icon: TimeIcon,
-    title: "No Activities Logged",
-    message: "Add tasks, calls, or meetings to keep track of interactions.",
-    actionButtonLabel: "New Activity",
-    onActionButtonClick: onCreateOpen,
-    isActionButtonDisabled: !userPermissions?.includes('activity:create')
-  };
+  // Secondary actions (column selector) - NEW: Using semantic tokens
+  const secondaryActions = (
+    <Button 
+      leftIcon={<SettingsIcon />} 
+      onClick={onColumnSelectorOpen}
+      size="md"
+      height="40px"
+      minW="110px"
+      {...styles.button.secondary} // NEW: Theme-aware styles
+    >
+      Columns
+    </Button>
+  );
 
-  // Loading state is handled before the main layout
-  if (activitiesLoading) {
-    return (
-      <Flex justify="center" align="center" minH="calc(100vh - 200px)">
-        <Spinner size="xl" />
-      </Flex>
-    );
-  }
-
-  // Error state when no activities are loaded yet (this might need adjustment based on full file content)
-  // This specific conditional rendering of ListPageLayout for error might be part of what gets simplified
-  // if the main ListPageLayout is always rendered.
-  if (activitiesError && !activities.length && !activitiesLoading) { // Added !activitiesLoading here
-    return (
-      <ListPageLayout 
-        title="Activities" 
-        newButtonLabel="New Activity"
-        onNewButtonClick={onCreateOpen} // This should trigger the modal
-        isNewButtonDisabled={!userPermissions?.includes('activity:create')}
-        isLoading={false} // Explicitly false as we are in error state
-        error={activitiesError}
-        isEmpty={true} // True because of error and no activities
-        emptyStateProps={emptyStateProps} // Use the defined emptyStateProps
-      >
-         <></>{/* Provide empty fragment as children to satisfy prop type */}
-      </ListPageLayout>
-    );
-  }
-
-  const emptyStatePropsForPage = {
-    icon: TimeIcon,
-    title: "No Activities Yet",
-    message: "Get started by creating your first activity or task.",
-    actionButtonLabel: "New Activity",
-    onActionButtonClick: onCreateOpen,
-    isActionButtonDisabled: !userPermissions?.includes('activity:create_any') && !userPermissions?.includes('activity:create_own')
-  };
-  
   const pageIsLoading = activitiesLoading;
 
   return (
     <>
-    <ListPageLayout 
-        title="Activities" 
-        newButtonLabel="New Activity"
-        onNewButtonClick={onCreateOpen}
-        isNewButtonDisabled={!userPermissions?.includes('activity:create')}
-        isLoading={pageIsLoading}
-        error={activitiesError}
-        isEmpty={!pageIsLoading && displayedActivities.length === 0 && !activitiesError}
-        emptyStateProps={emptyStatePropsForPage}
-        customControls={ 
-          <HStack spacing={4} my={2}>
-            <QuickFilterControls 
-              availableFilters={availableQuickFilters}
-              activeFilterKey={activeQuickFilterKey}
-              onSelectFilter={setActiveQuickFilterKey}
-            />
-            <Button leftIcon={<SettingsIcon />} onClick={onColumnSelectorOpen} size="sm" variant="outline">
-              Columns
-            </Button>
-          </HStack>
-        }
-    >
-        {!pageIsLoading && !activitiesError && displayedActivities.length > 0 && (
-            <SortableTable<Activity>
-                data={displayedActivities}
-                columns={visibleColumns}
-                initialSortKey="due_date"
-                initialSortDirection="ascending"
-            />
-        )}
-    </ListPageLayout>
+      <UnifiedPageHeader
+        title="Activities"
+        showSearch={true}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        searchPlaceholder="Search activities..."
+        primaryButtonLabel="New Activity"
+        onPrimaryButtonClick={onCreateOpen}
+        requiredPermission="activity:create"
+        userPermissions={userPermissions || []} // Fix: handle null userPermissions
+        secondaryActions={secondaryActions}
+      />
 
+      <Box sx={pageLayoutStyles.container}>
+        {pageIsLoading && (
+          <VStack justify="center" align="center" minH="300px" w="100%">
+            <Spinner 
+              size="xl" 
+              color={colors.interactive.default} // NEW: Semantic token
+            />
+          </VStack>
+        )}
+        
+        {!pageIsLoading && activitiesError && (
+          <Alert 
+            status="error" 
+            variant="subtle"
+            bg={colors.status.error} // NEW: Semantic token
+            color={colors.text.onAccent} // NEW: Semantic token
+          >
+            <AlertIcon />
+            {activitiesError}
+          </Alert>
+        )}
+        
+        {!pageIsLoading && !activitiesError && displayedActivities.length === 0 && (
+          <EmptyState
+            icon={TimeIcon}
+            title="No Activities Found"
+            message="Get started by creating your first activity or try adjusting your search."
+            actionButtonLabel="New Activity"
+            onActionButtonClick={onCreateOpen}
+            isActionButtonDisabled={!userPermissions?.includes('activity:create')}
+          />
+        )}
+        
+        {!pageIsLoading && !activitiesError && displayedActivities.length > 0 && (
+          <Box sx={pageLayoutStyles.content}>
+            <SortableTable<Activity>
+              data={displayedActivities}
+              columns={visibleColumns}
+              initialSortKey="due_date"
+              initialSortDirection="ascending"
+            />
+          </Box>
+        )}
+      </Box>
+
+    {/* Modals */}
     {isCreateOpen && (
         <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl" isCentered>
         <ModalOverlay />

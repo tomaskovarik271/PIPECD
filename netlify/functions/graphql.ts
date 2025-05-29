@@ -38,6 +38,9 @@ import { WFMProjectTypeResolvers } from './graphql/resolvers/wfmProjectType';
 import { WFMProject } from './graphql/resolvers/wfmProject';
 import { WFMWorkflowStep as WFMWorkflowStepResolver } from './graphql/resolvers/wfmWorkflowStep';
 
+// Import AI Activity Recommendation Resolver
+import { aiActivityRecommendationsResolver } from './graphql/resolvers/queries/aiActivityRecommendations';
+
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
 
@@ -45,6 +48,7 @@ const loadTypeDefs = (): string => {
   // Ensure this list is accurate and complete.
   const allSchemaFiles = [
     'activity.graphql', 
+    'aiActivityRecommendations.graphql',
     'base.graphql', 
     'customFields.graphql', 
     'deal.graphql', 
@@ -67,6 +71,7 @@ const loadTypeDefs = (): string => {
   // Example: load only a few critical files to see if the base schema works.
   const filesToLoad = [
     'activity.graphql', 
+    'aiActivityRecommendations.graphql',
     'base.graphql', 
     'customFields.graphql', 
     'deal.graphql', 
@@ -122,6 +127,7 @@ export const resolvers = {
     ...WFMStatusResolvers.Query,
     ...WFMWorkflowResolvers.Query,
     ...WFMProjectTypeResolvers.Query,
+    ...aiActivityRecommendationsResolver,
   },
   Mutation: {
     ...BaseMutation,

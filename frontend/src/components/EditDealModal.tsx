@@ -74,7 +74,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     error: customFieldsError,
     getDefinitionsForEntity 
   } = useOptimizedCustomFields({ 
-    entityTypes: ['DEAL' as CustomFieldEntityType] 
+    entityTypes: useMemo(() => ['DEAL' as CustomFieldEntityType], []) 
   });
 
   // Use user assignment hook

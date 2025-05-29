@@ -1,29 +1,25 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   Box,
-  Heading,
-  Button,
-  HStack,
   VStack,
-  Flex,
-  ButtonGroup,
-  Select,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  Text,
-  StatGroup,
-  Stat,
-  StatLabel,
-  StatNumber,
+  Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuOptionGroup,
+  MenuItemOption,
+  HStack,
+  Tag,
+  TagLabel,
+  TagCloseButton,
 } from '@chakra-ui/react';
-import { SearchIcon, AddIcon } from '@chakra-ui/icons';
-import { useAppStore } from '../../stores/useAppStore';
+import { ChevronDownIcon } from '@chakra-ui/icons';
 import DealsKanbanPageView from './DealsKanbanPageView';
-import QuickFilterControls, { QuickFilter } from '../common/QuickFilterControls';
 import type { UserListItem } from '../../stores/useUserListStore';
 import type { Deal } from '../../stores/useDealsStore';
-import { useThemeStore } from '../../stores/useThemeStore';
+import UnifiedPageHeader from '../layout/UnifiedPageHeader';
+import { usePageLayoutStyles } from '../../utils/headerUtils';
+import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 
 interface DealsKanbanPageLayoutProps {
   displayedDeals: Deal[];
@@ -32,14 +28,16 @@ interface DealsKanbanPageLayoutProps {
   handleCreateDealClick: () => void;
   activeQuickFilterKey: string | null;
   setActiveQuickFilterKey: (key: string | null) => void;
-  availableQuickFilters: QuickFilter[];
-  selectedAssignedUserId: string | null;
-  setSelectedAssignedUserId: (userId: string | null) => void;
+  availableQuickFilters: any[];
+  selectedAssignedUserIds: string[];
+  setSelectedAssignedUserIds: (userIds: string[]) => void;
   userList: UserListItem[];
   usersLoading: boolean;
   userPermissions: string[] | null | undefined;
   dealsViewMode: 'table' | 'kanban';
   setDealsViewMode: (mode: 'table' | 'kanban') => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
 }
 
 const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
@@ -47,207 +45,153 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
   pageIsLoading,
   dealsError,
   handleCreateDealClick,
-  activeQuickFilterKey,
-  setActiveQuickFilterKey,
-  availableQuickFilters,
-  selectedAssignedUserId,
-  setSelectedAssignedUserId,
+  selectedAssignedUserIds,
+  setSelectedAssignedUserIds,
   userList,
   usersLoading,
   userPermissions,
   dealsViewMode, 
   setDealsViewMode,
+  searchTerm,
+  onSearchChange,
 }) => {
-  const isSidebarCollapsed = useAppStore((state) => state.isSidebarCollapsed);
-  const currentThemeName = useThemeStore((state) => state.currentTheme);
-  const isModernTheme = currentThemeName === 'modern';
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
+  const pageLayoutStyles = usePageLayoutStyles(true);
 
-  const sidebarWidth = isSidebarCollapsed ? "70px" : (isModernTheme ? "280px" : "200px");
-  const pageHeaderHeight = isModernTheme ? "auto" : "72px";
-  const headerPaddingY = isModernTheme ? "24px" : 4;
-  const headerPaddingX = isModernTheme ? "32px" : 6;
-
-  const modernButtonHeight = "40px";
-  const modernButtonSize = "md";
-
+  // Calculate statistics for the header (same as table view)
   const totalValue = useMemo(() => displayedDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0), [displayedDeals]);
-  const averageDealSize = useMemo(() => totalValue / (displayedDeals.length || 1), [totalValue, displayedDeals.length]);
+  const averageDealSize = useMemo(() => displayedDeals.length > 0 ? totalValue / displayedDeals.length : 0, [totalValue, displayedDeals.length]);
+  const winRate = useMemo(() => {
+    const closedDeals = displayedDeals.filter(d => d.currentWfmStep?.isFinalStep);
+    const wonDeals = closedDeals.filter(d => d.currentWfmStep?.status?.name?.toLowerCase().includes('won'));
+    return closedDeals.length > 0 ? Math.round((wonDeals.length / closedDeals.length) * 100) : 0;
+  }, [displayedDeals]);
+
+  const openDealsCount = useMemo(() => 
+    displayedDeals.filter(d => !d.currentWfmStep?.isFinalStep).length, 
+    [displayedDeals]
+  );
+
+  const statistics = useMemo(() => [
+    {
+      label: 'Total Value',
+      value: totalValue,
+      formatter: (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+    },
+    {
+      label: 'Avg. Deal Size',
+      value: averageDealSize,
+      formatter: (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+    },
+    {
+      label: 'Win Rate',
+      value: `${winRate}%`
+    },
+    {
+      label: 'Open Deals',
+      value: openDealsCount
+    }
+  ], [totalValue, averageDealSize, winRate, openDealsCount]);
+
+  // Helper function to get user display name
+  const getUserDisplayName = useCallback((userId: string) => {
+    if (userId === 'unassigned') return 'Unassigned';
+    const user = userList.find(u => u.id === userId);
+    return user?.display_name || user?.email || userId;
+  }, [userList]);
+
+  // Handle removing a selected user
+  const removeSelectedUser = useCallback((userIdToRemove: string) => {
+    setSelectedAssignedUserIds(selectedAssignedUserIds.filter(id => id !== userIdToRemove));
+  }, [selectedAssignedUserIds, setSelectedAssignedUserIds]);
+
+  // Handle menu option changes
+  const handleMenuOptionChange = useCallback((values: string | string[]) => {
+    const valueArray = Array.isArray(values) ? values : [values];
+    setSelectedAssignedUserIds(valueArray);
+  }, [setSelectedAssignedUserIds]);
+
+  // Secondary actions (multi-select assigned user filter for kanban)
+  const secondaryActions = (
+    <VStack spacing={2} align="stretch" minW="200px">
+      <Menu closeOnSelect={false}>
+        <MenuButton
+          as={Button}
+          rightIcon={<ChevronDownIcon />}
+          size="md"
+          height="40px"
+          minW="180px"
+          bg={colors.bg.input}
+          color={colors.text.primary}
+          borderColor={colors.border.input}
+          _hover={{
+            bg: colors.component.button.secondaryHover,
+            borderColor: colors.border.focus
+          }}
+          textAlign="left"
+          fontWeight="normal"
+          isDisabled={usersLoading}
+        >
+          {selectedAssignedUserIds.length === 0 ? 'Assigned User' : `${selectedAssignedUserIds.length} selected`}
+        </MenuButton>
+        <MenuList>
+          <MenuOptionGroup 
+            type="checkbox" 
+            value={selectedAssignedUserIds}
+            onChange={handleMenuOptionChange}
+          >
+            <MenuItemOption value="unassigned">Unassigned</MenuItemOption>
+            {userList.map(user => (
+              <MenuItemOption key={user.id} value={user.id}>
+                {user.display_name || user.email}
+              </MenuItemOption>
+            ))}
+          </MenuOptionGroup>
+        </MenuList>
+      </Menu>
+      
+      {/* Selected users tags */}
+      {selectedAssignedUserIds.length > 0 && (
+        <HStack spacing={1} wrap="wrap" maxW="200px">
+          {selectedAssignedUserIds.map(userId => (
+            <Tag 
+              key={userId} 
+              size="sm" 
+              colorScheme="blue" 
+              variant="subtle"
+              bg={colors.interactive.default}
+              color={colors.text.onAccent}
+            >
+              <TagLabel>{getUserDisplayName(userId)}</TagLabel>
+              <TagCloseButton onClick={() => removeSelectedUser(userId)} />
+            </Tag>
+          ))}
+        </HStack>
+      )}
+    </VStack>
+  );
 
   return (
-    <VStack spacing={0} align="stretch" w="100%" h="100%">
-      <Flex
-        direction={isModernTheme ? "column" : "row"}
-        alignItems={isModernTheme ? "stretch" : "center"}
-        justifyContent="space-between"
-        py={headerPaddingY}
-        px={headerPaddingX}
-        bg={isModernTheme ? 'background.content' : { base: 'gray.50', _dark: 'gray.900' }}
-        position="fixed"
-        top="0"
-        left={sidebarWidth}
-        width={`calc(100% - ${sidebarWidth})`}
-        minH={pageHeaderHeight}
-        zIndex="sticky"
-        transition="left 0.2s ease-in-out, width 0.2s ease-in-out, background 0.2s ease-in-out"
-        borderBottomWidth={isModernTheme ? "1px" : "1px"} 
-        borderColor={isModernTheme ? 'border.default' : { base: 'gray.200', _dark: 'gray.700' }}
-      >
-        <Flex justifyContent="space-between" alignItems="center" mb={isModernTheme ? 4 : 0}>
-          <Heading as="h2" size={isModernTheme ? "xl" : "lg"} color={isModernTheme ? 'text.default' : undefined}>
-            Deals
-          </Heading>
-          <HStack spacing={isModernTheme ? 3 : 2}>
-            {isModernTheme && dealsViewMode === 'table' && (
-              <InputGroup size={modernButtonSize} maxW="280px">
-                <InputLeftElement pointerEvents="none">
-                  <SearchIcon color={"gray.400"} />
-                </InputLeftElement>
-                <Input 
-                  type="search" 
-                  placeholder="Search deals..." 
-                  borderRadius="md"
-                  bg={"gray.700"}
-                  color={"white"}
-                  borderColor={"gray.500"}
-                  height={modernButtonHeight}
-                  _placeholder={{
-                    color: "gray.400"
-                  }}
-                  _focus={{
-                    borderColor: "blue.400",
-                    boxShadow: "0 0 0 1px #3182ce"
-                  }}
-                />
-              </InputGroup>
-            )}
-            <Select
-              placeholder="Assigned User"
-              size={isModernTheme ? modernButtonSize : "sm"}
-              height={isModernTheme ? modernButtonHeight : undefined}
-              value={selectedAssignedUserId || ''}
-              onChange={(e) => setSelectedAssignedUserId(e.target.value || null)}
-              isDisabled={usersLoading}
-              minW="180px"
-              borderRadius="md"
-              bg={isModernTheme ? "gray.700" : undefined}
-              color={isModernTheme ? "white" : undefined}
-              borderColor={isModernTheme ? "gray.500" : undefined}
-              iconColor={isModernTheme ? "gray.400" : undefined}
-              _focus={{
-                borderColor: isModernTheme ? "blue.400" : undefined,
-                boxShadow: isModernTheme ? "0 0 0 1px #3182ce" : undefined
-              }}
-            >
-              <option value="">All Users</option>
-              <option value="unassigned">Unassigned</option>
-              {userList.map(user => (
-                <option key={user.id} value={user.id}>
-                  {user.display_name || user.email}
-                </option>
-              ))}
-            </Select>
+    <>
+      <UnifiedPageHeader
+        title="Deals"
+        showSearch={true}
+        searchTerm={searchTerm}
+        onSearchChange={onSearchChange}
+        searchPlaceholder="Search deals..."
+        primaryButtonLabel="New Deal"
+        onPrimaryButtonClick={handleCreateDealClick}
+        requiredPermission="deal:create"
+        userPermissions={userPermissions || []}
+        showViewModeSwitch={true}
+        viewMode={dealsViewMode}
+        onViewModeChange={setDealsViewMode}
+        secondaryActions={secondaryActions}
+        statistics={statistics}
+      />
 
-            <ButtonGroup size={isModernTheme ? modernButtonSize : "sm"} isAttached variant="outline">
-              <Button 
-                onClick={() => setDealsViewMode('table')} 
-                isActive={dealsViewMode === 'table'}
-                height={isModernTheme ? modernButtonHeight : undefined}
-                bg={isModernTheme ? (dealsViewMode === 'table' ? "blue.600" : "gray.700") : undefined}
-                color={isModernTheme ? "white" : undefined}
-                borderColor={isModernTheme ? "gray.500" : undefined}
-                _hover={isModernTheme ? {
-                  bg: "gray.600",
-                  borderColor: "gray.400"
-                } : {}}
-                _active={isModernTheme ? {
-                  bg: "blue.700"
-                } : {}}
-              >
-                Table
-              </Button>
-              <Button 
-                onClick={() => setDealsViewMode('kanban')} 
-                isActive={dealsViewMode === 'kanban'}
-                height={isModernTheme ? modernButtonHeight : undefined}
-                bg={isModernTheme ? (dealsViewMode === 'kanban' ? "blue.600" : "gray.700") : undefined}
-                color={isModernTheme ? "white" : undefined}
-                borderColor={isModernTheme ? "gray.500" : undefined}
-                _hover={isModernTheme ? {
-                  bg: "gray.600",
-                  borderColor: "gray.400"
-                } : {}}
-                _active={isModernTheme ? {
-                  bg: "blue.700"
-                } : {}}
-              >
-                Kanban
-              </Button>
-            </ButtonGroup>
-
-            <QuickFilterControls
-              availableFilters={availableQuickFilters}
-              activeFilterKey={activeQuickFilterKey}
-              onSelectFilter={setActiveQuickFilterKey}
-              isModernTheme={isModernTheme}
-              buttonProps={isModernTheme ? {
-                bg: "gray.700",
-                color: "white",
-                borderColor: "gray.500",
-                size: modernButtonSize,
-                height: modernButtonHeight,
-                _hover: {
-                  bg: "gray.600",
-                  borderColor: "gray.400"
-                },
-                _active: {
-                  bg: "blue.600",
-                  borderColor: "blue.500"
-                }
-              } : {}}
-            />
-
-            <Button
-              colorScheme={isModernTheme ? "brand" : "blue"}
-              onClick={handleCreateDealClick}
-              isDisabled={!userPermissions?.includes('deal:create')}
-              size={isModernTheme ? modernButtonSize : "md"}
-              height={isModernTheme ? modernButtonHeight : undefined}
-              minW={isModernTheme ? "120px" : undefined}
-              leftIcon={isModernTheme ? <AddIcon /> : undefined}
-            >
-              New Deal
-            </Button>
-          </HStack>
-        </Flex>
-        {isModernTheme && (
-          <StatGroup mt={2} borderTopWidth="1px" borderColor="border.divider" pt={3}>
-            <Stat>
-              <StatLabel color="gray.300" fontWeight="medium">Total Value</StatLabel>
-              <StatNumber fontSize="lg" color="white">${totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</StatNumber>
-            </Stat>
-            <Stat>
-              <StatLabel color="gray.300" fontWeight="medium">Avg. Deal Size</StatLabel>
-              <StatNumber fontSize="lg" color="white">${averageDealSize.toLocaleString('en-US', { maximumFractionDigits: 0 })}</StatNumber>
-            </Stat>
-            <Stat>
-              <StatLabel color="gray.300" fontWeight="medium">Win Rate</StatLabel>
-              <StatNumber fontSize="lg" color="white">--%</StatNumber>
-            </Stat>
-             <Stat>
-              <StatLabel color="gray.300" fontWeight="medium">Open Deals</StatLabel>
-              <StatNumber fontSize="lg" color="white">{displayedDeals.length}</StatNumber>
-            </Stat>
-          </StatGroup>
-        )}
-      </Flex>
-
-      <Box
-        flexGrow={1}
-        overflowY="auto"
-        h="100%"
-        pt={`calc(${typeof pageHeaderHeight === 'string' && pageHeaderHeight.endsWith('px') ? pageHeaderHeight : '72px'} + ${isModernTheme ? '90px' : '1rem'})`}
-        px={headerPaddingX}
-      >
+      <Box sx={pageLayoutStyles.container}>
         <DealsKanbanPageView
           deals={displayedDeals}
           isLoading={pageIsLoading}
@@ -256,7 +200,7 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
           userPermissions={userPermissions}
         />
       </Box>
-    </VStack>
+    </>
   );
 };
 

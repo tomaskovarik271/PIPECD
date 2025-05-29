@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box, Heading, Tabs, TabList, TabPanels, Tab, TabPanel, Container } from '@chakra-ui/react';
 import { Outlet, Link as RouterLink, useLocation } from 'react-router-dom';
+import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 
 // Import the page components we'll be linking to
 // Assuming these are the correct paths based on the previous discovery
@@ -10,6 +11,9 @@ import WFMProjectTypesPage from './WFMProjectTypesPage';
 
 const WfmAdminPage: React.FC = () => {
   const location = useLocation();
+  
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
 
   // Determine the default tab index based on the current route
   // This helps keep the selected tab in sync with the URL if navigated to directly
@@ -23,6 +27,19 @@ const WfmAdminPage: React.FC = () => {
 
   const tabIndex = getTabIndex();
 
+  // NEW: Theme-aware tab styles
+  const tabStyles = {
+    color: colors.text.secondary,
+    _hover: {
+      color: colors.text.primary,
+      bg: colors.bg.elevated,
+    },
+    _selected: { 
+      color: colors.text.onAccent,
+      bg: colors.interactive.default
+    }
+  };
+
   // Note: For this setup to work seamlessly with nested routes and direct URL access
   // to specific tabs, we will define routes for /admin/wfm/statuses, /admin/wfm/workflows, etc.
   // The TabPanels here will render the content of those routes via <Outlet />
@@ -31,19 +48,48 @@ const WfmAdminPage: React.FC = () => {
   // <Outlet /> would be better.
 
   return (
-    <Container maxW="container.xl" py={8}>
-      <Heading as="h1" size="xl" mb={6}>
+    <Container 
+      maxW="container.xl" 
+      py={8}
+      bg={colors.bg.surface}
+      borderRadius="xl"
+      borderWidth="1px"
+      borderColor={colors.border.default}
+      mt={4}
+    >
+      <Heading 
+        as="h1" 
+        size="xl" 
+        mb={6}
+        color={colors.text.primary}
+      >
         Workflow Management
       </Heading>
-      <Tabs index={tabIndex} variant="soft-rounded" colorScheme="blue">
+      <Tabs 
+        index={tabIndex} 
+        variant="soft-rounded" 
+        colorScheme="blue"
+      >
         <TabList mb={4}>
-          <Tab as={RouterLink} to="/admin/wfm/statuses" _selected={{ color: 'white', bg: 'blue.500' }}>
+          <Tab 
+            as={RouterLink} 
+            to="/admin/wfm/statuses" 
+            {...tabStyles}
+          >
             Statuses
           </Tab>
-          <Tab as={RouterLink} to="/admin/wfm/workflows" _selected={{ color: 'white', bg: 'blue.500' }}>
+          <Tab 
+            as={RouterLink} 
+            to="/admin/wfm/workflows" 
+            {...tabStyles}
+          >
             Workflows
           </Tab>
-          <Tab as={RouterLink} to="/admin/wfm/project-types" _selected={{ color: 'white', bg: 'blue.500' }}>
+          <Tab 
+            as={RouterLink} 
+            to="/admin/wfm/project-types" 
+            {...tabStyles}
+          >
             Project Types
           </Tab>
         </TabList>

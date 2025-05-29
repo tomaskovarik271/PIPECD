@@ -10,9 +10,12 @@ import { useThemeStore } from '../../stores/useThemeStore';
 
 // const SALES_DEAL_WORKFLOW_ID = 'your-sales-deal-workflow-id-here'; // Remove hardcoded ID
 
-const DealsKanbanView: React.FC = () => {
+interface DealsKanbanViewProps {
+  deals: Deal[]; // Receive filtered deals as prop
+}
+
+const DealsKanbanView: React.FC<DealsKanbanViewProps> = ({ deals }) => {
   const {
-    deals,
     dealsLoading,
     dealsError,
     fetchDeals,

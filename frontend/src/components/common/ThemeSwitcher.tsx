@@ -16,13 +16,18 @@ const ThemeSwitcher: React.FC = () => {
 
   const handleThemeChange = (newThemeKey: ThemeMode) => {
     setCurrentTheme(newThemeKey);
-    // Both remaining themes are dark-based for Chakra's color mode
-    setColorMode('dark');
+    // Set appropriate Chakra color mode based on theme
+    if (newThemeKey === 'lightModern') {
+      setColorMode('light');  // NEW: Use light mode for lightModern theme
+    } else {
+      setColorMode('dark');   // Use dark mode for other themes
+    }
   };
 
   // Updated to use keys from availableThemes
   const getThemeIcon = (themeKey: ThemeMode) => {
-    if (themeKey === 'modern') return <StarIcon />;
+    if (themeKey === 'modern') return <MoonIcon />;  // Dark theme gets moon icon
+    if (themeKey === 'lightModern') return <SunIcon />;  // NEW: Light theme gets sun icon
     if (themeKey === 'industrialMetal') return <Text as="span">⚙️</Text>;
     return <ChevronDownIcon />; // Fallback for button if currentThemeKey is somehow invalid
   };

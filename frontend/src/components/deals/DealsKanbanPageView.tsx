@@ -3,7 +3,6 @@ import {
   Box,
   Flex,
   Spinner,
-  VStack,
   Alert,
   AlertIcon,
 } from '@chakra-ui/react';
@@ -57,7 +56,7 @@ const DealsKanbanPageView: React.FC<DealsKanbanPageViewProps> = ({
       // Styling for the scrollbar can be inherited or applied here if specific
       // sx={{ ... }} // For custom scrollbar like in DealsKanbanView if needed at this level
     >
-      <DealsKanbanView />
+      <DealsKanbanView deals={deals} />
     </Box>
   );
 };

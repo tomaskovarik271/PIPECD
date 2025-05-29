@@ -39,6 +39,24 @@ export type Scalars = {
   JSON: { input: { [key: string]: any }; output: { [key: string]: any } };
 };
 
+/** AI-powered activity recommendation system for intelligent sales assistance. */
+export type AiActivityRecommendation = {
+  __typename?: "AIActivityRecommendation";
+  confidence: Scalars["Float"]["output"];
+  notes: Scalars["String"]["output"];
+  reasoning: Scalars["String"]["output"];
+  subject: Scalars["String"]["output"];
+  suggestedDueDate: Scalars["Date"]["output"];
+  type: ActivityType;
+};
+
+export type AiActivityRecommendationsResponse = {
+  __typename?: "AIActivityRecommendationsResponse";
+  contextSummary: Scalars["String"]["output"];
+  primaryRecommendation: AiActivityRecommendation;
+  recommendations: Array<AiActivityRecommendation>;
+};
+
 export type Activity = {
   __typename?: "Activity";
   assignedToUser?: Maybe<User>;
@@ -638,6 +656,12 @@ export type Query = {
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
+  /**
+   * Get AI-powered activity recommendations for a specific deal.
+   * Analyzes deal context, contact information, recent activities, and workflow status
+   * to suggest the most effective next activities to advance the deal.
+   */
+  getAIActivityRecommendations: AiActivityRecommendationsResponse;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   me?: Maybe<User>;
@@ -681,6 +705,10 @@ export type QueryCustomFieldDefinitionsArgs = {
 
 export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryGetAiActivityRecommendationsArgs = {
+  dealId: Scalars["ID"]["input"];
 };
 
 export type QueryGetWfmAllowedTransitionsArgs = {
@@ -1011,6 +1039,8 @@ export type DirectiveResolverFn<
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  AIActivityRecommendation: ResolverTypeWrapper<AiActivityRecommendation>;
+  AIActivityRecommendationsResponse: ResolverTypeWrapper<AiActivityRecommendationsResponse>;
   Activity: ResolverTypeWrapper<Activity>;
   ActivityFilterInput: ActivityFilterInput;
   ActivityType: ActivityType;
@@ -1077,6 +1107,8 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  AIActivityRecommendation: AiActivityRecommendation;
+  AIActivityRecommendationsResponse: AiActivityRecommendationsResponse;
   Activity: Activity;
   ActivityFilterInput: ActivityFilterInput;
   AdditionalCost: AdditionalCost;
@@ -1135,6 +1167,39 @@ export type ResolversParentTypes = {
   WFMWorkflowStepMutationResponse: WfmWorkflowStepMutationResponse;
   WFMWorkflowTransition: WfmWorkflowTransition;
   WFMWorkflowTransitionMutationResponse: WfmWorkflowTransitionMutationResponse;
+};
+
+export type AiActivityRecommendationResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AIActivityRecommendation"] = ResolversParentTypes["AIActivityRecommendation"],
+> = {
+  confidence?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  notes?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  reasoning?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  subject?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  suggestedDueDate?: Resolver<ResolversTypes["Date"], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes["ActivityType"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AiActivityRecommendationsResponseResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AIActivityRecommendationsResponse"] = ResolversParentTypes["AIActivityRecommendationsResponse"],
+> = {
+  contextSummary?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  primaryRecommendation?: Resolver<
+    ResolversTypes["AIActivityRecommendation"],
+    ParentType,
+    ContextType
+  >;
+  recommendations?: Resolver<
+    Array<ResolversTypes["AIActivityRecommendation"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ActivityResolvers<
@@ -1877,6 +1942,12 @@ export type QueryResolvers<
     RequireFields<QueryDealArgs, "id">
   >;
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
+  getAIActivityRecommendations?: Resolver<
+    ResolversTypes["AIActivityRecommendationsResponse"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetAiActivityRecommendationsArgs, "dealId">
+  >;
   getWfmAllowedTransitions?: Resolver<
     Array<ResolversTypes["WFMWorkflowTransition"]>,
     ParentType,
@@ -2213,6 +2284,8 @@ export type WfmWorkflowTransitionMutationResponseResolvers<
 };
 
 export type Resolvers<ContextType = GraphQLContext> = {
+  AIActivityRecommendation?: AiActivityRecommendationResolvers<ContextType>;
+  AIActivityRecommendationsResponse?: AiActivityRecommendationsResponseResolvers<ContextType>;
   Activity?: ActivityResolvers<ContextType>;
   AdditionalCost?: AdditionalCostResolvers<ContextType>;
   CustomFieldDefinition?: CustomFieldDefinitionResolvers<ContextType>;

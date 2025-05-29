@@ -19,7 +19,6 @@ import {
   Icon
 } from '@chakra-ui/react';
 import { ArrowBackIcon, WarningIcon } from '@chakra-ui/icons';
-import { useThemeStore } from '../stores/useThemeStore';
 import { usePeopleStore, Person } from '../stores/usePeopleStore'; // Assuming Person type is exported
 import {
   EmailIcon,
@@ -32,6 +31,7 @@ import {
 import { Deal } from '../stores/useDealsStore'; 
 import { Activity } from '../stores/useActivitiesStore'; 
 import { format, parseISO } from 'date-fns';
+import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors'; // NEW: Use semantic tokens
 // import { getLinkDisplayDetails } from '../utils/getLinkDisplayDetails'; // Removed for now
 
 // Helper to format dates
@@ -48,8 +48,10 @@ const formatDate = (dateString: string | Date | undefined) => {
 
 const PersonDetailPage = () => {
   const { personId } = useParams<{ personId: string }>();
-  const { currentTheme: currentThemeName } = useThemeStore();
-  const isModernTheme = currentThemeName === 'modern';
+  
+  // NEW: Use semantic tokens for automatic theme adaptation
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
 
   const fetchPersonById = usePeopleStore((state) => state.fetchPersonById);
   const currentPerson = usePeopleStore((state) => state.currentPerson);
@@ -64,30 +66,7 @@ const PersonDetailPage = () => {
     // return () => usePeopleStore.setState({ currentPerson: null, errorSinglePerson: null });
   }, [personId, fetchPersonById]);
 
-  if (!isModernTheme) {
-    // Basic non-modern theme fallback
-    return (
-      <Box p={5} maxW="lg" mx="auto">
-        <HStack mb={4}>
-          <IconButton as={RouterLink} to="/people" aria-label="Back to People" icon={<ArrowBackIcon />} />
-          <Heading size="lg">Person Details</Heading>
-        </HStack>
-        {isLoadingPerson && <Center><Spinner /></Center>}
-        {personError && <Alert status="error"><AlertIcon />{typeof personError === 'string' ? personError : JSON.stringify(personError)}</Alert>}
-        {currentPerson && (
-          <VStack align="start" spacing={3}>
-            <Text><strong>Name:</strong> {currentPerson.first_name} {currentPerson.last_name}</Text>
-            <Text><strong>Email:</strong> {currentPerson.email || 'N/A'}</Text>
-            <Text><strong>Phone:</strong> {currentPerson.phone || 'N/A'}</Text>
-            {/* Add more fields as needed */}
-          </VStack>
-        )}
-        {!currentPerson && !isLoadingPerson && !personError && <Text>Person not found.</Text>}
-      </Box>
-    );
-  }
-
-  // Modern Theme Layout
+  // NEW: Single unified layout that works with all themes
   return (
     <Box 
       h="calc(100vh - 40px)" 
@@ -97,66 +76,140 @@ const PersonDetailPage = () => {
       alignItems="center"
       justifyContent="center"
       p={4} 
+      bg={colors.bg.app} // NEW: Semantic token
     >
       <Box 
-        bg="gray.800" 
+        bg={colors.bg.surface} // NEW: Semantic token
         maxW="90vw" 
         w="full" 
         h="full"  
         maxH="calc(100% - 0px)" 
         borderRadius="xl" 
+        borderWidth="1px"
+        borderColor={colors.border.default} // NEW: Semantic token
         overflowY="auto"
         p={{base: 4, md: 8}}
         sx={{
             '&::-webkit-scrollbar': { width: '8px' },
-            '&::-webkit-scrollbar-thumb': { background: 'gray.600', borderRadius: '8px' },
-            '&::-webkit-scrollbar-track': { background: 'gray.750' },
+            '&::-webkit-scrollbar-thumb': { background: colors.border.subtle, borderRadius: '8px' }, // NEW: Semantic token
+            '&::-webkit-scrollbar-track': { background: colors.bg.input }, // NEW: Semantic token
         }}
       >
         {isLoadingPerson && (
-          <Center h="full"><Spinner size="xl" color="blue.400"/></Center>
+          <Center h="full">
+            <Spinner 
+              size="xl" 
+              color={colors.interactive.default} // NEW: Semantic token
+            />
+          </Center>
         )}
+        
         {personError && (
-          <Alert status="error" variant="subtle" borderRadius="lg" bg="red.900" color="white" mt={4}>
-            <AlertIcon color="red.300"/>
+          <Alert 
+            status="error" 
+            variant="subtle" 
+            borderRadius="lg" 
+            bg={colors.status.error} // NEW: Semantic token
+            color={colors.text.onAccent} // NEW: Semantic token
+            mt={4}
+          >
+            <AlertIcon color={colors.text.onAccent} /> {/* NEW: Semantic token */}
             <AlertTitle>Error Loading Person!</AlertTitle>
-            <AlertDescription>{typeof personError === 'string' ? personError : JSON.stringify(personError)}</AlertDescription>
+            <AlertDescription>
+              {typeof personError === 'string' ? personError : JSON.stringify(personError)}
+            </AlertDescription>
           </Alert>
         )}
+        
         {!isLoadingPerson && !personError && currentPerson && (
           <VStack spacing={6} align="stretch">
             {/* Header: Breadcrumbs, Title */}
-            <Box pb={4} borderBottomWidth="1px" borderColor="gray.700" mb={2}>
-              <Breadcrumb spacing="8px" separator={<Text color="gray.400">/</Text>} color="gray.400" fontSize="sm">
+            <Box 
+              pb={4} 
+              borderBottomWidth="1px" 
+              borderColor={colors.border.default} // NEW: Semantic token
+              mb={2}
+            >
+              <Breadcrumb 
+                spacing="8px" 
+                separator={<Text color={colors.text.muted}>/</Text>} // NEW: Semantic token
+                color={colors.text.muted} // NEW: Semantic token
+                fontSize="sm"
+              >
                 <BreadcrumbItem>
-                  <BreadcrumbLink as={RouterLink} to="/people" color="blue.400" _hover={{textDecoration: 'underline'}}>
+                  <BreadcrumbLink 
+                    as={RouterLink} 
+                    to="/people" 
+                    color={colors.text.link} // NEW: Semantic token
+                    _hover={{textDecoration: 'underline'}}
+                  >
                     People
                   </BreadcrumbLink>
                 </BreadcrumbItem>
                 <BreadcrumbItem isCurrentPage>
-                  <BreadcrumbLink href="#" color="gray.200" _hover={{textDecoration: 'none', cursor: 'default'}}>
+                  <BreadcrumbLink 
+                    href="#" 
+                    color={colors.text.secondary} // NEW: Semantic token
+                    _hover={{textDecoration: 'none', cursor: 'default'}}
+                  >
                     {currentPerson.first_name} {currentPerson.last_name}
                   </BreadcrumbLink>
                 </BreadcrumbItem>
               </Breadcrumb>
-              <Heading size="xl" color="white" mt={2}>{currentPerson.first_name} {currentPerson.last_name}</Heading>
+              <Heading 
+                size="xl" 
+                color={colors.text.primary} // NEW: Semantic token
+                mt={2}
+              >
+                {currentPerson.first_name} {currentPerson.last_name}
+              </Heading>
             </Box>
 
             {/* Person Details Card */}
-            <Box bg="gray.700" p={6} borderRadius="xl" border="1px solid" borderColor="gray.600">
-              <Heading size="md" mb={5} color="white">Contact Information</Heading>
+            <Box 
+              bg={colors.bg.elevated} // NEW: Semantic token
+              p={6} 
+              borderRadius="xl" 
+              borderWidth="1px" 
+              borderColor={colors.border.default} // NEW: Semantic token
+            >
+              <Heading 
+                size="md" 
+                mb={5} 
+                color={colors.text.primary} // NEW: Semantic token
+              >
+                Contact Information
+              </Heading>
               <VStack spacing={4} align="stretch">
                 <HStack justifyContent="space-between">
-                  <Text fontSize="sm" color="gray.400">Full Name</Text>
-                  <Text fontSize="md" fontWeight="medium" color="gray.200">{currentPerson.first_name} {currentPerson.last_name}</Text>
+                  <Text fontSize="sm" color={colors.text.muted}>Full Name</Text> {/* NEW: Semantic token */}
+                  <Text 
+                    fontSize="md" 
+                    fontWeight="medium" 
+                    color={colors.text.secondary} // NEW: Semantic token
+                  >
+                    {currentPerson.first_name} {currentPerson.last_name}
+                  </Text>
                 </HStack>
                 <HStack justifyContent="space-between">
-                  <Text fontSize="sm" color="gray.400">Email</Text>
-                  <Text fontSize="md" fontWeight="medium" color="blue.300">{currentPerson.email || '-'}</Text>
+                  <Text fontSize="sm" color={colors.text.muted}>Email</Text> {/* NEW: Semantic token */}
+                  <Text 
+                    fontSize="md" 
+                    fontWeight="medium" 
+                    color={colors.text.link} // NEW: Semantic token
+                  >
+                    {currentPerson.email || '-'}
+                  </Text>
                 </HStack>
                 <HStack justifyContent="space-between">
-                  <Text fontSize="sm" color="gray.400">Phone</Text>
-                  <Text fontSize="md" fontWeight="medium" color="gray.200">{currentPerson.phone || '-'}</Text>
+                  <Text fontSize="sm" color={colors.text.muted}>Phone</Text> {/* NEW: Semantic token */}
+                  <Text 
+                    fontSize="md" 
+                    fontWeight="medium" 
+                    color={colors.text.secondary} // NEW: Semantic token
+                  >
+                    {currentPerson.phone || '-'}
+                  </Text>
                 </HStack>
                 {/* Add more fields: Address, Company, etc. as available and needed */}
               </VStack>
@@ -164,11 +217,35 @@ const PersonDetailPage = () => {
             {/* We can add more cards here, e.g., for Related Deals, Activities, etc. */}
           </VStack>
         )}
+        
         {!currentPerson && !isLoadingPerson && !personError && (
-           <Center h="full" flexDirection="column" bg="gray.750" borderRadius="xl" p={6}>
-             <Icon as={WarningIcon} w={8} h={8} color="yellow.400" mb={4} />
-             <Text color="gray.300" fontSize="lg">Person not found.</Text>
-             <IconButton as={RouterLink} to="/people" aria-label="Back to People" icon={<ArrowBackIcon />} mt={6} colorScheme="blue"/>
+           <Center h="full" flexDirection="column">
+             <Box 
+               bg={colors.bg.elevated} // NEW: Semantic token
+               borderRadius="xl" 
+               p={8}
+               borderWidth="1px"
+               borderColor={colors.border.default} // NEW: Semantic token
+               textAlign="center"
+             >
+               <Icon 
+                 as={WarningIcon} 
+                 w={8} 
+                 h={8} 
+                 color={colors.status.warning} // NEW: Semantic token
+                 mb={4} 
+               />
+               <Text color={colors.text.secondary} fontSize="lg" mb={6}> {/* NEW: Semantic token */}
+                 Person not found.
+               </Text>
+               <IconButton 
+                 as={RouterLink} 
+                 to="/people" 
+                 aria-label="Back to People" 
+                 icon={<ArrowBackIcon />} 
+                 {...styles.button.primary} // NEW: Theme-aware button styles
+               />
+             </Box>
            </Center>
         )}
       </Box>

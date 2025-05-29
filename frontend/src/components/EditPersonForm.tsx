@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Button,
   FormControl,
@@ -66,7 +66,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
     loading: definitionsLoading, 
     error: definitionsError,
     getDefinitionsForEntity
-  } = useOptimizedCustomFields({ entityTypes: ['PERSON' as CustomFieldEntityType] });
+  } = useOptimizedCustomFields({ entityTypes: useMemo(() => ['PERSON' as CustomFieldEntityType], []) });
 
   const personCustomFieldDefinitions = getDefinitionsForEntity('PERSON' as CustomFieldEntityType);
 

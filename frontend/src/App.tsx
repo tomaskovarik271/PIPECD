@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { supabase } from './lib/supabase'; 
 import { Auth } from '@supabase/auth-ui-react';
@@ -30,75 +30,37 @@ import { useAppStore } from './stores/useAppStore';
 import { useWFMConfigStore } from './stores/useWFMConfigStore';
 import Sidebar from './components/layout/Sidebar';
 import { useThemeStore } from './stores/useThemeStore';
+import { useThemeColors } from './hooks/useThemeColors';
 
 function AppContent() {
   const isSidebarCollapsed = useAppStore((state) => state.isSidebarCollapsed);
   const sidebarWidth = isSidebarCollapsed ? "70px" : "280px";
-  const currentTheme = useThemeStore((state) => state.currentTheme);
-
-  if (currentTheme === 'modern') {
-    return (
-      <Box minH="100vh" bg="gray.900">
-        <Flex>
-          <Box 
-            w={sidebarWidth}
-            minH="100vh" 
-            bg="gray.850"
-            position="fixed" 
-            left="0" 
-            top="0"
-            zIndex="10"
-          >
-            <Sidebar />
-          </Box>
-          
-          <Box 
-            flex="1" 
-            ml={sidebarWidth}
-            bg="gray.900"
-            transition="margin-left 0.2s ease-in-out"
-          >
-            <Routes>
-              <Route path="/" element={<Heading size="lg" p={6} color="white">Home</Heading>} />
-              <Route path="/people" element={<PeoplePage />} />
-              <Route path="/people/:personId" element={<PersonDetailPage />} />
-              <Route path="/deals" element={<DealsPage />} />
-              <Route path="/deals/:dealId" element={<DealDetailPage />} />
-              <Route path="/organizations" element={<OrganizationsPage />} />
-              <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
-              <Route path="/activities" element={<ActivitiesPage />} />
-              <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
-              <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
-              <Route path="/admin/wfm" element={<WfmAdminPage />}>
-                <Route index element={<WFMStatusesPage />} />
-                <Route path="statuses" element={<WFMStatusesPage />} />
-                <Route path="workflows" element={<WFMWorkflowsPage />} />
-                <Route path="project-types" element={<WFMProjectTypesPage />} />
-              </Route>
-              <Route path="/project-board" element={<ProjectBoardPage />} />
-              <Route path="*" element={<Heading size="lg" p={6} color="white">404 Not Found</Heading>} />
-            </Routes>
-          </Box>
-        </Flex>
-      </Box>
-    );
-  }
+  
+  const colors = useThemeColors();
 
   return (
-    <Flex minH="100vh">
-      <Sidebar />
-      <Box 
-        as="main" 
-        flex={1} 
-        bg={{ base: 'gray.50', _dark: 'gray.900' }}
-        marginLeft={sidebarWidth}
-        transition="margin-left 0.2s ease-in-out"
-        width={`calc(100% - ${sidebarWidth})`}
-        position="relative"
-      >
+    <Box minH="100vh" bg={colors.bg.app}>
+      <Flex>
+        <Box 
+          w={sidebarWidth}
+          minH="100vh" 
+          bg={colors.bg.sidebar}
+          position="fixed" 
+          left="0" 
+          top="0"
+          zIndex="10"
+        >
+          <Sidebar />
+        </Box>
+        
+        <Box 
+          flex="1" 
+          ml={sidebarWidth}
+          bg={colors.bg.app}
+          transition="margin-left 0.2s ease-in-out"
+        >
           <Routes>
-            <Route path="/" element={<Heading size="lg" p={6}>Home</Heading>} />
+            <Route path="/" element={<Navigate to="/deals" replace />} />
             <Route path="/people" element={<PeoplePage />} />
             <Route path="/people/:personId" element={<PersonDetailPage />} />
             <Route path="/deals" element={<DealsPage />} />
@@ -116,10 +78,11 @@ function AppContent() {
               <Route path="project-types" element={<WFMProjectTypesPage />} />
             </Route>
             <Route path="/project-board" element={<ProjectBoardPage />} />
-            <Route path="*" element={<Heading size="lg">404 Not Found</Heading>} />
+            <Route path="*" element={<Heading size="lg" p={6} color={colors.text.primary}>404 Not Found</Heading>} />
           </Routes>
+        </Box>
+      </Flex>
     </Box>
-    </Flex>
   );
 }
 
@@ -130,6 +93,8 @@ function App() {
   const checkAuth = useAppStore((state) => state.checkAuth);
   const fetchSalesDealWorkflowId = useWFMConfigStore((state) => state.fetchSalesDealWorkflowId);
   const toast = useToast();
+  
+  const colors = useThemeColors();
 
   useEffect(() => {
     checkAuth();
@@ -154,18 +119,18 @@ function App() {
 
   if (isLoadingAuth) {
     return (
-      <Flex minH="100vh" align="center" justify="center">
-        <Spinner size="xl" />
+      <Flex minH="100vh" align="center" justify="center" bg={colors.bg.app}>
+        <Spinner size="xl" color={colors.interactive.default} />
       </Flex>
     );
   }
 
   if (!session) {
     return (
-      <Flex minH="100vh" align="center" justify="center" bg="gray.50">
-        <Box maxW="md" w="full" bg="white" boxShadow="lg" rounded="lg" p={8}>
+      <Flex minH="100vh" align="center" justify="center" bg={colors.bg.app}>
+        <Box maxW="md" w="full" bg={colors.bg.surface} boxShadow="lg" rounded="lg" p={8} borderWidth="1px" borderColor={colors.border.default}>
           <VStack spacing={4} align="stretch">
-            <Heading fontSize="2xl" textAlign="center">Sign in to your account</Heading>
+            <Heading fontSize="2xl" textAlign="center" color={colors.text.primary}>Sign in to your account</Heading>
             <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} providers={['github']} />
           </VStack>
         </Box>

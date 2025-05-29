@@ -12,7 +12,7 @@ import {
   Box,
 } from '@chakra-ui/react';
 import EmptyState from '../common/EmptyState'; // Assuming EmptyState is in common
-import { useThemeStore } from '../../stores/useThemeStore'; // Added theme store
+import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors'; // NEW: Use semantic tokens
 
 // Interface for EmptyState props (adjust if needed based on actual component)
 interface EmptyStateProps {
@@ -22,7 +22,7 @@ interface EmptyStateProps {
   actionButtonLabel?: string; // Make optional if not always needed
   onActionButtonClick?: () => void; // Make optional
   isActionButtonDisabled?: boolean; // Make optional
-  isModernTheme?: boolean; // ADDED for styling
+  // REMOVED: isModernTheme prop - no longer needed with semantic tokens
   // Add other props if EmptyState requires them
 }
 
@@ -52,32 +52,37 @@ const ListPageLayout: React.FC<ListPageLayoutProps> = ({
   children,
   customControls,
 }) => {
-  const { currentTheme: currentThemeName } = useThemeStore();
-  const isModernTheme = currentThemeName === 'modern';
+  // NEW: Use semantic tokens instead of manual theme checking
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
 
   return (
     <VStack 
       spacing={4} 
       align="stretch" 
-      p={isModernTheme ? 6 : 4} // Add padding consistent with other modern pages
-      bg={isModernTheme ? 'gray.900' : undefined} // Dark background for modern theme
-      color={isModernTheme ? 'white' : undefined} // Default text color for modern theme
+      p={6}
+      bg={colors.bg.content} // NEW: Semantic token
+      color={colors.text.primary} // NEW: Semantic token
       minH="100%" // Ensure it fills height
     >
       {/* Header Section */}
       <Flex justifyContent="space-between" alignItems="center" mb={6}>
-        <Heading as="h2" size="lg" color={isModernTheme ? 'white' : undefined}>
+        <Heading 
+          as="h2" 
+          size="lg" 
+          color={colors.text.primary} // NEW: Semantic token
+        >
           {title}
         </Heading>
         <HStack spacing={2}>
           {customControls && <Box>{customControls}</Box>}
           <Button 
-            colorScheme={isModernTheme ? "brand" : "blue"} // Use brand for modern theme
             onClick={onNewButtonClick}
             isDisabled={isNewButtonDisabled}
-            size={isModernTheme ? "md" : "md"} // Ensure consistent size
-            height={isModernTheme ? "40px" : undefined}
-            minW={isModernTheme ? "120px" : undefined}
+            size="md"
+            height="40px"
+            minW="120px"
+            {...styles.button.primary} // NEW: Theme-aware styles
           >
             {newButtonLabel}
           </Button>
@@ -87,12 +92,20 @@ const ListPageLayout: React.FC<ListPageLayoutProps> = ({
       {/* Conditional Content */}
       {isLoading && (
         <Flex justify="center" align="center" minH="200px">
-          <Spinner size="xl" color={isModernTheme ? 'white' : undefined} />
+          <Spinner 
+            size="xl" 
+            color={colors.interactive.default} // NEW: Semantic token
+          />
         </Flex>
       )}
 
       {!isLoading && error && (
-        <Alert status="error" variant={isModernTheme ? "solidSubtle" : "subtle"}> {/* Use modern variant if available */}
+        <Alert 
+          status="error" 
+          variant="subtle"
+          bg={colors.status.error} // NEW: Semantic token
+          color={colors.text.onAccent} // NEW: Semantic token
+        >
           <AlertIcon />
           {error}
         </Alert>
@@ -106,16 +119,18 @@ const ListPageLayout: React.FC<ListPageLayoutProps> = ({
           actionButtonLabel={newButtonLabel}
           onActionButtonClick={onNewButtonClick}
           isActionButtonDisabled={isNewButtonDisabled}
-          isModernTheme={isModernTheme}
+          // REMOVED: isModernTheme prop - EmptyState should use semantic tokens too
         />
       )}
 
       {!isLoading && !error && !isEmpty && (
-        // The table (children) will need its own modern theme styling
+        // The table (children) will use its own semantic styling
         <Box 
-          bg={isModernTheme ? 'gray.800' : undefined} 
-          borderRadius={isModernTheme ? 'xl' : undefined}
-          p={isModernTheme ? 6 : 0} // Add padding around table for modern
+          bg={colors.bg.surface} // NEW: Semantic token
+          borderRadius="xl"
+          borderWidth="1px"
+          borderColor={colors.border.default} // NEW: Semantic token
+          p={6}
         >
           {children}
         </Box>

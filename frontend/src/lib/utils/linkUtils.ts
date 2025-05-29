@@ -11,13 +11,13 @@ export interface LinkDisplayDetails {
 
 export const getLinkDisplayDetails = (str: string | null | undefined): LinkDisplayDetails => {
   if (!str) return { isUrl: false, displayText: '-' };
-  
+
   try {
     const url = new URL(str);
     if (!(url.protocol === 'http:' || url.protocol === 'https:')) {
       return { isUrl: false, displayText: str };
     }
-    
+
     // Google Services
     if (url.hostname.includes('docs.google.com')) {
       if (url.pathname.includes('/spreadsheets/')) {
@@ -50,7 +50,7 @@ export const getLinkDisplayDetails = (str: string | null | undefined): LinkDispl
     }
     
     // Add other services as needed (Slack, GitHub, etc.)
-    
+
     return { 
       isUrl: true, 
       displayText: str, 

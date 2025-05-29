@@ -5,7 +5,7 @@ interface UseFilteredDealsProps {
   deals: Deal[];
   activeQuickFilterKey: string | null;
   currentUserId?: string;
-  selectedAssignedUserId: string | null;
+  selectedAssignedUserIds: string[];
   searchTerm?: string;
 }
 
@@ -13,7 +13,7 @@ export function useFilteredDeals({
   deals,
   activeQuickFilterKey,
   currentUserId,
-  selectedAssignedUserId,
+  selectedAssignedUserIds,
   searchTerm,
 }: UseFilteredDealsProps): Deal[] {
   return useMemo(() => {
@@ -34,13 +34,16 @@ export function useFilteredDeals({
         }
       });
     }
-    // Add assigned user filter
-    if (selectedAssignedUserId && selectedAssignedUserId !== 'all') {
-      if (selectedAssignedUserId === 'unassigned') {
-        filtered = filtered.filter(deal => !deal.assigned_to_user_id);
-      } else {
-        filtered = filtered.filter(deal => deal.assigned_to_user_id === selectedAssignedUserId);
-      }
+    // Add assigned user filter - now supports multiple users
+    if (selectedAssignedUserIds && selectedAssignedUserIds.length > 0) {
+      filtered = filtered.filter(deal => {
+        // Check if "unassigned" is selected
+        if (selectedAssignedUserIds.includes('unassigned') && !deal.assigned_to_user_id) {
+          return true;
+        }
+        // Check if deal is assigned to any of the selected users
+        return deal.assigned_to_user_id && selectedAssignedUserIds.includes(deal.assigned_to_user_id);
+      });
     }
     // Search Term Filter (on deal name)
     if (searchTerm && searchTerm.trim() !== '') {
@@ -50,5 +53,5 @@ export function useFilteredDeals({
       );
     }
     return filtered;
-  }, [deals, activeQuickFilterKey, currentUserId, selectedAssignedUserId, searchTerm]);
+  }, [deals, activeQuickFilterKey, currentUserId, selectedAssignedUserIds, searchTerm]);
 } 

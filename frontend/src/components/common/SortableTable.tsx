@@ -9,7 +9,7 @@ import {
   TableContainer,
 } from '@chakra-ui/react';
 import { TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
-import { useThemeStore } from '../../stores/useThemeStore';
+import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 
 // Generic Column Definition
 export interface ColumnDefinition<T> {
@@ -47,8 +47,8 @@ function SortableTable<T extends { id: string }>({
   borderRadius: propBorderRadius // Renamed to avoid conflict
 }: SortableTableProps<T>) {
   
-  const { currentTheme: currentThemeName } = useThemeStore();
-  const isModernTheme = currentThemeName === 'modern';
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({ 
       key: initialSortKey,
@@ -112,42 +112,40 @@ function SortableTable<T extends { id: string }>({
   const renderSortIcon = (columnKey: string) => {
       if (sortConfig.key !== columnKey) return null;
       return sortConfig.direction === 'ascending' ? 
-             <TriangleUpIcon aria-label="sorted ascending" ml={1} w={3} h={3} /> : 
-             <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} />;
-  };
-
-  // Determine TableContainer styles based on theme
-  const tableContainerStyles = isModernTheme ? {
-    borderWidth: '0px', // No border, parent Box in ListPageLayout handles it
-    borderRadius: '0px',
-  } : {
-    borderWidth: propBorderWidth || "1px",
-    borderRadius: propBorderRadius || "lg",
+             <TriangleUpIcon aria-label="sorted ascending" ml={1} w={3} h={3} color={colors.text.secondary} /> : 
+             <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} color={colors.text.secondary} />;
   };
 
   return (
     <TableContainer 
       width="100%" 
-      borderWidth={tableContainerStyles.borderWidth}
-      borderRadius={tableContainerStyles.borderRadius}
+      borderWidth={propBorderWidth || "1px"}
+      borderRadius={propBorderRadius || "md"}
+      borderColor={colors.border.default}
     >
-      <Table variant={isModernTheme ? 'unstyled' : 'simple'} size="sm" width="100%">
-        <Thead bg={isModernTheme ? 'gray.750' : undefined}>
-          <Tr borderBottomWidth={isModernTheme ? "1px" : "1px"} borderColor={isModernTheme ? "gray.600" : "gray.200"}>
+      <Table variant="unstyled" size="sm" width="100%">
+        <Thead>
+          <Tr 
+            borderBottomWidth="1px" 
+            borderColor={colors.component.table.border}
+          >
             {columns.map((column) => (
               <Th
                 key={String(column.key)}
                 isNumeric={column.isNumeric}
                 cursor={column.isSortable ? "pointer" : "default"}
-                _hover={column.isSortable ? { bg: isModernTheme ? 'gray.600' : 'gray.100' } : {}}
+                bg={colors.component.table.header}
+                color={colors.text.secondary}
+                fontWeight="semibold"
+                textTransform="uppercase"
+                fontSize="xs"
+                py={3}
+                px={4}
+                borderBottomWidth="0px"
+                _hover={column.isSortable ? { 
+                  bg: colors.component.table.rowHover
+                } : {}}
                 onClick={column.isSortable ? () => requestSort(String(column.key)) : undefined}
-                color={isModernTheme ? 'gray.200' : undefined}
-                fontWeight={isModernTheme ? "semibold" : "bold"}
-                textTransform={isModernTheme ? "uppercase" : "none"}
-                fontSize={isModernTheme ? "xs" : undefined}
-                py={isModernTheme ? 3 : undefined}
-                px={isModernTheme ? 4 : undefined}
-                borderBottomWidth={isModernTheme ? "0px" : undefined} // Handled by Tr
               >
                 {column.header}
                 {column.isSortable && renderSortIcon(String(column.key))}
@@ -159,19 +157,21 @@ function SortableTable<T extends { id: string }>({
           {sortedData.map((item) => (
             <Tr 
               key={item.id} 
-              bg={isModernTheme ? 'gray.800' : 'white'} 
-              borderBottomWidth={isModernTheme ? "1px" : undefined}
-              borderColor={isModernTheme ? "gray.700" : undefined}
-              _hover={isModernTheme ? { bg: 'gray.750' } : {}}
+              bg={colors.component.table.row}
+              borderBottomWidth="1px"
+              borderColor={colors.component.table.border}
+              _hover={{ 
+                bg: colors.component.table.rowHover
+              }}
             >
               {columns.map((column) => (
                 <Td 
                   key={`${item.id}-${String(column.key)}`}
                   isNumeric={column.isNumeric}
-                  color={isModernTheme ? 'gray.100' : undefined}
-                  borderColor={isModernTheme ? "gray.700" : "gray.200"} // Use darker border for modern theme
-                  py={isModernTheme ? 3 : undefined}
-                  px={isModernTheme ? 4 : undefined}
+                  color={colors.text.primary}
+                  borderColor={colors.component.table.border}
+                  py={3}
+                  px={4}
                 >
                   {column.renderCell(item)}
                 </Td>

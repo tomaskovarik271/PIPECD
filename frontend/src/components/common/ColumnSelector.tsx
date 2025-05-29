@@ -20,7 +20,7 @@ import {
 } from '@chakra-ui/react';
 import { SearchIcon } from '@chakra-ui/icons';
 import type { ColumnDefinition } from './SortableTable'; // Assuming SortableTable exports this
-import { useThemeStore } from '../../stores/useThemeStore';
+import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors'; // NEW: Use semantic tokens
 
 interface ColumnSelectorProps<T> {
   isOpen: boolean;
@@ -44,6 +44,10 @@ function ColumnSelector<T>({
 }: ColumnSelectorProps<T>) {
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set(currentVisibleColumnKeys));
   const [searchTerm, setSearchTerm] = useState('');
+
+  // NEW: Use semantic tokens instead of manual theme checking
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
 
   useEffect(() => {
     setSelectedKeys(new Set(currentVisibleColumnKeys));
@@ -91,70 +95,44 @@ function ColumnSelector<T>({
   const customFields = filteredColumns.filter(col => String(col.key).startsWith('cf_'));
   const actionsField = filteredColumns.find(col => String(col.key) === 'actions');
 
-  // Determine if modern theme is active for modal styling
-  const currentThemeName = useThemeStore((state) => state.currentTheme);
-  const isModernTheme = currentThemeName === 'modern';
-
-  const modalContentStyles = isModernTheme ? {
-    bg: "gray.800",
-    color: "white",
-    border: "1px solid",
-    borderColor: "gray.600"
-  } : {};
-
-  const modalHeaderStyles = isModernTheme ? {
-    color: "white",
-    borderBottomWidth: "1px", // Add a divider below header
-    borderColor: "gray.600"
-  } : {};
-
-  const modalCloseButtonStyles = isModernTheme ? {
-    color: "white",
-    _hover: { bg: "gray.700" }
-  } : {};
-
-  const checkboxTextStyles = isModernTheme ? {
-    color: "gray.200" // Lighter gray for checkbox text for readability
-  } : {};
-  
-  const sectionTextStyles = isModernTheme ? {
-    color: "gray.100",
-    borderBottomWidth: "1px",
-    borderColor: "gray.700",
-    pb: 1,
-    mb: 2
-  } : { fontWeight: "semibold" };
-
-  const searchIconColor = isModernTheme ? "gray.400" : "gray.300";
-  const inputStyles = isModernTheme ? {} : {}; // Will pick up from theme if modern
-
-  const footerStyles = isModernTheme ? {
-    borderTopWidth: "1px",
-    borderColor: "gray.600"
-  } : {};
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="md" scrollBehavior="inside">
-      <ModalOverlay bg={isModernTheme ? "blackAlpha.600" : undefined} />
-      <ModalContent {...modalContentStyles}>
-        <ModalHeader {...modalHeaderStyles}>Select Columns to Display</ModalHeader>
-        <ModalCloseButton {...modalCloseButtonStyles} />
+      <ModalOverlay bg={colors.component.modal.overlay} /> {/* NEW: Semantic token */}
+      <ModalContent {...styles.modal.content}> {/* NEW: Theme-aware styles */}
+        <ModalHeader 
+          color={colors.text.primary} // NEW: Semantic token
+          borderBottomWidth="1px"
+          borderColor={colors.border.default} // NEW: Semantic token
+        >
+          Select Columns to Display
+        </ModalHeader>
+        <ModalCloseButton 
+          color={colors.text.primary} // NEW: Semantic token
+          _hover={{ bg: colors.component.button.ghostHover }} // NEW: Semantic token
+        />
         <ModalBody pb={6}>
           <VStack spacing={4} align="stretch">
             <InputGroup>
               <InputLeftElement pointerEvents="none">
-                <SearchIcon color={searchIconColor} />
+                <SearchIcon color={colors.text.muted} /> {/* NEW: Semantic token */}
               </InputLeftElement>
               <Input 
                 placeholder="Search columns..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                // Theme should handle styling for modern: bg, color, borderColor, _placeholder, _focus
-                // sx={inputStyles} // No longer needed if theme is applied correctly
+                {...styles.input} // NEW: Theme-aware styles
               />
             </InputGroup>
             
-            <Box maxHeight="40vh" overflowY="auto" borderWidth={isModernTheme ? "1px" : "1px"} borderColor={isModernTheme ? "gray.600" : "gray.200"} borderRadius="md" p={3}>
+            <Box 
+              maxHeight="40vh" 
+              overflowY="auto" 
+              borderWidth="1px" 
+              borderColor={colors.border.default} // NEW: Semantic token
+              borderRadius="md" 
+              p={3}
+              bg={colors.bg.elevated} // NEW: Semantic token
+            >
               <VStack spacing={3} align="stretch">
                 {actionsField && (
                   <Checkbox 
@@ -164,12 +142,25 @@ function ColumnSelector<T>({
                     isDisabled={selectedKeys.has(String(actionsField.key)) && selectedKeys.size === 1}
                     colorScheme="blue" // Keep colorScheme for the checkmark itself
                   >
-                    <Text {...checkboxTextStyles}>{actionsField.header}</Text>
+                    <Text color={colors.text.primary}>{actionsField.header}</Text> {/* NEW: Semantic token */}
                   </Checkbox>
                 )}
-                {actionsField && (standardFields.length > 0 || customFields.length > 0) && <Divider my={2} borderColor={isModernTheme ? "gray.600" : "gray.200"}/>}
+                {actionsField && (standardFields.length > 0 || customFields.length > 0) && (
+                  <Divider my={2} borderColor={colors.border.divider}/> 
+                )}
 
-                {standardFields.length > 0 && <Text {...sectionTextStyles}>Standard Fields</Text>}
+                {standardFields.length > 0 && (
+                  <Text 
+                    color={colors.text.secondary} // NEW: Semantic token
+                    fontWeight="semibold"
+                    borderBottomWidth="1px"
+                    borderColor={colors.border.divider} // NEW: Semantic token
+                    pb={1}
+                    mb={2}
+                  >
+                    Standard Fields
+                  </Text>
+                )}
                 {standardFields.map(col => (
                   <Checkbox 
                     key={String(col.key)} 
@@ -177,13 +168,26 @@ function ColumnSelector<T>({
                     onChange={() => handleToggle(String(col.key))}
                     colorScheme="blue"
                   >
-                    <Text {...checkboxTextStyles}>{col.header}</Text>
+                    <Text color={colors.text.primary}>{col.header}</Text> {/* NEW: Semantic token */}
                   </Checkbox>
                 ))}
 
-                {standardFields.length > 0 && customFields.length > 0 && <Divider my={2} borderColor={isModernTheme ? "gray.600" : "gray.200"}/>}
+                {standardFields.length > 0 && customFields.length > 0 && (
+                  <Divider my={2} borderColor={colors.border.divider}/> 
+                )}
 
-                {customFields.length > 0 && <Text {...sectionTextStyles}>Custom Fields</Text>}
+                {customFields.length > 0 && (
+                  <Text 
+                    color={colors.text.secondary} // NEW: Semantic token
+                    fontWeight="semibold"
+                    borderBottomWidth="1px"
+                    borderColor={colors.border.divider} // NEW: Semantic token
+                    pb={1}
+                    mb={2}
+                  >
+                    Custom Fields
+                  </Text>
+                )}
                 {customFields.map(col => (
                   <Checkbox 
                     key={String(col.key)} 
@@ -191,28 +195,47 @@ function ColumnSelector<T>({
                     onChange={() => handleToggle(String(col.key))}
                     colorScheme="blue"
                   >
-                    <Text {...checkboxTextStyles}>{col.header}</Text>
+                    <Text color={colors.text.primary}>{col.header}</Text> {/* NEW: Semantic token */}
                   </Checkbox>
                 ))}
                 
                 {filteredColumns.length === 0 && searchTerm && (
-                    <Text textAlign="center" color={isModernTheme ? "gray.400" : "gray.500"}>No columns match "{searchTerm}".</Text>
+                    <Text textAlign="center" color={colors.text.muted}> {/* NEW: Semantic token */}
+                      No columns match "{searchTerm}".
+                    </Text>
                 )}
               </VStack>
             </Box>
           </VStack>
         </ModalBody>
 
-        <ModalFooter {...footerStyles}>
+        <ModalFooter 
+          borderTopWidth="1px"
+          borderColor={colors.border.default} // NEW: Semantic token
+        >
           <HStack justifyContent="space-between" width="100%">
-            <Button variant="outline" onClick={handleReset} isDisabled={JSON.stringify(Array.from(selectedKeys).sort()) === JSON.stringify(defaultVisibleColumnKeys.sort())}>
+            <Button 
+              variant="outline" 
+              onClick={handleReset} 
+              isDisabled={JSON.stringify(Array.from(selectedKeys).sort()) === JSON.stringify(defaultVisibleColumnKeys.sort())}
+              {...styles.button.secondary} // NEW: Theme-aware styles
+            >
               Reset to Defaults
             </Button>
             <Box>
-              <Button variant={isModernTheme? "outline" : "ghost"} mr={3} onClick={onClose} sx={isModernTheme ? {color: "gray.300", _hover:{bg:"gray.700"}} : {}}>
+              <Button 
+                variant="ghost" 
+                mr={3} 
+                onClick={onClose}
+                {...styles.button.ghost} // NEW: Theme-aware styles
+              >
                 Cancel
               </Button>
-              <Button colorScheme="blue" onClick={handleApply}>
+              <Button 
+                colorScheme="blue" 
+                onClick={handleApply}
+                {...styles.button.primary} // NEW: Theme-aware styles
+              >
                 Apply
               </Button>
             </Box>

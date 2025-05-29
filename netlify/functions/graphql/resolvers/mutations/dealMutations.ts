@@ -128,10 +128,14 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
 
           const serviceInput: DealServiceUpdateData = {
             ...otherValidatedDataForService,
-            assigned_to_user_id: assignedToUserId,
             expected_close_date: validatedInput.expected_close_date,
             customFields: customFieldsForService, 
           };
+
+          // Only include assigned_to_user_id if it was actually provided in the input
+          if (Object.prototype.hasOwnProperty.call(args.input, 'assignedToUserId')) {
+            serviceInput.assigned_to_user_id = assignedToUserId;
+          }
 
           const updatedDealRecord = await dealService.updateDeal(userId, dealId, serviceInput, accessToken);
           

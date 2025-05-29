@@ -59,6 +59,12 @@ const processCustomFieldsForOrganizationCreate = async (
       case CustomFieldType.Boolean: valueToStore = cfInput.booleanValue; break;
       case CustomFieldType.Date: valueToStore = cfInput.dateValue; break; // Assuming dateValue is string/Date
       case CustomFieldType.Dropdown:
+        // Use stringValue for dropdown (correct format), with backward compatibility for selectedOptionValues
+        valueToStore = cfInput.stringValue || 
+          (cfInput.selectedOptionValues && cfInput.selectedOptionValues.length > 0 
+            ? cfInput.selectedOptionValues[0] 
+            : null);
+        break;
       case CustomFieldType.MultiSelect:
         valueToStore = cfInput.selectedOptionValues;
         break;
@@ -134,6 +140,12 @@ const processCustomFieldsForOrganizationUpdate = async (
             case CustomFieldType.Boolean: valueToStore = cfInput.booleanValue; break;
             case CustomFieldType.Date: valueToStore = cfInput.dateValue; break;
             case CustomFieldType.Dropdown:
+                // Use stringValue for dropdown (correct format), with backward compatibility for selectedOptionValues
+                valueToStore = cfInput.stringValue || 
+                  (cfInput.selectedOptionValues && cfInput.selectedOptionValues.length > 0 
+                    ? cfInput.selectedOptionValues[0] 
+                    : null);
+                break;
             case CustomFieldType.MultiSelect:
                 valueToStore = cfInput.selectedOptionValues;
                 break;

@@ -29,7 +29,7 @@ import { WfmStatus } from '../../generated/graphql/graphql';
 import CreateStatusModal from '../../components/admin/wfm/CreateStatusModal';
 import EditStatusModal from '../../components/admin/wfm/EditStatusModal';
 import ConfirmationDialog from '../../components/common/ConfirmationDialog';
-import { useThemeStore } from '../../stores/useThemeStore'; // Import useThemeStore
+import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors'; // NEW: Use semantic tokens
 
 const WFMStatusesPage: React.FC = () => {
   const {
@@ -48,9 +48,9 @@ const WFMStatusesPage: React.FC = () => {
   const [statusToDelete, setStatusToDelete] = useState<WfmStatus | null>(null); // Store the whole status object for name in dialog
   const toast = useToast();
 
-  // Get current theme
-  const currentThemeName = useThemeStore((state) => state.currentTheme);
-  const isModernTheme = currentThemeName === 'modern';
+  // NEW: Use semantic tokens for automatic theme adaptation
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
 
   useEffect(() => {
     fetchWFMStatuses();
@@ -90,36 +90,69 @@ const WFMStatusesPage: React.FC = () => {
   return (
     <Container maxW="container.xl" py={8}>
       <Flex justifyContent="space-between" alignItems="center" mb={6}>
-        <Heading as="h1" size="xl" color={isModernTheme ? "white" : undefined}>
+        <Heading as="h1" size="xl" color={colors.text.primary}>
           Manage WFM Statuses
         </Heading>
-        <Button leftIcon={<AddIcon />} colorScheme="blue" onClick={handleAddNewStatus}>
+        <Button 
+          leftIcon={<AddIcon />} 
+          onClick={handleAddNewStatus}
+          {...styles.button.primary}
+        >
           New Status
         </Button>
       </Flex>
-      <Text mb={4} color={isModernTheme ? "gray.300" : undefined}>
+      <Text mb={4} color={colors.text.secondary}>
         Define and manage global statuses for all workflows.
       </Text>
 
       {loading && statuses.length === 0 && (
         <Flex justifyContent="center" my={8}>
-          <Spinner thickness="4px" speed="0.65s" emptyColor={isModernTheme ? "gray.700" : "gray.200"} color="blue.500" size="xl" />
+          <Spinner 
+            thickness="4px" 
+            speed="0.65s" 
+            emptyColor={colors.bg.input}
+            color={colors.interactive.default}
+            size="xl" 
+          />
         </Flex>
       )}
 
       {error && (
-        <Alert status="error" my={4} variant={isModernTheme ? "subtle" : "solid"} bg={isModernTheme ? "red.900" : undefined} borderRadius={isModernTheme ? "lg" : undefined}>
-          <AlertIcon color={isModernTheme ? "red.300" : undefined}/>
-          <AlertTitle color={isModernTheme ? "white" : undefined}>Error communicating with server!</AlertTitle>
-          <AlertDescription color={isModernTheme ? "gray.200" : undefined}>{error}</AlertDescription>
+        <Alert 
+          status="error" 
+          my={4} 
+          variant="subtle"
+          bg={colors.status.error}
+          borderRadius="lg"
+        >
+          <AlertIcon />
+          <AlertTitle color={colors.text.onAccent}>Error communicating with server!</AlertTitle>
+          <AlertDescription color={colors.text.onAccent}>{error}</AlertDescription>
         </Alert>
       )}
 
       {!loading && !error && statuses.length === 0 && (
-         <Box textAlign="center" p={10} borderWidth="1px" borderRadius="lg" bg={isModernTheme ? "gray.800" : undefined} borderColor={isModernTheme ? "gray.600" : "gray.200"} shadow="sm">
-            <Heading as="h3" size="md" mb={2} color={isModernTheme ? "white" : undefined}>No WFM Statuses Found</Heading>
-            <Text mb={4} color={isModernTheme ? "gray.300" : undefined}>Get started by creating your first WFM status.</Text>
-            <Button colorScheme="blue" onClick={handleAddNewStatus}>Create First Status</Button>
+         <Box 
+           textAlign="center" 
+           p={10} 
+           borderWidth="1px" 
+           borderRadius="lg" 
+           bg={colors.bg.surface}
+           borderColor={colors.border.default}
+           shadow="sm"
+         >
+            <Heading as="h3" size="md" mb={2} color={colors.text.primary}>
+              No WFM Statuses Found
+            </Heading>
+            <Text mb={4} color={colors.text.secondary}>
+              Get started by creating your first WFM status.
+            </Text>
+            <Button 
+              onClick={handleAddNewStatus}
+              {...styles.button.primary}
+            >
+              Create First Status
+            </Button>
         </Box>
       )}
 
@@ -129,39 +162,105 @@ const WFMStatusesPage: React.FC = () => {
           borderRadius="xl" 
           shadow="sm" 
           overflowX="auto"
-          bg={isModernTheme ? "gray.800" : undefined}
-          borderColor={isModernTheme ? "gray.700" : "gray.200"} // Use gray.700 for a less prominent container border
-          p={isModernTheme ? 6 : 0} // Add padding for modern theme container
+          bg={colors.bg.surface}
+          borderColor={colors.border.default}
+          p={6}
         >
           <Table variant="simple" size="md">
             <Thead>
               <Tr>
-                <Th color={isModernTheme ? "gray.300" : undefined} borderColor={isModernTheme ? "gray.600" : undefined} fontWeight={isModernTheme ? "semibold" : undefined} textTransform={isModernTheme ? "uppercase" : undefined} fontSize={isModernTheme ? "xs" : undefined}>Name</Th>
-                <Th color={isModernTheme ? "gray.300" : undefined} borderColor={isModernTheme ? "gray.600" : undefined} fontWeight={isModernTheme ? "semibold" : undefined} textTransform={isModernTheme ? "uppercase" : undefined} fontSize={isModernTheme ? "xs" : undefined}>Description</Th>
-                <Th color={isModernTheme ? "gray.300" : undefined} borderColor={isModernTheme ? "gray.600" : undefined} fontWeight={isModernTheme ? "semibold" : undefined} textTransform={isModernTheme ? "uppercase" : undefined} fontSize={isModernTheme ? "xs" : undefined}>Color</Th>
-                <Th color={isModernTheme ? "gray.300" : undefined} borderColor={isModernTheme ? "gray.600" : undefined} fontWeight={isModernTheme ? "semibold" : undefined} textTransform={isModernTheme ? "uppercase" : undefined} fontSize={isModernTheme ? "xs" : undefined}>Archived</Th>
-                <Th color={isModernTheme ? "gray.300" : undefined} borderColor={isModernTheme ? "gray.600" : undefined} fontWeight={isModernTheme ? "semibold" : undefined} textTransform={isModernTheme ? "uppercase" : undefined} fontSize={isModernTheme ? "xs" : undefined}>Actions</Th>
+                <Th 
+                  color={colors.text.secondary}
+                  borderColor={colors.border.default}
+                  fontWeight="semibold" 
+                  textTransform="uppercase" 
+                  fontSize="xs"
+                >
+                  Name
+                </Th>
+                <Th 
+                  color={colors.text.secondary}
+                  borderColor={colors.border.default}
+                  fontWeight="semibold" 
+                  textTransform="uppercase" 
+                  fontSize="xs"
+                >
+                  Description
+                </Th>
+                <Th 
+                  color={colors.text.secondary}
+                  borderColor={colors.border.default}
+                  fontWeight="semibold" 
+                  textTransform="uppercase" 
+                  fontSize="xs"
+                >
+                  Color
+                </Th>
+                <Th 
+                  color={colors.text.secondary}
+                  borderColor={colors.border.default}
+                  fontWeight="semibold" 
+                  textTransform="uppercase" 
+                  fontSize="xs"
+                >
+                  Archived
+                </Th>
+                <Th 
+                  color={colors.text.secondary}
+                  borderColor={colors.border.default}
+                  fontWeight="semibold" 
+                  textTransform="uppercase" 
+                  fontSize="xs"
+                >
+                  Actions
+                </Th>
               </Tr>
             </Thead>
             <Tbody>
               {statuses.map((status) => (
-                <Tr key={status.id} _hover={isModernTheme ? { bg: "gray.700" } : {}}>
-                  <Td color={isModernTheme ? "white" : undefined} borderColor={isModernTheme ? "gray.600" : undefined}>{status.name}</Td>
-                  <Td whiteSpace="normal" wordBreak="break-word" color={isModernTheme ? "gray.300" : undefined} borderColor={isModernTheme ? "gray.600" : undefined}>{status.description}</Td>
-                  <Td borderColor={isModernTheme ? "gray.600" : undefined}>
+                <Tr key={status.id} _hover={{ bg: colors.component.table.rowHover }}>
+                  <Td 
+                    color={colors.text.primary}
+                    borderColor={colors.border.default}
+                  >
+                    {status.name}
+                  </Td>
+                  <Td 
+                    whiteSpace="normal" 
+                    wordBreak="break-word" 
+                    color={colors.text.secondary}
+                    borderColor={colors.border.default}
+                  >
+                    {status.description}
+                  </Td>
+                  <Td borderColor={colors.border.default}>
                     {status.color && (
                       <HStack spacing={2}>
-                        <Box w="20px" h="20px" bg={status.color} borderRadius="sm" borderWidth="1px" borderColor={isModernTheme ? "gray.500" : "gray.300"} />
-                        <Text color={isModernTheme ? "gray.300" : undefined}>{status.color}</Text>
+                        <Box 
+                          w="20px" 
+                          h="20px" 
+                          bg={status.color} 
+                          borderRadius="sm" 
+                          borderWidth="1px" 
+                          borderColor={colors.border.subtle}
+                        />
+                        <Text color={colors.text.secondary}>{status.color}</Text>
                       </HStack>
                     )}
                   </Td>
-                  <Td borderColor={isModernTheme ? "gray.600" : undefined}>
-                    <Tag colorScheme={status.isArchived ? 'red' : 'green'} variant={isModernTheme ? "subtle" : "solid"} bg={isModernTheme && status.isArchived ? "red.900" : isModernTheme && !status.isArchived ? "green.900" : undefined } color={isModernTheme && status.isArchived ? "red.300" : isModernTheme && !status.isArchived ? "green.300" : undefined }>
+                  <Td borderColor={colors.border.default}>
+                    <Tag 
+                      size="sm"
+                      variant="subtle"
+                      bg={status.isArchived ? colors.bg.surface : colors.bg.surface}
+                      color={status.isArchived ? colors.text.error : colors.text.success}
+                      borderWidth="1px"
+                      borderColor={status.isArchived ? colors.border.default : colors.border.default}
+                    >
                       {status.isArchived ? 'Yes' : 'No'}
                     </Tag>
                   </Td>
-                  <Td borderColor={isModernTheme ? "gray.600" : undefined}>
+                  <Td borderColor={colors.border.default}>
                     <HStack spacing={2}>
                       <IconButton 
                         aria-label="Edit status" 
@@ -170,8 +269,8 @@ const WFMStatusesPage: React.FC = () => {
                         variant="ghost"
                         onClick={() => handleEditStatus(status)}
                         isDisabled={loading}
-                        color={isModernTheme ? "gray.300" : undefined}
-                        _hover={isModernTheme ? {bg: "gray.600", color: "white"} : {}}
+                        color={colors.text.secondary}
+                        _hover={{ bg: colors.component.button.ghostHover, color: colors.text.primary }}
                       />
                       <IconButton 
                         aria-label="Delete status" 
@@ -181,8 +280,8 @@ const WFMStatusesPage: React.FC = () => {
                         colorScheme="red"
                         onClick={() => handleDeleteStatusClick(status)}
                         isDisabled={loading}
-                        color={isModernTheme ? "red.400" : undefined} // Explicit color for modern
-                        _hover={isModernTheme ? {bg: "red.800", color: "red.200"} : {}} // Darker red bg on hover for modern
+                        color={colors.text.error}
+                        _hover={{ bg: colors.status.error, color: colors.text.onAccent }}
                       />
                     </HStack>
                   </Td>

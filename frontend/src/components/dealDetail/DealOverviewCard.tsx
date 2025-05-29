@@ -9,20 +9,22 @@ import {
 } from '@chakra-ui/react';
 import { InlineEditableField } from '../common/InlineEditableField';
 import type { Deal } from '../../stores/useDealsStore';
+import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 
 interface DealOverviewCardProps {
   deal: Deal;
   onUpdateDeal: (dealId: string, updates: Record<string, any>) => Promise<void>;
-  isModernTheme?: boolean;
   userList?: Array<{ id: string; display_name?: string; email: string }>;
 }
 
 export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
   deal,
   onUpdateDeal,
-  isModernTheme = false,
   userList = []
 }) => {
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
+
   const getEffectiveProbabilityDisplay = useMemo(() => {
     let probability = deal.deal_specific_probability;
     let source = 'manual';
@@ -123,17 +125,17 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
 
   return (
     <Box 
-      bg={isModernTheme ? "gray.700" : "white"}
+      bg={colors.bg.elevated}
       p={6} 
       borderRadius="xl"
-      border="1px solid"
-      borderColor={isModernTheme ? "gray.600" : "gray.200"}
-      shadow={isModernTheme ? "none" : "sm"}
+      borderWidth="1px"
+      borderColor={colors.border.default}
+      boxShadow="sm"
     >
       <Heading 
         size="md" 
         mb={5} 
-        color={isModernTheme ? "white" : "gray.900"}
+        color={colors.text.primary}
       >
         Key Information
       </Heading>
@@ -146,11 +148,11 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
           inputType="number"
           onSave={handleAmountSave}
           validate={validateAmount}
-          textColor={isModernTheme ? "green.300" : "green.600"}
+          textColor={colors.text.success}
         />
 
         <HStack justifyContent="space-between" alignItems="center">
-          <Text fontSize="sm" color="gray.400">Probability</Text>
+          <Text fontSize="sm" color={colors.text.muted}>Probability</Text>
           <HStack flex={1} justifyContent="flex-end" spacing={2} maxW="60%">
             <Progress 
               value={getEffectiveProbabilityDisplay.value ? getEffectiveProbabilityDisplay.value * 100 : 0} 
@@ -158,12 +160,12 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
               colorScheme="blue" 
               flex={1} 
               borderRadius="full" 
-              bg={isModernTheme ? "gray.600" : "gray.200"}
+              bg={colors.bg.input}
             />
             <Text 
               fontSize="sm" 
               fontWeight="medium" 
-              color={isModernTheme ? "blue.300" : "blue.600"}
+              color={colors.interactive.default}
               minW="40px" 
               textAlign="right"
             >
@@ -181,7 +183,7 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
           formatDisplay={formatDate}
           inputType="date"
           onSave={handleCloseDateSave}
-          textColor={isModernTheme ? "gray.200" : "gray.800"}
+          textColor={colors.text.secondary}
         />
 
         <InlineEditableField
@@ -191,7 +193,7 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
           inputType="select"
           selectOptions={ownerSelectOptions}
           onSave={handleOwnerSave}
-          textColor={isModernTheme ? "gray.200" : "gray.800"}
+          textColor={colors.text.secondary}
           inputWidth="180px"
         />
 
@@ -203,7 +205,7 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
           inputType="number"
           onSave={handleProbabilitySave}
           validate={validateProbability}
-          textColor={isModernTheme ? "blue.300" : "blue.600"}
+          textColor={colors.interactive.default}
         />
       </VStack>
     </Box>

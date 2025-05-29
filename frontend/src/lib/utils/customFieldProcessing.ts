@@ -42,7 +42,6 @@ export const initializeCustomFieldValuesFromEntity = (
     if (existingValue) {
       switch (def.fieldType) {
         case 'TEXT' as CustomFieldType:
-        case 'DROPDOWN' as CustomFieldType:
           initialValues[def.fieldName] = existingValue.stringValue || '';
           break;
         case 'NUMBER' as CustomFieldType:
@@ -60,6 +59,13 @@ export const initializeCustomFieldValuesFromEntity = (
           break;
         case 'MULTI_SELECT' as CustomFieldType:
           initialValues[def.fieldName] = existingValue.selectedOptionValues || [];
+          break;
+        case 'DROPDOWN' as CustomFieldType:
+          // Check stringValue first (correct format), then selectedOptionValues for backward compatibility
+          initialValues[def.fieldName] = existingValue.stringValue || 
+            (existingValue.selectedOptionValues && existingValue.selectedOptionValues.length > 0 
+              ? existingValue.selectedOptionValues[0] 
+              : '');
           break;
         default:
           initialValues[def.fieldName] = '';
@@ -107,10 +113,11 @@ export const processCustomFieldsForSubmission = (
           case 'TEXT' as CustomFieldType:
             valueInput.stringValue = String(formValue);
             break;
-          case 'NUMBER' as CustomFieldType:
+          case 'NUMBER' as CustomFieldType: {
             const numericValue = parseFloat(String(formValue));
             valueInput.numberValue = isNaN(numericValue) ? undefined : numericValue;
             break;
+          }
           case 'BOOLEAN' as CustomFieldType:
             valueInput.booleanValue = Boolean(formValue);
             break;
@@ -118,7 +125,7 @@ export const processCustomFieldsForSubmission = (
             valueInput.dateValue = new Date(formValue).toISOString();
             break;
           case 'DROPDOWN' as CustomFieldType:
-            valueInput.selectedOptionValues = [String(formValue)];
+            valueInput.stringValue = String(formValue);
             break;
           case 'MULTI_SELECT' as CustomFieldType:
             valueInput.selectedOptionValues = Array.isArray(formValue) && formValue.length > 0 

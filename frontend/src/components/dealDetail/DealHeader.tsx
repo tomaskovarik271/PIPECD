@@ -10,13 +10,16 @@ import {
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import type { Deal } from '../../stores/useDealsStore';
+import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 
 interface DealHeaderProps {
   deal: Deal;
-  isModernTheme?: boolean;
 }
 
-export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isModernTheme = false }) => {
+export const DealHeader: React.FC<DealHeaderProps> = ({ deal }) => {
+  const colors = useThemeColors();
+  const styles = useThemeStyles();
+
   return (
     <Flex 
       direction={{ base: "column", md: "row" }}
@@ -24,16 +27,16 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isModernTheme = fa
       alignItems={{ base: "flex-start", md: "center" }} 
       pb={4} 
       borderBottomWidth="1px" 
-      borderColor={isModernTheme ? "gray.700" : "gray.200"}
+      borderColor={colors.border.default}
       mb={2}
       gap={2}
     >
       <VStack align="start" spacing={1}>
-        <HStack spacing={1} color={isModernTheme ? "gray.400" : "gray.600"} fontSize="sm">
+        <HStack spacing={1} color={colors.text.muted} fontSize="sm">
           <Link 
             as={RouterLink} 
             to="/deals" 
-            color={isModernTheme ? "blue.400" : "blue.500"}
+            color={colors.text.link}
             _hover={{ textDecoration: 'underline' }}
           >
             Deals
@@ -43,14 +46,14 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isModernTheme = fa
             noOfLines={1} 
             maxW={{ base: "200px", md: "300px" }} 
             title={deal.name} 
-            color={isModernTheme ? "gray.200" : "gray.800"}
+            color={colors.text.secondary}
           >
             {deal.name}
           </Text>
         </HStack>
         <Heading 
           size="xl" 
-          color={isModernTheme ? "white" : "gray.900"} 
+          color={colors.text.primary}
           noOfLines={1}
         >
           {deal.name}
@@ -64,6 +67,8 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isModernTheme = fa
               borderRadius="full" 
               px={3} 
               py={1}
+              bg={colors.component.kanban.card}
+              color={colors.text.primary}
             >
               {deal.currentWfmStep.status.name}
             </Tag>
@@ -75,8 +80,8 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isModernTheme = fa
             borderRadius="full" 
             px={3} 
             py={1} 
-            borderColor="purple.500" 
-            color="purple.400"
+            borderColor={colors.interactive.default}
+            color={colors.interactive.default}
           >
             Enterprise
           </Tag>
@@ -87,8 +92,8 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isModernTheme = fa
             borderRadius="full" 
             px={3} 
             py={1} 
-            borderColor="orange.500" 
-            color="orange.400"
+            borderColor={colors.status.warning}
+            color={colors.status.warning}
           >
             Urgent
           </Tag>

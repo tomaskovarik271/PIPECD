@@ -30,6 +30,24 @@ export type Scalars = {
   JSON: { input: Record<string, any>; output: Record<string, any> };
 };
 
+/** AI-powered activity recommendation system for intelligent sales assistance. */
+export type AiActivityRecommendation = {
+  __typename?: "AIActivityRecommendation";
+  confidence: Scalars["Float"]["output"];
+  notes: Scalars["String"]["output"];
+  reasoning: Scalars["String"]["output"];
+  subject: Scalars["String"]["output"];
+  suggestedDueDate: Scalars["Date"]["output"];
+  type: ActivityType;
+};
+
+export type AiActivityRecommendationsResponse = {
+  __typename?: "AIActivityRecommendationsResponse";
+  contextSummary: Scalars["String"]["output"];
+  primaryRecommendation: AiActivityRecommendation;
+  recommendations: Array<AiActivityRecommendation>;
+};
+
 export type Activity = {
   __typename?: "Activity";
   assignedToUser?: Maybe<User>;
@@ -629,6 +647,12 @@ export type Query = {
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
+  /**
+   * Get AI-powered activity recommendations for a specific deal.
+   * Analyzes deal context, contact information, recent activities, and workflow status
+   * to suggest the most effective next activities to advance the deal.
+   */
+  getAIActivityRecommendations: AiActivityRecommendationsResponse;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   me?: Maybe<User>;
@@ -672,6 +696,10 @@ export type QueryCustomFieldDefinitionsArgs = {
 
 export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryGetAiActivityRecommendationsArgs = {
+  dealId: Scalars["ID"]["input"];
 };
 
 export type QueryGetWfmAllowedTransitionsArgs = {
@@ -895,6 +923,36 @@ export type WfmWorkflowTransitionMutationResponse = {
   transitionId?: Maybe<Scalars["ID"]["output"]>;
 };
 
+export type GetAiActivityRecommendationsQueryVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+}>;
+
+export type GetAiActivityRecommendationsQuery = {
+  __typename?: "Query";
+  getAIActivityRecommendations: {
+    __typename?: "AIActivityRecommendationsResponse";
+    contextSummary: string;
+    primaryRecommendation: {
+      __typename?: "AIActivityRecommendation";
+      type: ActivityType;
+      subject: string;
+      notes: string;
+      suggestedDueDate: any;
+      confidence: number;
+      reasoning: string;
+    };
+    recommendations: Array<{
+      __typename?: "AIActivityRecommendation";
+      type: ActivityType;
+      subject: string;
+      notes: string;
+      suggestedDueDate: any;
+      confidence: number;
+      reasoning: string;
+    }>;
+  };
+};
+
 export type UpdateUserProfileMutationVariables = Exact<{
   input: UpdateUserProfileInput;
 }>;
@@ -922,6 +980,56 @@ export type GetDealCustomFieldDefinitionsQuery = {
     fieldName: string;
     fieldLabel: string;
     fieldType: CustomFieldType;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  }>;
+};
+
+export type GetAllCustomFieldDefinitionsQueryVariables = Exact<{
+  includeInactive?: InputMaybe<Scalars["Boolean"]["input"]>;
+}>;
+
+export type GetAllCustomFieldDefinitionsQuery = {
+  __typename?: "Query";
+  dealCustomFields: Array<{
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    entityType: CustomFieldEntityType;
+    isActive: boolean;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  }>;
+  personCustomFields: Array<{
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    entityType: CustomFieldEntityType;
+    isActive: boolean;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  }>;
+  organizationCustomFields: Array<{
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    entityType: CustomFieldEntityType;
+    isActive: boolean;
     dropdownOptions?: Array<{
       __typename?: "CustomFieldOption";
       value: string;
@@ -1631,26 +1739,6 @@ export type UpdateWfmWorkflowTransitionMutation = {
   };
 };
 
-export type GetOrganizationCustomFieldDefinitionsQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type GetOrganizationCustomFieldDefinitionsQuery = {
-  __typename?: "Query";
-  customFieldDefinitions: Array<{
-    __typename?: "CustomFieldDefinition";
-    id: string;
-    fieldName: string;
-    fieldLabel: string;
-    fieldType: CustomFieldType;
-    dropdownOptions?: Array<{
-      __typename?: "CustomFieldOption";
-      value: string;
-      label: string;
-    }> | null;
-  }>;
-};
-
 export type GetPersonCustomFieldDefinitionsQueryVariables = Exact<{
   [key: string]: never;
 }>;
@@ -2309,6 +2397,46 @@ export type GetOrganizationsQuery = {
       };
     }>;
   }>;
+};
+
+export type GetOrganizationByIdQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetOrganizationByIdQuery = {
+  __typename?: "Query";
+  organization?: {
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    address?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        displayOrder: number;
+        isRequired: boolean;
+        isActive: boolean;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+  } | null;
 };
 
 export type CreateOrganizationMutationVariables = Exact<{

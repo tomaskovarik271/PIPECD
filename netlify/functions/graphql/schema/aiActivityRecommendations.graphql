@@ -1,0 +1,27 @@
+"""
+AI-powered activity recommendation system for intelligent sales assistance.
+"""
+
+type AIActivityRecommendation {
+  type: ActivityType!
+  subject: String!
+  notes: String!
+  suggestedDueDate: Date!
+  confidence: Float!
+  reasoning: String!
+}
+
+type AIActivityRecommendationsResponse {
+  recommendations: [AIActivityRecommendation!]!
+  primaryRecommendation: AIActivityRecommendation!
+  contextSummary: String!
+}
+
+extend type Query {
+  """
+  Get AI-powered activity recommendations for a specific deal.
+  Analyzes deal context, contact information, recent activities, and workflow status
+  to suggest the most effective next activities to advance the deal.
+  """
+  getAIActivityRecommendations(dealId: ID!): AIActivityRecommendationsResponse!
+} 

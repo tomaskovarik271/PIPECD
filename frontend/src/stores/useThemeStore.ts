@@ -1,12 +1,12 @@
 import { create } from 'zustand';
 
-export type ThemeMode = 'modern' | 'industrialMetal';
+export type ThemeMode = 'modern' | 'lightModern' | 'industrialMetal';
 
 const getInitialTheme = (): ThemeMode => {
   if (typeof window !== 'undefined') {
     try {
       const storedTheme = localStorage.getItem('app-theme') as ThemeMode | null;
-      if (storedTheme && ['modern', 'industrialMetal'].includes(storedTheme)) {
+      if (storedTheme && ['modern', 'lightModern', 'industrialMetal'].includes(storedTheme)) {
         return storedTheme;
       }
     } catch (error: unknown) {

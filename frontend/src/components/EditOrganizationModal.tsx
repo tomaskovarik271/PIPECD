@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -60,13 +60,15 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
     error: definitionStoreError,
     getDefinitionsForEntity
   } = useOptimizedCustomFields({ 
-    entityTypes: ['ORGANIZATION' as CustomFieldEntityType] 
+    entityTypes: useMemo(() => ['ORGANIZATION' as CustomFieldEntityType], []) 
   });
 
   // Get active organization custom field definitions
-  const organizationCustomFieldDefinitions = getDefinitionsForEntity('ORGANIZATION' as CustomFieldEntityType)
-    .filter(def => def.isActive)
-    .sort((a, b) => a.displayOrder - b.displayOrder);
+  const organizationCustomFieldDefinitions = useMemo(() => {
+    return getDefinitionsForEntity('ORGANIZATION' as CustomFieldEntityType)
+      .filter(def => def.isActive)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+  }, [getDefinitionsForEntity]);
 
   // Initialize form when modal opens or organization changes
   useEffect(() => {
