@@ -40,6 +40,25 @@ export function requireAuthentication(context: GraphQLContext): { userId: string
 }
 
 /**
+ * Checks if the authenticated user has the required permission.
+ * Must be called after requireAuthentication.
+ * @param context - GraphQL context
+ * @param permission - Permission string to check (e.g., 'custom_fields:manage_definitions')
+ * @throws GraphQLError if user doesn't have the required permission
+ */
+export function requirePermission(context: GraphQLContext, permission: string): void {
+  if (!context.currentUser) {
+    throw new GraphQLError('Authentication required', { extensions: { code: 'UNAUTHENTICATED' } });
+  }
+  
+  if (!context.userPermissions || !context.userPermissions.includes(permission)) {
+    throw new GraphQLError(`Permission denied. Required permission: ${permission}`, { 
+      extensions: { code: 'FORBIDDEN', requiredPermission: permission } 
+    });
+  }
+}
+
+/**
  * Processes Zod validation errors and other errors into a GraphQLError.
  */
 export function processZodError(error: unknown, actionDescription: string): GraphQLError {

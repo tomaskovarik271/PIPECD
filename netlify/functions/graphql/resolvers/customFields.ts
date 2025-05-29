@@ -8,7 +8,7 @@ import type {
   CustomFieldEntityType as GraphQLCustomFieldEntityType,
   // CustomFieldValue as GraphQLCustomFieldValue, // Not directly used as return type here yet
 } from '../../../../lib/generated/graphql'; // Reverted to original path
-import { requireAuthentication, GraphQLContext } from '../helpers'; // Common helpers
+import { requireAuthentication, requirePermission, GraphQLContext } from '../helpers'; // Common helpers
 import { getAuthenticatedClient } from '../../../../lib/serviceUtils'; // Reverted to original path
 import * as customFieldDefinitionService from '../../../../lib/customFieldDefinitionService'; // To be created, path matches others
 
@@ -20,9 +20,9 @@ export const queryResolvers: Pick<QueryResolvers, 'customFieldDefinitions' | 'cu
   ): Promise<GraphQLCustomFieldDefinition[]> => {
     console.log('[Resolver Entry] Query.customFieldDefinitions invoked with args:', args);
     try {
-      requireAuthentication(context);
+      const auth = requireAuthentication(context);
       const { entityType, includeInactive = false } = args;
-      const supabase = getAuthenticatedClient(context.token);
+      const supabase = getAuthenticatedClient(auth.accessToken);
 
       // Verify that the service and function exist before calling
       if (!customFieldDefinitionService || typeof customFieldDefinitionService.getCustomFieldDefinitions !== 'function') {
@@ -69,9 +69,9 @@ export const queryResolvers: Pick<QueryResolvers, 'customFieldDefinitions' | 'cu
     args: { id: string },
     context: GraphQLContext
   ): Promise<GraphQLCustomFieldDefinition | null> => {
-    requireAuthentication(context);
+    const auth = requireAuthentication(context);
     const { id } = args;
-    const supabase = getAuthenticatedClient(context.token);
+    const supabase = getAuthenticatedClient(auth.accessToken);
 
     // console.log(`[Query.customFieldDefinition] Fetching for id: ${id}`);
     return customFieldDefinitionService.getCustomFieldDefinitionById(supabase, id);
@@ -90,14 +90,12 @@ export const mutationResolvers: Pick<
     args: { input: GraphQLCustomFieldDefinitionInput },
     context: GraphQLContext
   ): Promise<GraphQLCustomFieldDefinition> => {
-    requireAuthentication(context);
-    // TODO: Add permission check for 'custom_fields:manage_definitions'
+    const auth = requireAuthentication(context);
+    requirePermission(context, 'custom_fields:manage_definitions');
+    
     const { input } = args;
-    const supabase = getAuthenticatedClient(context.token);
-    const currentUser = context.currentUser!;
+    const supabase = getAuthenticatedClient(auth.accessToken);
 
-    // console.log(`[Mutation.createCustomFieldDefinition] User: ${currentUser.id}, Input:`, input);
-    // Permission check for 'custom_fields.manage_definitions' will be handled by RLS or a helper
     return customFieldDefinitionService.createCustomFieldDefinition(supabase, input);
   },
   updateCustomFieldDefinition: async (
@@ -105,13 +103,12 @@ export const mutationResolvers: Pick<
     args: { id: string; input: GraphQLCustomFieldDefinitionInput },
     context: GraphQLContext
   ): Promise<GraphQLCustomFieldDefinition> => {
-    requireAuthentication(context);
-    // TODO: Add permission check
+    const auth = requireAuthentication(context);
+    requirePermission(context, 'custom_fields:manage_definitions');
+    
     const { id, input } = args;
-    const supabase = getAuthenticatedClient(context.token);
-    const currentUser = context.currentUser!;
+    const supabase = getAuthenticatedClient(auth.accessToken);
 
-    // console.log(`[Mutation.updateCustomFieldDefinition] User: ${currentUser.id}, ID: ${id}, Input:`, input);
     return customFieldDefinitionService.updateCustomFieldDefinition(supabase, id, input);
   },
   deactivateCustomFieldDefinition: async (
@@ -119,13 +116,12 @@ export const mutationResolvers: Pick<
     args: { id: string },
     context: GraphQLContext
   ): Promise<GraphQLCustomFieldDefinition> => {
-    requireAuthentication(context);
-    // TODO: Add permission check
+    const auth = requireAuthentication(context);
+    requirePermission(context, 'custom_fields:manage_definitions');
+    
     const { id } = args;
-    const supabase = getAuthenticatedClient(context.token);
-    const currentUser = context.currentUser!;
+    const supabase = getAuthenticatedClient(auth.accessToken);
 
-    // console.log(`[Mutation.deactivateCustomFieldDefinition] User: ${currentUser.id}, ID: ${id}`);
     return customFieldDefinitionService.setCustomFieldDefinitionActiveStatus(supabase, id, false);
   },
   reactivateCustomFieldDefinition: async (
@@ -133,13 +129,12 @@ export const mutationResolvers: Pick<
     args: { id: string },
     context: GraphQLContext
   ): Promise<GraphQLCustomFieldDefinition> => {
-    requireAuthentication(context);
-    // TODO: Add permission check
+    const auth = requireAuthentication(context);
+    requirePermission(context, 'custom_fields:manage_definitions');
+    
     const { id } = args;
-    const supabase = getAuthenticatedClient(context.token);
-    const currentUser = context.currentUser!;
+    const supabase = getAuthenticatedClient(auth.accessToken);
 
-    // console.log(`[Mutation.reactivateCustomFieldDefinition] User: ${currentUser.id}, ID: ${id}`);
     return customFieldDefinitionService.setCustomFieldDefinitionActiveStatus(supabase, id, true);
   },
 };

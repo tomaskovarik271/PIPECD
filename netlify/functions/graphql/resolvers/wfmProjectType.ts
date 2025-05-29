@@ -1,4 +1,4 @@
-import { GraphQLContext } from '../helpers';
+import { GraphQLContext, requireAuthentication, requirePermission } from '../helpers';
 import { 
   WfmProjectType,
   CreateWfmProjectTypeInput,
@@ -53,14 +53,18 @@ export const WFMProjectTypeResolvers = {
   Mutation: {
     createWFMProjectType: async (_parent: unknown, args: { input: CreateWfmProjectTypeInput }, context: GraphQLContext): Promise<WfmProjectType> => {
       console.log('Resolving Mutation.createWFMProjectType with input:', args.input, 'user:', context.currentUser?.id);
-      if (!context.currentUser?.id) throw new Error('User must be authenticated');
-      const newProjectType = await wfmProjectTypeService.create(args.input, context.currentUser.id, context);
+      const auth = requireAuthentication(context);
+      requirePermission(context, 'wfm:manage_project_types');
+      
+      const newProjectType = await wfmProjectTypeService.create(args.input, auth.userId, context);
       return newProjectType as WfmProjectTypeWithResolvedIds;
     },
     updateWFMProjectType: async (_parent: unknown, args: { id: string, input: UpdateWfmProjectTypeInput }, context: GraphQLContext): Promise<WfmProjectType> => {
       console.log('Resolving Mutation.updateWFMProjectType with ID:', args.id, 'input:', args.input, 'user:', context.currentUser?.id);
-      if (!context.currentUser?.id) throw new Error('User must be authenticated');
-      const updatedProjectType = await wfmProjectTypeService.update(args.id, args.input, context.currentUser.id, context);
+      const auth = requireAuthentication(context);
+      requirePermission(context, 'wfm:manage_project_types');
+      
+      const updatedProjectType = await wfmProjectTypeService.update(args.id, args.input, auth.userId, context);
       if (!updatedProjectType) throw new Error('Project Type not found or update failed');
       return updatedProjectType as WfmProjectTypeWithResolvedIds;
     },
