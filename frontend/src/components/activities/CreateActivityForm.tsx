@@ -17,6 +17,7 @@ import {
   Spinner,
   Alert,
   AlertIcon,
+  Text,
 } from '@chakra-ui/react';
 import { useActivitiesStore, GeneratedCreateActivityInput as CreateActivityInput, ActivityType } from '../../stores/useActivitiesStore';
 import { usePeopleStore, Person } from '../../stores/usePeopleStore';
@@ -35,10 +36,8 @@ const activityTypes = [
 interface CreateActivityFormProps {
   onClose: () => void;
   onSuccess?: () => void; // Optional callback on successful creation
-  // Pass pre-filled links if creating from Deal/Person/Org page?
-  // initialDealId?: string;
-  // initialPersonId?: string;
-  // initialOrganizationId?: string;
+  initialDealId?: string; 
+  initialDealName?: string; // ADDED: To display the name of the pre-linked deal
 }
 
 // Use the store's CreateActivityInput for form values
@@ -47,7 +46,7 @@ type FormValues = CreateActivityInput;
 // Define type for link selection
 type LinkType = 'deal' | 'person' | 'organization' | 'none';
 
-function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
+function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName }: CreateActivityFormProps) {
   // Actions and state from useActivitiesStore
   const { createActivity, activitiesError, activitiesLoading } = useActivitiesStore();
 
@@ -55,7 +54,7 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
   const { people, fetchPeople, peopleLoading, peopleError: _peopleError } = usePeopleStore();
 
   // Deals state & actions from useDealsStore
-  const { deals, fetchDeals, dealsLoading, dealsError: _dealsError } = useDealsStore();
+  const { deals, fetchDeals, dealsLoading, dealsError: _dealsError } = useDealsStore(); 
 
   // Organizations state & actions from useOrganizationsStore
   const { organizations, fetchOrganizations, organizationsLoading, organizationsError: _organizationsError } = useOrganizationsStore();
@@ -66,7 +65,8 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
     register, 
     formState: { errors, isSubmitting },
     reset, 
-    setValue, 
+    setValue,
+    watch
   } = useForm<FormValues>({
       defaultValues: {
           type: activityTypes[0] as ActivityType,
@@ -74,28 +74,37 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
           due_date: null,
           notes: '',
           is_done: false,
-          deal_id: null,
+          deal_id: initialDealId || null, 
           person_id: null,
           organization_id: null,
       }
   });
 
   // State for the selected link type
-  const [selectedLinkType, setSelectedLinkType] = useState<LinkType>('none');
+  const [selectedLinkType, setSelectedLinkType] = useState<LinkType>(initialDealId ? 'deal' : 'none'); 
 
-  // Fetch related entities when the form mounts (or modal opens)
+  // Fetch related entities (only if not pre-linking via initialDealId)
   useEffect(() => {
-    // Fetch data for dropdowns when the component mounts.
-    // The stores themselves should ideally prevent redundant fetches if data is already loaded or loading.
-    fetchDeals(); 
-    fetchPeople();
-    fetchOrganizations();
-    // Dependency array includes the fetch functions. These should be stable references from Zustand.
-    // If they were unstable, this could loop. Assuming they are stable.
-  }, [fetchDeals, fetchPeople, fetchOrganizations]);
+    if (!initialDealId) {
+      fetchDeals(); 
+      fetchPeople();
+      fetchOrganizations();
+    } 
+  }, [fetchDeals, fetchPeople, fetchOrganizations, initialDealId]);
+  
+  // If initialDealId is provided, ensure the form value for deal_id is set.
+  useEffect(() => {
+    if (initialDealId) {
+      setValue('deal_id', initialDealId);
+      setSelectedLinkType('deal'); 
+    }
+  }, [initialDealId, setValue]);
 
-  // Clear other link IDs when radio selection changes
+
+  // Clear other link IDs when radio selection changes (Only if not initialDealId context)
   const handleLinkTypeChange = (nextValue: string) => {
+      if (initialDealId) return; // Don't allow changing link type if pre-set
+
       const linkType = nextValue as LinkType;
       setSelectedLinkType(linkType);
       // Clear other fields when changing type
@@ -108,6 +117,7 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
     // console.log('Submitting activity:', values);
     try {
       // Ensure at least one link is present (client-side check mimicking backend)
+      // This check is still valid, as initialDealId would satisfy it.
       if (!values.deal_id && !values.person_id && !values.organization_id) {
         toast({ title: 'Link Required', description: 'Please link the activity to a Deal, Person, or Organization.', status: 'warning', duration: 4000, isClosable: true });
         return; // Prevent submission
@@ -205,40 +215,49 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
         </FormControl>
         
         {/* --- Linked Entity Selection --- */}
-        <FormControl isInvalid={!!errors.deal_id || !!errors.person_id || !!errors.organization_id}>
-             <FormLabel>Linked To</FormLabel>
-             <RadioGroup onChange={handleLinkTypeChange} value={selectedLinkType}>
-                 <HStack spacing='20px' mb={2}>
-                     <Radio value='deal'>Deal</Radio>
-                     <Radio value='person'>Person</Radio>
-                     <Radio value='organization'>Organization</Radio>
-                     <Radio value='none' isDisabled={true} hidden={true}>None</Radio> {/* Hidden option for default/cleared */} 
-                 </HStack>
-             </RadioGroup>
-             
-             {isLoadingLinks && <Spinner size="sm" my={2}/>}
+        {initialDealId && initialDealName && (
+          <FormControl mt={2}>
+            <FormLabel>Linked To</FormLabel>
+            <Text fontWeight="bold">Deal: {initialDealName}</Text>
+          </FormControl>
+        )}
 
-             {!isLoadingLinks && selectedLinkType === 'deal' && (
-                 <Select 
-                    id='deal_id' 
-                    placeholder='Select Deal' 
-                    {...register('deal_id')} // Register deal_id
-                >
-                     {deals.map((deal: Deal) => (
-                        <option key={deal.id} value={deal.id}>{deal.name}</option>
-                     ))}
-                 </Select>
-             )}
+        {!initialDealId && (
+          <FormControl isInvalid={!!errors.deal_id || !!errors.person_id || !!errors.organization_id}>
+            <FormLabel>Link To (Select One)</FormLabel>
+            {isLoadingLinks && <Spinner size="sm" />}
+            {!isLoadingLinks && (
+              <RadioGroup onChange={handleLinkTypeChange} value={selectedLinkType}>
+                <HStack spacing={4}>
+                  <Radio value='deal'>Deal</Radio>
+                  <Radio value='person'>Person</Radio>
+                  <Radio value='organization'>Organization</Radio>
+                  <Radio value='none'>None</Radio> {/* "None" might be removed if a link is always required */}
+                </HStack>
+              </RadioGroup>
+            )}
+
+            {!isLoadingLinks && selectedLinkType === 'deal' && (
+              <Select 
+                id='deal_id' 
+                placeholder='Select Deal' 
+                {...register('deal_id')} 
+                mt={2}
+              >
+                {deals.filter(d => d && d.id && d.name).map((deal: Deal) => (
+                  <option key={deal.id} value={deal.id}>{deal.name}</option>
+                ))}
+              </Select>
+            )}
             {!isLoadingLinks && selectedLinkType === 'person' && (
                  <Select 
                     id='person_id' 
                     placeholder='Select Person' 
-                    {...register('person_id')} // Register person_id
+                    {...register('person_id')} 
+                    mt={2}
                  >
                      {people.map((person: Person) => (
-                        <option key={person.id} value={person.id}>
-                            {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email}
-                        </option>
+                        <option key={person.id} value={person.id}>{person.first_name} {person.last_name}</option>
                      ))}
                  </Select>
              )}
@@ -246,7 +265,8 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
                  <Select 
                     id='organization_id' 
                     placeholder='Select Organization' 
-                    {...register('organization_id')} // Register organization_id
+                    {...register('organization_id')} 
+                    mt={2}
                  >
                      {organizations.map((org: Organization) => (
                         <option key={org.id} value={org.id}>{org.name}</option>
@@ -255,7 +275,8 @@ function CreateActivityForm({ onClose, onSuccess }: CreateActivityFormProps) {
              )}
              {(errors.deal_id || errors.person_id || errors.organization_id) && 
                 <FormErrorMessage>Please select a linked entity if a type is chosen.</FormErrorMessage> }
-        </FormControl>
+          </FormControl>
+        )}
         {/* --- End Linked Entity Selection --- */}
         
         <FormControl isInvalid={!!errors.notes}>

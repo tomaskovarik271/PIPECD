@@ -11,22 +11,25 @@ export const cdColors = importedCdColors;
 export const config: ThemeConfig = baseThemeConfig;
 
 // Import themes from their individual files
-import { creativeDockLightTheme } from './themes/creativeDockLightTheme';
-import { creativeDockDarkTheme } from './themes/creativeDockDarkTheme';
-import { daliDarkTheme } from './themes/daliDarkTheme';
-import { bowieTheme } from './themes/bowieTheme';
+// import { creativeDockLightTheme } from './themes/creativeDockLightTheme'; // Removed
+// import { creativeDockDarkTheme } from './themes/creativeDockDarkTheme'; // Removed
+// import { daliDarkTheme } from './themes/daliDarkTheme'; // Removed
+// import { bowieTheme } from './themes/bowieTheme'; // Removed
 import { industrialMetalTheme } from './themes/industrialMetalTheme';
-import { andyWarholTheme } from './themes/andyWarholTheme';
+// import { andyWarholTheme } from './themes/andyWarholTheme'; // Removed
+import { creativeDockModernTheme } from './themes/creativeDockModernTheme';
 
-// Export all themes
+// Export only the allowed themes
 export const themes = {
-  light: creativeDockLightTheme,
-  dark: creativeDockDarkTheme,
-  daliDark: daliDarkTheme,
-  bowie: bowieTheme,
+  modern: creativeDockModernTheme,
   industrialMetal: industrialMetalTheme,
-  andyWarhol: andyWarholTheme,
 };
 
-// Default export for compatibility
-export default creativeDockLightTheme; 
+// Define an array of available themes for easier use in components like ThemeSwitcher
+export const availableThemes = [
+  { key: 'modern', name: 'Modern' , theme: creativeDockModernTheme },
+  { key: 'industrialMetal', name: 'Industrial Metal', theme: industrialMetalTheme },
+];
+
+// Update default export to one of the remaining themes
+export default creativeDockModernTheme; 

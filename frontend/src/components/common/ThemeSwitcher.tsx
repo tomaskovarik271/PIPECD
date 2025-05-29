@@ -2,9 +2,10 @@ import React from 'react';
 import { useThemeStore, ThemeMode } from '../../stores/useThemeStore';
 import { IconButton, useColorMode, Menu, MenuButton, MenuList, MenuItem, Text } from '@chakra-ui/react';
 import { SunIcon, MoonIcon, ChevronDownIcon, StarIcon } from '@chakra-ui/icons';
+import { availableThemes } from '../../theme'; // Import availableThemes
 
 const ThemeSwitcher: React.FC = () => {
-  const currentTheme = useThemeStore((state) => state.currentTheme);
+  const currentThemeKey = useThemeStore((state) => state.currentTheme);
   const setCurrentTheme = useThemeStore((state) => state.setCurrentTheme);
   const { setColorMode } = useColorMode();
 
@@ -13,55 +14,49 @@ const ThemeSwitcher: React.FC = () => {
   // We might not need toggleColorMode directly if our themes explicitly set colors.
   // const { colorMode, toggleColorMode } = useColorMode(); 
 
-  const handleThemeChange = (newTheme: ThemeMode) => {
-    setCurrentTheme(newTheme);
-    // For Chakra's internal mode, Ocean Breeze, Bowie & Industrial are considered 'light' or 'dark'
-    // based on their overall brightness. Bowie & Industrial are dark-based.
-    let chakraColorMode: 'light' | 'dark';
-    if (newTheme === 'dark' || newTheme === 'bowie' || newTheme === 'industrialMetal' || newTheme === 'daliDark') {
-      chakraColorMode = 'dark';
-    } else {
-      chakraColorMode = 'light';
-    }
-    setColorMode(chakraColorMode);
+  const handleThemeChange = (newThemeKey: ThemeMode) => {
+    setCurrentTheme(newThemeKey);
+    // Both remaining themes are dark-based for Chakra's color mode
+    setColorMode('dark');
   };
 
-  const getThemeIcon = (theme: ThemeMode) => {
-    if (theme === 'light') return <SunIcon />;
-    if (theme === 'dark') return <MoonIcon />;
-    if (theme === 'daliDark') return <Text as="span">👁️</Text>; // Dali Eye Icon
-    if (theme === 'bowie') return <Text as="span">⚡</Text>;
-    if (theme === 'industrialMetal') return <Text as="span">⚙️</Text>;
-    if (theme === 'andyWarhol') return <Text as="span">🥫</Text>;
-    return <ChevronDownIcon />; // Fallback for button
+  // Updated to use keys from availableThemes
+  const getThemeIcon = (themeKey: ThemeMode) => {
+    if (themeKey === 'modern') return <StarIcon />;
+    if (themeKey === 'industrialMetal') return <Text as="span">⚙️</Text>;
+    return <ChevronDownIcon />; // Fallback for button if currentThemeKey is somehow invalid
   };
 
-  const themeLabels: Record<ThemeMode, string> = {
-    light: 'Light Mode',
-    dark: 'Dark Mode',
-    daliDark: 'Dark Salvador Dali', // Renamed and relabeled
-    bowie: 'David Bowie',
-    industrialMetal: 'Industrial Metal',
-    andyWarhol: 'Andy Warhol',
-  };
+  // No longer need themeLabels if using availableThemes directly for name
+  // const themeLabels: Record<ThemeMode, string> = {
+  //   modern: 'Creative Dock Modern',
+  //   industrialMetal: 'Industrial Metal',
+  // };
 
   return (
     <Menu>
       <MenuButton
         as={IconButton}
         aria-label="Select theme"
-        icon={getThemeIcon(currentTheme)}
+        icon={getThemeIcon(currentThemeKey)}
         variant="ghost"
       />
-      <MenuList>
-        {(Object.keys(themeLabels) as ThemeMode[]).map((themeKey) => (
+      <MenuList
+        // Optional: Style MenuList for modern theme if needed
+        // bg={currentThemeKey === 'modern' ? 'gray.700' : undefined}
+        // borderColor={currentThemeKey === 'modern' ? 'gray.600' : undefined}
+      >
+        {availableThemes.map((themeObj) => (
           <MenuItem
-            key={themeKey}
-            icon={getThemeIcon(themeKey)}
-            onClick={() => handleThemeChange(themeKey)}
-            fontWeight={currentTheme === themeKey ? 'bold' : 'normal'}
+            key={themeObj.key as ThemeMode} // Cast key to ThemeMode
+            icon={getThemeIcon(themeObj.key as ThemeMode)} // Cast key to ThemeMode
+            onClick={() => handleThemeChange(themeObj.key as ThemeMode)} // Cast key to ThemeMode
+            fontWeight={currentThemeKey === themeObj.key ? 'bold' : 'normal'}
+            // Optional: Style MenuItem for modern theme if needed
+            // _hover={currentThemeKey === 'modern' ? { bg: 'gray.600' } : {}}
+            // color={currentThemeKey === 'modern' ? 'white' : undefined}
           >
-            {themeLabels[themeKey]}
+            {themeObj.name} {/* Use name from availableThemes object */}
           </MenuItem>
         ))}
       </MenuList>

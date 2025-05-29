@@ -1,9 +1,10 @@
 import { z } from 'zod';
 // import { StageType as GeneratedStageType } from '../../../lib/generated/graphql'; // REMOVED
-import type { 
+import { 
     PriceQuoteCreateInput as GeneratedPriceQuoteCreateInput,
     PriceQuoteUpdateInput as GeneratedPriceQuoteUpdateInput,
-    AdditionalCostInput as GeneratedAdditionalCostInput 
+    AdditionalCostInput as GeneratedAdditionalCostInput,
+    ActivityType as GeneratedActivityType
 } from '../../../lib/generated/graphql';
 
 // Zod schema for CustomFieldValueInput
@@ -84,14 +85,9 @@ export const DealUpdateSchema = DealBaseSchema.partial().refine(
 
 // === Activity Validators ===
 
-const ActivityTypeEnum = z.enum([
-  'TASK',
-  'MEETING',
-  'CALL',
-  'EMAIL',
-  'DEADLINE',
-  // Add any other types defined in the GraphQL enum
-], { errorMap: () => ({ message: 'Invalid activity type' }) });
+const ActivityTypeEnum = z.nativeEnum(GeneratedActivityType, {
+    errorMap: () => ({ message: 'Invalid activity type. Must be one of CALL, DEADLINE, EMAIL, MEETING, SYSTEM_TASK, TASK.' })
+});
 
 export const CreateActivityInputSchema = z.object({
   type: ActivityTypeEnum,

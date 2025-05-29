@@ -131,10 +131,18 @@ const GET_ACTIVITY_BY_ID_QUERY = gql`
       notes
       created_at
       updated_at
+      is_system_activity
       user { 
         id
         email 
         display_name
+      }
+      assigned_to_user_id
+      assignedToUser {
+        id
+        email
+        display_name
+        avatar_url
       }
       deal { 
         id

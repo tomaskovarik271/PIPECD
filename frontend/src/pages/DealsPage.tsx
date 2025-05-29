@@ -15,33 +15,38 @@ import {
   ButtonGroup,
   Link,
   Icon,
+  Select,
+  Input,
+  InputGroup,
+  InputLeftElement,
+  StatGroup,
+  Stat,
+  StatLabel,
+  StatNumber,
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
-import { SettingsIcon, LinkIcon, ViewIcon as PageViewIcon } from '@chakra-ui/icons';
+import { SettingsIcon, LinkIcon, ViewIcon as PageViewIcon, SearchIcon, AddIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
 import type { Person as GeneratedPerson, CustomFieldDefinition, CustomFieldValue, CustomFieldType as GQLCustomFieldType, StageType } from '../generated/graphql/graphql';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
-import ListPageLayout from '../components/layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import ColumnSelector from '../components/common/ColumnSelector';
 import EmptyState from '../components/common/EmptyState';
-import DealsKanbanView from '../components/deals/DealsKanbanView';
+import DealsKanbanPageLayout from '../components/deals/DealsKanbanPageLayout';
 import QuickFilterControls, { QuickFilter } from '../components/common/QuickFilterControls';
 import { getLinkDisplayDetails, LinkDisplayDetails } from '../lib/utils/linkUtils';
 
-// Import the new hooks
 import { useDealsPageModals } from '../hooks/useDealsPageModals';
 import { useDealDataManagement } from '../hooks/useDealDataManagement';
 
-// Import the new view components
-import DealsTableView from '../components/deals/DealsTableView';
-import DealsKanbanPageView from '../components/deals/DealsKanbanPageView';
-
-// Import the new hook for columns
 import { useDealsTableColumns } from '../hooks/useDealsTableColumns.tsx';
+
+import { useUserListStore, UserListItem } from '../stores/useUserListStore';
+import { useFilteredDeals } from '../hooks/useFilteredDeals';
+import { useThemeStore } from '../stores/useThemeStore';
 
 function DealsPage() {
   const { 
@@ -49,7 +54,7 @@ function DealsPage() {
     dealsLoading, 
     dealsError, 
     fetchDeals, 
-    deleteDeal: deleteDealActionFromStore, // Renamed for clarity
+    deleteDeal: deleteDealActionFromStore,
     dealsViewMode,
     setDealsViewMode
   } = useDealsStore();
@@ -58,6 +63,8 @@ function DealsPage() {
   const session = useAppStore((state) => state.session);
   const currentUserId = session?.user.id;
   
+  const isSidebarCollapsed = useAppStore((state) => state.isSidebarCollapsed);
+  
   const { 
     tableColumnPreferences, 
     initializeTable, 
@@ -65,7 +72,6 @@ function DealsPage() {
     resetTableToDefaults 
   } = useViewPreferencesStore();
   
-  // Use the new hooks
   const {
     isCreateModalOpen, openCreateModal, closeCreateModal,
     isEditModalOpen, openEditModal, closeEditModal, dealToEdit,
@@ -73,21 +79,19 @@ function DealsPage() {
     isColumnSelectorOpen, openColumnSelectorModal, closeColumnSelectorModal
   } = useDealsPageModals();
 
-  const toast = useToast(); // Keep toast here if page-level notifications are still needed, or move if fully handled by hooks
+  const toast = useToast();
 
-  // dealToDeleteId for connecting modal open action with data management hook
   const [dealIdPendingConfirmation, setDealIdPendingConfirmation] = useState<string | null>(null);
 
   const {
     dealCustomFieldDefinitions,
     customFieldsLoading,
-    confirmDeleteHandler, // This is the async function that performs delete
-    isDeletingDeal,       // Boolean indicating if delete is in progress
-    dealToDeleteId: activeDeletingDealId, // ID of deal being processed by confirmDeleteHandler
+    confirmDeleteHandler,
+    isDeletingDeal,
+    dealToDeleteId: activeDeletingDealId,
     clearDealToDeleteId
   } = useDealDataManagement({ deleteDealActionFromStore, initialDealsError: dealsError });
 
-  // Local state for quick filters remains for now
   const [activeQuickFilterKey, setActiveQuickFilterKey] = useState<string | null>(null);
 
   const availableQuickFilters = useMemo((): QuickFilter[] => [
@@ -95,6 +99,18 @@ function DealsPage() {
     { key: 'myOpen', label: 'My Open Deals' },
     { key: 'closingThisMonth', label: 'Closing This Month' },
   ], []);
+
+  const { users: userList, loading: usersLoading, error: usersError, fetchUsers, hasFetched: hasFetchedUsers } = useUserListStore();
+  const [selectedAssignedUserId, setSelectedAssignedUserId] = useState<string | null>(null);
+
+  // Search term state for table view header
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (!hasFetchedUsers) {
+      fetchUsers();
+    }
+  }, [fetchUsers, hasFetchedUsers]);
 
   useEffect(() => {
     fetchDeals();
@@ -106,41 +122,37 @@ function DealsPage() {
   const handleEditClick = (deal: Deal) => openEditModal(deal);
   
   const handleDeleteClick = (dealId: string) => {
-    setDealIdPendingConfirmation(dealId); // Set the ID that we intend to delete
-    openConfirmDeleteModal();      // Open the confirmation dialog
+    setDealIdPendingConfirmation(dealId);
+    openConfirmDeleteModal();
   };
 
-  // handleConfirmDelete is now mostly within useDealDataManagement
-  // The page component orchestrates opening the dialog and then calling the handler
   const onConfirmActualDelete = async () => {
     if (dealIdPendingConfirmation) {
       await confirmDeleteHandler(dealIdPendingConfirmation);
       closeConfirmDeleteModal();
-      clearDealToDeleteId(); // Clear ID in the data management hook
-      setDealIdPendingConfirmation(null); // Clear our temporary pending ID
+      clearDealToDeleteId(); 
+      setDealIdPendingConfirmation(null);
     }
   };
 
   const onCancelDelete = () => {
     closeConfirmDeleteModal();
-    clearDealToDeleteId(); // Clear ID in the data management hook if it was set
-    setDealIdPendingConfirmation(null); // Ensure this uses the correct setter
+    clearDealToDeleteId(); 
+    setDealIdPendingConfirmation(null);
   }
 
   const TABLE_KEY = 'deals_list';
 
-  // Get columns from the new hook
   const { standardColumns, actionsColumn: actionsColumnFromHook, customFieldColumns: customFieldColumnsFromHook } = useDealsTableColumns({
     dealCustomFieldDefinitions,
-    handleEditClick, // Pass the function
-    handleDeleteClick, // Pass the function
+    handleEditClick,
+    handleDeleteClick,
     userPermissions,
     currentUserId,
     activeDeletingDealId,
   });
 
   const allAvailableColumns = useMemo((): ColumnDefinition<Deal>[] => {
-    // customFieldColumns definition is now removed from here.
     const columnsToUse: ColumnDefinition<Deal>[] = [];
     if (standardColumns) columnsToUse.push(...standardColumns);
     if (customFieldColumnsFromHook) columnsToUse.push(...customFieldColumnsFromHook);
@@ -160,197 +172,325 @@ function DealsPage() {
     }
   }, [initializeTable, defaultVisibleColumnKeys, allAvailableColumns, customFieldsLoading]);
 
-  const currentVisibleColumnKeys = tableColumnPreferences[TABLE_KEY]?.visibleColumnKeys || defaultVisibleColumnKeys;
+  const currentTableVisibleColumnKeys = tableColumnPreferences[TABLE_KEY]?.visibleColumnKeys || defaultVisibleColumnKeys;
   
   const visibleColumns = useMemo(() => {
     if (customFieldsLoading || !allAvailableColumns || allAvailableColumns.length === 0) return [];
     const availableKeysSet = new Set(allAvailableColumns.map(col => String(col.key)));
-    const validVisibleKeys = currentVisibleColumnKeys.filter(key => availableKeysSet.has(key));
+    const validVisibleKeys = currentTableVisibleColumnKeys.filter(key => availableKeysSet.has(key));
     
     const finalKeysToShow = validVisibleKeys.length > 0 
         ? validVisibleKeys 
         : defaultVisibleColumnKeys.filter(key => availableKeysSet.has(key));
 
     return allAvailableColumns.filter(col => finalKeysToShow.includes(String(col.key)));
-  }, [allAvailableColumns, currentVisibleColumnKeys, customFieldsLoading, defaultVisibleColumnKeys]);
-
-  const emptyStatePropsForLayout = { 
-    icon: PageViewIcon, 
-    title: "No Deals Found", 
-    message: "Get started by creating your first deal or try a different filter.",
-  };
+  }, [allAvailableColumns, currentTableVisibleColumnKeys, customFieldsLoading, defaultVisibleColumnKeys]);
   
   const pageIsLoading = dealsLoading || customFieldsLoading;
 
-  const displayedDeals = useMemo(() => {
-    let filtered = deals;
-    if (activeQuickFilterKey && activeQuickFilterKey !== 'all') {
-      filtered = deals.filter(deal => {
-        switch (activeQuickFilterKey) {
-          case 'myOpen':
-            return deal.user_id === currentUserId && deal.currentWfmStep && !deal.currentWfmStep.isFinalStep;
-          case 'closingThisMonth': {
-            if (!deal.expected_close_date) return false;
-            const closeDate = new Date(deal.expected_close_date);
-            const today = new Date();
-            return closeDate.getFullYear() === today.getFullYear() && closeDate.getMonth() === today.getMonth();
-          }
-          default:
-            return true;
-        }
-      });
-    }
-    return filtered;
-  }, [deals, activeQuickFilterKey, currentUserId]);
+  const displayedDeals = useFilteredDeals({
+    deals,
+    activeQuickFilterKey,
+    currentUserId,
+    selectedAssignedUserId,
+    searchTerm,
+  });
+  
+  // Modern Theme specific constants from DealsKanbanPageLayout
+  const { currentTheme: currentThemeName } = useThemeStore();
+  const isModernTheme = currentThemeName === 'modern';
 
-  // For List View
-  const listPageContent = (
-    <ListPageLayout
-      title="Deals"
-      newButtonLabel="New Deal"
-      onNewButtonClick={handleCreateDealClick}
-      isNewButtonDisabled={!userPermissions?.includes('deal:create')}
-      isLoading={pageIsLoading}
-      error={dealsError}
-      isEmpty={!pageIsLoading && !dealsError && displayedDeals.length === 0}
-      emptyStateProps={emptyStatePropsForLayout} // Use the simplified props
-      customControls={
-        <HStack spacing={2} my={2}>
-          <ButtonGroup size="sm" isAttached variant="outline">
-            <Button onClick={() => setDealsViewMode('table')} isActive={dealsViewMode === 'table'}>Table</Button>
-            <Button onClick={() => setDealsViewMode('kanban')} isActive={dealsViewMode === 'kanban'}>Kanban</Button>
-          </ButtonGroup>
-          <QuickFilterControls
-            availableFilters={availableQuickFilters}
-            activeFilterKey={activeQuickFilterKey}
-            onSelectFilter={setActiveQuickFilterKey}
-          />
-          <Button leftIcon={<SettingsIcon />} onClick={openColumnSelectorModal} size="sm" variant="outline">
-            Columns
-          </Button>
-        </HStack>
-      }
-    >
-      {!pageIsLoading && !dealsError && displayedDeals.length > 0 && (
-        <SortableTable<Deal> 
-          data={displayedDeals} 
-          columns={visibleColumns} 
-          initialSortKey="expected_close_date" 
-          initialSortDirection="ascending" 
-        />
-      )}
-    </ListPageLayout>
-  );
+  // Calculate sidebar width based on theme and collapsed state
+  const modernThemeSidebarWidth = isSidebarCollapsed ? "70px" : "280px";
+  const otherThemeSidebarWidth = isSidebarCollapsed ? "70px" : "200px";
+  const actualSidebarWidth = isModernTheme ? modernThemeSidebarWidth : otherThemeSidebarWidth;
 
-  // For Kanban View
-  const kanbanPageContent = (
-    <VStack spacing={4} align="stretch" w="100%">
-      <Flex justifyContent="space-between" alignItems="center" mb={0} mt={2} px={6}>
-        <Heading as="h2" size="lg">
-          Deals
-        </Heading>
-        <HStack spacing={2}>
-         <ButtonGroup size="sm" isAttached variant="outline">
-            <Button onClick={() => setDealsViewMode('table')} isActive={dealsViewMode === 'table'}>Table</Button>
-            <Button onClick={() => setDealsViewMode('kanban')} isActive={dealsViewMode === 'kanban'}>Kanban</Button>
-          </ButtonGroup>
-          <QuickFilterControls
-            availableFilters={availableQuickFilters}
-            activeFilterKey={activeQuickFilterKey}
-            onSelectFilter={setActiveQuickFilterKey}
-          />
-          <Button 
-            colorScheme="blue"
-            onClick={handleCreateDealClick}
-            isDisabled={!userPermissions?.includes('deal:create')}
-            size="md"
-          >
-            New Deal
-          </Button>
-        </HStack>
-      </Flex>
-      {pageIsLoading && (
-        <Flex justify="center" align="center" minH="200px"><Spinner size="xl" /></Flex>
-      )}
-      {!pageIsLoading && dealsError && (
-        <Alert status="error" mx={6}><AlertIcon />{dealsError}</Alert>
-      )}
-      {!pageIsLoading && !dealsError && displayedDeals.length === 0 && (
-        <Box mx={6}>
-          <EmptyState 
-            icon={PageViewIcon} 
-            title="No Deals Found" 
-            message="Get started by creating your first deal or try a different filter." 
-            actionButtonLabel="New Deal"
-            onActionButtonClick={handleCreateDealClick}
-            isActionButtonDisabled={!userPermissions?.includes('deal:create')}
-          />
-        </Box>
-      )}
-      {!pageIsLoading && !dealsError && displayedDeals.length > 0 && (
-        <DealsKanbanView />
-      )}
-    </VStack>
-  );
+  const modernPageHeaderHeight = "auto";
+  const modernHeaderPaddingY = "24px";
+  const modernHeaderPaddingX = "32px";
+  const modernButtonHeight = "40px";
+  const modernButtonSize = "md";
 
-  return (
-    <Box w="100%">
-      {dealsViewMode === 'table' ? (
-        <DealsTableView
-          deals={displayedDeals}
-          columns={visibleColumns}
-          isLoading={pageIsLoading}
-          error={dealsError}
-          onNewButtonClick={handleCreateDealClick}
-          userPermissions={userPermissions}
-          emptyStateProps={emptyStatePropsForLayout}
-          onOpenColumnSelector={openColumnSelectorModal}
-          dealsViewMode={dealsViewMode}
-          onSetDealsViewMode={setDealsViewMode}
-          availableQuickFilters={availableQuickFilters}
-          activeQuickFilterKey={activeQuickFilterKey}
-          onSelectQuickFilter={setActiveQuickFilterKey}
-        />
-      ) : (
-        <DealsKanbanPageView
-          deals={displayedDeals}
-          isLoading={pageIsLoading}
-          error={dealsError}
-          onNewButtonClick={handleCreateDealClick}
-          userPermissions={userPermissions}
-          dealsViewMode={dealsViewMode}
-          onSetDealsViewMode={setDealsViewMode}
-          availableQuickFilters={availableQuickFilters}
-          activeQuickFilterKey={activeQuickFilterKey}
-          onSelectQuickFilter={setActiveQuickFilterKey}
-        />
-      )}
-      {/* Modals and Dialogs are siblings to the view content */}
-      <CreateDealModal isOpen={isCreateModalOpen} onClose={closeCreateModal} onDealCreated={handleDataChanged} />
-      {isEditModalOpen && dealToEdit && <EditDealModal deal={dealToEdit} isOpen={isEditModalOpen} onClose={closeEditModal} onDealUpdated={handleDataChanged} />}
-      <ConfirmationDialog 
-        isOpen={isConfirmDeleteDialogOpen} 
-        onClose={onCancelDelete}
-        onConfirm={onConfirmActualDelete}
-        title="Delete Deal"
-        body="Are you sure you want to delete this deal?"
-        confirmButtonText="Delete" 
-        confirmButtonColor="red" 
-        isConfirmLoading={isDeletingDeal}
+  // Calculate totalValue and averageDealSize for StatGroup (as in DealsKanbanPageLayout)
+  const totalValue = useMemo(() => displayedDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0), [displayedDeals]);
+  const averageDealSize = useMemo(() => displayedDeals.length > 0 ? totalValue / displayedDeals.length : 0, [totalValue, displayedDeals.length]);
+
+  // Determine actual header height for padding content below
+  // This is a rough estimate, might need refinement based on StatGroup visibility
+  const calculatedHeaderHeight = isModernTheme ? '150px' : '72px'; 
+
+  if (dealsViewMode === 'kanban') {
+    return (
+      <DealsKanbanPageLayout
+        displayedDeals={displayedDeals}
+        pageIsLoading={pageIsLoading}
+        dealsError={dealsError}
+        handleCreateDealClick={handleCreateDealClick}
+        activeQuickFilterKey={activeQuickFilterKey}
+        setActiveQuickFilterKey={setActiveQuickFilterKey}
+        availableQuickFilters={availableQuickFilters}
+        selectedAssignedUserId={selectedAssignedUserId}
+        setSelectedAssignedUserId={setSelectedAssignedUserId}
+        userList={userList}
+        usersLoading={usersLoading}
+        userPermissions={userPermissions}
+        dealsViewMode={dealsViewMode}
+        setDealsViewMode={setDealsViewMode}
       />
-      
-      {isColumnSelectorOpen && allAvailableColumns.length > 0 && dealsViewMode === 'table' && (
+    );
+  }
+
+  // TABLE VIEW
+  return (
+    <VStack spacing={0} align="stretch" w="100%" h="100%" bg={isModernTheme ? 'gray.900' : undefined}>
+      {/* Fixed Header for Table View - Mirrored from DealsKanbanPageLayout */}
+      <Flex
+        direction={isModernTheme ? "column" : "row"}
+        alignItems={isModernTheme ? "stretch" : "center"}
+        justifyContent="space-between"
+        py={isModernTheme ? modernHeaderPaddingY : 4}
+        px={isModernTheme ? modernHeaderPaddingX : 6}
+        bg={isModernTheme ? 'background.content' : { base: 'gray.50', _dark: 'gray.900' }}
+        position="fixed"
+        top="0"
+        left={actualSidebarWidth}
+        width={`calc(100% - ${actualSidebarWidth})`}
+        minH={isModernTheme ? modernPageHeaderHeight : "72px"}
+        zIndex="sticky"
+        transition="left 0.2s ease-in-out, width 0.2s ease-in-out, background 0.2s ease-in-out"
+        borderBottomWidth={isModernTheme ? "1px" : "1px"} 
+        borderColor={isModernTheme ? 'border.default' : { base: 'gray.200', _dark: 'gray.700' }}
+      >
+        <Flex justifyContent="space-between" alignItems="center" mb={isModernTheme ? 4 : 0}>
+          <Heading as="h2" size={isModernTheme ? "xl" : "lg"} color={isModernTheme ? 'text.default' : undefined}>
+            Deals
+          </Heading>
+          <HStack spacing={isModernTheme ? 3 : 2}>
+            {isModernTheme && ( // Search bar always shown in modern table view header
+              <InputGroup size={modernButtonSize} maxW="220px">
+                <InputLeftElement pointerEvents="none">
+                  <SearchIcon color={"gray.400"} />
+                </InputLeftElement>
+                <Input 
+                  type="search" 
+                  placeholder="Search deals..." 
+                  borderRadius="md"
+                  bg={"gray.700"}
+                  color={"white"}
+                  borderColor={"gray.500"}
+                  height={modernButtonHeight}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  _placeholder={{ color: "gray.400" }}
+                  _focus={{ borderColor: "blue.400", boxShadow: "0 0 0 1px #3182ce" }}
+                />
+              </InputGroup>
+            )}
+            <Select
+              placeholder="Assigned User"
+              size={isModernTheme ? modernButtonSize : "sm"}
+              height={isModernTheme ? modernButtonHeight : undefined}
+              value={selectedAssignedUserId || ''}
+              onChange={(e) => setSelectedAssignedUserId(e.target.value || null)}
+              isDisabled={usersLoading}
+              minW={isModernTheme ? "160px" : "180px"}
+              borderRadius="md"
+              bg={isModernTheme ? "gray.700" : undefined}
+              color={isModernTheme ? "white" : undefined}
+              borderColor={isModernTheme ? "gray.500" : undefined}
+              iconColor={isModernTheme ? "gray.400" : undefined}
+              _focus={{
+                borderColor: isModernTheme ? "blue.400" : undefined,
+                boxShadow: isModernTheme ? "0 0 0 1px #3182ce" : undefined
+              }}
+            >
+              <option value="">All Users</option>
+              <option value="unassigned">Unassigned</option>
+              {userList.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.display_name || user.email}
+                </option>
+              ))}
+            </Select>
+
+            <ButtonGroup size={isModernTheme ? modernButtonSize : "sm"} isAttached variant="outline">
+              <Button 
+                onClick={() => setDealsViewMode('table')} 
+                isActive={true}
+                height={isModernTheme ? modernButtonHeight : undefined}
+                bg={isModernTheme ? "blue.600" : undefined}
+                color={isModernTheme ? "white" : undefined}
+                borderColor={isModernTheme ? "gray.500" : undefined}
+                _hover={isModernTheme ? { bg: "gray.600", borderColor: "gray.400" } : {}}
+                _active={isModernTheme ? { bg: "blue.700" } : {}}
+              >
+                Table
+              </Button>
+              <Button 
+                onClick={() => setDealsViewMode('kanban')} 
+                isActive={false}
+                height={isModernTheme ? modernButtonHeight : undefined}
+                bg={isModernTheme ? "gray.700" : undefined}
+                color={isModernTheme ? "white" : undefined}
+                borderColor={isModernTheme ? "gray.500" : undefined}
+                _hover={isModernTheme ? { bg: "gray.600", borderColor: "gray.400" } : {}}
+                _active={isModernTheme ? { bg: "blue.700" } : {}}
+              >
+                Kanban
+              </Button>
+            </ButtonGroup>
+
+            <QuickFilterControls
+              availableFilters={availableQuickFilters}
+              activeFilterKey={activeQuickFilterKey}
+              onSelectFilter={setActiveQuickFilterKey}
+              isModernTheme={isModernTheme}
+              buttonProps={isModernTheme ? {
+                bg: "gray.700", color: "white", borderColor: "gray.500",
+                size: modernButtonSize, height: modernButtonHeight,
+                _hover: { bg: "gray.600", borderColor: "gray.400" },
+                _active: { bg: "blue.600", borderColor: "blue.500" }
+              } : {}}
+            />
+             <Button 
+                leftIcon={<SettingsIcon />} 
+                onClick={openColumnSelectorModal} 
+                size={isModernTheme ? modernButtonSize : "sm"}
+                height={isModernTheme ? modernButtonHeight : undefined}
+                variant={isModernTheme ? "outline" : "outline"}
+                bg={isModernTheme ? "gray.700" : undefined}
+                color={isModernTheme ? "white" : undefined}
+                borderColor={isModernTheme ? "gray.500" : undefined}
+                _hover={isModernTheme ? { bg: "gray.600", borderColor: "gray.400" } : {}}
+                minW={isModernTheme ? "auto" : undefined}
+                px={isModernTheme ? 4 : undefined}
+            >
+                Columns
+            </Button>
+            <Button
+              colorScheme={isModernTheme ? "brand" : "blue"}
+              onClick={handleCreateDealClick}
+              isDisabled={!userPermissions?.includes('deal:create')}
+              size={isModernTheme ? modernButtonSize : "md"}
+              height={isModernTheme ? modernButtonHeight : undefined}
+              minW={isModernTheme ? "120px" : undefined}
+              leftIcon={isModernTheme ? <AddIcon /> : undefined}
+            >
+              New Deal
+            </Button>
+          </HStack>
+        </Flex>
+        {isModernTheme && ( // StatGroup for modern theme table view
+          <StatGroup mt={2} borderTopWidth="1px" borderColor="border.divider" pt={3}>
+            <Stat>
+              <StatLabel color="gray.300" fontWeight="medium">Total Value</StatLabel>
+              <StatNumber fontSize="lg" color="white">${totalValue.toLocaleString('en-US', { maximumFractionDigits: 0 })}</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel color="gray.300" fontWeight="medium">Avg. Deal Size</StatLabel>
+              <StatNumber fontSize="lg" color="white">${averageDealSize.toLocaleString('en-US', { maximumFractionDigits: 0 })}</StatNumber>
+            </Stat>
+            <Stat>
+              <StatLabel color="gray.300" fontWeight="medium">Win Rate</StatLabel>
+              <StatNumber fontSize="lg" color="white">--%</StatNumber> {/* Placeholder */}
+            </Stat>
+             <Stat>
+              <StatLabel color="gray.300" fontWeight="medium">Open Deals</StatLabel>
+              <StatNumber fontSize="lg" color="white">{displayedDeals.length}</StatNumber>
+            </Stat>
+          </StatGroup>
+        )}
+      </Flex>
+
+      {/* Main Content Area for Table View */}
+      <Box
+        flexGrow={1}
+        overflowY="auto"
+        h="100%" // Ensure it takes available height
+        pt={`calc(${calculatedHeaderHeight} + ${isModernTheme ? modernHeaderPaddingY : '1rem'})`} // Padding to account for fixed header
+        px={isModernTheme ? modernHeaderPaddingX : 6}
+        bg={isModernTheme ? 'gray.900' : undefined} // Match overall page background
+      >
+        {pageIsLoading && (
+          <Flex justify="center" align="center" minH="300px" w="100%"><Spinner size="xl" color={isModernTheme ? 'white' : undefined} /></Flex>
+        )}
+        {!pageIsLoading && dealsError && (
+          <Alert status="error" variant={isModernTheme ? "solidSubtle" : "subtle"} m={4}><AlertIcon />{dealsError}</Alert>
+        )}
+        {!pageIsLoading && !dealsError && displayedDeals.length === 0 && (
+          <Box m={isModernTheme ? 0 : 4}> {/* No extra margin for modern theme as parent Box has padding */}
+            <EmptyState
+              icon={PageViewIcon}
+              title="No Deals Found"
+              message="Get started by creating your first deal or try a different filter."
+              actionButtonLabel="New Deal"
+              onActionButtonClick={handleCreateDealClick}
+              isActionButtonDisabled={!userPermissions?.includes('deal:create')}
+              isModernTheme={isModernTheme}
+            />
+          </Box>
+        )}
+        {!pageIsLoading && !dealsError && displayedDeals.length > 0 && (
+          <Box 
+            bg={isModernTheme ? 'gray.800' : undefined} 
+            borderRadius={isModernTheme ? 'xl' : undefined}
+            p={isModernTheme ? 6 : 0} // Padding inside the table's card-like container
+          >
+            <SortableTable<Deal> 
+              data={displayedDeals} 
+              columns={visibleColumns} 
+              initialSortKey="expected_close_date" 
+              initialSortDirection="ascending" 
+            />
+          </Box>
+        )}
+      </Box>
+
+      {/* Modals */}
+      {isCreateModalOpen && (
+        <CreateDealModal
+          isOpen={isCreateModalOpen}
+          onClose={closeCreateModal}
+          onDealCreated={handleDataChanged}
+        />
+      )}
+      {dealToEdit && isEditModalOpen && (
+        <EditDealModal
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          deal={dealToEdit}
+          onDealUpdated={handleDataChanged}
+        />
+      )}
+      {isConfirmDeleteDialogOpen && (
+        <ConfirmationDialog
+          isOpen={isConfirmDeleteDialogOpen}
+          onClose={onCancelDelete}
+          onConfirm={onConfirmActualDelete}
+          title="Delete Deal"
+          body="Are you sure you want to delete this deal? This action cannot be undone."
+          confirmButtonText="Delete"
+          confirmButtonColor="red"
+          isConfirmLoading={isDeletingDeal}
+        />
+      )}
+      {isColumnSelectorOpen && (
         <ColumnSelector<Deal>
           isOpen={isColumnSelectorOpen}
           onClose={closeColumnSelectorModal}
           allAvailableColumns={allAvailableColumns}
-          currentVisibleColumnKeys={currentVisibleColumnKeys}
+          currentVisibleColumnKeys={currentTableVisibleColumnKeys}
+          onApply={(newVisibleKeys: string[]) => {
+            setVisibleColumnKeys(TABLE_KEY, newVisibleKeys);
+            closeColumnSelectorModal();
+          }}
+          onReset={() => {
+            resetTableToDefaults(TABLE_KEY, defaultVisibleColumnKeys);
+          }}
           defaultVisibleColumnKeys={defaultVisibleColumnKeys}
-          onApply={(newKeys) => setVisibleColumnKeys(TABLE_KEY, newKeys)}
-          onReset={() => resetTableToDefaults(TABLE_KEY, defaultVisibleColumnKeys)}
         />
       )}
-    </Box>
+    </VStack>
   );
 }
 

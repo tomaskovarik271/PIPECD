@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'; // Added React import for JSX
 import { Link as RouterLink } from 'react-router-dom';
-import { HStack, IconButton, Text, Link, Icon } from '@chakra-ui/react';
+import { HStack, IconButton, Text, Link, Icon, Tag } from '@chakra-ui/react';
 import { ViewIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
 
 import type { ColumnDefinition } from '../components/common/SortableTable';
@@ -61,7 +61,21 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
     {
       key: 'stage',
       header: 'Status',
-      renderCell: (d) => d.currentWfmStatus?.name || '-',
+      renderCell: (d) => {
+        const statusName = d.currentWfmStatus?.name || '-';
+        const statusColor = d.currentWfmStatus?.color?.toLowerCase() || 'gray';
+        // Ensure a valid colorScheme for Tag, fallback to gray if color is unusual
+        const validChakraColorSchemes = ['whiteAlpha', 'blackAlpha', 'gray', 'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'cyan', 'purple', 'pink'];
+        const colorScheme = validChakraColorSchemes.includes(statusColor) ? statusColor : 'gray';
+
+        return statusName !== '-' ? (
+            <Tag size="sm" colorScheme={colorScheme} variant="solid">
+                {statusName}
+            </Tag>
+        ) : (
+            statusName
+        );
+      },
       isSortable: true,
       sortAccessor: (d) => d.currentWfmStatus?.name?.toLowerCase() ?? '',
     },

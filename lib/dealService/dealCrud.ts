@@ -220,6 +220,28 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
             data: { dealId: updatedDealWithWfmLink.id, /* other relevant data */ },
         });
         console.log(`[dealCrud.createDeal] Sent 'crm/deal.created' event for deal ID: ${updatedDealWithWfmLink.id}`);
+
+        // ---- Send 'crm/deal.assigned' event if assigned_to_user_id is present ----
+        if (updatedDealWithWfmLink.assigned_to_user_id) {
+            try {
+                await inngest.send({
+                    name: 'crm/deal.assigned',
+                    user: { id: userId }, // User who performed the action (created the deal)
+                    data: {
+                        dealId: updatedDealWithWfmLink.id,
+                        dealName: updatedDealWithWfmLink.name,
+                        assignedToUserId: updatedDealWithWfmLink.assigned_to_user_id,
+                        assignedByUserId: userId,
+                    },
+                });
+                console.log(`[dealCrud.createDeal] Sent 'crm/deal.assigned' event for deal ID: ${updatedDealWithWfmLink.id} assigned to ${updatedDealWithWfmLink.assigned_to_user_id}`);
+            } catch (assignEventError: any) {
+                console.error(`[dealCrud.createDeal] Failed to send 'crm/deal.assigned' event for deal ID: ${updatedDealWithWfmLink.id}:`, assignEventError.message);
+                // Do not let Inngest failure roll back the deal creation
+            }
+        }
+        // ---- End 'crm/deal.assigned' event ----
+
     } catch (eventError: any) {
         console.error(`[dealCrud.createDeal] Failed to send 'crm/deal.created' event for deal ID: ${updatedDealWithWfmLink.id}:`, eventError.message);
         // Do not let Inngest failure roll back the deal creation
@@ -382,8 +404,8 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
   }
 
   // Refetch the deal to get its absolute latest state, especially if assignment was changed by RPC or only history was recorded.
-  const finalDealData = await getDealById(userId, id, accessToken);
-  if (!finalDealData) {
+  const updatedDealRecord = await getDealById(userId, id, accessToken);
+  if (!updatedDealRecord) {
     // This could happen if the RPC call reassigned the deal away from the user and they are not the creator,
     // and they are trying to read it immediately after. 
     console.warn(`[dealCrud.updateDeal] User ${userId} cannot retrieve deal ${id} after update operation. This is likely due to RLS if assignment changed visibility. The DB updates should have succeeded. Returning null from service.`);
@@ -407,8 +429,8 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
       if (Object.prototype.hasOwnProperty.call(oldDealData, fieldKey)) {
         (oldDataForHistory as any)[key] = oldDealData[fieldKey];
       }
-      if (Object.prototype.hasOwnProperty.call(finalDealData, fieldKey)) {
-        (finalDataForHistory as any)[key] = finalDealData[fieldKey];
+      if (Object.prototype.hasOwnProperty.call(updatedDealRecord, fieldKey)) {
+        (finalDataForHistory as any)[key] = updatedDealRecord[fieldKey];
       }
     });
 
@@ -417,6 +439,71 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
     const changes = generateDealChanges(oldDataForHistory as Deal, finalDataForHistory as Deal);
     if (Object.keys(changes).length > 0) {
         await recordEntityHistory(supabase, 'deal_history', 'deal_id', id, userId, 'DEAL_UPDATED', changes);
+    }
+  }
+  
+  // ---- Send 'crm/deal.assigned' event if assigned_to_user_id changed ----
+  if (oldDealData.assigned_to_user_id !== updatedDealRecord.assigned_to_user_id && updatedDealRecord.assigned_to_user_id) {
+    try {
+        await inngest.send({
+            name: 'crm/deal.assigned',
+            user: { id: userId }, // User who performed the action (updated the deal)
+            data: {
+                dealId: updatedDealRecord.id,
+                dealName: updatedDealRecord.name,
+                assignedToUserId: updatedDealRecord.assigned_to_user_id,
+                assignedByUserId: userId,
+                previousAssignedToUserId: oldDealData.assigned_to_user_id || null, // Ensure it's null if undefined
+            },
+        });
+        console.log(`[dealCrud.updateDeal] Sent 'crm/deal.assigned' event for deal ID: ${updatedDealRecord.id} reassigned to ${updatedDealRecord.assigned_to_user_id}`);
+    } catch (assignEventError: any) {
+        console.error(`[dealCrud.updateDeal] Failed to send 'crm/deal.assigned' event for deal ID: ${updatedDealRecord.id}:`, assignEventError.message);
+        // Do not let Inngest failure roll back the deal update
+    }
+  }
+  // ---- End 'crm/deal.assigned' event ----
+
+  // Re-fetch the deal to get its absolute latest state including any WFM or probability updates triggered by other logic.
+  // This is important because calculateDealProbabilityFields might rely on joined WFM data not present in the direct updatedDealRecord.
+  const finalDealData = await getDealById(userId, id, accessToken);
+   if (!finalDealData) {
+       // This scenario (deal disappearing after update and before re-fetch) should be rare but needs handling.
+       console.warn(`[dealCrud.updateDeal] Deal ${id} could not be re-fetched after update. Returning potentially stale data.`);
+       return updatedDealRecord as DbDeal; // Fallback to the record from the update operation.
+   }
+
+  // Calculate probability and update if necessary, using the re-fetched finalDealData
+  const probabilityFields = await calculateDealProbabilityFields(finalDealData as unknown as DealInput, finalDealData as unknown as Deal, supabase, undefined /* no targetWfmStepMetadata needed for general update */);
+  
+  // Check if probabilityFields has own properties to update, as it might return an empty object or fields set to undefined/null
+  const hasProbabilityUpdate = probabilityFields && 
+                             (Object.prototype.hasOwnProperty.call(probabilityFields, 'deal_specific_probability_to_set') || 
+                              Object.prototype.hasOwnProperty.call(probabilityFields, 'weighted_amount_to_set'));
+
+  if (hasProbabilityUpdate) {
+    const updateDataForProbability: { deal_specific_probability?: number | null, weighted_amount?: number | null } = {};
+    if (Object.prototype.hasOwnProperty.call(probabilityFields, 'deal_specific_probability_to_set')) {
+      updateDataForProbability.deal_specific_probability = probabilityFields.deal_specific_probability_to_set;
+    }
+    if (Object.prototype.hasOwnProperty.call(probabilityFields, 'weighted_amount_to_set')) {
+      updateDataForProbability.weighted_amount = probabilityFields.weighted_amount_to_set;
+    }
+
+    // Only update if there's something to update, and it's different from current values if needed (though service handles this)
+    if (Object.keys(updateDataForProbability).length > 0) {
+        const { data: _, error: probUpdateError } = await supabase
+            .from('deals')
+            .update(updateDataForProbability)
+            .eq('id', id);
+
+        if (probUpdateError) {
+            console.warn(`[dealCrud.updateDeal] Failed to update probability fields for deal ${id}:`, probUpdateError.message);
+            // Not throwing, as main update succeeded
+        }
+        // After updating probability, re-fetch one last time to ensure the returned object has all latest data.
+        const dealAfterProbabilityUpdate = await getDealById(userId, id, accessToken);
+        return (dealAfterProbabilityUpdate || finalDealData) as DbDeal; // Prefer freshest, fallback to before prob update
     }
   }
   

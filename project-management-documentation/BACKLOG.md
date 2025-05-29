@@ -152,12 +152,12 @@ Refactor the stores to use more granular error states for different types of ope
 *   **Better User Experience:** Users receive more targeted feedback, and the application feels more stable as unrelated parts of the UI are not affected by localized errors.
 
 **Affected Components (Examples):**
-*   `frontend/src/stores/useStagesStore.ts`
-*   `frontend/src/stores/usePipelinesStore.ts`
+*   `frontend/src/stores/useWFMWorkflowStore.ts`
+*   `frontend/src/stores/useWFMStatusStore.ts`
 *   `frontend/src/stores/useDealsStore.ts`
 *   `frontend/src/stores/usePeopleStore.ts`
 *   `frontend/src/stores/useOrganizationsStore.ts`
-*   All pages and components that consume these stores and handle their error states (e.g., `StagesPage.tsx`, `PeoplePage.tsx`, etc.).
+*   All pages and components that consume these stores and handle their error states (e.g., `AdminWFMWorkflowsPage.tsx`, `PeoplePage.tsx`, etc.).
 
 **Acceptance Criteria:**
 *   Stores are updated with distinct error state properties for fetch, create, update, and delete operations (as applicable).
@@ -171,7 +171,7 @@ Refactor the stores to use more granular error states for different types of ope
 ## Task: Implement UI and Backend for Stage Reordering within a Pipeline
 
 **ID:** STAGE-002
-**Status:** To Do
+**Status:** Obsolete
 **Priority:** Medium
 **Reporter:** User Request / System (AI Assistant)
 **Assignee:** TBD
@@ -182,34 +182,23 @@ Currently, the `order` of stages within a pipeline is set during stage creation 
 **Goal:**
 Provide a user-friendly interface for reordering stages within a specific pipeline. The backend must support updating the `order` property for multiple stages in a way that maintains unique order values.
 
+**Resolution Note:** This task is now obsolete. Reordering of process steps is handled by the WFM system (specifically reordering `WFMWorkflowStep`s within a `WFMWorkflow`), and the UI for this is covered in the WFM Admin section (see ADR-006, Section 4.3, Sprint 1.3, which notes this as DONE).
+
 **Key Requirements:**
-*   **Frontend UI:**
-    *   A visual way to reorder stages for a selected pipeline (e.g., a dedicated settings page for a pipeline, or drag-and-drop directly on a representation of the pipeline stages).
-    *   Changes should be explicitly saved by the user.
-*   **Backend API (GraphQL):**
-    *   A new mutation, e.g., `updateStageOrders(pipelineId: ID!, stageOrders: [StageOrderInput!]!): [Stage!]!`, where `StageOrderInput` could be `{ stageId: ID!, newOrder: Int! }`.
-    *   This mutation must handle updating multiple stages within a transaction.
-    *   It needs to ensure that the `order` values remain unique within the pipeline after the update (this can be complex, might involve shifting existing orders).
-*   **Backend Service (`stageService.ts`):**
-    *   New service function to implement the logic for `updateStageOrders`.
-    *   Careful handling of order conflicts and transactional updates.
+*   **Frontend UI:** (Obsolete)
+*   **Backend API (GraphQL):** (Obsolete)
+*   **Backend Service (`stageService.ts`):** (Obsolete)
 
-**Acceptance Criteria:**
-*   Users can visually reorder stages for a given pipeline.
-*   Saving the new order updates the `order` property of the affected stages in the database.
-*   The uniqueness of `order` per pipeline is maintained.
-*   The Kanban view (and any other UI relying on stage order) correctly reflects the new stage sequence.
+**Acceptance Criteria:** (Obsolete)
 
-**Notes/Considerations:**
-*   The backend logic for re-assigning unique order numbers can be challenging. Strategies include: temporarily assigning very large numbers then re-sequencing, or carefully shifting existing numbers.
-*   Consider impact on performance if many stages are reordered.
+**Notes/Considerations:** (Obsolete)
 
 ---
 
 ## Task: Implement Pipeline and Stage Archiving Functionality
 
 **ID:** ARCH-001
-**Status:** To Do
+**Status:** Obsolete
 **Priority:** Low-Medium
 **Reporter:** User Request / System (AI Assistant)
 **Assignee:** TBD
@@ -220,32 +209,13 @@ Users may want to hide old or unused pipelines and stages from their primary vie
 **Goal:**
 Allow users to archive and unarchive pipelines and stages. Archived items should typically be hidden from default lists and selectors but remain in the database for historical reference and potential unarchival.
 
-**Key Requirements:**
-*   **Database Schema:**
-    *   Add `archived_at: TIMESTAMPTZ NULL` to `public.pipelines` table.
-    *   Add `archived_at: TIMESTAMPTZ NULL` to `public.stages` table.
-*   **Backend Services (`pipelineService.ts`, `stageService.ts`):**
-    *   New functions: `archivePipeline(id)`, `unarchivePipeline(id)`, `archiveStage(id)`, `unarchiveStage(id)`.
-    *   These functions would set or clear the `archived_at` timestamp.
-    *   Existing fetch functions (e.g., `getPipelines`, `getStagesByPipelineId`) should be updated to typically exclude archived items by default (e.g., `WHERE archived_at IS NULL`), but offer an option to include them.
-*   **Backend API (GraphQL):**
-    *   New mutations: `archivePipeline`, `unarchivePipeline`, `archiveStage`, `unarchiveStage`.
-    *   Queries for pipelines and stages should accept an optional filter argument (e.g., `includeArchived: Boolean`) or have separate queries for fetching archived items.
-*   **Frontend UI:**
-    *   UI elements (e.g., buttons, menu options) to archive/unarchive pipelines and stages.
-    *   Default views (pipeline lists, stage lists, selectors) should hide archived items.
-    *   Potentially a separate settings area or view to see and manage archived items.
+**Resolution Note:** This task, as it pertains to the legacy Pipeline/Stage system, is now obsolete. Archiving functionality for WFM entities (e.g., `WFMWorkflow`, `WFMStatus`, `WFMProjectType`) is covered by the WFM system design (see ADR-006, which includes `is_archived` flags in schema and mentions Admin UI for archiving WFMWorkflows in Sprint 1.2 - COMPLETED).
 
-**Acceptance Criteria:**
-*   Users can mark pipelines and stages as archived.
-*   Archived items are hidden from default views but not deleted from the database.
-*   Users can view and unarchive previously archived items.
-*   Deals associated with archived stages/pipelines remain, but their context (the archived pipeline/stage) is appropriately indicated if viewed.
-*   Kanban view should likely only show stages from active (non-archived) pipelines.
+**Key Requirements:** (Obsolete)
 
-**Notes/Considerations:**
-*   What happens if a user archives a pipeline that contains active stages? Should the stages also be implicitly archived, or should archiving be prevented?
-*   What happens to deals in a stage that gets archived? They remain in that stage, but the stage itself becomes hidden.
+**Acceptance Criteria:** (Obsolete)
+
+**Notes/Considerations:** (Obsolete)
 
 --- 
 

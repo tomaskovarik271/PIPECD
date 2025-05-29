@@ -21,11 +21,12 @@ The system utilizes a serverless architecture based on:
 *   **Testing:** Vitest (Unit/Integration), Playwright (E2E)
 *   **Hosting/Deployment:** Netlify (`netlify.toml`)
 
-**Current Status (As of WFM Implementation for Sales Deals):**
+**Current Status (As of WFM Implementation for Sales Deals & First Automation):**
 
 *   Core infrastructure is set up (Supabase, Netlify, Inngest).
 *   Authentication (Email/Password, GitHub) is working, managed via Zustand store.
-*   Full CRUD implemented for **People**, **Organizations**, and **Activities** (Backend services, GraphQL API, Frontend Zustand store, Frontend UI Pages/Modals).
+*   Full CRUD implemented for **People**, **Organizations**.
+*   **Activities** now support assignments (`assigned_to_user_id`) and system flags (`is_system_activity`), effectively functioning as assignable tasks. CRUD and RLS policies updated accordingly. Backend services, GraphQL API, and Frontend support these enhancements.
 *   **Work Flow Management (WFM) System implemented:**
     *   Core WFM entities (`WFMStatus`, `WFMWorkflow`, `WFMWorkflowStep`, `WFMProjectType`, `WFMProject`, `WFMWorkflowTransition`) and services are in place.
     *   **Sales Deals are now managed by the WFM system:**
@@ -39,9 +40,12 @@ The system utilizes a serverless architecture based on:
     *   Users can view and edit their `display_name` and `avatar_url`.
     *   Profile data is stored in `user_profiles` table in Supabase.
     *   GraphQL `Query.me` and `Mutation.updateUserProfile` handle profile data.
-    *   Deal history now displays the `display_name` of the user who performed the action, leveraging updated RLS policies for `user_profiles` to allow authenticated reads.
-*   Inngest event sending implemented for Person & Deal creation (simple logging handlers).
-*   Basic UI (Chakra UI) implemented for Auth and all core CRUD entities, including WFM-driven Deal Kanban.
+    *   Deal history now displays the `display_name` of the user who performed the action.
+*   **Inngest event-driven automation (ADR-008 Phase 1 Started):**
+    *   `crm/deal.assigned` events published from `dealService`.
+    *   `createDealAssignmentTask` Inngest function implemented to create a "Welcome & Review" system task (Activity) for the deal assignee.
+    *   `SYSTEM_USER_ID` established and used for attributing automated actions.
+*   Basic UI (Chakra UI) implemented for Auth and all core CRUD entities, including WFM-driven Deal Kanban and display of assigned system tasks.
 *   Unit/Integration tests implemented for backend services (`lib/`).
 *   Basic E2E testing setup (Playwright) with login flow.
 *   Production deployment is live on Netlify.

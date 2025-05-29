@@ -9,6 +9,7 @@ import {
   TableContainer,
 } from '@chakra-ui/react';
 import { TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 // Generic Column Definition
 export interface ColumnDefinition<T> {
@@ -42,10 +43,13 @@ function SortableTable<T extends { id: string }>({
   columns, 
   initialSortKey, 
   initialSortDirection = 'ascending',
-  borderWidth = "1px", // Default border
-  borderRadius = "lg"  // Default radius
+  borderWidth: propBorderWidth, // Renamed to avoid conflict, will be conditional
+  borderRadius: propBorderRadius // Renamed to avoid conflict
 }: SortableTableProps<T>) {
   
+  const { currentTheme: currentThemeName } = useThemeStore();
+  const isModernTheme = currentThemeName === 'modern';
+
   const [sortConfig, setSortConfig] = useState<SortConfig>({ 
       key: initialSortKey,
       direction: initialSortDirection 
@@ -112,18 +116,38 @@ function SortableTable<T extends { id: string }>({
              <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} />;
   };
 
+  // Determine TableContainer styles based on theme
+  const tableContainerStyles = isModernTheme ? {
+    borderWidth: '0px', // No border, parent Box in ListPageLayout handles it
+    borderRadius: '0px',
+  } : {
+    borderWidth: propBorderWidth || "1px",
+    borderRadius: propBorderRadius || "lg",
+  };
+
   return (
-    <TableContainer width="100%" borderWidth={borderWidth} borderRadius={borderRadius}>
-      <Table variant="simple" size="sm" width="100%">
-        <Thead>
-          <Tr borderBottomWidth="1px" borderColor="gray.200">
+    <TableContainer 
+      width="100%" 
+      borderWidth={tableContainerStyles.borderWidth}
+      borderRadius={tableContainerStyles.borderRadius}
+    >
+      <Table variant={isModernTheme ? 'unstyled' : 'simple'} size="sm" width="100%">
+        <Thead bg={isModernTheme ? 'gray.750' : undefined}>
+          <Tr borderBottomWidth={isModernTheme ? "1px" : "1px"} borderColor={isModernTheme ? "gray.600" : "gray.200"}>
             {columns.map((column) => (
               <Th
-                key={String(column.key)} // Ensure key is string
+                key={String(column.key)}
                 isNumeric={column.isNumeric}
                 cursor={column.isSortable ? "pointer" : "default"}
-                _hover={column.isSortable ? { bg: 'gray.100' } : {}}
+                _hover={column.isSortable ? { bg: isModernTheme ? 'gray.600' : 'gray.100' } : {}}
                 onClick={column.isSortable ? () => requestSort(String(column.key)) : undefined}
+                color={isModernTheme ? 'gray.200' : undefined}
+                fontWeight={isModernTheme ? "semibold" : "bold"}
+                textTransform={isModernTheme ? "uppercase" : "none"}
+                fontSize={isModernTheme ? "xs" : undefined}
+                py={isModernTheme ? 3 : undefined}
+                px={isModernTheme ? 4 : undefined}
+                borderBottomWidth={isModernTheme ? "0px" : undefined} // Handled by Tr
               >
                 {column.header}
                 {column.isSortable && renderSortIcon(String(column.key))}
@@ -133,9 +157,22 @@ function SortableTable<T extends { id: string }>({
         </Thead>
         <Tbody>
           {sortedData.map((item) => (
-            <Tr key={item.id} bg="white">
+            <Tr 
+              key={item.id} 
+              bg={isModernTheme ? 'gray.800' : 'white'} 
+              borderBottomWidth={isModernTheme ? "1px" : undefined}
+              borderColor={isModernTheme ? "gray.700" : undefined}
+              _hover={isModernTheme ? { bg: 'gray.750' } : {}}
+            >
               {columns.map((column) => (
-                <Td key={`${item.id}-${String(column.key)}`} isNumeric={column.isNumeric}>
+                <Td 
+                  key={`${item.id}-${String(column.key)}`}
+                  isNumeric={column.isNumeric}
+                  color={isModernTheme ? 'gray.100' : undefined}
+                  borderColor={isModernTheme ? "gray.700" : "gray.200"} // Use darker border for modern theme
+                  py={isModernTheme ? 3 : undefined}
+                  px={isModernTheme ? 4 : undefined}
+                >
                   {column.renderCell(item)}
                 </Td>
               ))}

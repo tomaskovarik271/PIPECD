@@ -30,11 +30,13 @@ export function getAccessToken(context: GraphQLContext): string | null {
 
 /**
  * Checks if the user is authenticated. Throws GraphQLError if not.
+ * Returns an object with userId and accessToken if authenticated.
  */
-export function requireAuthentication(context: GraphQLContext): void {
+export function requireAuthentication(context: GraphQLContext): { userId: string; accessToken: string } {
   if (!context.currentUser || !context.token) {
     throw new GraphQLError('Authentication required', { extensions: { code: 'UNAUTHENTICATED' } });
   }
+  return { userId: context.currentUser.id, accessToken: context.token };
 }
 
 /**

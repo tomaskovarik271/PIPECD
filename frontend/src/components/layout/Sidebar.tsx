@@ -1,4 +1,4 @@
-import { VStack, Link as ChakraLink, Text, Box, Button, Flex, useStyleConfig, SystemStyleObject, Image, useColorModeValue } from '@chakra-ui/react';
+import { VStack, Link as ChakraLink, Text, Box, Button, Flex, useStyleConfig, SystemStyleObject, Image, useColorModeValue, IconButton, Tooltip } from '@chakra-ui/react';
 import { NavLink as RouterNavLink } from 'react-router-dom';
 import { useAppStore } from '../../stores/useAppStore';
 import ThemeSwitcher from '../common/ThemeSwitcher';
@@ -15,7 +15,9 @@ import {
   // CopyIcon, // Placeholder for Pipelines
   // TimeIcon, // Placeholder for Activities
   SettingsIcon, // Used for Profile and Admin items now
-  // RepeatIcon // Example
+  HamburgerIcon, // For toggle
+  ArrowBackIcon, // For toggle
+  ArrowForwardIcon // For toggle
 } from '@chakra-ui/icons'; // Use appropriate icons
 
 // Comment out direct imports if moving logos to public directory
@@ -27,12 +29,14 @@ const logoPositive = '/assets/logos/logo-positive.svg';
 const logoNegative = '/assets/logos/logo-negative.svg';
 
 import { useThemeStore } from '../../stores/useThemeStore'; // To check current theme for logo
+import { useMemo } from 'react'; // Added useMemo import
 
 const NAV_ITEMS = [
   { path: '/deals', label: 'Deals', icon: <CheckCircleIcon /> },
   { path: '/people', label: 'People', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
+  // { path: '/pipelines', label: 'Pipelines', icon: <ArrowRightIcon /> }, // Commented out as per existing code
 ];
 
 // Added Admin Nav Items
@@ -54,22 +58,95 @@ function Sidebar() {
   const styles = useStyleConfig("Sidebar", {}) as Record<string, SystemStyleObject>; 
   const currentThemeName = useThemeStore((state) => state.currentTheme);
 
-  const containerStyles = styles?.container || {};
-  const headerTextStyles = styles?.headerText || {};
-  const navLinkStyles = styles?.navLink || {};
-  const activeNavLinkStyles = styles?.activeNavLink || {};
-  const userInfoTextStyles = styles?.userInfoText || {};
+  // Sidebar collapse state from store
+  const isSidebarCollapsed = useAppStore((state) => state.isSidebarCollapsed);
+  const toggleSidebar = useAppStore((state) => state.toggleSidebar);
 
-  const isDarkTheme = [
+  // Determine if modern theme is active
+  const isModernTheme = currentThemeName === 'modern';
+
+  const containerStyles = isModernTheme ? {
+    bgGradient: 'linear(to-b, background.sidebar, background.sidebarEnd)',
+    // color: 'rgba(255, 255, 255, 0.7)', // Base color for text, overridden below
+    borderRightWidth: '0px', // No border in modern theme sidebar
+  } : (styles?.container || {});
+
+  const navLinkBaseStylesModern = {
+    color: 'gray.300', // CHANGED from rgba(255, 255, 255, 0.7) for better contrast
+    fontWeight: 'medium',
+    transition: 'all 0.2s ease',
+    borderRadius: '0', // No border radius on individual items for full-width effect
+    pl: isSidebarCollapsed ? 0 : '32px',
+    pr: isSidebarCollapsed ? 0 : '32px',
+    py: isSidebarCollapsed ? '12px' : '16px',
+    w: '100%',
+    justifyContent: isSidebarCollapsed ? "center" : "flex-start",
+    _hover: {
+      color: 'text.light',
+      bg: 'rgba(255, 255, 255, 0.1)',
+      textDecoration: 'none',
+    },
+  };
+
+  const activeNavLinkStylesModern = {
+    ...navLinkBaseStylesModern,
+    color: 'text.light', // Active link can be brighter
+    bg: 'rgba(255, 255, 255, 0.15)',
+    boxShadow: 'inset 4px 0 0 0 var(--chakra-colors-brand-primary)', // Using CSS var for brand.primary
+  };
+  
+  const navLinkStyles = isModernTheme ? navLinkBaseStylesModern : (styles?.navLink || {});
+  const activeNavLinkStyles = isModernTheme ? activeNavLinkStylesModern : (styles?.activeNavLink || {});
+
+  // User Info text for modern theme
+  const userEmailTextStylesModern = isModernTheme ? {
+    color: 'gray.400', // CHANGED for email - better contrast
+    _hover: { color: 'text.light' },
+  } : (styles?.userInfoText || {});
+
+  const signOutButtonStylesModern = isModernTheme ? {
+    color: 'gray.300', // CHANGED for Sign Out - better contrast
+    _hover: { color: 'text.light', textDecoration: 'underline' },
+    justifyContent: "flex-start",
+    fontWeight: "medium", // Match My Profile fontWeight
+  } : (styles?.userInfoText || {});
+
+  // Calculate the border color to apply, safely handling theme values
+  const borderColorToApply = useMemo((): string | undefined => {
+    if (isModernTheme) {
+      return 'transparent';
+    }
+    // Handle non-modern theme case
+    let colorFromTheme = containerStyles.borderColor;
+
+    if (typeof colorFromTheme === 'number' || typeof colorFromTheme === 'boolean') {
+      return 'gray.200';
+    }
+
+    if (colorFromTheme === 'transparent') {
+      return 'gray.200';
+    }
+
+    // If colorFromTheme is an object (responsive styles) or a function, return undefined
+    // to let Chakra handle it or fall back to defaults, as sx prop might have issues with complex types here.
+    if (typeof colorFromTheme === 'object' || typeof colorFromTheme === 'function') {
+        return undefined; 
+    }
+
+    // At this point, colorFromTheme should be a string (color name, hex) or undefined.
+    return colorFromTheme as string | undefined;
+  }, [isModernTheme, containerStyles.borderColor]);
+
+  // For logo, modern theme uses a dark sidebar
+  const isDarkBackgroundForLogo = isModernTheme || [
     'dark', 
     'bowie', 
     'industrialMetal', 
-    'creativeDockDarkTheme', // Ensure this matches your dark CD theme name if distinct in store
-    'andyWarhol',
-    'daliDark' // Add daliDark to this check if its sidebar is also dark for logo selection
+    'daliDark'
   ].includes(currentThemeName);
   
-  const selectedLogo = isDarkTheme ? logoNegative : logoPositive;
+  const selectedLogo = isDarkBackgroundForLogo ? logoNegative : logoPositive;
+  const selectedIconLogo = isDarkBackgroundForLogo ? '/assets/logos/logo-negative-icon.svg' : '/assets/logos/logo-positive-icon.svg';
 
   // Filter admin nav items based on permissions
   const visibleAdminNavItems = ADMIN_NAV_ITEMS.filter(item => {
@@ -79,132 +156,177 @@ function Sidebar() {
     return true; // Keep other admin items visible by default
   });
 
+  const sidebarWidth = isSidebarCollapsed ? "70px" : "280px"; // Modern theme sidebar is wider when not collapsed
+
   return (
     <VStack 
       as="nav" 
-      spacing={2} 
+      spacing={0} // Modern theme has no space between items
       align="stretch" 
-      w="200px" // Fixed width for now
-      // bg="gray.50" // Removed hardcoded background, will be themed by global body or specific component style
-      p={4}
-      borderRightWidth="1px"
-      // borderColor="gray.200" // Removed, will be themed
-      minH="100vh" // Make sidebar full height
-      className="sidebar-container" // Add a class for potential theme targeting
-      // Apply themed styles to the container safely
+      w={sidebarWidth}
+      p={isModernTheme ? (isSidebarCollapsed ? '16px 0' : '32px 0') : (isSidebarCollapsed ? 2 : 4)} // Adjusted padding for modern
+      height="100vh"
+      className={`sidebar-container ${isModernTheme ? 'modern-sidebar' : ''}`}
       sx={containerStyles}
+      transition="width 0.2s ease-in-out, padding 0.2s ease-in-out"
+      position="fixed"
+      top="0"
+      left="0"
+      zIndex="sticky"
+      overflowY="auto"
     >
-      {/* Logo Section */}
-      <Box mb={4} sx={headerTextStyles} h={{base: "30px"}} display="flex" alignItems="center"> 
-        <Image src={selectedLogo} alt="Creative Dock Logo" maxH="30px" />
-      </Box>
+      <Flex 
+        direction="column" 
+        alignItems={isSidebarCollapsed ? "center" : "stretch"}
+        w="100%"
+        flexGrow={1}
+      >
+        {/* Logo Section */}
+        <Box 
+          mb={isModernTheme ? '48px' : 4} 
+          h={{base: isModernTheme ? "auto" : "30px"}} 
+          display="flex" 
+          alignItems="center" 
+          justifyContent={isSidebarCollapsed ? "center" : "flex-start"} 
+          w="100%"
+          px={isModernTheme && !isSidebarCollapsed ? '32px' : (isSidebarCollapsed ? 0 : undefined)}
+        >
+          {isModernTheme && !isSidebarCollapsed && <Text color="white" fontSize="24px" fontWeight="extrabold">CreativeDock</Text>}
+          {!isModernTheme && !isSidebarCollapsed && <Image src={selectedLogo} alt="Creative Dock Logo" maxH="30px" />}
+          {isSidebarCollapsed && <Image src={selectedIconLogo} alt="CD" maxH="30px" />}
+        </Box>
       
       {NAV_ITEMS.map((item) => (
-        // Use NavLink for active state detection, pass function as children
         <RouterNavLink key={item.path} to={item.path} end={item.path === '/'}> 
           {({ isActive }) => (
-            // Use Flex for styling, apply styles conditionally, avoid nesting <a>
-            <Flex // CHANGED from ChakraLink
-              as="span" // Render as span or div, not another <a>
-              display="flex"
-              alignItems="center"
-              p="8px 12px"
-              borderRadius="md"
-              // REMOVED direct bg/color props
-              // Rely solely on sx prop to apply the entire style object
-              sx={isActive ? activeNavLinkStyles : navLinkStyles} 
-              // Ensure navLinkStyles includes cursor: pointer if not already present
-            >
-              <Box as="span" mr={3}>{item.icon}</Box>
-              {item.label}
-            </Flex> // CHANGED from ChakraLink
+              <Tooltip label={isSidebarCollapsed ? item.label : undefined} placement="right" isDisabled={!isSidebarCollapsed || !isModernTheme }>
+                <Flex
+                  as="span"
+                  display="flex"
+                  alignItems="center"
+                  p={isModernTheme ? undefined : (isSidebarCollapsed ? 2 : "8px 12px")}
+                  borderRadius={isModernTheme ? '0' : "md"} // No border radius for modern items
+                  sx={isActive ? activeNavLinkStyles : navLinkStyles} 
+                  w="100%"
+                >
+                  <Box 
+                    as="span" 
+                    mr={isSidebarCollapsed ? 0 : (isModernTheme ? '16px' : 3)}
+                  >
+                    {item.icon}
+                  </Box>
+                  {!isSidebarCollapsed && item.label}
+                </Flex>
+              </Tooltip>
           )}
         </RouterNavLink>
       ))}
 
       {/* Admin Section */}
-      <Box mt={4} pt={2} borderTopWidth="1px" sx={{ borderColor: containerStyles.borderColor === "transparent" ? "gray.200" : containerStyles.borderColor }}>
-        <Text fontSize="xs" fontWeight="semibold" mb={2} color="gray.500" sx={{ _dark: { color: "gray.400"} }}>ADMIN</Text>
-        {visibleAdminNavItems.map((item) => (
+        <Box 
+          mt={isModernTheme ? 4 : 4} 
+          pt={isModernTheme ? 0 : 2} 
+          borderTopWidth={isModernTheme ? '0' : '1px'} 
+          sx={{ borderColor: borderColorToApply }} 
+          w="100%"
+        >
+          {!isSidebarCollapsed && !isModernTheme && <Text fontSize="xs" fontWeight="semibold" mb={2} color="gray.500" sx={{ _dark: { color: "gray.400"} }}>ADMIN</Text>}
+          {/* No ADMIN text title in modern theme mockup */}
+          {visibleAdminNavItems.map((item) => (
             <RouterNavLink key={item.path} to={item.path} end={item.path === '/'}> 
             {({ isActive }) => (
+                <Tooltip label={isSidebarCollapsed ? item.label : undefined} placement="right" isDisabled={!isSidebarCollapsed || !isModernTheme }>
                 <Flex
-                as="span"
-                display="flex"
-                alignItems="center"
-                p="8px 12px"
-                borderRadius="md"
-                sx={isActive ? activeNavLinkStyles : navLinkStyles}
+                  as="span"
+                  display="flex"
+                  alignItems="center"
+                  p={isModernTheme ? undefined : (isSidebarCollapsed ? 2 : "8px 12px")}
+                  borderRadius={isModernTheme ? '0' : "md"}
+                  sx={isActive ? activeNavLinkStyles : navLinkStyles}
+                  w="100%"
                 >
-                <Box as="span" mr={3}>{item.icon}</Box>
-                {item.label}
+                    <Box 
+                      as="span" 
+                      mr={isSidebarCollapsed ? 0 : (isModernTheme ? '16px' : 3)}
+                    >
+                      {item.icon}
+                    </Box>
+                    {!isSidebarCollapsed && item.label}
                 </Flex>
+                </Tooltip>
             )}
             </RouterNavLink>
         ))}
       </Box>
 
-      {/* User Profile Link - moved here for better separation before user info block */}
+        {/* User Profile Link */}
+      <Box mt={isModernTheme ? 'auto' : 0}> { /* Pushes to bottom in modern theme if it's the last group before toggle */}
       {USER_NAV_ITEMS.map((item) => (
         <RouterNavLink key={item.path} to={item.path} end={item.path === '/'}> 
           {({ isActive }) => (
+            <Tooltip label={isSidebarCollapsed ? item.label : undefined} placement="right" isDisabled={!isSidebarCollapsed || !isModernTheme }>
             <Flex
               as="span"
               display="flex"
               alignItems="center"
-              p="8px 12px"
-              borderRadius="md"
+              p={isModernTheme ? undefined : (isSidebarCollapsed ? 2 : "8px 12px")}
+              borderRadius={isModernTheme ? '0' : "md"}
               sx={isActive ? activeNavLinkStyles : navLinkStyles}
+              w="100%"
             >
-              <Box as="span" mr={3}>{item.icon}</Box>
-              {item.label}
+              <Box 
+                as="span" 
+                mr={isSidebarCollapsed ? 0 : (isModernTheme ? '16px' : 3)}
+              >
+                {item.icon}
+              </Box>
+              {!isSidebarCollapsed && item.label}
             </Flex>
+            </Tooltip>
           )}
         </RouterNavLink>
       ))}
-
-      {/* Conditionally render Dali inspiration image */}
-      {currentThemeName === 'daliDark' && (
-        <Box my={4} px={2} display="flex" justifyContent="center">
-          <Image 
-            src="/assets/images/dali-inspiration.png" 
-            alt="Dali Inspiration" 
-            borderRadius="md" 
-            boxShadow="lg" // Add a subtle shadow, can be themed later
-            maxW="150px" // Limit width
-            objectFit="contain"
-          />
-        </Box>
-      )}
-
-      {/* Spacer to push sign out down? Or place it logically */}
-      <Box flexGrow={1}></Box> 
-
-      {/* Display Logged In User */}
-      <Box borderTopWidth="1px" sx={{ borderColor: containerStyles.borderColor }} pt={4} mt={4}>
-        <Flex justifyContent="space-between" alignItems="center" mb={2}>
-          <Box>
-            <Text fontSize="xs" sx={userInfoTextStyles}>Signed in as:</Text>
-            <Text fontSize="sm" fontWeight="medium" noOfLines={1} title={userEmail}>
-                {userEmail ?? 'Unknown User'}
-            </Text>
-          </Box>
-          <ThemeSwitcher />
-        </Flex>
       </Box>
 
-      {/* Sign Out Button */}
-      <Button 
-          variant="ghost" // Use ghost to match link hover, but provide button padding/semantics
-          // colorScheme="gray" // Let theme dictate ghost button colors
-          onClick={handleSignOutAction}
-          width="100%" 
-          justifyContent="flex-start" // Align text left
-          // mt={4} // Adjust margin as needed, maybe remove if Box provides enough spacing
-        >
-         {/* TODO: Add sign out icon */}
-          Sign Out
-      </Button>
+      {/* Toggle button and User Info / Sign Out */}
+      <VStack 
+        spacing={2} 
+        align="stretch" 
+        w="100%" 
+        mt={isModernTheme ? 4 : 'auto'} // Modern theme: spacing before bottom items; Other themes: push to bottom
+        pt={isModernTheme ? 0 : 2} 
+        borderTopWidth={isModernTheme ? '0' : "1px"} 
+        borderColor={borderColorToApply}
+      >
+        <Tooltip label={isSidebarCollapsed ? (isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar") : undefined} placement="right">
+          <IconButton 
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            icon={isSidebarCollapsed ? <ArrowForwardIcon /> : <ArrowBackIcon />}
+            onClick={toggleSidebar}
+            variant={isModernTheme ? "ghost" : "outline"}
+            size="sm"
+            alignSelf={isSidebarCollapsed ? "center" : "flex-end"}
+            color={isModernTheme ? 'rgba(255,255,255,0.7)' : undefined}
+            _hover={isModernTheme ? {color: 'white', bg:'rgba(255,255,255,0.1)'} : {}}
+            mt={isModernTheme && isSidebarCollapsed ? 2 : 0}
+            mb={isModernTheme && !isSidebarCollapsed ? '16px' : 0}
+            mr={isModernTheme && !isSidebarCollapsed ? '16px' : 0} // align with padding
+          />
+        </Tooltip>
+
+        {!isSidebarCollapsed && (
+          <>
+            <ThemeSwitcher />
+            {userEmail && <Text fontSize="xs" sx={userEmailTextStylesModern} noOfLines={1} title={userEmail}>{userEmail}</Text>}
+            <Button variant="link" size="sm" onClick={handleSignOutAction} sx={signOutButtonStylesModern}>
+              Sign Out
+            </Button>
+          </>
+        )}
+        {isSidebarCollapsed && isModernTheme && <ThemeSwitcher />}
+        {/* When collapsed & modern, sign out might be an icon button or omitted depending on design */} 
+      </VStack>
+      </Flex>
     </VStack>
   );
 }

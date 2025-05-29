@@ -38,6 +38,12 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
       updated_at
       deal_specific_probability
       weighted_amount
+      assigned_to_user_id
+      assignedToUser {
+        id
+        display_name
+        email
+      }
       currentWfmStatus {
         id
         name
@@ -126,6 +132,10 @@ export interface AppState {
   currentDealError: string | null;
   fetchDealById: (dealId: string) => Promise<void>; 
 
+  // UI State
+  isSidebarCollapsed: boolean;
+  toggleSidebar: () => void;
+
   // Removed Current Activity Detail state
   // currentActivity: ActivityWithDetails | null;
   // currentActivityLoading: boolean;
@@ -145,6 +155,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentDeal: null,
   currentDealLoading: false,
   currentDealError: null,
+
+  // Initial UI State
+  isSidebarCollapsed: false,
 
   // Removed Initial Activity Detail State
   // currentActivity: null,
@@ -198,17 +211,9 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const data = await gqlClient.request<{ myPermissions: string[] }>(GET_MY_PERMISSIONS_QUERY);
       set({ userPermissions: data.myPermissions || [], permissionsLoading: false });
-    } catch (error) {
-      console.error("Error fetching user permissions:", error);
+    } catch (error: any) {
+      console.error('Error fetching permissions:', isGraphQLErrorWithMessage(error) && error.response ? error.response.errors : error.message);
       set({ userPermissions: [], permissionsLoading: false });
-      if (isGraphQLErrorWithMessage(error) && error.response && error.response.errors && error.response.errors.length > 0) {
-        const authError = error.response.errors.find(
-          (e: any) => e.extensions?.code === 'UNAUTHENTICATED' || e.extensions?.code === 'FORBIDDEN'
-        );
-        if (authError) {
-          console.warn("Permissions fetch failed due to auth error, potentially stale session.");
-      }
-    }
     }
   },
 
@@ -248,7 +253,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  // Removed fetchActivityById action
+  // UI Actions
+  toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
 }));
 
 // Initialize auth check when store is loaded (client-side only)

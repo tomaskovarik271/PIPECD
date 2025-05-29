@@ -1,6 +1,6 @@
 # Architecture Decision Record (ADR-006): WFM as Core Process Engine
 
-**Status:** Adopted & Revised | **Date:** 2025-05-28 (Revised YYYY-MM-DD)
+**Status:** Adopted & Revised | **Date:** 2025-05-28 (Revised 2024-07-31)
 
 **Revision Note:** This ADR has been revised to reflect a "starting from scratch" approach for the WFM core components, incorporating learnings from the existing application's database patterns and RLS mechanisms. The strategic direction to establish WFM as the core process engine remains.
 
@@ -132,7 +132,7 @@ This phase will occur after the core WFM is implemented and stable. The goal is 
     *   **DONE:** Define "Sales" `WFMWorkflow`(s):
         *   Using the WFM Admin UI, create `WFMWorkflow`(s) (e.g., "Standard Sales Process").
         *   Within each workflow, add `WFMWorkflowSteps` using the created `WFMStatus` records, define `stepOrder`, `isInitialStep`, `isFinalStep` flags.
-        *   Populate `WFMWorkflowStep.metadata` for sales-specific attributes (e.g., `{"deal_probability": 0.25}`, `{"outcome_type": "WON"}`). (Initial population done, UI for easy editing is **TODO** in Sprint 1.3 WFM Admin).
+        *   Populate `WFMWorkflowStep.metadata` for sales-specific attributes (e.g., `{"deal_probability": 0.25}`, `{"outcome_type": "WON"}`). (Initial population done, UI for easy editing is **DONE**).
         *   Define all necessary `WFMWorkflowTransitions` between these steps.
     *   **DONE:** Define "Sales Deal" `WFMProjectType`: Using the WFM Admin UI, create a `WFMProjectType` (e.g., "Sales Deal") and assign the relevant "Sales Workflow" as its default.
 
@@ -246,8 +246,8 @@ This phase will occur after the core WFM is implemented and stable. The goal is 
                 *   **DONE:** Editing existing `workflow_steps` (name via metadata, description via metadata, status, `isInitialStep`, and `isFinalStep` flags, using `EditWorkflowStepModal` and `WorkflowStepForm`).
                 *   **DONE:** Deleting `workflow_steps` (frontend calls exist, backend implications verified).
             *   **DONE:** Implement UI for creating/deleting `workflow_transitions` between steps (Frontend UI, modals, and store actions `createWorkflowTransition` and `deleteWorkflowTransition` are implemented and functional).
-            *   **TODO:** Implement UI for editing `workflow_transitions` (e.g., changing the transition name).
-            *   **TODO:** Enhance `WorkflowStepForm` (or a dedicated section in `EditWorkflowStepsModal`) to allow admins to easily configure sales-specific metadata like `deal_probability` and `outcome_type` (e.g. WON, LOST, OPEN) when a step is part of a "Sales" workflow or used by "Sales Deal" project type. This makes setting up sales processes more intuitive.
+            *   **DONE:** Implement UI for editing `workflow_transitions` (e.g., changing the transition name).
+            *   **DONE:** Enhance `WorkflowStepForm` (or a dedicated section in `EditWorkflowStepsModal`) to allow admins to easily configure sales-specific metadata like `deal_probability` and `outcome_type` (e.g. WON, LOST, OPEN) when a step is part of a "Sales" workflow or used by "Sales Deal" project type. This makes setting up sales processes more intuitive.
             *   **DONE:** Implement "Save" functionality for all step/transition changes (Step order saving is DONE. Saving for transitions is handled by individual create/delete/update actions. This item is now considered complete).
     *   **Sprint 1.4 (Project Board & Enforcement):**
         *   **TODO:** Develop initial `ProjectBoard.tsx` (rendering based on workflow, basic drag-drop) - *Note: This overlaps with Sales Kanban refactor and can be considered partially done for Sales. A generic project board is still TODO.*

@@ -74,7 +74,21 @@ const ActivityDetailPage: React.FC = () => {
   }
 
   // Destructure directly from currentActivity for cleaner JSX
-  const { type, subject, due_date, is_done, notes, created_at, updated_at, user, deal, person, organization } = currentActivity;
+  const { 
+    type, 
+    subject, 
+    due_date, 
+    is_done, 
+    notes, 
+    created_at, 
+    updated_at, 
+    user, 
+    deal, 
+    person, 
+    organization,
+    assignedToUser,
+    is_system_activity
+  } = currentActivity;
 
   return (
     <Box p={5}>
@@ -142,7 +156,12 @@ const ActivityDetailPage: React.FC = () => {
         )}
 
         <Heading size="sm" mt={4} mb={2}>Other Information</Heading>
-        <Text><strong>Assigned to:</strong> {user?.display_name || ''} ({user?.email || 'N/A'})</Text>
+        <Text><strong>Assigned to:</strong> {assignedToUser?.display_name || assignedToUser?.email || 'N/A'}</Text>
+        {is_system_activity && user && (
+          <Text fontSize="sm" color="gray.500">
+            (Created by: {user.display_name || user.email})
+          </Text>
+        )}
         <Text><strong>Created:</strong> {created_at ? new Date(created_at).toLocaleString() : 'N/A'}</Text>
         <Text><strong>Last Updated:</strong> {updated_at ? new Date(updated_at).toLocaleString() : 'N/A'}</Text>
 

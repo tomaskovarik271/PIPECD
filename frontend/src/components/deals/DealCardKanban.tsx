@@ -1,188 +1,180 @@
 import React from 'react';
-import { Box, Text, VStack, Heading, Tooltip, useColorModeValue, useTheme, Badge, Icon, HStack, Flex } from '@chakra-ui/react';
+import {
+  Box,
+  Text,
+  VStack,
+  Heading,
+  Tooltip,
+  Badge,
+  Icon,
+  HStack,
+  Flex,
+  Spacer,
+  Progress,
+  Avatar,
+  Tag,
+} from '@chakra-ui/react';
 import { Deal } from '../../stores/useDealsStore';
-import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd'; // Import Draggable & its types
-import { Link as RouterLink } from 'react-router-dom'; // Import Link
-import { useThemeStore } from '../../stores/useThemeStore'; // Import theme store
-import { TimeIcon, CheckCircleIcon } from '@chakra-ui/icons'; // Added icons
-import { ActivityType } from '../../generated/graphql/graphql'; // Import ActivityType enum if needed for specific icons
+import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
+import { Link as RouterLink } from 'react-router-dom';
+import { useThemeStore } from '../../stores/useThemeStore';
+import { TimeIcon, ExternalLinkIcon, EditIcon, ViewIcon as EyeIcon } from '@chakra-ui/icons';
+import { differenceInDays, formatDistanceToNowStrict, isPast, format } from 'date-fns';
 
 interface DealCardKanbanProps {
   deal: Deal;
-  index: number; // Required by react-beautiful-dnd for Draggable
+  index: number;
 }
 
-// Wrap component with React.memo
 const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index }) => {
-  const { currentTheme } = useThemeStore();
-  const theme = useTheme();
+  const { currentTheme: currentThemeName } = useThemeStore();
+  const isModernTheme = currentThemeName === 'modern';
 
-  // Function to calculate effective probability for display
-  const getEffectiveProbabilityDisplay = () => {
-    let probability = deal.deal_specific_probability;
-    let source = 'manual'; // Or 'override' if it's a direct setting
+  const placeholderTags = [deal.currentWfmStep?.status?.name].filter(Boolean) as string[];
+  if (deal.amount && deal.amount > 50000) placeholderTags.push('High Value');
 
-    if (probability == null) {
-      // Check WFM step metadata for probability
-      // Ensure currentWfmStep and its metadata exist, and metadata is an object
-      if (deal.currentWfmStep && 
-          deal.currentWfmStep.metadata && 
-          typeof deal.currentWfmStep.metadata === 'object' && 
-          'deal_probability' in deal.currentWfmStep.metadata) {
-        // Assuming deal_probability in metadata is a number (0 to 1)
-        const stepProbability = (deal.currentWfmStep.metadata as { deal_probability?: number }).deal_probability;
-        if (stepProbability != null) {
-          probability = stepProbability;
-          source = 'step';
-        }
-      }
+  const getEffectiveProbability = () => {
+    if (deal.deal_specific_probability != null) return deal.deal_specific_probability;
+    if (deal.currentWfmStep?.metadata && typeof deal.currentWfmStep.metadata === 'object' && 'deal_probability' in deal.currentWfmStep.metadata) {
+      const stepProbability = (deal.currentWfmStep.metadata as { deal_probability?: number }).deal_probability;
+      if (stepProbability != null) return stepProbability;
     }
-
-    if (probability == null) return 'N/A';
-    return `${Math.round(probability * 100)}% (${source})`;
+    return 0;
   };
+  const probabilityValue = getEffectiveProbability() * 100;
 
-  // Default Theme-aware colors
-  const defaultCardBgBase = useColorModeValue('white', 'gray.800');
-  const defaultCardBgDragging = useColorModeValue('green.50', 'green.800');
-  const defaultCardBorderColor = useColorModeValue('gray.200', 'gray.600');
-  const defaultAmountTextColor = useColorModeValue('gray.700', 'gray.200');
-  const defaultSecondaryTextColor = useColorModeValue('gray.500', 'gray.400');
-  const defaultProbabilityTextColor = useColorModeValue('purple.600', 'purple.300');
+  const expectedCloseDate = deal.expected_close_date ? new Date(deal.expected_close_date) : null;
+  let dueDateStatus = "";
+  let dueDateColor = "text.muted";
+  if (expectedCloseDate) {
+    if (isPast(expectedCloseDate)) {
+      dueDateStatus = `${formatDistanceToNowStrict(expectedCloseDate, { addSuffix: true })} overdue`;
+      dueDateColor = "accent.danger";
+    } else {
+      dueDateStatus = `Due in ${formatDistanceToNowStrict(expectedCloseDate)}`;
+    }
+  }
 
-  // Warhol-specific dark theme colors
-  const warholCardBgBase = theme.colors.gray[900]; // black
-  const warholCardBgDragging = theme.colors.blue[800]; // dark popBlue
-  const warholCardBorderColor = theme.colors.yellow[500]; // popYellow
-  const warholAmountTextColor = theme.colors.gray[50];
-  const warholSecondaryTextColor = theme.colors.gray[100];
-  const warholProbabilityTextColor = theme.colors.green[500]; // popGreen
-  const warholHeadingColor = theme.colors.gray[50];
-  const activityIconColor = useColorModeValue('gray.600', 'gray.300');
-  const warholActivityIconColor = theme.colors.cyan[400]; // Example for Warhol
-  const finalActivityIconColor = currentTheme === 'andyWarhol' ? warholActivityIconColor : activityIconColor;
+  // Determine base and dragging styles based on theme
+  let baseStyle: any;
+  let draggingStyle: any;
 
-  const cardBgBase = currentTheme === 'andyWarhol' ? warholCardBgBase : defaultCardBgBase;
-  const cardBgDragging = currentTheme === 'andyWarhol' ? warholCardBgDragging : defaultCardBgDragging;
-  const cardBorderColor = currentTheme === 'andyWarhol' ? warholCardBorderColor : defaultCardBorderColor;
-  const amountTextColor = currentTheme === 'andyWarhol' ? warholAmountTextColor : defaultAmountTextColor;
-  const secondaryTextColor = currentTheme === 'andyWarhol' ? warholSecondaryTextColor : defaultSecondaryTextColor;
-  const probabilityTextColor = currentTheme === 'andyWarhol' ? warholProbabilityTextColor : defaultProbabilityTextColor;
-  const headingColor = currentTheme === 'andyWarhol' ? warholHeadingColor : useColorModeValue(theme.colors.gray[900], theme.colors.gray[50]);
-
-  // Process activities
-  const openActivities = deal.activities?.filter(a => !a.is_done) || [];
-  const nextOpenActivity = openActivities
-    .filter(a => a.due_date) // Only consider activities with a due date
-    .sort((a, b) => new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime())[0];
-
-  const getIconForActivityType = (activityType?: ActivityType | null) => {
-    // Placeholder for more specific icons based on activity.type if desired
-    // For now, using TimeIcon for open and CheckCircleIcon for general idea
-    return TimeIcon; 
-  };
+  if (isModernTheme) {
+    baseStyle = {
+      bg: "gray.700",
+      p: 5,
+      borderRadius: "lg",
+      border: "1px solid",
+      borderColor: "gray.500",
+      transition: "all 0.2s ease-in-out",
+      _hover: {
+        borderColor: "blue.400",
+        transform: "translateY(-2px)",
+        boxShadow: "lg"
+      }
+    };
+    draggingStyle = {
+      ...baseStyle,
+      borderColor: "blue.500",
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
+      transform: 'translateY(-2px) rotate(1deg)',
+    };
+  } else {
+    // Original styles for other themes
+    baseStyle = {
+      p: 3,
+      bg: 'gray.50',
+      borderRadius: "md",
+      boxShadow: "sm",
+      borderWidth: "1px",
+      borderColor: "gray.200",
+      _dark: {
+        bg: 'gray.700',
+        borderColor: "gray.600"
+      }
+    };
+    draggingStyle = {
+      ...baseStyle,
+      bg: 'blue.50', _dark: { bg: 'blue.800' },
+      boxShadow: "xl",
+    };
+  }
 
   return (
     <Draggable draggableId={deal.id} index={index}>
-      {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => ( // Add types to provided and snapshot
+      {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
         <Box
-          ref={provided.innerRef} // Connect ref
-          {...provided.draggableProps} // Spread draggable props
-          {...provided.dragHandleProps} // Spread drag handle props
-          p={3}
-          bg={snapshot.isDragging ? cardBgDragging : cardBgBase} // Change bg based on dragging state
-          borderRadius="md"
-          boxShadow={snapshot.isDragging ? "xl" : "sm"} // Enhance shadow when dragging
-          borderWidth="1px"
-          borderColor={cardBorderColor}
-          style={{ 
-            ...provided.draggableProps.style, // Important for D&D positioning
-            // userSelect: "none", // Prevent text selection during drag (optional)
-          }}
-          mb={3} // Margin between cards
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          style={{ ...provided.draggableProps.style }}
+          mb={isModernTheme ? 4 : 3}
+          {...(snapshot.isDragging ? draggingStyle : baseStyle)}
+          position="relative"
         >
-          <VStack align="stretch" spacing={1}>
-            <Tooltip label={deal.name} placement="top" openDelay={500}>
-                <RouterLink to={`/deals/${deal.id}`} style={{ textDecoration: 'none', display: 'block', color: 'inherit' }}>
-                    <Heading size="xs" isTruncated _hover={{ textDecoration: 'underline' }} color={headingColor}>{deal.name}</Heading>
-                </RouterLink>
-            </Tooltip>
-            <Text fontSize="sm" color={amountTextColor}>
-              {deal.amount ? 
-                new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(deal.amount) 
-                : 'No amount'}
-            </Text>
-            {deal.person && (
-              <Text fontSize="xs" color={secondaryTextColor} isTruncated>
-                Person: {deal.person.first_name || ''} {deal.person.last_name || ''}
-              </Text>
-            )}
-            {deal.organization && (
-              <Text fontSize="xs" color={secondaryTextColor} isTruncated>
-                Org: {deal.organization.name}
-              </Text>
-            )}
-            {/* Display Assigned User */}
-            {deal.assignedToUser ? (
-              <Text fontSize="xs" color={secondaryTextColor} isTruncated>
-                Assigned: {deal.assignedToUser.display_name}
-              </Text>
-            ) : (
-              <Text fontSize="xs" color={secondaryTextColor} isTruncated>
-                Assigned: Unassigned
-              </Text>
-            )}
-            <Text fontSize="xs" color={probabilityTextColor}>
-                Prob: {getEffectiveProbabilityDisplay()}
-            </Text>
-            
-            {/* Activities Section */}
-            {deal.activities && deal.activities.length > 0 && (
-              <Box mt={2} pt={1} borderTopWidth="1px" borderColor={cardBorderColor}>
-                <HStack justifyContent="space-between" alignItems="center">
-                  <Text fontSize="xs" fontWeight="medium" color={secondaryTextColor}>Activities</Text>
-                  {openActivities.length > 0 && (
-                    <Badge colorScheme="orange" size="sm">{openActivities.length} open</Badge>
-                  )}
-                  {openActivities.length === 0 && deal.activities.length > 0 && (
-                     <Badge colorScheme="green" size="sm">All done</Badge>
-                  )}
-                </HStack>
-                {nextOpenActivity && (
-                  <Tooltip label={`Due: ${new Date(nextOpenActivity.due_date!).toLocaleDateString()} - ${nextOpenActivity.type}`} placement="bottom-start" openDelay={300}>
-                    <RouterLink to={`/activities/${nextOpenActivity.id}`} style={{ textDecoration: 'none', display: 'block', color: 'inherit' }}>
-                      <Flex alignItems="center" mt={1} _hover={{ textDecoration: 'underline' }}>
-                        <Icon as={getIconForActivityType(nextOpenActivity.type)} color={finalActivityIconColor} w={3} h={3} mr={1.5} />
-                        <Text fontSize="xs" color={secondaryTextColor} isTruncated>
-                          {nextOpenActivity.subject}
-                        </Text>
-                      </Flex>
-                    </RouterLink>
-                  </Tooltip>
-                )}
-                {openActivities.length > 0 && !nextOpenActivity && openActivities[0] && (
-                  // Show first open activity if no 'nextOpenActivity' with a due date was found
-                  <RouterLink to={`/activities/${openActivities[0].id}`} style={{ textDecoration: 'none', display: 'block', color: 'inherit' }}>
-                    <Flex alignItems="center" mt={1} _hover={{ textDecoration: 'underline' }}>
-                      <Icon as={getIconForActivityType(openActivities[0].type)} color={finalActivityIconColor} w={3} h={3} mr={1.5} />
-                      <Text fontSize="xs" color={secondaryTextColor} isTruncated>
-                        {openActivities[0].subject} (No due date)
-                      </Text>
-                    </Flex>
+          {isModernTheme ? (
+            <VStack align="stretch" spacing={3}>
+              <HStack justify="space-between" mb={2}>
+                <VStack align="start" spacing={0.5}>
+                  <RouterLink to={`/deals/${deal.id}`} style={{ textDecoration: 'none' }}>
+                    <Text fontWeight="bold" color="white" noOfLines={2} _hover={{ color: 'blue.300' }} fontSize="md">
+                      {deal.name}
+                    </Text>
                   </RouterLink>
-                )}
-              </Box>
-            )}
-            {/* End Activities Section */}
+                  <Text fontSize="sm" color="gray.400" noOfLines={1}>
+                    {deal.organization?.name || '-'}
+                  </Text>
+                </VStack>
+                <Text fontSize="lg" fontWeight="bold" color="green.300">
+                  {deal.amount ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits:0, maximumFractionDigits:0 }).format(deal.amount) : '-'}
+                </Text>
+              </HStack>
 
-          </VStack>
+              <Box mb={2}>
+                <Progress 
+                  value={probabilityValue}
+                  size="sm" 
+                  colorScheme="blue" 
+                  bg="gray.600"
+                  borderRadius="full"
+                />
+                <Text fontSize="xs" color="blue.200" mt={1} textAlign="right">
+                  {probabilityValue.toFixed(0)}% probability
+                </Text>
+              </Box>
+
+              <HStack justify="space-between" borderTopWidth="1px" borderColor="gray.600" pt={2} mt="auto">
+                <HStack spacing={1.5}>
+                  <Avatar 
+                    size="xs" 
+                    name={deal.assignedToUser?.display_name || 'Unassigned'} 
+                    src={deal.assignedToUser?.avatar_url || undefined}
+                    bg="gray.500"
+                  />
+                  <Text fontSize="xs" color="gray.300" noOfLines={1}>
+                    {deal.assignedToUser?.display_name || 'Unassigned'}
+                  </Text>
+                </HStack>
+                <Text fontSize="xs" color={dueDateColor === "accent.danger" ? "red.400" : "gray.300"} textAlign="right">
+                  {expectedCloseDate ? dueDateStatus : 'No due date'}
+                </Text>
+              </HStack>
+            </VStack>
+          ) : (
+            <VStack align="stretch" spacing={1}>
+              <RouterLink to={`/deals/${deal.id}`} style={{ textDecoration: 'none' }}><Heading size="xs" isTruncated>{deal.name}</Heading></RouterLink>
+              <Text fontSize="sm">{deal.amount ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(deal.amount) : 'No amount'}</Text>
+              {deal.person && <Text fontSize="xs" color="gray.500">Person: {deal.person.first_name} {deal.person.last_name}</Text>}
+              {deal.organization && <Text fontSize="xs" color="gray.500">Org: {deal.organization.name}</Text>}
+              {deal.assignedToUser && <Text fontSize="xs" color="gray.600">Owner: {deal.assignedToUser.display_name}</Text>}
+              <Text fontSize="xs" color="purple.500">Prob: {probabilityValue.toFixed(0)}%</Text>
+            </VStack>
+          )}
         </Box>
       )}
     </Draggable>
   );
 });
 
-// Add display name for better debugging with React.memo
 DealCardKanban.displayName = 'DealCardKanban';
-
 export default DealCardKanban; 

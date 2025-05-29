@@ -58,6 +58,29 @@ const GET_ORGANIZATIONS_QUERY = gql`
   }
 `;
 
+// New Query for fetching a single organization by ID
+const GET_ORGANIZATION_BY_ID_QUERY = gql`
+  ${CUSTOM_FIELD_VALUES_FRAGMENT}
+  query GetOrganizationById($id: ID!) {
+    organization(id: $id) {
+      id
+      name
+      address
+      notes
+      created_at
+      updated_at
+      # Example of other fields that might be useful for a detail page:
+      # website
+      # industry
+      # people { id first_name last_name email }
+      # deals { id name }
+      customFieldValues {
+        ...CustomFieldValuesData
+      }
+    }
+  }
+`;
+
 const CREATE_ORGANIZATION_MUTATION = gql`
   ${CUSTOM_FIELD_VALUES_FRAGMENT}
   mutation CreateOrganization($input: OrganizationInput!) {
@@ -102,7 +125,11 @@ interface OrganizationsState {
   organizations: Organization[];
   organizationsLoading: boolean;
   organizationsError: string | null;
+  currentOrganization: Organization | null; // Added for single org view
+  isLoadingSingleOrganization: boolean;    // Added for single org view
+  errorSingleOrganization: string | null;    // Added for single org view
   fetchOrganizations: () => Promise<void>;
+  fetchOrganizationById: (id: string) => Promise<void>; // Added for single org view
   createOrganization: (input: OrganizationInput) => Promise<Organization | null>;
   updateOrganization: (id: string, input: OrganizationInput) => Promise<Organization | null>;
   deleteOrganization: (id: string) => Promise<boolean>;
@@ -112,6 +139,9 @@ export const useOrganizationsStore = create<OrganizationsState>((set, get) => ({
   organizations: [],
   organizationsLoading: false,
   organizationsError: null,
+  currentOrganization: null,             // Initialized
+  isLoadingSingleOrganization: false,    // Initialized
+  errorSingleOrganization: null,       // Initialized
 
   fetchOrganizations: async () => {
     set({ organizationsLoading: true, organizationsError: null });
@@ -127,6 +157,28 @@ export const useOrganizationsStore = create<OrganizationsState>((set, get) => ({
         message = error.message;
       }
       set({ organizationsError: message, organizationsLoading: false, organizations: [] });
+    }
+  },
+
+  // New action to fetch a single organization by ID
+  fetchOrganizationById: async (id: string) => {
+    set({ isLoadingSingleOrganization: true, errorSingleOrganization: null, currentOrganization: null });
+    try {
+      type GetOrganizationByIdQueryResponse = { organization: Organization | null };
+      const response = await gqlClient.request<GetOrganizationByIdQueryResponse>(
+        GET_ORGANIZATION_BY_ID_QUERY,
+        { id }
+      );
+      set({ currentOrganization: response.organization || null, isLoadingSingleOrganization: false });
+    } catch (error: unknown) {
+      let message = 'An unknown error occurred fetching organization details';
+      if (isGraphQLErrorWithMessage(error)) {
+        message = error.response?.errors?.[0]?.message || 'GraphQL error';
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+      set({ errorSingleOrganization: message, isLoadingSingleOrganization: false });
+      console.error(`Error fetching organization by ID (${id}):`, error);
     }
   },
 

@@ -8,13 +8,14 @@ enum ActivityType {
   CALL
   EMAIL
   DEADLINE
+  SYSTEM_TASK # Added for system-generated tasks
   # Add other common types like LUNCH if needed
 }
 
 type Activity {
   id: ID!
   user_id: ID! # Included for potential direct filtering/reference
-  user: User # The user associated with this activity
+  user: User # The user associated with this activity (creator)
   created_at: DateTime!
   updated_at: DateTime!
   type: ActivityType!
@@ -22,16 +23,19 @@ type Activity {
   due_date: DateTime # Nullable ISO 8601 DateTime string
   is_done: Boolean!
   notes: String
+  is_system_activity: Boolean! # Added for system-generated tasks
 
   # Linked Objects (Resolved)
   deal: Deal
   person: Person
   organization: Organization
+  assignedToUser: User # The user to whom this activity is assigned
 
   # Linked Object IDs (Directly from DB - useful sometimes)
   deal_id: ID
   person_id: ID
   organization_id: ID
+  assigned_to_user_id: ID # The ID of the user to whom this activity is assigned
 }
 
 input CreateActivityInput {

@@ -1,19 +1,19 @@
 import { create } from 'zustand';
 
-export type ThemeMode = 'light' | 'dark' | 'daliDark' | 'bowie' | 'industrialMetal' | 'andyWarhol';
+export type ThemeMode = 'modern' | 'industrialMetal';
 
 const getInitialTheme = (): ThemeMode => {
   if (typeof window !== 'undefined') {
     try {
       const storedTheme = localStorage.getItem('app-theme') as ThemeMode | null;
-      if (storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'daliDark' || storedTheme === 'bowie' || storedTheme === 'industrialMetal' || storedTheme === 'andyWarhol') {
+      if (storedTheme && ['modern', 'industrialMetal'].includes(storedTheme)) {
         return storedTheme;
       }
     } catch (error: unknown) {
       console.error("Error reading theme from localStorage:", error);
     }
   }
-  return 'light'; // Default theme
+  return 'modern';
 };
 
 export interface ThemeState {

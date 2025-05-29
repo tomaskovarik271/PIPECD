@@ -41,12 +41,15 @@ export type Scalars = {
 
 export type Activity = {
   __typename?: "Activity";
+  assignedToUser?: Maybe<User>;
+  assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
   deal?: Maybe<Deal>;
   deal_id?: Maybe<Scalars["ID"]["output"]>;
   due_date?: Maybe<Scalars["DateTime"]["output"]>;
   id: Scalars["ID"]["output"];
   is_done: Scalars["Boolean"]["output"];
+  is_system_activity: Scalars["Boolean"]["output"];
   notes?: Maybe<Scalars["String"]["output"]>;
   organization?: Maybe<Organization>;
   organization_id?: Maybe<Scalars["ID"]["output"]>;
@@ -72,6 +75,7 @@ export enum ActivityType {
   Deadline = "DEADLINE",
   Email = "EMAIL",
   Meeting = "MEETING",
+  SystemTask = "SYSTEM_TASK",
   Task = "TASK",
 }
 
@@ -1138,6 +1142,16 @@ export type ActivityResolvers<
   ParentType extends
     ResolversParentTypes["Activity"] = ResolversParentTypes["Activity"],
 > = {
+  assignedToUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  assigned_to_user_id?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   deal?: Resolver<Maybe<ResolversTypes["Deal"]>, ParentType, ContextType>;
   deal_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
@@ -1148,6 +1162,11 @@ export type ActivityResolvers<
   >;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   is_done?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  is_system_activity?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
   notes?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   organization?: Resolver<
     Maybe<ResolversTypes["Organization"]>,

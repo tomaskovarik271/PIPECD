@@ -2,7 +2,9 @@ import { Box, Text, VStack, HStack, Avatar, UnorderedList, ListItem, chakra } fr
 import { format, parseISO } from 'date-fns';
 import { DealHistoryEntryDisplayItem } from './DealHistoryList'; // Import the type
 import { useAppStore, DealWithHistory } from '../../stores/useAppStore'; // Added store import and DealWithHistory
-import { CustomFieldDefinition, Stage, Person, Organization } from '../../generated/graphql/graphql'; // For typing
+import { useUserListStore, UserListItem } from '../../stores/useUserListStore'; // ADDED
+import { CustomFieldDefinition, Person, Organization, WfmStatus } from '../../generated/graphql/graphql'; // For typing, changed Stage to WfmStatus
+import { useEffect } from 'react'; // ADDED
 
 interface DealHistoryItemProps {
   entry: DealHistoryEntryDisplayItem;
@@ -16,6 +18,7 @@ const coreFieldDisplayNames: Record<string, string> = {
   expected_close_date: 'Expected Close Date',
   person_id: 'Person',
   organization_id: 'Organization',
+  assigned_to_user_id: 'Assigned To', // ADDED for clarity
   deal_specific_probability: 'Deal Specific Probability',
   // We will handle custom_field_values explicitly in renderChanges
 };
@@ -24,6 +27,20 @@ const coreFieldDisplayNames: Record<string, string> = {
 const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
   // Access currentDeal which contains the current deal's stage, person, org, and CF definitions
   const currentDeal = useAppStore((state) => state.currentDeal);
+  const { users, fetchUsers, hasFetched: usersHaveBeenFetched } = useUserListStore(); // ADDED
+
+  // ADDED: Fetch users if not already fetched
+  useEffect(() => {
+    if (!usersHaveBeenFetched) {
+      fetchUsers();
+    }
+  }, [usersHaveBeenFetched, fetchUsers]);
+
+  // ADDED: Helper to get user display name
+  const getUserDisplayNameById = (userId: string): string => {
+    const user = users.find(u => u.id === userId);
+    return user?.display_name || user?.email || `User ID: ${userId}`;
+  };
 
   // Helper to get all unique custom field definitions from the current deal
   const getCustomFieldDefinitionsFromCurrentDeal = (): CustomFieldDefinition[] => {
@@ -88,9 +105,14 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
           return String(value);
         }
       case 'stage_id': {
-        const stage = currentDeal?.stage;
-        return (stage && stage.id === value) ? stage.name : String(value); // Use current deal's stage if ID matches
+        // Attempt to find the stage name from currentDeal if it matches the ID
+        // This is a best-effort for display and might not always find a match if stages change over time.
+        // The raw ID will be shown if no match.
+        const wfmStatus = currentDeal?.currentWfmStatus;
+        return (wfmStatus && wfmStatus.id === value) ? wfmStatus.name : String(value);
       }
+      case 'assigned_to_user_id': // ADDED: case for assigned_to_user_id
+        return getUserDisplayNameById(String(value));
       case 'person_id': {
         const person = currentDeal?.person;
         return (person && person.id === value) ? `${person.first_name || ''} ${person.last_name || ''}`.trim() || String(value) : String(value);
@@ -110,6 +132,30 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
     if (eventType === 'DEAL_DELETED') {
       return 'This deal was deleted.';
     }
+
+    // Handle DEAL_WFM_STATUS_CHANGED specifically
+    if (eventType === 'DEAL_WFM_STATUS_CHANGED' && changes) {
+      try {
+        // The 'changes' object itself is the change_data for this event type
+        const changeData = typeof changes === 'string' ? JSON.parse(changes) : changes;
+        const oldStatusName = changeData.old_wfm_status?.name || 'Unknown Status';
+        const newStatusName = changeData.new_wfm_status?.name || 'Unknown Status';
+        // Make sure to check if old/new status are the same (can happen if only metadata changed on step)
+        if (oldStatusName === newStatusName && changeData.old_wfm_status?.id === changeData.new_wfm_status?.id) {
+            return <Text>Deal progress updated within status <chakra.strong>{newStatusName}</chakra.strong>.</Text>;
+        }    
+        return (
+          <Text>
+            Status changed from <chakra.strong>{oldStatusName}</chakra.strong> to <chakra.strong>{newStatusName}</chakra.strong>.
+          </Text>
+        );
+      } catch (e) {
+        console.error("Error parsing DEAL_WFM_STATUS_CHANGED data:", e, changes);
+        // Fallback to JSON if parsing fails
+        return <chakra.pre fontSize="xs" fontFamily="mono">{JSON.stringify(changes, null, 2)}</chakra.pre>;
+      }
+    }
+
     if (!changes || Object.keys(changes).length === 0) {
       return 'No specific changes logged.';
     }
@@ -164,21 +210,63 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
     if (eventType === 'DEAL_CREATED') {
       return (
         <UnorderedList spacing={1} styleType="none" ml={0}>
-          {Object.entries(changes).map(([key, value]) => 
-            renderListItem(key, coreFieldDisplayNames[key] || key, value)
-          )}
+          {Object.entries(changes).map(([key, value]) => {
+            // Special handling for custom_field_values during creation
+            if (key === 'custom_field_values' && typeof value === 'object' && value !== null) {
+              return Object.entries(value).map(([cfId, cfVal]) => {
+                const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
+                const fieldLabel = definition?.fieldLabel || cfId;
+                return (
+                  <ListItem key={cfId}>
+                    <Text as="span" fontWeight="medium">{fieldLabel}:</Text> {formatSingleCustomFieldValue(cfId, cfVal)}
+                  </ListItem>
+                );
+              });
+            }
+            // For other core fields during creation
+            const displayName = coreFieldDisplayNames[key] || key;
+            return renderListItem(key, displayName, value);
+          })}
         </UnorderedList>
       );
     }
 
     if (eventType === 'DEAL_UPDATED') {
-      return (
-        <UnorderedList spacing={1} styleType="none" ml={0}>
-          {Object.entries(changes).map(([key, valueObj]: [string, any]) => 
-            renderListItem(key, coreFieldDisplayNames[key] || key, valueObj.newValue, valueObj.oldValue)
-          )}
-        </UnorderedList>
-      );
+      const changeItems: JSX.Element[] = [];
+      Object.entries(changes).forEach(([key, valueObj]: [string, any]) => {
+        if (key === 'custom_field_values') {
+          // Iterate through changed custom fields
+          if (typeof valueObj === 'object' && valueObj !== null) {
+            Object.entries(valueObj).forEach(([cfId, cfChange]) => {
+              const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
+              const fieldLabel = definition?.fieldLabel || cfId;
+              if (typeof cfChange === 'object' && cfChange !== null && 'oldValue' in cfChange && 'newValue' in cfChange) {
+                const oldF = formatSingleCustomFieldValue(cfId, (cfChange as any).oldValue);
+                const newF = formatSingleCustomFieldValue(cfId, (cfChange as any).newValue);
+                 // Only add if old and new values are different
+                if (oldF !== newF) {
+                    changeItems.push(
+                        <ListItem key={cfId}>
+                        <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from "{oldF}" to "{newF}"
+                        </ListItem>
+                    );
+                }
+              }
+            });
+          }
+        } else {
+          // Handle other core field updates
+          const displayName = coreFieldDisplayNames[key] || key;
+          // Only add if old and new values are different
+          const oldF = formatHistoryFieldValue(key, valueObj.oldValue);
+          const newF = formatHistoryFieldValue(key, valueObj.newValue);
+          if (oldF !== newF) {
+            changeItems.push(renderListItem(key, displayName, valueObj.newValue, valueObj.oldValue));
+          }
+        }
+      });
+      if (changeItems.length === 0) return <Text>No visible field changes.</Text>; // Or specific message
+      return <UnorderedList spacing={1} styleType="none" ml={0}>{changeItems}</UnorderedList>;
     }
     // Fallback for other event types or if structure is unexpected
     return <chakra.pre fontSize="xs" fontFamily="mono">{JSON.stringify(changes, null, 2)}</chakra.pre>;

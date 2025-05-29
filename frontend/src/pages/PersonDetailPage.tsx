@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Heading,
@@ -7,19 +7,20 @@ import {
   Spinner,
   Alert,
   AlertIcon,
+  AlertTitle,
+  AlertDescription,
   VStack,
   HStack,
-  Tag,
-  Divider,
-  Card,
-  CardHeader,
-  CardBody,
-  SimpleGrid,
-  Link as ChakraLink,
-  Icon,
-  Flex
+  IconButton,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  Center,
+  Icon
 } from '@chakra-ui/react';
-import { usePeopleStore } from '../stores/usePeopleStore';
+import { ArrowBackIcon, WarningIcon } from '@chakra-ui/icons';
+import { useThemeStore } from '../stores/useThemeStore';
+import { usePeopleStore, Person } from '../stores/usePeopleStore'; // Assuming Person type is exported
 import {
   EmailIcon,
   PhoneIcon,
@@ -31,7 +32,6 @@ import {
 import { Deal } from '../stores/useDealsStore'; 
 import { Activity } from '../stores/useActivitiesStore'; 
 import { format, parseISO } from 'date-fns';
-import { Link as RouterLink } from 'react-router-dom';
 // import { getLinkDisplayDetails } from '../utils/getLinkDisplayDetails'; // Removed for now
 
 // Helper to format dates
@@ -46,168 +46,134 @@ const formatDate = (dateString: string | Date | undefined) => {
   }
 };
 
-export default function PersonDetailPage() {
+const PersonDetailPage = () => {
   const { personId } = useParams<{ personId: string }>();
-  const {
-    currentPerson,
-    isLoadingSinglePerson: isLoading,
-    errorSinglePerson: error,
-    fetchPersonById,
-  } = usePeopleStore();
+  const { currentTheme: currentThemeName } = useThemeStore();
+  const isModernTheme = currentThemeName === 'modern';
+
+  const fetchPersonById = usePeopleStore((state) => state.fetchPersonById);
+  const currentPerson = usePeopleStore((state) => state.currentPerson);
+  const isLoadingPerson = usePeopleStore((state) => state.isLoadingSinglePerson); // Corrected state name
+  const personError = usePeopleStore((state) => state.errorSinglePerson); // Corrected state name
 
   useEffect(() => {
-    if (personId) {
+    if (personId && fetchPersonById) {
       fetchPersonById(personId);
     }
+    // Optional: Clear currentPerson on unmount if desired
+    // return () => usePeopleStore.setState({ currentPerson: null, errorSinglePerson: null });
   }, [personId, fetchPersonById]);
 
-  if (isLoading) {
+  if (!isModernTheme) {
+    // Basic non-modern theme fallback
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="calc(100vh - 200px)">
-        <Spinner size="xl" />
+      <Box p={5} maxW="lg" mx="auto">
+        <HStack mb={4}>
+          <IconButton as={RouterLink} to="/people" aria-label="Back to People" icon={<ArrowBackIcon />} />
+          <Heading size="lg">Person Details</Heading>
+        </HStack>
+        {isLoadingPerson && <Center><Spinner /></Center>}
+        {personError && <Alert status="error"><AlertIcon />{typeof personError === 'string' ? personError : JSON.stringify(personError)}</Alert>}
+        {currentPerson && (
+          <VStack align="start" spacing={3}>
+            <Text><strong>Name:</strong> {currentPerson.first_name} {currentPerson.last_name}</Text>
+            <Text><strong>Email:</strong> {currentPerson.email || 'N/A'}</Text>
+            <Text><strong>Phone:</strong> {currentPerson.phone || 'N/A'}</Text>
+            {/* Add more fields as needed */}
+          </VStack>
+        )}
+        {!currentPerson && !isLoadingPerson && !personError && <Text>Person not found.</Text>}
       </Box>
     );
   }
 
-  if (error) {
-    return (
-      <Alert status="error" mt={4}>
-        <AlertIcon />
-        Error fetching person details: {typeof error === 'string' ? error : JSON.stringify(error)}
-      </Alert>
-    );
-  }
-
-  if (!currentPerson) {
-    return <Text>Person not found.</Text>;
-  }
-
-  const {
-    first_name,
-    last_name,
-    email,
-    phone,
-    notes,
-    created_at,
-    updated_at,
-    organization,
-    deals,
-    activities,
-    // customFieldValues, // Ensure this is not used if commented out
-  } = currentPerson;
-
-  const fullName = [first_name, last_name].filter(Boolean).join(' ') || 'N/A';
-
+  // Modern Theme Layout
   return (
-    <Box p={5}>
-      <VStack spacing={4} align="stretch">
-        <Heading as="h1" size="xl">
-          {fullName}
-        </Heading>
-
-        <Card>
-          <CardHeader><Heading size="md">Contact Information</Heading></CardHeader>
-          <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              <HStack>
-                <EmailIcon />
-                <Text><strong>Email:</strong> {email || 'N/A'}</Text>
-              </HStack>
-              <HStack>
-                <PhoneIcon />
-                <Text><strong>Phone:</strong> {phone || 'N/A'}</Text>
-              </HStack>
-            </SimpleGrid>
-          </CardBody>
-        </Card>
-
-        {notes && (
-          <Card>
-            <CardHeader><Heading size="md"><Icon as={InfoOutlineIcon} mr={2}/>Notes</Heading></CardHeader>
-            <CardBody>
-              <Text whiteSpace="pre-wrap">{notes}</Text>
-            </CardBody>
-          </Card>
+    <Box 
+      h="calc(100vh - 40px)" 
+      maxH="calc(100vh - 40px)"
+      m={0} 
+      display="flex"
+      alignItems="center"
+      justifyContent="center"
+      p={4} 
+    >
+      <Box 
+        bg="gray.800" 
+        maxW="90vw" 
+        w="full" 
+        h="full"  
+        maxH="calc(100% - 0px)" 
+        borderRadius="xl" 
+        overflowY="auto"
+        p={{base: 4, md: 8}}
+        sx={{
+            '&::-webkit-scrollbar': { width: '8px' },
+            '&::-webkit-scrollbar-thumb': { background: 'gray.600', borderRadius: '8px' },
+            '&::-webkit-scrollbar-track': { background: 'gray.750' },
+        }}
+      >
+        {isLoadingPerson && (
+          <Center h="full"><Spinner size="xl" color="blue.400"/></Center>
         )}
-
-        {organization && (
-           <Card>
-            <CardHeader><Heading size="md">Associated Organization</Heading></CardHeader>
-            <CardBody>
-                <ChakraLink as={RouterLink} to={`/organizations/${organization.id}`} color="blue.500">
-                    <HStack><Icon as={LinkIcon} /><Text>{organization.name}</Text></HStack>
-                </ChakraLink>
-            </CardBody>
-          </Card>
+        {personError && (
+          <Alert status="error" variant="subtle" borderRadius="lg" bg="red.900" color="white" mt={4}>
+            <AlertIcon color="red.300"/>
+            <AlertTitle>Error Loading Person!</AlertTitle>
+            <AlertDescription>{typeof personError === 'string' ? personError : JSON.stringify(personError)}</AlertDescription>
+          </Alert>
         )}
+        {!isLoadingPerson && !personError && currentPerson && (
+          <VStack spacing={6} align="stretch">
+            {/* Header: Breadcrumbs, Title */}
+            <Box pb={4} borderBottomWidth="1px" borderColor="gray.700" mb={2}>
+              <Breadcrumb spacing="8px" separator={<Text color="gray.400">/</Text>} color="gray.400" fontSize="sm">
+                <BreadcrumbItem>
+                  <BreadcrumbLink as={RouterLink} to="/people" color="blue.400" _hover={{textDecoration: 'underline'}}>
+                    People
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbItem isCurrentPage>
+                  <BreadcrumbLink href="#" color="gray.200" _hover={{textDecoration: 'none', cursor: 'default'}}>
+                    {currentPerson.first_name} {currentPerson.last_name}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </Breadcrumb>
+              <Heading size="xl" color="white" mt={2}>{currentPerson.first_name} {currentPerson.last_name}</Heading>
+            </Box>
 
-        {/* 
-        Custom fields section properly commented out for JSX 
-        {currentPerson.customFieldValues && currentPerson.customFieldValues.length > 0 && (
-          <Card>
-            <CardHeader><Heading size="md">Custom Fields</Heading></CardHeader>
-            <CardBody>
-              <VStack align="stretch" spacing={2}>
-                {currentPerson.customFieldValues.map((cfValue: any) => ( // Added any type for cfValue temporarily
-                  <HStack key={cfValue.custom_field_id}>
-                    <Text fontWeight="bold">{cfValue.fieldDefinition?.name || 'Unknown Field'}:</Text>
-                    <Text>Value: {JSON.stringify(cfValue.value_string || cfValue.value_number || cfValue.value_date || cfValue.value_boolean)} </Text> 
-                  </HStack>
-                ))}
+            {/* Person Details Card */}
+            <Box bg="gray.700" p={6} borderRadius="xl" border="1px solid" borderColor="gray.600">
+              <Heading size="md" mb={5} color="white">Contact Information</Heading>
+              <VStack spacing={4} align="stretch">
+                <HStack justifyContent="space-between">
+                  <Text fontSize="sm" color="gray.400">Full Name</Text>
+                  <Text fontSize="md" fontWeight="medium" color="gray.200">{currentPerson.first_name} {currentPerson.last_name}</Text>
+                </HStack>
+                <HStack justifyContent="space-between">
+                  <Text fontSize="sm" color="gray.400">Email</Text>
+                  <Text fontSize="md" fontWeight="medium" color="blue.300">{currentPerson.email || '-'}</Text>
+                </HStack>
+                <HStack justifyContent="space-between">
+                  <Text fontSize="sm" color="gray.400">Phone</Text>
+                  <Text fontSize="md" fontWeight="medium" color="gray.200">{currentPerson.phone || '-'}</Text>
+                </HStack>
+                {/* Add more fields: Address, Company, etc. as available and needed */}
               </VStack>
-            </CardBody>
-          </Card>
+            </Box>
+            {/* We can add more cards here, e.g., for Related Deals, Activities, etc. */}
+          </VStack>
         )}
-        */}
-
-        {deals && deals.length > 0 && (
-          <Card>
-            <CardHeader><Heading size="md">Associated Deals ({deals.length})</Heading></CardHeader>
-            <CardBody>
-              <VStack align="stretch" spacing={2}>
-                {deals.map((deal: Deal) => (
-                  <ChakraLink as={RouterLink} key={deal.id} to={`/deals/${deal.id}`} color="blue.500">
-                    <HStack>
-                      <Icon as={LinkIcon} />
-                      <Text>{deal.name || `Deal ${deal.id}`}</Text>
-                      {deal.stage?.name && <Tag size="sm">{deal.stage.name}</Tag>}
-                    </HStack>
-                  </ChakraLink>
-                ))}
-              </VStack>
-            </CardBody>
-          </Card>
+        {!currentPerson && !isLoadingPerson && !personError && (
+           <Center h="full" flexDirection="column" bg="gray.750" borderRadius="xl" p={6}>
+             <Icon as={WarningIcon} w={8} h={8} color="yellow.400" mb={4} />
+             <Text color="gray.300" fontSize="lg">Person not found.</Text>
+             <IconButton as={RouterLink} to="/people" aria-label="Back to People" icon={<ArrowBackIcon />} mt={6} colorScheme="blue"/>
+           </Center>
         )}
-
-        {activities && activities.length > 0 && (
-          <Card>
-            <CardHeader><Heading size="md">Related Activities ({activities.length})</Heading></CardHeader>
-            <CardBody>
-              <VStack align="stretch" spacing={2}>
-                {activities.map((activity: Activity) => (
-                  <ChakraLink as={RouterLink} key={activity.id} to={`/activities/${activity.id}`} color="blue.500">
-                    <HStack>
-                        <Icon as={LinkIcon} />
-                        <Text>{activity.subject || `Activity ${activity.id}`}</Text>
-                        <Tag size="sm" colorScheme={activity.is_done ? 'green' : 'yellow'}>
-                            {activity.is_done ? 'Done' : 'Open'}
-                        </Tag>
-                        {activity.due_date && <Text fontSize="sm">Due: {formatDate(activity.due_date)}</Text>}
-                    </HStack>
-                  </ChakraLink>
-                ))}
-              </VStack>
-            </CardBody>
-          </Card>
-        )}
-        
-        <Divider my={4} />
-
-        <Flex justifyContent="space-between" color="gray.500" fontSize="sm">
-          <HStack><TimeIcon /><Text>Created: {formatDate(created_at)}</Text></HStack>
-          <HStack><TimeIcon /><Text>Last Updated: {formatDate(updated_at)}</Text></HStack>
-        </Flex>
-      </VStack>
+      </Box>
     </Box>
   );
-} 
+};
+
+export default PersonDetailPage; 

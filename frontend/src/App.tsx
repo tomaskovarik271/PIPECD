@@ -7,6 +7,7 @@ import DealsPage from './pages/DealsPage';
 import PeoplePage from './pages/PeoplePage';
 import PersonDetailPage from './pages/PersonDetailPage';
 import OrganizationsPage from './pages/OrganizationsPage'; 
+import OrganizationDetailPage from './pages/OrganizationDetailPage';
 import ActivitiesPage from './pages/ActivitiesPage';
 import ActivityDetailPage from './pages/ActivityDetailPage';
 import DealDetailPage from './pages/DealDetailPage';
@@ -28,19 +29,82 @@ import {
 import { useAppStore } from './stores/useAppStore';
 import { useWFMConfigStore } from './stores/useWFMConfigStore';
 import Sidebar from './components/layout/Sidebar';
+import { useThemeStore } from './stores/useThemeStore';
 
 function AppContent() {
+  const isSidebarCollapsed = useAppStore((state) => state.isSidebarCollapsed);
+  const sidebarWidth = isSidebarCollapsed ? "70px" : "280px";
+  const currentTheme = useThemeStore((state) => state.currentTheme);
+
+  if (currentTheme === 'modern') {
+    return (
+      <Box minH="100vh" bg="gray.900">
+        <Flex>
+          <Box 
+            w={sidebarWidth}
+            minH="100vh" 
+            bg="gray.850"
+            position="fixed" 
+            left="0" 
+            top="0"
+            zIndex="10"
+          >
+            <Sidebar />
+          </Box>
+          
+          <Box 
+            flex="1" 
+            ml={sidebarWidth}
+            bg="gray.900"
+            transition="margin-left 0.2s ease-in-out"
+          >
+            <Routes>
+              <Route path="/" element={<Heading size="lg" p={6} color="white">Home</Heading>} />
+              <Route path="/people" element={<PeoplePage />} />
+              <Route path="/people/:personId" element={<PersonDetailPage />} />
+              <Route path="/deals" element={<DealsPage />} />
+              <Route path="/deals/:dealId" element={<DealDetailPage />} />
+              <Route path="/organizations" element={<OrganizationsPage />} />
+              <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
+              <Route path="/activities" element={<ActivitiesPage />} />
+              <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
+              <Route path="/admin/wfm" element={<WfmAdminPage />}>
+                <Route index element={<WFMStatusesPage />} />
+                <Route path="statuses" element={<WFMStatusesPage />} />
+                <Route path="workflows" element={<WFMWorkflowsPage />} />
+                <Route path="project-types" element={<WFMProjectTypesPage />} />
+              </Route>
+              <Route path="/project-board" element={<ProjectBoardPage />} />
+              <Route path="*" element={<Heading size="lg" p={6} color="white">404 Not Found</Heading>} />
+            </Routes>
+          </Box>
+        </Flex>
+      </Box>
+    );
+  }
+
   return (
     <Flex minH="100vh">
       <Sidebar />
-      <Box as="main" flex={1} p={6} bg={{ base: 'gray.50', _dark: 'gray.900' }}>
+      <Box 
+        as="main" 
+        flex={1} 
+        bg={{ base: 'gray.50', _dark: 'gray.900' }}
+        marginLeft={sidebarWidth}
+        transition="margin-left 0.2s ease-in-out"
+        width={`calc(100% - ${sidebarWidth})`}
+        position="relative"
+      >
           <Routes>
-            <Route path="/" element={<Heading size="lg">Home</Heading>} />
+            <Route path="/" element={<Heading size="lg" p={6}>Home</Heading>} />
             <Route path="/people" element={<PeoplePage />} />
             <Route path="/people/:personId" element={<PersonDetailPage />} />
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/deals/:dealId" element={<DealDetailPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
+            <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
             <Route path="/profile" element={<ProfilePage />} />

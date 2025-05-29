@@ -8,7 +8,7 @@ Welcome to Project PipeCD! This document will help you understand the project st
 
 For critical setup instructions and initial verification, please refer to [README.md](README.md).
 For high-level architectural decisions and their rationale, see [ADR.md](ADR.md).
-For the project plan, feature tracking, and known issues, consult `PROJECT_ROADMAP_V2.md`.
+For the project plan, feature tracking, and known issues, consult `BACKLOG.md`.
 
 ## 2. Core Technologies & Architecture
 
@@ -44,9 +44,10 @@ PIPECD/
 │   │   ├── components/ # Reusable UI Components
 │   │   │   ├── common/     # Generic components (e.g., ConfirmationDialog)
 │   │   │   ├── activities/ # Activity-specific components
+│   │   │   ├── admin/      # Admin section components
+│   │   │   │   └── wfm/      # WFM Admin UI components (e.g. WorkflowStepForm)
 │   │   │   ├── layout/     # Layout components (Navbar, Sidebar)
-│   │   │   ├── pipelines/  # Pipeline-specific components
-│   │   │   └── stages/     # Stage-specific components
+│   │   │   └── deals/      # Deal-specific components (Kanban, Modals, etc.)
 │   │   ├── generated/    # Auto-generated files (e.g., GraphQL types)
 │   │   │   └── graphql/
 │   │   ├── lib/          # Frontend-specific helpers (gql client, Supabase init)
@@ -67,12 +68,16 @@ PIPECD/
 │   ├── supabaseClient.ts # Backend Supabase client initialization
 │   ├── serviceUtils.ts   # Shared service helpers (auth, error handling)
 │   ├── types.ts          # Shared TypeScript interfaces/types (if not from GraphQL)
-│   ├── activityService.ts
-│   ├── dealService.ts
+│   ├── activityService.ts # Service for managing activities, including assignments and system flags
+│   ├── dealService/      # Core deal logic (CRUD, probability - WFM integrated, event publishing for assignments)
+│   │   ├── dealCrud.ts
+│   │   └── dealProbability.ts
 │   ├── organizationService.ts
 │   ├── personService.ts
-│   ├── pipelineService.ts
-│   ├── stageService.ts
+│   ├── wfmStatusService.ts
+│   ├── wfmWorkflowService.ts
+│   ├── wfmProjectTypeService.ts
+│   ├── wfmProjectService.ts
 │   └── *.test.ts         # Corresponding Vitest unit tests
 ├── netlify/
 │   └── functions/        # Netlify serverless functions
@@ -149,6 +154,8 @@ Refer to [README.md](README.md) for a streamlined setup. Detailed steps:
     *   Inbucket (local email testing): `http://127.0.0.1:54324`
     *   Inngest Dev Server (if running `npx inngest-cli dev -u http://localhost:8888/.netlify/functions/inngest` in a separate terminal): `http://localhost:8288`
 
+
+
 ## 5. Backend Development
 
 ### Shared Logic (`/lib`)
@@ -202,79 +209,104 @@ Refer to [README.md](README.md) for a streamlined setup. Detailed steps:
 
 ### 5.4 Handling GraphQL Inputs with Fields Not Directly Mapped to Database Tables
 
-A common scenario in GraphQL development involves input types that contain fields necessary for the GraphQL layer (e.g., for validation, context, or to satisfy client-side expectations) but do not directly correspond to a column in the primary database table for the entity being mutated. This section outlines best practices for handling such discrepancies, using the implementation of "Deal-Specific Probability" and its `pipeline_id` field in `DealInput` as a case study.
+A common scenario in GraphQL development involves input types that contain fields necessary for the GraphQL layer (e.g., for validation, context, or to trigger related actions) but do not directly correspond to a column in the primary database table for the entity being mutated. This section outlines best practices for handling such discrepancies, using a hypothetical example of creating an initial follow-up activity during Deal creation.
 
-#### 5.4.1 The Challenge: `pipeline_id` in `DealInput`
+#### 5.4.1 The Challenge: `initial_follow_up_type` in `DealCreateInput`
 
-During the implementation of deal-specific probabilities, the `DealInput` GraphQL type was defined to include fields like `name`, `stage_id`, `amount`, and crucially, `pipeline_id`. The `pipeline_id` is essential at the GraphQL/frontend layer because:
-*   When creating or editing a deal, selecting a pipeline is often the first step before selecting a stage.
-*   The frontend needs `pipeline_id` to correctly populate stage selection dropdowns based on the chosen pipeline.
+Imagine the business wants to allow users to specify an `initial_follow_up_type` (e.g., "Call", "Email") when creating a new Deal. This information isn't stored directly on the `deals` table but is used by the `dealService.createDeal` method to automatically schedule a corresponding `Activity`.
 
-However, the `deals` table in the database does not have a `pipeline_id` column. Instead, a deal is associated with a pipeline indirectly: `deals.stage_id` links to the `stages` table, and `stages.pipeline_id` links to the `pipelines` table.
-
-This mismatch led to an error: `PGRST204: Could not find the 'pipeline_id' column of 'deals' in the schema cache`. This occurred when GraphQL resolvers for `createDeal` and `updateDeal` passed the full `DealInput` (containing `pipeline_id`) to service layer methods (`dealService.createDeal` and `dealService.updateDeal`). These service methods, in their initial implementation, then attempted to use all fields from the input in Supabase `insert` or `update` operations on the `deals` table.
+The `DealCreateInput` GraphQL type might look like this:
+```graphql
+input DealCreateInput {
+  name: String!
+  amount: Float
+  # ... other deal fields ...
+  wfm_project_type_id: ID! # To link to the correct WFM setup
+  initial_follow_up_type: String # e.g., "Call", "Email", "Meeting"
+  # ... other fields ...
+}
+```
+The `deals` table, however, has no `initial_follow_up_type` column. If the GraphQL resolver for `createDeal` passes the full `DealCreateInput` (containing `initial_follow_up_type`) to `dealService.createDeal`, and the service method then naively attempts to use all input fields in a Supabase `insert` operation on the `deals` table, an error like `PGRST204: Could not find the 'initial_follow_up_type' column of 'deals'` would occur.
 
 #### 5.4.2 Solution and Best Practices
 
-The core principle is to ensure that only data corresponding to actual database table columns is passed to the database client for `insert` or `update` operations. The responsibility for stripping or transforming fields depends on the nature of the mutation and the service layer design.
+The core principle is to ensure that only data corresponding to actual database table columns is passed to the database client for `insert` or `update` operations. The responsibility for stripping or transforming fields lies with the service layer, especially for "create" operations or when the service method is designed to handle such auxiliary fields.
 
-##### 5.4.2.1 Resolver Responsibility (Primarily for Partial Updates)
+##### 5.4.2.1 Service Layer Responsibility (Recommended for this Scenario)
 
-*   **Scenario**: When a mutation is designed for partial updates (e.g., `updateDeal` where only a subset of fields might be provided) and the corresponding service method also expects a partial input (e.g., `dealService.updateDeal` taking `Partial<DealInput>`).
-*   **Action**: The GraphQL resolver is a suitable place to destructure the validated input and explicitly pass only the fields that are intended for direct update on the database table.
-*   **Example (`updateDeal` resolver in `mutation.ts`):**
+*   **Scenario**: The `dealService.createDeal` method is designed to accept the `DealCreateInput` (which includes `initial_follow_up_type`). It's the service's job to handle both the deal creation and the subsequent activity creation.
+*   **Action**: The service method itself destructures the input. It uses fields like `name` and `amount` for the `deals` table insertion and uses `initial_follow_up_type` (along with other necessary data like `user_id` and the new `deal_id`) to call `activityService.createActivity`.
+*   **Example (`createDeal` method in `lib/dealService/dealCrud.ts`):**
     ```typescript
-    // In netlify/functions/graphql/resolvers/mutation.ts
-    // ...
-    const validatedInput = DealUpdateSchema.parse(args.input);
-    // ...
-    // Destructure to exclude pipeline_id before passing to the service
-    const { pipeline_id, ...dealDataForUpdate } = validatedInput;
-    const updatedDealRecord = await dealService.updateDeal(userId, args.id, dealDataForUpdate, accessToken);
-    // ...
-    ```
-    Here, `dealDataForUpdate` only contains fields that directly map to the `deals` table or are otherwise handled by the `dealService.updateDeal` method for persistence.
+    // In lib/dealService/dealCrud.ts (illustrative)
+    async createDealInternal(
+      userId: string,
+      input: DealCreateInput, // Contains initial_follow_up_type
+      accessToken: string,
+      context: ServiceContext // Assuming context provides activityService
+    ): Promise<Deal> {
+      const { initial_follow_up_type, wfm_project_type_id, ...dealDataForDbInsert } = input;
 
-##### 5.4.2.2 Service Layer Responsibility (Primarily for Create Operations or Full Input Updates)
+      // 1. Create the WFM Project for the Deal
+      const wfmProject = await this.createWfmProjectForDeal(userId, dealDataForDbInsert.name, wfm_project_type_id, context);
+      if (!wfmProject || !wfmProject.current_step_id) {
+        throw new Error('Failed to initialize WFM project for deal.');
+      }
 
-*   **Scenario**: When a service layer method is designed to accept the full GraphQL input type (e.g., `dealService.createDeal` taking `DealInput`), especially for creation operations where a complete representation is often expected.
-*   **Action**: The service method itself should be responsible for ensuring only valid columns are passed to the database. This involves destructuring or mapping the input *within* the service method to exclude fields not present in the target table *before* calling the database client (e.g., Supabase `insert()`).
-*   **Example (`createDeal` method in `lib/dealService.ts`):**
-    ```typescript
-    // In lib/dealService.ts
-    async createDeal(userId: string, input: DealInput, accessToken: string): Promise<Deal> {
-      // ...
-      // Destructure pipeline_id from input, as it doesn't belong in the 'deals' table directly.
-      const { pipeline_id, ...dealDataForDbInsert } = input;
-      
-      const { data, error } = await supabase
+      // 2. Insert into 'deals' table
+      const { data: dealRecord, error: dealError } = await context.supabase
         .from('deals')
-        .insert({ ...dealDataForDbInsert, user_id: userId }) // Use the destructured object
-        .select()
+        .insert({ 
+          ...dealDataForDbInsert, 
+          user_id: userId, 
+          wfm_project_id: wfmProject.id 
+        })
+        .select('*, person(*), organization(*), assignedToUser:user_profiles(*), customFieldValues:custom_field_values(*, definition:custom_field_definitions(*)), currentWfmStep:wfm_workflow_steps(*, status:wfm_statuses(*)), currentWfmStatus:wfm_statuses(*), activities(*)') // Fetching related data
         .single();
-      // ...
+
+      if (dealError || !dealRecord) {
+        throw new GraphQLError(`Error creating deal: ${dealError?.message || 'Unknown error'}`);
+      }
+
+      // 3. Create initial follow-up activity if specified
+      if (initial_follow_up_type && dealRecord.id) {
+        try {
+          await context.activityService.createActivity(userId, {
+            type: initial_follow_up_type,
+            subject: `Initial follow-up for deal: ${dealRecord.name}`,
+            deal_id: dealRecord.id,
+            // due_date: // set appropriately, e.g., 3 days from now
+            // assigned_to_user_id: userId, // or specific logic
+          }, accessToken);
+        } catch (activityError) {
+          // Log or handle error, but don't necessarily fail deal creation
+          console.warn(`Failed to create initial follow-up activity: ${activityError}`);
+        }
+      }
+      // ... calculate probability, history, etc. ...
+      return dealRecord as Deal; // Assuming dealRecord matches Deal type after select
     }
     ```
-    In this case, the `createDeal` resolver in `mutation.ts` can pass the full `validatedInput` to `dealService.createDeal`, and the service layer handles the adaptation for the database.
+    In this case, the `createDeal` resolver in `mutation.ts` passes the full `validatedInput` to the service, and the service layer correctly orchestrates database insertion for `deals` and any related actions like creating an `Activity`.
 
-##### 5.4.2.3 Why the Distinction?
+##### 5.4.2.2 Resolver Responsibility (More for Partial Updates)
 
-*   **Create Operations**: Service methods for creating new entities (e.g., `createDeal`) often have a contract closely tied to the full GraphQL input type. It's cleaner and more encapsulated for them to internally manage the mapping to the database schema. The resolver then doesn't need to know the intimate details of which fields are transient for DB persistence.
-*   **Partial Update Operations**: Service methods for partial updates (e.g., `updateDeal`) are typically more flexible if they accept a subset of fields. The resolver, having validated the full `Partial<DealInput>`, can then prepare this precise subset for the update, minimizing the risk of accidentally trying to update non-existent or non-updatable fields.
+*   **Scenario**: If a mutation is for partial updates (e.g., `updateDeal`) and the service method also expects a partial input (e.g., `dealService.updateDeal` taking `Partial<DealUpdateInput>`).
+*   **Action**: The GraphQL resolver can destructure the validated input and explicitly pass only the fields intended for direct update on the database table. This is less common for fields that trigger side-effects like activity creation, which are better handled encapsulated within the service.
 
-##### 5.4.2.4 Zod Schemas and GraphQL Inputs
+##### 5.4.2.3 Zod Schemas and GraphQL Inputs
 
-*   Zod validation schemas (e.g., `DealCreateSchema`, `DealUpdateSchema` in `netlify/functions/graphql/validators.ts`) should generally align with the corresponding GraphQL `Input` types. This ensures consistent validation at the entry point of the resolver.
-*   The transformation or stripping of fields not meant for direct database persistence (like `pipeline_id` from `DealInput` for the `deals` table) should occur *after* Zod validation, either in the resolver or the service layer, following the patterns described above.
+*   Zod validation schemas (e.g., `DealCreateInputSchema` in `netlify/functions/graphql/validators.ts`) should align with the corresponding GraphQL `Input` types, including fields like `initial_follow_up_type`.
+*   The stripping or processing of auxiliary fields occurs *after* Zod validation, within the service layer as demonstrated.
 
 #### 5.4.3 Key Takeaways
 
-*   **Be Mindful of Discrepancies**: Always be aware of differences between the structure of your GraphQL input types and your underlying database table schemas.
-*   **Define Responsibility**: Clearly determine where the logic for adapting GraphQL inputs for database operations should reside (resolver vs. service layer). This decision can be guided by whether it's a "create" versus a "partial update" scenario and the design of your service layer methods.
-*   **Defensive Service Layers**: Implement service layer methods that interact with the database defensively. They should only attempt to write data for columns that actually exist in the target table.
-*   **Test CRUD Thoroughly**: When introducing new fields to input types or modifying how entities are structured, thoroughly test all related Create, Read, Update, and Delete (CRUD) operations to catch such issues early.
+*   **Be Mindful of Discrepancies**: Always be aware of differences between your GraphQL input types and your database table schemas.
+*   **Define Responsibility**: Clearly determine where logic for adapting inputs and handling related side-effects should reside. For "create" operations with auxiliary actions, the service layer is often the best place for encapsulation.
+*   **Defensive Service Layers**: Service methods should be robust, only attempting to write data for columns that exist and handling any auxiliary logic explicitly.
+*   **Test Thoroughly**: Test all CRUD operations, especially those involving inputs that trigger side-effects or don't map directly to table columns.
 
-This pattern helps maintain a clean separation of concerns: THE GraphQL layer handles client-facing data contracts and validation, while the service and database layers ensure data is persisted correctly according to the defined schema.
+This pattern helps maintain clean separation: GraphQL handles client contracts and validation, while the service layer orchestrates business logic and data persistence.
 
 ### 5.5 Database (`supabase/migrations`)
 
@@ -287,9 +319,10 @@ This pattern helps maintain a clean separation of concerns: THE GraphQL layer ha
 
 ### 5.6 Async Workflows (`netlify/functions/inngest.ts`)
 
-*   **Inngest Client**: Initialized in `inngest.ts`.
-*   **Function Definitions**: Inngest functions are defined here (e.g., `crm/person.created`). These functions are triggered by events.
-*   **Event Sending**: Events (e.g., `{ name: 'crm/person.created', data: { personId: '...' } }`) are sent from GraphQL mutations or service layers using `inngest.send()`.
+*   **Inngest Client**: Initialized in `lib/inngestClient.ts` (ensure it's shared correctly).
+*   **Function Definitions**: Inngest functions are defined here (e.g., `createDealAssignmentTask`). These functions are triggered by events.
+    *   `createDealAssignmentTask`: Listens for `crm/deal.assigned` events and creates an Activity (task) for the assigned user, setting `user_id` to `SYSTEM_USER_ID`, `assigned_to_user_id` to the deal assignee, and `is_system_activity` to `true`.
+*   **Event Sending**: Events (e.g., `{ name: 'crm/deal.assigned', data: { dealId: '...', assignedToUserId: '...' } }`) are sent from GraphQL mutations or service layers (e.g., `dealService`) using `inngest.send()`.
 *   **Local Testing**:
     *   Run the Inngest Dev Server: `npx inngest-cli dev -u http://localhost:8888/.netlify/functions/inngest` (ensure the URL matches your local Netlify Dev setup for the Inngest function).
     *   Trigger events from your application; they will appear in the Inngest Dev UI (`http://localhost:8288`).
@@ -460,7 +493,7 @@ The initial application of the WFM system is the refactoring of the Sales Pipeli
 
 *   **Organization**:
     *   `common/`: Generic, reusable components (e.g., `ConfirmationDialog.tsx`, `EmptyState.tsx`, `LoadingSpinner.tsx`).
-    *   Feature-specific directories (e.g., `pipelines/`, `stages/`, `deals/`) for components related to a particular domain.
+    *   Feature-specific directories (e.g., `deals/`, `activities/`, `admin/wfm/`) for components related to a particular domain.
 *   **Chakra UI**: Components are built using Chakra UI primitives and styled components. Adhere to Chakra's styling props and theme capabilities.
 *   **Creating New Components**:
     *   Ensure components are focused and reusable.
@@ -593,16 +626,16 @@ The project aims for a balanced testing approach:
 
 ## 11. Key Development Learnings & Best Practices (NEW SECTION)
 
-This section consolidates key learnings and best practices derived from feature implementations, such as the Deal History / Audit Trail. Applying these can help improve development efficiency, code quality, and reduce common pitfalls.
+This section consolidates key learnings and best practices derived from feature implementations, such as the Deal History / Audit Trail and the initial "Welcome & Review" task automation.
 
 ### X.1 Database & Migrations
 
 *   **Migration Verification**: Always double-check the content of generated SQL migration files before applying them, especially when using tools to edit them. An empty or incorrect migration file can lead to significant lost time.
-*   **RLS Policy Completeness**: When creating new tables requiring Row-Level Security:
+*   **RLS Policy Completeness**: When creating new tables or adding functionality like activity assignments:
     *   Remember to define policies for all relevant operations: `SELECT`, `INSERT`, `UPDATE`, `DELETE`.
-    *   Test RLS policies thoroughly, especially for `INSERT` operations which are often triggered by backend logic after initial checks.
-*   **Data Integrity**: Be mindful of data integrity issues. Incorrect data in one table (e.g., a user profile in `people` having incorrect name data) can manifest as bugs in seemingly unrelated features (e.g., incorrect user attribution in an audit log). Direct database inspection is crucial for diagnosing such issues.
-*   **Table & Column Naming**: Clearly understand and use correct table and column names, especially when joining or filtering (e.g., `people.user_id` vs. `people.id` when linking to `deal_history.user_id` which references `auth.users.id`).
+    *   Ensure policies cover different access patterns (e.g., creator access, assignee access for system tasks).
+    *   Test RLS policies thoroughly, especially for `INSERT` and `UPDATE` operations which are often triggered by backend logic (e.g., Inngest functions, service methods) after initial checks.
+*   **Data Integrity**: Be mindful of data integrity issues. Incorrect data in one table (e.g., a user profile in `people` having incorrect name data) can manifest as bugs in seemingly unrelated features (e.g., incorrect user attribution in an audit log or activity assignment).
 
 ### X.2 Backend Services & Business Logic (`/lib`)
 
@@ -626,16 +659,17 @@ This section consolidates key learnings and best practices derived from feature 
 ### X.4 Inngest (Async Workflows)
 
 *   **Local Development & Dev Server**:
-    *   The `netlify/functions/inngest.ts` handler should use `serve` from `inngest/lambda`.
+    *   The `netlify/functions/inngest.ts` handler should use `serve` from `inngest/lambda` (or `inngest/netlify` if API changes).
     *   For reliable local Inngest Dev Server synchronization with Netlify Dev, explicitly configuring `serveHost`, `servePath`, and `signingKey` in the `serve` options within `inngest.ts` might be necessary.
     *   The Inngest Dev Server typically expects to connect via HTTP for local Netlify Dev.
-*   **Event Data Contracts**: Ensure Inngest functions correctly access data from the `event` object (e.g., `event.data.deal.id` vs. `event.data.id`).
+*   **Event Data Contracts**: Ensure Inngest functions correctly access data from the `event` object (e.g., `event.data.dealId`, `event.data.assignedToUserId`).
+*   **Environment Variables in Functions**: Ensure Inngest functions (and other Netlify functions) have access to necessary environment variables (e.g., `SUPABASE_SERVICE_ROLE_KEY`, `SYSTEM_USER_ID`).
 *   **Idempotency & Error Handling**: (Future consideration for more complex Inngest functions) Plan for idempotency and robust error handling within Inngest functions.
 
 ### X.5 Frontend Development
 
 *   **Dependency Management**: When installing new frontend-specific libraries (e.g., `date-fns`), ensure they are installed in the correct `package.json` (e.g., `frontend/package.json`).
-*   **Data Display & Formatting**: Utilize libraries like `date-fns` for user-friendly display of dates and times. Plan for displaying resolved names for foreign key IDs in user-facing views (e.g., showing Stage Name instead of `stage_id` in history).
+*   **Data Display & Formatting**: Utilize libraries like `date-fns` for user-friendly display of dates and times. Plan for displaying resolved names for foreign key IDs in user-facing views (e.g., showing WFM Status Name instead of `wfm_status_id` in history).
 
 ### X.6 General Development & Planning
 
@@ -643,20 +677,6 @@ This section consolidates key learnings and best practices derived from feature 
 *   **Incremental Changes**: Apply and test changes incrementally, especially when debugging complex interactions between the database, backend, and frontend.
 *   **Plan Adherence & Adaptation**: While a good implementation plan is invaluable, be prepared to adapt and troubleshoot unforeseen issues. The initial plan for Deal History was a strong guide, but practical implementation always reveals nuances.
 *   **Verify Assumptions**: Early verification of assumptions about existing schema, naming conventions, and library/SDK behavior can save significant time.
-
-## 12. Role-Based Access Control (RBAC)
-
-The project implements a database-driven RBAC system.
-
-*   **Goal**: To control what actions users can perform (e.g., `create`, `read_any`, `update_own`) on different resources (e.g., `deal`, `pipeline`).
-*   **Database Schema** (in `supabase/migrations/..._rbac_schema_and_policies.sql`):
-    *   `public.roles`: Defines roles (e.g., 'admin', 'member').
-    *   `public.permissions`: Defines granular permissions (e.g., `{resource: 'deal', action: 'create'}`).
-    *   `public.role_permissions`: Links roles to permissions (many-to-many).
-    *   `public.user_roles`: Links users (`auth.users`) to roles (many-to-many).
-*   **SQL Helper Functions** (in `supabase/migrations/..._rbac_permission_helpers.sql`):
-    *   `public.check_permission(p_user_id uuid, p_resource text, p_action text) RETURNS boolean`: Checks if a user has a specific permission. Used in RLS policies.
-    *   `public.get_user_permissions(p_user_id UUID) RETURNS jsonb`: Returns all permissions for the specified user. Called by the GraphQL context factory, passing the authenticated user's ID.
 *   **RLS Policies**:
     *   Applied to core data tables (`deals`, `people`, etc.).
     *   Use the `check_permission` function with `auth.uid()` to enforce access control at the database level.
@@ -664,7 +684,7 @@ The project implements a database-driven RBAC system.
 *   **Backend Enforcement**:
     *   While RLS provides database-level security, service layers or resolvers might include additional checks if needed, though RLS should be the primary guard.
 *   **Frontend UI**:
-    *   The `userPermissions: string[]` array (e.g., `['deal:create', 'pipeline:read_any']`) is fetched on login and stored in `useAppStore`.
+    *   The `userPermissions: string[]` array (e.g., `['deal:create', 'wfm_workflow:read_any']`) is fetched on login and stored in `useAppStore`.
     *   UI elements (buttons, links, fields) are conditionally rendered or disabled based on these permissions.
         *   Example: `<Button isDisabled={!userPermissions.includes('deal:create')}>Create Deal</Button>`
 
@@ -776,6 +796,54 @@ The project implements a database-driven RBAC system.
 *   [Playwright](https://playwright.dev/docs/intro)
 *   [ESLint](https://eslint.org/docs/latest/)
 *   [Zod](https://zod.dev/)
+
+## Post Database Reset Procedures
+
+When the development database is reset (e.g., by dropping and recreating tables or running all migrations from scratch), certain manual steps are required to ensure the application functions correctly, particularly for features relying on a `system_user_id` for automated actions like the "Welcome & Review" task creation.
+
+### Recreating the System User (`system_user_id`)
+
+The `system_user_id` is used to attribute actions performed by automated processes (e.g., via Inngest functions creating system tasks) to a dedicated "System" entity. If the database is reset, the previous system user will be deleted, and a new one must be created. The UUID of this new system user will then need to be updated in your environment variables.
+
+**Steps:**
+
+1.  **Create the System User in Supabase Auth:**
+    *   Navigate to your Supabase Project Dashboard.
+    *   Go to **Authentication** -> **Users**.
+    *   Click **"Add user"** (or "Invite user").
+    *   **Email:** Use a consistent, recognizable email for the system user. The convention currently used is `system_automation@pipecd.kovarik.cz`. If you choose a different one, ensure it's documented.
+    *   **Password:** Generate a very strong, random password. Store this securely if you anticipate needing to log in as this user (though typically, system actions use the service role key and don't involve traditional login).
+    *   Confirm the user creation.
+
+2.  **Retrieve the New User UID:**
+    *   After the user is created in Supabase Auth, find it in the user list.
+    *   **Copy its User UID.** This is a UUID (e.g., `9db26ede-9820-45ac-8691-d9bc74d3c8fe`). This new UID is your new `SYSTEM_USER_ID` for this database instance.
+
+3.  **Verify/Update `public.user_profiles` Entry:**
+    *   A trigger (`on_auth_user_created_sync_profile`) should automatically create a corresponding entry in the `public.user_profiles` table when the `auth.users` entry is made.
+    *   Verify this row exists.
+    *   The `display_name` for this system user should be user-friendly. If it defaults to the email address, update it using the Supabase SQL Editor:
+        ```sql
+        UPDATE public.user_profiles
+        SET display_name = 'System Automation' -- Or simply 'System'
+        WHERE user_id = 'YOUR_NEW_SYSTEM_USER_UID_HERE'; -- Replace with the UID copied in step 2
+        ```
+
+4.  **Update Environment Variables:**
+    *   This is the most critical step for the application, especially automations, to use the new system user.
+    *   Open your local development environment configuration file (typically `.env` at the project root).
+    *   Find the `SYSTEM_USER_ID` variable and update its value to the **new User UID** you copied in Step 2.
+        ```env
+        # Example .env entry
+        SYSTEM_USER_ID="YOUR_NEW_SYSTEM_USER_UID_HERE"
+        ```
+    *   **Deployment Environments:** If you have deployed instances (e.g., on Netlify, Vercel), you **must** also update the `SYSTEM_USER_ID` environment variable in the settings for each of those environments.
+
+**Important Considerations:**
+
+*   **Consistency:** Always use the same email address convention for the system user to make identification easier.
+*   **Environment Variables:** Failure to update the `SYSTEM_USER_ID` environment variable after a database reset will lead to errors in automated processes (like Inngest functions creating activities), as they will be attempting to use an old, non-existent user ID for the `user_id` field of system tasks.
+*   **Seeding Scripts (Future Enhancement):** For more frequent database resets, consider enhancing database seeding scripts to automate parts of this process, particularly the creation of the auth user via Supabase Admin API and logging its new ID. This is particularly relevant for the `SYSTEM_USER_ID` needed by automations (refer to ADR-008 for context).
 
 ---
 This guide should provide a solid foundation for developing Project PipeCD. Happy coding! 

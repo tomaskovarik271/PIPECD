@@ -1,5 +1,8 @@
 import { Inngest } from 'inngest';
 import type { Handler, HandlerContext } from '@netlify/functions';
+import { supabaseAdmin } from '../../lib/supabaseClient';
+import { getISOEndOfDay } from '../../lib/dateUtils';
+import { serve } from 'inngest/lambda';
 
 if (!process.env.INNGEST_EVENT_KEY) {
   throw new Error('INNGEST_EVENT_KEY environment variable is not set.');
@@ -11,6 +14,10 @@ if (!process.env.INNGEST_SIGNING_KEY) {
   } else {
     console.warn('INNGEST_SIGNING_KEY environment variable is not set. Requests will not be signed.');
   }
+}
+
+if (!process.env.SYSTEM_USER_ID) {
+    console.warn('SYSTEM_USER_ID environment variable is not set. Cannot create system-generated activities.');
 }
 
 export const inngest = new Inngest({
@@ -63,13 +70,74 @@ const logDealCreation = inngest.createFunction(
   }
 );
 
-export const functions = [helloWorld, logContactCreation, logDealCreation];
+export const createDealAssignmentTask = inngest.createFunction(
+  { id: 'create-deal-assignment-task', name: 'Create Deal Assignment Review Task' },
+  { event: 'crm/deal.assigned' },
+  async ({ event, step }) => {
+    console.log('[Inngest Fn: createDealAssignmentTask] Received event \'crm/deal.assigned\' for deal:', event.data.dealName, '(ID:', event.data.dealId, '), assigned to:', event.data.assignedToUserId, 'by user:', event.data.assignedByUserId);
+    if (event.data.previousAssignedToUserId) {
+      console.log('[Inngest Fn: createDealAssignmentTask] Previous assignee was:', event.data.previousAssignedToUserId);
+    }
 
-export const handler: Handler = async (_event, _context: HandlerContext) => {
-  console.warn('[inngest.ts handler] Invoked directly by Netlify Dev - this should ideally be handled by Inngest infrastructure (Plugin/Dev Server).');
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ message: 'Inngest functions defined; placeholder handler invoked.' }),
-    headers: { 'Content-Type': 'application/json' },
-  };
-};
+    const systemUserId = process.env.SYSTEM_USER_ID;
+    if (!systemUserId) {
+      console.error('[Inngest Fn: createDealAssignmentTask] SYSTEM_USER_ID environment variable is not set. Skipping activity creation.');
+      // Optionally, throw an error to make the step fail and retry if this is critical
+      throw new Error('SYSTEM_USER_ID is not configured.'); 
+    }
+
+    try {
+      const newActivity = await step.run('create-review-activity', async () => {
+        if (!supabaseAdmin) {
+          console.error('[Inngest Fn: createDealAssignmentTask] supabaseAdmin is not initialized. SUPABASE_SERVICE_ROLE_KEY might be missing. Skipping activity creation.');
+          throw new Error('supabaseAdmin is not initialized. Cannot create system activity.');
+        }
+
+        const activityInput = {
+          deal_id: event.data.dealId,
+          user_id: systemUserId, // Activity created by the System User
+          assigned_to_user_id: event.data.assignedToUserId, // Activity assigned to the user who got the deal
+          type: 'SYSTEM_TASK',
+          subject: `Review new deal assignment: ${event.data.dealName}`,
+          notes: `Deal "${event.data.dealName}" (ID: ${event.data.dealId}) was assigned to user ID ${event.data.assignedToUserId} by user ID ${event.data.assignedByUserId}. Please review.`,
+          due_date: getISOEndOfDay(),
+          is_done: false,
+          is_system_activity: true, // Mark as a system-generated activity
+        };
+
+        const { data: createdActivity, error: activityError } = await supabaseAdmin
+          .from('activities')
+          .insert(activityInput)
+          .select()
+          .single();
+
+        if (activityError) {
+          console.error('[Inngest Fn: createDealAssignmentTask] Error creating activity:', activityError);
+          throw activityError; // This will make the Inngest step fail and retry
+        }
+        if (!createdActivity) {
+          console.error('[Inngest Fn: createDealAssignmentTask] Failed to create activity, no data returned.');
+          throw new Error('Failed to create activity, no data returned from insert.');
+        }
+        console.log('[Inngest Fn: createDealAssignmentTask] Successfully created activity ID:', createdActivity.id, 'for deal ID:', event.data.dealId);
+        return createdActivity;
+      });
+
+      return { success: true, activityId: newActivity.id, message: `Activity created for deal ${event.data.dealName}` };
+    } catch (error) {
+      console.error('[Inngest Fn: createDealAssignmentTask] Overall error in function execution:', error);
+      // Ensure the error is re-thrown if not handled by a step retry, so Inngest knows the run failed.
+      throw error;
+    }
+  }
+);
+
+export const functions = [helloWorld, logContactCreation, logDealCreation, createDealAssignmentTask];
+
+export const handler: Handler = serve({
+  client: inngest,
+  functions,
+  serveHost: 'http://localhost:8888',
+  // signingKey: process.env.INNGEST_SIGNING_KEY_DEV || process.env.INNGEST_SIGNING_KEY,
+  // servePath: '/.netlify/functions/inngest' // Usually not needed if file is named inngest.ts
+}) as any; // Cast to any to bypass strict type checking for now

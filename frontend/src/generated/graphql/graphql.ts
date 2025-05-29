@@ -32,12 +32,15 @@ export type Scalars = {
 
 export type Activity = {
   __typename?: "Activity";
+  assignedToUser?: Maybe<User>;
+  assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
   deal?: Maybe<Deal>;
   deal_id?: Maybe<Scalars["ID"]["output"]>;
   due_date?: Maybe<Scalars["DateTime"]["output"]>;
   id: Scalars["ID"]["output"];
   is_done: Scalars["Boolean"]["output"];
+  is_system_activity: Scalars["Boolean"]["output"];
   notes?: Maybe<Scalars["String"]["output"]>;
   organization?: Maybe<Organization>;
   organization_id?: Maybe<Scalars["ID"]["output"]>;
@@ -63,6 +66,7 @@ export enum ActivityType {
   Deadline = "DEADLINE",
   Email = "EMAIL",
   Meeting = "MEETING",
+  SystemTask = "SYSTEM_TASK",
   Task = "TASK",
 }
 
@@ -1798,11 +1802,20 @@ export type GetActivityByIdQuery = {
     notes?: string | null;
     created_at: string;
     updated_at: string;
+    is_system_activity: boolean;
+    assigned_to_user_id?: string | null;
     user?: {
       __typename?: "User";
       id: string;
       email: string;
       display_name?: string | null;
+    } | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      email: string;
+      display_name?: string | null;
+      avatar_url?: string | null;
     } | null;
     deal?: { __typename?: "Deal"; id: string; name: string } | null;
     person?: {
@@ -1842,6 +1855,13 @@ export type GetDealWithHistoryQuery = {
     updated_at: string;
     deal_specific_probability?: number | null;
     weighted_amount?: number | null;
+    assigned_to_user_id?: string | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+    } | null;
     currentWfmStatus?: {
       __typename?: "WFMStatus";
       id: string;
@@ -1910,6 +1930,90 @@ export type GetDealWithHistoryQuery = {
   } | null;
 };
 
+export type PersonFieldsFragment = {
+  __typename?: "Person";
+  id: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+};
+
+export type OrganizationFieldsFragment = {
+  __typename?: "Organization";
+  id: string;
+  name: string;
+};
+
+export type UserProfileFieldsFragment = {
+  __typename?: "User";
+  id: string;
+  display_name?: string | null;
+  email: string;
+  avatar_url?: string | null;
+};
+
+export type CustomFieldValueFieldsFragment = {
+  __typename?: "CustomFieldValue";
+  stringValue?: string | null;
+  numberValue?: number | null;
+  booleanValue?: boolean | null;
+  dateValue?: string | null;
+  selectedOptionValues?: Array<string> | null;
+  definition: {
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldType: CustomFieldType;
+  };
+};
+
+export type ActivitySummaryFieldsFragment = {
+  __typename?: "Activity";
+  id: string;
+  type: ActivityType;
+  subject: string;
+  due_date?: string | null;
+  is_done: boolean;
+};
+
+export type WfmStepFieldsFragment = {
+  __typename?: "WFMWorkflowStep";
+  id: string;
+  stepOrder: number;
+  isInitialStep: boolean;
+  isFinalStep: boolean;
+  metadata?: Record<string, any> | null;
+  status: {
+    __typename?: "WFMStatus";
+    id: string;
+    name: string;
+    color?: string | null;
+  };
+};
+
+export type WfmStatusFieldsFragment = {
+  __typename?: "WFMStatus";
+  id: string;
+  name: string;
+  color?: string | null;
+};
+
+export type DealCoreFieldsFragment = {
+  __typename?: "Deal";
+  id: string;
+  name: string;
+  amount?: number | null;
+  expected_close_date?: string | null;
+  created_at: string;
+  updated_at: string;
+  person_id?: string | null;
+  user_id: string;
+  assigned_to_user_id?: string | null;
+  deal_specific_probability?: number | null;
+  weighted_amount?: number | null;
+  wfm_project_id?: string | null;
+};
+
 export type GetDealsQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetDealsQuery = {
@@ -1923,7 +2027,6 @@ export type GetDealsQuery = {
     created_at: string;
     updated_at: string;
     person_id?: string | null;
-    organization_id?: string | null;
     user_id: string;
     assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
@@ -2008,7 +2111,6 @@ export type CreateDealMutation = {
     created_at: string;
     updated_at: string;
     person_id?: string | null;
-    organization_id?: string | null;
     user_id: string;
     assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
@@ -2021,6 +2123,11 @@ export type CreateDealMutation = {
       last_name?: string | null;
       email?: string | null;
     } | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
     assignedToUser?: {
       __typename?: "User";
       id: string;
@@ -2032,6 +2139,8 @@ export type CreateDealMutation = {
       __typename?: "WFMWorkflowStep";
       id: string;
       stepOrder: number;
+      isInitialStep: boolean;
+      isFinalStep: boolean;
       metadata?: Record<string, any> | null;
       status: {
         __typename?: "WFMStatus";
@@ -2065,11 +2174,11 @@ export type UpdateDealMutation = {
     created_at: string;
     updated_at: string;
     person_id?: string | null;
-    organization_id?: string | null;
     user_id: string;
     assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
     weighted_amount?: number | null;
+    wfm_project_id?: string | null;
     person?: {
       __typename?: "Person";
       id: string;
@@ -2105,13 +2214,18 @@ export type UpdateDealWfmProgressMutation = {
   __typename?: "Mutation";
   updateDealWFMProgress: {
     __typename?: "Deal";
+    wfm_project_id?: string | null;
     id: string;
     name: string;
     amount?: number | null;
     expected_close_date?: string | null;
+    created_at: string;
+    updated_at: string;
+    person_id?: string | null;
+    user_id: string;
+    assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
     weighted_amount?: number | null;
-    wfm_project_id?: string | null;
     currentWfmStep?: {
       __typename?: "WFMWorkflowStep";
       id: string;
@@ -2483,6 +2597,19 @@ export type DeletePersonMutationVariables = Exact<{
 export type DeletePersonMutation = {
   __typename?: "Mutation";
   deletePerson?: boolean | null;
+};
+
+export type GetUserListQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetUserListQuery = {
+  __typename?: "Query";
+  users: Array<{
+    __typename?: "User";
+    id: string;
+    display_name?: string | null;
+    email: string;
+    avatar_url?: string | null;
+  }>;
 };
 
 export type GetWfmProjectTypeByNameQueryVariables = Exact<{

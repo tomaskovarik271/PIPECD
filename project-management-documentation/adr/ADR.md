@@ -1,6 +1,6 @@
 # Architecture Decision Record (ADR): Custom CRM System
 
-**Status:** Proposed | **Date:** 2025-05-01 (Revised: 2025-05-26)
+**Status:** Proposed | **Date:** 2025-05-01 (Revised: 2025-05-28)
 
 ## 1. Context
 
@@ -136,14 +136,14 @@ sequenceDiagram
 |  #  | Domain Module (Conceptual Microservice) | Core Responsibilities                                | Initial MVP Scope                           | Status / Notes                                       |
 | :-: | --------------------------------------- | ---------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
 |  1  | **Lead Management**                     | Capture, store, qualify leads → promote to deals.    | ✅ *In* (basic lead inbox, convert to deal)  | ⬜ *Later* (Requires dedicated implementation)        |
-|  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ *In* (CRUD implemented)                   | ✅ Done (Core CRUD)                                  |
-|  3  | **Pipeline Management**                 | Define pipelines & stages; validate deal stage flow. | ✅ *In* (single default pipeline)            | 🟡 *In Progress* (Schema/Service implemented)        |
+|  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ *In* (CRUD implemented)                   | ✅ Done (Core CRUD, WFM-driven, assignment event publishing) |
+|  3  | **WFM Configuration**                   | Define & manage WFM entities (Statuses, Workflows, Steps, Transitions, Project Types) that constitute processes. | ✅ *In* (Core WFM entities defined)          | ✅ Done (Replaces legacy Pipeline/Stage Management. See ADR-006) |
 |  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ *In* (basic CRUD)                         | ✅ Done (Person/Org CRUD)                             |
-|  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ *In* (tasks & reminders only)             | ⬜ *Later* (Requires significant expansion)         |
+|  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ *In* (CRUD, assignable tasks & system tasks implemented) | 🟡 *Enhancing* (Further automation, UI for assignment if needed) |
 |  6  | **Project (Post-Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ *Later* (post-MVP)                        | ⬜ Not Started                                       |
 |  7  | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ *Later* (post-MVP)                        | ⬜ Not Started                                       |
 |  8  | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
-|  9  | **Workflow Automation**                 | Rule-based triggers/actions across modules.          | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
+|  9  | **Workflow Automation**                 | Rule-based triggers/actions across modules.          | ✅ *In* (Phase 1: First Inngest automation for Deal Assignment task) | 🟡 *Enhancing* (More automations per ADR-008)      |
 |  10 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ *Later* (phase 2)                         | ⬜ Not Started                                       |
 |  11 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ *In* (Supabase Auth + `user_profiles` table) | ✅ Done (Profile view/edit for display name & avatar implemented) |
 |  12 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ *In* (owner / company-wide)               | ✅ *In* (Basic RLS via `auth.uid()`), ⬜ *Later* (RBAC) |
@@ -199,19 +199,6 @@ sequenceDiagram
         *   Reduced likelihood of runtime errors due to type mismatches between frontend and backend schema.
         *   Faster development as types are automatically generated and updated, ensuring consistency between the GraphQL schema, store logic, and UI components.
     *   **Implementation:** Configured via `frontend/codegen.ts` (or `codegen.yml`), uses the `client-preset` (or similar plugins like `typescript`, `typescript-operations`, `typescript-graphql-request`), and generates types into `frontend/src/generated/graphql/`. Core entity types (e.g., `Deal`, `Person`) and input types (e.g., `DealInput`) are then re-exported from `frontend/src/stores/useAppStore.ts`, which serves as the primary source for UI components to import these types. Store actions in `useAppStore.ts` are also typed using these generated types for their parameters and return values. See `DEVELOPER_GUIDE.md` for detailed usage patterns.
-
-*   **Deletion Strategy for Linked Pipeline/Stage Entities:**
-    *   **Context:** Entities like Pipelines contain Stages, and Stages can be linked to Deals (via `deals.stage_id`). Deleting a Pipeline or a Stage requires a strategy for handling these relationships to maintain data integrity and prevent application errors.
-    *   **Problem Observed:** Deleting a Pipeline (which might cascade to delete its Stages) that has Stages linked to Deals can lead to orphaned `deals.stage_id` values if not handled correctly. This can cause GraphQL queries for Deals to fail with an internal server error when trying to resolve a non-existent Stage.
-    *   **Decision (Current - MVP):**
-        1.  **Pipelines to Stages:** When a `Pipeline` is deleted, all its associated `Stage` records will also be deleted (achieved via `ON DELETE CASCADE` on the `stages.pipeline_id` foreign key).
-        2.  **Stages to Deals:** When a `Stage` is deleted (either directly or as a result of a Pipeline deletion), any `Deal` referencing that `Stage` will have its `deals.stage_id` foreign key automatically set to `NULL` (achieved via `ON DELETE SET NULL` on the `deals.stage_id` foreign key).
-    *   **Rationale:** This approach ensures data integrity at the database level, preventing orphaned foreign keys and subsequent application errors. It allows for the deletion of pipelines and stages even if they are in use, with deals gracefully becoming "stageless." The frontend should then be able to handle and display deals with a `null` stage appropriately (e.g., showing "N/A" or omitting stage information).
-    *   **Implementation:** Requires database migrations to set up the appropriate `ON DELETE CASCADE` and `ON DELETE SET NULL` behaviors on the relevant foreign keys.
-    *   **Future Considerations:** If business requirements evolve to necessitate preventing deletion of in-use pipelines/stages, or to preserve historical stage information on deals, this decision can be revisited. Alternatives include:
-        *   **Deletion Prevention:** Block deletion if the pipeline/stage is linked to active deals.
-        *   **Soft Deletes:** Implement soft deletes for Stages and Pipelines.
-        *   **Archiving:** Introduce an "Archived" status for pipelines/stages instead of hard deletion.
 
 ## 6. Key Architectural Risks & Considerations
 

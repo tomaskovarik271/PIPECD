@@ -39,14 +39,8 @@ const DealsKanbanView: React.FC = () => {
   const theme = useTheme();
 
   // Theme-aware scrollbar colors for the main Kanban container
-  const defaultKanbanScrollbarThumbBg = useColorModeValue('gray.300', 'gray.500');
-  const defaultKanbanScrollbarTrackBg = useColorModeValue('gray.100', 'gray.600');
-
-  const warholKanbanScrollbarThumbBg = theme.colors.pink?.[500] ?? defaultKanbanScrollbarThumbBg;
-  const warholKanbanScrollbarTrackBg = theme.colors.gray?.[800] ?? defaultKanbanScrollbarTrackBg;
-
-  const kanbanScrollbarThumbBg = currentTheme === 'andyWarhol' ? warholKanbanScrollbarThumbBg : defaultKanbanScrollbarThumbBg;
-  const kanbanScrollbarTrackBg = currentTheme === 'andyWarhol' ? warholKanbanScrollbarTrackBg : defaultKanbanScrollbarTrackBg;
+  const kanbanScrollbarThumbBg = useColorModeValue('gray.300', 'gray.500');
+  const kanbanScrollbarTrackBg = useColorModeValue('gray.100', 'gray.600');
 
   useEffect(() => {
     if (!hasInitiallyFetchedDeals && !dealsLoading && !dealsError) {
@@ -155,6 +149,16 @@ const DealsKanbanView: React.FC = () => {
     return grouped;
   }, [workflowStepsForKanban, deals]);
 
+  // Calculate weighted amount sum for each step
+  const weightedAmountByStepId = useMemo(() => {
+    const sums: Record<string, number> = {};
+    for (const step of workflowStepsForKanban) {
+      const stepDeals = dealsByWfmStep[step.id] || [];
+      sums[step.id] = stepDeals.reduce((sum, deal) => sum + (deal.weighted_amount || 0), 0);
+    }
+    return sums;
+  }, [workflowStepsForKanban, dealsByWfmStep]);
+
   // Loading and error states
   if (isLoadingSalesDealWorkflowId || dealsLoading || wfmWorkflowLoading) { // Added isLoadingSalesDealWorkflowId
     return <Flex justify="center" align="center" minH="calc(100vh - 200px)"><Spinner size="xl" /></Flex>;
@@ -187,7 +191,7 @@ const DealsKanbanView: React.FC = () => {
   
   return (
     <VStack spacing={4} align="stretch" p={4}>
-      <Heading size="md" mb={2} textAlign="center">
+      <Heading size="md" mt={6} mb={2} textAlign="center">
         {currentWorkflowWithDetails?.name || 'Sales Kanban'}
       </Heading>
 
@@ -195,6 +199,7 @@ const DealsKanbanView: React.FC = () => {
           <Box 
               p={2} 
               overflowX="auto"
+              width="100%"
               sx={{
                   '&::-webkit-scrollbar': {
                       height: '8px',
@@ -202,22 +207,27 @@ const DealsKanbanView: React.FC = () => {
                   '&::-webkit-scrollbar-thumb': {
                       background: kanbanScrollbarThumbBg, 
                       borderRadius: '8px',
-                      border: currentTheme === 'andyWarhol' ? `2px solid ${theme.colors.black ?? 'black'}` : 'none',
+                      border: 'none',
                   },
                   '&::-webkit-scrollbar-track': {
                       background: kanbanScrollbarTrackBg, 
                   },
               }}
           >
-              {workflowStepsForKanban.length === 0 && ( // This condition might be redundant due to earlier check
+              {workflowStepsForKanban.length === 0 && (
                   <Text textAlign="center" p={4}>This workflow has no steps defined.</Text>
               )}
-              <Flex direction="row" gap={0}>
+              <Flex 
+                direction="row" 
+                gap={0}
+                minWidth="max-content"
+              >
                   {workflowStepsForKanban.map((step: WfmWorkflowStep, index: number) => (
                     <KanbanStepColumn
                       key={step.id} 
                       step={step}
                       deals={dealsByWfmStep[step.id] || []} 
+                      weightedAmountSum={weightedAmountByStepId[step.id] || 0}
                       index={index}
                     />
                   ))}

@@ -32,10 +32,17 @@ export const getActivityById = async (userId: string, activityId: string, access
   const { data, error } = await supabaseClient
     .from('activities')
     .select('*')
-    .match({ id: activityId, user_id: userId }) 
+    // RLS will enforce whether this user (userId, from accessToken) can access this activityId.
+    // The RLS policy allows access if:
+    // 1. auth.uid() = activities.user_id (current user is the creator)
+    // OR
+    // 2. auth.uid() = activities.assigned_to_user_id AND activities.is_system_activity = TRUE (current user is assigned to a system task)
+    .eq('id', activityId) 
     .maybeSingle();
 
-  if (error && error.code !== 'PGRST116') {
+  // PGRST116: Row not found or permission denied. maybeSingle() handles this by returning null.
+  // We only want to throw for other unexpected errors.
+  if (error && error.code !== 'PGRST116') { 
     handleSupabaseError(error, 'getting activity by ID');
   }
 
@@ -105,7 +112,7 @@ export const updateActivity = async (userId: string, activityId: string, updates
   const { data, error } = await supabaseClient
     .from('activities')
     .update(safeUpdates)
-    .match({ id: activityId, user_id: userId })
+    .eq('id', activityId)
     .select()
     .single();
 

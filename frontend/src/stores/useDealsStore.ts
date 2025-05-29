@@ -20,18 +20,18 @@ export type { Deal, DealInput, Maybe };
 
 const PERSON_FIELDS_FRAGMENT = gql`
   fragment PersonFields on Person {
-    id
-    first_name
-    last_name
-    email
-  }
+        id
+        first_name
+        last_name
+        email
+      }
 `;
 
 const ORGANIZATION_FIELDS_FRAGMENT = gql`
   fragment OrganizationFields on Organization {
-    id
-    name
-  }
+        id
+        name
+      }
 `;
 
 const USER_PROFILE_FIELDS_FRAGMENT = gql`
@@ -45,49 +45,49 @@ const USER_PROFILE_FIELDS_FRAGMENT = gql`
 
 const CUSTOM_FIELD_VALUE_FIELDS_FRAGMENT = gql`
   fragment CustomFieldValueFields on CustomFieldValue {
-    definition {
-      id
-      fieldName
-      fieldType
-    }
-    stringValue
-    numberValue
-    booleanValue
-    dateValue
-    selectedOptionValues
-  }
+        definition {
+          id
+          fieldName
+          fieldType
+        }
+        stringValue
+        numberValue
+        booleanValue
+        dateValue
+        selectedOptionValues
+      }
 `;
 
 const ACTIVITY_SUMMARY_FIELDS_FRAGMENT = gql`
   fragment ActivitySummaryFields on Activity {
-    id
-    type
-    subject
-    due_date
-    is_done
-  }
+        id
+        type
+        subject
+        due_date
+        is_done
+      }
 `;
 
 const WFM_STEP_FIELDS_FRAGMENT = gql`
   fragment WfmStepFields on WFMWorkflowStep {
-    id
-    stepOrder
-    isInitialStep
-    isFinalStep
-    metadata
-    status {
-      id
-      name
-      color
-    }
-  }
+        id
+        stepOrder
+        isInitialStep
+        isFinalStep
+        metadata
+        status {
+          id
+          name
+          color
+        }
+      }
 `;
 
 const WFM_STATUS_FIELDS_FRAGMENT = gql`
   fragment WfmStatusFields on WFMStatus {
-    id
-    name
-    color
+        id
+        name
+        color
   }
 `;
 
@@ -161,9 +161,8 @@ const CREATE_DEAL_MUTATION = gql`
       person {
         ...PersonFields
       }
-      organization { # Assuming organization is not part of DealCoreFields directly but resolved
-        id # Example: if org is linked and only id is needed post-create on core Deal
-        name
+      organization { 
+        ...OrganizationFields
       }
       assignedToUser {
         ...UserProfileFields
@@ -215,7 +214,7 @@ const DELETE_DEAL_MUTATION = gql`
 const UPDATE_DEAL_WFM_PROGRESS_MUTATION = gql`
   ${WFM_STEP_FIELDS_FRAGMENT}
   ${WFM_STATUS_FIELDS_FRAGMENT}
-  ${DEAL_CORE_FIELDS_FRAGMENT} // Include core fields like name, amount for card updates
+  ${DEAL_CORE_FIELDS_FRAGMENT} # Include core fields like name, amount for card updates
 
   mutation UpdateDealWFMProgress($dealId: ID!, $targetWfmWorkflowStepId: ID!) {
     updateDealWFMProgress(dealId: $dealId, targetWfmWorkflowStepId: $targetWfmWorkflowStepId) {

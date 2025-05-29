@@ -16,7 +16,8 @@ import {
   RadioGroup,
   Radio,
   HStack,
-  Spinner
+  Spinner,
+  Text,
 } from '@chakra-ui/react';
 import { 
     useActivitiesStore, 
@@ -42,6 +43,9 @@ interface EditActivityFormProps {
   onClose: () => void;
   onSuccess?: () => void;
 }
+
+// Use UpdateActivityInput for form values, but make fields optional as not all are always updated
+type FormValues = Partial<UpdateActivityInput>; // Use Partial for flexibility, or define a specific edit type
 
 // Define type for link selection (same as CreateActivityForm)
 type LinkType = 'deal' | 'person' | 'organization' | 'none';
@@ -70,19 +74,55 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
     register, 
     formState: { errors, isSubmitting }, 
     reset, 
-    setValue
-  } = useForm<UpdateActivityInput>({
+    setValue,
+    watch
+  } = useForm<FormValues>({
       defaultValues: {
-      type: activity.type,
+          type: activity.type as ActivityType,
           subject: activity.subject,
-      due_date: activity.due_date ? new Date(activity.due_date).toISOString().substring(0, 16) : null,
-      notes: activity.notes || '',
-          is_done: activity.is_done,
-          deal_id: activity.deal_id,
-          person_id: activity.person_id,
-          organization_id: activity.organization_id,
+          due_date: activity.due_date ? new Date(activity.due_date).toISOString().substring(0, 16) : null, // Format for datetime-local
+          notes: activity.notes || '',
+          is_done: activity.is_done || false,
+          deal_id: activity.deal_id || null,
+          person_id: activity.person_id || null,
+          organization_id: activity.organization_id || null,
       }
   });
+
+  const currentDealId = watch('deal_id');
+  const currentPersonId = watch('person_id');
+  const currentOrganizationId = watch('organization_id');
+
+  useEffect(() => {
+    // Fetch only if a link type is selected and the corresponding entities aren't already in the activity prop
+    // (or if we want to allow changing the link)
+    if (selectedLinkType === 'deal' && !activity.deal) fetchDeals();
+    if (selectedLinkType === 'person' && !activity.person) fetchPeople();
+    if (selectedLinkType === 'organization' && !activity.organization) fetchOrganizations();
+
+    // This logic ensures that if you clear a selection, the others are cleared too.
+    // And if you set one, others are cleared.
+    if (currentDealId) {
+        if (selectedLinkType !== 'deal') setSelectedLinkType('deal');
+        if (currentPersonId) setValue('person_id', null);
+        if (currentOrganizationId) setValue('organization_id', null);
+    } else if (currentPersonId) {
+        if (selectedLinkType !== 'person') setSelectedLinkType('person');
+        if (currentDealId) setValue('deal_id', null);
+        if (currentOrganizationId) setValue('organization_id', null);
+    } else if (currentOrganizationId) {
+        if (selectedLinkType !== 'organization') setSelectedLinkType('organization');
+        if (currentDealId) setValue('deal_id', null);
+        if (currentPersonId) setValue('person_id', null);
+    }
+
+
+  }, [
+    selectedLinkType, 
+    fetchDeals, fetchPeople, fetchOrganizations, 
+    activity.deal, activity.person, activity.organization,
+    currentDealId, currentPersonId, currentOrganizationId, setValue
+  ]);
 
   // Reset form if activity prop changes (e.g. modal is reused for different activities)
   useEffect(() => {
@@ -109,36 +149,48 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
   const handleLinkTypeChange = (nextValue: string) => {
     const linkType = nextValue as LinkType;
     setSelectedLinkType(linkType);
-    setValue('deal_id', linkType === 'deal' ? (activity.deal_id || null) : null, { shouldDirty: true });
-    setValue('person_id', linkType === 'person' ? (activity.person_id || null) : null, { shouldDirty: true });
-    setValue('organization_id', linkType === 'organization' ? (activity.organization_id || null) : null, { shouldDirty: true });
+    if (linkType !== 'deal') setValue('deal_id', null);
+    if (linkType !== 'person') setValue('person_id', null);
+    if (linkType !== 'organization') setValue('organization_id', null);
   };
 
-  const onSubmit: SubmitHandler<UpdateActivityInput> = async (values) => {
-    const submissionData: UpdateActivityInput = { ...values }; 
-
-    if (!submissionData.deal_id && !submissionData.person_id && !submissionData.organization_id) {
-        toast({ title: 'Link Required', description: 'Activity must be linked to a Deal, Person, or Organization.', status: 'warning', duration: 4000, isClosable: true });
+  const onSubmit: SubmitHandler<FormValues> = async (values) => {
+    try {
+      if (!values.deal_id && !values.person_id && !values.organization_id) {
+        toast({ title: 'Link Required', description: 'Please link the activity to a Deal, Person, or Organization.', status: 'warning', duration: 4000, isClosable: true });
         return;
-    }
+      }
 
-    if (submissionData.notes === '') submissionData.notes = null;
-    if (submissionData.due_date) {
-                    try {
-        const date = new Date(submissionData.due_date);
-        submissionData.due_date = !isNaN(date.getTime()) ? date.toISOString() : null;
-      } catch { submissionData.due_date = null; }
-                        } else {
-      submissionData.due_date = null;
-    }
+      const submissionData: UpdateActivityInput = {
+          // Ensure all fields from UpdateActivityInput are present or explicitly null
+          type: values.type || activity.type, // Fallback to original if not in form
+          subject: values.subject || activity.subject, // Fallback to original
+          due_date: values.due_date ? new Date(values.due_date).toISOString() : null,
+          notes: values.notes || null,
+          is_done: values.is_done === undefined ? activity.is_done : values.is_done, // Handle boolean carefully
+          deal_id: values.deal_id || null,
+          person_id: values.person_id || null,
+          organization_id: values.organization_id || null,
+      };
+      
+      // Remove fields that weren't actually changed to avoid sending them as null
+      // This is tricky with react-hook-form. A better approach might be to compare with initial values.
+      // For now, we send all, and the backend should handle partial updates.
+      // Let's make sure our UpdateActivityInput in the store handles partial updates gracefully.
+      // The generated type usually makes all fields optional.
 
-    const updatedActivity = await updateActivity(activity.id, submissionData);
-    if (updatedActivity) {
-      toast({ title: 'Activity updated.', status: 'success', duration: 3000, isClosable: true });
-      onSuccess?.();
-      onClose();
-    } else {
-      toast({ title: 'Failed to update activity', description: activitiesError || 'Please check details and try again.', status: 'error', duration: 5000, isClosable: true });
+      const updatedActivity = await updateActivity(activity.id, submissionData);
+
+      if (updatedActivity) {
+        toast({ title: 'Activity updated.', status: 'success', duration: 3000, isClosable: true });
+        onSuccess?.();
+        onClose();
+      } else {
+        toast({ title: 'Failed to update activity', description: activitiesError || 'Please check the details and try again.', status: 'error', duration: 5000, isClosable: true });
+      }
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      toast({ title: 'An error occurred', description: 'Please try again.', status: 'error', duration: 5000, isClosable: true });
     }
   };
 
@@ -165,7 +217,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
 
         <FormControl isInvalid={!!errors.type}>
             <FormLabel htmlFor='type'>Type</FormLabel>
-            <Select id='type' {...register('type', { required: 'Type is required' })}>
+            <Select id='type' {...register('type')} defaultValue={activity.type as ActivityType}>
                 {activityTypes.map(type => (
                     <option key={type} value={type}>{type}</option>
                 ))}
@@ -184,49 +236,70 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
         </FormControl>
         
         <FormControl isInvalid={!!errors.deal_id || !!errors.person_id || !!errors.organization_id}>
-             <FormLabel>Linked To</FormLabel>
-             <RadioGroup onChange={handleLinkTypeChange} value={selectedLinkType}>
-                 <HStack spacing='20px' mb={2}>
-                     <Radio value='deal'>Deal</Radio>
-                     <Radio value='person'>Person</Radio>
-                     <Radio value='organization'>Organization</Radio>
-                 </HStack>
-             </RadioGroup>
-             
-             {isLoadingLinks && <Spinner size="sm" my={2}/>}
+            <FormLabel>Link To (Select One)</FormLabel>
+            {isLoadingLinks && <Spinner size="sm" />}
+            {!isLoadingLinks && (
+              <RadioGroup onChange={handleLinkTypeChange} value={selectedLinkType}>
+                <HStack spacing={4}>
+                  <Radio value='deal'>Deal</Radio>
+                  <Radio value='person'>Person</Radio>
+                  <Radio value='organization'>Organization</Radio>
+                  <Radio value='none'>None</Radio>
+                </HStack>
+              </RadioGroup>
+            )}
 
-             {!isLoadingLinks && selectedLinkType === 'deal' && (
-                 <Select id='deal_id' placeholder='Select Deal' {...register('deal_id')} defaultValue={activity.deal_id || ''}>
-                     {deals.map((deal: Deal) => (<option key={deal.id} value={deal.id}>{deal.name}</option>))}
-                 </Select>
-             )}
+            {!isLoadingLinks && selectedLinkType === 'deal' && (
+              <Select 
+                id='deal_id' 
+                placeholder='Select Deal' 
+                {...register('deal_id')} 
+                mt={2}
+                defaultValue={activity.deal_id || undefined}
+              >
+                {deals.map((deal: Deal) => (
+                  <option key={deal.id} value={deal.id}>{deal.name}</option>
+                ))}
+              </Select>
+            )}
             {!isLoadingLinks && selectedLinkType === 'person' && (
-                 <Select id='person_id' placeholder='Select Person' {...register('person_id')} defaultValue={activity.person_id || ''}>
-                     {people.map((person: Person) => (<option key={person.id} value={person.id}>{`${person.first_name || ''} ${person.last_name || ''}`.trim() || person.email}</option>))}
+                 <Select 
+                    id='person_id' 
+                    placeholder='Select Person' 
+                    {...register('person_id')} 
+                    mt={2}
+                    defaultValue={activity.person_id || undefined}
+                 >
+                     {people.map((person: Person) => (
+                        <option key={person.id} value={person.id}>{person.first_name} {person.last_name}</option>
+                     ))}
                  </Select>
              )}
              {!isLoadingLinks && selectedLinkType === 'organization' && (
-                 <Select id='organization_id' placeholder='Select Organization' {...register('organization_id')} defaultValue={activity.organization_id || ''}>
-                     {organizations.map((org: Organization) => (<option key={org.id} value={org.id}>{org.name}</option>))}
+                 <Select 
+                    id='organization_id' 
+                    placeholder='Select Organization' 
+                    {...register('organization_id')} 
+                    mt={2}
+                    defaultValue={activity.organization_id || undefined}
+                 >
+                     {organizations.map((org: Organization) => (
+                        <option key={org.id} value={org.id}>{org.name}</option>
+                     ))}
                  </Select>
              )}
-             {(errors.deal_id && selectedLinkType ==='deal' || errors.person_id && selectedLinkType ==='person' || errors.organization_id && selectedLinkType ==='organization') && 
-                <FormErrorMessage>Please select a linked entity.</FormErrorMessage> }
-        </FormControl>
+             {(errors.deal_id || errors.person_id || errors.organization_id) && 
+                <FormErrorMessage>Please select a linked entity if a type is chosen.</FormErrorMessage> }
+          </FormControl>
         
         <FormControl isInvalid={!!errors.notes}>
           <FormLabel htmlFor='notes'>Notes</FormLabel>
-          <Textarea
-            id='notes'
-            {...register('notes')}
-          />
+          <Textarea id='notes' {...register('notes')} />
           <FormErrorMessage>{errors.notes?.message}</FormErrorMessage>
         </FormControl>
 
         <FormControl>
-          <Checkbox id='is_done' {...register('is_done')}>
-            Mark as Done
-          </Checkbox>
+          <Checkbox {...register('is_done')} defaultChecked={activity.is_done}>Mark as Done</Checkbox>
         </FormControl>
 
         <Button type="submit" colorScheme="blue" isLoading={isSubmitting || activitiesLoading}>

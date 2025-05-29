@@ -52,7 +52,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
          } as Person;
       } catch (e) {
           console.error(`Error fetching person ${parent.person_id} for deal ${parent.id}:`, e);
-          return null;
+          return null; 
       }
     },
     organization: async (parent: GraphQLDealParent, _args: any, context: GraphQLContext): Promise<Organization | null> => {
@@ -195,7 +195,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
               selectedOptionValues: null,
             };
             if (rawValue === undefined || rawValue === null) {
-              return fieldValue;
+              return fieldValue; 
             }
             switch (definition.fieldType) {
               case CustomFieldType.Text:
@@ -211,14 +211,14 @@ export const Deal: DealResolvers<GraphQLContext> = {
                 fieldValue.booleanValue = Boolean(rawValue);
                 break;
               case CustomFieldType.Date:
-                fieldValue.dateValue = rawValue;
-                fieldValue.stringValue = String(rawValue);
+                fieldValue.dateValue = rawValue; 
+                fieldValue.stringValue = String(rawValue); 
                 break;
               case CustomFieldType.Dropdown:
                 if (Array.isArray(rawValue) && rawValue.length > 0) {
                   fieldValue.selectedOptionValues = [String(rawValue[0])];
                   fieldValue.stringValue = String(rawValue[0]);
-                } else if (typeof rawValue === 'string') {
+                } else if (typeof rawValue === 'string') { 
                   fieldValue.selectedOptionValues = [rawValue];
                   fieldValue.stringValue = rawValue;
                 }
@@ -233,7 +233,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
             }
             return fieldValue;
           });
-        console.log(`[Resolver Deal.customFieldValues] For Deal ${parent.id}, resolvedValues (before any accidental filter):`, JSON.stringify(mappedValues, null, 2));
+        console.log(`[Resolver Deal.customFieldValues] For Deal ${parent.id}, resolvedValues (before any accidental filter):`, JSON.stringify(mappedValues, null, 2)); 
         return mappedValues;
       } catch (error) {
         console.error(`Error resolving customFieldValues for deal ${parent.id}:`, error);
@@ -405,7 +405,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
             // Avoid breaking the entire deal list if a single user profile fetch fails.
             // Log the error and return null, indicating the assigned user could not be resolved.
             // Consider if specific errors should be re-thrown if they are critical.
-            return null; 
-        }
+        return null;
+      }
     },
 }; 
