@@ -1,18 +1,11 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  Box,
-  Heading,
   Button,
   Text,
-  Spinner,
-  Alert,
-  AlertIcon,
   IconButton,
   HStack,
   useToast,
   useDisclosure,
-  VStack,
-  Flex,
 } from '@chakra-ui/react';
 import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
@@ -20,7 +13,7 @@ import { EditIcon, DeleteIcon, ViewIcon, SettingsIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
 import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
-import type { CustomFieldDefinition, CustomFieldValue, CustomFieldType as GQLCustomFieldType } from '../generated/graphql/graphql';
+import type { CustomFieldDefinition } from '../generated/graphql/graphql';
 import { gqlClient } from '../lib/graphqlClient';
 import { gql } from 'graphql-request';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';

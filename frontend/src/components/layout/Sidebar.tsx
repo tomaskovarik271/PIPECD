@@ -117,7 +117,7 @@ function Sidebar() {
       return 'transparent';
     }
     // Handle non-modern theme case
-    let colorFromTheme = containerStyles.borderColor;
+    const colorFromTheme = containerStyles.borderColor;
 
     if (typeof colorFromTheme === 'number' || typeof colorFromTheme === 'boolean') {
       return 'gray.200';

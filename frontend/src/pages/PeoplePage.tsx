@@ -1,35 +1,34 @@
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
+  Button,
+  Text,
+  IconButton,
+  HStack,
+  useToast,
+  useDisclosure,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalBody,
   ModalCloseButton,
-  useDisclosure,
-  useToast,
-  HStack,
-  IconButton,
+  ModalBody,
   Spinner,
-  Box,
-  Button
 } from '@chakra-ui/react';
-import { AddIcon, EditIcon, DeleteIcon, SettingsIcon, ViewIcon } from '@chakra-ui/icons';
-import { usePeopleStore, Person } from '../stores/usePeopleStore';
-import { useAppStore } from '../stores/useAppStore';
-import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
-import type { CustomFieldDefinition, CustomFieldValue, CustomFieldEntityType, CustomFieldType as GQLCustomFieldType } from '../generated/graphql/graphql';
-import { gqlClient } from '../lib/graphqlClient';
-import { gql } from 'graphql-request';
-import { Link as RouterLink } from 'react-router-dom';
-
 import CreatePersonForm from '../components/CreatePersonForm';
 import EditPersonForm from '../components/EditPersonForm';
+import { EditIcon, DeleteIcon, ViewIcon, SettingsIcon, AddIcon } from '@chakra-ui/icons';
+import { useAppStore } from '../stores/useAppStore';
+import { usePeopleStore, Person } from '../stores/usePeopleStore';
+import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
+import type { CustomFieldDefinition } from '../generated/graphql/graphql';
+import { gqlClient } from '../lib/graphqlClient';
+import { gql } from 'graphql-request';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import ListPageLayout from '../components/layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import ColumnSelector from '../components/common/ColumnSelector';
 import QuickFilterControls, { QuickFilter } from '../components/common/QuickFilterControls';
+import { Link as RouterLink } from 'react-router-dom';
 
 const isUrl = (str: string): boolean => {
   try {

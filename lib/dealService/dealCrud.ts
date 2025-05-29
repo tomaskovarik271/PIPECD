@@ -283,7 +283,7 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
   const hasAssignAny = userPermissions.includes('deal:assign_any');
 
   const { customFields: inputCustomFields, assigned_to_user_id: newAssigneeIdInput, ...otherCoreInputFieldsFromInput } = input;
-  let serviceDataForDirectUpdate: Partial<DbDeal> = { ...otherCoreInputFieldsFromInput } as Partial<DbDeal>; // Cast for properties
+  const serviceDataForDirectUpdate: Partial<DbDeal> = { ...otherCoreInputFieldsFromInput } as Partial<DbDeal>; // Cast for properties
   let assignmentWillBeChangedViaRpc = false;
   let assignmentChangedViaRpcSuccessfully = false;
 
