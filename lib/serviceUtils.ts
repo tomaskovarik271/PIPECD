@@ -21,7 +21,6 @@ export const supabaseAdmin = createClient(supabaseUrl, process.env.SUPABASE_SERV
  * @throws Error if SUPABASE_URL or SUPABASE_ANON_KEY are not set.
  */
 export function getAuthenticatedClient(accessToken: string): SupabaseClient {
-  // console.log('[getAuthenticatedClient] AccessToken:', accessToken); // DEBUG LOG
   // Create a new Supabase client with the user's access token
   return createClient(supabaseUrl!, supabaseAnonKey!, {
     global: {

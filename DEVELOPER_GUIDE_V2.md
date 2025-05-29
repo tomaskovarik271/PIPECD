@@ -153,8 +153,7 @@ Refer to [README.md](README.md) for a streamlined setup. Detailed steps:
     *   Supabase Studio: `http://127.0.0.1:54323` (or as specified by `supabase start`)
     *   Inbucket (local email testing): `http://127.0.0.1:54324`
     *   Inngest Dev Server (if running `npx inngest-cli dev -u http://localhost:8888/.netlify/functions/inngest` in a separate terminal): `http://localhost:8288`
-
-
+        *   Ensure `netlify/functions/inngest.ts` conditionally sets `serveHost: 'http://localhost:8888'` (or your Netlify dev port) for local development (when `process.env.CONTEXT === 'dev'` or `process.env.NODE_ENV === 'development'`) to ensure the Inngest dev server can correctly call your local functions over HTTP.
 
 ## 5. Backend Development
 
@@ -326,6 +325,7 @@ This pattern helps maintain clean separation: GraphQL handles client contracts a
 *   **Local Testing**:
     *   Run the Inngest Dev Server: `npx inngest-cli dev -u http://localhost:8888/.netlify/functions/inngest` (ensure the URL matches your local Netlify Dev setup for the Inngest function).
     *   Trigger events from your application; they will appear in the Inngest Dev UI (`http://localhost:8288`).
+    *   **Crucial for Local Dev**: Your `netlify/functions/inngest.ts` must conditionally set `serveOptions.serveHost = 'http://localhost:8888'` (or your Netlify dev port) for local development (when `process.env.CONTEXT === 'dev'` or `process.env.NODE_ENV === 'development'`) to ensure the Inngest dev server can correctly call your local functions over HTTP.
 
 ### 5.7 User Profile Management
 
@@ -361,6 +361,15 @@ The system allows users to manage basic profile information, which is also lever
             *   If the history entry's `user_id` is the current authenticated user, it calls `userProfileService.getUserProfile` to fetch their profile, ensuring the `display_name` from `user_profiles` is used.
             *   If the history entry's `user_id` is a *different* user, it also calls `userProfileService.getUserProfile` (using the *viewing* user's access token) to fetch the actor's profile. This is possible due to the updated RLS policy allowing authenticated reads on `user_profiles`.
             *   A placeholder email (e.g., `user@system.local`) is used for users other than `currentUser` to satisfy the `User.email: String!` schema requirement, as actual emails of other users are not exposed through this path.
+
+*   **Local Development & Dev Server**:
+    *   The `netlify/functions/inngest.ts` handler should use `serve` from `inngest/lambda` (or `inngest/netlify` if API changes).
+    *   For reliable local Inngest Dev Server synchronization with Netlify Dev:
+        *   The Inngest Dev Server, when run with `npx inngest-cli dev -u http://localhost:8888/.netlify/functions/inngest`, expects to communicate with your local Netlify functions endpoint (e.g., `http://localhost:8888/.netlify/functions/inngest`) over HTTP.
+        *   Your `netlify/functions/inngest.ts` handler **must** conditionally set `serveOptions.serveHost` to your local Netlify Dev URL (e.g., `'http://localhost:8888'`) when in a local development environment. The recommended way is to check `if (process.env.CONTEXT === 'dev')` (Netlify Dev sets this) or fallback to `if (process.env.NODE_ENV === 'development')`.
+        *   This configuration ensures that when the Inngest Dev Server attempts to execute a function step by calling back to your local Netlify function, it uses HTTP, preventing "http: server gave HTTP response to HTTPS client" errors.
+        *   The `signingKey` is typically handled by the `INNGEST_SIGNING_KEY` environment variable and does not need to be set in `serveOptions` for local development if the environment variable is present (though it's critical for production).
+*   **Event Data Contracts**: Ensure Inngest functions correctly access data from the `event` object (e.g., `event.data.dealId`, `event.data.assignedToUserId`).
 
 ## 6. Work Flow Management (WFM) System (NEW SECTION)
 
@@ -660,8 +669,11 @@ This section consolidates key learnings and best practices derived from feature 
 
 *   **Local Development & Dev Server**:
     *   The `netlify/functions/inngest.ts` handler should use `serve` from `inngest/lambda` (or `inngest/netlify` if API changes).
-    *   For reliable local Inngest Dev Server synchronization with Netlify Dev, explicitly configuring `serveHost`, `servePath`, and `signingKey` in the `serve` options within `inngest.ts` might be necessary.
-    *   The Inngest Dev Server typically expects to connect via HTTP for local Netlify Dev.
+    *   For reliable local Inngest Dev Server synchronization with Netlify Dev:
+        *   The Inngest Dev Server, when run with `npx inngest-cli dev -u http://localhost:8888/.netlify/functions/inngest`, expects to communicate with your local Netlify functions endpoint (e.g., `http://localhost:8888/.netlify/functions/inngest`) over HTTP.
+        *   Your `netlify/functions/inngest.ts` handler **must** conditionally set `serveOptions.serveHost` to your local Netlify Dev URL (e.g., `'http://localhost:8888'`) when in a local development environment. The recommended way is to check `if (process.env.CONTEXT === 'dev')` (Netlify Dev sets this) or fallback to `if (process.env.NODE_ENV === 'development')`.
+        *   This configuration ensures that when the Inngest Dev Server attempts to execute a function step by calling back to your local Netlify function, it uses HTTP, preventing "http: server gave HTTP response to HTTPS client" errors.
+        *   The `signingKey` is typically handled by the `INNGEST_SIGNING_KEY` environment variable and does not need to be set in `serveOptions` for local development if the environment variable is present (though it's critical for production).
 *   **Event Data Contracts**: Ensure Inngest functions correctly access data from the `event` object (e.g., `event.data.dealId`, `event.data.assignedToUserId`).
 *   **Environment Variables in Functions**: Ensure Inngest functions (and other Netlify functions) have access to necessary environment variables (e.g., `SUPABASE_SERVICE_ROLE_KEY`, `SYSTEM_USER_ID`).
 *   **Idempotency & Error Handling**: (Future consideration for more complex Inngest functions) Plan for idempotency and robust error handling within Inngest functions.
@@ -777,6 +789,11 @@ This section consolidates key learnings and best practices derived from feature 
 *   **RLS Policy Debugging**:
     *   Use Supabase Studio's SQL editor to test `SELECT` statements as different roles/users.
     *   Temporarily simplify policies to isolate issues. `EXPLAIN (ANALYZE, VERBOSE)` can be helpful.
+*   **Inngest Local Development**:
+    *   If Inngest functions are not triggering locally or you see "http: server gave HTTP response to HTTPS client" errors in the `inngest-cli dev` logs:
+        *   Ensure `netlify dev` is running and serving your functions (e.g., on `http://localhost:8888`).
+        *   Ensure `inngest-cli dev` is started with the correct URL: `npx inngest-cli dev -u http://localhost:8888/.netlify/functions/inngest`.
+        *   Verify that `netlify/functions/inngest.ts` conditionally sets `serveOptions.serveHost` to your local Netlify Dev URL (e.g., `'http://localhost:8888'`) when in a local development environment. This forces the Inngest system to use HTTP for callbacks to your local functions.
 *   **CORS Issues**: Usually handled by Netlify Dev and GraphQL Yoga defaults for local. For prod, ensure Netlify function responses have correct CORS headers if accessed from unexpected origins.
 
 ## 17. Further Reading & Resources

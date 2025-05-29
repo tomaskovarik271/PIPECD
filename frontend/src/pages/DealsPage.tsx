@@ -107,6 +107,10 @@ function DealsPage() {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
+    console.log('[DealsPage] isCreateModalOpen changed to:', isCreateModalOpen);
+  }, [isCreateModalOpen]);
+
+  useEffect(() => {
     if (!hasFetchedUsers) {
       fetchUsers();
     }
