@@ -1,18 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Button,
-  Checkbox,
   FormControl,
   FormErrorMessage,
   FormLabel,
   Input,
   ModalBody,
   ModalFooter,
-  NumberDecrementStepper,
-  NumberIncrementStepper,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
   Select,
   Stack,
   Textarea,
@@ -22,15 +16,18 @@ import {
   AlertIcon,
 } from '@chakra-ui/react';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
-import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
+import { useOrganizationsStore } from '../stores/useOrganizationsStore';
 import type {
   PersonInput,
   CustomFieldValueInput,
-  CustomFieldDefinition,
   CustomFieldEntityType,
-  CustomFieldType as GQLCustomFieldType,
 } from '../generated/graphql/graphql';
-import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
+import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
+import { CustomFieldRenderer } from './common/CustomFieldRenderer';
+import { 
+  initializeCustomFieldValuesFromEntity,
+  processCustomFieldsForSubmission
+} from '../lib/utils/customFieldProcessing';
 
 interface EditPersonFormProps {
   person: Person;
@@ -61,32 +58,23 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
 
   const { updatePerson: updatePersonAction, peopleError } = usePeopleStore();
   
-  const allDefinitions = useCustomFieldDefinitionStore(state => state.definitions);
-  const definitionsLoading = useCustomFieldDefinitionStore(state => state.loading);
-  const definitionsError = useCustomFieldDefinitionStore(state => state.error);
-  const fetchDefinitions = useCustomFieldDefinitionStore(state => state.fetchCustomFieldDefinitions);
-  
   const [localError, setLocalError] = useState<string | null>(null);
-  const [hasAttemptedPersonDefinitionsFetch, setHasAttemptedPersonDefinitionsFetch] = useState(false);
 
-  // Memoize personCustomFieldDefinitions
-  const personCustomFieldDefinitions = useMemo(() => {
-    // console.log("[EditPersonForm] Recalculating personCustomFieldDefinitions via useMemo."); // Keep this commented log if desired, or remove
-    return allDefinitions.filter(
-      d => d.entityType === 'PERSON' && d.isActive
-    );
-  }, [allDefinitions]); // Dependency is allDefinitions from the store
+  // Use optimized custom fields hook
+  const { 
+    definitions, 
+    loading: definitionsLoading, 
+    error: definitionsError,
+    getDefinitionsForEntity
+  } = useOptimizedCustomFields({ entityTypes: ['PERSON' as CustomFieldEntityType] });
+
+  const personCustomFieldDefinitions = getDefinitionsForEntity('PERSON' as CustomFieldEntityType);
 
   useEffect(() => {
     if (Array.isArray(organizations) && !organizations.length && !orgLoading) {
       fetchOrganizations();
     }
-    if (!definitionsLoading && !definitionsError && !hasAttemptedPersonDefinitionsFetch && !allDefinitions.some(d => d.entityType === 'PERSON')) {
-      fetchDefinitions('PERSON' as CustomFieldEntityType).finally(() => {
-        setHasAttemptedPersonDefinitionsFetch(true);
-      });
-    }
-  }, [organizations, orgLoading, fetchOrganizations, definitionsLoading, definitionsError, allDefinitions, fetchDefinitions, hasAttemptedPersonDefinitionsFetch]);
+  }, [organizations, orgLoading, fetchOrganizations]);
 
   useEffect(() => {
     setFormData({
@@ -100,50 +88,17 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
     });
     setLocalError(null);
 
-    if (person && person.customFieldValues && personCustomFieldDefinitions.length > 0 && !definitionsLoading && hasAttemptedPersonDefinitionsFetch) {
-      // console.log('[EditPersonForm] useEffect for customFieldData triggered.');
-      // console.log('[EditPersonForm] person.id:', person.id);
-      // console.log('[EditPersonForm] person.customFieldValues:', JSON.stringify(person.customFieldValues, null, 2));
-      // console.log('[EditPersonForm] personCustomFieldDefinitions:', JSON.stringify(personCustomFieldDefinitions, null, 2));
-      // console.log('[EditPersonForm] definitionsLoading:', definitionsLoading);
-      // console.log('[EditPersonForm] hasAttemptedPersonDefinitionsFetch:', hasAttemptedPersonDefinitionsFetch);
-      // console.log('[EditPersonForm] Calculated personCustomFieldDefinitions length:', personCustomFieldDefinitions.length);
-      const initialCustomData: Record<string, any> = {};
-      personCustomFieldDefinitions.forEach(def => {
-        // console.log(`[EditPersonForm] Found matching definition: ID=${def.id}, fieldName=${def.fieldName}, fieldType=${def.fieldType}`);
-        const existingValue = person.customFieldValues?.find(val => val.definition.id === def.id);
-        if (existingValue) {
-          let value: any;
-          switch (def.fieldType) {
-            case 'TEXT': value = existingValue.stringValue; break;
-            case 'NUMBER': value = existingValue.numberValue; break;
-            case 'BOOLEAN': value = existingValue.booleanValue; break;
-            case 'DATE': value = existingValue.dateValue; break;
-            case 'DROPDOWN': value = existingValue.selectedOptionValues?.[0]; break;
-            case 'MULTI_SELECT': value = existingValue.selectedOptionValues; break;
-            default: value = null;
-          }
-          if (value !== undefined && value !== null) {
-            initialCustomData[def.fieldName] = value;
-          }
-        } else {
-          console.warn(`[EditPersonForm] No matching active definition found in personCustomFieldDefinitions for cfv.definition.id: ${def.id}`);
-        }
-      });
-      // console.log('[EditPersonForm] Final initialCustomData to be set:', initialCustomData);
+    // Initialize custom field data using shared utility
+    if (person && person.customFieldValues && personCustomFieldDefinitions.length > 0 && !definitionsLoading) {
+      const initialCustomData = initializeCustomFieldValuesFromEntity(
+        personCustomFieldDefinitions,
+        person.customFieldValues
+      );
       setCustomFieldData(initialCustomData);
     } else {
-      console.warn('[EditPersonForm] Conditions NOT met to populate customFieldData. Clearing. Details:',
-        {
-          definitionsLoading,
-          hasAttemptedPersonDefinitionsFetch,
-          personCustomFieldValuesCount: person.customFieldValues?.length,
-          personCustomFieldDefinitionsCount: personCustomFieldDefinitions?.length
-        }
-      );
-      setCustomFieldData({}); 
+      setCustomFieldData({});
     }
-  }, [person, person.customFieldValues, personCustomFieldDefinitions, definitionsLoading, hasAttemptedPersonDefinitionsFetch]);
+  }, [person, person.customFieldValues, personCustomFieldDefinitions, definitionsLoading]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -154,10 +109,10 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
     }
   };
 
-  const handleCustomFieldChange = (fieldName: string, value: any, type: GQLCustomFieldType) => {
+  const handleCustomFieldChange = (fieldName: string, value: any) => {
     setCustomFieldData(prev => ({
       ...prev,
-      [fieldName]: type === 'BOOLEAN' ? (value as React.ChangeEvent<HTMLInputElement>).target.checked : value,
+      [fieldName]: value,
     }));
   };
 
@@ -172,77 +127,23 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
       return;
     }
 
-    let accumulatedCustomFieldErrors = '';
-
-    const processedCustomFields: CustomFieldValueInput[] = personCustomFieldDefinitions
-      .map(def => {
-        let fieldHasError = false;
-        const rawValue = customFieldData[def.fieldName];
-        
-        if (rawValue === undefined && rawValue === null && !def.isRequired) return null;
-
-        if (def.isRequired && (rawValue === undefined || rawValue === null || String(rawValue).trim() === '')) {
-            accumulatedCustomFieldErrors += `Field '${def.fieldLabel}' is required.\n`;
-            fieldHasError = true;
-        }
-        
-        const cfInput: CustomFieldValueInput = { definitionId: def.id };
-
-        if (fieldHasError) return null;
-
-        if (rawValue === null || rawValue === '') {
-            switch (def.fieldType) {
-                case 'TEXT': cfInput.stringValue = null; break;
-                case 'NUMBER': cfInput.numberValue = null; break;
-                case 'BOOLEAN': cfInput.booleanValue = false; break;
-                case 'DATE': cfInput.dateValue = null; break;
-                case 'DROPDOWN': cfInput.selectedOptionValues = null; break;
-                case 'MULTI_SELECT': cfInput.selectedOptionValues = null; break;
-            }
-        } else if (rawValue !== undefined) {
-            switch (def.fieldType) {
-                case 'TEXT': cfInput.stringValue = String(rawValue); break;
-                case 'NUMBER':
-                    const num = parseFloat(String(rawValue));
-                    if (!isNaN(num)) {
-                        cfInput.numberValue = num;
-                    } else {
-                        accumulatedCustomFieldErrors += `Invalid number for '${def.fieldLabel}'.\n`;
-                        fieldHasError = true;
-                    }
-                    break;
-                case 'BOOLEAN': cfInput.booleanValue = Boolean(rawValue); break;
-                case 'DATE': cfInput.dateValue = rawValue; break;
-                case 'DROPDOWN': cfInput.selectedOptionValues = [String(rawValue)]; break;
-                case 'MULTI_SELECT': 
-                    cfInput.selectedOptionValues = Array.isArray(rawValue) ? rawValue.map(String) : (rawValue ? [String(rawValue)] : []);
-                    break;
-            }
-        }
-        
-        if (fieldHasError) return null;
-        
-        return cfInput;
-      })
-      .filter(Boolean) as CustomFieldValueInput[];
-
-    if (accumulatedCustomFieldErrors) {
-        setLocalError(accumulatedCustomFieldErrors.trim());
-        setIsLoading(false);
-        return;
-    }
-    
-    const mutationInput: PersonInput = {
-      first_name: formData.first_name || null,
-      last_name: formData.last_name || null,
-      email: formData.email || null,
-      phone: formData.phone || null,
-      notes: formData.notes || null,
-      organization_id: formData.organization_id || null,
-      customFields: processedCustomFields,
-    };
-
+    // Process custom fields using shared utility
     try {
+      const processedCustomFields = processCustomFieldsForSubmission(
+        personCustomFieldDefinitions,
+        customFieldData
+      );
+
+      const mutationInput: PersonInput = {
+        first_name: formData.first_name || null,
+        last_name: formData.last_name || null,
+        email: formData.email || null,
+        phone: formData.phone || null,
+        notes: formData.notes || null,
+        organization_id: formData.organization_id || null,
+        customFields: processedCustomFields,
+      };
+
       const updatedPerson = await updatePersonAction(person.id, mutationInput);
 
       if (updatedPerson) {
@@ -256,9 +157,14 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
         onClose();
       } else {
         setLocalError(peopleError || 'Failed to update person. Please try again.');
-        toast({ title: 'Error', description: peopleError || 'Failed to update person.', status: 'error', duration: 5000, isClosable: true });
+        toast({ 
+          title: 'Error', 
+          description: peopleError || 'Failed to update person.', 
+          status: 'error', 
+          duration: 5000, 
+          isClosable: true 
+        });
       }
-
     } catch (error: unknown) {
       console.error(`Failed to update person ${person.id}:`, error);
       let message = 'An unexpected error occurred.';
@@ -268,6 +174,13 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
         message = error;
       }
       setLocalError(message);
+      toast({ 
+        title: 'Error', 
+        description: message, 
+        status: 'error', 
+        duration: 5000, 
+        isClosable: true 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -331,66 +244,28 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
             <Textarea name="notes" value={formData.notes || ''} onChange={handleChange} />
           </FormControl>
 
+          {/* Custom Fields Section */}
           {definitionsLoading && <Spinner />}
-          {definitionsError && <Alert status="error"><AlertIcon />Error loading custom fields: {definitionsError}</Alert>}
-          {personCustomFieldDefinitions.map((def: CustomFieldDefinition) => (
-            <FormControl key={def.id} isRequired={def.isRequired}>
-              <FormLabel>{def.fieldLabel}</FormLabel>
-              {def.fieldType === 'TEXT' && (
-                <Input
-                  value={customFieldData[def.fieldName] || ''}
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
+          {definitionsError && (
+            <Alert status="error">
+              <AlertIcon />
+              Error loading custom fields: {definitionsError}
+            </Alert>
+          )}
+          
+          {!definitionsLoading && !definitionsError && personCustomFieldDefinitions.length > 0 && (
+            <>
+              {personCustomFieldDefinitions.map((def) => (
+                <CustomFieldRenderer
+                  key={def.id}
+                  definition={def}
+                  value={customFieldData[def.fieldName]}
+                  onChange={(value) => handleCustomFieldChange(def.fieldName, value)}
+                  isRequired={def.isRequired}
                 />
-              )}
-              {def.fieldType === 'NUMBER' && (
-                <NumberInput
-                  value={customFieldData[def.fieldName] || ''}
-                  onChange={(valueString) => handleCustomFieldChange(def.fieldName, valueString, def.fieldType)}
-                >
-                  <NumberInputField />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput>
-              )}
-              {def.fieldType === 'BOOLEAN' && (
-                <Checkbox
-                  isChecked={customFieldData[def.fieldName] || false}
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e, def.fieldType)}
-                >
-                  Enabled
-                </Checkbox>
-              )}
-              {def.fieldType === 'DATE' && (
-                <Input
-                  type="date"
-                  value={customFieldData[def.fieldName] || ''}
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
-                />
-              )}
-              {def.fieldType === 'DROPDOWN' && (
-                <Select
-                  placeholder={`Select ${def.fieldLabel}`}
-                  value={customFieldData[def.fieldName] || ''}
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
-                >
-                  {def.dropdownOptions?.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </Select>
-              )}
-              {def.fieldType === 'MULTI_SELECT' && (
-                 <Textarea
-                  placeholder={`Enter values for ${def.fieldLabel}, comma-separated`}
-                  value={Array.isArray(customFieldData[def.fieldName]) ? customFieldData[def.fieldName].join(', ') : (customFieldData[def.fieldName] || '')} 
-                  onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value.split(',').map(s => s.trim()), def.fieldType)}
-                />
-              )}
-              {localError && def.isRequired && (customFieldData[def.fieldName] === undefined || customFieldData[def.fieldName] === null || customFieldData[def.fieldName] === '') && 
-                <FormErrorMessage>{`Field '${def.fieldLabel}' is required.`}</FormErrorMessage>}
-            </FormControl>
-          ))}
+              ))}
+            </>
+          )}
         </Stack>
       </ModalBody>
       <ModalFooter>
