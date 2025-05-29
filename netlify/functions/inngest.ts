@@ -1,5 +1,5 @@
 import { Inngest } from 'inngest';
-import type { Handler, HandlerContext } from '@netlify/functions';
+import type { Handler } from '@netlify/functions';
 import { supabaseAdmin } from '../../lib/supabaseClient';
 import { getISOEndOfDay } from '../../lib/dateUtils';
 import { serve } from 'inngest/lambda';
@@ -134,10 +134,10 @@ export const createDealAssignmentTask = inngest.createFunction(
 
 export const functions = [helloWorld, logContactCreation, logDealCreation, createDealAssignmentTask];
 
+// Export the handler using the lambda serve adapter
 export const handler: Handler = serve({
   client: inngest,
   functions,
-  serveHost: 'http://localhost:8888',
-  // signingKey: process.env.INNGEST_SIGNING_KEY_DEV || process.env.INNGEST_SIGNING_KEY,
-  // servePath: '/.netlify/functions/inngest' // Usually not needed if file is named inngest.ts
-}) as any; // Cast to any to bypass strict type checking for now
+  // serveHost should not be set for Netlify production; it's auto-detected or handled by the plugin.
+  // signingKey is typically handled by the INNGEST_SIGNING_KEY environment variable.
+}) as any;
