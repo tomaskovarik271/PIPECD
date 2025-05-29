@@ -173,7 +173,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       const customFieldsSubmission: CustomFieldValueInput[] = activeDealCustomFields
         .map(def => {
           const formValue = customFieldFormValues[def.fieldName];
-          let valueInput: Partial<CustomFieldValueInput> = { definitionId: def.id };
+          const valueInput: CustomFieldValueInput = { definitionId: def.id };
 
           switch (def.fieldType) {
             case CustomFieldType.Text:

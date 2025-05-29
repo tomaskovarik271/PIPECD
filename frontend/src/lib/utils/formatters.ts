@@ -1,28 +1,91 @@
 import type { Person as GeneratedPerson } from '../../generated/graphql/graphql';
 
-export const formatPersonName = (person: GeneratedPerson | null | undefined): string => {
-  if (!person) return '-';
-  return person.last_name && person.first_name 
-    ? `${person.last_name}, ${person.first_name}` 
-    : person.first_name || person.last_name || person.email || 'Unnamed Person';
+// Memoized currency formatter
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 0
+});
+
+const currencyFormatterWithCents = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+});
+
+// Memoized date formatter
+const dateFormatter = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'medium'
+});
+
+const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'medium',
+  timeStyle: 'short'
+});
+
+export const formatCurrency = (amount: number | null | undefined, includeCents: boolean = false): string => {
+  if (amount === null || amount === undefined) return '-';
+  const formatter = includeCents ? currencyFormatterWithCents : currencyFormatter;
+  return formatter.format(amount);
 };
 
 export const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return '-';
   try {
-    return new Date(dateString).toLocaleDateString();
-  } catch (e) {
-    console.error("Error formatting date:", dateString, e);
-    return '-'; // Return a fallback on error
+    return dateFormatter.format(new Date(dateString));
+  } catch (error) {
+    console.warn('Invalid date string:', dateString);
+    return '-';
   }
 };
 
-export const formatCurrency = (amount: number | null | undefined): string => {
-  if (amount == null) return '-'; // Check for null or undefined
+export const formatDateTime = (dateString: string | null | undefined): string => {
+  if (!dateString) return '-';
   try {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
-  } catch (e) {
-    console.error("Error formatting currency:", amount, e);
-    return '-'; // Return a fallback on error
+    return dateTimeFormatter.format(new Date(dateString));
+  } catch (error) {
+    console.warn('Invalid date string:', dateString);
+    return '-';
   }
+};
+
+export const formatPersonName = (person: GeneratedPerson | null | undefined): string => {
+  if (!person) return '-';
+  const firstName = person.first_name || '';
+  const lastName = person.last_name || '';
+  const fullName = `${firstName} ${lastName}`.trim();
+  return fullName || person.email || '-';
+};
+
+export const formatPhoneNumber = (phone: string | null | undefined): string => {
+  if (!phone) return '-';
+  
+  // Simple US phone number formatting
+  const cleanPhone = phone.replace(/\D/g, '');
+  if (cleanPhone.length === 10) {
+    return `(${cleanPhone.slice(0, 3)}) ${cleanPhone.slice(3, 6)}-${cleanPhone.slice(6)}`;
+  } else if (cleanPhone.length === 11 && cleanPhone.startsWith('1')) {
+    return `+1 (${cleanPhone.slice(1, 4)}) ${cleanPhone.slice(4, 7)}-${cleanPhone.slice(7)}`;
+  }
+  
+  return phone; // Return original if formatting fails
+};
+
+export const formatPercentage = (value: number | null | undefined, decimalPlaces: number = 0): string => {
+  if (value === null || value === undefined) return '-';
+  return `${(value * 100).toFixed(decimalPlaces)}%`;
+};
+
+export const truncateText = (text: string | null | undefined, maxLength: number = 50): string => {
+  if (!text) return '-';
+  if (text.length <= maxLength) return text;
+  return `${text.substring(0, maxLength)}...`;
+};
+
+// Utility for consistent empty value display
+export const displayEmpty = (value: any): string => {
+  if (value === null || value === undefined || value === '') return '-';
+  return String(value);
 }; 
