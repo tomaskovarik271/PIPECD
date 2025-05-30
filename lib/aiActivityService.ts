@@ -75,7 +75,7 @@ export async function gatherDealContext(
         deal_specific_probability,
         created_at,
         wfm_project_id,
-        person:people!inner(
+        person:people(
           first_name,
           last_name,
           email
@@ -105,10 +105,10 @@ export async function gatherDealContext(
       
       if (wfmData?.current_step_id) {
         const { data: stepData } = await supabase
-          .from('wfm_workflow_steps')
+          .from('workflow_steps')
           .select(`
             metadata,
-            status:statuses!inner(name)
+            status:statuses(name)
           `)
           .eq('id', wfmData.current_step_id)
           .single();
