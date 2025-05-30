@@ -199,8 +199,10 @@ export async function generateActivityRecommendations(
 ): Promise<AIActivityRecommendationsResponse> {
   const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
   
-  if (!anthropicApiKey) {
-    console.warn('ANTHROPIC_API_KEY not configured, using fallback recommendations');
+  // Temporarily disable AI API calls in production to avoid timeouts
+  // TODO: Re-enable once we have proper async processing or longer timeouts
+  if (!anthropicApiKey || process.env.NODE_ENV === 'production') {
+    console.warn('Using fallback recommendations (AI disabled in production)');
     return generateFallbackRecommendations(context);
   }
 
@@ -295,7 +297,12 @@ export async function generateActivityRecommendations(
       }
     };
     
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Create a timeout wrapper for the API call
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('Claude API timeout after 8 seconds')), 8000);
+    });
+    
+    const apiCallPromise = fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -303,8 +310,8 @@ export async function generateActivityRecommendations(
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022', // Latest Claude 3.5 Haiku
-        max_tokens: 1500,
+        model: 'claude-3-5-haiku-20241022', // Latest Claude 3.5 Haiku (fastest)
+        max_tokens: 800, // Reduced for faster response
         tools: [structuredOutputTool],
         tool_choice: { type: "tool", name: "activity_recommendations" },
         messages: [
@@ -315,6 +322,8 @@ export async function generateActivityRecommendations(
         ]
       })
     });
+
+    const response = await Promise.race([apiCallPromise, timeoutPromise]);
 
     if (!response.ok) {
       throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
@@ -342,34 +351,22 @@ export async function generateActivityRecommendations(
 function buildClaudePrompt(context: ActivityRecommendationContext): string {
   const { deal, person, organization, recentActivities, contextualInfo } = context;
   
-  return `You are a sales AI assistant analyzing deal context to recommend the 3 most effective next activities.
+  return `Sales AI: Analyze this deal and recommend 3 priority activities.
 
-DEAL CONTEXT:
-- Deal: "${deal.name}" (${deal.amount ? `$${deal.amount.toLocaleString()}` : 'No amount'})
-- Contact: ${person ? `${person.first_name} ${person.last_name}` : 'Unknown'} ${person?.job_title ? `(${person.job_title})` : ''}
-- Company: ${organization?.name || 'Unknown'} ${organization?.industry ? `(${organization.industry})` : ''}
-- Expected Close: ${deal.expected_close_date || 'Not set'}
-- Days Until Close: ${contextualInfo.daysUntilExpectedClose || 'Unknown'}
-- Deal Probability: ${deal.deal_specific_probability ? `${Math.round(deal.deal_specific_probability * 100)}%` : 'Not set'}
-- Current Stage: ${deal.currentWfmStatus?.name || 'Unknown'}
-- Days in Stage: ${contextualInfo.stageDuration}
-- High Value Deal: ${contextualInfo.isHighValue ? 'Yes' : 'No'}
-- Has Overdue Activities: ${contextualInfo.hasOverdueActivities ? 'Yes' : 'No'}
+DEAL: "${deal.name}" - ${deal.amount ? `$${deal.amount.toLocaleString()}` : 'No amount'}
+CONTACT: ${person ? `${person.first_name} ${person.last_name}` : 'Unknown'}
+COMPANY: ${organization?.name || 'Unknown'}
+CLOSE DATE: ${deal.expected_close_date || 'Not set'} (${contextualInfo.daysUntilExpectedClose || '?'} days)
+STAGE: ${deal.currentWfmStatus?.name || 'Unknown'} (${contextualInfo.stageDuration} days)
+VALUE: ${contextualInfo.isHighValue ? 'High' : 'Standard'} | OVERDUE: ${contextualInfo.hasOverdueActivities ? 'Yes' : 'No'}
 
-RECENT ACTIVITIES (last 30 days):
+RECENT ACTIVITIES:
 ${recentActivities.length > 0 
-  ? recentActivities.map(a => `- ${a.type}: "${a.subject}" (${a.is_done ? 'Done' : 'Open'})`).join('\n')
-  : '- No recent activities'
+  ? recentActivities.slice(0, 3).map(a => `${a.type}: ${a.subject} (${a.is_done ? 'Done' : 'Open'})`).join('\n')
+  : 'None'
 }
 
-ANALYSIS REQUIREMENTS:
-1. Recommend 3 activities in order of priority
-2. Consider the deal stage, timeline, value, and recent activity patterns
-3. Focus on activities that will advance the deal toward closing
-4. Be specific and actionable
-5. Use the activity_recommendations tool to provide structured output
-
-Provide a brief contextSummary analyzing the deal situation, then recommend the top 3 most effective activities. The primary recommendation should be the most critical activity that needs to happen next.`;
+Generate 3 specific, actionable activities to advance this deal. Use activity_recommendations tool.`;
 }
 
 /**
