@@ -12,7 +12,7 @@ import { apolloClient } from './lib/apolloClient'
 // Create a wrapper component to access the Zustand store
 const AppWithTheme: React.FC = () => {
   const currentThemeMode = useThemeStore((state) => state.currentTheme)
-  const activeTheme = themes[currentThemeMode] || themes.light
+  const activeTheme = themes[currentThemeMode] || themes.lightModern
 
   return (
     <ApolloProvider client={apolloClient}>
