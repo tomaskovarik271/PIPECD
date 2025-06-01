@@ -1464,13 +1464,291 @@ ${person.notes || 'No notes available'}`;
         return `✅ Contact updated successfully!
 
 **Updated Contact Details:**
-+- Name: ${fullName}
-+- Email: ${person.email || 'No email'}
-+- Phone: ${person.phone || 'No phone'}
-+- Organization: ${org}
-+- Notes: ${person.notes || 'No notes'}
-+- Last Updated: ${new Date(person.updated_at).toLocaleDateString()}
-+- Contact ID: ${person.id}`;
+- Name: ${fullName}
+- Email: ${person.email || 'No email'}
+- Phone: ${person.phone || 'No phone'}
+- Organization: ${org}
+- Notes: ${person.notes || 'No notes'}
+- Last Updated: ${new Date(person.updated_at).toLocaleDateString()}
+- Contact ID: ${person.id}`;
+      }
+
+      case 'search_activities': {
+        const { deal_id, person_id, organization_id, is_done, limit = 20 } = parameters;
+        
+        let query = `
+          query GetActivities($filter: ActivityFilterInput) {
+            activities(filter: $filter) {
+              id
+              type
+              subject
+              due_date
+              is_done
+              notes
+              created_at
+              deal {
+                id
+                name
+              }
+              person {
+                id
+                first_name
+                last_name
+              }
+              organization {
+                id
+                name
+              }
+              assignedToUser {
+                display_name
+              }
+            }
+          }
+        `;
+
+        const filter: any = {};
+        if (deal_id) filter.dealId = deal_id;
+        if (person_id) filter.personId = person_id;
+        if (organization_id) filter.organizationId = organization_id;
+        if (is_done !== undefined) filter.isDone = is_done;
+
+        const result = await executeGraphQL(query, { filter });
+        let activities = result.data?.activities || [];
+
+        // Sort by due_date and created_at
+        activities.sort((a: any, b: any) => {
+          const aDate = a.due_date ? new Date(a.due_date) : new Date(a.created_at);
+          const bDate = b.due_date ? new Date(b.due_date) : new Date(b.created_at);
+          return aDate.getTime() - bDate.getTime();
+        });
+        activities = activities.slice(0, limit);
+
+        const summary = `Found ${activities.length} activities`;
+        
+        const activitiesList = activities.map((activity: any) => {
+          const deal = activity.deal ? ` | Deal: ${activity.deal.name}` : '';
+          const person = activity.person ? ` | Contact: ${activity.person.first_name} ${activity.person.last_name}` : '';
+          const org = activity.organization ? ` | Org: ${activity.organization.name}` : '';
+          const dueDate = activity.due_date ? ` | Due: ${new Date(activity.due_date).toLocaleDateString()}` : '';
+          const status = activity.is_done ? '✅ Done' : '⏳ Pending';
+          const assignedTo = activity.assignedToUser ? ` | Assigned: ${activity.assignedToUser.display_name}` : '';
+          
+          return `• ${activity.type}: ${activity.subject} | ${status}${dueDate}${deal}${person}${org}${assignedTo}
+  ID: ${activity.id} | Created: ${new Date(activity.created_at).toLocaleDateString()}`;
+        }).join('\n\n');
+
+        return `${summary}\n\n${activitiesList || 'No activities found.'}`;
+      }
+
+      case 'create_activity': {
+        const { type, subject, due_date, notes, is_done = false, deal_id, person_id, organization_id } = parameters;
+        
+        const mutation = `
+          mutation CreateActivity($input: CreateActivityInput!) {
+            createActivity(input: $input) {
+              id
+              type
+              subject
+              due_date
+              notes
+              is_done
+              created_at
+              deal {
+                name
+              }
+              person {
+                first_name
+                last_name
+              }
+              organization {
+                name
+              }
+            }
+          }
+        `;
+
+        const input: any = { type, subject, is_done };
+        if (due_date) input.due_date = due_date;
+        if (notes) input.notes = notes;
+        if (deal_id) input.deal_id = deal_id;
+        if (person_id) input.person_id = person_id;
+        if (organization_id) input.organization_id = organization_id;
+
+        const result = await executeGraphQL(mutation, { input });
+        const activity = result.data?.createActivity;
+        
+        if (!activity) {
+          throw new Error('Failed to create activity - no data returned');
+        }
+        
+        const deal = activity.deal ? ` for deal "${activity.deal.name}"` : '';
+        const person = activity.person ? ` with ${activity.person.first_name} ${activity.person.last_name}` : '';
+        const org = activity.organization ? ` at ${activity.organization.name}` : '';
+        
+        return `✅ Activity created successfully!
+
+**Activity Details:**
++- Type: ${activity.type}
++- Subject: ${activity.subject}
++- Due Date: ${activity.due_date ? new Date(activity.due_date).toLocaleDateString() : 'Not set'}
++- Status: ${activity.is_done ? 'Completed' : 'Pending'}
++- Notes: ${activity.notes || 'No notes'}
++- Created: ${new Date(activity.created_at).toLocaleDateString()}
++- Activity ID: ${activity.id}
++- Associated: ${deal}${person}${org}
+
++The activity has been added to your task list.`;
+      }
+
+      case 'complete_activity': {
+        const { activity_id, completion_notes } = parameters;
+        
+        const input: any = { is_done: true };
+        if (completion_notes) {
+          input.notes = completion_notes;
+        }
+        
+        const mutation = `
+          mutation CompleteActivity($id: ID!, $input: UpdateActivityInput!) {
+            updateActivity(id: $id, input: $input) {
+              id
+              subject
+              type
+              updated_at
+              notes
+            }
+          }
+        `;
+
+        const result = await executeGraphQL(mutation, { id: activity_id, input });
+        const activity = result.data?.updateActivity;
+        
+        if (!activity) {
+          throw new Error(`Failed to complete activity - activity with ID ${activity_id} not found`);
+        }
+        
+        return `✅ Activity completed successfully!
+
+**Completed Activity:**
++- ${activity.type}: ${activity.subject}
++- Completed: ${new Date(activity.updated_at).toLocaleDateString()}
++- Notes: ${activity.notes || 'No completion notes'}
++- Activity ID: ${activity.id}`;
+      }
+
+      case 'get_price_quotes': {
+        const { deal_id } = parameters;
+        
+        const query = `
+          query GetPriceQuotes($dealId: ID!) {
+            priceQuotesForDeal(dealId: $dealId) {
+              id
+              name
+              status
+              version_number
+              final_offer_price_fop
+              base_minimum_price_mp
+              target_markup_percentage
+              overall_discount_percentage
+              created_at
+              updated_at
+            }
+          }
+        `;
+
+        const result = await executeGraphQL(query, { dealId: deal_id });
+        const quotes = result.data?.priceQuotesForDeal || [];
+
+        if (quotes.length === 0) {
+          return `No price quotes found for deal ID ${deal_id}`;
+        }
+
+        const summary = `Found ${quotes.length} price quote${quotes.length > 1 ? 's' : ''} for deal ID ${deal_id}`;
+        
+        const quotesList = quotes.map((quote: any) => {
+          const finalPrice = quote.final_offer_price_fop ? `$${quote.final_offer_price_fop.toLocaleString()}` : 'No final price';
+          const basePrice = quote.base_minimum_price_mp ? `$${quote.base_minimum_price_mp.toLocaleString()}` : 'No base price';
+          const markup = quote.target_markup_percentage ? `${(quote.target_markup_percentage * 100).toFixed(1)}%` : 'No markup';
+          const discount = quote.overall_discount_percentage ? `${(quote.overall_discount_percentage * 100).toFixed(1)}%` : 'No discount';
+          
+          return `• ${quote.name || `Quote v${quote.version_number}`} | Status: ${quote.status}
+  Final Price: ${finalPrice} | Base: ${basePrice} | Markup: ${markup} | Discount: ${discount}
+  Created: ${new Date(quote.created_at).toLocaleDateString()} | ID: ${quote.id}`;
+        }).join('\n\n');
+
+        return `${summary}\n\n${quotesList}`;
+      }
+
+      case 'get_user_profile': {
+        const query = `
+          query GetMe {
+            me {
+              id
+              email
+              display_name
+              avatar_url
+              created_at
+            }
+          }
+        `;
+
+        const result = await executeGraphQL(query);
+        const user = result.data?.me;
+        
+        if (!user) {
+          return 'Unable to fetch user profile information';
+        }
+        
+        return `# Your Profile
+
+**User Information:**
++- Name: ${user.display_name || 'No display name set'}
++- Email: ${user.email}
++- Member Since: ${new Date(user.created_at).toLocaleDateString()}
++- User ID: ${user.id}
++- Avatar: ${user.avatar_url ? 'Set' : 'Not set'}`;
+      }
+
+      case 'get_wfm_project_types': {
+        const { is_archived = false } = parameters;
+        
+        const query = `
+          query GetWFMProjectTypes($isArchived: Boolean) {
+            wfmProjectTypes(isArchived: $isArchived) {
+              id
+              name
+              description
+              iconName
+              isArchived
+              created_at
+              defaultWorkflow {
+                id
+                name
+              }
+            }
+          }
+        `;
+
+        const result = await executeGraphQL(query, { isArchived: is_archived });
+        const projectTypes = result.data?.wfmProjectTypes || [];
+
+        if (projectTypes.length === 0) {
+          return `No workflow project types found${is_archived ? ' (including archived)' : ''}`;
+        }
+
+        const summary = `Found ${projectTypes.length} workflow project type${projectTypes.length > 1 ? 's' : ''}`;
+        
+        const typesList = projectTypes.map((type: any) => {
+          const workflow = type.defaultWorkflow ? ` | Default Workflow: ${type.defaultWorkflow.name}` : '';
+          const icon = type.iconName ? ` | Icon: ${type.iconName}` : '';
+          const status = type.isArchived ? ' (Archived)' : '';
+          
+          return `• ${type.name}${status}${workflow}${icon}
+  Description: ${type.description || 'No description'}
+  Created: ${new Date(type.created_at).toLocaleDateString()} | ID: ${type.id}`;
+        }).join('\n\n');
+
+        return `${summary}\n\n${typesList}`;
       }
 
       default:
