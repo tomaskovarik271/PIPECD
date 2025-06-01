@@ -38,7 +38,23 @@ import {
 import { SettingsIcon, TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { FiSend, FiUser, FiCpu, FiActivity, FiMessageSquare, FiClock, FiTool, FiEye, FiZap, FiTarget } from 'react-icons/fi';
 import { useAgentStore } from '../../stores/useAgentStore';
-import type { AgentMessage, AgentConversation } from '../../stores/useAgentStore';
+import type { AgentMessage, AgentConversation, AgentThought } from '../../stores/useAgentStore';
+import { gql } from '@apollo/client';
+import { apolloClient } from '../../lib/apolloClient';
+
+// GraphQL query for real-time thought polling
+const GET_AGENT_THOUGHTS = gql`
+  query GetAgentThoughts($conversationId: ID!, $limit: Int) {
+    agentThoughts(conversationId: $conversationId, limit: $limit) {
+      id
+      conversationId
+      type
+      content
+      metadata
+      timestamp
+    }
+  }
+`;
 
 // Thought Details Component for showing complete autonomous behavior
 const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> = React.memo(({ thoughts }) => {
@@ -232,7 +248,10 @@ export const AIAgentChat: React.FC = () => {
   const [localSendError, setLocalSendError] = useState<string | null>(null);
   const [conversations, setConversations] = useState<AgentConversation[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [realTimeThoughts, setRealTimeThoughts] = useState<AgentThought[]>([]);
+  const [isPollingThoughts, setIsPollingThoughts] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Modal for conversation history
   const { isOpen: isHistoryOpen, onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
@@ -247,6 +266,57 @@ export const AIAgentChat: React.FC = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [localCurrentConversation?.messages?.length]);
+  
+  // Real-time thought polling during message sending
+  const pollThoughts = useCallback(async (conversationId: string) => {
+    try {
+      const { data } = await apolloClient.query({
+        query: GET_AGENT_THOUGHTS,
+        variables: { conversationId, limit: 100 },
+        fetchPolicy: 'network-only', // Always fetch fresh data
+      });
+      
+      if (data?.agentThoughts) {
+        setRealTimeThoughts(data.agentThoughts.map((thought: any) => ({
+          ...thought,
+          timestamp: new Date(thought.timestamp),
+        })));
+      }
+    } catch (error) {
+      console.warn('Failed to poll thoughts:', error);
+    }
+  }, []);
+
+  // Start/stop polling when sending message
+  useEffect(() => {
+    if (localIsSendingMessage && localCurrentConversation?.id) {
+      setIsPollingThoughts(true);
+      setRealTimeThoughts([]); // Clear previous thoughts
+      
+      // Start polling every 2 seconds
+      pollingIntervalRef.current = setInterval(() => {
+        pollThoughts(localCurrentConversation.id);
+      }, 2000);
+      
+      // Initial poll
+      pollThoughts(localCurrentConversation.id);
+    } else {
+      // Stop polling
+      setIsPollingThoughts(false);
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+      setRealTimeThoughts([]); // Clear real-time thoughts when done
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [localIsSendingMessage, localCurrentConversation?.id, pollThoughts]);
   
   // Manual conversation creation
   const handleStartConversation = useCallback(async () => {
@@ -492,9 +562,25 @@ export const AIAgentChat: React.FC = () => {
                 {localIsSendingMessage && (
                   <HStack spacing={1}>
                     <Spinner size="xs" />
-                    <Text fontSize="xs" color="gray.500">
-                      Thinking...
-                    </Text>
+                    {isPollingThoughts && realTimeThoughts.length > 0 ? (
+                      <VStack align="start" spacing={0}>
+                        <Text fontSize="xs" color="gray.500">
+                          Working... ({realTimeThoughts.length} steps)
+                        </Text>
+                        {realTimeThoughts.length > 0 && (
+                          <Text fontSize="xs" color="blue.600">
+                            {realTimeThoughts[realTimeThoughts.length - 1]?.metadata?.toolName 
+                              ? `🔧 ${realTimeThoughts[realTimeThoughts.length - 1].metadata.toolName}`
+                              : realTimeThoughts[realTimeThoughts.length - 1]?.type.toLowerCase()
+                            }
+                          </Text>
+                        )}
+                      </VStack>
+                    ) : (
+                      <Text fontSize="xs" color="gray.500">
+                        Thinking...
+                      </Text>
+                    )}
                   </HStack>
                 )}
               </HStack>
@@ -595,6 +681,74 @@ export const AIAgentChat: React.FC = () => {
                   Dismiss
                 </Button>
               </Alert>
+            )}
+            
+            {/* Real-time thought display during message sending */}
+            {isPollingThoughts && realTimeThoughts.length > 0 && (
+              <Card bg={cardBg} mb={4} borderColor="blue.200" borderWidth="2px">
+                <CardBody>
+                  <VStack align="stretch" spacing={3}>
+                    <HStack spacing={2}>
+                      <Spinner size="sm" color="blue.500" />
+                      <Text fontWeight="semibold" color="blue.600">
+                        AI Assistant is working...
+                      </Text>
+                      <Badge colorScheme="blue" size="sm">
+                        {realTimeThoughts.length} step{realTimeThoughts.length > 1 ? 's' : ''}
+                      </Badge>
+                    </HStack>
+                    
+                    <VStack align="stretch" spacing={2} pl={4} borderLeft="2px" borderColor="blue.200">
+                      {realTimeThoughts.slice(-5).map((thought, idx) => (
+                        <HStack key={thought.id || idx} spacing={3}>
+                          <Box>
+                            {thought.type === 'TOOL_CALL' ? (
+                              <FiTool size={14} color="blue" />
+                            ) : thought.type === 'REASONING' ? (
+                              <FiZap size={14} color="purple" />
+                            ) : thought.type === 'OBSERVATION' ? (
+                              <FiEye size={14} color="green" />
+                            ) : (
+                              <FiActivity size={14} color="gray" />
+                            )}
+                          </Box>
+                          <VStack align="start" spacing={1} flex={1}>
+                            <HStack spacing={2}>
+                              <Badge 
+                                colorScheme={
+                                  thought.type === 'TOOL_CALL' ? 'blue' :
+                                  thought.type === 'REASONING' ? 'purple' :
+                                  thought.type === 'OBSERVATION' ? 'green' : 'gray'
+                                }
+                                size="xs"
+                              >
+                                {thought.type.toLowerCase()}
+                              </Badge>
+                              <Text fontSize="xs" color="gray.500">
+                                {new Date(thought.timestamp).toLocaleTimeString()}
+                              </Text>
+                            </HStack>
+                            <Text fontSize="sm" color="gray.700" _dark={{ color: 'gray.300' }}>
+                              {thought.content}
+                            </Text>
+                            {thought.metadata?.toolName && (
+                              <Text fontSize="xs" color="blue.600">
+                                🔧 {thought.metadata.toolName}
+                              </Text>
+                            )}
+                          </VStack>
+                        </HStack>
+                      ))}
+                      
+                      {realTimeThoughts.length > 5 && (
+                        <Text fontSize="xs" color="gray.500" fontStyle="italic" textAlign="center">
+                          ... and {realTimeThoughts.length - 5} more steps
+                        </Text>
+                      )}
+                    </VStack>
+                  </VStack>
+                </CardBody>
+              </Card>
             )}
             
             <div ref={messagesEndRef} />
