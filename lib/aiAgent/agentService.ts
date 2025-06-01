@@ -1207,6 +1207,376 @@ Deal ID: ${deal.id}`;
 Deal ID: ${deal.id}`;
       }
 
+      case 'get_custom_field_definitions': {
+        const { entity_type, include_inactive = false } = parameters;
+        
+        const query = `
+          query GetCustomFieldDefinitions($entityType: CustomFieldEntityType!, $includeInactive: Boolean) {
+            customFieldDefinitions(entityType: $entityType, includeInactive: $includeInactive) {
+              id
+              entityType
+              fieldName
+              fieldLabel
+              fieldType
+              isRequired
+              isActive
+              displayOrder
+              dropdownOptions {
+                value
+                label
+              }
+              createdAt
+              updatedAt
+            }
+          }
+        `;
+
+        const result = await executeGraphQL(query, { entityType: entity_type, includeInactive: include_inactive });
+        const definitions = result.data?.customFieldDefinitions || [];
+
+        if (definitions.length === 0) {
+          return `No custom field definitions found for ${entity_type} entity type${include_inactive ? ' (including inactive)' : ''}`;
+        }
+
+        const summary = `Found ${definitions.length} custom field definition${definitions.length > 1 ? 's' : ''} for ${entity_type}`;
+        
+        const definitionsList = definitions.map((def: any) => {
+          const status = def.isActive ? 'Active' : 'Inactive';
+          const required = def.isRequired ? 'Required' : 'Optional';
+          const options = def.dropdownOptions && def.dropdownOptions.length > 0 
+            ? ` | Options: ${def.dropdownOptions.map((opt: any) => opt.label).join(', ')}`
+            : '';
+          
+          return `• ${def.fieldLabel} (${def.fieldName})
+  Type: ${def.fieldType} | ${required} | ${status}${options}
+  Display Order: ${def.displayOrder} | Created: ${new Date(def.createdAt).toLocaleDateString()}
+  ID: ${def.id}`;
+        }).join('\n\n');
+
+        return `${summary}\n\n${definitionsList}`;
+      }
+
+      case 'create_custom_field_definition': {
+        const { entity_type, field_name, field_label, field_type, is_required = false, dropdown_options, display_order = 0 } = parameters;
+        
+        const mutation = `
+          mutation CreateCustomFieldDefinition($input: CustomFieldDefinitionInput!) {
+            createCustomFieldDefinition(input: $input) {
+              id
+              entityType
+              fieldName
+              fieldLabel
+              fieldType
+              isRequired
+              isActive
+              displayOrder
+              dropdownOptions {
+                value
+                label
+              }
+              createdAt
+            }
+          }
+        `;
+
+        const input: any = {
+          entityType: entity_type,
+          fieldName: field_name,
+          fieldLabel: field_label,
+          fieldType: field_type,
+          isRequired: is_required,
+          displayOrder: display_order,
+        };
+
+        // Add dropdown options if provided for DROPDOWN or MULTI_SELECT fields
+        if (dropdown_options && (field_type === 'DROPDOWN' || field_type === 'MULTI_SELECT')) {
+          input.dropdownOptions = dropdown_options;
+        }
+
+        const result = await executeGraphQL(mutation, { input });
+        const definition = result.data?.createCustomFieldDefinition;
+        
+        if (!definition) {
+          throw new Error('Failed to create custom field definition - no data returned');
+        }
+        
+        const options = definition.dropdownOptions && definition.dropdownOptions.length > 0 
+          ? `\n- Options: ${definition.dropdownOptions.map((opt: any) => `${opt.label} (${opt.value})`).join(', ')}`
+          : '';
+        
+        return `✅ Custom field definition created successfully!
+
+**Custom Field Details:**
++- Label: ${definition.fieldLabel}
++- Internal Name: ${definition.fieldName}
++- Entity Type: ${definition.entityType}
++- Field Type: ${definition.fieldType}
++- Required: ${definition.isRequired ? 'Yes' : 'No'}
++- Display Order: ${definition.displayOrder}${options}
++- Created: ${new Date(definition.createdAt).toLocaleDateString()}
++- Definition ID: ${definition.id}
+
+The custom field is now available for use in ${definition.entityType.toLowerCase()} forms and can be set via API.`;
+      }
+
+      case 'get_entity_custom_fields': {
+        const { entity_type, entity_id } = parameters;
+        
+        // Map entity types to GraphQL queries
+        const entityQueries = {
+          DEAL: `
+            query GetDealCustomFields($dealId: ID!) {
+              deal(id: $dealId) {
+                id
+                name
+                customFieldValues {
+                  definition {
+                    id
+                    fieldName
+                    fieldLabel
+                    fieldType
+                  }
+                  stringValue
+                  numberValue
+                  booleanValue
+                  dateValue
+                  selectedOptionValues
+                }
+              }
+            }
+          `,
+          PERSON: `
+            query GetPersonCustomFields($personId: ID!) {
+              person(id: $personId) {
+                id
+                first_name
+                last_name
+                customFieldValues {
+                  definition {
+                    id
+                    fieldName
+                    fieldLabel
+                    fieldType
+                  }
+                  stringValue
+                  numberValue
+                  booleanValue
+                  dateValue
+                  selectedOptionValues
+                }
+              }
+            }
+          `,
+          ORGANIZATION: `
+            query GetOrganizationCustomFields($organizationId: ID!) {
+              organization(id: $organizationId) {
+                id
+                name
+                customFieldValues {
+                  definition {
+                    id
+                    fieldName
+                    fieldLabel
+                    fieldType
+                  }
+                  stringValue
+                  numberValue
+                  booleanValue
+                  dateValue
+                  selectedOptionValues
+                }
+              }
+            }
+          `,
+        };
+
+        const query = entityQueries[entity_type as keyof typeof entityQueries];
+        if (!query) {
+          throw new Error(`Unsupported entity type: ${entity_type}`);
+        }
+
+        const variables = {
+          [`${entity_type.toLowerCase()}Id`]: entity_id
+        };
+
+        const result = await executeGraphQL(query, variables);
+        const entity = result.data?.[entity_type.toLowerCase()];
+        
+        if (!entity) {
+          return `${entity_type} with ID ${entity_id} not found`;
+        }
+
+        const customFields = entity.customFieldValues || [];
+
+        if (customFields.length === 0) {
+          const entityName = entity.name || `${entity.first_name || ''} ${entity.last_name || ''}`.trim() || 'Unknown';
+          return `No custom field values found for ${entity_type}: ${entityName} (ID: ${entity_id})`;
+        }
+
+        const entityName = entity.name || `${entity.first_name || ''} ${entity.last_name || ''}`.trim() || 'Unknown';
+        const summary = `Found ${customFields.length} custom field value${customFields.length > 1 ? 's' : ''} for ${entity_type}: ${entityName}`;
+        
+        const fieldsList = customFields.map((field: any) => {
+          let value = 'No value';
+          
+          switch (field.definition.fieldType) {
+            case 'TEXT':
+              value = field.stringValue || 'No value';
+              break;
+            case 'NUMBER':
+              value = field.numberValue !== null ? field.numberValue.toString() : 'No value';
+              break;
+            case 'BOOLEAN':
+              value = field.booleanValue !== null ? (field.booleanValue ? 'Yes' : 'No') : 'No value';
+              break;
+            case 'DATE':
+              value = field.dateValue ? new Date(field.dateValue).toLocaleDateString() : 'No value';
+              break;
+            case 'DROPDOWN':
+              value = field.stringValue || 'No selection';
+              break;
+            case 'MULTI_SELECT':
+              value = field.selectedOptionValues && field.selectedOptionValues.length > 0 
+                ? field.selectedOptionValues.join(', ') 
+                : 'No selections';
+              break;
+            default:
+              value = field.stringValue || 'No value';
+          }
+          
+          return `• ${field.definition.fieldLabel} (${field.definition.fieldType}): ${value}
+  Field ID: ${field.definition.id}`;
+        }).join('\n');
+
+        return `${summary}\n\n${fieldsList}`;
+      }
+
+      case 'set_entity_custom_fields': {
+        const { entity_type, entity_id, custom_fields } = parameters;
+        
+        // For now, we'll use a direct update approach
+        // This assumes the GraphQL mutations support custom field updates
+        const mutations = {
+          DEAL: `
+            mutation UpdateDealCustomFields($id: ID!, $input: DealUpdateInput!) {
+              updateDeal(id: $id, input: $input) {
+                id
+                name
+                customFieldValues {
+                  definition {
+                    fieldLabel
+                    fieldType
+                  }
+                  stringValue
+                  numberValue
+                  booleanValue
+                  dateValue
+                  selectedOptionValues
+                }
+              }
+            }
+          `,
+          PERSON: `
+            mutation UpdatePersonCustomFields($id: ID!, $input: PersonInput!) {
+              updatePerson(id: $id, input: $input) {
+                id
+                first_name
+                last_name
+                customFieldValues {
+                  definition {
+                    fieldLabel
+                    fieldType
+                  }
+                  stringValue
+                  numberValue
+                  booleanValue
+                  dateValue
+                  selectedOptionValues
+                }
+              }
+            }
+          `,
+          ORGANIZATION: `
+            mutation UpdateOrganizationCustomFields($id: ID!, $input: OrganizationInput!) {
+              updateOrganization(id: $id, input: $input) {
+                id
+                name
+                customFieldValues {
+                  definition {
+                    fieldLabel
+                    fieldType
+                  }
+                  stringValue
+                  numberValue
+                  booleanValue
+                  dateValue
+                  selectedOptionValues
+                }
+              }
+            }
+          `,
+        };
+
+        const mutation = mutations[entity_type as keyof typeof mutations];
+        if (!mutation) {
+          throw new Error(`Unsupported entity type for custom field updates: ${entity_type}`);
+        }
+
+        // Format custom fields for GraphQL input
+        const formattedCustomFields = custom_fields.map((field: any) => ({
+          definitionId: field.definitionId,
+          stringValue: field.stringValue || null,
+          numberValue: field.numberValue || null,
+          booleanValue: field.booleanValue || null,
+          dateValue: field.dateValue || null,
+          selectedOptionValues: field.selectedOptionValues || null,
+        }));
+
+        const input = {
+          customFieldValues: formattedCustomFields
+        };
+
+        const result = await executeGraphQL(mutation, { id: entity_id, input });
+        const entity = result.data?.[`update${entity_type.charAt(0) + entity_type.slice(1).toLowerCase()}`];
+        
+        if (!entity) {
+          throw new Error(`Failed to update custom fields for ${entity_type} with ID ${entity_id}`);
+        }
+
+        const entityName = entity.name || `${entity.first_name || ''} ${entity.last_name || ''}`.trim() || 'Unknown';
+        const updatedFields = entity.customFieldValues || [];
+        
+        return `✅ Custom fields updated successfully for ${entity_type}: ${entityName}!
+
+**Updated Custom Fields:**
+${updatedFields.map((field: any) => {
+  let value = 'No value';
+  switch (field.definition.fieldType) {
+    case 'TEXT':
+    case 'DROPDOWN':
+      value = field.stringValue || 'No value';
+      break;
+    case 'NUMBER':
+      value = field.numberValue !== null ? field.numberValue.toString() : 'No value';
+      break;
+    case 'BOOLEAN':
+      value = field.booleanValue !== null ? (field.booleanValue ? 'Yes' : 'No') : 'No value';
+      break;
+    case 'DATE':
+      value = field.dateValue ? new Date(field.dateValue).toLocaleDateString() : 'No value';
+      break;
+    case 'MULTI_SELECT':
+      value = field.selectedOptionValues && field.selectedOptionValues.length > 0 
+        ? field.selectedOptionValues.join(', ') 
+        : 'No selections';
+      break;
+  }
+  return `- ${field.definition.fieldLabel}: ${value}`;
+}).join('\n')}
+
+Entity ID: ${entity.id}`;
+      }
+
       default:
         throw new Error(`Unknown tool: ${toolName}`);
     }
