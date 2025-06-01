@@ -1079,10 +1079,14 @@ The deal has been added to your pipeline and is ready for further customization.
           // Check if the task appears to be complete based on the tool result
           const taskComplete = this.isTaskComplete(currentTool.toolName, toolResultText, originalUserMessage);
           
+          console.log(`Task completion check: ${taskComplete} for tool ${currentTool.toolName} with user message: "${originalUserMessage}"`);
+          
           if (taskComplete) {
             console.log('Task appears complete, stopping sequential execution');
             break;
           }
+          
+          console.log('Asking Claude for follow-up actions...');
           
           const followUpPrompt = `The tool ${currentTool.toolName} has been executed with the following result:
 
@@ -1110,6 +1114,9 @@ Based on this result, do you need to execute any additional tools to complete th
 
           // Update current response
           currentResponse = followUpResponse.content;
+
+          console.log('Claude follow-up response:', followUpResponse.content);
+          console.log('Claude suggested tool calls:', followUpResponse.toolCalls?.length || 0);
 
           // Check if Claude indicates the task is complete
           if (followUpResponse.content.includes('TASK_COMPLETE') || 
@@ -1283,13 +1290,22 @@ Based on this result, do you need to execute any additional tools to complete th
       if (toolName === 'create_deal' && toolResultText.includes('✅ Deal created successfully')) {
         return true; // Deal creation task is complete
       }
+      // search_organizations is just a step, not completion for deal creation requests
+      return false;
     }
     
-    // Search/analysis requests - if we got results, task is likely complete
+    // PURE search/analysis requests (not deal creation) - complete after results
     if (originalUserMessage.toLowerCase().includes('search') ||
         originalUserMessage.toLowerCase().includes('find') ||
-        originalUserMessage.toLowerCase().includes('analyze') ||
-        originalUserMessage.toLowerCase().includes('pipeline')) {
+        originalUserMessage.includes('analyze') ||
+        originalUserMessage.includes('pipeline')) {
+      
+      // But NOT if this is part of a deal creation workflow
+      if (originalUserMessage.toLowerCase().includes('create') ||
+          originalUserMessage.toLowerCase().includes('rfp') ||
+          originalUserMessage.toLowerCase().includes('deal')) {
+        return false; // Continue with deal creation workflow
+      }
       
       if (toolName === 'search_deals' || toolName === 'search_contacts' || 
           toolName === 'search_organizations' || toolName === 'analyze_pipeline') {
