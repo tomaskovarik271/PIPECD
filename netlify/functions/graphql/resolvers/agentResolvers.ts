@@ -6,14 +6,7 @@
 import { GraphQLError } from 'graphql';
 import { supabase } from '../../../../lib/supabaseClient';
 import { AgentService } from '../../../../lib/aiAgent/agentService';
-import type {
-  QueryResolvers,
-  MutationResolvers,
-  AgentConversation as GraphQLAgentConversation,
-  AgentThought as GraphQLAgentThought,
-  AgentResponse as GraphQLAgentResponse,
-} from '../../../../lib/generated/graphql';
-import type {
+import {
   GraphQLContext,
   getAccessToken,
   processZodError,
@@ -39,13 +32,11 @@ const getAgentService = (context: GraphQLContext): AgentService => {
 };
 
 // ================================
-// Query Resolvers
+// Query Resolvers (Simplified)
 // ================================
 
-export const agentQueries: Pick<QueryResolvers<GraphQLContext>, 
-  'agentConversations' | 'agentConversation' | 'agentThoughts' | 'discoverAgentTools'
-> = {
-  agentConversations: async (_parent, args, context) => {
+export const agentQueries = {
+  agentConversations: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'fetching agent conversations';
     try {
       requireAuthentication(context);
@@ -58,18 +49,18 @@ export const agentQueries: Pick<QueryResolvers<GraphQLContext>,
         args.offset || 0
       );
 
-      return conversations.map(conv => ({
+      return conversations.map((conv: any) => ({
         id: conv.id,
         userId: conv.userId,
-        messages: conv.messages.map(msg => ({
+        messages: conv.messages.map((msg: any) => ({
           role: msg.role,
           content: msg.content,
-          timestamp: msg.timestamp.toISOString(),
-          thoughts: msg.thoughts || [],
+          timestamp: msg.timestamp,
+          thoughts: [],
         })),
         plan: conv.plan ? {
           goal: conv.plan.goal,
-          steps: conv.plan.steps.map(step => ({
+          steps: conv.plan.steps.map((step: any) => ({
             id: step.id,
             description: step.description,
             toolName: step.toolName || null,
@@ -81,15 +72,15 @@ export const agentQueries: Pick<QueryResolvers<GraphQLContext>,
           context: conv.plan.context,
         } : null,
         context: conv.context,
-        createdAt: conv.createdAt.toISOString(),
-        updatedAt: conv.updatedAt.toISOString(),
-      })) as GraphQLAgentConversation[];
+        createdAt: conv.createdAt,
+        updatedAt: conv.updatedAt,
+      }));
     } catch (error) {
       throw processZodError(error, action);
     }
   },
 
-  agentConversation: async (_parent, args, context) => {
+  agentConversation: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'fetching agent conversation by ID';
     try {
       requireAuthentication(context);
@@ -102,15 +93,15 @@ export const agentQueries: Pick<QueryResolvers<GraphQLContext>,
       return {
         id: conversation.id,
         userId: conversation.userId,
-        messages: conversation.messages.map(msg => ({
+        messages: conversation.messages.map((msg: any) => ({
           role: msg.role,
           content: msg.content,
-          timestamp: msg.timestamp.toISOString(),
-          thoughts: msg.thoughts || [],
+          timestamp: msg.timestamp,
+          thoughts: [],
         })),
         plan: conversation.plan ? {
           goal: conversation.plan.goal,
-          steps: conversation.plan.steps.map(step => ({
+          steps: conversation.plan.steps.map((step: any) => ({
             id: step.id,
             description: step.description,
             toolName: step.toolName || null,
@@ -122,15 +113,15 @@ export const agentQueries: Pick<QueryResolvers<GraphQLContext>,
           context: conversation.plan.context,
         } : null,
         context: conversation.context,
-        createdAt: conversation.createdAt.toISOString(),
-        updatedAt: conversation.updatedAt.toISOString(),
-      } as GraphQLAgentConversation;
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt,
+      };
     } catch (error) {
       throw processZodError(error, action);
     }
   },
 
-  agentThoughts: async (_parent, args, context) => {
+  agentThoughts: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'fetching agent thoughts';
     try {
       requireAuthentication(context);
@@ -138,20 +129,20 @@ export const agentQueries: Pick<QueryResolvers<GraphQLContext>,
       
       const thoughts = await service.getThoughts(args.conversationId, args.limit || 50);
       
-      return thoughts.map(thought => ({
+      return thoughts.map((thought: any) => ({
         id: thought.id,
         conversationId: thought.conversationId,
         type: thought.type.toUpperCase(),
         content: thought.content,
         metadata: thought.metadata,
-        timestamp: thought.timestamp.toISOString(),
-      })) as GraphQLAgentThought[];
+        timestamp: thought.timestamp,
+      }));
     } catch (error) {
       throw processZodError(error, action);
     }
   },
 
-  discoverAgentTools: async (_parent, _args, context) => {
+  discoverAgentTools: async (_parent: any, _args: any, context: GraphQLContext) => {
     const action = 'discovering agent tools';
     try {
       requireAuthentication(context);
@@ -160,7 +151,7 @@ export const agentQueries: Pick<QueryResolvers<GraphQLContext>,
       try {
         const tools = await service.discoverTools();
         return {
-          tools: tools.map(tool => ({
+          tools: tools.map((tool: any) => ({
             name: tool.name,
             description: tool.description,
             parameters: tool.parameters,
@@ -181,35 +172,45 @@ export const agentQueries: Pick<QueryResolvers<GraphQLContext>,
 };
 
 // ================================
-// Mutation Resolvers
+// Mutation Resolvers (Simplified)
 // ================================
 
-export const agentMutations: Pick<MutationResolvers<GraphQLContext>,
-  'sendAgentMessage' | 'createAgentConversation' | 'updateAgentConversation' | 
-  'addAgentThoughts' | 'deleteAgentConversation' | 'executeAgentStep'
-> = {
-  sendAgentMessage: async (_parent, args, context) => {
+export const agentMutations = {
+  sendAgentMessage: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'sending agent message';
     try {
       requireAuthentication(context);
       const service = getAgentService(context);
       const userId = context.currentUser!.id;
       
-      const response = await service.processMessage(args.input, userId);
+      // Convert GraphQL input to service input
+      const serviceInput = {
+        conversationId: args.input.conversationId || undefined,
+        content: args.input.content,
+        config: args.input.config ? {
+          maxThinkingSteps: args.input.config.maxThinkingSteps || undefined,
+          enableExtendedThinking: args.input.config.enableExtendedThinking || undefined,
+          thinkingBudget: args.input.config.thinkingBudget || undefined,
+          maxClarifyingQuestions: args.input.config.maxClarifyingQuestions || undefined,
+          autoExecute: args.input.config.autoExecute || undefined,
+        } : undefined,
+      };
+      
+      const response = await service.processMessage(serviceInput, userId);
       
       return {
         conversation: {
           id: response.conversation.id,
           userId: response.conversation.userId,
-          messages: response.conversation.messages.map(msg => ({
+          messages: response.conversation.messages.map((msg: any) => ({
             role: msg.role,
             content: msg.content,
-            timestamp: msg.timestamp.toISOString(),
-            thoughts: msg.thoughts || [],
+            timestamp: msg.timestamp,
+            thoughts: [],
           })),
           plan: response.conversation.plan ? {
             goal: response.conversation.plan.goal,
-            steps: response.conversation.plan.steps.map(step => ({
+            steps: response.conversation.plan.steps.map((step: any) => ({
               id: step.id,
               description: step.description,
               toolName: step.toolName || null,
@@ -221,26 +222,26 @@ export const agentMutations: Pick<MutationResolvers<GraphQLContext>,
             context: response.conversation.plan.context,
           } : null,
           context: response.conversation.context,
-          createdAt: response.conversation.createdAt.toISOString(),
-          updatedAt: response.conversation.updatedAt.toISOString(),
+          createdAt: response.conversation.createdAt,
+          updatedAt: response.conversation.updatedAt,
         },
         message: {
           role: response.message.role,
           content: response.message.content,
-          timestamp: response.message.timestamp.toISOString(),
-          thoughts: response.message.thoughts || [],
+          timestamp: response.message.timestamp,
+          thoughts: [],
         },
-        thoughts: response.thoughts.map(thought => ({
+        thoughts: response.thoughts.map((thought: any) => ({
           id: thought.id,
           conversationId: thought.conversationId,
           type: thought.type.toUpperCase(),
           content: thought.content,
           metadata: thought.metadata,
-          timestamp: thought.timestamp.toISOString(),
+          timestamp: thought.timestamp,
         })),
         plan: response.plan ? {
           goal: response.plan.goal,
-          steps: response.plan.steps.map(step => ({
+          steps: response.plan.steps.map((step: any) => ({
             id: step.id,
             description: step.description,
             toolName: step.toolName || null,
@@ -251,13 +252,13 @@ export const agentMutations: Pick<MutationResolvers<GraphQLContext>,
           })),
           context: response.plan.context,
         } : null,
-      } as GraphQLAgentResponse;
+      };
     } catch (error) {
       throw processZodError(error, action);
     }
   },
 
-  createAgentConversation: async (_parent, args, context) => {
+  createAgentConversation: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'creating agent conversation';
     try {
       requireAuthentication(context);
@@ -275,15 +276,15 @@ export const agentMutations: Pick<MutationResolvers<GraphQLContext>,
       return {
         id: conversation.id,
         userId: conversation.userId,
-        messages: conversation.messages.map(msg => ({
+        messages: conversation.messages.map((msg: any) => ({
           role: msg.role,
           content: msg.content,
-          timestamp: msg.timestamp.toISOString(),
-          thoughts: msg.thoughts || [],
+          timestamp: msg.timestamp,
+          thoughts: [],
         })),
         plan: conversation.plan ? {
           goal: conversation.plan.goal,
-          steps: conversation.plan.steps.map(step => ({
+          steps: conversation.plan.steps.map((step: any) => ({
             id: step.id,
             description: step.description,
             toolName: step.toolName || null,
@@ -295,15 +296,15 @@ export const agentMutations: Pick<MutationResolvers<GraphQLContext>,
           context: conversation.plan.context,
         } : null,
         context: conversation.context,
-        createdAt: conversation.createdAt.toISOString(),
-        updatedAt: conversation.updatedAt.toISOString(),
-      } as GraphQLAgentConversation;
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt,
+      };
     } catch (error) {
       throw processZodError(error, action);
     }
   },
 
-  updateAgentConversation: async (_parent, args, context) => {
+  updateAgentConversation: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'updating agent conversation';
     try {
       requireAuthentication(context);
@@ -322,15 +323,15 @@ export const agentMutations: Pick<MutationResolvers<GraphQLContext>,
       return {
         id: conversation.id,
         userId: conversation.userId,
-        messages: conversation.messages.map(msg => ({
+        messages: conversation.messages.map((msg: any) => ({
           role: msg.role,
           content: msg.content,
-          timestamp: msg.timestamp.toISOString(),
-          thoughts: msg.thoughts || [],
+          timestamp: msg.timestamp,
+          thoughts: [],
         })),
         plan: conversation.plan ? {
           goal: conversation.plan.goal,
-          steps: conversation.plan.steps.map(step => ({
+          steps: conversation.plan.steps.map((step: any) => ({
             id: step.id,
             description: step.description,
             toolName: step.toolName || null,
@@ -342,15 +343,15 @@ export const agentMutations: Pick<MutationResolvers<GraphQLContext>,
           context: conversation.plan.context,
         } : null,
         context: conversation.context,
-        createdAt: conversation.createdAt.toISOString(),
-        updatedAt: conversation.updatedAt.toISOString(),
-      } as GraphQLAgentConversation;
+        createdAt: conversation.createdAt,
+        updatedAt: conversation.updatedAt,
+      };
     } catch (error) {
       throw processZodError(error, action);
     }
   },
 
-  addAgentThoughts: async (_parent, args, context) => {
+  addAgentThoughts: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'adding agent thoughts';
     try {
       requireAuthentication(context);
@@ -358,28 +359,28 @@ export const agentMutations: Pick<MutationResolvers<GraphQLContext>,
       
       const thoughts = await service.addThoughts(
         args.conversationId,
-        args.thoughts.map(thought => ({
+        args.thoughts.map((thought: any) => ({
           conversationId: args.conversationId,
-          type: thought.type.toLowerCase() as any,
+          type: thought.type.toLowerCase(),
           content: thought.content,
           metadata: thought.metadata || {},
         }))
       );
 
-      return thoughts.map(thought => ({
+      return thoughts.map((thought: any) => ({
         id: thought.id,
         conversationId: thought.conversationId,
         type: thought.type.toUpperCase(),
         content: thought.content,
         metadata: thought.metadata,
-        timestamp: thought.timestamp.toISOString(),
-      })) as GraphQLAgentThought[];
+        timestamp: thought.timestamp,
+      }));
     } catch (error) {
       throw processZodError(error, action);
     }
   },
 
-  deleteAgentConversation: async (_parent, args, context) => {
+  deleteAgentConversation: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'deleting agent conversation';
     try {
       requireAuthentication(context);
@@ -392,7 +393,7 @@ export const agentMutations: Pick<MutationResolvers<GraphQLContext>,
     }
   },
 
-  executeAgentStep: async (_parent, args, context) => {
+  executeAgentStep: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'executing agent step';
     try {
       requireAuthentication(context);

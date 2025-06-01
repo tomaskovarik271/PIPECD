@@ -104,6 +104,106 @@ export type AdditionalCostInput = {
   description: Scalars["String"]["input"];
 };
 
+export type AgentConfig = {
+  __typename?: "AgentConfig";
+  autoExecute: Scalars["Boolean"]["output"];
+  enableExtendedThinking: Scalars["Boolean"]["output"];
+  maxClarifyingQuestions: Scalars["Int"]["output"];
+  maxThinkingSteps: Scalars["Int"]["output"];
+  thinkingBudget: ThinkingBudget;
+};
+
+export type AgentConfigInput = {
+  autoExecute?: InputMaybe<Scalars["Boolean"]["input"]>;
+  enableExtendedThinking?: InputMaybe<Scalars["Boolean"]["input"]>;
+  maxClarifyingQuestions?: InputMaybe<Scalars["Int"]["input"]>;
+  maxThinkingSteps?: InputMaybe<Scalars["Int"]["input"]>;
+  thinkingBudget?: InputMaybe<ThinkingBudget>;
+};
+
+export type AgentConversation = {
+  __typename?: "AgentConversation";
+  context: Scalars["JSON"]["output"];
+  createdAt: Scalars["DateTime"]["output"];
+  id: Scalars["ID"]["output"];
+  messages: Array<AgentMessage>;
+  plan?: Maybe<AgentPlan>;
+  updatedAt: Scalars["DateTime"]["output"];
+  userId: Scalars["ID"]["output"];
+};
+
+export type AgentMessage = {
+  __typename?: "AgentMessage";
+  content: Scalars["String"]["output"];
+  role: Scalars["String"]["output"];
+  thoughts?: Maybe<Array<AgentThought>>;
+  timestamp: Scalars["DateTime"]["output"];
+};
+
+export type AgentPlan = {
+  __typename?: "AgentPlan";
+  context: Scalars["JSON"]["output"];
+  goal: Scalars["String"]["output"];
+  steps: Array<AgentPlanStep>;
+};
+
+export type AgentPlanStep = {
+  __typename?: "AgentPlanStep";
+  dependencies?: Maybe<Array<Scalars["String"]["output"]>>;
+  description: Scalars["String"]["output"];
+  id: Scalars["String"]["output"];
+  parameters?: Maybe<Scalars["JSON"]["output"]>;
+  result?: Maybe<Scalars["JSON"]["output"]>;
+  status: AgentStepStatus;
+  toolName?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type AgentPlanStepInput = {
+  dependencies?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  description: Scalars["String"]["input"];
+  parameters?: InputMaybe<Scalars["JSON"]["input"]>;
+  toolName?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type AgentResponse = {
+  __typename?: "AgentResponse";
+  conversation: AgentConversation;
+  message: AgentMessage;
+  plan?: Maybe<AgentPlan>;
+  thoughts: Array<AgentThought>;
+};
+
+export enum AgentStepStatus {
+  Completed = "COMPLETED",
+  Failed = "FAILED",
+  InProgress = "IN_PROGRESS",
+  Pending = "PENDING",
+}
+
+export type AgentThought = {
+  __typename?: "AgentThought";
+  content: Scalars["String"]["output"];
+  conversationId: Scalars["ID"]["output"];
+  id: Scalars["ID"]["output"];
+  metadata: Scalars["JSON"]["output"];
+  timestamp: Scalars["DateTime"]["output"];
+  type: AgentThoughtType;
+};
+
+export type AgentThoughtInput = {
+  content: Scalars["String"]["input"];
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  type: AgentThoughtType;
+};
+
+export enum AgentThoughtType {
+  Observation = "OBSERVATION",
+  Plan = "PLAN",
+  Question = "QUESTION",
+  Reasoning = "REASONING",
+  ToolCall = "TOOL_CALL",
+}
+
 export type CreateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -297,9 +397,11 @@ export type InvoiceScheduleEntry = {
 
 export type Mutation = {
   __typename?: "Mutation";
+  addAgentThoughts: Array<AgentThought>;
   /** Calculates a preview of a price quote. dealId is optional. */
   calculatePriceQuotePreview: PriceQuote;
   createActivity: Activity;
+  createAgentConversation: AgentConversation;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
   createOrganization: Organization;
@@ -313,6 +415,7 @@ export type Mutation = {
   createWFMWorkflowTransition: WfmWorkflowTransition;
   deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteActivity: Scalars["ID"]["output"];
+  deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
@@ -321,8 +424,11 @@ export type Mutation = {
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
+  executeAgentStep: AgentResponse;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
+  sendAgentMessage: AgentResponse;
   updateActivity: Activity;
+  updateAgentConversation: AgentConversation;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateDealWFMProgress: Deal;
@@ -340,6 +446,11 @@ export type Mutation = {
   updateWFMWorkflowTransition: WfmWorkflowTransition;
 };
 
+export type MutationAddAgentThoughtsArgs = {
+  conversationId: Scalars["ID"]["input"];
+  thoughts: Array<AgentThoughtInput>;
+};
+
 export type MutationCalculatePriceQuotePreviewArgs = {
   dealId?: InputMaybe<Scalars["ID"]["input"]>;
   input: PriceQuoteUpdateInput;
@@ -347,6 +458,10 @@ export type MutationCalculatePriceQuotePreviewArgs = {
 
 export type MutationCreateActivityArgs = {
   input: CreateActivityInput;
+};
+
+export type MutationCreateAgentConversationArgs = {
+  config?: InputMaybe<AgentConfigInput>;
 };
 
 export type MutationCreateCustomFieldDefinitionArgs = {
@@ -398,6 +513,10 @@ export type MutationDeleteActivityArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteAgentConversationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteDealArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -426,13 +545,26 @@ export type MutationDeleteWfmStatusArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationExecuteAgentStepArgs = {
+  conversationId: Scalars["ID"]["input"];
+  stepId: Scalars["String"]["input"];
+};
+
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type MutationSendAgentMessageArgs = {
+  input: SendMessageInput;
 };
 
 export type MutationUpdateActivityArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateActivityInput;
+};
+
+export type MutationUpdateAgentConversationArgs = {
+  input: UpdateConversationInput;
 };
 
 export type MutationUpdateCustomFieldDefinitionArgs = {
@@ -643,10 +775,14 @@ export type Query = {
   __typename?: "Query";
   activities: Array<Activity>;
   activity?: Maybe<Activity>;
+  agentConversation?: Maybe<AgentConversation>;
+  agentConversations: Array<AgentConversation>;
+  agentThoughts: Array<AgentThought>;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
+  discoverAgentTools: ToolDiscoveryResponse;
   /**
    * Get AI-powered activity recommendations for a specific deal.
    * Analyzes deal context, contact information, recent activities, and workflow status
@@ -683,6 +819,20 @@ export type QueryActivitiesArgs = {
 
 export type QueryActivityArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryAgentConversationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryAgentConversationsArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryAgentThoughtsArgs = {
+  conversationId: Scalars["ID"]["input"];
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryCustomFieldDefinitionArgs = {
@@ -751,11 +901,50 @@ export type QueryWfmWorkflowsArgs = {
   isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
+export type SendMessageInput = {
+  config?: InputMaybe<AgentConfigInput>;
+  content: Scalars["String"]["input"];
+  conversationId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
 export enum StageType {
   Lost = "LOST",
   Open = "OPEN",
   Won = "WON",
 }
+
+export type Subscription = {
+  __typename?: "Subscription";
+  agentConversationUpdated: AgentConversation;
+  agentPlanUpdated: AgentPlan;
+  agentThoughtsAdded: Array<AgentThought>;
+};
+
+export type SubscriptionAgentConversationUpdatedArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionAgentPlanUpdatedArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionAgentThoughtsAddedArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export enum ThinkingBudget {
+  Standard = "STANDARD",
+  Think = "THINK",
+  ThinkHard = "THINK_HARD",
+  ThinkHarder = "THINK_HARDER",
+  Ultrathink = "ULTRATHINK",
+}
+
+export type ToolDiscoveryResponse = {
+  __typename?: "ToolDiscoveryResponse";
+  error?: Maybe<Scalars["String"]["output"]>;
+  tools: Array<Scalars["JSON"]["output"]>;
+};
 
 export type UpdateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
@@ -766,6 +955,12 @@ export type UpdateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject?: InputMaybe<Scalars["String"]["input"]>;
   type?: InputMaybe<ActivityType>;
+};
+
+export type UpdateConversationInput = {
+  context?: InputMaybe<Scalars["JSON"]["input"]>;
+  conversationId: Scalars["ID"]["input"];
+  plan?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
 /**

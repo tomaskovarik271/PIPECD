@@ -113,6 +113,106 @@ export type AdditionalCostInput = {
   description: Scalars["String"]["input"];
 };
 
+export type AgentConfig = {
+  __typename?: "AgentConfig";
+  autoExecute: Scalars["Boolean"]["output"];
+  enableExtendedThinking: Scalars["Boolean"]["output"];
+  maxClarifyingQuestions: Scalars["Int"]["output"];
+  maxThinkingSteps: Scalars["Int"]["output"];
+  thinkingBudget: ThinkingBudget;
+};
+
+export type AgentConfigInput = {
+  autoExecute?: InputMaybe<Scalars["Boolean"]["input"]>;
+  enableExtendedThinking?: InputMaybe<Scalars["Boolean"]["input"]>;
+  maxClarifyingQuestions?: InputMaybe<Scalars["Int"]["input"]>;
+  maxThinkingSteps?: InputMaybe<Scalars["Int"]["input"]>;
+  thinkingBudget?: InputMaybe<ThinkingBudget>;
+};
+
+export type AgentConversation = {
+  __typename?: "AgentConversation";
+  context: Scalars["JSON"]["output"];
+  createdAt: Scalars["DateTime"]["output"];
+  id: Scalars["ID"]["output"];
+  messages: Array<AgentMessage>;
+  plan?: Maybe<AgentPlan>;
+  updatedAt: Scalars["DateTime"]["output"];
+  userId: Scalars["ID"]["output"];
+};
+
+export type AgentMessage = {
+  __typename?: "AgentMessage";
+  content: Scalars["String"]["output"];
+  role: Scalars["String"]["output"];
+  thoughts?: Maybe<Array<AgentThought>>;
+  timestamp: Scalars["DateTime"]["output"];
+};
+
+export type AgentPlan = {
+  __typename?: "AgentPlan";
+  context: Scalars["JSON"]["output"];
+  goal: Scalars["String"]["output"];
+  steps: Array<AgentPlanStep>;
+};
+
+export type AgentPlanStep = {
+  __typename?: "AgentPlanStep";
+  dependencies?: Maybe<Array<Scalars["String"]["output"]>>;
+  description: Scalars["String"]["output"];
+  id: Scalars["String"]["output"];
+  parameters?: Maybe<Scalars["JSON"]["output"]>;
+  result?: Maybe<Scalars["JSON"]["output"]>;
+  status: AgentStepStatus;
+  toolName?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type AgentPlanStepInput = {
+  dependencies?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  description: Scalars["String"]["input"];
+  parameters?: InputMaybe<Scalars["JSON"]["input"]>;
+  toolName?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type AgentResponse = {
+  __typename?: "AgentResponse";
+  conversation: AgentConversation;
+  message: AgentMessage;
+  plan?: Maybe<AgentPlan>;
+  thoughts: Array<AgentThought>;
+};
+
+export enum AgentStepStatus {
+  Completed = "COMPLETED",
+  Failed = "FAILED",
+  InProgress = "IN_PROGRESS",
+  Pending = "PENDING",
+}
+
+export type AgentThought = {
+  __typename?: "AgentThought";
+  content: Scalars["String"]["output"];
+  conversationId: Scalars["ID"]["output"];
+  id: Scalars["ID"]["output"];
+  metadata: Scalars["JSON"]["output"];
+  timestamp: Scalars["DateTime"]["output"];
+  type: AgentThoughtType;
+};
+
+export type AgentThoughtInput = {
+  content: Scalars["String"]["input"];
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  type: AgentThoughtType;
+};
+
+export enum AgentThoughtType {
+  Observation = "OBSERVATION",
+  Plan = "PLAN",
+  Question = "QUESTION",
+  Reasoning = "REASONING",
+  ToolCall = "TOOL_CALL",
+}
+
 export type CreateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -306,9 +406,11 @@ export type InvoiceScheduleEntry = {
 
 export type Mutation = {
   __typename?: "Mutation";
+  addAgentThoughts: Array<AgentThought>;
   /** Calculates a preview of a price quote. dealId is optional. */
   calculatePriceQuotePreview: PriceQuote;
   createActivity: Activity;
+  createAgentConversation: AgentConversation;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
   createOrganization: Organization;
@@ -322,6 +424,7 @@ export type Mutation = {
   createWFMWorkflowTransition: WfmWorkflowTransition;
   deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteActivity: Scalars["ID"]["output"];
+  deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
@@ -330,8 +433,11 @@ export type Mutation = {
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
+  executeAgentStep: AgentResponse;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
+  sendAgentMessage: AgentResponse;
   updateActivity: Activity;
+  updateAgentConversation: AgentConversation;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateDealWFMProgress: Deal;
@@ -349,6 +455,11 @@ export type Mutation = {
   updateWFMWorkflowTransition: WfmWorkflowTransition;
 };
 
+export type MutationAddAgentThoughtsArgs = {
+  conversationId: Scalars["ID"]["input"];
+  thoughts: Array<AgentThoughtInput>;
+};
+
 export type MutationCalculatePriceQuotePreviewArgs = {
   dealId?: InputMaybe<Scalars["ID"]["input"]>;
   input: PriceQuoteUpdateInput;
@@ -356,6 +467,10 @@ export type MutationCalculatePriceQuotePreviewArgs = {
 
 export type MutationCreateActivityArgs = {
   input: CreateActivityInput;
+};
+
+export type MutationCreateAgentConversationArgs = {
+  config?: InputMaybe<AgentConfigInput>;
 };
 
 export type MutationCreateCustomFieldDefinitionArgs = {
@@ -407,6 +522,10 @@ export type MutationDeleteActivityArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteAgentConversationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteDealArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -435,13 +554,26 @@ export type MutationDeleteWfmStatusArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationExecuteAgentStepArgs = {
+  conversationId: Scalars["ID"]["input"];
+  stepId: Scalars["String"]["input"];
+};
+
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type MutationSendAgentMessageArgs = {
+  input: SendMessageInput;
 };
 
 export type MutationUpdateActivityArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateActivityInput;
+};
+
+export type MutationUpdateAgentConversationArgs = {
+  input: UpdateConversationInput;
 };
 
 export type MutationUpdateCustomFieldDefinitionArgs = {
@@ -652,10 +784,14 @@ export type Query = {
   __typename?: "Query";
   activities: Array<Activity>;
   activity?: Maybe<Activity>;
+  agentConversation?: Maybe<AgentConversation>;
+  agentConversations: Array<AgentConversation>;
+  agentThoughts: Array<AgentThought>;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
+  discoverAgentTools: ToolDiscoveryResponse;
   /**
    * Get AI-powered activity recommendations for a specific deal.
    * Analyzes deal context, contact information, recent activities, and workflow status
@@ -692,6 +828,20 @@ export type QueryActivitiesArgs = {
 
 export type QueryActivityArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryAgentConversationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryAgentConversationsArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryAgentThoughtsArgs = {
+  conversationId: Scalars["ID"]["input"];
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryCustomFieldDefinitionArgs = {
@@ -760,11 +910,50 @@ export type QueryWfmWorkflowsArgs = {
   isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
+export type SendMessageInput = {
+  config?: InputMaybe<AgentConfigInput>;
+  content: Scalars["String"]["input"];
+  conversationId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
 export enum StageType {
   Lost = "LOST",
   Open = "OPEN",
   Won = "WON",
 }
+
+export type Subscription = {
+  __typename?: "Subscription";
+  agentConversationUpdated: AgentConversation;
+  agentPlanUpdated: AgentPlan;
+  agentThoughtsAdded: Array<AgentThought>;
+};
+
+export type SubscriptionAgentConversationUpdatedArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionAgentPlanUpdatedArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionAgentThoughtsAddedArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export enum ThinkingBudget {
+  Standard = "STANDARD",
+  Think = "THINK",
+  ThinkHard = "THINK_HARD",
+  ThinkHarder = "THINK_HARDER",
+  Ultrathink = "ULTRATHINK",
+}
+
+export type ToolDiscoveryResponse = {
+  __typename?: "ToolDiscoveryResponse";
+  error?: Maybe<Scalars["String"]["output"]>;
+  tools: Array<Scalars["JSON"]["output"]>;
+};
 
 export type UpdateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
@@ -775,6 +964,12 @@ export type UpdateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject?: InputMaybe<Scalars["String"]["input"]>;
   type?: InputMaybe<ActivityType>;
+};
+
+export type UpdateConversationInput = {
+  context?: InputMaybe<Scalars["JSON"]["input"]>;
+  conversationId: Scalars["ID"]["input"];
+  plan?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
 /**
@@ -1046,6 +1241,18 @@ export type ResolversTypes = {
   ActivityType: ActivityType;
   AdditionalCost: ResolverTypeWrapper<AdditionalCost>;
   AdditionalCostInput: AdditionalCostInput;
+  AgentConfig: ResolverTypeWrapper<AgentConfig>;
+  AgentConfigInput: AgentConfigInput;
+  AgentConversation: ResolverTypeWrapper<AgentConversation>;
+  AgentMessage: ResolverTypeWrapper<AgentMessage>;
+  AgentPlan: ResolverTypeWrapper<AgentPlan>;
+  AgentPlanStep: ResolverTypeWrapper<AgentPlanStep>;
+  AgentPlanStepInput: AgentPlanStepInput;
+  AgentResponse: ResolverTypeWrapper<AgentResponse>;
+  AgentStepStatus: AgentStepStatus;
+  AgentThought: ResolverTypeWrapper<AgentThought>;
+  AgentThoughtInput: AgentThoughtInput;
+  AgentThoughtType: AgentThoughtType;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
   CreateActivityInput: CreateActivityInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
@@ -1084,9 +1291,14 @@ export type ResolversTypes = {
   PriceQuoteCreateInput: PriceQuoteCreateInput;
   PriceQuoteUpdateInput: PriceQuoteUpdateInput;
   Query: ResolverTypeWrapper<{}>;
+  SendMessageInput: SendMessageInput;
   StageType: StageType;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
+  Subscription: ResolverTypeWrapper<{}>;
+  ThinkingBudget: ThinkingBudget;
+  ToolDiscoveryResponse: ResolverTypeWrapper<ToolDiscoveryResponse>;
   UpdateActivityInput: UpdateActivityInput;
+  UpdateConversationInput: UpdateConversationInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
@@ -1113,6 +1325,16 @@ export type ResolversParentTypes = {
   ActivityFilterInput: ActivityFilterInput;
   AdditionalCost: AdditionalCost;
   AdditionalCostInput: AdditionalCostInput;
+  AgentConfig: AgentConfig;
+  AgentConfigInput: AgentConfigInput;
+  AgentConversation: AgentConversation;
+  AgentMessage: AgentMessage;
+  AgentPlan: AgentPlan;
+  AgentPlanStep: AgentPlanStep;
+  AgentPlanStepInput: AgentPlanStepInput;
+  AgentResponse: AgentResponse;
+  AgentThought: AgentThought;
+  AgentThoughtInput: AgentThoughtInput;
   Boolean: Scalars["Boolean"]["output"];
   CreateActivityInput: CreateActivityInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
@@ -1149,8 +1371,12 @@ export type ResolversParentTypes = {
   PriceQuoteCreateInput: PriceQuoteCreateInput;
   PriceQuoteUpdateInput: PriceQuoteUpdateInput;
   Query: {};
+  SendMessageInput: SendMessageInput;
   String: Scalars["String"]["output"];
+  Subscription: {};
+  ToolDiscoveryResponse: ToolDiscoveryResponse;
   UpdateActivityInput: UpdateActivityInput;
+  UpdateConversationInput: UpdateConversationInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
@@ -1263,6 +1489,134 @@ export type AdditionalCostResolvers<
   description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgentConfigResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AgentConfig"] = ResolversParentTypes["AgentConfig"],
+> = {
+  autoExecute?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  enableExtendedThinking?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  maxClarifyingQuestions?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  maxThinkingSteps?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  thinkingBudget?: Resolver<
+    ResolversTypes["ThinkingBudget"],
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgentConversationResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AgentConversation"] = ResolversParentTypes["AgentConversation"],
+> = {
+  context?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  messages?: Resolver<
+    Array<ResolversTypes["AgentMessage"]>,
+    ParentType,
+    ContextType
+  >;
+  plan?: Resolver<Maybe<ResolversTypes["AgentPlan"]>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgentMessageResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AgentMessage"] = ResolversParentTypes["AgentMessage"],
+> = {
+  content?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  role?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  thoughts?: Resolver<
+    Maybe<Array<ResolversTypes["AgentThought"]>>,
+    ParentType,
+    ContextType
+  >;
+  timestamp?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgentPlanResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AgentPlan"] = ResolversParentTypes["AgentPlan"],
+> = {
+  context?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  goal?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  steps?: Resolver<
+    Array<ResolversTypes["AgentPlanStep"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgentPlanStepResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AgentPlanStep"] = ResolversParentTypes["AgentPlanStep"],
+> = {
+  dependencies?: Resolver<
+    Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  parameters?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  result?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  status?: Resolver<ResolversTypes["AgentStepStatus"], ParentType, ContextType>;
+  toolName?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgentResponseResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AgentResponse"] = ResolversParentTypes["AgentResponse"],
+> = {
+  conversation?: Resolver<
+    ResolversTypes["AgentConversation"],
+    ParentType,
+    ContextType
+  >;
+  message?: Resolver<ResolversTypes["AgentMessage"], ParentType, ContextType>;
+  plan?: Resolver<Maybe<ResolversTypes["AgentPlan"]>, ParentType, ContextType>;
+  thoughts?: Resolver<
+    Array<ResolversTypes["AgentThought"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgentThoughtResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AgentThought"] = ResolversParentTypes["AgentThought"],
+> = {
+  content?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  conversationId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  metadata?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  timestamp?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes["AgentThoughtType"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1485,6 +1839,12 @@ export type MutationResolvers<
   ParentType extends
     ResolversParentTypes["Mutation"] = ResolversParentTypes["Mutation"],
 > = {
+  addAgentThoughts?: Resolver<
+    Array<ResolversTypes["AgentThought"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationAddAgentThoughtsArgs, "conversationId" | "thoughts">
+  >;
   calculatePriceQuotePreview?: Resolver<
     ResolversTypes["PriceQuote"],
     ParentType,
@@ -1496,6 +1856,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateActivityArgs, "input">
+  >;
+  createAgentConversation?: Resolver<
+    ResolversTypes["AgentConversation"],
+    ParentType,
+    ContextType,
+    Partial<MutationCreateAgentConversationArgs>
   >;
   createCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
@@ -1569,6 +1935,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteActivityArgs, "id">
   >;
+  deleteAgentConversation?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteAgentConversationArgs, "id">
+  >;
   deleteDeal?: Resolver<
     Maybe<ResolversTypes["Boolean"]>,
     ParentType,
@@ -1611,17 +1983,35 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteWfmStatusArgs, "id">
   >;
+  executeAgentStep?: Resolver<
+    ResolversTypes["AgentResponse"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationExecuteAgentStepArgs, "conversationId" | "stepId">
+  >;
   reactivateCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
     ParentType,
     ContextType,
     RequireFields<MutationReactivateCustomFieldDefinitionArgs, "id">
   >;
+  sendAgentMessage?: Resolver<
+    ResolversTypes["AgentResponse"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationSendAgentMessageArgs, "input">
+  >;
   updateActivity?: Resolver<
     ResolversTypes["Activity"],
     ParentType,
     ContextType,
     RequireFields<MutationUpdateActivityArgs, "id" | "input">
+  >;
+  updateAgentConversation?: Resolver<
+    ResolversTypes["AgentConversation"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateAgentConversationArgs, "input">
   >;
   updateCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
@@ -1920,6 +2310,24 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryActivityArgs, "id">
   >;
+  agentConversation?: Resolver<
+    Maybe<ResolversTypes["AgentConversation"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryAgentConversationArgs, "id">
+  >;
+  agentConversations?: Resolver<
+    Array<ResolversTypes["AgentConversation"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryAgentConversationsArgs, "limit" | "offset">
+  >;
+  agentThoughts?: Resolver<
+    Array<ResolversTypes["AgentThought"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryAgentThoughtsArgs, "conversationId" | "limit">
+  >;
   customFieldDefinition?: Resolver<
     Maybe<ResolversTypes["CustomFieldDefinition"]>,
     ParentType,
@@ -1942,6 +2350,11 @@ export type QueryResolvers<
     RequireFields<QueryDealArgs, "id">
   >;
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
+  discoverAgentTools?: Resolver<
+    ResolversTypes["ToolDiscoveryResponse"],
+    ParentType,
+    ContextType
+  >;
   getAIActivityRecommendations?: Resolver<
     ResolversTypes["AIActivityRecommendationsResponse"],
     ParentType,
@@ -2047,6 +2460,44 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryWfmWorkflowsArgs, "isArchived">
   >;
+};
+
+export type SubscriptionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["Subscription"] = ResolversParentTypes["Subscription"],
+> = {
+  agentConversationUpdated?: SubscriptionResolver<
+    ResolversTypes["AgentConversation"],
+    "agentConversationUpdated",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionAgentConversationUpdatedArgs, "conversationId">
+  >;
+  agentPlanUpdated?: SubscriptionResolver<
+    ResolversTypes["AgentPlan"],
+    "agentPlanUpdated",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionAgentPlanUpdatedArgs, "conversationId">
+  >;
+  agentThoughtsAdded?: SubscriptionResolver<
+    Array<ResolversTypes["AgentThought"]>,
+    "agentThoughtsAdded",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionAgentThoughtsAddedArgs, "conversationId">
+  >;
+};
+
+export type ToolDiscoveryResponseResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["ToolDiscoveryResponse"] = ResolversParentTypes["ToolDiscoveryResponse"],
+> = {
+  error?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  tools?: Resolver<Array<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type UserResolvers<
@@ -2288,6 +2739,13 @@ export type Resolvers<ContextType = GraphQLContext> = {
   AIActivityRecommendationsResponse?: AiActivityRecommendationsResponseResolvers<ContextType>;
   Activity?: ActivityResolvers<ContextType>;
   AdditionalCost?: AdditionalCostResolvers<ContextType>;
+  AgentConfig?: AgentConfigResolvers<ContextType>;
+  AgentConversation?: AgentConversationResolvers<ContextType>;
+  AgentMessage?: AgentMessageResolvers<ContextType>;
+  AgentPlan?: AgentPlanResolvers<ContextType>;
+  AgentPlanStep?: AgentPlanStepResolvers<ContextType>;
+  AgentResponse?: AgentResponseResolvers<ContextType>;
+  AgentThought?: AgentThoughtResolvers<ContextType>;
   CustomFieldDefinition?: CustomFieldDefinitionResolvers<ContextType>;
   CustomFieldOption?: CustomFieldOptionResolvers<ContextType>;
   CustomFieldValue?: CustomFieldValueResolvers<ContextType>;
@@ -2303,6 +2761,8 @@ export type Resolvers<ContextType = GraphQLContext> = {
   PersonListItem?: PersonListItemResolvers<ContextType>;
   PriceQuote?: PriceQuoteResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  Subscription?: SubscriptionResolvers<ContextType>;
+  ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   WFMProject?: WfmProjectResolvers<ContextType>;
   WFMProjectType?: WfmProjectTypeResolvers<ContextType>;
