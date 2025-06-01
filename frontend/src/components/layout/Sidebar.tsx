@@ -37,6 +37,7 @@ const NAV_ITEMS = [
   { path: '/people', label: 'People', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
+  { path: '/agent', label: 'AI Assistant', icon: <InfoOutlineIcon /> },
 ];
 
 const ADMIN_NAV_ITEMS = [

@@ -12,6 +12,7 @@ import ActivitiesPage from './pages/ActivitiesPage';
 import ActivityDetailPage from './pages/ActivityDetailPage';
 import DealDetailPage from './pages/DealDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import AgentPage from './pages/AgentPage';
 import CustomFieldsPage from './pages/admin/CustomFieldsPage';
 import WfmAdminPage from './pages/admin/WfmAdminPage';
 import WFMStatusesPage from './pages/admin/WFMStatusesPage';
@@ -69,6 +70,7 @@ function AppContent() {
             <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
+            <Route path="/agent" element={<AgentPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/admin/wfm" element={<WfmAdminPage />}>
