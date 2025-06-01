@@ -916,26 +916,8 @@ The deal has been added to your pipeline and is ready for further customization.
               assistantMessage.content += '\n\n' + toolResults.join('\n\n');
             }
 
-            // Check if Claude wants to continue working after seeing tool results
-            const shouldContinue = await this.checkIfContinuationNeeded(
-              conversation,
-              assistantMessage,
-              toolResults,
-              availableTools
-            );
-
-            if (shouldContinue) {
-              const continuationResponse = await this.continueAutonomousWork(
-                conversation,
-                assistantMessage,
-                toolResults,
-                availableTools
-              );
-              
-              if (continuationResponse) {
-                assistantMessage.content += '\n\n' + continuationResponse;
-              }
-            }
+            // Claude 4 handles all autonomous decisions in the initial response
+            // No need for continuation checking - Claude decides everything autonomously
           }
 
         } catch (aiError) {
@@ -1075,92 +1057,6 @@ The deal has been added to your pipeline and is ready for further customization.
     }
 
     return toolResults;
-  }
-
-  /**
-   * Ask Claude if it wants to continue working after seeing tool results
-   * This replaces hardcoded follow-up detection with AI reasoning
-   */
-  private async checkIfContinuationNeeded(
-    conversation: AgentConversation,
-    currentResponse: AgentMessage,
-    toolResults: string[],
-    availableTools: MCPTool[]
-  ): Promise<boolean> {
-    if (!this.aiService) return false;
-
-    try {
-      const prompt = `Based on the current conversation and tool results, do you need to continue working to fully complete the user's request?
-
-Current response: "${currentResponse.content}"
-
-Tool results:
-${toolResults.join('\n')}
-
-Available tools: ${availableTools.map(t => t.name).join(', ')}
-
-Reply with just "YES" if you need to continue working, or "NO" if the task is complete.`;
-
-      const response = await this.aiService.generateResponse(
-        prompt,
-        conversation.messages,
-        {},
-        [],
-        { type: 'continuation_check' }
-      );
-
-      return response.content.toLowerCase().includes('yes');
-    } catch (error) {
-      console.error('Error checking continuation need:', error);
-      return false;
-    }
-  }
-
-  /**
-   * Let Claude continue working autonomously if it decides more work is needed
-   */
-  private async continueAutonomousWork(
-    conversation: AgentConversation,
-    currentResponse: AgentMessage,
-    toolResults: string[],
-    availableTools: MCPTool[]
-  ): Promise<string | null> {
-    if (!this.aiService) return null;
-
-    try {
-      const prompt = `Continue working to complete the user's request. You have these tool results:
-
-${toolResults.join('\n')}
-
-Current response: "${currentResponse.content}"
-
-What should you do next? Use tools if needed to complete the task fully.`;
-
-      const response = await this.aiService.generateResponse(
-        prompt,
-        conversation.messages,
-        {},
-        availableTools,
-        { type: 'autonomous_continuation' }
-      );
-
-      // Execute any additional tool calls Claude suggests
-      if (response.toolCalls && response.toolCalls.length > 0) {
-        const additionalResults = await this.executeToolsAutonomously(
-          response.toolCalls,
-          conversation,
-          'continuation',
-          response.content
-        );
-        
-        return response.content + '\n\n' + additionalResults.join('\n\n');
-      }
-
-      return response.content;
-    } catch (error) {
-      console.error('Error in autonomous continuation:', error);
-      return null;
-    }
   }
 
   // ================================
