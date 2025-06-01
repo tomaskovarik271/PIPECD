@@ -31,6 +31,7 @@ export class AgentService {
   private availableTools: Map<string, MCPTool> = new Map();
   private aiService: AIService | null = null;
   private accessToken: string | null = null;
+  private emitThoughtUpdate?: (conversationId: string, thought: any) => void;
 
   constructor(
     supabase: SupabaseClient<Database>,
@@ -56,6 +57,11 @@ export class AgentService {
   // Set access token for tool calls
   setAccessToken(token: string | null) {
     this.accessToken = token;
+  }
+
+  // Set callback for real-time thought updates (WebSocket/SSE integration)
+  setThoughtUpdateCallback(callback: (conversationId: string, thought: any) => void) {
+    this.emitThoughtUpdate = callback;
   }
 
   // ================================
@@ -1038,6 +1044,16 @@ The deal has been added to your pipeline and is ready for further customization.
             },
           }]);
 
+          // For real-time updates: emit thought immediately (future implementation for WebSockets/SSE)
+          this.emitThoughtUpdate?.(conversation.id, {
+            type: 'tool_call',
+            content: `Claude autonomously executed ${currentTool.toolName}`,
+            toolName: currentTool.toolName,
+            parameters: currentTool.parameters,
+            result: toolResponse.result,
+            timestamp: new Date(),
+          });
+
         } else {
           toolResultText = `❌ **${currentTool.toolName}** failed: ${toolResponse.error}`;
           allToolResults.push(toolResultText);
@@ -1060,13 +1076,25 @@ The deal has been added to your pipeline and is ready for further customization.
 
         // Call Claude again with the tool result to see if more actions are needed
         if (this.aiService && remainingTools.length === 0) {
+          // Check if the task appears to be complete based on the tool result
+          const taskComplete = this.isTaskComplete(currentTool.toolName, toolResultText, originalUserMessage);
+          
+          if (taskComplete) {
+            console.log('Task appears complete, stopping sequential execution');
+            break;
+          }
+          
           const followUpPrompt = `The tool ${currentTool.toolName} has been executed with the following result:
 
 ${toolResultText}
 
 Original user request: "${originalUserMessage}"
 
-Based on this result, do you need to execute any additional tools to complete the user's request? If so, please make the appropriate tool call.`;
+IMPORTANT: Only suggest additional tools if they are NECESSARY to complete the original user request.
+
+If the user's request has been fulfilled (e.g., deal created, information provided), respond with "TASK_COMPLETE" and do not suggest any more tools.
+
+Based on this result, do you need to execute any additional tools to complete the user's request? If not, respond with "TASK_COMPLETE". If yes, make the appropriate tool call.`;
 
           const followUpResponse = await this.aiService.generateResponse(
             followUpPrompt,
@@ -1082,6 +1110,14 @@ Based on this result, do you need to execute any additional tools to complete th
 
           // Update current response
           currentResponse = followUpResponse.content;
+
+          // Check if Claude indicates the task is complete
+          if (followUpResponse.content.includes('TASK_COMPLETE') || 
+              followUpResponse.content.toLowerCase().includes('task is complete') ||
+              followUpResponse.content.toLowerCase().includes('request has been fulfilled')) {
+            console.log('Claude indicates task is complete, stopping sequential execution');
+            break;
+          }
 
           // If Claude suggests more tools, add them to the queue
           if (followUpResponse.toolCalls && followUpResponse.toolCalls.length > 0) {
@@ -1236,5 +1272,36 @@ Based on this result, do you need to execute any additional tools to complete th
       metadata: JSON.parse(dbThought.metadata),
       timestamp: new Date(dbThought.timestamp),
     };
+  }
+
+  private isTaskComplete(toolName: string, toolResultText: string, originalUserMessage: string): boolean {
+    // Deal creation requests - check if deal was successfully created
+    if (originalUserMessage.toLowerCase().includes('create deal') || 
+        originalUserMessage.toLowerCase().includes('rfp') ||
+        originalUserMessage.toLowerCase().includes('new deal')) {
+      
+      if (toolName === 'create_deal' && toolResultText.includes('✅ Deal created successfully')) {
+        return true; // Deal creation task is complete
+      }
+    }
+    
+    // Search/analysis requests - if we got results, task is likely complete
+    if (originalUserMessage.toLowerCase().includes('search') ||
+        originalUserMessage.toLowerCase().includes('find') ||
+        originalUserMessage.toLowerCase().includes('analyze') ||
+        originalUserMessage.toLowerCase().includes('pipeline')) {
+      
+      if (toolName === 'search_deals' || toolName === 'search_contacts' || 
+          toolName === 'search_organizations' || toolName === 'analyze_pipeline') {
+        return true; // Search/analysis task is complete after first result
+      }
+    }
+    
+    // If we just got details about something, that's usually complete
+    if (toolName === 'get_deal_details' && !toolResultText.includes('not found')) {
+      return true;
+    }
+    
+    return false; // Continue execution for other cases
   }
 } 
