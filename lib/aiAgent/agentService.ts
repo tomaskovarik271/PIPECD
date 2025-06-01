@@ -331,6 +331,18 @@ export class AgentService {
           required: ['name'],
         },
       },
+      {
+        name: 'search_users',
+        description: 'Find users by name or email to assign deals and tasks',
+        parameters: {
+          type: 'object',
+          properties: {
+            search_term: { type: 'string', description: 'Search term to find users by name or email' },
+            limit: { type: 'number', description: 'Maximum number of users to return', default: 10 },
+          },
+          required: ['search_term'],
+        },
+      },
     ];
   }
 
@@ -784,7 +796,14 @@ ${deal.person?.notes ? `Contact: ${deal.person.notes}` : ''}`;
         if (amount !== undefined) input.amount = amount;
         if (person_id) input.person_id = person_id;
         if (organization_id) input.organization_id = organization_id;
-        if (expected_close_date) input.expected_close_date = expected_close_date;
+        // Smart default: Set expected close date to 30 days from now if not specified
+        if (expected_close_date) {
+          input.expected_close_date = expected_close_date;
+        } else {
+          const defaultCloseDate = new Date();
+          defaultCloseDate.setDate(defaultCloseDate.getDate() + 30);
+          input.expected_close_date = defaultCloseDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+        }
         if (assigned_to_user_id) input.assignedToUserId = assigned_to_user_id;
 
         const result = await executeGraphQL(mutation, { input });
@@ -810,6 +829,62 @@ ${deal.person?.notes ? `Contact: ${deal.person.notes}` : ''}`;
 - Deal ID: ${deal.id}
 
 The deal has been added to your pipeline and is ready for further customization.`;
+      }
+
+      case 'search_users': {
+        const { search_term, limit = 10 } = parameters;
+        
+        const query = `
+          query GetUsers {
+            userProfiles {
+              id
+              display_name
+              email
+              first_name
+              last_name
+              role
+              created_at
+            }
+          }
+        `;
+
+        const result = await executeGraphQL(query);
+        let users = result.data?.userProfiles || [];
+
+        // Apply client-side filtering
+        if (search_term) {
+          const searchLower = search_term.toLowerCase();
+          users = users.filter((user: any) => {
+            const displayName = (user.display_name || '').toLowerCase();
+            const email = (user.email || '').toLowerCase();
+            const firstName = (user.first_name || '').toLowerCase();
+            const lastName = (user.last_name || '').toLowerCase();
+            const fullName = `${firstName} ${lastName}`.toLowerCase();
+            
+            return displayName.includes(searchLower) || 
+                   email.includes(searchLower) || 
+                   fullName.includes(searchLower) ||
+                   firstName.includes(searchLower) ||
+                   lastName.includes(searchLower);
+          });
+        }
+
+        // Sort by display_name and limit
+        users.sort((a: any, b: any) => (a.display_name || a.email || '').localeCompare(b.display_name || b.email || ''));
+        users = users.slice(0, limit);
+
+        const summary = `Found ${users.length} users${search_term ? ` matching "${search_term}"` : ''}`;
+        
+        const usersList = users.map((user: any) => {
+          const name = user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'No name';
+          const email = user.email ? ` | ${user.email}` : '';
+          const role = user.role ? ` | ${user.role}` : '';
+          const created = new Date(user.created_at).toLocaleDateString();
+          return `• ${name}${email}${role}
+  ID: ${user.id} | Joined: ${created}`;
+        }).join('\n');
+
+        return `${summary}\n\n${usersList || 'No users found.'}`;
       }
 
       default:
