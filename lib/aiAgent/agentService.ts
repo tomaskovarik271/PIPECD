@@ -44,7 +44,7 @@ export class AgentService {
     if (anthropicApiKey) {
       this.aiService = new AIService({
         apiKey: anthropicApiKey,
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-20250514', // Claude 4 Sonnet (May 2025)
         maxTokens: 4096,
         temperature: 0.7,
       });
@@ -857,19 +857,23 @@ The deal has been added to your pipeline and is ready for further customization.
         console.warn('Could not discover tools, continuing without them:', error);
       }
 
-      // Generate AI response
+      // Generate AI response with Claude 4's autonomous reasoning
       let assistantMessage: AgentMessage;
       let aiThoughts: AgentThought[] = [];
 
       if (this.aiService) {
-        // Use real AI service with native tool calling
         try {
+          // Let Claude 4 work completely autonomously
           const aiResponse = await this.aiService.generateResponse(
             input.content,
             conversation.messages,
             agentConfig,
             availableTools,
-            conversation.context
+            { 
+              ...conversation.context,
+              currentUser: userId,
+              conversationId: conversation.id,
+            }
           );
 
           assistantMessage = {
@@ -895,22 +899,42 @@ The deal has been added to your pipeline and is ready for further customization.
             aiThoughts = await this.addThoughts(conversation.id, thoughtsToAdd);
           }
 
-          // Handle tool calls if any - but let Claude decide everything
+          // Execute any tool calls that Claude autonomously decided to make
           if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
-            console.log('Claude suggested tool calls:', aiResponse.toolCalls);
+            console.log('Claude autonomously suggested tool calls:', aiResponse.toolCalls);
             
-            // Execute tools and let Claude see the results to decide next steps
-            const toolResults = await this.executeToolsForClaude(
+            // Execute tools and let Claude continue reasoning if needed
+            const toolResults = await this.executeToolsAutonomously(
               aiResponse.toolCalls, 
-              conversation,
-              [...conversation.messages, userMessage],
-              agentConfig,
-              availableTools
+              conversation, 
+              input.content,
+              aiResponse.content
             );
             
-            // Append tool results to the assistant's response
+            // Append tool results to response
             if (toolResults.length > 0) {
               assistantMessage.content += '\n\n' + toolResults.join('\n\n');
+            }
+
+            // Check if Claude wants to continue working after seeing tool results
+            const shouldContinue = await this.checkIfContinuationNeeded(
+              conversation,
+              assistantMessage,
+              toolResults,
+              availableTools
+            );
+
+            if (shouldContinue) {
+              const continuationResponse = await this.continueAutonomousWork(
+                conversation,
+                assistantMessage,
+                toolResults,
+                availableTools
+              );
+              
+              if (continuationResponse) {
+                assistantMessage.content += '\n\n' + continuationResponse;
+              }
             }
           }
 
@@ -973,23 +997,21 @@ The deal has been added to your pipeline and is ready for further customization.
   }
 
   // ================================
-  // Claude 4 Native Tool Execution
+  // Autonomous Tool Execution (No Hardcoded Patterns)
   // ================================
 
   /**
-   * Execute tools and let Claude see results to autonomously decide next steps
-   * This is the proper Claude 4 approach - no hardcoded follow-up logic
+   * Execute tools autonomously as requested by Claude 4
+   * No hardcoded follow-up logic - Claude decides everything
    */
-  private async executeToolsForClaude(
+  private async executeToolsAutonomously(
     toolCalls: Array<{ toolName: string; parameters: Record<string, any>; reasoning: string }>,
     conversation: AgentConversation,
-    conversationHistory: AgentMessage[],
-    agentConfig: any,
-    availableTools: MCPTool[]
+    userMessage: string,
+    assistantResponse: string
   ): Promise<string[]> {
-    const allResults: string[] = [];
-    
-    // Execute initial tool calls
+    const toolResults: string[] = [];
+
     for (const toolCall of toolCalls) {
       try {
         const toolCallRequest: MCPToolCall = {
@@ -1005,13 +1027,13 @@ The deal has been added to your pipeline and is ready for further customization.
             ? toolResponse.result 
             : JSON.stringify(toolResponse.result, null, 2);
 
-          allResults.push(`🔧 **${toolCall.toolName}** execution:\n${resultText}`);
+          toolResults.push(`🔧 **${toolCall.toolName}** execution:\n${resultText}`);
 
           // Add successful tool execution thought
           await this.addThoughts(conversation.id, [{
             conversationId: conversation.id,
             type: 'tool_call',
-            content: `Successfully executed ${toolCall.toolName}`,
+            content: `Claude autonomously executed ${toolCall.toolName}`,
             metadata: {
               toolName: toolCall.toolName,
               parameters: toolCall.parameters,
@@ -1019,8 +1041,9 @@ The deal has been added to your pipeline and is ready for further customization.
               reasoning: toolCall.reasoning,
             },
           }]);
+
         } else {
-          allResults.push(`❌ **${toolCall.toolName}** failed: ${toolResponse.error}`);
+          toolResults.push(`❌ **${toolCall.toolName}** failed: ${toolResponse.error}`);
 
           await this.addThoughts(conversation.id, [{
             conversationId: conversation.id,
@@ -1036,7 +1059,7 @@ The deal has been added to your pipeline and is ready for further customization.
         }
       } catch (toolError) {
         console.error('Tool execution error:', toolError);
-        allResults.push(`⚠️ **${toolCall.toolName}** error: ${toolError instanceof Error ? toolError.message : 'Unknown error'}`);
+        toolResults.push(`⚠️ **${toolCall.toolName}** error: ${toolError instanceof Error ? toolError.message : 'Unknown error'}`);
 
         await this.addThoughts(conversation.id, [{
           conversationId: conversation.id,
@@ -1051,104 +1074,98 @@ The deal has been added to your pipeline and is ready for further customization.
       }
     }
 
-    // Now let Claude see the tool results and decide if it wants to continue
-    if (this.aiService && allResults.length > 0) {
-      try {
-        // Create a follow-up message with tool results for Claude to analyze
-        const toolResultsMessage: AgentMessage = {
-          role: 'assistant',
-          content: 'I executed the requested tools. Here are the results:\n\n' + allResults.join('\n\n'),
-          timestamp: new Date(),
-          thoughts: [],
-        };
-
-        const updatedHistory = [...conversationHistory, toolResultsMessage];
-
-        // Let Claude see the results and decide what to do next
-        const followUpResponse = await this.aiService.generateResponse(
-          'Based on these tool results, should I take any follow-up actions? If so, what tools should I use next?',
-          updatedHistory,
-          agentConfig,
-          availableTools,
-          conversation.context
-        );
-
-        // If Claude wants to call more tools, execute them
-        if (followUpResponse.toolCalls && followUpResponse.toolCalls.length > 0) {
-          console.log('Claude autonomously decided to call additional tools:', followUpResponse.toolCalls);
-          
-          const additionalResults = await this.executeAdditionalToolsForClaude(
-            followUpResponse.toolCalls,
-            conversation
-          );
-
-          allResults.push(...additionalResults);
-        }
-
-        // If Claude has additional insights or wants to provide analysis
-        if (followUpResponse.content && followUpResponse.content.trim() && 
-            !followUpResponse.content.includes('Based on these tool results')) {
-          allResults.push(`\n**Claude's Analysis:**\n${followUpResponse.content}`);
-        }
-
-      } catch (followUpError) {
-        console.error('Follow-up analysis error:', followUpError);
-        // Don't add error to results - just log it
-      }
-    }
-
-    return allResults;
+    return toolResults;
   }
 
   /**
-   * Execute additional tools that Claude autonomously decided to call
+   * Ask Claude if it wants to continue working after seeing tool results
+   * This replaces hardcoded follow-up detection with AI reasoning
    */
-  private async executeAdditionalToolsForClaude(
-    toolCalls: Array<{ toolName: string; parameters: Record<string, any>; reasoning: string }>,
-    conversation: AgentConversation
-  ): Promise<string[]> {
-    const results: string[] = [];
+  private async checkIfContinuationNeeded(
+    conversation: AgentConversation,
+    currentResponse: AgentMessage,
+    toolResults: string[],
+    availableTools: MCPTool[]
+  ): Promise<boolean> {
+    if (!this.aiService) return false;
 
-    for (const toolCall of toolCalls) {
-      try {
-        const toolCallRequest: MCPToolCall = {
-          toolName: toolCall.toolName,
-          parameters: toolCall.parameters,
-          conversationId: conversation.id,
-        };
+    try {
+      const prompt = `Based on the current conversation and tool results, do you need to continue working to fully complete the user's request?
 
-        const toolResponse = await this.callTool(toolCallRequest, this.accessToken || undefined);
+Current response: "${currentResponse.content}"
 
-        if (toolResponse.success) {
-          const resultText = typeof toolResponse.result === 'string' 
-            ? toolResponse.result 
-            : JSON.stringify(toolResponse.result, null, 2);
+Tool results:
+${toolResults.join('\n')}
 
-          results.push(`🔧 **${toolCall.toolName}** (follow-up):\n${resultText}`);
+Available tools: ${availableTools.map(t => t.name).join(', ')}
 
-          await this.addThoughts(conversation.id, [{
-            conversationId: conversation.id,
-            type: 'tool_call',
-            content: `Claude autonomously executed ${toolCall.toolName}`,
-            metadata: {
-              toolName: toolCall.toolName,
-              parameters: toolCall.parameters,
-              result: toolResponse.result,
-              reasoning: toolCall.reasoning,
-              autonomous: true,
-            },
-          }]);
-        } else {
-          results.push(`❌ **${toolCall.toolName}** (follow-up) failed: ${toolResponse.error}`);
-        }
-      } catch (error) {
-        console.error('Additional tool execution error:', error);
-        results.push(`⚠️ **${toolCall.toolName}** (follow-up) error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
+Reply with just "YES" if you need to continue working, or "NO" if the task is complete.`;
+
+      const response = await this.aiService.generateResponse(
+        prompt,
+        conversation.messages,
+        {},
+        [],
+        { type: 'continuation_check' }
+      );
+
+      return response.content.toLowerCase().includes('yes');
+    } catch (error) {
+      console.error('Error checking continuation need:', error);
+      return false;
     }
-
-    return results;
   }
+
+  /**
+   * Let Claude continue working autonomously if it decides more work is needed
+   */
+  private async continueAutonomousWork(
+    conversation: AgentConversation,
+    currentResponse: AgentMessage,
+    toolResults: string[],
+    availableTools: MCPTool[]
+  ): Promise<string | null> {
+    if (!this.aiService) return null;
+
+    try {
+      const prompt = `Continue working to complete the user's request. You have these tool results:
+
+${toolResults.join('\n')}
+
+Current response: "${currentResponse.content}"
+
+What should you do next? Use tools if needed to complete the task fully.`;
+
+      const response = await this.aiService.generateResponse(
+        prompt,
+        conversation.messages,
+        {},
+        availableTools,
+        { type: 'autonomous_continuation' }
+      );
+
+      // Execute any additional tool calls Claude suggests
+      if (response.toolCalls && response.toolCalls.length > 0) {
+        const additionalResults = await this.executeToolsAutonomously(
+          response.toolCalls,
+          conversation,
+          'continuation',
+          response.content
+        );
+        
+        return response.content + '\n\n' + additionalResults.join('\n\n');
+      }
+
+      return response.content;
+    } catch (error) {
+      console.error('Error in autonomous continuation:', error);
+      return null;
+    }
+  }
+
+  // ================================
+  // Private Helper Methods
+  // ================================
 
   private mapDbConversationToModel(dbConversation: any): AgentConversation {
     return {
