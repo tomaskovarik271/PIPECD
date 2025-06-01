@@ -23,6 +23,11 @@ export interface AIResponse {
   }>;
   needsClarification?: string[];
   confidence: number;
+  metadata?: {
+    model: string;
+    tokensUsed: number;
+    responseTime: number;
+  };
 }
 
 export class AIService {
@@ -30,16 +35,16 @@ export class AIService {
   private config: Required<AIServiceConfig>;
 
   constructor(config: AIServiceConfig) {
+    this.config = {
+      model: 'claude-3-5-sonnet-20241022', // Using the actual available model
+      maxTokens: 4096,
+      temperature: 0.7,
+      ...config,
+    };
+
     this.anthropic = new Anthropic({
       apiKey: config.apiKey,
     });
-    
-    this.config = {
-      apiKey: config.apiKey,
-      model: config.model || 'claude-sonnet-4-20250514',
-      maxTokens: config.maxTokens || 4096,
-      temperature: config.temperature || 0.7,
-    };
   }
 
   /**
@@ -47,16 +52,22 @@ export class AIService {
    */
   async generateResponse(
     userMessage: string,
-    conversationHistory: AgentMessage[],
+    conversationHistory: AgentMessage[] = [],
     agentConfig: AgentConfig,
     availableTools: MCPTool[] = [],
-    context: Record<string, any> = {}
+    context: any = {}
   ): Promise<AIResponse> {
     try {
-      const systemPrompt = this.buildSystemPrompt(agentConfig, availableTools, context);
-      const messages = this.buildConversationMessages(conversationHistory, userMessage);
-      const tools = this.convertMCPToolsToAnthropicTools(availableTools);
+      // Convert conversation history to Anthropic format
+      const messages = this.formatMessagesForAnthropic(conversationHistory, userMessage);
 
+      // Convert tools to Anthropic format
+      const tools = this.formatToolsForAnthropic(availableTools);
+
+      // Build system prompt for PipeCD AI Agent
+      const systemPrompt = this.buildSystemPrompt(agentConfig, availableTools);
+
+      // Call Claude with native tool support
       const response = await this.anthropic.messages.create({
         model: this.config.model,
         max_tokens: this.config.maxTokens,
@@ -66,159 +77,161 @@ export class AIService {
         tools: tools.length > 0 ? tools : undefined,
       });
 
-      if (!response.content || response.content.length === 0) {
-        throw new Error('No content in response from Claude');
+      // Extract response content and tool calls
+      let content = '';
+      const toolCalls: Array<{
+        toolName: string;
+        parameters: Record<string, any>;
+        reasoning: string;
+      }> = [];
+      const thoughts: ThinkingStep[] = [];
+
+      for (const contentBlock of response.content) {
+        if (contentBlock.type === 'text') {
+          content += contentBlock.text;
+        } else if (contentBlock.type === 'tool_use') {
+          toolCalls.push({
+            toolName: contentBlock.name,
+            parameters: contentBlock.input || {},
+            reasoning: `Claude decided to use ${contentBlock.name} tool`,
+          });
+        }
       }
 
-      return this.parseAnthropicResponse(response);
+      // Add a thinking step about the response
+      thoughts.push({
+        id: `thinking-${Date.now()}`,
+        type: 'reasoning',
+        content: `Generated response with ${toolCalls.length} tool calls`,
+        confidence: 0.9,
+        reasoning: 'Processed user request and determined appropriate response strategy',
+        nextActions: toolCalls.length > 0 ? [`Execute ${toolCalls.length} tools`] : ['Provide final response'],
+      });
 
+      return {
+        content: content.trim(),
+        thoughts,
+        toolCalls,
+        confidence: 0.85,
+        metadata: {
+          model: this.config.model,
+          tokensUsed: response.usage?.output_tokens || 0,
+          responseTime: Date.now(),
+        },
+      };
     } catch (error) {
       console.error('AI service error:', error);
-      throw new Error(`AI service failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(`Failed to generate AI response: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  /**
-   * Convert MCP tools to Anthropic tool format
-   */
-  private convertMCPToolsToAnthropicTools(mcpTools: MCPTool[]): Anthropic.Tool[] {
-    return mcpTools.map(tool => ({
+  private formatMessagesForAnthropic(
+    conversationHistory: AgentMessage[],
+    currentUserMessage: string
+  ): Anthropic.MessageParam[] {
+    const messages: Anthropic.MessageParam[] = [];
+
+    // Add conversation history
+    for (const message of conversationHistory) {
+      if (message.role === 'user' || message.role === 'assistant') {
+        messages.push({
+          role: message.role,
+          content: message.content,
+        });
+      }
+    }
+
+    // Add current user message
+    messages.push({
+      role: 'user',
+      content: currentUserMessage,
+    });
+
+    return messages;
+  }
+
+  private formatToolsForAnthropic(availableTools: MCPTool[]): Anthropic.Tool[] {
+    return availableTools.map(tool => ({
       name: tool.name,
       description: tool.description,
       input_schema: {
         type: 'object',
         properties: tool.parameters?.properties || {},
         required: tool.parameters?.required || [],
+        ...tool.parameters,
       },
     }));
   }
 
   /**
-   * Parse Anthropic's native response format
-   */
-  private parseAnthropicResponse(response: Anthropic.Message): AIResponse {
-    const thoughts: ThinkingStep[] = [];
-    const toolCalls: Array<{
-      toolName: string;
-      parameters: Record<string, any>;
-      reasoning: string;
-    }> = [];
-    let content = '';
-
-    // Process each content block
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        content += block.text;
-        
-        // Extract thinking from text if present
-        const thinkingMatch = block.text.match(/\*\*Thinking:\*\*(.*?)(?=\*\*|$)/s);
-        if (thinkingMatch && thinkingMatch[1]) {
-          thoughts.push({
-            id: `thinking-${Date.now()}`,
-            type: 'reasoning',
-            content: thinkingMatch[1].trim(),
-            confidence: 0.8,
-            reasoning: 'AI reasoning process',
-          });
-        }
-      } else if (block.type === 'tool_use') {
-        toolCalls.push({
-          toolName: block.name,
-          parameters: block.input as Record<string, any>,
-          reasoning: `Using ${block.name} tool`,
-        });
-      }
-    }
-
-    // Clean up content (remove thinking sections if they were extracted)
-    content = content.replace(/\*\*Thinking:\*\*.*?(?=\*\*|$)/gs, '').trim();
-
-    return {
-      content: content || 'I can help you with that.',
-      thoughts,
-      toolCalls,
-      needsClarification: [],
-      confidence: 0.8,
-    };
-  }
-
-  /**
    * Build system prompt based on agent configuration and context
    */
-  private buildSystemPrompt(
-    agentConfig: AgentConfig,
-    availableTools: MCPTool[],
-    context: Record<string, any>
-  ): string {
-    return `You are an autonomous AI assistant for PipeCD, a CRM and pipeline management system. You help users manage deals, contacts, activities, and workflows by completing tasks autonomously.
+  private buildSystemPrompt(agentConfig: AgentConfig, availableTools: MCPTool[]): string {
+    const toolsDescription = availableTools.length > 0 
+      ? `\n\nYou have access to the following tools for CRM operations:\n${availableTools.map(tool => 
+          `- ${tool.name}: ${tool.description}`
+        ).join('\n')}`
+      : '';
 
-## Your Capabilities:
-- Analyze user requests and provide helpful responses
-- Help with deal management, contact organization, and activity tracking  
-- Plan and execute multi-step workflows using available tools
-- Provide insights and recommendations
-- Complete tasks autonomously when you have sufficient information
+    return `You are an intelligent AI assistant for PipeCD, a comprehensive CRM and pipeline management system. You specialize in helping users manage deals, contacts, organizations, and sales activities.
 
-## Available Tools:
-${availableTools.map(tool => `- ${tool.name}: ${tool.description}`).join('\n') || 'No tools currently available'}
+Your capabilities include:
+- 🔍 **Search and Analysis**: Find deals, contacts, and organizations with detailed filtering
+- 📊 **Pipeline Analysis**: Analyze sales performance, trends, and metrics  
+- 💼 **Deal Management**: Create and manage deals throughout the sales process
+- 🏢 **Organization Management**: Track companies and their relationships
+- 👥 **Contact Management**: Manage people and their business relationships
+- 📈 **Activity Tracking**: Monitor tasks, meetings, calls, and other sales activities
 
 ## Autonomous Behavior Guidelines:
-1. **Complete tasks when possible**: If you can fulfill the user's request with available information, do it autonomously
-2. **Chain tool calls**: Use multiple tools in sequence to complete complex tasks (e.g., search for organizations, then create deals)
-3. **Make reasonable assumptions**: When minor details are missing, use sensible defaults rather than asking for every detail
-4. **Inform users of actions**: Clearly communicate what you're doing and the results
-5. **Ask only for essential missing information**: Only request clarification for critical missing data
 
-## Multi-step Task Execution:
-When a user requests a task that requires multiple steps:
-1. **Analyze**: Determine all required steps
-2. **Execute**: Use tools to gather information and complete actions
-3. **Continue**: Don't stop after the first tool call - complete the full workflow
-4. **Report**: Summarize what was accomplished
+You are Claude 4 with advanced reasoning capabilities. When users request actions:
 
-## Example Workflows:
-- **Creating deals with organizations**: Search organizations → Select best match → Create deal with found organization_id
-- **Finding and analyzing data**: Search deals → Get details → Provide analysis
-- **Setting up relationships**: Search contacts → Search organizations → Link them appropriately
+1. **Think through the request** - Understand what the user wants to accomplish
+2. **Plan your approach** - Determine what tools and steps are needed
+3. **Execute systematically** - Use tools in logical sequence
+4. **Analyze results** - Evaluate tool outputs and decide if additional actions are needed
+5. **Continue autonomously** - If initial results suggest follow-up actions, proceed without asking
+6. **Ask clarifying questions** only when genuinely unclear about intent
 
-## Configuration:
-- Thinking Budget: ${agentConfig.thinkingBudget}
-- Max Thinking Steps: ${agentConfig.maxThinkingSteps}
-- Extended Thinking: ${agentConfig.enableExtendedThinking ? 'Enabled' : 'Disabled'}
-- Auto Execute: ${agentConfig.autoExecute ? 'Enabled' : 'Disabled'}
+## Multi-Step Workflow Examples:
 
-## Context:
-${JSON.stringify(context, null, 2)}
+**"Create a deal for Orbis Solutions worth $350,000":**
+- Search for Orbis Solutions organization
+- If not found, create the deal anyway (organizations are optional)
+- Use appropriate deal amount and name
+- Proceed without confirmation
 
-Be proactive, autonomous, and helpful. Complete tasks efficiently rather than requiring multiple back-and-forth interactions for simple requests.`;
-  }
+**"How are we doing this quarter?":**
+- Analyze pipeline for current period
+- Check recent deal closures
+- Review activity trends
+- Provide comprehensive assessment
 
-  /**
-   * Build conversation messages for Claude API
-   */
-  private buildConversationMessages(
-    history: AgentMessage[],
-    currentMessage: string
-  ): Anthropic.MessageParam[] {
-    const messages: Anthropic.MessageParam[] = [];
+**"Find deals similar to the Tesla project":**
+- Search for Tesla-related deals
+- Analyze deal characteristics
+- Find similar patterns in other deals
+- Present comparison
 
-    // Add conversation history (excluding system messages)
-    history
-      .filter(msg => msg.role !== 'system')
-      .forEach(msg => {
-        messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content,
-        });
-      });
+## Tool Usage Philosophy:
 
-    // Add current user message
-    messages.push({
-      role: 'user',
-      content: currentMessage,
-    });
+- **Be proactive**: Don't ask permission to use relevant tools
+- **Chain operations**: Use tool results to inform next actions
+- **Scale by complexity**: Simple queries need 1-2 tools, complex analysis needs 5+ tools
+- **Provide value**: Always aim to give actionable insights, not just raw data
 
-    return messages;
+## Response Style:
+
+- Be conversational but professional
+- Lead with insights, support with data
+- Explain your reasoning when making recommendations
+- Use emojis sparingly for visual organization
+- Focus on business outcomes and actionable next steps
+
+${toolsDescription}
+
+Remember: You're an autonomous AI agent. When you see an opportunity to provide more value through additional analysis or actions, take initiative and do it. Users prefer comprehensive, intelligent assistance over back-and-forth questioning.`;
   }
 
   /**

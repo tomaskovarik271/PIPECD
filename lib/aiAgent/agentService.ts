@@ -862,7 +862,7 @@ The deal has been added to your pipeline and is ready for further customization.
       let aiThoughts: AgentThought[] = [];
 
       if (this.aiService) {
-        // Use real AI service
+        // Use real AI service with native tool calling
         try {
           const aiResponse = await this.aiService.generateResponse(
             input.content,
@@ -895,55 +895,22 @@ The deal has been added to your pipeline and is ready for further customization.
             aiThoughts = await this.addThoughts(conversation.id, thoughtsToAdd);
           }
 
-          // Handle tool calls if any
+          // Handle tool calls if any - but let Claude decide everything
           if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
-            console.log('AI suggested tool calls:', aiResponse.toolCalls);
+            console.log('Claude suggested tool calls:', aiResponse.toolCalls);
             
-            // Execute the tool calls and potentially trigger follow-up actions
-            const { toolResults, shouldContinue, followUpContext } = await this.executeToolChain(
+            // Execute tools and let Claude see the results to decide next steps
+            const toolResults = await this.executeToolsForClaude(
               aiResponse.toolCalls, 
-              conversation, 
-              input.content,
-              aiResponse.content
+              conversation,
+              [...conversation.messages, userMessage],
+              agentConfig,
+              availableTools
             );
             
-            // If we have tool results, append them to the assistant's response
+            // Append tool results to the assistant's response
             if (toolResults.length > 0) {
               assistantMessage.content += '\n\n' + toolResults.join('\n\n');
-            }
-
-            // If Claude should continue with follow-up actions, generate another response
-            if (shouldContinue && followUpContext) {
-              try {
-                const followUpResponse = await this.aiService.generateResponse(
-                  followUpContext.prompt,
-                  [...conversation.messages, userMessage, assistantMessage],
-                  agentConfig,
-                  availableTools,
-                  conversation.context
-                );
-
-                // Execute any additional tool calls from the follow-up
-                if (followUpResponse.toolCalls && followUpResponse.toolCalls.length > 0) {
-                  const additionalResults = await this.executeAdditionalTools(
-                    followUpResponse.toolCalls,
-                    conversation
-                  );
-                  
-                  if (additionalResults.length > 0) {
-                    assistantMessage.content += '\n\n' + additionalResults.join('\n\n');
-                  }
-                }
-
-                // Append follow-up content if meaningful
-                if (followUpResponse.content && followUpResponse.content.trim() !== assistantMessage.content.trim()) {
-                  assistantMessage.content += '\n\n' + followUpResponse.content;
-                }
-
-              } catch (followUpError) {
-                console.error('Follow-up execution error:', followUpError);
-                assistantMessage.content += '\n\n⚠️ Follow-up action encountered an issue, but the primary task was completed.';
-              }
             }
           }
 
@@ -1006,22 +973,23 @@ The deal has been added to your pipeline and is ready for further customization.
   }
 
   // ================================
-  // Private Helper Methods
+  // Claude 4 Native Tool Execution
   // ================================
 
   /**
-   * Execute a chain of tool calls with autonomous follow-up detection
+   * Execute tools and let Claude see results to autonomously decide next steps
+   * This is the proper Claude 4 approach - no hardcoded follow-up logic
    */
-  private async executeToolChain(
+  private async executeToolsForClaude(
     toolCalls: Array<{ toolName: string; parameters: Record<string, any>; reasoning: string }>,
     conversation: AgentConversation,
-    userMessage: string,
-    assistantResponse: string
-  ): Promise<{ toolResults: string[]; shouldContinue: boolean; followUpContext?: { prompt: string } }> {
-    const toolResults: string[] = [];
-    let shouldContinue = false;
-    let followUpContext: { prompt: string } | undefined;
-
+    conversationHistory: AgentMessage[],
+    agentConfig: any,
+    availableTools: MCPTool[]
+  ): Promise<string[]> {
+    const allResults: string[] = [];
+    
+    // Execute initial tool calls
     for (const toolCall of toolCalls) {
       try {
         const toolCallRequest: MCPToolCall = {
@@ -1037,7 +1005,7 @@ The deal has been added to your pipeline and is ready for further customization.
             ? toolResponse.result 
             : JSON.stringify(toolResponse.result, null, 2);
 
-          toolResults.push(`🔧 **${toolCall.toolName}** execution:\n${resultText}`);
+          allResults.push(`🔧 **${toolCall.toolName}** execution:\n${resultText}`);
 
           // Add successful tool execution thought
           await this.addThoughts(conversation.id, [{
@@ -1051,16 +1019,8 @@ The deal has been added to your pipeline and is ready for further customization.
               reasoning: toolCall.reasoning,
             },
           }]);
-
-          // Check if this tool result suggests a follow-up action
-          const followUp = this.detectFollowUpAction(toolCall, toolResponse.result, userMessage);
-          if (followUp) {
-            shouldContinue = true;
-            followUpContext = followUp;
-          }
-
         } else {
-          toolResults.push(`❌ **${toolCall.toolName}** failed: ${toolResponse.error}`);
+          allResults.push(`❌ **${toolCall.toolName}** failed: ${toolResponse.error}`);
 
           await this.addThoughts(conversation.id, [{
             conversationId: conversation.id,
@@ -1076,7 +1036,7 @@ The deal has been added to your pipeline and is ready for further customization.
         }
       } catch (toolError) {
         console.error('Tool execution error:', toolError);
-        toolResults.push(`⚠️ **${toolCall.toolName}** error: ${toolError instanceof Error ? toolError.message : 'Unknown error'}`);
+        allResults.push(`⚠️ **${toolCall.toolName}** error: ${toolError instanceof Error ? toolError.message : 'Unknown error'}`);
 
         await this.addThoughts(conversation.id, [{
           conversationId: conversation.id,
@@ -1091,60 +1051,59 @@ The deal has been added to your pipeline and is ready for further customization.
       }
     }
 
-    return { toolResults, shouldContinue, followUpContext };
-  }
+    // Now let Claude see the tool results and decide if it wants to continue
+    if (this.aiService && allResults.length > 0) {
+      try {
+        // Create a follow-up message with tool results for Claude to analyze
+        const toolResultsMessage: AgentMessage = {
+          role: 'assistant',
+          content: 'I executed the requested tools. Here are the results:\n\n' + allResults.join('\n\n'),
+          timestamp: new Date(),
+          thoughts: [],
+        };
 
-  /**
-   * Detect if a tool execution should trigger follow-up actions
-   */
-  private detectFollowUpAction(
-    toolCall: { toolName: string; parameters: Record<string, any>; reasoning: string },
-    result: any,
-    originalUserMessage: string
-  ): { prompt: string } | null {
-    // Check for organization search that should lead to deal creation
-    if (toolCall.toolName === 'search_organizations' && typeof result === 'string') {
-      // Look for organization ID in the result
-      const orgIdMatch = result.match(/ID:\s*([a-f0-9-]+)/i);
-      
-      if (orgIdMatch && originalUserMessage.toLowerCase().includes('create') && originalUserMessage.toLowerCase().includes('deal')) {
-        const orgId = orgIdMatch[1];
-        
-        // Extract deal details from the original message
-        const dealNameMatch = originalUserMessage.match(/(?:named?|called?)\s*["""']([^"""']+)["""']/i);
-        const amountMatch = originalUserMessage.match(/(?:for|worth|amount|value|price)\s*[\$]?(\d+(?:,\d{3})*(?:\.\d{2})?)/i);
-        
-        if (dealNameMatch && amountMatch) {
-          const dealName = dealNameMatch[1];
-          const amount = parseInt(amountMatch[1]?.replace(/,/g, '') || '0');
+        const updatedHistory = [...conversationHistory, toolResultsMessage];
+
+        // Let Claude see the results and decide what to do next
+        const followUpResponse = await this.aiService.generateResponse(
+          'Based on these tool results, should I take any follow-up actions? If so, what tools should I use next?',
+          updatedHistory,
+          agentConfig,
+          availableTools,
+          conversation.context
+        );
+
+        // If Claude wants to call more tools, execute them
+        if (followUpResponse.toolCalls && followUpResponse.toolCalls.length > 0) {
+          console.log('Claude autonomously decided to call additional tools:', followUpResponse.toolCalls);
           
-          return {
-            prompt: `Based on the organization search results, I found a suitable organization. Now I need to create the deal "${dealName}" for $${amount} using organization ID: ${orgId}. Please create this deal now.`
-          };
+          const additionalResults = await this.executeAdditionalToolsForClaude(
+            followUpResponse.toolCalls,
+            conversation
+          );
+
+          allResults.push(...additionalResults);
         }
+
+        // If Claude has additional insights or wants to provide analysis
+        if (followUpResponse.content && followUpResponse.content.trim() && 
+            !followUpResponse.content.includes('Based on these tool results')) {
+          allResults.push(`\n**Claude's Analysis:**\n${followUpResponse.content}`);
+        }
+
+      } catch (followUpError) {
+        console.error('Follow-up analysis error:', followUpError);
+        // Don't add error to results - just log it
       }
     }
 
-    // Check for contact search that should lead to deal creation with contact
-    if (toolCall.toolName === 'search_contacts' && typeof result === 'string') {
-      if (originalUserMessage.toLowerCase().includes('create') && originalUserMessage.toLowerCase().includes('deal')) {
-        const contactIdMatch = result.match(/ID:\s*([a-f0-9-]+)/i);
-        
-        if (contactIdMatch) {
-          return {
-            prompt: `Based on the contact search results, I found a suitable contact. Please proceed with creating the deal using the found contact information.`
-          };
-        }
-      }
-    }
-
-    return null;
+    return allResults;
   }
 
   /**
-   * Execute additional tool calls from follow-up responses
+   * Execute additional tools that Claude autonomously decided to call
    */
-  private async executeAdditionalTools(
+  private async executeAdditionalToolsForClaude(
     toolCalls: Array<{ toolName: string; parameters: Record<string, any>; reasoning: string }>,
     conversation: AgentConversation
   ): Promise<string[]> {
@@ -1165,25 +1124,26 @@ The deal has been added to your pipeline and is ready for further customization.
             ? toolResponse.result 
             : JSON.stringify(toolResponse.result, null, 2);
 
-          results.push(`🔧 **${toolCall.toolName}** execution:\n${resultText}`);
+          results.push(`🔧 **${toolCall.toolName}** (follow-up):\n${resultText}`);
 
           await this.addThoughts(conversation.id, [{
             conversationId: conversation.id,
             type: 'tool_call',
-            content: `Successfully executed follow-up ${toolCall.toolName}`,
+            content: `Claude autonomously executed ${toolCall.toolName}`,
             metadata: {
               toolName: toolCall.toolName,
               parameters: toolCall.parameters,
               result: toolResponse.result,
               reasoning: toolCall.reasoning,
+              autonomous: true,
             },
           }]);
         } else {
-          results.push(`❌ **${toolCall.toolName}** failed: ${toolResponse.error}`);
+          results.push(`❌ **${toolCall.toolName}** (follow-up) failed: ${toolResponse.error}`);
         }
       } catch (error) {
         console.error('Additional tool execution error:', error);
-        results.push(`⚠️ **${toolCall.toolName}** error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        results.push(`⚠️ **${toolCall.toolName}** (follow-up) error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
