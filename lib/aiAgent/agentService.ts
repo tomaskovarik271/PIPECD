@@ -903,21 +903,19 @@ The deal has been added to your pipeline and is ready for further customization.
           if (aiResponse.toolCalls && aiResponse.toolCalls.length > 0) {
             console.log('Claude autonomously suggested tool calls:', aiResponse.toolCalls);
             
-            // Execute tools and let Claude continue reasoning if needed
-            const toolResults = await this.executeToolsAutonomously(
-              aiResponse.toolCalls, 
-              conversation, 
+            // Execute tools sequentially and let Claude decide next steps
+            const finalResult = await this.executeSequentialWorkflow(
+              aiResponse.toolCalls,
+              conversation,
               input.content,
-              aiResponse.content
+              aiResponse.content,
+              updatedMessages
             );
             
-            // Append tool results to response
-            if (toolResults.length > 0) {
-              assistantMessage.content += '\n\n' + toolResults.join('\n\n');
-            }
-
-            // Claude 4 handles all autonomous decisions in the initial response
-            // No need for continuation checking - Claude decides everything autonomously
+            // Update the assistant message with the final result
+            assistantMessage.content = finalResult.finalResponse;
+            
+            // All additional thoughts from sequential execution are already saved
           }
 
         } catch (aiError) {
@@ -981,6 +979,160 @@ The deal has been added to your pipeline and is ready for further customization.
   // ================================
   // Autonomous Tool Execution (No Hardcoded Patterns)
   // ================================
+
+  /**
+   * Execute tools sequentially, calling Claude again after each tool to decide next steps
+   * This implements proper sequential workflow where tool results inform subsequent actions
+   */
+  private async executeSequentialWorkflow(
+    initialToolCalls: Array<{ toolName: string; parameters: Record<string, any>; reasoning: string }>,
+    conversation: AgentConversation,
+    originalUserMessage: string,
+    initialAssistantResponse: string,
+    conversationHistory: AgentMessage[]
+  ): Promise<{ finalResponse: string; allToolResults: string[] }> {
+    let currentResponse = initialAssistantResponse;
+    let allToolResults: string[] = [];
+    let remainingTools = [...initialToolCalls];
+    let iterationCount = 0;
+    const maxIterations = 5; // Prevent infinite loops
+
+    while (remainingTools.length > 0 && iterationCount < maxIterations) {
+      iterationCount++;
+      
+      // Execute the FIRST tool only (sequential execution)
+      const currentTool = remainingTools[0];
+      if (!currentTool) {
+        break; // No more tools to execute
+      }
+      
+      console.log(`Sequential execution - executing tool: ${currentTool.toolName}`);
+      
+      try {
+        const toolCallRequest: MCPToolCall = {
+          toolName: currentTool.toolName,
+          parameters: currentTool.parameters,
+          conversationId: conversation.id,
+        };
+
+        const toolResponse = await this.callTool(toolCallRequest, this.accessToken || undefined);
+        let toolResultText: string;
+
+        if (toolResponse.success) {
+          toolResultText = typeof toolResponse.result === 'string' 
+            ? toolResponse.result 
+            : JSON.stringify(toolResponse.result, null, 2);
+
+          allToolResults.push(`🔧 **${currentTool.toolName}** execution:\n${toolResultText}`);
+
+          // Add successful tool execution thought
+          await this.addThoughts(conversation.id, [{
+            conversationId: conversation.id,
+            type: 'tool_call',
+            content: `Claude autonomously executed ${currentTool.toolName}`,
+            metadata: {
+              toolName: currentTool.toolName,
+              parameters: currentTool.parameters,
+              result: toolResponse.result,
+              reasoning: currentTool.reasoning,
+            },
+          }]);
+
+        } else {
+          toolResultText = `❌ **${currentTool.toolName}** failed: ${toolResponse.error}`;
+          allToolResults.push(toolResultText);
+
+          await this.addThoughts(conversation.id, [{
+            conversationId: conversation.id,
+            type: 'observation',
+            content: `Tool execution failed: ${currentTool.toolName}`,
+            metadata: {
+              toolName: currentTool.toolName,
+              parameters: currentTool.parameters,
+              error: toolResponse.error,
+              reasoning: currentTool.reasoning,
+            },
+          }]);
+        }
+
+        // Remove the executed tool
+        remainingTools = remainingTools.slice(1);
+
+        // Call Claude again with the tool result to see if more actions are needed
+        if (this.aiService && remainingTools.length === 0) {
+          const followUpPrompt = `The tool ${currentTool.toolName} has been executed with the following result:
+
+${toolResultText}
+
+Original user request: "${originalUserMessage}"
+
+Based on this result, do you need to execute any additional tools to complete the user's request? If so, please make the appropriate tool call.`;
+
+          const followUpResponse = await this.aiService.generateResponse(
+            followUpPrompt,
+            conversationHistory,
+            { ...DEFAULT_AGENT_CONFIG },
+            await this.discoverTools(),
+            {
+              currentUser: conversation.userId,
+              conversationId: conversation.id,
+              currentToolResult: toolResultText,
+            }
+          );
+
+          // Update current response
+          currentResponse = followUpResponse.content;
+
+          // If Claude suggests more tools, add them to the queue
+          if (followUpResponse.toolCalls && followUpResponse.toolCalls.length > 0) {
+            console.log('Claude suggests additional tools after seeing results:', followUpResponse.toolCalls);
+            remainingTools.push(...followUpResponse.toolCalls);
+
+            // Add follow-up reasoning thought
+            await this.addThoughts(conversation.id, [{
+              conversationId: conversation.id,
+              type: 'reasoning',
+              content: `Claude analyzed tool results and decided to execute additional tools`,
+              metadata: {
+                previousTool: currentTool.toolName,
+                nextTools: followUpResponse.toolCalls.map(tc => tc.toolName),
+                reasoning: 'Sequential workflow continuation based on tool results',
+              },
+            }]);
+          }
+        }
+
+      } catch (toolError) {
+        console.error('Sequential tool execution error:', toolError);
+        const errorText = `⚠️ **${currentTool.toolName}** error: ${toolError instanceof Error ? toolError.message : 'Unknown error'}`;
+        allToolResults.push(errorText);
+
+        await this.addThoughts(conversation.id, [{
+          conversationId: conversation.id,
+          type: 'observation',
+          content: `Tool execution exception: ${currentTool.toolName}`,
+          metadata: {
+            toolName: currentTool.toolName,
+            parameters: currentTool.parameters,
+            exception: toolError instanceof Error ? toolError.message : 'Unknown error',
+          },
+        }]);
+
+        // Remove the failed tool and continue
+        remainingTools = remainingTools.slice(1);
+      }
+    }
+
+    // Build final response with all tool results
+    const finalResponse = allToolResults.length > 0 
+      ? `${currentResponse}\n\n${allToolResults.join('\n\n')}`
+      : currentResponse;
+
+    return {
+      finalResponse,
+      allToolResults
+    };
+  }
 
   /**
    * Execute tools autonomously as requested by Claude 4
