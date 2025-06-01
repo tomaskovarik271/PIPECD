@@ -33,11 +33,195 @@ import {
   useDisclosure,
   SimpleGrid,
   Stack,
+  Code,
 } from '@chakra-ui/react';
-import { SettingsIcon, TimeIcon, DeleteIcon } from '@chakra-ui/icons';
-import { FiSend, FiUser, FiCpu, FiActivity, FiMessageSquare, FiClock } from 'react-icons/fi';
+import { SettingsIcon, TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
+import { FiSend, FiUser, FiCpu, FiActivity, FiMessageSquare, FiClock, FiTool, FiEye, FiZap, FiTarget } from 'react-icons/fi';
 import { useAgentStore } from '../../stores/useAgentStore';
 import type { AgentMessage, AgentConversation } from '../../stores/useAgentStore';
+
+// Thought Details Component for showing complete autonomous behavior
+const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> = React.memo(({ thoughts }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const thoughtBg = useColorModeValue('gray.50', 'gray.800');
+  const tooltipBg = useColorModeValue('blue.500', 'blue.600');
+  
+  if (!thoughts || thoughts.length === 0) {
+    return null;
+  }
+
+  const getThoughtIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'reasoning': return <FiZap size={12} />;
+      case 'tool_call': return <FiTool size={12} />;
+      case 'observation': return <FiEye size={12} />;
+      case 'plan': return <FiTarget size={12} />;
+      default: return <FiActivity size={12} />;
+    }
+  };
+
+  const getThoughtColor = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'reasoning': return 'purple';
+      case 'tool_call': return 'blue';
+      case 'observation': return 'green';
+      case 'plan': return 'orange';
+      default: return 'gray';
+    }
+  };
+
+  return (
+    <Box mt={3}>
+      <Divider my={2} />
+      
+      {/* Thoughts Summary */}
+      <HStack 
+        spacing={2} 
+        cursor="pointer" 
+        onClick={() => setIsExpanded(!isExpanded)}
+        _hover={{ bg: thoughtBg }}
+        p={2}
+        borderRadius="md"
+        transition="all 0.2s"
+      >
+        <FiActivity size={14} />
+        <Text fontSize="xs" opacity={0.8} flex={1}>
+          {thoughts.length} autonomous step{thoughts.length > 1 ? 's' : ''} • Click to view details
+        </Text>
+        <HStack spacing={1}>
+          {thoughts.slice(0, 3).map((thought, idx) => (
+            <Badge 
+              key={idx} 
+              size="xs" 
+              colorScheme={getThoughtColor(thought.type)}
+            >
+              {thought.type.toLowerCase()}
+            </Badge>
+          ))}
+          {thoughts.length > 3 && (
+            <Badge size="xs" colorScheme="gray">
+              +{thoughts.length - 3} more
+            </Badge>
+          )}
+        </HStack>
+        {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+      </HStack>
+
+      {/* Expanded Thoughts Details */}
+      {isExpanded && (
+        <VStack align="stretch" spacing={3} mt={3} pl={4} borderLeft="2px" borderColor="blue.200">
+          {thoughts.map((thought, idx) => (
+            <Card key={thought.id || idx} size="sm" bg={thoughtBg}>
+              <CardBody p={3}>
+                <VStack align="stretch" spacing={2}>
+                  {/* Thought Header */}
+                  <HStack spacing={2}>
+                    <Badge 
+                      colorScheme={getThoughtColor(thought.type)} 
+                      size="sm"
+                      display="flex"
+                      alignItems="center"
+                      gap={1}
+                    >
+                      {getThoughtIcon(thought.type)}
+                      {thought.type}
+                    </Badge>
+                    <Text fontSize="xs" color="gray.500">
+                      {new Date(thought.timestamp).toLocaleTimeString()}
+                    </Text>
+                  </HStack>
+
+                  {/* Thought Content */}
+                  <Text fontSize="xs" whiteSpace="pre-wrap">
+                    {thought.content}
+                  </Text>
+
+                  {/* Metadata Details */}
+                  {thought.metadata && Object.keys(thought.metadata).length > 0 && (
+                    <Box>
+                      <Text fontSize="xs" fontWeight="semibold" color="gray.600" mb={1}>
+                        Details:
+                      </Text>
+                      <SimpleGrid columns={1} spacing={1}>
+                        {/* Tool Call Details */}
+                        {thought.metadata.toolName && (
+                          <HStack spacing={2} fontSize="xs">
+                            <Text fontWeight="medium" color="blue.600">Tool:</Text>
+                            <Code colorScheme="blue" fontSize="xs">{thought.metadata.toolName}</Code>
+                          </HStack>
+                        )}
+                        
+                        {/* Parameters */}
+                        {thought.metadata.parameters && (
+                          <VStack align="stretch" spacing={1}>
+                            <Text fontWeight="medium" color="green.600" fontSize="xs">Parameters:</Text>
+                            <Code p={2} fontSize="xs" maxH="100px" overflow="auto">
+                              {JSON.stringify(thought.metadata.parameters, null, 2)}
+                            </Code>
+                          </VStack>
+                        )}
+
+                        {/* Tool Results */}
+                        {thought.metadata.result && (
+                          <VStack align="stretch" spacing={1}>
+                            <Text fontWeight="medium" color="purple.600" fontSize="xs">Result:</Text>
+                            <Code p={2} fontSize="xs" maxH="100px" overflow="auto">
+                              {typeof thought.metadata.result === 'string' 
+                                ? thought.metadata.result 
+                                : JSON.stringify(thought.metadata.result, null, 2)}
+                            </Code>
+                          </VStack>
+                        )}
+
+                        {/* Confidence Score */}
+                        {thought.metadata.confidence && (
+                          <HStack spacing={2} fontSize="xs">
+                            <Text fontWeight="medium" color="orange.600">Confidence:</Text>
+                            <Badge colorScheme={
+                              thought.metadata.confidence > 0.8 ? 'green' : 
+                              thought.metadata.confidence > 0.6 ? 'yellow' : 'red'
+                            }>
+                              {Math.round(thought.metadata.confidence * 100)}%
+                            </Badge>
+                          </HStack>
+                        )}
+
+                        {/* Reasoning */}
+                        {thought.metadata.reasoning && (
+                          <VStack align="stretch" spacing={1}>
+                            <Text fontWeight="medium" color="gray.600" fontSize="xs">Reasoning:</Text>
+                            <Text fontSize="xs" p={2} bg="gray.50" borderRadius="md" fontStyle="italic">
+                              {thought.metadata.reasoning}
+                            </Text>
+                          </VStack>
+                        )}
+
+                        {/* Next Actions */}
+                        {thought.metadata.nextActions && thought.metadata.nextActions.length > 0 && (
+                          <VStack align="stretch" spacing={1}>
+                            <Text fontWeight="medium" color="blue.600" fontSize="xs">Next Actions:</Text>
+                            <VStack align="stretch" spacing={1} pl={2}>
+                              {thought.metadata.nextActions.map((action: string, actionIdx: number) => (
+                                <HStack key={actionIdx} spacing={2} fontSize="xs">
+                                  <Text color="blue.500">•</Text>
+                                  <Text>{action}</Text>
+                                </HStack>
+                              ))}
+                            </VStack>
+                          </VStack>
+                        )}
+                      </SimpleGrid>
+                    </Box>
+                  )}
+                </VStack>
+              </CardBody>
+            </Card>
+          ))}
+        </VStack>
+      )}
+    </Box>
+  );
+});
 
 export const AIAgentChat: React.FC = () => {
   const [messageInput, setMessageInput] = useState('');
@@ -243,17 +427,7 @@ export const AIAgentChat: React.FC = () => {
                 {message.content}
               </Text>
               
-              {message.thoughts && message.thoughts.length > 0 && (
-                <Box>
-                  <Divider my={2} />
-                  <HStack spacing={2}>
-                    <FiActivity size={14} />
-                    <Text fontSize="xs" opacity={0.8}>
-                      {message.thoughts.length} thought{message.thoughts.length > 1 ? 's' : ''}
-                    </Text>
-                  </HStack>
-                </Box>
-              )}
+              <ThoughtDetailsComponent thoughts={message.thoughts} />
               
               <Text fontSize="xs" opacity={0.7} alignSelf="flex-end">
                 {formatTimestamp(message.timestamp)}

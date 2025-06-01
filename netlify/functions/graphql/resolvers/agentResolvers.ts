@@ -46,31 +46,53 @@ export const agentQueries = {
         args.offset || 0
       );
 
-      return conversations.map((conv: any) => ({
-        id: conv.id,
-        userId: conv.userId,
-        messages: conv.messages.map((msg: any) => ({
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp,
-          thoughts: [],
-        })),
-        plan: conv.plan ? {
-          goal: conv.plan.goal,
-          steps: conv.plan.steps.map((step: any) => ({
-            id: step.id,
-            description: step.description,
-            toolName: step.toolName || null,
-            parameters: step.parameters || null,
-            dependencies: step.dependencies || [],
-            status: step.status.toUpperCase(),
-            result: step.result || null,
-          })),
-          context: conv.plan.context,
-        } : null,
-        context: conv.context,
-        createdAt: conv.createdAt,
-        updatedAt: conv.updatedAt,
+      // Load thoughts for each conversation to properly populate the messages
+      return Promise.all(conversations.map(async (conv: any) => {
+        const allThoughts = await service.getThoughts(conv.id, 500); // Get all thoughts for this conversation
+        
+        return {
+          id: conv.id,
+          userId: conv.userId,
+          messages: conv.messages.map((msg: any) => {
+            // Filter thoughts that belong to this message (by timestamp proximity)
+            const messageTime = new Date(msg.timestamp).getTime();
+            const messageThoughts = allThoughts.filter((thought: any) => {
+              const thoughtTime = new Date(thought.timestamp).getTime();
+              // Include thoughts within 1 minute of the message
+              return Math.abs(thoughtTime - messageTime) < 60000;
+            });
+            
+            return {
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.timestamp,
+              thoughts: messageThoughts.map((thought: any) => ({
+                id: thought.id,
+                conversationId: thought.conversationId,
+                type: thought.type.toUpperCase(),
+                content: thought.content,
+                metadata: thought.metadata,
+                timestamp: thought.timestamp,
+              })),
+            };
+          }),
+          plan: conv.plan ? {
+            goal: conv.plan.goal,
+            steps: conv.plan.steps.map((step: any) => ({
+              id: step.id,
+              description: step.description,
+              toolName: step.toolName || null,
+              parameters: step.parameters || null,
+              dependencies: step.dependencies || [],
+              status: step.status.toUpperCase(),
+              result: step.result || null,
+            })),
+            context: conv.plan.context,
+          } : null,
+          context: conv.context,
+          createdAt: conv.createdAt,
+          updatedAt: conv.updatedAt,
+        };
       }));
     } catch (error) {
       throw processZodError(error, action);
@@ -87,15 +109,35 @@ export const agentQueries = {
       const conversation = await service.getConversation(args.id, userId);
       if (!conversation) return null;
 
+      // Load thoughts for this conversation  
+      const allThoughts = await service.getThoughts(conversation.id, 500);
+
       return {
         id: conversation.id,
         userId: conversation.userId,
-        messages: conversation.messages.map((msg: any) => ({
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp,
-          thoughts: [],
-        })),
+        messages: conversation.messages.map((msg: any) => {
+          // Filter thoughts that belong to this message (by timestamp proximity)
+          const messageTime = new Date(msg.timestamp).getTime();
+          const messageThoughts = allThoughts.filter((thought: any) => {
+            const thoughtTime = new Date(thought.timestamp).getTime();
+            // Include thoughts within 1 minute of the message
+            return Math.abs(thoughtTime - messageTime) < 60000;
+          });
+          
+          return {
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp,
+            thoughts: messageThoughts.map((thought: any) => ({
+              id: thought.id,
+              conversationId: thought.conversationId,
+              type: thought.type.toUpperCase(),
+              content: thought.content,
+              metadata: thought.metadata,
+              timestamp: thought.timestamp,
+            })),
+          };
+        }),
         plan: conversation.plan ? {
           goal: conversation.plan.goal,
           steps: conversation.plan.steps.map((step: any) => ({
@@ -195,16 +237,36 @@ export const agentMutations = {
       
       const response = await service.processMessage(serviceInput, userId);
       
+      // Load all thoughts for this conversation to properly populate the messages
+      const allThoughts = await service.getThoughts(response.conversation.id, 500);
+      
       return {
         conversation: {
           id: response.conversation.id,
           userId: response.conversation.userId,
-          messages: response.conversation.messages.map((msg: any) => ({
-            role: msg.role,
-            content: msg.content,
-            timestamp: msg.timestamp,
-            thoughts: [],
-          })),
+          messages: response.conversation.messages.map((msg: any) => {
+            // Filter thoughts that belong to this message (by timestamp proximity)
+            const messageTime = new Date(msg.timestamp).getTime();
+            const messageThoughts = allThoughts.filter((thought: any) => {
+              const thoughtTime = new Date(thought.timestamp).getTime();
+              // Include thoughts within 1 minute of the message
+              return Math.abs(thoughtTime - messageTime) < 60000;
+            });
+            
+            return {
+              role: msg.role,
+              content: msg.content,
+              timestamp: msg.timestamp,
+              thoughts: messageThoughts.map((thought: any) => ({
+                id: thought.id,
+                conversationId: thought.conversationId,
+                type: thought.type.toUpperCase(),
+                content: thought.content,
+                metadata: thought.metadata,
+                timestamp: thought.timestamp,
+              })),
+            };
+          }),
           plan: response.conversation.plan ? {
             goal: response.conversation.plan.goal,
             steps: response.conversation.plan.steps.map((step: any) => ({
@@ -279,15 +341,35 @@ export const agentMutations = {
       const conversation = await service.createConversation(conversationData);
       console.log('[createAgentConversation] Conversation created successfully:', conversation.id);
 
+      // Load thoughts for this conversation (should be empty for new conversations)
+      const allThoughts = await service.getThoughts(conversation.id, 500);
+
       return {
         id: conversation.id,
         userId: conversation.userId,
-        messages: conversation.messages.map((msg: any) => ({
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp,
-          thoughts: [],
-        })),
+        messages: conversation.messages.map((msg: any) => {
+          // Filter thoughts that belong to this message (by timestamp proximity)
+          const messageTime = new Date(msg.timestamp).getTime();
+          const messageThoughts = allThoughts.filter((thought: any) => {
+            const thoughtTime = new Date(thought.timestamp).getTime();
+            // Include thoughts within 1 minute of the message
+            return Math.abs(thoughtTime - messageTime) < 60000;
+          });
+          
+          return {
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp,
+            thoughts: messageThoughts.map((thought: any) => ({
+              id: thought.id,
+              conversationId: thought.conversationId,
+              type: thought.type.toUpperCase(),
+              content: thought.content,
+              metadata: thought.metadata,
+              timestamp: thought.timestamp,
+            })),
+          };
+        }),
         plan: conversation.plan ? {
           goal: conversation.plan.goal,
           steps: conversation.plan.steps.map((step: any) => ({
