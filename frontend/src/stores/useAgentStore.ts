@@ -6,6 +6,8 @@
 import { create } from 'zustand';
 import { devtools, subscribeWithSelector } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { apolloClient } from '../lib/apolloClient';
+import { gql } from '@apollo/client';
 
 // Types
 export interface AgentMessage {
@@ -121,6 +123,132 @@ export interface AgentActions {
   reset: () => void;
 }
 
+// GraphQL Queries and Mutations
+const CREATE_AGENT_CONVERSATION = gql`
+  mutation CreateAgentConversation($config: AgentConfigInput) {
+    createAgentConversation(config: $config) {
+      id
+      userId
+      messages {
+        role
+        content
+        timestamp
+        thoughts {
+          id
+          type
+          content
+          metadata
+          timestamp
+        }
+      }
+      plan {
+        goal
+        steps {
+          id
+          description
+          toolName
+          status
+        }
+        context
+      }
+      context
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const GET_AGENT_CONVERSATIONS = gql`
+  query GetAgentConversations($limit: Int, $offset: Int) {
+    agentConversations(limit: $limit, offset: $offset) {
+      id
+      userId
+      messages {
+        role
+        content
+        timestamp
+      }
+      context
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+const SEND_AGENT_MESSAGE = gql`
+  mutation SendAgentMessage($input: SendMessageInput!) {
+    sendAgentMessage(input: $input) {
+      conversation {
+        id
+        userId
+        messages {
+          role
+          content
+          timestamp
+          thoughts {
+            id
+            type
+            content
+            metadata
+            timestamp
+          }
+        }
+        plan {
+          goal
+          steps {
+            id
+            description
+            toolName
+            status
+            result
+          }
+          context
+        }
+        context
+        createdAt
+        updatedAt
+      }
+      message {
+        role
+        content
+        timestamp
+      }
+      thoughts {
+        id
+        type
+        content
+        metadata
+        timestamp
+      }
+      plan {
+        goal
+        steps {
+          id
+          description
+          toolName
+          status
+        }
+        context
+      }
+    }
+  }
+`;
+
+const DELETE_AGENT_CONVERSATION = gql`
+  mutation DeleteAgentConversation($id: ID!) {
+    deleteAgentConversation(id: $id)
+  }
+`;
+
+const DISCOVER_AGENT_TOOLS = gql`
+  query DiscoverAgentTools {
+    discoverAgentTools {
+      tools
+      error
+    }
+  }
+`;
+
 // Default configuration
 const DEFAULT_CONFIG: AgentConfig = {
   maxThinkingSteps: 10,
@@ -165,58 +293,12 @@ export const useAgentStore = create<AgentState & AgentActions>()(
           });
 
           try {
-            // TODO: Replace with actual GraphQL mutation
-            const response = await fetch('/api/graphql', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                // Add auth header from context
-              },
-              body: JSON.stringify({
-                query: `
-                  mutation CreateAgentConversation($config: AgentConfigInput) {
-                    createAgentConversation(config: $config) {
-                      id
-                      userId
-                      messages {
-                        role
-                        content
-                        timestamp
-                        thoughts {
-                          id
-                          type
-                          content
-                          metadata
-                          timestamp
-                        }
-                      }
-                      plan {
-                        goal
-                        steps {
-                          id
-                          description
-                          toolName
-                          status
-                        }
-                        context
-                      }
-                      context
-                      createdAt
-                      updatedAt
-                    }
-                  }
-                `,
-                variables: { config },
-              }),
+            const { data } = await apolloClient.mutate({
+              mutation: CREATE_AGENT_CONVERSATION,
+              variables: { config },
             });
 
-            const data = await response.json();
-            
-            if (data.errors) {
-              throw new Error(data.errors[0].message);
-            }
-
-            const newConversation = data.data.createAgentConversation;
+            const newConversation = data.createAgentConversation;
             
             set((state) => {
               state.conversations.unshift(newConversation);
@@ -241,42 +323,14 @@ export const useAgentStore = create<AgentState & AgentActions>()(
           });
 
           try {
-            // TODO: Replace with actual GraphQL query
-            const response = await fetch('/api/graphql', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                // Add auth header from context
-              },
-              body: JSON.stringify({
-                query: `
-                  query GetAgentConversations($limit: Int, $offset: Int) {
-                    agentConversations(limit: $limit, offset: $offset) {
-                      id
-                      userId
-                      messages {
-                        role
-                        content
-                        timestamp
-                      }
-                      context
-                      createdAt
-                      updatedAt
-                    }
-                  }
-                `,
-                variables: { limit: 50, offset: 0 },
-              }),
+            const { data } = await apolloClient.query({
+              query: GET_AGENT_CONVERSATIONS,
+              variables: { limit: 50, offset: 0 },
+              fetchPolicy: 'network-only', // Always fetch fresh data
             });
 
-            const data = await response.json();
-            
-            if (data.errors) {
-              throw new Error(data.errors[0].message);
-            }
-
             set((state) => {
-              state.conversations = data.data.agentConversations;
+              state.conversations = data.agentConversations;
               state.isLoadingConversations = false;
             });
           } catch (error) {
@@ -289,28 +343,10 @@ export const useAgentStore = create<AgentState & AgentActions>()(
 
         deleteConversation: async (id) => {
           try {
-            // TODO: Replace with actual GraphQL mutation
-            const response = await fetch('/api/graphql', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                // Add auth header from context
-              },
-              body: JSON.stringify({
-                query: `
-                  mutation DeleteAgentConversation($id: ID!) {
-                    deleteAgentConversation(id: $id)
-                  }
-                `,
-                variables: { id },
-              }),
+            await apolloClient.mutate({
+              mutation: DELETE_AGENT_CONVERSATION,
+              variables: { id },
             });
-
-            const data = await response.json();
-            
-            if (data.errors) {
-              throw new Error(data.errors[0].message);
-            }
 
             set((state) => {
               state.conversations = state.conversations.filter((conv: AgentConversation) => conv.id !== id);
@@ -334,83 +370,12 @@ export const useAgentStore = create<AgentState & AgentActions>()(
           });
 
           try {
-            // TODO: Replace with actual GraphQL mutation
-            const response = await fetch('/api/graphql', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                // Add auth header from context
-              },
-              body: JSON.stringify({
-                query: `
-                  mutation SendAgentMessage($input: SendMessageInput!) {
-                    sendAgentMessage(input: $input) {
-                      conversation {
-                        id
-                        userId
-                        messages {
-                          role
-                          content
-                          timestamp
-                          thoughts {
-                            id
-                            type
-                            content
-                            metadata
-                            timestamp
-                          }
-                        }
-                        plan {
-                          goal
-                          steps {
-                            id
-                            description
-                            toolName
-                            status
-                            result
-                          }
-                          context
-                        }
-                        context
-                        createdAt
-                        updatedAt
-                      }
-                      message {
-                        role
-                        content
-                        timestamp
-                      }
-                      thoughts {
-                        id
-                        type
-                        content
-                        metadata
-                        timestamp
-                      }
-                      plan {
-                        goal
-                        steps {
-                          id
-                          description
-                          toolName
-                          status
-                        }
-                        context
-                      }
-                    }
-                  }
-                `,
-                variables: { input },
-              }),
+            const { data } = await apolloClient.mutate({
+              mutation: SEND_AGENT_MESSAGE,
+              variables: { input },
             });
 
-            const data = await response.json();
-            
-            if (data.errors) {
-              throw new Error(data.errors[0].message);
-            }
-
-            const response_data = data.data.sendAgentMessage;
+            const response_data = data.sendAgentMessage;
             
             set((state) => {
               // Update current conversation
@@ -446,33 +411,13 @@ export const useAgentStore = create<AgentState & AgentActions>()(
         // Tools
         loadAvailableTools: async () => {
           try {
-            // TODO: Replace with actual GraphQL query
-            const response = await fetch('/api/graphql', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                // Add auth header from context
-              },
-              body: JSON.stringify({
-                query: `
-                  query DiscoverAgentTools {
-                    discoverAgentTools {
-                      tools
-                      error
-                    }
-                  }
-                `,
-              }),
+            const { data } = await apolloClient.query({
+              query: DISCOVER_AGENT_TOOLS,
+              fetchPolicy: 'network-only',
             });
 
-            const data = await response.json();
-            
-            if (data.errors) {
-              throw new Error(data.errors[0].message);
-            }
-
             set((state) => {
-              state.availableTools = data.data.discoverAgentTools.tools || [];
+              state.availableTools = data.discoverAgentTools.tools || [];
             });
           } catch (error) {
             console.error('Failed to load available tools:', error);
@@ -517,16 +462,30 @@ export const useAgentStore = create<AgentState & AgentActions>()(
   )
 );
 
-// Selector hooks for commonly used state
-export const useCurrentConversation = () => useAgentStore(state => state.currentConversation);
-export const useConversations = () => useAgentStore(state => state.conversations);
-export const useAgentConfig = () => useAgentStore(state => state.config);
-export const useAgentLoading = () => useAgentStore(state => ({
-  isLoading: state.isLoading,
-  isSendingMessage: state.isSendingMessage,
-  isLoadingConversations: state.isLoadingConversations,
-}));
-export const useAgentErrors = () => useAgentStore(state => ({
-  error: state.error,
-  sendError: state.sendError,
-})); 
+// Memoized selector hooks to prevent infinite loops
+export const useCurrentConversation = () => {
+  return useAgentStore((state) => state.currentConversation);
+};
+
+export const useConversations = () => {
+  return useAgentStore((state) => state.conversations);
+};
+
+export const useAgentConfig = () => {
+  return useAgentStore((state) => state.config);
+};
+
+export const useAgentLoading = () => {
+  return useAgentStore((state) => ({
+    isLoading: state.isLoading,
+    isSendingMessage: state.isSendingMessage,
+    isLoadingConversations: state.isLoadingConversations,
+  }));
+};
+
+export const useAgentErrors = () => {
+  return useAgentStore((state) => ({
+    error: state.error,
+    sendError: state.sendError,
+  }));
+}; 

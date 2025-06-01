@@ -13,22 +13,19 @@ import {
   requireAuthentication
 } from '../helpers';
 
-// Initialize agent service
-let agentService: AgentService;
-
+// Create agent service for each request with proper authentication
 const getAgentService = (context: GraphQLContext): AgentService => {
-  if (!agentService) {
-    const accessToken = getAccessToken(context);
-    const supabaseWithAuth = supabase;
-    if (accessToken) {
-      supabaseWithAuth.auth.setSession({
-        access_token: accessToken,
-        refresh_token: '', // Not needed for this use case
-      });
-    }
-    agentService = new AgentService(supabaseWithAuth);
+  const accessToken = getAccessToken(context);
+  // Use the supabaseClient from the context if available, otherwise use the global one
+  const supabaseClient = context.supabaseClient || supabase;
+  const service = new AgentService(supabaseClient);
+  
+  // Set the access token for tool authentication
+  if (accessToken) {
+    service.setAccessToken(accessToken);
   }
-  return agentService;
+  
+  return service;
 };
 
 // ================================
@@ -261,17 +258,26 @@ export const agentMutations = {
   createAgentConversation: async (_parent: any, args: any, context: GraphQLContext) => {
     const action = 'creating agent conversation';
     try {
+      console.log('[createAgentConversation] Starting mutation with args:', args);
       requireAuthentication(context);
+      console.log('[createAgentConversation] Authentication passed, user:', context.currentUser?.id);
+      
       const service = getAgentService(context);
+      console.log('[createAgentConversation] AgentService created');
+      
       const userId = context.currentUser!.id;
       
-      const conversation = await service.createConversation({
+      const conversationData = {
         userId,
         context: {
           agentConfig: args.config || {},
           lastActivity: new Date().toISOString(),
         },
-      });
+      };
+      
+      console.log('[createAgentConversation] About to call service.createConversation with:', conversationData);
+      const conversation = await service.createConversation(conversationData);
+      console.log('[createAgentConversation] Conversation created successfully:', conversation.id);
 
       return {
         id: conversation.id,
@@ -300,6 +306,13 @@ export const agentMutations = {
         updatedAt: conversation.updatedAt,
       };
     } catch (error) {
+      console.error('[createAgentConversation] Error occurred:', error);
+      console.error('[createAgentConversation] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        type: typeof error,
+        constructor: error?.constructor?.name,
+      });
       throw processZodError(error, action);
     }
   },

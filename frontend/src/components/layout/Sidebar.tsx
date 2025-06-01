@@ -19,6 +19,7 @@ import {
   ArrowBackIcon, // For toggle
   ArrowForwardIcon // For toggle
 } from '@chakra-ui/icons'; // Use appropriate icons
+import { FiCpu } from 'react-icons/fi'; // Import AI/robot icon
 
 // Comment out direct imports if moving logos to public directory
 // import logoPositiveRoot from '../../assets/logos/logo-positive.svg'; 
@@ -37,7 +38,7 @@ const NAV_ITEMS = [
   { path: '/people', label: 'People', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
-  { path: '/agent', label: 'AI Assistant', icon: <InfoOutlineIcon /> },
+  { path: '/agent', label: 'AI Assistant', icon: <FiCpu size={16} /> },
 ];
 
 const ADMIN_NAV_ITEMS = [
