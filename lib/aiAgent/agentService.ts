@@ -255,6 +255,7 @@ export class AgentService {
     // Since our MCP server uses stdio transport for Claude Desktop,
     // we'll define the available tools directly here for the web interface
     return [
+      // DEAL OPERATIONS
       {
         name: 'search_deals',
         description: 'Search and filter deals by various criteria',
@@ -281,41 +282,6 @@ export class AgentService {
         },
       },
       {
-        name: 'search_contacts',
-        description: 'Find contacts and people by name or email',
-        parameters: {
-          type: 'object',
-          properties: {
-            search_term: { type: 'string', description: 'Search term to find contacts by name or email' },
-            organization_id: { type: 'string', description: 'Filter by organization ID' },
-            limit: { type: 'number', description: 'Maximum number of contacts to return', default: 10 },
-          },
-          required: ['search_term'],
-        },
-      },
-      {
-        name: 'search_organizations',
-        description: 'Find organizations by name to get their IDs for deal creation',
-        parameters: {
-          type: 'object',
-          properties: {
-            search_term: { type: 'string', description: 'Search term to find organizations by name' },
-            limit: { type: 'number', description: 'Maximum number of organizations to return', default: 10 },
-          },
-          required: ['search_term'],
-        },
-      },
-      {
-        name: 'analyze_pipeline',
-        description: 'Pipeline trends and performance analysis',
-        parameters: {
-          type: 'object',
-          properties: {
-            time_period_days: { type: 'number', description: 'Number of days to analyze', default: 30 },
-          },
-        },
-      },
-      {
         name: 'create_deal',
         description: 'Create new deals through natural language',
         parameters: {
@@ -332,6 +298,263 @@ export class AgentService {
         },
       },
       {
+        name: 'update_deal',
+        description: 'Update existing deal information',
+        parameters: {
+          type: 'object',
+          properties: {
+            deal_id: { type: 'string', description: 'ID of the deal to update' },
+            name: { type: 'string', description: 'New deal name' },
+            amount: { type: 'number', description: 'New deal amount' },
+            person_id: { type: 'string', description: 'New contact person ID' },
+            organization_id: { type: 'string', description: 'New organization ID' },
+            expected_close_date: { type: 'string', description: 'New expected close date (YYYY-MM-DD)' },
+            assigned_to_user_id: { type: 'string', description: 'New assigned user ID' },
+          },
+          required: ['deal_id'],
+        },
+      },
+      {
+        name: 'delete_deal',
+        description: 'Delete a deal permanently',
+        parameters: {
+          type: 'object',
+          properties: {
+            deal_id: { type: 'string', description: 'ID of the deal to delete' },
+          },
+          required: ['deal_id'],
+        },
+      },
+      {
+        name: 'analyze_pipeline',
+        description: 'Pipeline trends and performance analysis',
+        parameters: {
+          type: 'object',
+          properties: {
+            time_period_days: { type: 'number', description: 'Number of days to analyze', default: 30 },
+          },
+        },
+      },
+
+      // ORGANIZATION OPERATIONS
+      {
+        name: 'search_organizations',
+        description: 'Find organizations by name to get their IDs for deal creation',
+        parameters: {
+          type: 'object',
+          properties: {
+            search_term: { type: 'string', description: 'Search term to find organizations by name' },
+            limit: { type: 'number', description: 'Maximum number of organizations to return', default: 10 },
+          },
+          required: ['search_term'],
+        },
+      },
+      {
+        name: 'get_organization_details',
+        description: 'Get detailed information about a specific organization',
+        parameters: {
+          type: 'object',
+          properties: {
+            organization_id: { type: 'string', description: 'ID of the organization to get details for' },
+          },
+          required: ['organization_id'],
+        },
+      },
+      {
+        name: 'create_organization',
+        description: 'Create new organization/company record',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Organization name' },
+            address: { type: 'string', description: 'Organization address' },
+            notes: { type: 'string', description: 'Additional notes about the organization' },
+          },
+          required: ['name'],
+        },
+      },
+      {
+        name: 'update_organization',
+        description: 'Update existing organization information',
+        parameters: {
+          type: 'object',
+          properties: {
+            organization_id: { type: 'string', description: 'ID of the organization to update' },
+            name: { type: 'string', description: 'New organization name' },
+            address: { type: 'string', description: 'New organization address' },
+            notes: { type: 'string', description: 'New notes about the organization' },
+          },
+          required: ['organization_id'],
+        },
+      },
+
+      // CONTACT/PEOPLE OPERATIONS
+      {
+        name: 'search_contacts',
+        description: 'Find contacts and people by name or email',
+        parameters: {
+          type: 'object',
+          properties: {
+            search_term: { type: 'string', description: 'Search term to find contacts by name or email' },
+            organization_id: { type: 'string', description: 'Filter by organization ID' },
+            limit: { type: 'number', description: 'Maximum number of contacts to return', default: 10 },
+          },
+          required: ['search_term'],
+        },
+      },
+      {
+        name: 'get_contact_details',
+        description: 'Get detailed information about a specific contact',
+        parameters: {
+          type: 'object',
+          properties: {
+            person_id: { type: 'string', description: 'ID of the person to get details for' },
+          },
+          required: ['person_id'],
+        },
+      },
+      {
+        name: 'create_contact',
+        description: 'Create new contact/person record',
+        parameters: {
+          type: 'object',
+          properties: {
+            first_name: { type: 'string', description: 'First name' },
+            last_name: { type: 'string', description: 'Last name' },
+            email: { type: 'string', description: 'Email address' },
+            phone: { type: 'string', description: 'Phone number' },
+            organization_id: { type: 'string', description: 'Organization ID to associate with' },
+            notes: { type: 'string', description: 'Additional notes about the contact' },
+          },
+          required: ['first_name'],
+        },
+      },
+      {
+        name: 'update_contact',
+        description: 'Update existing contact information',
+        parameters: {
+          type: 'object',
+          properties: {
+            person_id: { type: 'string', description: 'ID of the person to update' },
+            first_name: { type: 'string', description: 'New first name' },
+            last_name: { type: 'string', description: 'New last name' },
+            email: { type: 'string', description: 'New email address' },
+            phone: { type: 'string', description: 'New phone number' },
+            organization_id: { type: 'string', description: 'New organization ID' },
+            notes: { type: 'string', description: 'New notes about the contact' },
+          },
+          required: ['person_id'],
+        },
+      },
+
+      // ACTIVITY OPERATIONS
+      {
+        name: 'search_activities',
+        description: 'Find activities and tasks with filtering options',
+        parameters: {
+          type: 'object',
+          properties: {
+            deal_id: { type: 'string', description: 'Filter by deal ID' },
+            person_id: { type: 'string', description: 'Filter by person ID' },
+            organization_id: { type: 'string', description: 'Filter by organization ID' },
+            is_done: { type: 'boolean', description: 'Filter by completion status' },
+            limit: { type: 'number', description: 'Maximum number of activities to return', default: 20 },
+          },
+        },
+      },
+      {
+        name: 'get_activity_details',
+        description: 'Get detailed information about a specific activity',
+        parameters: {
+          type: 'object',
+          properties: {
+            activity_id: { type: 'string', description: 'ID of the activity to get details for' },
+          },
+          required: ['activity_id'],
+        },
+      },
+      {
+        name: 'create_activity',
+        description: 'Create new activity, task, meeting, or reminder',
+        parameters: {
+          type: 'object',
+          properties: {
+            type: { type: 'string', description: 'Activity type: TASK, MEETING, CALL, EMAIL, DEADLINE, SYSTEM_TASK', enum: ['TASK', 'MEETING', 'CALL', 'EMAIL', 'DEADLINE', 'SYSTEM_TASK'] },
+            subject: { type: 'string', description: 'Activity subject/title' },
+            due_date: { type: 'string', description: 'Due date (ISO 8601 format)' },
+            notes: { type: 'string', description: 'Activity notes or description' },
+            is_done: { type: 'boolean', description: 'Completion status', default: false },
+            deal_id: { type: 'string', description: 'Associate with deal ID' },
+            person_id: { type: 'string', description: 'Associate with person ID' },
+            organization_id: { type: 'string', description: 'Associate with organization ID' },
+          },
+          required: ['type', 'subject'],
+        },
+      },
+      {
+        name: 'update_activity',
+        description: 'Update existing activity information',
+        parameters: {
+          type: 'object',
+          properties: {
+            activity_id: { type: 'string', description: 'ID of the activity to update' },
+            type: { type: 'string', description: 'New activity type', enum: ['TASK', 'MEETING', 'CALL', 'EMAIL', 'DEADLINE', 'SYSTEM_TASK'] },
+            subject: { type: 'string', description: 'New activity subject/title' },
+            due_date: { type: 'string', description: 'New due date (ISO 8601 format)' },
+            notes: { type: 'string', description: 'New activity notes' },
+            is_done: { type: 'boolean', description: 'New completion status' },
+            deal_id: { type: 'string', description: 'New deal association' },
+            person_id: { type: 'string', description: 'New person association' },
+            organization_id: { type: 'string', description: 'New organization association' },
+          },
+          required: ['activity_id'],
+        },
+      },
+      {
+        name: 'complete_activity',
+        description: 'Mark an activity as completed',
+        parameters: {
+          type: 'object',
+          properties: {
+            activity_id: { type: 'string', description: 'ID of the activity to complete' },
+            completion_notes: { type: 'string', description: 'Optional notes about completion' },
+          },
+          required: ['activity_id'],
+        },
+      },
+
+      // PRICING AND QUOTES
+      {
+        name: 'get_price_quotes',
+        description: 'Get price quotes for a specific deal',
+        parameters: {
+          type: 'object',
+          properties: {
+            deal_id: { type: 'string', description: 'Deal ID to get quotes for' },
+          },
+          required: ['deal_id'],
+        },
+      },
+      {
+        name: 'create_price_quote',
+        description: 'Create new price quote for a deal',
+        parameters: {
+          type: 'object',
+          properties: {
+            deal_id: { type: 'string', description: 'Deal ID to create quote for' },
+            name: { type: 'string', description: 'Quote name/title' },
+            base_minimum_price_mp: { type: 'number', description: 'Base minimum price' },
+            target_markup_percentage: { type: 'number', description: 'Target markup percentage' },
+            final_offer_price_fop: { type: 'number', description: 'Final offer price' },
+            overall_discount_percentage: { type: 'number', description: 'Overall discount percentage' },
+            upfront_payment_percentage: { type: 'number', description: 'Upfront payment percentage' },
+          },
+          required: ['deal_id'],
+        },
+      },
+
+      // USER OPERATIONS
+      {
         name: 'search_users',
         description: 'Find users by name or email to assign deals and tasks',
         parameters: {
@@ -341,6 +564,38 @@ export class AgentService {
             limit: { type: 'number', description: 'Maximum number of users to return', default: 10 },
           },
           required: ['search_term'],
+        },
+      },
+      {
+        name: 'get_user_profile',
+        description: 'Get current user profile information',
+        parameters: {
+          type: 'object',
+          properties: {},
+        },
+      },
+
+      // WORKFLOW MANAGEMENT
+      {
+        name: 'get_wfm_project_types',
+        description: 'Get available workflow project types',
+        parameters: {
+          type: 'object',
+          properties: {
+            is_archived: { type: 'boolean', description: 'Include archived types', default: false },
+          },
+        },
+      },
+      {
+        name: 'update_deal_workflow_progress',
+        description: 'Move a deal to a different workflow stage',
+        parameters: {
+          type: 'object',
+          properties: {
+            deal_id: { type: 'string', description: 'Deal ID to update' },
+            target_step_id: { type: 'string', description: 'Target workflow step ID' },
+          },
+          required: ['deal_id', 'target_step_id'],
         },
       },
     ];
@@ -885,6 +1140,337 @@ The deal has been added to your pipeline and is ready for further customization.
         }).join('\n');
 
         return `${summary}\n\n${usersList || 'No users found.'}`;
+      }
+
+      case 'update_deal': {
+        const { deal_id, name, amount, person_id, organization_id, expected_close_date, assigned_to_user_id } = parameters;
+        
+        const mutation = `
+          mutation UpdateDeal($id: ID!, $input: DealUpdateInput!) {
+            updateDeal(id: $id, input: $input) {
+              id
+              name
+              amount
+              expected_close_date
+              updated_at
+              person {
+                first_name
+                last_name
+              }
+              organization {
+                name
+              }
+            }
+          }
+        `;
+
+        const input: any = {};
+        if (name !== undefined) input.name = name;
+        if (amount !== undefined) input.amount = amount;
+        if (person_id !== undefined) input.person_id = person_id;
+        if (organization_id !== undefined) input.organization_id = organization_id;
+        if (expected_close_date !== undefined) input.expected_close_date = expected_close_date;
+        if (assigned_to_user_id !== undefined) input.assignedToUserId = assigned_to_user_id;
+
+        const result = await executeGraphQL(mutation, { id: deal_id, input });
+        const deal = result.data?.updateDeal;
+        
+        if (!deal) {
+          throw new Error(`Failed to update deal - deal with ID ${deal_id} not found`);
+        }
+        
+        const contact = deal.person ? `${deal.person.first_name} ${deal.person.last_name}` : 'No contact';
+        const org = deal.organization?.name || 'No organization';
+        const amountStr = deal.amount ? `$${deal.amount.toLocaleString()}` : 'No amount';
+        
+        return `✅ Deal updated successfully!
+
+**Updated Deal Details:**
+-+- Name: ${deal.name}
+-+- Amount: ${amountStr}
+-+- Contact: ${contact}
+-+- Organization: ${org}
+-+- Expected Close: ${deal.expected_close_date || 'Not set'}
+-+- Last Updated: ${new Date(deal.updated_at).toLocaleDateString()}
+-+- Deal ID: ${deal.id}`;
+      }
+
+      case 'delete_deal': {
+        const { deal_id } = parameters;
+        
+        const mutation = `
+          mutation DeleteDeal($id: ID!) {
+            deleteDeal(id: $id)
+          }
+        `;
+
+        const result = await executeGraphQL(mutation, { id: deal_id });
+        const success = result.data?.deleteDeal;
+        
+        if (!success) {
+          throw new Error(`Failed to delete deal with ID ${deal_id}`);
+        }
+        
+        return `✅ Deal deleted successfully! Deal ID ${deal_id} has been permanently removed from the system.`;
+      }
+
+      case 'get_organization_details': {
+        const { organization_id } = parameters;
+        
+        const query = `
+          query GetOrganizationDetails($organizationId: ID!) {
+            organization(id: $organizationId) {
+              id
+              name
+              address
+              notes
+              created_at
+              updated_at
+            }
+          }
+        `;
+
+        const result = await executeGraphQL(query, { organizationId: organization_id });
+        const org = result.data?.organization;
+        
+        if (!org) {
+          return `Organization with ID ${organization_id} not found`;
+        }
+
+        return `# Organization Details: ${org.name}
+
+**Basic Information:**
++- Name: ${org.name}
++- Address: ${org.address || 'No address'}
++- Created: ${new Date(org.created_at).toLocaleDateString()}
++- Last Updated: ${new Date(org.updated_at).toLocaleDateString()}
++- Organization ID: ${org.id}
+
+**Notes:**
+${org.notes || 'No notes available'}`;
+      }
+
+      case 'create_organization': {
+        const { name, address, notes } = parameters;
+        
+        const mutation = `
+          mutation CreateOrganization($input: OrganizationInput!) {
+            createOrganization(input: $input) {
+              id
+              name
+              address
+              notes
+              created_at
+            }
+          }
+        `;
+
+        const input: any = { name };
+        if (address) input.address = address;
+        if (notes) input.notes = notes;
+
+        const result = await executeGraphQL(mutation, { input });
+        const org = result.data?.createOrganization;
+        
+        if (!org) {
+          throw new Error('Failed to create organization - no data returned');
+        }
+        
+        return `✅ Organization created successfully!
+
+**Organization Details:**
++- Name: ${org.name}
++- Address: ${org.address || 'No address'}
++- Notes: ${org.notes || 'No notes'}
++- Created: ${new Date(org.created_at).toLocaleDateString()}
++- Organization ID: ${org.id}
+
++The organization has been added to your CRM and is ready for use.`;
+      }
+
+      case 'update_organization': {
+        const { organization_id, name, address, notes } = parameters;
+        
+        const mutation = `
+          mutation UpdateOrganization($id: ID!, $input: OrganizationInput!) {
+            updateOrganization(id: $id, input: $input) {
+              id
+              name
+              address
+              notes
+              updated_at
+            }
+          }
+        `;
+
+        const input: any = {};
+        if (name !== undefined) input.name = name;
+        if (address !== undefined) input.address = address;
+        if (notes !== undefined) input.notes = notes;
+
+        const result = await executeGraphQL(mutation, { id: organization_id, input });
+        const org = result.data?.updateOrganization;
+        
+        if (!org) {
+          throw new Error(`Failed to update organization - organization with ID ${organization_id} not found`);
+        }
+        
+        return `✅ Organization updated successfully!
+
+**Updated Organization Details:**
++- Name: ${org.name}
++- Address: ${org.address || 'No address'}
++- Notes: ${org.notes || 'No notes'}
++- Last Updated: ${new Date(org.updated_at).toLocaleDateString()}
++- Organization ID: ${org.id}`;
+      }
+
+      case 'get_contact_details': {
+        const { person_id } = parameters;
+        
+        const query = `
+          query GetContactDetails($personId: ID!) {
+            person(id: $personId) {
+              id
+              first_name
+              last_name
+              email
+              phone
+              notes
+              created_at
+              updated_at
+              organization {
+                id
+                name
+              }
+            }
+          }
+        `;
+
+        const result = await executeGraphQL(query, { personId: person_id });
+        const person = result.data?.person;
+        
+        if (!person) {
+          return `Contact with ID ${person_id} not found`;
+        }
+
+        const fullName = `${person.first_name || ''} ${person.last_name || ''}`.trim();
+        const org = person.organization ? person.organization.name : 'No organization';
+
+        return `# Contact Details: ${fullName}
+
+**Basic Information:**
++- Name: ${fullName}
++- Email: ${person.email || 'No email'}
++- Phone: ${person.phone || 'No phone'}
++- Organization: ${org}
++- Created: ${new Date(person.created_at).toLocaleDateString()}
++- Last Updated: ${new Date(person.updated_at).toLocaleDateString()}
++- Contact ID: ${person.id}
+
+**Notes:**
+${person.notes || 'No notes available'}`;
+      }
+
+      case 'create_contact': {
+        const { first_name, last_name, email, phone, organization_id, notes } = parameters;
+        
+        const mutation = `
+          mutation CreateContact($input: PersonInput!) {
+            createPerson(input: $input) {
+              id
+              first_name
+              last_name
+              email
+              phone
+              notes
+              created_at
+              organization {
+                name
+              }
+            }
+          }
+        `;
+
+        const input: any = { first_name };
+        if (last_name) input.last_name = last_name;
+        if (email) input.email = email;
+        if (phone) input.phone = phone;
+        if (organization_id) input.organization_id = organization_id;
+        if (notes) input.notes = notes;
+
+        const result = await executeGraphQL(mutation, { input });
+        const person = result.data?.createPerson;
+        
+        if (!person) {
+          throw new Error('Failed to create contact - no data returned');
+        }
+        
+        const fullName = `${person.first_name || ''} ${person.last_name || ''}`.trim();
+        const org = person.organization ? person.organization.name : 'No organization';
+        
+        return `✅ Contact created successfully!
+
+**Contact Details:**
++- Name: ${fullName}
++- Email: ${person.email || 'No email'}
++- Phone: ${person.phone || 'No phone'}
++- Organization: ${org}
++- Notes: ${person.notes || 'No notes'}
++- Created: ${new Date(person.created_at).toLocaleDateString()}
++- Contact ID: ${person.id}
+
++The contact has been added to your CRM and is ready for use.`;
+      }
+
+      case 'update_contact': {
+        const { person_id, first_name, last_name, email, phone, organization_id, notes } = parameters;
+        
+        const mutation = `
+          mutation UpdateContact($id: ID!, $input: PersonInput!) {
+            updatePerson(id: $id, input: $input) {
+              id
+              first_name
+              last_name
+              email
+              phone
+              notes
+              updated_at
+              organization {
+                name
+              }
+            }
+          }
+        `;
+
+        const input: any = {};
+        if (first_name !== undefined) input.first_name = first_name;
+        if (last_name !== undefined) input.last_name = last_name;
+        if (email !== undefined) input.email = email;
+        if (phone !== undefined) input.phone = phone;
+        if (organization_id !== undefined) input.organization_id = organization_id;
+        if (notes !== undefined) input.notes = notes;
+
+        const result = await executeGraphQL(mutation, { id: person_id, input });
+        const person = result.data?.updatePerson;
+        
+        if (!person) {
+          throw new Error(`Failed to update contact - contact with ID ${person_id} not found`);
+        }
+        
+        const fullName = `${person.first_name || ''} ${person.last_name || ''}`.trim();
+        const org = person.organization ? person.organization.name : 'No organization';
+        
+        return `✅ Contact updated successfully!
+
+**Updated Contact Details:**
++- Name: ${fullName}
++- Email: ${person.email || 'No email'}
++- Phone: ${person.phone || 'No phone'}
++- Organization: ${org}
++- Notes: ${person.notes || 'No notes'}
++- Last Updated: ${new Date(person.updated_at).toLocaleDateString()}
++- Contact ID: ${person.id}`;
       }
 
       default:
