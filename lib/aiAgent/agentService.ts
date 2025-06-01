@@ -283,16 +283,21 @@ export class AgentService {
       },
       {
         name: 'create_deal',
-        description: 'Create new deals through natural language',
+        description: 'Create a new deal in the CRM system',
         parameters: {
           type: 'object',
           properties: {
-            name: { type: 'string', description: 'Name of the new deal' },
-            amount: { type: 'number', description: 'Deal amount' },
-            person_id: { type: 'string', description: 'ID of the contact person' },
-            organization_id: { type: 'string', description: 'ID of the organization' },
-            expected_close_date: { type: 'string', description: 'Expected close date (YYYY-MM-DD)' },
-            assigned_to_user_id: { type: 'string', description: 'ID of the user to assign the deal to' },
+            name: { type: 'string', description: 'Deal name/title' },
+            organization_id: { type: 'string', description: 'Organization ID to associate with deal' },
+            primary_contact_id: { type: 'string', description: 'Primary contact person ID' },
+            value: { type: 'number', description: 'Deal value/amount' },
+            stage: { type: 'string', description: 'Deal stage' },
+            priority: { type: 'string', description: 'Deal priority (HIGH, MEDIUM, LOW)' },
+            description: { type: 'string', description: 'Deal description' },
+            source: { type: 'string', description: 'Deal source (e.g., Website, Referral, Cold Call)' },
+            deal_type: { type: 'string', description: 'Type of deal' },
+            close_date: { type: 'string', description: 'Expected close date (YYYY-MM-DD format)' },
+            custom_fields: { type: 'array', description: 'Custom field values array with definitionId and value fields' },
           },
           required: ['name'],
         },
@@ -596,6 +601,62 @@ export class AgentService {
             target_step_id: { type: 'string', description: 'Target workflow step ID' },
           },
           required: ['deal_id', 'target_step_id'],
+        },
+      },
+
+      // CUSTOM FIELDS MANAGEMENT
+      {
+        name: 'get_custom_field_definitions',
+        description: 'Get available custom field definitions for an entity type',
+        parameters: {
+          type: 'object',
+          properties: {
+            entity_type: { type: 'string', description: 'Entity type: DEAL, PERSON, ORGANIZATION', enum: ['DEAL', 'PERSON', 'ORGANIZATION'] },
+            include_inactive: { type: 'boolean', description: 'Include inactive custom fields', default: false },
+          },
+          required: ['entity_type'],
+        },
+      },
+      {
+        name: 'create_custom_field_definition',
+        description: 'Create new custom field definition for capturing unique information',
+        parameters: {
+          type: 'object',
+          properties: {
+            entity_type: { type: 'string', description: 'Entity type: DEAL, PERSON, ORGANIZATION', enum: ['DEAL', 'PERSON', 'ORGANIZATION'] },
+            field_name: { type: 'string', description: 'Internal field name (unique per entity type)' },
+            field_label: { type: 'string', description: 'Display label for the field' },
+            field_type: { type: 'string', description: 'Field type: TEXT, NUMBER, DATE, BOOLEAN, DROPDOWN, MULTI_SELECT', enum: ['TEXT', 'NUMBER', 'DATE', 'BOOLEAN', 'DROPDOWN', 'MULTI_SELECT'] },
+            is_required: { type: 'boolean', description: 'Whether field is required', default: false },
+            dropdown_options: { type: 'array', description: 'Options for DROPDOWN/MULTI_SELECT fields. Array of {value, label} objects' },
+            display_order: { type: 'number', description: 'Display order for UI', default: 0 },
+          },
+          required: ['entity_type', 'field_name', 'field_label', 'field_type'],
+        },
+      },
+      {
+        name: 'get_entity_custom_fields',
+        description: 'Get custom field values for a specific entity',
+        parameters: {
+          type: 'object',
+          properties: {
+            entity_type: { type: 'string', description: 'Entity type: DEAL, PERSON, ORGANIZATION', enum: ['DEAL', 'PERSON', 'ORGANIZATION'] },
+            entity_id: { type: 'string', description: 'ID of the entity to get custom fields for' },
+          },
+          required: ['entity_type', 'entity_id'],
+        },
+      },
+      {
+        name: 'set_entity_custom_fields',
+        description: 'Set custom field values for an entity',
+        parameters: {
+          type: 'object',
+          properties: {
+            entity_type: { type: 'string', description: 'Entity type: DEAL, PERSON, ORGANIZATION', enum: ['DEAL', 'PERSON', 'ORGANIZATION'] },
+            entity_id: { type: 'string', description: 'ID of the entity to set custom fields for' },
+            custom_fields: { type: 'array', description: 'Array of custom field values with definitionId and value fields' },
+          },
+          required: ['entity_type', 'entity_id', 'custom_fields'],
         },
       },
     ];
@@ -903,40 +964,142 @@ export class AgentService {
             deal(id: $dealId) {
               id
               name
-              amount
-              expected_close_date
+              description
+              value
+              stage
+              priority
+              status
+              source
               created_at
               updated_at
-              assigned_to_user_id
-              person {
+              closeDate
+              deal_type
+              organization {
+                id
+                name
+              }
+              primaryContact {
                 id
                 first_name
                 last_name
                 email
-                phone
-                notes
-              }
-              organization {
-                id
-                name
-                address
-                notes
               }
               activities {
                 id
                 type
-                subject
+                status
+                due_date
+                completed_at
                 notes
                 created_at
-                is_done
-                due_date
-                user {
-                  display_name
-                }
               }
-              assignedToUser {
+              customFieldValues {
+                definition {
+                  id
+                  fieldName
+                  fieldLabel
+                  fieldType
+                }
+                stringValue
+                numberValue
+                booleanValue
+                dateValue
+                selectedOptionValues
+              }
+            }
+          }
+        `;
+        
+        const result = await executeGraphQL(query, { dealId: deal_id });
+        const deal = result.data?.deal;
+        
+        if (!deal) {
+          return `Deal with ID ${deal_id} not found`;
+        }
+        
+        const org = deal.organization ? `${deal.organization.name} (ID: ${deal.organization.id})` : 'No organization';
+        const contact = deal.primaryContact 
+          ? `${deal.primaryContact.first_name} ${deal.primaryContact.last_name} (${deal.primaryContact.email})`
+          : 'No primary contact';
+        
+        const activitiesInfo = deal.activities && deal.activities.length > 0 
+          ? `\n\n**Recent Activities (${deal.activities.length}):**\n${deal.activities.slice(0, 5).map((activity: any) => 
+              `• ${activity.type} - ${activity.status}${activity.due_date ? ` (Due: ${new Date(activity.due_date).toLocaleDateString()})` : ''}${activity.completed_at ? ` (Completed: ${new Date(activity.completed_at).toLocaleDateString()})` : ''}`
+            ).join('\n')}`
+          : '';
+
+        // Format custom fields
+        const customFieldsInfo = deal.customFieldValues && deal.customFieldValues.length > 0
+          ? `\n\n**Custom Fields:**\n${deal.customFieldValues.map((field: any) => {
+              let value = 'No value';
+              switch (field.definition.fieldType) {
+                case 'TEXT':
+                case 'DROPDOWN':
+                  value = field.stringValue || 'No value';
+                  break;
+                case 'NUMBER':
+                  value = field.numberValue !== null ? field.numberValue.toString() : 'No value';
+                  break;
+                case 'BOOLEAN':
+                  value = field.booleanValue !== null ? (field.booleanValue ? 'Yes' : 'No') : 'No value';
+                  break;
+                case 'DATE':
+                  value = field.dateValue ? new Date(field.dateValue).toLocaleDateString() : 'No value';
+                  break;
+                case 'MULTI_SELECT':
+                  value = field.selectedOptionValues && field.selectedOptionValues.length > 0 
+                    ? field.selectedOptionValues.join(', ') 
+                    : 'No selections';
+                  break;
+              }
+              return `• ${field.definition.fieldLabel}: ${value}`;
+            }).join('\n')}`
+          : '';
+        
+        return `**Deal Details:**
+- Name: ${deal.name}
+- Value: ${deal.value ? `$${deal.value.toLocaleString()}` : 'Not specified'}
+- Stage: ${deal.stage || 'Not specified'}
+- Priority: ${deal.priority || 'Not specified'}
+- Status: ${deal.status}
+- Type: ${deal.deal_type || 'Not specified'}
+- Source: ${deal.source || 'Not specified'}
+- Organization: ${org}
+- Primary Contact: ${contact}
+- Close Date: ${deal.closeDate ? new Date(deal.closeDate).toLocaleDateString() : 'Not set'}
+- Created: ${new Date(deal.created_at).toLocaleDateString()}
+- Last Updated: ${new Date(deal.updated_at).toLocaleDateString()}
+
+**Description:**
+${deal.description || 'No description provided'}${activitiesInfo}${customFieldsInfo}
+
+Deal ID: ${deal.id}`;
+      }
+
+      case 'create_deal': {
+        const { name, organization_id, primary_contact_id, value, stage, priority, description, source, deal_type, close_date, custom_fields } = parameters;
+        
+        const mutation = `
+          mutation CreateDeal($input: DealInput!) {
+            createDeal(input: $input) {
+              id
+              name
+              value
+              stage
+              priority
+              status
+              description
+              source
+              deal_type
+              closeDate
+              organization {
                 id
-                display_name
+                name
+              }
+              primaryContact {
+                id
+                first_name
+                last_name
                 email
               }
               customFieldValues {
@@ -948,118 +1111,44 @@ export class AgentService {
                 numberValue
                 booleanValue
                 dateValue
+                selectedOptionValues
               }
-            }
-          }
-        `;
-
-        const result = await executeGraphQL(query, { dealId: deal_id });
-        const deal = result.data?.deal;
-        
-        if (!deal) {
-          return `Deal with ID ${deal_id} not found`;
-        }
-
-        const contact = deal.person ? 
-          `${deal.person.first_name || ''} ${deal.person.last_name || ''}`.trim() : 'No contact';
-        const org = deal.organization?.name || 'No organization';
-        const amount = deal.amount ? `$${deal.amount.toLocaleString()}` : 'No amount';
-        const assignedTo = deal.assignedToUser?.display_name || 'Unassigned';
-
-        const activities = deal.activities?.slice(0, 5).map((activity: any) => 
-          `• ${activity.type}: ${activity.subject || 'No subject'} (${new Date(activity.created_at).toLocaleDateString()})`
-        ).join('\n') || 'No activities';
-
-        const customFields = deal.customFieldValues?.map((field: any) => {
-          const value = field.stringValue || field.numberValue || field.booleanValue || field.dateValue || 'No value';
-          return `• ${field.definition.fieldLabel}: ${value}`;
-        }).join('\n') || 'No custom fields';
-
-        return `# Deal Details: ${deal.name}
-
-**Basic Information:**
-- Amount: ${amount}
-- Assigned to: ${assignedTo}
-- Expected Close: ${deal.expected_close_date || 'Not set'}
-- Created: ${new Date(deal.created_at).toLocaleDateString()}
-- Last Updated: ${new Date(deal.updated_at).toLocaleDateString()}
-
-**Contact Information:**
-- Primary Contact: ${contact}
-- Organization: ${org}
-${deal.person?.email ? `- Email: ${deal.person.email}` : ''}
-${deal.person?.phone ? `- Phone: ${deal.person.phone}` : ''}
-
-**Recent Activities:**
-${activities}
-
-**Custom Fields:**
-${customFields}
-
-**Notes:**
-${deal.organization?.notes ? `Organization: ${deal.organization.notes}` : ''}
-${deal.person?.notes ? `Contact: ${deal.person.notes}` : ''}`;
-      }
-
-      case 'create_deal': {
-        const { name, amount, person_id, organization_id, expected_close_date, assigned_to_user_id } = parameters;
-        
-        // First, get a default WFM project type for deals
-        const projectTypeQuery = `
-          query GetDefaultProjectType {
-            wfmProjectTypes(isArchived: false) {
-              id
-              name
-            }
-          }
-        `;
-        
-        const projectTypeResult = await executeGraphQL(projectTypeQuery);
-        const projectTypes = projectTypeResult.data?.wfmProjectTypes || [];
-        
-        if (projectTypes.length === 0) {
-          throw new Error('No WFM project types available. Please contact your administrator to set up project types.');
-        }
-        
-        // Use the first available project type as default
-        const defaultProjectTypeId = projectTypes[0].id;
-        
-        const mutation = `
-          mutation CreateDeal($input: DealInput!) {
-            createDeal(input: $input) {
-              id
-              name
-              amount
-              expected_close_date
               created_at
-              person {
-                first_name
-                last_name
-              }
-              organization {
-                name
-              }
             }
           }
         `;
 
         const input: any = {
-          name: name || 'New Deal',
-          wfmProjectTypeId: defaultProjectTypeId,
+          name,
+          organizationId: organization_id,
+          primaryContactId: primary_contact_id,
+          value,
+          stage,
+          priority,
+          description,
+          source,
+          dealType: deal_type,
+          closeDate: close_date,
         };
 
-        if (amount !== undefined) input.amount = amount;
-        if (person_id) input.person_id = person_id;
-        if (organization_id) input.organization_id = organization_id;
-        // Smart default: Set expected close date to 30 days from now if not specified
-        if (expected_close_date) {
-          input.expected_close_date = expected_close_date;
-        } else {
-          const defaultCloseDate = new Date();
-          defaultCloseDate.setDate(defaultCloseDate.getDate() + 30);
-          input.expected_close_date = defaultCloseDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+        // Add custom fields if provided
+        if (custom_fields && custom_fields.length > 0) {
+          input.customFieldValues = custom_fields.map((field: any) => ({
+            definitionId: field.definitionId,
+            stringValue: field.stringValue || null,
+            numberValue: field.numberValue || null,
+            booleanValue: field.booleanValue || null,
+            dateValue: field.dateValue || null,
+            selectedOptionValues: field.selectedOptionValues || null,
+          }));
         }
-        if (assigned_to_user_id) input.assignedToUserId = assigned_to_user_id;
+
+        // Remove undefined values
+        Object.keys(input).forEach(key => {
+          if (input[key] === undefined) {
+            delete input[key];
+          }
+        });
 
         const result = await executeGraphQL(mutation, { input });
         const deal = result.data?.createDeal;
@@ -1068,687 +1157,54 @@ ${deal.person?.notes ? `Contact: ${deal.person.notes}` : ''}`;
           throw new Error('Failed to create deal - no data returned');
         }
         
-        const contact = deal.person ? `${deal.person.first_name} ${deal.person.last_name}` : 'No contact';
-        const org = deal.organization?.name || 'No organization';
-        const amountStr = deal.amount ? `$${deal.amount.toLocaleString()}` : 'No amount';
+        const org = deal.organization ? ` at ${deal.organization.name}` : '';
+        const contact = deal.primaryContact 
+          ? ` with primary contact ${deal.primaryContact.first_name} ${deal.primaryContact.last_name} (${deal.primaryContact.email})`
+          : '';
+
+        // Format custom fields in response
+        const customFieldsInfo = deal.customFieldValues && deal.customFieldValues.length > 0
+          ? `\n\n**Custom Fields Set:**\n${deal.customFieldValues.map((field: any) => {
+              let value = 'No value';
+              switch (field.definition.fieldType) {
+                case 'TEXT':
+                case 'DROPDOWN':
+                  value = field.stringValue || 'No value';
+                  break;
+                case 'NUMBER':
+                  value = field.numberValue !== null ? field.numberValue.toString() : 'No value';
+                  break;
+                case 'BOOLEAN':
+                  value = field.booleanValue !== null ? (field.booleanValue ? 'Yes' : 'No') : 'No value';
+                  break;
+                case 'DATE':
+                  value = field.dateValue ? new Date(field.dateValue).toLocaleDateString() : 'No value';
+                  break;
+                case 'MULTI_SELECT':
+                  value = field.selectedOptionValues && field.selectedOptionValues.length > 0 
+                    ? field.selectedOptionValues.join(', ') 
+                    : 'No selections';
+                  break;
+              }
+              return `- ${field.definition.fieldLabel}: ${value}`;
+            }).join('\n')}`
+          : '';
         
         return `✅ Deal created successfully!
 
 **Deal Details:**
 - Name: ${deal.name}
-- Amount: ${amountStr}
-- Contact: ${contact}
-- Organization: ${org}
-- Expected Close: ${deal.expected_close_date || 'Not set'}
-- Created: ${new Date(deal.created_at).toLocaleDateString()}
-- Deal ID: ${deal.id}
-
-The deal has been added to your pipeline and is ready for further customization.`;
-      }
-
-      case 'search_users': {
-        const { search_term, limit = 10 } = parameters;
-        
-        const query = `
-          query GetUsers {
-            userProfiles {
-              id
-              display_name
-              email
-              first_name
-              last_name
-              role
-              created_at
-            }
-          }
-        `;
-
-        const result = await executeGraphQL(query);
-        let users = result.data?.userProfiles || [];
-
-        // Apply client-side filtering
-        if (search_term) {
-          const searchLower = search_term.toLowerCase();
-          users = users.filter((user: any) => {
-            const displayName = (user.display_name || '').toLowerCase();
-            const email = (user.email || '').toLowerCase();
-            const firstName = (user.first_name || '').toLowerCase();
-            const lastName = (user.last_name || '').toLowerCase();
-            const fullName = `${firstName} ${lastName}`.toLowerCase();
-            
-            return displayName.includes(searchLower) || 
-                   email.includes(searchLower) || 
-                   fullName.includes(searchLower) ||
-                   firstName.includes(searchLower) ||
-                   lastName.includes(searchLower);
-          });
-        }
-
-        // Sort by display_name and limit
-        users.sort((a: any, b: any) => (a.display_name || a.email || '').localeCompare(b.display_name || b.email || ''));
-        users = users.slice(0, limit);
-
-        const summary = `Found ${users.length} users${search_term ? ` matching "${search_term}"` : ''}`;
-        
-        const usersList = users.map((user: any) => {
-          const name = user.display_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'No name';
-          const email = user.email ? ` | ${user.email}` : '';
-          const role = user.role ? ` | ${user.role}` : '';
-          const created = new Date(user.created_at).toLocaleDateString();
-          return `• ${name}${email}${role}
-  ID: ${user.id} | Joined: ${created}`;
-        }).join('\n');
-
-        return `${summary}\n\n${usersList || 'No users found.'}`;
-      }
-
-      case 'update_deal': {
-        const { deal_id, name, amount, person_id, organization_id, expected_close_date, assigned_to_user_id } = parameters;
-        
-        const mutation = `
-          mutation UpdateDeal($id: ID!, $input: DealUpdateInput!) {
-            updateDeal(id: $id, input: $input) {
-              id
-              name
-              amount
-              expected_close_date
-              updated_at
-              person {
-                first_name
-                last_name
-              }
-              organization {
-                name
-              }
-            }
-          }
-        `;
-
-        const input: any = {};
-        if (name !== undefined) input.name = name;
-        if (amount !== undefined) input.amount = amount;
-        if (person_id !== undefined) input.person_id = person_id;
-        if (organization_id !== undefined) input.organization_id = organization_id;
-        if (expected_close_date !== undefined) input.expected_close_date = expected_close_date;
-        if (assigned_to_user_id !== undefined) input.assignedToUserId = assigned_to_user_id;
-
-        const result = await executeGraphQL(mutation, { id: deal_id, input });
-        const deal = result.data?.updateDeal;
-        
-        if (!deal) {
-          throw new Error(`Failed to update deal - deal with ID ${deal_id} not found`);
-        }
-        
-        const contact = deal.person ? `${deal.person.first_name} ${deal.person.last_name}` : 'No contact';
-        const org = deal.organization?.name || 'No organization';
-        const amountStr = deal.amount ? `$${deal.amount.toLocaleString()}` : 'No amount';
-        
-        return `✅ Deal updated successfully!
-
-**Updated Deal Details:**
--+- Name: ${deal.name}
--+- Amount: ${amountStr}
--+- Contact: ${contact}
--+- Organization: ${org}
--+- Expected Close: ${deal.expected_close_date || 'Not set'}
--+- Last Updated: ${new Date(deal.updated_at).toLocaleDateString()}
--+- Deal ID: ${deal.id}`;
-      }
-
-      case 'delete_deal': {
-        const { deal_id } = parameters;
-        
-        const mutation = `
-          mutation DeleteDeal($id: ID!) {
-            deleteDeal(id: $id)
-          }
-        `;
-
-        const result = await executeGraphQL(mutation, { id: deal_id });
-        const success = result.data?.deleteDeal;
-        
-        if (!success) {
-          throw new Error(`Failed to delete deal with ID ${deal_id}`);
-        }
-        
-        return `✅ Deal deleted successfully! Deal ID ${deal_id} has been permanently removed from the system.`;
-      }
-
-      case 'get_organization_details': {
-        const { organization_id } = parameters;
-        
-        const query = `
-          query GetOrganizationDetails($organizationId: ID!) {
-            organization(id: $organizationId) {
-              id
-              name
-              address
-              notes
-              created_at
-              updated_at
-            }
-          }
-        `;
-
-        const result = await executeGraphQL(query, { organizationId: organization_id });
-        const org = result.data?.organization;
-        
-        if (!org) {
-          return `Organization with ID ${organization_id} not found`;
-        }
-
-        return `# Organization Details: ${org.name}
-
-**Basic Information:**
-+- Name: ${org.name}
-+- Address: ${org.address || 'No address'}
-+- Created: ${new Date(org.created_at).toLocaleDateString()}
-+- Last Updated: ${new Date(org.updated_at).toLocaleDateString()}
-+- Organization ID: ${org.id}
-
-**Notes:**
-${org.notes || 'No notes available'}`;
-      }
-
-      case 'create_organization': {
-        const { name, address, notes } = parameters;
-        
-        const mutation = `
-          mutation CreateOrganization($input: OrganizationInput!) {
-            createOrganization(input: $input) {
-              id
-              name
-              address
-              notes
-              created_at
-            }
-          }
-        `;
-
-        const input: any = { name };
-        if (address) input.address = address;
-        if (notes) input.notes = notes;
-
-        const result = await executeGraphQL(mutation, { input });
-        const org = result.data?.createOrganization;
-        
-        if (!org) {
-          throw new Error('Failed to create organization - no data returned');
-        }
-        
-        return `✅ Organization created successfully!
-
-**Organization Details:**
-+- Name: ${org.name}
-+- Address: ${org.address || 'No address'}
-+- Notes: ${org.notes || 'No notes'}
-+- Created: ${new Date(org.created_at).toLocaleDateString()}
-+- Organization ID: ${org.id}
-
-+The organization has been added to your CRM and is ready for use.`;
-      }
-
-      case 'update_organization': {
-        const { organization_id, name, address, notes } = parameters;
-        
-        const mutation = `
-          mutation UpdateOrganization($id: ID!, $input: OrganizationInput!) {
-            updateOrganization(id: $id, input: $input) {
-              id
-              name
-              address
-              notes
-              updated_at
-            }
-          }
-        `;
-
-        const input: any = {};
-        if (name !== undefined) input.name = name;
-        if (address !== undefined) input.address = address;
-        if (notes !== undefined) input.notes = notes;
-
-        const result = await executeGraphQL(mutation, { id: organization_id, input });
-        const org = result.data?.updateOrganization;
-        
-        if (!org) {
-          throw new Error(`Failed to update organization - organization with ID ${organization_id} not found`);
-        }
-        
-        return `✅ Organization updated successfully!
-
-**Updated Organization Details:**
-+- Name: ${org.name}
-+- Address: ${org.address || 'No address'}
-+- Notes: ${org.notes || 'No notes'}
-+- Last Updated: ${new Date(org.updated_at).toLocaleDateString()}
-+- Organization ID: ${org.id}`;
-      }
-
-      case 'get_contact_details': {
-        const { person_id } = parameters;
-        
-        const query = `
-          query GetContactDetails($personId: ID!) {
-            person(id: $personId) {
-              id
-              first_name
-              last_name
-              email
-              phone
-              notes
-              created_at
-              updated_at
-              organization {
-                id
-                name
-              }
-            }
-          }
-        `;
-
-        const result = await executeGraphQL(query, { personId: person_id });
-        const person = result.data?.person;
-        
-        if (!person) {
-          return `Contact with ID ${person_id} not found`;
-        }
-
-        const fullName = `${person.first_name || ''} ${person.last_name || ''}`.trim();
-        const org = person.organization ? person.organization.name : 'No organization';
-
-        return `# Contact Details: ${fullName}
-
-**Basic Information:**
-+- Name: ${fullName}
-+- Email: ${person.email || 'No email'}
-+- Phone: ${person.phone || 'No phone'}
-+- Organization: ${org}
-+- Created: ${new Date(person.created_at).toLocaleDateString()}
-+- Last Updated: ${new Date(person.updated_at).toLocaleDateString()}
-+- Contact ID: ${person.id}
-
-**Notes:**
-${person.notes || 'No notes available'}`;
-      }
-
-      case 'create_contact': {
-        const { first_name, last_name, email, phone, organization_id, notes } = parameters;
-        
-        const mutation = `
-          mutation CreateContact($input: PersonInput!) {
-            createPerson(input: $input) {
-              id
-              first_name
-              last_name
-              email
-              phone
-              notes
-              created_at
-              organization {
-                name
-              }
-            }
-          }
-        `;
-
-        const input: any = { first_name };
-        if (last_name) input.last_name = last_name;
-        if (email) input.email = email;
-        if (phone) input.phone = phone;
-        if (organization_id) input.organization_id = organization_id;
-        if (notes) input.notes = notes;
-
-        const result = await executeGraphQL(mutation, { input });
-        const person = result.data?.createPerson;
-        
-        if (!person) {
-          throw new Error('Failed to create contact - no data returned');
-        }
-        
-        const fullName = `${person.first_name || ''} ${person.last_name || ''}`.trim();
-        const org = person.organization ? person.organization.name : 'No organization';
-        
-        return `✅ Contact created successfully!
-
-**Contact Details:**
-+- Name: ${fullName}
-+- Email: ${person.email || 'No email'}
-+- Phone: ${person.phone || 'No phone'}
-+- Organization: ${org}
-+- Notes: ${person.notes || 'No notes'}
-+- Created: ${new Date(person.created_at).toLocaleDateString()}
-+- Contact ID: ${person.id}
-
-+The contact has been added to your CRM and is ready for use.`;
-      }
-
-      case 'update_contact': {
-        const { person_id, first_name, last_name, email, phone, organization_id, notes } = parameters;
-        
-        const mutation = `
-          mutation UpdateContact($id: ID!, $input: PersonInput!) {
-            updatePerson(id: $id, input: $input) {
-              id
-              first_name
-              last_name
-              email
-              phone
-              notes
-              updated_at
-              organization {
-                name
-              }
-            }
-          }
-        `;
-
-        const input: any = {};
-        if (first_name !== undefined) input.first_name = first_name;
-        if (last_name !== undefined) input.last_name = last_name;
-        if (email !== undefined) input.email = email;
-        if (phone !== undefined) input.phone = phone;
-        if (organization_id !== undefined) input.organization_id = organization_id;
-        if (notes !== undefined) input.notes = notes;
-
-        const result = await executeGraphQL(mutation, { id: person_id, input });
-        const person = result.data?.updatePerson;
-        
-        if (!person) {
-          throw new Error(`Failed to update contact - contact with ID ${person_id} not found`);
-        }
-        
-        const fullName = `${person.first_name || ''} ${person.last_name || ''}`.trim();
-        const org = person.organization ? person.organization.name : 'No organization';
-        
-        return `✅ Contact updated successfully!
-
-**Updated Contact Details:**
-- Name: ${fullName}
-- Email: ${person.email || 'No email'}
-- Phone: ${person.phone || 'No phone'}
-- Organization: ${org}
-- Notes: ${person.notes || 'No notes'}
-- Last Updated: ${new Date(person.updated_at).toLocaleDateString()}
-- Contact ID: ${person.id}`;
-      }
-
-      case 'search_activities': {
-        const { deal_id, person_id, organization_id, is_done, limit = 20 } = parameters;
-        
-        let query = `
-          query GetActivities($filter: ActivityFilterInput) {
-            activities(filter: $filter) {
-              id
-              type
-              subject
-              due_date
-              is_done
-              notes
-              created_at
-              deal {
-                id
-                name
-              }
-              person {
-                id
-                first_name
-                last_name
-              }
-              organization {
-                id
-                name
-              }
-              assignedToUser {
-                display_name
-              }
-            }
-          }
-        `;
-
-        const filter: any = {};
-        if (deal_id) filter.dealId = deal_id;
-        if (person_id) filter.personId = person_id;
-        if (organization_id) filter.organizationId = organization_id;
-        if (is_done !== undefined) filter.isDone = is_done;
-
-        const result = await executeGraphQL(query, { filter });
-        let activities = result.data?.activities || [];
-
-        // Sort by due_date and created_at
-        activities.sort((a: any, b: any) => {
-          const aDate = a.due_date ? new Date(a.due_date) : new Date(a.created_at);
-          const bDate = b.due_date ? new Date(b.due_date) : new Date(b.created_at);
-          return aDate.getTime() - bDate.getTime();
-        });
-        activities = activities.slice(0, limit);
-
-        const summary = `Found ${activities.length} activities`;
-        
-        const activitiesList = activities.map((activity: any) => {
-          const deal = activity.deal ? ` | Deal: ${activity.deal.name}` : '';
-          const person = activity.person ? ` | Contact: ${activity.person.first_name} ${activity.person.last_name}` : '';
-          const org = activity.organization ? ` | Org: ${activity.organization.name}` : '';
-          const dueDate = activity.due_date ? ` | Due: ${new Date(activity.due_date).toLocaleDateString()}` : '';
-          const status = activity.is_done ? '✅ Done' : '⏳ Pending';
-          const assignedTo = activity.assignedToUser ? ` | Assigned: ${activity.assignedToUser.display_name}` : '';
-          
-          return `• ${activity.type}: ${activity.subject} | ${status}${dueDate}${deal}${person}${org}${assignedTo}
-  ID: ${activity.id} | Created: ${new Date(activity.created_at).toLocaleDateString()}`;
-        }).join('\n\n');
-
-        return `${summary}\n\n${activitiesList || 'No activities found.'}`;
-      }
-
-      case 'create_activity': {
-        const { type, subject, due_date, notes, is_done = false, deal_id, person_id, organization_id } = parameters;
-        
-        const mutation = `
-          mutation CreateActivity($input: CreateActivityInput!) {
-            createActivity(input: $input) {
-              id
-              type
-              subject
-              due_date
-              notes
-              is_done
-              created_at
-              deal {
-                name
-              }
-              person {
-                first_name
-                last_name
-              }
-              organization {
-                name
-              }
-            }
-          }
-        `;
-
-        const input: any = { type, subject, is_done };
-        if (due_date) input.due_date = due_date;
-        if (notes) input.notes = notes;
-        if (deal_id) input.deal_id = deal_id;
-        if (person_id) input.person_id = person_id;
-        if (organization_id) input.organization_id = organization_id;
-
-        const result = await executeGraphQL(mutation, { input });
-        const activity = result.data?.createActivity;
-        
-        if (!activity) {
-          throw new Error('Failed to create activity - no data returned');
-        }
-        
-        const deal = activity.deal ? ` for deal "${activity.deal.name}"` : '';
-        const person = activity.person ? ` with ${activity.person.first_name} ${activity.person.last_name}` : '';
-        const org = activity.organization ? ` at ${activity.organization.name}` : '';
-        
-        return `✅ Activity created successfully!
-
-**Activity Details:**
-+- Type: ${activity.type}
-+- Subject: ${activity.subject}
-+- Due Date: ${activity.due_date ? new Date(activity.due_date).toLocaleDateString() : 'Not set'}
-+- Status: ${activity.is_done ? 'Completed' : 'Pending'}
-+- Notes: ${activity.notes || 'No notes'}
-+- Created: ${new Date(activity.created_at).toLocaleDateString()}
-+- Activity ID: ${activity.id}
-+- Associated: ${deal}${person}${org}
-
-+The activity has been added to your task list.`;
-      }
-
-      case 'complete_activity': {
-        const { activity_id, completion_notes } = parameters;
-        
-        const input: any = { is_done: true };
-        if (completion_notes) {
-          input.notes = completion_notes;
-        }
-        
-        const mutation = `
-          mutation CompleteActivity($id: ID!, $input: UpdateActivityInput!) {
-            updateActivity(id: $id, input: $input) {
-              id
-              subject
-              type
-              updated_at
-              notes
-            }
-          }
-        `;
-
-        const result = await executeGraphQL(mutation, { id: activity_id, input });
-        const activity = result.data?.updateActivity;
-        
-        if (!activity) {
-          throw new Error(`Failed to complete activity - activity with ID ${activity_id} not found`);
-        }
-        
-        return `✅ Activity completed successfully!
-
-**Completed Activity:**
-+- ${activity.type}: ${activity.subject}
-+- Completed: ${new Date(activity.updated_at).toLocaleDateString()}
-+- Notes: ${activity.notes || 'No completion notes'}
-+- Activity ID: ${activity.id}`;
-      }
-
-      case 'get_price_quotes': {
-        const { deal_id } = parameters;
-        
-        const query = `
-          query GetPriceQuotes($dealId: ID!) {
-            priceQuotesForDeal(dealId: $dealId) {
-              id
-              name
-              status
-              version_number
-              final_offer_price_fop
-              base_minimum_price_mp
-              target_markup_percentage
-              overall_discount_percentage
-              created_at
-              updated_at
-            }
-          }
-        `;
-
-        const result = await executeGraphQL(query, { dealId: deal_id });
-        const quotes = result.data?.priceQuotesForDeal || [];
-
-        if (quotes.length === 0) {
-          return `No price quotes found for deal ID ${deal_id}`;
-        }
-
-        const summary = `Found ${quotes.length} price quote${quotes.length > 1 ? 's' : ''} for deal ID ${deal_id}`;
-        
-        const quotesList = quotes.map((quote: any) => {
-          const finalPrice = quote.final_offer_price_fop ? `$${quote.final_offer_price_fop.toLocaleString()}` : 'No final price';
-          const basePrice = quote.base_minimum_price_mp ? `$${quote.base_minimum_price_mp.toLocaleString()}` : 'No base price';
-          const markup = quote.target_markup_percentage ? `${(quote.target_markup_percentage * 100).toFixed(1)}%` : 'No markup';
-          const discount = quote.overall_discount_percentage ? `${(quote.overall_discount_percentage * 100).toFixed(1)}%` : 'No discount';
-          
-          return `• ${quote.name || `Quote v${quote.version_number}`} | Status: ${quote.status}
-  Final Price: ${finalPrice} | Base: ${basePrice} | Markup: ${markup} | Discount: ${discount}
-  Created: ${new Date(quote.created_at).toLocaleDateString()} | ID: ${quote.id}`;
-        }).join('\n\n');
-
-        return `${summary}\n\n${quotesList}`;
-      }
-
-      case 'get_user_profile': {
-        const query = `
-          query GetMe {
-            me {
-              id
-              email
-              display_name
-              avatar_url
-              created_at
-            }
-          }
-        `;
-
-        const result = await executeGraphQL(query);
-        const user = result.data?.me;
-        
-        if (!user) {
-          return 'Unable to fetch user profile information';
-        }
-        
-        return `# Your Profile
-
-**User Information:**
-+- Name: ${user.display_name || 'No display name set'}
-+- Email: ${user.email}
-+- Member Since: ${new Date(user.created_at).toLocaleDateString()}
-+- User ID: ${user.id}
-+- Avatar: ${user.avatar_url ? 'Set' : 'Not set'}`;
-      }
-
-      case 'get_wfm_project_types': {
-        const { is_archived = false } = parameters;
-        
-        const query = `
-          query GetWFMProjectTypes($isArchived: Boolean) {
-            wfmProjectTypes(isArchived: $isArchived) {
-              id
-              name
-              description
-              iconName
-              isArchived
-              created_at
-              defaultWorkflow {
-                id
-                name
-              }
-            }
-          }
-        `;
-
-        const result = await executeGraphQL(query, { isArchived: is_archived });
-        const projectTypes = result.data?.wfmProjectTypes || [];
-
-        if (projectTypes.length === 0) {
-          return `No workflow project types found${is_archived ? ' (including archived)' : ''}`;
-        }
-
-        const summary = `Found ${projectTypes.length} workflow project type${projectTypes.length > 1 ? 's' : ''}`;
-        
-        const typesList = projectTypes.map((type: any) => {
-          const workflow = type.defaultWorkflow ? ` | Default Workflow: ${type.defaultWorkflow.name}` : '';
-          const icon = type.iconName ? ` | Icon: ${type.iconName}` : '';
-          const status = type.isArchived ? ' (Archived)' : '';
-          
-          return `• ${type.name}${status}${workflow}${icon}
-  Description: ${type.description || 'No description'}
-  Created: ${new Date(type.created_at).toLocaleDateString()} | ID: ${type.id}`;
-        }).join('\n\n');
-
-        return `${summary}\n\n${typesList}`;
+- Value: ${deal.value ? `$${deal.value.toLocaleString()}` : 'Not specified'}
+- Stage: ${deal.stage || 'Not specified'}
+- Priority: ${deal.priority || 'Not specified'}
+- Status: ${deal.status}
+- Type: ${deal.deal_type || 'Not specified'}
+- Source: ${deal.source || 'Not specified'}${org}${contact}
+- Close Date: ${deal.closeDate ? new Date(deal.closeDate).toLocaleDateString() : 'Not set'}
+- Description: ${deal.description || 'No description'}
+- Created: ${new Date(deal.created_at).toLocaleDateString()}${customFieldsInfo}
+
+Deal ID: ${deal.id}`;
       }
 
       default:

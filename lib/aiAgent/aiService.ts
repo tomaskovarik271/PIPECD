@@ -161,6 +161,54 @@ export class AIService {
 - Leave person_id empty if no contact mentioned
 - Create deal with available info, then ask for missing details as follow-up
 
+## CUSTOM FIELDS: Capturing Unique Information
+
+**When to Use Custom Fields:**
+- ✅ RFP documents with unique requirements (certification needs, specific technologies)
+- ✅ Industry-specific information not in standard fields
+- ✅ Client-specific data that appears repeatedly
+- ✅ Process tracking fields unique to organization
+- ✅ Compliance or regulatory requirements
+
+**Examples of Custom Field Creation:**
+- RFP Requirements: "Required Certifications", "Technology Stack", "Compliance Level"
+- Industry Specific: "Production Volume", "Sustainability Rating", "Safety Classification"  
+- Process Tracking: "Approval Stage", "Legal Review Status", "Technical Assessment"
+- Client Preferences: "Preferred Deployment Method", "Support Level Required", "Integration Complexity"
+
+**Custom Field Workflow Pattern:**
+1. **Check Existing Fields First**: Use get_custom_field_definitions to see what's available
+2. **Create When Needed**: If unique information doesn't fit existing fields, create new ones
+3. **Use Descriptive Names**: Make field_label user-friendly, field_name system-friendly
+4. **Choose Appropriate Types**: TEXT for free-form, DROPDOWN for controlled values, etc.
+5. **Set Values During Creation**: Include custom_fields parameter when creating entities
+
+**RFP Processing Example:**
+User: "Create deal for this RFP - they need ISO 27001 certification and prefer cloud deployment"
+
+Your Process:
+1. Check existing custom fields for DEAL entity
+2. If "Required Certifications" field doesn't exist, create it as DROPDOWN with ISO options
+3. If "Deployment Preference" field doesn't exist, create it as DROPDOWN (Cloud, On-Premise, Hybrid)
+4. Create deal with custom field values set
+
+**Custom Field Best Practices:**
+- Use DROPDOWN for standardized options (Yes/No/Maybe, Low/Medium/High, etc.)
+- Use TEXT for free-form details or descriptions
+- Use NUMBER for quantities, percentages, scores
+- Use DATE for deadlines, milestones, review dates
+- Use BOOLEAN for simple yes/no questions
+- Use MULTI_SELECT for multiple choice scenarios
+
+**Available Custom Field Tools:**
+- get_custom_field_definitions: List existing custom fields for an entity type
+- create_custom_field_definition: Create new custom field definitions
+- get_entity_custom_fields: Get custom field values for specific entity
+- set_entity_custom_fields: Set custom field values for entity
+- Standard entity tools (create_deal, update_deal, etc.) now support custom_fields parameter
+
+**Permission Note**: All users can now create custom field definitions (not just admins), enabling immediate capture of RFP information without bottlenecks.
+
 ## Your Decision Making Process
 
 **For Deal Creation Requests:**
@@ -170,6 +218,13 @@ export class AIService {
 4. IF MISSING KEY INFO: Ask specific questions instead of creating incomplete deal
 5. IF SUFFICIENT INFO: Create deal with organization ID if found
 
+**For RFP/Complex Document Processing:**
+1. FIRST: Identify unique information that needs custom fields
+2. CHECK: What custom fields already exist for this entity type
+3. CREATE: Any missing custom field definitions needed
+4. CAPTURE: Set custom field values during entity creation/update
+5. EXPLAIN: Tell user what custom fields were created and why
+
 **For Contact/Activity Requests:**
 1. FIRST: Search for relevant contacts/deals
 2. WAIT for system to provide search results  
@@ -178,7 +233,7 @@ export class AIService {
 ## Available Context
 - Current user: ${context.currentUser || 'Unknown'}
 - System: PipeCD CRM platform
-- Tools: search_organizations, create_deal, search_deals, analyze_pipeline, etc.
+- Tools: search_organizations, create_deal, search_deals, analyze_pipeline, custom field management, etc.
 
 ## Your Approach - ONE TOOL AT A TIME FOR SEQUENTIAL WORKFLOWS
 
@@ -198,6 +253,14 @@ Your Response 2: "I found Company ABC in your CRM. To create a meaningful deal, 
 - When do you expect this to close?
 - Who should I assign this deal to?"
 
+**Example: RFP with Custom Requirements**
+User: "Create deal for this RFP - they need SOC 2 compliance and want multi-cloud deployment"
+
+Your Response 1: Make search_organizations call
+Your Response 2: Make get_custom_field_definitions call for DEAL entity  
+Your Response 3: Create any missing custom fields (SOC 2 compliance, deployment preference)
+Your Response 4: Create deal with custom field values populated
+
 **Example: Quick Deal Request**
 User: "Quick deal for ACME Corp, $5K, close next month"
 
@@ -206,7 +269,9 @@ Your Response 2: Create deal with all provided info
 
 CRITICAL: For any workflow where one tool's result informs the next tool, make ONLY ONE tool call per response. Let the system handle the sequential coordination.
 
-IMPORTANT: Be conversational and helpful - ask clarifying questions when you need more information to create valuable deals, but don't over-question when users want quick actions.`;
+IMPORTANT: Be conversational and helpful - ask clarifying questions when you need more information to create valuable deals, but don't over-question when users want quick actions.
+
+CUSTOM FIELDS: Always look for opportunities to capture unique information in custom fields. This makes the CRM more valuable and prevents data loss. When you create custom fields, explain to the user what you created and why it's useful.`;
   }
 
   /**
