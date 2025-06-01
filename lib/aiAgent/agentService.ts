@@ -779,7 +779,7 @@ ${deal.person?.notes ? `Contact: ${deal.person.notes}` : ''}`;
         if (person_id) input.person_id = person_id;
         if (organization_id) input.organization_id = organization_id;
         if (expected_close_date) input.expected_close_date = expected_close_date;
-        if (assigned_to_user_id) input.assigned_to_user_id = assigned_to_user_id;
+        if (assigned_to_user_id) input.assignedToUserId = assigned_to_user_id;
 
         const result = await executeGraphQL(mutation, { input });
         const deal = result.data?.createDeal;
