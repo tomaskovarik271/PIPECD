@@ -875,12 +875,6 @@ Parameters:
 - assigned_to_user_id?: string // Assigned user
 ```
 
-#### 17.3.6 get_activity_recommendations
-AI-powered next steps and recommendations
-```typescript
-Parameters:
-- deal_id: string          // Deal to analyze
-```
 
 Returns: AI-generated activity recommendations with confidence scores and reasoning.
 
@@ -985,98 +979,6 @@ server.tool(
 );
 ```
 
-### 17.7 Multi-Step AI Reasoning Examples
-
-**Complex Pipeline Analysis:**
-```
-User: "Find deals that need immediate attention and suggest specific actions"
-
-AI Process:
-1. analyze_pipeline (identify trends and risks)
-2. search_deals (find high-value or overdue deals)  
-3. get_deal_details (analyze specific concerning deals)
-4. get_activity_recommendations (generate action plans)
-5. Synthesize insights and prioritize recommendations
-```
-
-**Performance Optimization:**
-```
-User: "Which team member needs help and with what deals?"
-
-AI Process:
-1. analyze_pipeline (team performance breakdown)
-2. search_deals (filter by underperforming users)
-3. get_deal_details (analyze specific deals needing help)
-4. search_contacts (identify relationship mapping)
-5. Generate coaching recommendations and action items
-```
-
-### 17.8 Performance & Metrics
-
-**Response Times:**
-- Simple queries: < 500ms
-- Complex multi-step analysis: < 2s
-- Real-time pipeline monitoring: < 1s
-
-**Efficiency Gains:**
-- 10x faster deal analysis vs manual database queries
-- 99.5% query success rate with proper error handling
-- Natural language interface eliminates SQL knowledge requirement
-
-**Usage Patterns:**
-- Pipeline health monitoring
-- Deal risk assessment
-- Contact relationship analysis
-- Activity recommendation generation
-- Performance reporting with AI insights
-
-### 17.9 Troubleshooting
-
-**Common Issues:**
-
-1. **Authentication Errors**:
-   ```
-   Error: Authentication required
-   ```
-   - Regenerate JWT token: `node get-auth-token.js`
-   - Update Claude Desktop configuration
-   - Restart Claude Desktop
-
-2. **GraphQL Endpoint Issues**:
-   ```
-   Error: Network request failed
-   ```
-   - Verify PipeCD is running: `netlify dev`
-   - Check endpoint URL (port 8888, not 3000)
-   - Test with curl: `curl http://localhost:8888/.netlify/functions/graphql`
-
-3. **Token Expiration**:
-   - JWT tokens expire after ~1 hour
-   - Use `get-auth-token.js` to refresh
-   - Consider implementing auto-refresh mechanism
-
-4. **Schema Mismatches**:
-   - MCP server uses current GraphQL schema (no deprecated fields)
-   - Client-side filtering handles missing server-side filter arguments
-   - Proper error handling for schema evolution
-
-### 17.10 Future Enhancements
-
-**Planned Features:**
-- **Predictive Analytics**: Machine learning-based deal scoring
-- **Automated Communications**: AI-generated emails and follow-ups
-- **Real-Time Coaching**: Live conversation assistance
-- **Dynamic Pricing**: Market-based pricing recommendations
-- **Integration Expansion**: CRM synchronization and external data sources
-
-**Development Priorities:**
-- Token auto-refresh mechanism
-- Production deployment considerations
-- Enhanced error handling and logging
-- Performance optimization for large datasets
-- Extended tool library for advanced analytics
-
-The MCP integration represents a fundamental shift in how sales teams interact with their data, transforming static databases into intelligent, conversational business advisors that provide real-time insights and actionable recommendations.
 
 ---
 This guide should provide a solid foundation for developing Project PipeCD. Happy coding! 

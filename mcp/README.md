@@ -138,14 +138,7 @@ Parameters:
 
 **Example:** *"Create a new deal called 'Enterprise Software License' for $75,000"*
 
-### 🤖 **get_activity_recommendations**
-Get AI-powered next steps for deals
-```
-Parameters:
-- deal_id: Deal to analyze
-```
 
-**Example:** *"What should I do next with deal ABC123?"*
 
 ## 🧠 **Multi-Step AI Reasoning Examples**
 

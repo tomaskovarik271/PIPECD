@@ -1,0 +1,196 @@
+# AI Agent Schema for PipeCD
+# Autonomous agent conversations, thoughts, and planning capabilities
+
+# ================================
+# Base Types
+# ================================
+
+scalar DateTime
+scalar JSON
+
+enum AgentThoughtType {
+  REASONING
+  QUESTION
+  TOOL_CALL
+  OBSERVATION
+  PLAN
+}
+
+enum AgentStepStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+}
+
+enum ThinkingBudget {
+  STANDARD
+  THINK
+  THINK_HARD
+  THINK_HARDER
+  ULTRATHINK
+}
+
+# ================================
+# Core Types
+# ================================
+
+type AgentThought {
+  id: ID!
+  conversationId: ID!
+  type: AgentThoughtType!
+  content: String!
+  metadata: JSON!
+  timestamp: DateTime!
+}
+
+type AgentPlanStep {
+  id: String!
+  description: String!
+  toolName: String
+  parameters: JSON
+  dependencies: [String!]
+  status: AgentStepStatus!
+  result: JSON
+}
+
+type AgentPlan {
+  goal: String!
+  steps: [AgentPlanStep!]!
+  context: JSON!
+}
+
+type AgentMessage {
+  role: String!
+  content: String!
+  timestamp: DateTime!
+  thoughts: [AgentThought!]
+}
+
+type AgentConfig {
+  maxThinkingSteps: Int!
+  enableExtendedThinking: Boolean!
+  thinkingBudget: ThinkingBudget!
+  maxClarifyingQuestions: Int!
+  autoExecute: Boolean!
+}
+
+type AgentConversation {
+  id: ID!
+  userId: ID!
+  messages: [AgentMessage!]!
+  plan: AgentPlan
+  context: JSON!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# ================================
+# Input Types
+# ================================
+
+input AgentConfigInput {
+  maxThinkingSteps: Int
+  enableExtendedThinking: Boolean
+  thinkingBudget: ThinkingBudget
+  maxClarifyingQuestions: Int
+  autoExecute: Boolean
+}
+
+input SendMessageInput {
+  conversationId: ID
+  content: String!
+  config: AgentConfigInput
+}
+
+input AgentThoughtInput {
+  type: AgentThoughtType!
+  content: String!
+  metadata: JSON
+}
+
+input AgentPlanStepInput {
+  description: String!
+  toolName: String
+  parameters: JSON
+  dependencies: [String!]
+}
+
+input UpdateConversationInput {
+  conversationId: ID!
+  plan: JSON
+  context: JSON
+}
+
+# ================================
+# Response Types
+# ================================
+
+type AgentResponse {
+  conversation: AgentConversation!
+  message: AgentMessage!
+  thoughts: [AgentThought!]!
+  plan: AgentPlan
+}
+
+type ToolDiscoveryResponse {
+  tools: [JSON!]!
+  error: String
+}
+
+# ================================
+# Queries
+# ================================
+
+type Query {
+  # Get all conversations for the current user
+  agentConversations(limit: Int = 10, offset: Int = 0): [AgentConversation!]!
+  
+  # Get a specific conversation by ID
+  agentConversation(id: ID!): AgentConversation
+  
+  # Get thoughts for a specific conversation
+  agentThoughts(conversationId: ID!, limit: Int = 50): [AgentThought!]!
+  
+  # Discover available MCP tools
+  discoverAgentTools: ToolDiscoveryResponse!
+}
+
+# ================================
+# Mutations
+# ================================
+
+type Mutation {
+  # Start a new conversation or send a message to existing one
+  sendAgentMessage(input: SendMessageInput!): AgentResponse!
+  
+  # Create a new empty conversation
+  createAgentConversation(config: AgentConfigInput): AgentConversation!
+  
+  # Update conversation plan or context
+  updateAgentConversation(input: UpdateConversationInput!): AgentConversation!
+  
+  # Add thoughts to a conversation (internal use)
+  addAgentThoughts(conversationId: ID!, thoughts: [AgentThoughtInput!]!): [AgentThought!]!
+  
+  # Delete a conversation and all related data
+  deleteAgentConversation(id: ID!): Boolean!
+  
+  # Execute a planned step
+  executeAgentStep(conversationId: ID!, stepId: String!): AgentResponse!
+}
+
+# ================================
+# Subscriptions (for real-time updates)
+# ================================
+
+type Subscription {
+  # Subscribe to new messages in a conversation
+  agentConversationUpdated(conversationId: ID!): AgentConversation!
+  
+  # Subscribe to new thoughts being added
+  agentThoughtsAdded(conversationId: ID!): [AgentThought!]!
+  
+  # Subscribe to plan updates
+  agentPlanUpdated(conversationId: ID!): AgentPlan!
+} 

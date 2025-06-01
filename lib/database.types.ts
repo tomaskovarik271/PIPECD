@@ -36,11 +36,13 @@ export type Database = {
     Tables: {
       activities: {
         Row: {
+          assigned_to_user_id: string | null
           created_at: string
           deal_id: string | null
           due_date: string | null
           id: string
           is_done: boolean
+          is_system_activity: boolean
           notes: string | null
           organization_id: string | null
           person_id: string | null
@@ -50,11 +52,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          assigned_to_user_id?: string | null
           created_at?: string
           deal_id?: string | null
           due_date?: string | null
           id?: string
           is_done?: boolean
+          is_system_activity?: boolean
           notes?: string | null
           organization_id?: string | null
           person_id?: string | null
@@ -64,11 +68,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          assigned_to_user_id?: string | null
           created_at?: string
           deal_id?: string | null
           due_date?: string | null
           id?: string
           is_done?: boolean
+          is_system_activity?: boolean
           notes?: string | null
           organization_id?: string | null
           person_id?: string | null
@@ -78,6 +84,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "activities_assigned_to_user_id_fkey"
+            columns: ["assigned_to_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "activities_deal_id_fkey"
             columns: ["deal_id"]
@@ -100,6 +113,113 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      agent_conversations: {
+        Row: {
+          context: Json
+          created_at: string
+          id: string
+          messages: Json
+          plan: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context?: Json
+          created_at?: string
+          id?: string
+          messages?: Json
+          plan?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context?: Json
+          created_at?: string
+          id?: string
+          messages?: Json
+          plan?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      agent_thoughts: {
+        Row: {
+          content: string
+          conversation_id: string
+          id: string
+          metadata: Json
+          timestamp: string
+          type: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          id?: string
+          metadata?: Json
+          timestamp?: string
+          type: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          id?: string
+          metadata?: Json
+          timestamp?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_thoughts_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "agent_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      custom_field_definitions: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          dropdown_options: Json | null
+          entity_type: Database["public"]["Enums"]["entity_type"]
+          field_label: string
+          field_name: string
+          field_type: Database["public"]["Enums"]["custom_field_type"]
+          id: string
+          is_active: boolean | null
+          is_required: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          dropdown_options?: Json | null
+          entity_type: Database["public"]["Enums"]["entity_type"]
+          field_label: string
+          field_name: string
+          field_type: Database["public"]["Enums"]["custom_field_type"]
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          dropdown_options?: Json | null
+          entity_type?: Database["public"]["Enums"]["entity_type"]
+          field_label?: string
+          field_name?: string
+          field_type?: Database["public"]["Enums"]["custom_field_type"]
+          id?: string
+          is_active?: boolean | null
+          is_required?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       deal_history: {
         Row: {
@@ -139,50 +259,63 @@ export type Database = {
       deals: {
         Row: {
           amount: number | null
+          assigned_to_user_id: string | null
           created_at: string
+          custom_field_values: Json | null
           deal_specific_probability: number | null
           expected_close_date: string | null
           id: string
           name: string
-          notes: string | null
+          organization_id: string | null
           person_id: string | null
-          stage: string | null
           stage_id: string | null
           updated_at: string
           user_id: string
           weighted_amount: number | null
+          wfm_project_id: string | null
         }
         Insert: {
           amount?: number | null
+          assigned_to_user_id?: string | null
           created_at?: string
+          custom_field_values?: Json | null
           deal_specific_probability?: number | null
           expected_close_date?: string | null
           id?: string
           name: string
-          notes?: string | null
+          organization_id?: string | null
           person_id?: string | null
-          stage?: string | null
           stage_id?: string | null
           updated_at?: string
           user_id: string
           weighted_amount?: number | null
+          wfm_project_id?: string | null
         }
         Update: {
           amount?: number | null
+          assigned_to_user_id?: string | null
           created_at?: string
+          custom_field_values?: Json | null
           deal_specific_probability?: number | null
           expected_close_date?: string | null
           id?: string
           name?: string
-          notes?: string | null
+          organization_id?: string | null
           person_id?: string | null
-          stage?: string | null
           stage_id?: string | null
           updated_at?: string
           user_id?: string
           weighted_amount?: number | null
+          wfm_project_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "deals_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "deals_person_id_fkey"
             columns: ["person_id"]
@@ -197,35 +330,45 @@ export type Database = {
             referencedRelation: "stages"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "deals_wfm_project_id_fkey"
+            columns: ["wfm_project_id"]
+            isOneToOne: false
+            referencedRelation: "wfm_projects"
+            referencedColumns: ["id"]
+          },
         ]
       }
       organizations: {
         Row: {
           address: string | null
           created_at: string
+          custom_field_values: Json
           id: string
           name: string
           notes: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           address?: string | null
           created_at?: string
+          custom_field_values?: Json
           id?: string
           name: string
           notes?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           address?: string | null
           created_at?: string
+          custom_field_values?: Json
           id?: string
           name?: string
           notes?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -233,6 +376,7 @@ export type Database = {
         Row: {
           company: string | null
           created_at: string
+          custom_field_values: Json
           email: string | null
           first_name: string | null
           id: string
@@ -246,6 +390,7 @@ export type Database = {
         Insert: {
           company?: string | null
           created_at?: string
+          custom_field_values?: Json
           email?: string | null
           first_name?: string | null
           id?: string
@@ -259,6 +404,7 @@ export type Database = {
         Update: {
           company?: string | null
           created_at?: string
+          custom_field_values?: Json
           email?: string | null
           first_name?: string | null
           id?: string
@@ -323,6 +469,215 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      price_quotes: {
+        Row: {
+          base_minimum_price_mp: number | null
+          calculated_discounted_offer_price: number | null
+          calculated_effective_markup_fop_over_mp: number | null
+          calculated_full_target_price_ftp: number | null
+          calculated_target_price_tp: number | null
+          calculated_total_direct_cost: number | null
+          created_at: string
+          deal_id: string
+          escalation_details: Json | null
+          escalation_status: string | null
+          final_offer_price_fop: number | null
+          id: string
+          name: string | null
+          overall_discount_percentage: number | null
+          status: string
+          subsequent_installments_count: number | null
+          subsequent_installments_interval_days: number | null
+          target_markup_percentage: number | null
+          updated_at: string
+          upfront_payment_due_days: number | null
+          upfront_payment_percentage: number | null
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          base_minimum_price_mp?: number | null
+          calculated_discounted_offer_price?: number | null
+          calculated_effective_markup_fop_over_mp?: number | null
+          calculated_full_target_price_ftp?: number | null
+          calculated_target_price_tp?: number | null
+          calculated_total_direct_cost?: number | null
+          created_at?: string
+          deal_id: string
+          escalation_details?: Json | null
+          escalation_status?: string | null
+          final_offer_price_fop?: number | null
+          id?: string
+          name?: string | null
+          overall_discount_percentage?: number | null
+          status?: string
+          subsequent_installments_count?: number | null
+          subsequent_installments_interval_days?: number | null
+          target_markup_percentage?: number | null
+          updated_at?: string
+          upfront_payment_due_days?: number | null
+          upfront_payment_percentage?: number | null
+          user_id: string
+          version_number?: number
+        }
+        Update: {
+          base_minimum_price_mp?: number | null
+          calculated_discounted_offer_price?: number | null
+          calculated_effective_markup_fop_over_mp?: number | null
+          calculated_full_target_price_ftp?: number | null
+          calculated_target_price_tp?: number | null
+          calculated_total_direct_cost?: number | null
+          created_at?: string
+          deal_id?: string
+          escalation_details?: Json | null
+          escalation_status?: string | null
+          final_offer_price_fop?: number | null
+          id?: string
+          name?: string | null
+          overall_discount_percentage?: number | null
+          status?: string
+          subsequent_installments_count?: number | null
+          subsequent_installments_interval_days?: number | null
+          target_markup_percentage?: number | null
+          updated_at?: string
+          upfront_payment_due_days?: number | null
+          upfront_payment_percentage?: number | null
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_quotes_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_types: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          default_workflow_id: string | null
+          description: string | null
+          icon_name: string | null
+          id: string
+          is_archived: boolean
+          name: string
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          default_workflow_id?: string | null
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+          is_archived?: boolean
+          name: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          default_workflow_id?: string | null
+          description?: string | null
+          icon_name?: string | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_types_default_workflow_id_fkey"
+            columns: ["default_workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_additional_costs: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          price_quote_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description: string
+          id?: string
+          price_quote_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          price_quote_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_additional_costs_price_quote_id_fkey"
+            columns: ["price_quote_id"]
+            isOneToOne: false
+            referencedRelation: "price_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quote_invoice_schedule_entries: {
+        Row: {
+          amount_due: number
+          created_at: string
+          description: string | null
+          due_date: string
+          entry_type: string
+          id: string
+          price_quote_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount_due: number
+          created_at?: string
+          description?: string | null
+          due_date: string
+          entry_type: string
+          id?: string
+          price_quote_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount_due?: number
+          created_at?: string
+          description?: string | null
+          due_date?: string
+          entry_type?: string
+          id?: string
+          price_quote_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quote_invoice_schedule_entries_price_quote_id_fkey"
+            columns: ["price_quote_id"]
+            isOneToOne: false
+            referencedRelation: "price_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
@@ -416,36 +771,66 @@ export type Database = {
           },
         ]
       }
+      statuses: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          id: string
+          is_archived: boolean
+          name: string
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
           avatar_url: string | null
           created_at: string
           display_name: string | null
           email: string | null
-          first_name: string | null
-          id: string
-          last_name: string | null
           updated_at: string
+          user_id: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
-          first_name?: string | null
-          id: string
-          last_name?: string | null
           updated_at?: string
+          user_id: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
           updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -472,6 +857,203 @@ export type Database = {
           },
         ]
       }
+      wfm_projects: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          current_step_id: string | null
+          description: string | null
+          id: string
+          name: string
+          project_type_id: string
+          updated_at: string
+          updated_by_user_id: string | null
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          current_step_id?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          project_type_id: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          current_step_id?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          project_type_id?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wfm_projects_current_step_id_fkey"
+            columns: ["current_step_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wfm_projects_project_type_id_fkey"
+            columns: ["project_type_id"]
+            isOneToOne: false
+            referencedRelation: "project_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "wfm_projects_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_steps: {
+        Row: {
+          created_at: string
+          id: string
+          is_final_step: boolean
+          is_initial_step: boolean
+          metadata: Json | null
+          status_id: string
+          step_order: number
+          updated_at: string
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_final_step?: boolean
+          is_initial_step?: boolean
+          metadata?: Json | null
+          status_id: string
+          step_order: number
+          updated_at?: string
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_final_step?: boolean
+          is_initial_step?: boolean
+          metadata?: Json | null
+          status_id?: string
+          step_order?: number
+          updated_at?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_steps_status_id_fkey"
+            columns: ["status_id"]
+            isOneToOne: false
+            referencedRelation: "statuses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_steps_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflow_transitions: {
+        Row: {
+          created_at: string
+          from_step_id: string
+          id: string
+          name: string | null
+          to_step_id: string
+          updated_at: string
+          workflow_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_step_id: string
+          id?: string
+          name?: string | null
+          to_step_id: string
+          updated_at?: string
+          workflow_id: string
+        }
+        Update: {
+          created_at?: string
+          from_step_id?: string
+          id?: string
+          name?: string | null
+          to_step_id?: string
+          updated_at?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_transitions_from_step_id_fkey"
+            columns: ["from_step_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_transitions_to_step_id_fkey"
+            columns: ["to_step_id"]
+            isOneToOne: false
+            referencedRelation: "workflow_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workflow_transitions_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workflows: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          description: string | null
+          id: string
+          is_archived: boolean
+          name: string
+          updated_at: string
+          updated_by_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          description?: string | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          updated_at?: string
+          updated_by_user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -481,13 +1063,32 @@ export type Database = {
         Args: { p_user_id: string; p_action: string; p_resource: string }
         Returns: boolean
       }
-      get_my_permissions: {
-        Args: Record<PropertyKey, never>
+      check_user_has_permission: {
+        Args: { checking_user_id: string; required_permission_code: string }
+        Returns: boolean
+      }
+      get_user_permissions: {
+        Args: { p_user_id: string }
         Returns: Json
+      }
+      reassign_deal: {
+        Args: {
+          p_deal_id: string
+          p_new_assignee_id: string
+          p_current_user_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
-      [_ in never]: never
+      custom_field_type:
+        | "TEXT"
+        | "NUMBER"
+        | "DATE"
+        | "BOOLEAN"
+        | "DROPDOWN"
+        | "MULTI_SELECT"
+      entity_type: "DEAL" | "PERSON" | "ORGANIZATION"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -605,7 +1206,17 @@ export const Constants = {
     Enums: {},
   },
   public: {
-    Enums: {},
+    Enums: {
+      custom_field_type: [
+        "TEXT",
+        "NUMBER",
+        "DATE",
+        "BOOLEAN",
+        "DROPDOWN",
+        "MULTI_SELECT",
+      ],
+      entity_type: ["DEAL", "PERSON", "ORGANIZATION"],
+    },
   },
 } as const
 

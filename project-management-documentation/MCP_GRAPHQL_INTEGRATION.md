@@ -205,17 +205,7 @@ Parameters:
 - *"Create a new deal called 'Enterprise Software License' for $75,000"*
 - *"Add a deal for Acme Corp worth $50k in discovery stage"*
 
-### **6. 🤖 AI Activity Recommendations**
-```
-Tool: get_activity_recommendations
-Purpose: Get AI-powered next steps for deals
-Parameters:
-- deal_id: Deal to analyze
-```
 
-**Example Claude Commands:**
-- *"What should I do next with deal ABC123?"*
-- *"Get AI recommendations for my biggest deals"*
 
 ---
 
@@ -229,8 +219,7 @@ Parameters:
 1. **Search deals** with high amounts (`search_deals` with `min_amount: 50000`)
 2. **Analyze pipeline** to identify stalled deals (`analyze_pipeline`)
 3. **Get deal details** for concerning deals (`get_deal_details`)
-4. **Get AI recommendations** for each deal (`get_activity_recommendations`)
-5. **Synthesize insights** and provide action plan
+4. **Synthesize insights** and provide action plan
 
 ### **Example 2: Contact Relationship Mapping**
 

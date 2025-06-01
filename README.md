@@ -296,7 +296,7 @@ PIPECD/
 - **search_contacts**: Contact relationship mapping
 - **analyze_pipeline**: Performance trends and metrics
 - **create_deal**: Natural language deal creation
-- **get_activity_recommendations**: AI-suggested next steps
+
 
 ## 🧪 Testing
 
