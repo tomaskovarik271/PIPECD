@@ -42,6 +42,64 @@ const getEntityColorScheme = (type: string) => {
   }
 };
 
+// Helper function to get deal status from stage or metadata
+const getDealStatus = (entity: any) => {
+  if (entity.metadata?.stage && entity.metadata.stage !== null) {
+    return entity.metadata.stage;
+  }
+  return 'Active'; // Default status for new deals
+};
+
+// Helper function to format display name
+const getDisplayName = (entity: any) => {
+  if (entity.name && entity.name !== 'Unnamed' && !entity.name.startsWith('Deal ')) {
+    return entity.name;
+  }
+  
+  // Generate a more meaningful name for deals
+  if (entity.type === 'deal') {
+    if (entity.organizationName) {
+      return `${entity.organizationName} Deal`;
+    }
+    if (entity.amount) {
+      return `$${entity.amount.toLocaleString()} Deal`;
+    }
+  }
+  
+  return entity.name || 'Unnamed';
+};
+
+// Helper function to get relevant metadata (filter out unhelpful fields)
+const getRelevantMetadata = (entity: any, compact: boolean) => {
+  if (!entity.metadata) return [];
+  
+  const metadata = { ...entity.metadata };
+  
+  // Remove unhelpful fields
+  delete metadata.stage; // We show this separately as status
+  delete metadata.organizationId; // We show organization name instead
+  delete metadata.createdAt; // Too verbose for cards
+  delete metadata.updatedAt; // Too verbose for cards
+  
+  // Rename/format fields for better display
+  const displayMetadata: Record<string, any> = {};
+  
+  if (metadata.industry) {
+    displayMetadata.Industry = metadata.industry;
+  }
+  
+  if (metadata.size) {
+    displayMetadata.Size = metadata.size;
+  }
+  
+  // Add status for deals
+  if (entity.type === 'deal') {
+    displayMetadata.Status = getDealStatus(entity);
+  }
+  
+  return Object.entries(displayMetadata).slice(0, compact ? 2 : 3);
+};
+
 export const EntityCard: React.FC<EntityCardProps> = ({
   entity,
   actions = [],
@@ -92,7 +150,7 @@ export const EntityCard: React.FC<EntityCardProps> = ({
             />
           </HStack>
           <Text fontWeight="bold" fontSize="sm" color="gray.600">
-            {entity.name || 'Unnamed'}
+            {getDisplayName(entity)}
           </Text>
         </VStack>
       </HStack>
@@ -132,9 +190,9 @@ export const EntityCard: React.FC<EntityCardProps> = ({
         )}
 
         {/* Metadata */}
-        {entity.metadata && Object.keys(entity.metadata).length > 0 && (
+        {getRelevantMetadata(entity, compact).length > 0 && (
           <Box w="full">
-            {Object.entries(entity.metadata).slice(0, compact ? 2 : 4).map(([key, value]) => (
+            {getRelevantMetadata(entity, compact).map(([key, value]) => (
               <HStack key={key} fontSize="xs">
                 <Text color="gray.500" textTransform="capitalize">
                   {key.replace(/([A-Z])/g, ' $1').trim()}:

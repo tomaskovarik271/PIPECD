@@ -101,10 +101,21 @@ export class ResponseParser {
                 if (item.amount !== undefined) {
                   // This looks like a deal
                   const organization = organizationMap.get(item.organization_id);
+                  
+                  // Generate a meaningful name if none exists
+                  let dealName = item.name;
+                  if (!dealName || dealName.trim() === '') {
+                    if (organization?.name) {
+                      dealName = `${organization.name} Opportunity`;
+                    } else {
+                      dealName = `$${item.amount.toLocaleString()} Deal`;
+                    }
+                  }
+                  
                   entities.push({
                     type: 'deal',
                     id: item.id,
-                    name: item.name || `Deal ${item.id.substring(0, 8)}`,
+                    name: dealName,
                     amount: item.amount,
                     organizationName: organization?.name,
                     metadata: {
@@ -121,10 +132,21 @@ export class ResponseParser {
             // Single deal from create_deal
             if (data.id && data.amount !== undefined) {
               const organization = organizationMap.get(data.organization_id);
+              
+              // Generate a meaningful name if none exists
+              let dealName = data.name;
+              if (!dealName || dealName.trim() === '') {
+                if (organization?.name) {
+                  dealName = `${organization.name} Opportunity`;
+                } else {
+                  dealName = `$${data.amount.toLocaleString()} Deal`;
+                }
+              }
+              
               entities.push({
                 type: 'deal',
                 id: data.id,
-                name: data.name || `Deal ${data.id.substring(0, 8)}`,
+                name: dealName,
                 amount: data.amount,
                 organizationName: organization?.name,
                 metadata: {
