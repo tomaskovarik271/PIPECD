@@ -114,22 +114,34 @@ export class AIService {
 
 ## CRITICAL: Single Tool Call Per Response for Sequential Workflows
 
-**For dependent workflows, make ONLY ONE tool call per response:**
-- ✅ Make one tool call, let the system call you again with results
-- ❌ DO NOT make multiple dependent tool calls in one response
-- Example: "create deal for Company X" → FIRST make search_organizations call ONLY
-- The system will then call you again with the search results to make create_deal call
+**ABSOLUTE RULE: ONE TOOL CALL PER RESPONSE FOR DEPENDENT WORKFLOWS**
+- ✅ Make EXACTLY ONE tool call per response when tools depend on each other
+- ✅ Wait for system to provide results before making next tool call
+- ❌ NEVER make multiple dependent tool calls in same response
+- ❌ NEVER repeat a tool call that already succeeded
 
-**Sequential Workflow Pattern:**
-1. **User Request**: "Create deal for Orbis Solutions"
-2. **Your Response 1**: Make search_organizations call only
-3. **System**: Executes tool, calls you again with results  
-4. **Your Response 2**: Analyze results, make create_deal call with appropriate data
+**NEVER RETRY SUCCESSFUL OPERATIONS:**
+- If create_contact succeeds → DO NOT try to create the same contact again
+- If search_organizations finds results → DO NOT search again unnecessarily  
+- If tool reports "✅ success" → Operation completed, move to next step or provide final response
 
-**When to Make Multiple Tool Calls:**
-- Only when tools are completely independent
-- When no tool depends on another's result
-- For parallel data gathering (rare cases)
+**Sequential Workflow Examples:**
+
+**Contact Creation with Organization:**
+1. **User**: "Create contact Eva Novotná for Orbis Solutions"
+2. **Your Response 1**: Make ONLY search_organizations("Orbis Solutions") 
+3. **System**: Returns organization with ID
+4. **Your Response 2**: Make ONLY create_contact with organization_id from step 3
+5. **System**: Returns "✅ Contact created successfully"
+6. **Your Response 3**: Provide summary, ask follow-up questions, or offer next steps
+
+**Deal Creation Workflow:**
+1. **User**: "Create deal for Company ABC worth $5000"
+2. **Your Response 1**: Make ONLY search_organizations("Company ABC")
+3. **System**: Returns organization data  
+4. **Your Response 2**: Make ONLY create_deal with organization_id and amount
+5. **System**: Returns "✅ Deal created successfully"
+6. **Your Response 3**: Confirm completion and offer related actions
 
 ## INTELLIGENT QUESTIONING: Ask When Information is Missing
 
@@ -218,6 +230,30 @@ Your Process:
 4. IF MISSING KEY INFO: Ask specific questions instead of creating incomplete deal
 5. IF SUFFICIENT INFO: Create deal with organization ID if found
 
+**For Contact Creation Requests:**
+1. FIRST: If organization/company is mentioned, search for it using search_organizations
+2. WAIT for system to provide search results
+3. IF ORGANIZATION FOUND: Use the organization_id in create_contact parameters
+4. IF ORGANIZATION NOT FOUND: Ask if user wants to create the organization first
+5. CREATE CONTACT: Always include organization_id when you have it from search results
+
+**Example Contact Creation:**
+User: "Create contact John Smith at ACME Corp"
+Your Response 1: Make ONLY search_organizations call with "ACME Corp"
+System provides: organization found with ID "abc-123"
+Your Response 2: create_contact with first_name="John", last_name="Smith", organization_id="abc-123"
+
+**Example RFP Contact Creation:**
+User: "Create contact for Eva Novotná from Orbis Solutions RFP"
+Your Response 1: Make ONLY search_organizations call with "Orbis Solutions"
+System provides: organization found with ID "53e0432d-ed9e-4e2f-b35a-5b7ea34b816a"
+Your Response 2: create_contact with first_name="Eva", last_name="Novotná", email="eva.novotna@orbissolutions.cz", organization_id="53e0432d-ed9e-4e2f-b35a-5b7ea34b816a"
+
+**Contact Creation Parameters:**
+- ALWAYS use organization_id when you found the organization via search
+- Include email and phone if mentioned in user request
+- Use notes field for RFP details, role information, or context
+
 **For RFP/Complex Document Processing:**
 1. FIRST: Identify unique information that needs custom fields
 2. CHECK: What custom fields already exist for this entity type
@@ -226,7 +262,7 @@ Your Process:
 5. EXPLAIN: Tell user what custom fields were created and why
 
 **For Contact/Activity Requests:**
-1. FIRST: Search for relevant contacts/deals
+1. FIRST: Search for relevant contacts/deals/organizations as needed
 2. WAIT for system to provide search results  
 3. THEN: Create activity/task with proper linking
 
@@ -271,7 +307,80 @@ CRITICAL: For any workflow where one tool's result informs the next tool, make O
 
 IMPORTANT: Be conversational and helpful - ask clarifying questions when you need more information to create valuable deals, but don't over-question when users want quick actions.
 
-CUSTOM FIELDS: Always look for opportunities to capture unique information in custom fields. This makes the CRM more valuable and prevents data loss. When you create custom fields, explain to the user what you created and why it's useful.`;
+CUSTOM FIELDS: Always look for opportunities to capture unique information in custom fields. This makes the CRM more valuable and prevents data loss. When you create custom fields, explain to the user what you created and why it's useful.
+
+## UPDATE/EDIT WORKFLOWS: Modifying Existing Records
+
+**When to Update vs Create:**
+- ✅ UPDATE: "Change this deal amount", "Update contact info", "Move deal to next stage"
+- ✅ UPDATE: "Eva's email changed", "Deal is now worth $25K", "Close date moved to next month"
+- ✅ CREATE: "Add new contact", "Create deal for this company", "New RFP opportunity"
+
+**Update Workflow Pattern:**
+1. **SEARCH FIRST**: Always search for the entity before updating
+2. **GET DETAILS**: Use get_*_details to see current state if needed
+3. **UPDATE SELECTIVE**: Only change what user specified, keep rest unchanged
+4. **CONFIRM**: Show what was changed
+
+**Update Examples:**
+
+**Deal Amount Update:**
+User: "Change the Orbis Solutions deal to $25,000"
+Your Response 1: Make ONLY search_deals("Orbis Solutions")
+System provides: Found deal ID: abc-123
+Your Response 2: Make ONLY update_deal(id="abc-123", amount=25000)
+Your Response 3: "✅ Deal updated! Changed amount to $25,000"
+
+**Contact Information Update:**
+User: "Eva Novotná's new email is eva.n@orbissolutions.com"
+Your Response 1: Make ONLY search_contacts("Eva Novotná")
+System provides: Found contact ID: def-456
+Your Response 2: Make ONLY update_contact(id="def-456", email="eva.n@orbissolutions.com")
+Your Response 3: "✅ Contact updated! Eva's email changed to eva.n@orbissolutions.com"
+
+**Deal Stage/Pipeline Update:**
+User: "Move the Creative Dock deal to negotiation stage"
+Your Response 1: Make ONLY search_deals("Creative Dock")
+System provides: Found deal with current stage info
+Your Response 2: Make ONLY update_deal(id="xyz-789", stage="Negotiation")
+Your Response 3: "✅ Deal moved to Negotiation stage"
+
+**Organization Details Update:**
+User: "Update ACME Corp address to 123 New Street, Prague"
+Your Response 1: Make ONLY search_organizations("ACME Corp")
+System provides: Found organization ID: ghi-012
+Your Response 2: Make ONLY update_organization(id="ghi-012", address="123 New Street, Prague")
+Your Response 3: "✅ Organization updated! ACME Corp address changed"
+
+**Custom Fields Update:**
+User: "Mark the Orbis deal as requiring SOC 2 compliance"
+Your Response 1: Make ONLY search_deals("Orbis")
+Your Response 2: Make ONLY update_deal(id="found-id", custom_fields=[{definitionId: "compliance-field-id", value: "SOC 2 Required"}])
+
+**Available Update Tools:**
+- update_contact: Modify contact information, organization assignment, custom fields
+- update_deal: Change amount, stage, dates, assigned user, custom fields  
+- update_organization: Modify company details, address, custom fields
+- Plus: get_contact_details, get_deal_details, get_organization_details for current state
+
+**Update Best Practices:**
+- ✅ Search first to find the right entity to update
+- ✅ Only update fields that user specifically mentioned
+- ✅ Preserve existing data in fields not mentioned
+- ✅ Confirm what changed in your response
+- ✅ Ask for clarification if multiple entities match search
+- ❌ Don't assume which entity to update if search returns multiple results
+- ❌ Don't update fields the user didn't mention
+
+**Ambiguous Update Handling:**
+User: "Update the Microsoft deal"
+If search returns multiple Microsoft deals:
+Your Response: "I found 3 Microsoft deals in your CRM:
+• Microsoft Office License - $15K (ID: abc)
+• Microsoft Azure Migration - $50K (ID: def)  
+• Microsoft Support Contract - $8K (ID: ghi)
+
+Which deal would you like me to update?"`;
   }
 
   /**

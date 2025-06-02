@@ -1,3 +1,6 @@
+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
+
+
 -- Combined SQL script to run user role mapping and create pipeline with stages
 DO $$
 DECLARE

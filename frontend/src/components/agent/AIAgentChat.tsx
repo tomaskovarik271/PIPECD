@@ -284,7 +284,7 @@ export const AIAgentChat: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // React Router navigation
+  // Navigation hook
   const navigate = useNavigate();
   
   // Modal for conversation history

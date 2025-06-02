@@ -73,7 +73,25 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
   console.log('[dealCrud.createDeal] called for user:', userId /*, 'input:', JSON.stringify(input, null, 2)*/);
   const supabase = getAuthenticatedClient(accessToken);
   
-  const { customFields, wfmProjectTypeId, assignedToUserId, ...dealCoreData } = input; 
+  let { customFields, wfmProjectTypeId, assignedToUserId, ...dealCoreData } = input; 
+
+  // Handle auto-default project type resolution for AI-created deals
+  if (wfmProjectTypeId === 'AUTO_DEFAULT_SALES_DEAL') {
+    console.log('[dealCrud.createDeal] Resolving AUTO_DEFAULT_SALES_DEAL to actual project type...');
+    const { data: salesDealProjectType, error: projectTypeLookupError } = await supabase
+      .from('project_types')
+      .select('id')
+      .eq('name', 'Sales Deal')
+      .single();
+    
+    if (projectTypeLookupError || !salesDealProjectType) {
+      console.error('[dealCrud.createDeal] Failed to find Sales Deal project type:', projectTypeLookupError);
+      throw new GraphQLError('Default Sales Deal project type not found. Please contact administrator.', { extensions: { code: 'CONFIGURATION_ERROR' } });
+    }
+    
+    wfmProjectTypeId = salesDealProjectType.id;
+    console.log(`[dealCrud.createDeal] Resolved AUTO_DEFAULT_SALES_DEAL to: ${wfmProjectTypeId}`);
+  }
 
   if (!wfmProjectTypeId) {
     throw new GraphQLError('wfmProjectTypeId is required to create a deal.', { extensions: { code: 'BAD_USER_INPUT' } });

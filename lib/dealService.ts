@@ -16,7 +16,7 @@ import {
     updateDeal as updateDealInternal,
     deleteDeal as deleteDealInternal
 } from './dealService/dealCrud';
-import type { DealServiceUpdateData } from './dealService/dealCrud'; // Import the type
+import type { DealServiceUpdateData, DbDeal } from './dealService/dealCrud'; // Import the DbDeal type
 
 
 
@@ -25,16 +25,16 @@ import type { DealServiceUpdateData } from './dealService/dealCrud'; // Import t
 
 // --- Deal Service ---
 export const dealService = {
-  getDeals: (userId: string, accessToken: string): Promise<Deal[]> => 
+  getDeals: (userId: string, accessToken: string): Promise<DbDeal[]> => 
     getDealsInternal(userId, accessToken),
   
-  getDealById: (userId: string, id: string, accessToken: string): Promise<Deal | null> => 
+  getDealById: (userId: string, id: string, accessToken: string): Promise<DbDeal | null> => 
     getDealByIdInternal(userId, id, accessToken),
   
-  createDeal: (userId: string, input: DealInput, accessToken: string): Promise<Deal> => 
+  createDeal: (userId: string, input: DealInput, accessToken: string): Promise<DbDeal> => 
     createDealInternal(userId, input, accessToken),
   
-  updateDeal: (userId: string, id: string, input: DealServiceUpdateData, accessToken: string): Promise<Deal> => 
+  updateDeal: (userId: string, id: string, input: DealServiceUpdateData, accessToken: string): Promise<DbDeal | null> => 
     updateDealInternal(userId, id, input, accessToken),
   
   deleteDeal: (userId: string, id: string, accessToken: string): Promise<boolean> => 

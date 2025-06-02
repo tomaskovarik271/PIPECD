@@ -2,6 +2,23 @@
 
 This repository contains the source code for the custom CRM system designed to replace Pipedrive, built following the architectural decisions outlined in `ADR.md`.
 
+## 📚 Documentation Overview
+
+PipeCD now features comprehensive documentation for the **AI Agent System** - a revolutionary Claude 4 Sonnet-powered assistant with 30+ integrated tools and custom fields management:
+
+### 🤖 AI Agent Documentation
+- **[📖 Complete Documentation](PIPECD_AI_AGENT_DOCUMENTATION.md)** - Full system overview, capabilities, custom fields revolution, setup guide, and usage examples
+- **[🚀 Quick Start Guide](AI_AGENT_QUICK_START.md)** - Get up and running with the AI agent in 10 minutes
+- **[📡 API Reference](AI_AGENT_API_REFERENCE.md)** - Comprehensive technical reference for all AI agent interfaces
+
+### 🔧 System Architecture
+- **[📋 Developer Guide V2](DEVELOPER_GUIDE_V2.md)** - Complete technical guide and architecture overview
+- **[🏗️ AI Architecture](PIPECD_AI_ARCHITECTURE.md)** - AI system architecture deep dive
+- **[⚙️ AI Integration Setup](AI_INTEGRATION_SETUP.md)** - AI integration configuration guide
+
+### 📝 Legacy Documentation
+- **[📋 AI Implementation Plan](AI_AGENT_IMPLEMENTATION_PLAN.md)** - Original implementation roadmap (historical reference)
+
 ## Overview
 
 The system utilizes a serverless architecture based on:
