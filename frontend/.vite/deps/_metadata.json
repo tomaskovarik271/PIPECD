@@ -1,0 +1,211 @@
+{
+  "hash": "427fb59c",
+  "configHash": "be6c54a6",
+  "lockfileHash": "2c40c71a",
+  "browserHash": "07e4ae3b",
+  "optimized": {
+    "react/jsx-dev-runtime": {
+      "src": "../../node_modules/react/jsx-dev-runtime.js",
+      "file": "react_jsx-dev-runtime.js",
+      "fileHash": "5e2c89f9",
+      "needsInterop": true
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "a080c0e7",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "1d63aa70",
+      "needsInterop": true
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.mjs",
+      "file": "react-router-dom.js",
+      "fileHash": "4cb19e6e",
+      "needsInterop": false
+    },
+    "@chakra-ui/react": {
+      "src": "../../node_modules/@chakra-ui/react/dist/esm/index.mjs",
+      "file": "@chakra-ui_react.js",
+      "fileHash": "ae145724",
+      "needsInterop": false
+    },
+    "@apollo/client": {
+      "src": "../../../node_modules/@apollo/client/index.js",
+      "file": "@apollo_client.js",
+      "fileHash": "ba6dadf1",
+      "needsInterop": false
+    },
+    "@supabase/auth-ui-react": {
+      "src": "../../node_modules/@supabase/auth-ui-react/dist/index.es.js",
+      "file": "@supabase_auth-ui-react.js",
+      "fileHash": "804ae23c",
+      "needsInterop": false
+    },
+    "@supabase/auth-ui-shared": {
+      "src": "../../node_modules/@supabase/auth-ui-shared/dist/index.mjs",
+      "file": "@supabase_auth-ui-shared.js",
+      "fileHash": "38d473d9",
+      "needsInterop": false
+    },
+    "zustand": {
+      "src": "../../node_modules/zustand/esm/index.mjs",
+      "file": "zustand.js",
+      "fileHash": "c986dbdd",
+      "needsInterop": false
+    },
+    "@apollo/client/link/context": {
+      "src": "../../../node_modules/@apollo/client/link/context/index.js",
+      "file": "@apollo_client_link_context.js",
+      "fileHash": "dbf204eb",
+      "needsInterop": false
+    },
+    "@apollo/client/link/error": {
+      "src": "../../../node_modules/@apollo/client/link/error/index.js",
+      "file": "@apollo_client_link_error.js",
+      "fileHash": "e3743468",
+      "needsInterop": false
+    },
+    "@supabase/supabase-js": {
+      "src": "../../node_modules/@supabase/supabase-js/dist/module/index.js",
+      "file": "@supabase_supabase-js.js",
+      "fileHash": "f682e5bd",
+      "needsInterop": false
+    },
+    "graphql-request": {
+      "src": "../../node_modules/graphql-request/build/esm/index.js",
+      "file": "graphql-request.js",
+      "fileHash": "a5767bc4",
+      "needsInterop": false
+    },
+    "@chakra-ui/icons": {
+      "src": "../../node_modules/@chakra-ui/icons/dist/esm/index.mjs",
+      "file": "@chakra-ui_icons.js",
+      "fileHash": "862b1ced",
+      "needsInterop": false
+    },
+    "date-fns": {
+      "src": "../../node_modules/date-fns/index.js",
+      "file": "date-fns.js",
+      "fileHash": "ea590afa",
+      "needsInterop": false
+    },
+    "react-icons/fa": {
+      "src": "../../node_modules/react-icons/fa/index.mjs",
+      "file": "react-icons_fa.js",
+      "fileHash": "b9161732",
+      "needsInterop": false
+    },
+    "react-icons/fi": {
+      "src": "../../node_modules/react-icons/fi/index.mjs",
+      "file": "react-icons_fi.js",
+      "fileHash": "385d2350",
+      "needsInterop": false
+    },
+    "react-hook-form": {
+      "src": "../../node_modules/react-hook-form/dist/index.esm.mjs",
+      "file": "react-hook-form.js",
+      "fileHash": "88452f35",
+      "needsInterop": false
+    },
+    "zustand/middleware": {
+      "src": "../../node_modules/zustand/esm/middleware.mjs",
+      "file": "zustand_middleware.js",
+      "fileHash": "97221e81",
+      "needsInterop": false
+    },
+    "zustand/middleware/immer": {
+      "src": "../../node_modules/zustand/esm/middleware/immer.mjs",
+      "file": "zustand_middleware_immer.js",
+      "fileHash": "ecd18814",
+      "needsInterop": false
+    },
+    "@hookform/resolvers/zod": {
+      "src": "../../node_modules/@hookform/resolvers/zod/dist/zod.mjs",
+      "file": "@hookform_resolvers_zod.js",
+      "fileHash": "1742ca73",
+      "needsInterop": false
+    },
+    "zod": {
+      "src": "../../node_modules/zod/lib/index.mjs",
+      "file": "zod.js",
+      "fileHash": "280792aa",
+      "needsInterop": false
+    },
+    "@hookform/resolvers/yup": {
+      "src": "../../node_modules/@hookform/resolvers/yup/dist/yup.mjs",
+      "file": "@hookform_resolvers_yup.js",
+      "fileHash": "d7718ab3",
+      "needsInterop": false
+    },
+    "yup": {
+      "src": "../../node_modules/yup/index.esm.js",
+      "file": "yup.js",
+      "fileHash": "89d19b47",
+      "needsInterop": false
+    },
+    "@hello-pangea/dnd": {
+      "src": "../../node_modules/@hello-pangea/dnd/dist/dnd.esm.js",
+      "file": "@hello-pangea_dnd.js",
+      "fileHash": "c4af180c",
+      "needsInterop": false
+    },
+    "react-markdown": {
+      "src": "../../../node_modules/react-markdown/index.js",
+      "file": "react-markdown.js",
+      "fileHash": "f514a910",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "browser-J6IYAAS7": {
+      "file": "browser-J6IYAAS7.js"
+    },
+    "browser-2YNC6QW7": {
+      "file": "browser-2YNC6QW7.js"
+    },
+    "chunk-MVTGUZIR": {
+      "file": "chunk-MVTGUZIR.js"
+    },
+    "chunk-VN7TGFZF": {
+      "file": "chunk-VN7TGFZF.js"
+    },
+    "chunk-7W32CK3N": {
+      "file": "chunk-7W32CK3N.js"
+    },
+    "chunk-SD42HLFO": {
+      "file": "chunk-SD42HLFO.js"
+    },
+    "chunk-M4B5GCBD": {
+      "file": "chunk-M4B5GCBD.js"
+    },
+    "chunk-HQ6ZTAWL": {
+      "file": "chunk-HQ6ZTAWL.js"
+    },
+    "chunk-JUWM2LYA": {
+      "file": "chunk-JUWM2LYA.js"
+    },
+    "chunk-QY5W4RSS": {
+      "file": "chunk-QY5W4RSS.js"
+    },
+    "chunk-IWZBQYVM": {
+      "file": "chunk-IWZBQYVM.js"
+    },
+    "chunk-OVFYXEYT": {
+      "file": "chunk-OVFYXEYT.js"
+    },
+    "chunk-W4EHDCLL": {
+      "file": "chunk-W4EHDCLL.js"
+    },
+    "chunk-OH4ZLUJL": {
+      "file": "chunk-OH4ZLUJL.js"
+    },
+    "chunk-EWTE5DHJ": {
+      "file": "chunk-EWTE5DHJ.js"
+    }
+  }
+}

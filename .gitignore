@@ -34,3 +34,4 @@ Thumbs.db
 playwright-report/
 test-results/
 frontend/.vite/
+seeding_sql.txt
