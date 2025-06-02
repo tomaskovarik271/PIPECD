@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    /* Base Options: */
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "target": "ES2022", // Target recent ECMAScript version
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+
+    /* Strictness */
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    /* Bundled projects */
+    "lib": ["esnext"], // Add esnext lib
+    // "lib": ["dom", "dom.iterable", "esnext"],
+    // "noEmit": true,
+
+    /* Node Projects */
+    "module": "NodeNext", // Use NodeNext for module system
+    "moduleResolution": "NodeNext", // Modern module resolution
+    // "outDir": "dist", // Optional: Specify output directory if compiling
+
+    /* Type Checking */
+    "types": ["node"], // Include node types
+
+    /* Source Maps */
+    "sourceMap": true, // Generate source maps
+    "inlineSources": true, // Include source code in source maps
+
+    /* Path Aliases (optional) */
+    // "baseUrl": ".",
+    // "paths": {
+    //   "@lib/*": ["lib/*"],
+    //   "@functions/*": ["netlify/functions/*"]
+    // }
+  },
+  "include": ["netlify/**/*.ts", "lib/**/*.ts"], // Adjust as needed
+  "exclude": ["node_modules"]
+} 

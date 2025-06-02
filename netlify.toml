@@ -1,0 +1,43 @@
+# netlify.toml
+
+# Add the Inngest plugin configuration
+[[plugins]]
+  package = "netlify-plugin-inngest"
+  [plugins.inputs] # Explicitly configure inputs for the plugin
+    path = "/.netlify/functions/inngest" # Tell the plugin the exact path to the Inngest function endpoint
+
+# Base settings for all contexts
+[build]
+  # Command to build your site: cd into frontend, install deps, then build
+  command = "cd frontend && npm install && npm run build"
+  # Directory (relative to root) containing deploy-ready assets
+  publish = "frontend/dist"
+  # Directory containing Netlify functions
+  functions = "netlify/functions"
+
+# Optional: Specify Node.js bundler for functions
+# This might help resolve module issues like the one with inngest/netlify
+[functions]
+  node_bundler = "esbuild"
+  # ADDED: Explicitly include the schema files directory for the graphql function
+  # Use a specific function entry if only needed for graphql, or keep global if needed elsewhere
+  # included_files = ["netlify/functions/graphql/schema/**"]
+  # Trying global inclusion first:
+  included_files = ["netlify/functions/graphql/schema/**"]
+
+# Development server settings for Vite
+[dev]
+  # Explicitly run the dev script from the frontend directory
+  command = "npm run dev --prefix frontend"
+  framework = "vite"
+  # viteProjectDirectory = "frontend" # Commented out
+  # Port the frontend dev server (Vite) runs on
+  targetPort = 5173 # Use default Vite port
+  # Serve static assets from build output if needed (can sometimes help)
+  publish = "frontend/dist"
+
+# Redirects and rewrites (Essential for SPAs)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200 

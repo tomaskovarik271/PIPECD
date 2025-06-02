@@ -1,0 +1,1 @@
+export const WFM_PROJECT_TYPE_NAME_SALES_DEAL = 'Sales Deal'; 

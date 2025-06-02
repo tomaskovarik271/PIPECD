@@ -1,0 +1,112 @@
+# Defines the GraphQL schema for Custom Fields management and usage.
+
+enum CustomFieldType {
+  TEXT
+  NUMBER
+  DATE
+  BOOLEAN
+  DROPDOWN
+  MULTI_SELECT
+}
+
+enum CustomFieldEntityType {
+  DEAL
+  PERSON
+  ORGANIZATION
+}
+
+# Represents an option for a DROPDOWN or MULTI_SELECT custom field.
+type CustomFieldOption {
+  value: String!
+  label: String!
+}
+
+# Input type for CustomFieldOption when creating or updating definitions.
+input CustomFieldOptionInput {
+  value: String!
+  label: String!
+}
+
+# Represents the definition of a custom field.
+type CustomFieldDefinition {
+  id: ID!
+  entityType: CustomFieldEntityType!
+  fieldName: String! # Internal name, unique per entity_type
+  fieldLabel: String! # Display name for UI
+  fieldType: CustomFieldType!
+  isRequired: Boolean!
+  dropdownOptions: [CustomFieldOption!] # Null if not DROPDOWN or MULTI_SELECT
+  isActive: Boolean!
+  displayOrder: Int!
+  createdAt: DateTime! # Assuming DateTime scalar is defined
+  updatedAt: DateTime! # Assuming DateTime scalar is defined
+}
+
+# Input type for creating or updating a CustomFieldDefinition.
+# fieldName will be used as the internal unique identifier per entity type.
+# fieldLabel is the display name.
+input CustomFieldDefinitionInput {
+  entityType: CustomFieldEntityType!
+  fieldName: String!
+  fieldLabel: String!
+  fieldType: CustomFieldType!
+  isRequired: Boolean # Defaults to false in the database
+  dropdownOptions: [CustomFieldOptionInput!] # Required if fieldType is DROPDOWN or MULTI_SELECT
+  displayOrder: Int # Defaults to 0 in the database
+  # isActive is managed by deactivate/reactivate mutations, not directly set here.
+}
+
+# Represents a single custom field value associated with an entity instance.
+# Only one of the value fields (stringValue, numberValue, etc.) will be populated
+# based on the field's definition (CustomFieldDefinition.fieldType).
+type CustomFieldValue {
+  definition: CustomFieldDefinition! # The full CustomFieldDefinition
+  # definitionId: ID! # The ID of the CustomFieldDefinition (now redundant if full definition is present)
+
+  # Value fields - only one should be non-null based on field type.
+  stringValue: String
+  numberValue: Float
+  booleanValue: Boolean
+  dateValue: DateTime # Assuming DateTime scalar
+  selectedOptionValues: [String!] # For MULTI_SELECT, or single string for DROPDOWN in stringValue
+}
+
+# Input type for setting custom field values on an entity.
+# When submitting data for an entity, an array of these inputs will be used.
+input CustomFieldValueInput {
+  definitionId: ID! # ID of the CustomFieldDefinition this value is for
+  
+  # Provide ONLY ONE of the following, corresponding to the definition's fieldType:
+  stringValue: String
+  numberValue: Float
+  booleanValue: Boolean
+  dateValue: DateTime # Input as ISO string or appropriate DateTime scalar format
+  selectedOptionValues: [String!] # For MULTI_SELECT. For DROPDOWN, use stringValue with the option's value.
+}
+
+extend type Query {
+  # Fetches all custom field definitions, optionally filtered by entity type.
+  # Can also include inactive definitions if specified (requires admin privileges).
+  customFieldDefinitions(entityType: CustomFieldEntityType!, includeInactive: Boolean = false): [CustomFieldDefinition!]!
+  
+  # Fetches a single custom field definition by its ID.
+  customFieldDefinition(id: ID!): CustomFieldDefinition
+}
+
+extend type Mutation {
+  # Creates a new custom field definition. Requires admin privileges.
+  createCustomFieldDefinition(input: CustomFieldDefinitionInput!): CustomFieldDefinition!
+  
+  # Updates an existing custom field definition. Requires admin privileges.
+  # Note: Changing fieldName or fieldType on existing definitions with data can be complex
+  # and might be restricted or require data migration strategies not covered here.
+  # This mutation would typically update label, isRequired, dropdownOptions, displayOrder.
+  updateCustomFieldDefinition(id: ID!, input: CustomFieldDefinitionInput!): CustomFieldDefinition!
+  
+  # Deactivates (soft-deletes) a custom field definition. Requires admin privileges.
+  # Data associated with this definition remains but the field is no longer active for new entries.
+  deactivateCustomFieldDefinition(id: ID!): CustomFieldDefinition! # Returns the deactivated definition
+  
+  # Reactivates an inactive custom field definition. Requires admin privileges.
+  reactivateCustomFieldDefinition(id: ID!): CustomFieldDefinition! # Returns the reactivated definition
+} 

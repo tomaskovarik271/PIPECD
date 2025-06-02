@@ -1,0 +1,12 @@
+# netlify/functions/graphql/schema/user.graphql
+
+type User {
+  id: ID!
+  email: String!
+  display_name: String # Renamed from 'name', represents combined or preferred display name
+  avatar_url: String # Added avatar URL
+} 
+
+extend type Query {
+  users: [User!]!
+} 

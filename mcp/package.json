@@ -1,0 +1,41 @@
+{
+  "name": "pipecd-mcp-server",
+  "version": "1.0.0",
+  "description": "Model Context Protocol server for PipeCD - enables AI reasoning over deal management data",
+  "type": "module",
+  "main": "dist/pipecd-mcp-server.js",
+  "bin": {
+    "pipecd-mcp-server": "./dist/pipecd-mcp-server.js"
+  },
+  "scripts": {
+    "build": "tsc && chmod +x dist/pipecd-mcp-server.js",
+    "dev": "tsc --watch",
+    "start": "node dist/pipecd-mcp-server.js",
+    "test": "node dist/pipecd-mcp-server.js --test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/node-fetch": "^2.6.11",
+    "typescript": "^5.5.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "pipecd",
+    "ai",
+    "graphql",
+    "sales",
+    "crm"
+  ],
+  "author": "PipeCD Team",
+  "license": "MIT",
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ]
+} 

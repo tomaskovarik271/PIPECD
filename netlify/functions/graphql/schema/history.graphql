@@ -1,0 +1,19 @@
+# netlify/functions/graphql/schema/history.graphql
+
+type DealHistoryEntry {
+  id: ID!
+  user: User # To be resolved to a User type
+  eventType: String!
+  changes: JSON # Represents the structured changes
+  createdAt: DateTime!
+}
+
+# Extend User type if not already available for simple lookup by resolver
+# If User type is complex, resolver might only return a subset like { id, name, email }
+# Ensure base.graphql or similar defines/extends User appropriately.
+# Example:
+# type User {
+#   id: ID!
+#   email: String
+#   # Add other fields like name, avatar_url if available and needed
+# } 

@@ -1,0 +1,31 @@
+"""
+Defines the Organization type and related queries/mutations.
+"""
+
+type Organization {
+    id: ID!
+    created_at: DateTime!
+    updated_at: DateTime!
+    user_id: ID!
+    name: String!
+    address: String
+    notes: String
+    people: [Person!] # People belonging to this organization
+    deals: [Deal!]! # List of associated deals
+    activities: [Activity!]! # ADDED list of related activities
+    customFieldValues: [CustomFieldValue!]! # ADDED
+}
+
+input OrganizationInput {
+    name: String!
+    address: String
+    notes: String
+    customFields: [CustomFieldValueInput!] # ADDED
+}
+
+input OrganizationUpdateInput {
+    name: String
+    address: String
+    notes: String
+    customFields: [CustomFieldValueInput!] # ADDED
+} 

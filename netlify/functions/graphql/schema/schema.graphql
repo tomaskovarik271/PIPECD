@@ -1,0 +1,18 @@
+# This file now only extends the Query type with fields not present in base.graphql.
+# Assumes 'type Query' is defined elsewhere (e.g., in base.graphql).
+
+# Add other types as needed...
+
+# --- Query Type ---
+
+extend type Query {
+  myPermissions: [String!]
+  # All other Query fields (deals, people, health, etc.) are presumably defined in base.graphql
+  # and should not be repeated here to avoid conflicts.
+}
+
+# If this schema were to also introduce new mutations not in base.graphql,
+# and if base.graphql defines 'type Mutation', you would use:
+# extend type Mutation {
+#   newMutationFromSchemaFile: String
+# } 

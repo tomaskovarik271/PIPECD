@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "pipecd": {
+      "command": "node",
+      "args": [
+        "/Users/tomaskovarik/059_PIPECD/PIPECD/mcp/dist/pipecd-mcp-server.js"
+      ],
+      "env": {
+        "GRAPHQL_ENDPOINT": "http://localhost:8888/.netlify/functions/graphql",
+        "SUPABASE_JWT_SECRET": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU0MzIxL2F1dGgvdjEiLCJzdWIiOiJmNjU0ZjcxMC03MGI0LTQzNzUtOWI3NS0yOTkyMDFkNTQ0NTUiLCJhdWQiOiJhdXRoZW50aWNhdGVkIiwiZXhwIjoxNzQ4NTU1NjA0LCJpYXQiOjE3NDg1NTIwMDQsImVtYWlsIjoidG9tYXNAa292YXJpay5jeiIsInBob25lIjoiIiwiYXBwX21ldGFkYXRhIjp7InByb3ZpZGVyIjoiZW1haWwiLCJwcm92aWRlcnMiOlsiZW1haWwiXX0sInVzZXJfbWV0YWRhdGEiOnsiZW1haWwiOiJ0b21hc0Brb3ZhcmlrLmN6IiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBob25lX3ZlcmlmaWVkIjpmYWxzZSwic3ViIjoiZjY1NGY3MTAtNzBiNC00Mzc1LTliNzUtMjk5MjAxZDU0NDU1In0sInJvbGUiOiJhdXRoZW50aWNhdGVkIiwiYWFsIjoiYWFsMSIsImFtciI6W3sibWV0aG9kIjoicGFzc3dvcmQiLCJ0aW1lc3RhbXAiOjE3NDg1NTIwMDR9XSwic2Vzc2lvbl9pZCI6IjQ5ZGE5ZmE1LThkMzAtNDQyYS1iZjY4LTI0NzFjYjA4Y2U0NiIsImlzX2Fub255bW91cyI6ZmFsc2V9.tu4Vf3lIZfWZ2vTn_Qv73Q0J-En_EH7Mh8kSpGHp0rA"
+      }
+    }
+  }
+} 

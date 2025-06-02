@@ -1,0 +1,52 @@
+type Deal {
+  id: ID!
+  user_id: ID!
+  name: String!
+  amount: Float
+  expected_close_date: DateTime
+  created_at: DateTime!
+  updated_at: DateTime!
+  person_id: ID
+  person: Person
+  organization_id: ID
+  organization: Organization
+  activities: [Activity!]!
+  deal_specific_probability: Float # Nullable, if null, use probability from WFM step
+  weighted_amount: Float # Calculated: amount * (deal_specific_probability || wfm_step_probability)
+  history(limit: Int, offset: Int): [DealHistoryEntry!]
+  customFieldValues: [CustomFieldValue!]!
+
+  # WFM Fields
+  wfm_project_id: ID # The ID of the associated WFMProject
+  wfmProject: WFMProject
+  currentWfmStep: WFMWorkflowStep
+  currentWfmStatus: WFMStatus
+
+  # Resolved fields
+  createdBy: User! # The user who created the deal
+  assigned_to_user_id: ID # ID of the user this deal is assigned to
+  assignedToUser: User # The user to whom the deal is currently assigned
+}
+
+input DealInput {
+  name: String!
+  amount: Float
+  expected_close_date: DateTime
+  wfmProjectTypeId: ID!
+  person_id: ID
+  organization_id: ID
+  deal_specific_probability: Float # Nullable, for setting/unsetting
+  customFields: [CustomFieldValueInput!]
+  assignedToUserId: ID # Optional: ID of the user to assign this deal to upon creation
+}
+
+input DealUpdateInput {
+  name: String
+  amount: Float
+  expected_close_date: DateTime
+  person_id: ID
+  organization_id: ID
+  deal_specific_probability: Float # Nullable, for setting/unsetting
+  customFields: [CustomFieldValueInput!]
+  assignedToUserId: ID # ID of the user to assign/reassign this deal to
+} 
