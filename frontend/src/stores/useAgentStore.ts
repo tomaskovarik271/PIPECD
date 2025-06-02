@@ -167,6 +167,13 @@ const GET_AGENT_CONVERSATIONS = gql`
         role
         content
         timestamp
+        thoughts {
+          id
+          type
+          content
+          metadata
+          timestamp
+        }
       }
       context
       createdAt

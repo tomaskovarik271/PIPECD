@@ -32,15 +32,19 @@ import {
   ModalCloseButton,
   useDisclosure,
   SimpleGrid,
-  Stack,
   Code,
 } from '@chakra-ui/react';
 import { SettingsIcon, TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { FiSend, FiUser, FiCpu, FiActivity, FiMessageSquare, FiClock, FiTool, FiEye, FiZap, FiTarget } from 'react-icons/fi';
+import ReactMarkdown from 'react-markdown';
+import { useNavigate } from 'react-router-dom';
 import { useAgentStore } from '../../stores/useAgentStore';
 import type { AgentMessage, AgentConversation, AgentThought } from '../../stores/useAgentStore';
 import { gql } from '@apollo/client';
 import { apolloClient } from '../../lib/apolloClient';
+// Enhanced AI Agent Components
+import { EnhancedResponse } from './enhanced';
+import type { SuggestedAction } from './enhanced';
 
 // GraphQL query for real-time thought polling
 const GET_AGENT_THOUGHTS = gql`
@@ -86,11 +90,18 @@ const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> 
     }
   };
 
+  // Count different types of steps for better summary
+  const stepCounts = thoughts.reduce((acc, thought) => {
+    const type = thought.type.toLowerCase();
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <Box mt={3}>
       <Divider my={2} />
       
-      {/* Thoughts Summary */}
+      {/* Improved Thoughts Summary */}
       <HStack 
         spacing={2} 
         cursor="pointer" 
@@ -100,30 +111,33 @@ const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> 
         borderRadius="md"
         transition="all 0.2s"
       >
-        <FiActivity size={14} />
-        <Text fontSize="xs" opacity={0.8} flex={1}>
-          {thoughts.length} autonomous step{thoughts.length > 1 ? 's' : ''} • Click to view details
-        </Text>
-        <HStack spacing={1}>
-          {thoughts.slice(0, 3).map((thought, idx) => (
-            <Badge 
-              key={idx} 
-              size="xs" 
-              colorScheme={getThoughtColor(thought.type)}
-            >
-              {thought.type.toLowerCase()}
-            </Badge>
-          ))}
-          {thoughts.length > 3 && (
-            <Badge size="xs" colorScheme="gray">
-              +{thoughts.length - 3} more
-            </Badge>
-          )}
-        </HStack>
-        {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        <FiActivity size={14} color="gray" />
+        <VStack align="start" spacing={0} flex={1}>
+          <Text fontSize="xs" opacity={0.8}>
+            {thoughts.length} processing step{thoughts.length > 1 ? 's' : ''}
+          </Text>
+          <HStack spacing={1}>
+            {Object.entries(stepCounts).map(([type, count]) => (
+              <Badge 
+                key={type} 
+                size="xs" 
+                colorScheme={getThoughtColor(type)}
+                variant="subtle"
+              >
+                {count} {type}
+              </Badge>
+            ))}
+          </HStack>
+        </VStack>
+        <Tooltip label={isExpanded ? "Hide technical details" : "Show technical details"} bg={tooltipBg}>
+          <HStack spacing={1} fontSize="xs" color="gray.500">
+            <Text>Technical details</Text>
+            {isExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+          </HStack>
+        </Tooltip>
       </HStack>
 
-      {/* Expanded Thoughts Details */}
+      {/* Expanded Thoughts Details - Only show when explicitly requested */}
       {isExpanded && (
         <VStack align="stretch" spacing={3} mt={3} pl={4} borderLeft="2px" borderColor="blue.200">
           {thoughts.map((thought, idx) => (
@@ -152,11 +166,11 @@ const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> 
                     {thought.content}
                   </Text>
 
-                  {/* Metadata Details */}
+                  {/* Only show raw metadata for debugging when expanded */}
                   {thought.metadata && Object.keys(thought.metadata).length > 0 && (
                     <Box>
                       <Text fontSize="xs" fontWeight="semibold" color="gray.600" mb={1}>
-                        Details:
+                        Technical Details:
                       </Text>
                       <SimpleGrid columns={1} spacing={1}>
                         {/* Tool Call Details */}
@@ -167,24 +181,34 @@ const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> 
                           </HStack>
                         )}
                         
-                        {/* Parameters */}
+                        {/* Parameters - Collapsed by default */}
                         {thought.metadata.parameters && (
                           <VStack align="stretch" spacing={1}>
                             <Text fontWeight="medium" color="green.600" fontSize="xs">Parameters:</Text>
-                            <Code p={2} fontSize="xs" maxH="100px" overflow="auto">
+                            <Code p={2} fontSize="xs" maxH="80px" overflow="auto">
                               {JSON.stringify(thought.metadata.parameters, null, 2)}
                             </Code>
                           </VStack>
                         )}
 
-                        {/* Tool Results */}
+                        {/* Tool Results - Show when technical details are expanded */}
                         {thought.metadata.result && (
                           <VStack align="stretch" spacing={1}>
-                            <Text fontWeight="medium" color="purple.600" fontSize="xs">Result:</Text>
-                            <Code p={2} fontSize="xs" maxH="100px" overflow="auto">
+                            <Text fontWeight="medium" color="purple.600" fontSize="xs">Formatted Result:</Text>
+                            <Code p={2} fontSize="xs" maxH="80px" overflow="auto">
                               {typeof thought.metadata.result === 'string' 
                                 ? thought.metadata.result 
                                 : JSON.stringify(thought.metadata.result, null, 2)}
+                            </Code>
+                          </VStack>
+                        )}
+
+                        {/* Raw Data - Show the actual JSON data returned from tool */}
+                        {thought.metadata.rawData && (
+                          <VStack align="stretch" spacing={1}>
+                            <Text fontWeight="medium" color="orange.600" fontSize="xs">Raw Data:</Text>
+                            <Code p={2} fontSize="xs" maxH="120px" overflow="auto">
+                              {JSON.stringify(thought.metadata.rawData, null, 2)}
                             </Code>
                           </VStack>
                         )}
@@ -206,7 +230,14 @@ const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> 
                         {thought.metadata.reasoning && (
                           <VStack align="stretch" spacing={1}>
                             <Text fontWeight="medium" color="gray.600" fontSize="xs">Reasoning:</Text>
-                            <Text fontSize="xs" p={2} bg="gray.50" borderRadius="md" fontStyle="italic">
+                            <Text 
+                              fontSize="xs" 
+                              p={2} 
+                              bg={useColorModeValue('gray.50', 'gray.700')}
+                              color={useColorModeValue('gray.800', 'gray.200')}
+                              borderRadius="md" 
+                              fontStyle="italic"
+                            >
                               {thought.metadata.reasoning}
                             </Text>
                           </VStack>
@@ -252,6 +283,9 @@ export const AIAgentChat: React.FC = () => {
   const [isPollingThoughts, setIsPollingThoughts] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // React Router navigation
+  const navigate = useNavigate();
   
   // Modal for conversation history
   const { isOpen: isHistoryOpen, onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
@@ -440,6 +474,30 @@ export const AIAgentChat: React.FC = () => {
     onHistoryClose();
   }, [onHistoryClose]);
 
+  // Handle enhanced response actions
+  const handleEnhancedAction = useCallback((action: SuggestedAction) => {
+    switch (action.action) {
+      case 'navigate':
+        if (action.target) {
+          navigate(action.target);
+        }
+        break;
+      case 'copy':
+        if (action.payload?.value) {
+          navigator.clipboard.writeText(String(action.payload.value));
+        }
+        break;
+      case 'create':
+      case 'edit':
+      case 'view':
+        console.log('Action triggered:', action);
+        // Implement additional action handling as needed
+        break;
+      default:
+        console.log('Unknown action:', action);
+    }
+  }, [navigate]);
+
   // Handle conversation deletion
   const handleDeleteConversation = useCallback(async (conversationId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent conversation selection
@@ -467,6 +525,12 @@ export const AIAgentChat: React.FC = () => {
     const isUser = message.role === 'user';
     const Icon = isUser ? FiUser : FiCpu;
     
+    // Move all theme-related hooks to component level
+    const codeBlockBg = useColorModeValue('gray.100', 'gray.700');
+    const blockquoteBg = useColorModeValue('blue.50', 'blue.900');
+    const blockquoteBorder = useColorModeValue('blue.500', 'blue.400');
+    const strongColor = useColorModeValue('gray.800', 'white');
+    
     return (
       <HStack
         align="start"
@@ -493,11 +557,19 @@ export const AIAgentChat: React.FC = () => {
         >
           <CardBody py={3} px={4}>
             <VStack align="start" spacing={2}>
-              <Text fontSize="sm" whiteSpace="pre-wrap">
-                {message.content}
-              </Text>
+              {isUser ? (
+                <Text fontSize="sm" whiteSpace="pre-wrap">
+                  {message.content}
+                </Text>
+              ) : (
+                <EnhancedResponse
+                  content={message.content}
+                  thoughts={message.thoughts}
+                  onAction={handleEnhancedAction}
+                />
+              )}
               
-              <ThoughtDetailsComponent thoughts={message.thoughts} />
+              {!isUser && <ThoughtDetailsComponent thoughts={message.thoughts} />}
               
               <Text fontSize="xs" opacity={0.7} alignSelf="flex-end">
                 {formatTimestamp(message.timestamp)}
