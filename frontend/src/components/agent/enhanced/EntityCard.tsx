@@ -156,7 +156,7 @@ export const EntityCard: React.FC<EntityCardProps> = ({
               size="sm"
             />
           </HStack>
-          <Text fontWeight="bold" fontSize="sm" color="gray.600">
+          <Text fontWeight="bold" fontSize="sm" color={useColorModeValue('gray.800', 'gray.200')}>
             {getDisplayName(entity)}
           </Text>
         </VStack>

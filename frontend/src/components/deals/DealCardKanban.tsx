@@ -61,19 +61,33 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
     borderRadius: "lg",
     borderWidth: "1px",
     borderColor: colors.border.default,
-    transition: "all 0.2s ease-in-out",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     _hover: {
-      borderColor: colors.interactive.default,
-      transform: "translateY(-2px)",
-      boxShadow: "lg"
+      transform: "translateY(-4px) scale(1.02)",
+      boxShadow: `
+        0 20px 25px -5px rgba(59, 130, 246, 0.15),
+        0 10px 10px -5px rgba(59, 130, 246, 0.1),
+        0 0 20px rgba(59, 130, 246, 0.2),
+        0 0 40px rgba(59, 130, 246, 0.1)
+      `,
+      borderColor: 'rgba(59, 130, 246, 0.5)',
+      bg: colors.bg.elevated,
+      filter: 'brightness(1.05)'
     }
   };
 
   const draggingStyle = {
     ...baseStyle,
-    borderColor: colors.interactive.active,
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1)',
-    transform: 'translateY(-2px) rotate(1deg)',
+    borderColor: 'rgba(59, 130, 246, 0.8)',
+    boxShadow: `
+      0 25px 50px -12px rgba(59, 130, 246, 0.25),
+      0 15px 15px -5px rgba(59, 130, 246, 0.15),
+      0 0 30px rgba(59, 130, 246, 0.3),
+      0 0 60px rgba(59, 130, 246, 0.15)
+    `,
+    transform: 'translateY(-6px) rotate(2deg) scale(1.05)',
+    filter: 'brightness(1.1)',
+    bg: colors.bg.elevated,
   };
 
   return (

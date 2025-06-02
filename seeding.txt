@@ -68,25 +68,7 @@ INSERT INTO public.user_roles (user_id, role_id)
 VALUES
     ('your_new_user_id_here', (SELECT id FROM public.roles WHERE name = 'admin'));
 
-############
 
-USER user_profiles
-
-    UPDATE public.user_profiles p
-    SET email = (
-        SELECT u.email
-        FROM auth.users u
-        WHERE u.id = p.user_id
-    )
-    WHERE p.email IS NULL AND p.user_id IN ('2686ffd4-3673-473c-aa83-e23f96343876', '4726313f-9599-4bc1-92c0-d3242994ebe7');
-
-UPDATE public.user_profiles p
-SET email = (
-    SELECT u.email
-    FROM auth.users u
-    WHERE u.id = p.user_id
-)
-WHERE p.email IS NULL; -- Run this for all profiles with NULL email
 
 ############
 
@@ -214,5 +196,3 @@ BEGIN
     RAISE NOTICE 'Successfully created sample organizations and people.';
 
 END $$;
-
-

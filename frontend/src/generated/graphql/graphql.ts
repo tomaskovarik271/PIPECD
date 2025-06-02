@@ -395,15 +395,144 @@ export type InvoiceScheduleEntry = {
   updated_at: Scalars["DateTime"]["output"];
 };
 
+export type Lead = {
+  __typename?: "Lead";
+  activities: Array<Activity>;
+  assignedToUser?: Maybe<User>;
+  assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
+  company_name?: Maybe<Scalars["String"]["output"]>;
+  contact_email?: Maybe<Scalars["String"]["output"]>;
+  contact_name?: Maybe<Scalars["String"]["output"]>;
+  contact_phone?: Maybe<Scalars["String"]["output"]>;
+  converted_at?: Maybe<Scalars["DateTime"]["output"]>;
+  converted_to_deal?: Maybe<Deal>;
+  converted_to_deal_id?: Maybe<Scalars["ID"]["output"]>;
+  createdBy: User;
+  created_at: Scalars["DateTime"]["output"];
+  currentWfmStatus?: Maybe<WfmStatus>;
+  currentWfmStep?: Maybe<WfmWorkflowStep>;
+  customFieldValues: Array<CustomFieldValue>;
+  custom_field_values?: Maybe<Scalars["JSON"]["output"]>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  estimated_close_date?: Maybe<Scalars["DateTime"]["output"]>;
+  estimated_value?: Maybe<Scalars["Float"]["output"]>;
+  history?: Maybe<Array<LeadHistoryEntry>>;
+  id: Scalars["ID"]["output"];
+  is_qualified?: Maybe<Scalars["Boolean"]["output"]>;
+  last_contacted_at?: Maybe<Scalars["DateTime"]["output"]>;
+  lead_score?: Maybe<Scalars["Int"]["output"]>;
+  lead_source?: Maybe<Scalars["String"]["output"]>;
+  lead_source_detail?: Maybe<Scalars["String"]["output"]>;
+  next_follow_up_date?: Maybe<Scalars["DateTime"]["output"]>;
+  notes?: Maybe<Scalars["String"]["output"]>;
+  organization?: Maybe<Organization>;
+  organization_id?: Maybe<Scalars["ID"]["output"]>;
+  person?: Maybe<Person>;
+  person_id?: Maybe<Scalars["ID"]["output"]>;
+  priority?: Maybe<LeadPriority>;
+  qualification_notes?: Maybe<Scalars["String"]["output"]>;
+  tags?: Maybe<Array<Scalars["String"]["output"]>>;
+  title: Scalars["String"]["output"];
+  updated_at: Scalars["DateTime"]["output"];
+  user_id: Scalars["ID"]["output"];
+  wfmProject?: Maybe<WfmProject>;
+  wfm_project_id?: Maybe<Scalars["ID"]["output"]>;
+};
+
+export type LeadHistoryArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type LeadConversionInput = {
+  amount?: InputMaybe<Scalars["Float"]["input"]>;
+  deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
+  expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type LeadConversionResult = {
+  __typename?: "LeadConversionResult";
+  deal: Deal;
+  lead: Lead;
+};
+
+export type LeadHistoryEntry = {
+  __typename?: "LeadHistoryEntry";
+  changes?: Maybe<Scalars["JSON"]["output"]>;
+  created_at: Scalars["DateTime"]["output"];
+  event_type: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  lead_id: Scalars["ID"]["output"];
+  user?: Maybe<User>;
+  user_id?: Maybe<Scalars["ID"]["output"]>;
+};
+
+export type LeadInput = {
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  company_name?: InputMaybe<Scalars["String"]["input"]>;
+  contact_email?: InputMaybe<Scalars["String"]["input"]>;
+  contact_name?: InputMaybe<Scalars["String"]["input"]>;
+  contact_phone?: InputMaybe<Scalars["String"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  estimated_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
+  estimated_value?: InputMaybe<Scalars["Float"]["input"]>;
+  lead_score?: InputMaybe<Scalars["Int"]["input"]>;
+  lead_source?: InputMaybe<Scalars["String"]["input"]>;
+  lead_source_detail?: InputMaybe<Scalars["String"]["input"]>;
+  next_follow_up_date?: InputMaybe<Scalars["DateTime"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
+  person_id?: InputMaybe<Scalars["ID"]["input"]>;
+  priority?: InputMaybe<LeadPriority>;
+  qualification_notes?: InputMaybe<Scalars["String"]["input"]>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  title: Scalars["String"]["input"];
+};
+
+export enum LeadPriority {
+  High = "HIGH",
+  Low = "LOW",
+  Medium = "MEDIUM",
+  Urgent = "URGENT",
+}
+
+export type LeadUpdateInput = {
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  company_name?: InputMaybe<Scalars["String"]["input"]>;
+  contact_email?: InputMaybe<Scalars["String"]["input"]>;
+  contact_name?: InputMaybe<Scalars["String"]["input"]>;
+  contact_phone?: InputMaybe<Scalars["String"]["input"]>;
+  customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  estimated_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
+  estimated_value?: InputMaybe<Scalars["Float"]["input"]>;
+  is_qualified?: InputMaybe<Scalars["Boolean"]["input"]>;
+  lead_score?: InputMaybe<Scalars["Int"]["input"]>;
+  lead_source?: InputMaybe<Scalars["String"]["input"]>;
+  lead_source_detail?: InputMaybe<Scalars["String"]["input"]>;
+  next_follow_up_date?: InputMaybe<Scalars["DateTime"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
+  person_id?: InputMaybe<Scalars["ID"]["input"]>;
+  priority?: InputMaybe<LeadPriority>;
+  qualification_notes?: InputMaybe<Scalars["String"]["input"]>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  title?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type Mutation = {
   __typename?: "Mutation";
   addAgentThoughts: Array<AgentThought>;
   /** Calculates a preview of a price quote. dealId is optional. */
   calculatePriceQuotePreview: PriceQuote;
+  convertLeadToDeal: LeadConversionResult;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
+  createLead: Lead;
   createOrganization: Organization;
   createPerson: Person;
   /** Creates a new price quote for a given deal. */
@@ -417,6 +546,7 @@ export type Mutation = {
   deleteActivity: Scalars["ID"]["output"];
   deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteLead: Scalars["Boolean"]["output"];
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   /** Deletes a price quote. */
@@ -432,6 +562,8 @@ export type Mutation = {
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateDealWFMProgress: Deal;
+  updateLead: Lead;
+  updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
   /** Updates an existing price quote. */
@@ -456,6 +588,11 @@ export type MutationCalculatePriceQuotePreviewArgs = {
   input: PriceQuoteUpdateInput;
 };
 
+export type MutationConvertLeadToDealArgs = {
+  dealData?: InputMaybe<LeadConversionInput>;
+  leadId: Scalars["ID"]["input"];
+};
+
 export type MutationCreateActivityArgs = {
   input: CreateActivityInput;
 };
@@ -470,6 +607,10 @@ export type MutationCreateCustomFieldDefinitionArgs = {
 
 export type MutationCreateDealArgs = {
   input: DealInput;
+};
+
+export type MutationCreateLeadArgs = {
+  input: LeadInput;
 };
 
 export type MutationCreateOrganizationArgs = {
@@ -518,6 +659,10 @@ export type MutationDeleteAgentConversationArgs = {
 };
 
 export type MutationDeleteDealArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteLeadArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -579,6 +724,16 @@ export type MutationUpdateDealArgs = {
 
 export type MutationUpdateDealWfmProgressArgs = {
   dealId: Scalars["ID"]["input"];
+  targetWfmWorkflowStepId: Scalars["ID"]["input"];
+};
+
+export type MutationUpdateLeadArgs = {
+  id: Scalars["ID"]["input"];
+  input: LeadUpdateInput;
+};
+
+export type MutationUpdateLeadWfmProgressArgs = {
+  leadId: Scalars["ID"]["input"];
   targetWfmWorkflowStepId: Scalars["ID"]["input"];
 };
 
@@ -791,6 +946,8 @@ export type Query = {
   getAIActivityRecommendations: AiActivityRecommendationsResponse;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
+  lead?: Maybe<Lead>;
+  leads: Array<Lead>;
   me?: Maybe<User>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
   organization?: Maybe<Organization>;
@@ -855,6 +1012,10 @@ export type QueryGetAiActivityRecommendationsArgs = {
 export type QueryGetWfmAllowedTransitionsArgs = {
   fromStepId: Scalars["ID"]["input"];
   workflowId: Scalars["ID"]["input"];
+};
+
+export type QueryLeadArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type QueryOrganizationArgs = {
@@ -1116,6 +1277,24 @@ export type WfmWorkflowTransitionMutationResponse = {
   message?: Maybe<Scalars["String"]["output"]>;
   success: Scalars["Boolean"]["output"];
   transitionId?: Maybe<Scalars["ID"]["output"]>;
+};
+
+export type GetAgentThoughtsQueryVariables = Exact<{
+  conversationId: Scalars["ID"]["input"];
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type GetAgentThoughtsQuery = {
+  __typename?: "Query";
+  agentThoughts: Array<{
+    __typename?: "AgentThought";
+    id: string;
+    conversationId: string;
+    type: AgentThoughtType;
+    content: string;
+    metadata: Record<string, any>;
+    timestamp: string;
+  }>;
 };
 
 export type GetAiActivityRecommendationsQueryVariables = Exact<{
@@ -2113,6 +2292,171 @@ export type GetActivityByIdQuery = {
       name: string;
     } | null;
   } | null;
+};
+
+export type CreateAgentConversationMutationVariables = Exact<{
+  config?: InputMaybe<AgentConfigInput>;
+}>;
+
+export type CreateAgentConversationMutation = {
+  __typename?: "Mutation";
+  createAgentConversation: {
+    __typename?: "AgentConversation";
+    id: string;
+    userId: string;
+    context: Record<string, any>;
+    createdAt: string;
+    updatedAt: string;
+    messages: Array<{
+      __typename?: "AgentMessage";
+      role: string;
+      content: string;
+      timestamp: string;
+      thoughts?: Array<{
+        __typename?: "AgentThought";
+        id: string;
+        type: AgentThoughtType;
+        content: string;
+        metadata: Record<string, any>;
+        timestamp: string;
+      }> | null;
+    }>;
+    plan?: {
+      __typename?: "AgentPlan";
+      goal: string;
+      context: Record<string, any>;
+      steps: Array<{
+        __typename?: "AgentPlanStep";
+        id: string;
+        description: string;
+        toolName?: string | null;
+        status: AgentStepStatus;
+      }>;
+    } | null;
+  };
+};
+
+export type GetAgentConversationsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type GetAgentConversationsQuery = {
+  __typename?: "Query";
+  agentConversations: Array<{
+    __typename?: "AgentConversation";
+    id: string;
+    userId: string;
+    context: Record<string, any>;
+    createdAt: string;
+    updatedAt: string;
+    messages: Array<{
+      __typename?: "AgentMessage";
+      role: string;
+      content: string;
+      timestamp: string;
+      thoughts?: Array<{
+        __typename?: "AgentThought";
+        id: string;
+        type: AgentThoughtType;
+        content: string;
+        metadata: Record<string, any>;
+        timestamp: string;
+      }> | null;
+    }>;
+  }>;
+};
+
+export type SendAgentMessageMutationVariables = Exact<{
+  input: SendMessageInput;
+}>;
+
+export type SendAgentMessageMutation = {
+  __typename?: "Mutation";
+  sendAgentMessage: {
+    __typename?: "AgentResponse";
+    conversation: {
+      __typename?: "AgentConversation";
+      id: string;
+      userId: string;
+      context: Record<string, any>;
+      createdAt: string;
+      updatedAt: string;
+      messages: Array<{
+        __typename?: "AgentMessage";
+        role: string;
+        content: string;
+        timestamp: string;
+        thoughts?: Array<{
+          __typename?: "AgentThought";
+          id: string;
+          type: AgentThoughtType;
+          content: string;
+          metadata: Record<string, any>;
+          timestamp: string;
+        }> | null;
+      }>;
+      plan?: {
+        __typename?: "AgentPlan";
+        goal: string;
+        context: Record<string, any>;
+        steps: Array<{
+          __typename?: "AgentPlanStep";
+          id: string;
+          description: string;
+          toolName?: string | null;
+          status: AgentStepStatus;
+          result?: Record<string, any> | null;
+        }>;
+      } | null;
+    };
+    message: {
+      __typename?: "AgentMessage";
+      role: string;
+      content: string;
+      timestamp: string;
+    };
+    thoughts: Array<{
+      __typename?: "AgentThought";
+      id: string;
+      type: AgentThoughtType;
+      content: string;
+      metadata: Record<string, any>;
+      timestamp: string;
+    }>;
+    plan?: {
+      __typename?: "AgentPlan";
+      goal: string;
+      context: Record<string, any>;
+      steps: Array<{
+        __typename?: "AgentPlanStep";
+        id: string;
+        description: string;
+        toolName?: string | null;
+        status: AgentStepStatus;
+      }>;
+    } | null;
+  };
+};
+
+export type DeleteAgentConversationMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteAgentConversationMutation = {
+  __typename?: "Mutation";
+  deleteAgentConversation: boolean;
+};
+
+export type DiscoverAgentToolsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type DiscoverAgentToolsQuery = {
+  __typename?: "Query";
+  discoverAgentTools: {
+    __typename?: "ToolDiscoveryResponse";
+    tools: Array<Record<string, any>>;
+    error?: string | null;
+  };
 };
 
 export type GetMyPermissionsQueryVariables = Exact<{ [key: string]: never }>;

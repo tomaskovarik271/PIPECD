@@ -34,7 +34,7 @@ export class DomainRegistry {
     this.graphqlClient = graphqlClient;
     
     // Initialize domain modules
-    this.dealsModule = new DealsModule();
+    this.dealsModule = new DealsModule(graphqlClient);
     this.organizationsModule = new OrganizationsModule();
     this.contactsModule = new ContactsModule();
     this.activitiesModule = new ActivitiesModule();
