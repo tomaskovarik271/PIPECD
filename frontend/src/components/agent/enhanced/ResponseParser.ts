@@ -119,6 +119,7 @@ export class ResponseParser {
                     amount: item.amount,
                     organizationName: organization?.name,
                     metadata: {
+                      status: item.status,
                       stage: item.stage,
                       createdAt: item.created_at,
                       updatedAt: item.updated_at,
@@ -150,6 +151,7 @@ export class ResponseParser {
                 amount: data.amount,
                 organizationName: organization?.name,
                 metadata: {
+                  status: data.status,
                   stage: data.stage,
                   createdAt: data.created_at,
                   organizationId: data.organization_id,

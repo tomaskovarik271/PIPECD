@@ -44,10 +44,17 @@ const getEntityColorScheme = (type: string) => {
 
 // Helper function to get deal status from stage or metadata
 const getDealStatus = (entity: any) => {
+  // First try to get status field (the actual status from deals table)
+  if (entity.metadata?.status && entity.metadata.status !== null) {
+    return entity.metadata.status;
+  }
+  
+  // Fallback to stage if status not available
   if (entity.metadata?.stage && entity.metadata.stage !== null) {
     return entity.metadata.stage;
   }
-  return 'Active'; // Default status for new deals
+  
+  return 'New'; // Default status for new deals
 };
 
 // Helper function to format display name
