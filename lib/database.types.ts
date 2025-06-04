@@ -34,6 +34,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_territories: {
+        Row: {
+          assignment_reason: string | null
+          created_at: string | null
+          is_primary: boolean | null
+          organization_id: string
+          territory_id: string
+        }
+        Insert: {
+          assignment_reason?: string | null
+          created_at?: string | null
+          is_primary?: boolean | null
+          organization_id: string
+          territory_id: string
+        }
+        Update: {
+          assignment_reason?: string | null
+          created_at?: string | null
+          is_primary?: boolean | null
+          organization_id?: string
+          territory_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_territories_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_territories_territory_id_fkey"
+            columns: ["territory_id"]
+            isOneToOne: false
+            referencedRelation: "territories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activities: {
         Row: {
           assigned_to_user_id: string | null
@@ -512,6 +551,76 @@ export type Database = {
           },
         ]
       }
+      organization_relationships: {
+        Row: {
+          child_org_id: string
+          created_at: string | null
+          created_by_user_id: string | null
+          end_date: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          ownership_percentage: number | null
+          parent_org_id: string
+          relationship_strength: number | null
+          relationship_type: string
+          start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          child_org_id: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          end_date?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          ownership_percentage?: number | null
+          parent_org_id: string
+          relationship_strength?: number | null
+          relationship_type: string
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          child_org_id?: string
+          created_at?: string | null
+          created_by_user_id?: string | null
+          end_date?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          ownership_percentage?: number | null
+          parent_org_id?: string
+          relationship_strength?: number | null
+          relationship_type?: string
+          start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_relationships_child_org_id_fkey"
+            columns: ["child_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_relationships_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "organization_relationships_parent_org_id_fkey"
+            columns: ["parent_org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           address: string | null
@@ -619,6 +728,158 @@ export type Database = {
         }
         Relationships: []
       }
+      person_organizational_roles: {
+        Row: {
+          budget_authority_usd: number | null
+          created_at: string | null
+          created_by_user_id: string | null
+          department: string | null
+          end_date: string | null
+          id: string
+          is_primary_role: boolean | null
+          notes: string | null
+          organization_id: string
+          person_id: string
+          reporting_structure: Json | null
+          responsibilities: Json | null
+          role_title: string
+          seniority_level: string | null
+          start_date: string | null
+          team_size: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          budget_authority_usd?: number | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          department?: string | null
+          end_date?: string | null
+          id?: string
+          is_primary_role?: boolean | null
+          notes?: string | null
+          organization_id: string
+          person_id: string
+          reporting_structure?: Json | null
+          responsibilities?: Json | null
+          role_title: string
+          seniority_level?: string | null
+          start_date?: string | null
+          team_size?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          budget_authority_usd?: number | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          department?: string | null
+          end_date?: string | null
+          id?: string
+          is_primary_role?: boolean | null
+          notes?: string | null
+          organization_id?: string
+          person_id?: string
+          reporting_structure?: Json | null
+          responsibilities?: Json | null
+          role_title?: string
+          seniority_level?: string | null
+          start_date?: string | null
+          team_size?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_organizational_roles_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "person_organizational_roles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_organizational_roles_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      person_relationships: {
+        Row: {
+          created_at: string | null
+          created_by_user_id: string | null
+          from_person_id: string
+          id: string
+          interaction_frequency: string | null
+          is_bidirectional: boolean | null
+          metadata: Json | null
+          notes: string | null
+          relationship_context: string | null
+          relationship_strength: number | null
+          relationship_type: string
+          to_person_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by_user_id?: string | null
+          from_person_id: string
+          id?: string
+          interaction_frequency?: string | null
+          is_bidirectional?: boolean | null
+          metadata?: Json | null
+          notes?: string | null
+          relationship_context?: string | null
+          relationship_strength?: number | null
+          relationship_type: string
+          to_person_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by_user_id?: string | null
+          from_person_id?: string
+          id?: string
+          interaction_frequency?: string | null
+          is_bidirectional?: boolean | null
+          metadata?: Json | null
+          notes?: string | null
+          relationship_context?: string | null
+          relationship_strength?: number | null
+          relationship_type?: string
+          to_person_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "person_relationships_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "person_relationships_from_person_id_fkey"
+            columns: ["from_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "person_relationships_to_person_id_fkey"
+            columns: ["to_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pipelines: {
         Row: {
           created_at: string
@@ -687,6 +948,74 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "workflows"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      relationship_insights: {
+        Row: {
+          ai_reasoning: string | null
+          confidence_score: number | null
+          created_at: string | null
+          entity_id: string
+          entity_type: string
+          expires_at: string | null
+          id: string
+          insight_description: string
+          insight_title: string
+          insight_type: string
+          priority_level: string | null
+          recommended_actions: Json | null
+          reviewed_at: string | null
+          reviewed_by_user_id: string | null
+          status: string | null
+          supporting_data: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_reasoning?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          entity_id: string
+          entity_type: string
+          expires_at?: string | null
+          id?: string
+          insight_description: string
+          insight_title: string
+          insight_type: string
+          priority_level?: string | null
+          recommended_actions?: Json | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: string | null
+          supporting_data?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_reasoning?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          entity_id?: string
+          entity_type?: string
+          expires_at?: string | null
+          id?: string
+          insight_description?: string
+          insight_title?: string
+          insight_type?: string
+          priority_level?: string | null
+          recommended_actions?: Json | null
+          reviewed_at?: string | null
+          reviewed_by_user_id?: string | null
+          status?: string | null
+          supporting_data?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relationship_insights_reviewed_by_user_id_fkey"
+            columns: ["reviewed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -782,6 +1111,129 @@ export type Database = {
           },
         ]
       }
+      stakeholder_analysis: {
+        Row: {
+          ai_communication_style: string | null
+          ai_decision_pattern: string | null
+          ai_influence_network: Json | null
+          ai_personality_profile: Json | null
+          approach_strategy: string | null
+          budget_authority_level: string | null
+          communication_preference: string | null
+          concerns: Json | null
+          created_at: string | null
+          created_by_user_id: string | null
+          deal_id: string | null
+          decision_authority: string | null
+          engagement_level: string | null
+          id: string
+          influence_score: number | null
+          last_interaction_date: string | null
+          last_interaction_type: string | null
+          lead_id: string | null
+          motivations: Json | null
+          next_best_action: string | null
+          organization_id: string
+          pain_points: Json | null
+          person_id: string
+          preferred_meeting_time: string | null
+          success_metrics: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          ai_communication_style?: string | null
+          ai_decision_pattern?: string | null
+          ai_influence_network?: Json | null
+          ai_personality_profile?: Json | null
+          approach_strategy?: string | null
+          budget_authority_level?: string | null
+          communication_preference?: string | null
+          concerns?: Json | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          deal_id?: string | null
+          decision_authority?: string | null
+          engagement_level?: string | null
+          id?: string
+          influence_score?: number | null
+          last_interaction_date?: string | null
+          last_interaction_type?: string | null
+          lead_id?: string | null
+          motivations?: Json | null
+          next_best_action?: string | null
+          organization_id: string
+          pain_points?: Json | null
+          person_id: string
+          preferred_meeting_time?: string | null
+          success_metrics?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          ai_communication_style?: string | null
+          ai_decision_pattern?: string | null
+          ai_influence_network?: Json | null
+          ai_personality_profile?: Json | null
+          approach_strategy?: string | null
+          budget_authority_level?: string | null
+          communication_preference?: string | null
+          concerns?: Json | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          deal_id?: string | null
+          decision_authority?: string | null
+          engagement_level?: string | null
+          id?: string
+          influence_score?: number | null
+          last_interaction_date?: string | null
+          last_interaction_type?: string | null
+          lead_id?: string | null
+          motivations?: Json | null
+          next_best_action?: string | null
+          organization_id?: string
+          pain_points?: Json | null
+          person_id?: string
+          preferred_meeting_time?: string | null
+          success_metrics?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stakeholder_analysis_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "stakeholder_analysis_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stakeholder_analysis_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stakeholder_analysis_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stakeholder_analysis_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       statuses: {
         Row: {
           color: string | null
@@ -817,6 +1269,75 @@ export type Database = {
           updated_by_user_id?: string | null
         }
         Relationships: []
+      }
+      territories: {
+        Row: {
+          account_size_range: string | null
+          assigned_user_id: string | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          id: string
+          industry_focus: string[] | null
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          parent_territory_id: string | null
+          region: string | null
+          state_province: string | null
+          territory_type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_size_range?: string | null
+          assigned_user_id?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          industry_focus?: string[] | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          parent_territory_id?: string | null
+          region?: string | null
+          state_province?: string | null
+          territory_type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_size_range?: string | null
+          assigned_user_id?: string | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string
+          industry_focus?: string[] | null
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          parent_territory_id?: string | null
+          region?: string | null
+          state_province?: string | null
+          territory_type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territories_assigned_user_id_fkey"
+            columns: ["assigned_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "territories_parent_territory_id_fkey"
+            columns: ["parent_territory_id"]
+            isOneToOne: false
+            referencedRelation: "territories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_profiles: {
         Row: {
@@ -1091,6 +1612,10 @@ export type Database = {
       create_lead_wfm_project: {
         Args: { lead_uuid: string; project_name?: string }
         Returns: string
+      }
+      expire_old_insights: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       get_user_permissions: {
         Args: { p_user_id: string }

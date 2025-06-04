@@ -5,21 +5,6 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    include: [
-      'react-force-graph-3d',
-      'react-force-graph-2d',
-      'three'
-    ],
-    esbuildOptions: {
-      target: 'esnext'
-    }
-  },
-  server: {
-    hmr: {
-      timeout: 60000 // Increase timeout for heavy dependencies
-    }
-  },
   test: {
     globals: true, // Use Vitest globals (describe, it, expect) without importing
     environment: 'jsdom', // Simulate browser environment

@@ -11,7 +11,6 @@ import {
   ArrowRightIcon,    // Pipelines (Represents flow?)
   ViewIcon, // Added ViewIcon for Project Board
   StarIcon, // Added for Leads
-  LinkIcon, // Added for Graph
   // StarIcon, // Placeholder for People
   // LockIcon, // Placeholder for Organizations
   // CopyIcon, // Placeholder for Pipelines
@@ -41,7 +40,6 @@ const NAV_ITEMS = [
   { path: '/people', label: 'People', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
-  { path: '/graph', label: 'Network Graph', icon: <LinkIcon /> },
   { path: '/agent', label: 'AI Assistant', icon: <FiCpu size={16} /> },
 ];
 
