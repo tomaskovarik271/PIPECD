@@ -30,7 +30,6 @@ import {
   queryResolvers as CustomFieldQueryResolvers,
   mutationResolvers as CustomFieldMutationResolvers,
 } from './graphql/resolvers/customFields';
-import { Query as PricingQuery, PriceQuoteResolver } from './graphql/resolvers/pricing';
 
 // Import WFM Resolvers
 import { WFMStatusResolvers } from './graphql/resolvers/wfmStatus';
@@ -38,9 +37,6 @@ import { WFMWorkflowResolvers } from './graphql/resolvers/wfmWorkflow';
 import { WFMProjectTypeResolvers } from './graphql/resolvers/wfmProjectType';
 import { WFMProject } from './graphql/resolvers/wfmProject';
 import { WFMWorkflowStep as WFMWorkflowStepResolver } from './graphql/resolvers/wfmWorkflowStep';
-
-// Import AI Activity Recommendation Resolver
-import { aiActivityRecommendationsResolver } from './graphql/resolvers/queries/aiActivityRecommendations';
 
 // Import Agent Resolvers
 import { agentQueries, agentMutations } from './graphql/resolvers/agentResolvers';
@@ -78,7 +74,6 @@ const loadTypeDefs = (): string => {
   const filesToLoad = [
     'activity.graphql', 
     'agent.graphql',
-    'aiActivityRecommendations.graphql',
     'base.graphql', 
     'customFields.graphql', 
     'deal.graphql', 
@@ -87,7 +82,6 @@ const loadTypeDefs = (): string => {
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
-    'pricing.graphql', 
     'scalars.graphql', 
     'schema.graphql', 
     'user.graphql', 
@@ -131,11 +125,9 @@ export const resolvers = {
     ...BaseQuery,
     ...ActivityQuery,
     ...CustomFieldQueryResolvers,
-    ...PricingQuery,
     ...WFMStatusResolvers.Query,
     ...WFMWorkflowResolvers.Query,
     ...WFMProjectTypeResolvers.Query,
-    ...aiActivityRecommendationsResolver,
     ...agentQueries,
   },
   Mutation: {
@@ -153,7 +145,6 @@ export const resolvers = {
   Organization,
   Activity,
   DealHistoryEntry,
-  PriceQuote: PriceQuoteResolver,
   WFMStatus: WFMStatusResolvers.WFMStatus,
   WFMWorkflow: WFMWorkflowResolvers.WFMWorkflow,
   WFMWorkflowStep: WFMWorkflowStepResolver,

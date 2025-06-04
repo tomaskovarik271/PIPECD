@@ -417,6 +417,30 @@ export async function updateLead(userId: string, id: string, input: LeadServiceU
     }
   }
 
+  // 🚨 SEND LEAD ASSIGNMENT EVENT (NEW AUTOMATION)
+  // Send assignment event if lead was assigned to a user
+  if (leadUpdateData.assigned_to_user_id !== undefined && 
+      leadUpdateData.assigned_to_user_id !== currentLead.assigned_to_user_id &&
+      leadUpdateData.assigned_to_user_id) {
+    try {
+      await inngest.send({
+        name: 'crm/lead.assigned',
+        data: {
+          leadId: updatedLeadRecord.id,
+          leadName: updatedLeadRecord.name,
+          assignedToUserId: leadUpdateData.assigned_to_user_id,
+          assignedByUserId: userId,
+          previousAssignedToUserId: currentLead.assigned_to_user_id || null,
+          authToken: accessToken
+        }
+      });
+      console.log(`[leadCrud.updateLead] Sent lead assignment event for lead ${updatedLeadRecord.id} assigned to ${leadUpdateData.assigned_to_user_id}`);
+    } catch (inngestError) {
+      console.error('[leadCrud.updateLead] Failed to send lead assignment event:', inngestError);
+      // Continue - event failure shouldn't block lead update
+    }
+  }
+
   return updatedLeadRecord as DbLead;
 }
 

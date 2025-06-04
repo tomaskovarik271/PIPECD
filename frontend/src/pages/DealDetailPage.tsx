@@ -58,7 +58,6 @@ import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import CreateActivityForm from '../components/activities/CreateActivityForm';
 import EditActivityForm from '../components/activities/EditActivityForm';
 import EditDealModal from '../components/EditDealModal';
-import DealPricingSection from '../components/pricing/DealPricingSection';
 import { DealHeader } from '../components/deals/DealHeader';
 import { DealOverviewCard } from '../components/deals/DealOverviewCard';
 import { DealActivitiesPanel } from '../components/deals/DealActivitiesPanel';
@@ -343,9 +342,6 @@ const DealDetailPage = () => {
                         Activities ({dealActivities.length})
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                        Pricing
-                      </Tab>
-                      <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         Related
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
@@ -383,10 +379,6 @@ const DealDetailPage = () => {
                           onDeleteActivity={handleDeleteActivityClick}
                           getActivityTypeIcon={getActivityTypeIcon}
                         />
-                                          </TabPanel>
-                      
-                                          <TabPanel>
-                                            {dealId && <DealPricingSection dealId={dealId} />}
                                           </TabPanel>
                       
                                           <TabPanel>

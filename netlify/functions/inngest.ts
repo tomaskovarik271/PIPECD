@@ -132,7 +132,67 @@ export const createDealAssignmentTask = inngest.createFunction(
   }
 );
 
-export const functions = [helloWorld, logContactCreation, logDealCreation, createDealAssignmentTask];
+export const createLeadAssignmentTask = inngest.createFunction(
+  { id: 'create-lead-assignment-task', name: 'Create Lead Assignment Review Task' },
+  { event: 'crm/lead.assigned' },
+  async ({ event, step }) => {
+    console.log('[Inngest Fn: createLeadAssignmentTask] Received event \'crm/lead.assigned\' for lead:', event.data.leadName, '(ID:', event.data.leadId, '), assigned to:', event.data.assignedToUserId, 'by user:', event.data.assignedByUserId);
+    if (event.data.previousAssignedToUserId) {
+      console.log('[Inngest Fn: createLeadAssignmentTask] Previous assignee was:', event.data.previousAssignedToUserId);
+    }
+
+    const systemUserId = process.env.SYSTEM_USER_ID;
+    if (!systemUserId) {
+      console.error('[Inngest Fn: createLeadAssignmentTask] SYSTEM_USER_ID environment variable is not set. Skipping activity creation.');
+      throw new Error('SYSTEM_USER_ID is not configured.'); 
+    }
+
+    try {
+      const newActivity = await step.run('create-lead-review-activity', async () => {
+        if (!supabaseAdmin) {
+          console.error('[Inngest Fn: createLeadAssignmentTask] supabaseAdmin is not initialized. SUPABASE_SERVICE_ROLE_KEY might be missing. Skipping activity creation.');
+          throw new Error('supabaseAdmin is not initialized. Cannot create system activity.');
+        }
+
+        const activityInput = {
+          lead_id: event.data.leadId,
+          user_id: systemUserId, // Activity created by the System User
+          assigned_to_user_id: event.data.assignedToUserId, // Activity assigned to the user who got the lead
+          type: 'SYSTEM_TASK',
+          subject: `Review new lead assignment: ${event.data.leadName}`,
+          notes: `Lead "${event.data.leadName}" (ID: ${event.data.leadId}) was assigned to user ID ${event.data.assignedToUserId} by user ID ${event.data.assignedByUserId}. Please review and follow up.`,
+          due_date: getISOEndOfDay(),
+          is_done: false,
+          is_system_activity: true, // Mark as a system-generated activity
+        };
+
+        const { data: createdActivity, error: activityError } = await supabaseAdmin
+          .from('activities')
+          .insert(activityInput)
+          .select()
+          .single();
+
+        if (activityError) {
+          console.error('[Inngest Fn: createLeadAssignmentTask] Error creating activity:', activityError);
+          throw activityError; // This will make the Inngest step fail and retry
+        }
+        if (!createdActivity) {
+          console.error('[Inngest Fn: createLeadAssignmentTask] Failed to create activity, no data returned.');
+          throw new Error('Failed to create activity, no data returned from insert.');
+        }
+        console.log('[Inngest Fn: createLeadAssignmentTask] Successfully created activity ID:', createdActivity.id, 'for lead ID:', event.data.leadId);
+        return createdActivity;
+      });
+
+      return { success: true, activityId: newActivity.id, message: `Activity created for lead ${event.data.leadName}` };
+    } catch (error) {
+      console.error('[Inngest Fn: createLeadAssignmentTask] Overall error in function execution:', error);
+      throw error;
+    }
+  }
+);
+
+export const functions = [helloWorld, logContactCreation, logDealCreation, createDealAssignmentTask, createLeadAssignmentTask];
 
 // Determine serve options based on environment
 const serveOptions: Parameters<typeof serve>[0] = {

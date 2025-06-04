@@ -1,9 +1,6 @@
 import { z } from 'zod';
 // import { StageType as GeneratedStageType } from '../../../lib/generated/graphql'; // REMOVED
 import { 
-    PriceQuoteCreateInput as GeneratedPriceQuoteCreateInput,
-    PriceQuoteUpdateInput as GeneratedPriceQuoteUpdateInput,
-    AdditionalCostInput as GeneratedAdditionalCostInput,
     ActivityType as GeneratedActivityType
 } from '../../../lib/generated/graphql';
 
@@ -125,49 +122,3 @@ export const ActivityFilterInputSchema = z.object({
     isDone: z.boolean().optional(),
 }).optional();
 
-// --- Pricing Module Schemas ---
-
-// Corresponds to AdditionalCostInput in GraphQL
-// This Zod schema should match the structure of GeneratedAdditionalCostInput
-export const AdditionalCostInputSchema = z.object({
-  description: z.string().trim().min(1, { message: "Description for additional cost cannot be empty" }),
-  amount: z.number().positive({ message: "Amount for additional cost must be a positive number" }),
-  // Add other fields from GeneratedAdditionalCostInput if they exist and need validation
-  // For example, if GeneratedAdditionalCostInput had an optional 'id' for updates:
-  // id: z.string().uuid().optional().nullable(), 
-});
-
-// Corresponds to PriceQuoteCreateInput in GraphQL
-// This Zod schema should match the structure of GeneratedPriceQuoteCreateInput
-export const PriceQuoteCreateInputSchema = z.object({
-  name: z.string().trim().min(1, { message: "Quote name cannot be empty" }).optional().nullable(),
-  base_minimum_price_mp: z.number().min(0, { message: "Base minimum price cannot be negative" }).optional().nullable(),
-  target_markup_percentage: z.number().min(0, { message: "Target markup percentage cannot be negative" }).optional().nullable(),
-  final_offer_price_fop: z.number().min(0, { message: "Final offer price cannot be negative" }).optional().nullable(),
-  overall_discount_percentage: z.number().min(0).max(100, { message: "Overall discount must be between 0 and 100" }).optional().nullable(),
-  upfront_payment_percentage: z.number().min(0).max(100, { message: "Upfront payment percentage must be between 0 and 100" }).optional().nullable(),
-  upfront_payment_due_days: z.number().int().min(0, { message: "Upfront payment due days cannot be negative" }).optional().nullable(),
-  subsequent_installments_count: z.number().int().min(0, { message: "Subsequent installments count cannot be negative" }).optional().nullable(),
-  subsequent_installments_interval_days: z.number().int().min(1, { message: "Subsequent installments interval must be at least 1 day" }).optional().nullable(),
-  additional_costs: z.array(AdditionalCostInputSchema).optional().nullable(), // Uses the Zod schema above
-  // Ensure all fields from GeneratedPriceQuoteCreateInput are represented here
-});
-
-// Corresponds to PriceQuoteUpdateInput in GraphQL
-// This Zod schema should match the structure of GeneratedPriceQuoteUpdateInput
-export const PriceQuoteUpdateInputSchema = z.object({
-  name: z.string().trim().min(1, { message: "Quote name cannot be empty if provided" }).optional().nullable(),
-  base_minimum_price_mp: z.number().min(0).optional().nullable(),
-  target_markup_percentage: z.number().min(0).optional().nullable(),
-  final_offer_price_fop: z.number().min(0).optional().nullable(),
-  overall_discount_percentage: z.number().min(0).max(100).optional().nullable(),
-  upfront_payment_percentage: z.number().min(0).max(100).optional().nullable(),
-  upfront_payment_due_days: z.number().int().min(0).optional().nullable(),
-  subsequent_installments_count: z.number().int().min(0).optional().nullable(),
-  subsequent_installments_interval_days: z.number().int().min(1).optional().nullable(),
-  additional_costs: z.array(AdditionalCostInputSchema).optional().nullable(),
-  status: z.string().trim().min(1, { message: "Status cannot be empty if provided"}).optional().nullable(),
-  // Ensure all fields from GeneratedPriceQuoteUpdateInput are represented here
-  // If PriceQuoteUpdateInput in GraphQL has an `id` field, it should NOT be here 
-  // as the ID for update usually comes from args.id, not args.input.id
-}).partial(); // .partial() makes all fields optional, which is typical for update inputs. 
