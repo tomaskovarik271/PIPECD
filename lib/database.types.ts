@@ -43,6 +43,7 @@ export type Database = {
           id: string
           is_done: boolean
           is_system_activity: boolean
+          lead_id: string | null
           notes: string | null
           organization_id: string | null
           person_id: string | null
@@ -59,6 +60,7 @@ export type Database = {
           id?: string
           is_done?: boolean
           is_system_activity?: boolean
+          lead_id?: string | null
           notes?: string | null
           organization_id?: string | null
           person_id?: string | null
@@ -75,6 +77,7 @@ export type Database = {
           id?: string
           is_done?: boolean
           is_system_activity?: boolean
+          lead_id?: string | null
           notes?: string | null
           organization_id?: string | null
           person_id?: string | null
@@ -96,6 +99,13 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
           {
@@ -332,6 +342,169 @@ export type Database = {
           },
           {
             foreignKeyName: "deals_wfm_project_id_fkey"
+            columns: ["wfm_project_id"]
+            isOneToOne: false
+            referencedRelation: "wfm_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_history: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          field_name: string | null
+          id: string
+          lead_id: string
+          new_value: Json | null
+          old_value: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          field_name?: string | null
+          id?: string
+          lead_id: string
+          new_value?: Json | null
+          old_value?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          field_name?: string | null
+          id?: string
+          lead_id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_history_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          ai_insights: Json | null
+          assigned_at: string | null
+          assigned_to_user_id: string | null
+          automation_score_factors: Json | null
+          company_name: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          converted_at: string | null
+          converted_by_user_id: string | null
+          converted_to_deal_id: string | null
+          converted_to_organization_id: string | null
+          converted_to_person_id: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          custom_field_values: Json | null
+          description: string | null
+          estimated_close_date: string | null
+          estimated_value: number | null
+          id: string
+          last_activity_at: string | null
+          lead_score: number | null
+          lead_score_factors: Json | null
+          name: string
+          source: string | null
+          updated_at: string | null
+          user_id: string
+          wfm_project_id: string | null
+        }
+        Insert: {
+          ai_insights?: Json | null
+          assigned_at?: string | null
+          assigned_to_user_id?: string | null
+          automation_score_factors?: Json | null
+          company_name?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          converted_at?: string | null
+          converted_by_user_id?: string | null
+          converted_to_deal_id?: string | null
+          converted_to_organization_id?: string | null
+          converted_to_person_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          custom_field_values?: Json | null
+          description?: string | null
+          estimated_close_date?: string | null
+          estimated_value?: number | null
+          id?: string
+          last_activity_at?: string | null
+          lead_score?: number | null
+          lead_score_factors?: Json | null
+          name: string
+          source?: string | null
+          updated_at?: string | null
+          user_id: string
+          wfm_project_id?: string | null
+        }
+        Update: {
+          ai_insights?: Json | null
+          assigned_at?: string | null
+          assigned_to_user_id?: string | null
+          automation_score_factors?: Json | null
+          company_name?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          converted_at?: string | null
+          converted_by_user_id?: string | null
+          converted_to_deal_id?: string | null
+          converted_to_organization_id?: string | null
+          converted_to_person_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          custom_field_values?: Json | null
+          description?: string | null
+          estimated_close_date?: string | null
+          estimated_value?: number | null
+          id?: string
+          last_activity_at?: string | null
+          lead_score?: number | null
+          lead_score_factors?: Json | null
+          name?: string
+          source?: string | null
+          updated_at?: string | null
+          user_id?: string
+          wfm_project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_converted_to_deal_id_fkey"
+            columns: ["converted_to_deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_converted_to_organization_id_fkey"
+            columns: ["converted_to_organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_converted_to_person_id_fkey"
+            columns: ["converted_to_person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_wfm_project_id_fkey"
             columns: ["wfm_project_id"]
             isOneToOne: false
             referencedRelation: "wfm_projects"
@@ -1056,7 +1229,17 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      lead_index_usage: {
+        Row: {
+          idx_scan: number | null
+          idx_tup_fetch: number | null
+          idx_tup_read: number | null
+          indexname: unknown | null
+          schemaname: unknown | null
+          tablename: unknown | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       check_permission: {
@@ -1066,6 +1249,10 @@ export type Database = {
       check_user_has_permission: {
         Args: { checking_user_id: string; required_permission_code: string }
         Returns: boolean
+      }
+      create_lead_wfm_project: {
+        Args: { lead_uuid: string; project_name?: string }
+        Returns: string
       }
       get_user_permissions: {
         Args: { p_user_id: string }
@@ -1079,6 +1266,26 @@ export type Database = {
         }
         Returns: undefined
       }
+      setup_default_lead_permissions: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      test_lead_rls_policies: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          policy_name: string
+          test_description: string
+          test_result: boolean
+        }[]
+      }
+      update_lead_workflow_step: {
+        Args: { lead_uuid: string; target_step_id: string }
+        Returns: boolean
+      }
+      user_has_lead_access: {
+        Args: { lead_uuid: string; access_type?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       custom_field_type:
@@ -1088,7 +1295,7 @@ export type Database = {
         | "BOOLEAN"
         | "DROPDOWN"
         | "MULTI_SELECT"
-      entity_type: "DEAL" | "PERSON" | "ORGANIZATION"
+      entity_type: "DEAL" | "PERSON" | "ORGANIZATION" | "LEAD"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1215,7 +1422,7 @@ export const Constants = {
         "DROPDOWN",
         "MULTI_SELECT",
       ],
-      entity_type: ["DEAL", "PERSON", "ORGANIZATION"],
+      entity_type: ["DEAL", "PERSON", "ORGANIZATION", "LEAD"],
     },
   },
 } as const
