@@ -8,8 +8,8 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       'react-force-graph-3d',
-      'three', 
-      '@types/three'
+      'react-force-graph-2d',
+      'three'
     ],
     esbuildOptions: {
       target: 'esnext'
