@@ -98,16 +98,20 @@ export const GraphView: React.FC<GraphViewProps> = ({
   const handleNodeClick = useCallback((node: any) => {
     setSelectedNode(node);
     
-    // Focus camera on clicked node (3D only)
+    // Focus camera on clicked node with better positioning
     if (fgRef.current && use3D) {
-      const distance = 40;
+      const distance = 200; // Closer distance for better viewing
       const distRatio = 1 + distance / Math.hypot(node.x || 0, node.y || 0, node.z || 0);
       
       fgRef.current.cameraPosition(
         { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
         node, // lookAt
-        3000  // ms transition duration
+        2000  // ms transition duration
       );
+    } else if (fgRef.current && !use3D) {
+      // For 2D, center and zoom to the node
+      fgRef.current.centerAt(node.x, node.y, 1000);
+      fgRef.current.zoom(3, 1000);
     }
 
     toast({
@@ -136,13 +140,45 @@ export const GraphView: React.FC<GraphViewProps> = ({
     if (fgRef.current) {
       if (use3D) {
         fgRef.current.cameraPosition(
-          { x: 0, y: 0, z: 400 }, // position
-          { x: 0, y: 0, z: 0 },   // lookAt
-          3000 // transition duration
+          { x: 0, y: 0, z: 250 }, // Much closer initial position
+          { x: 0, y: 0, z: 0 },   // lookAt center
+          2000 // transition duration
         );
       } else {
-        fgRef.current.zoom(1, 1000);
+        fgRef.current.centerAt(0, 0, 1000);
+        fgRef.current.zoom(2, 1000); // Good default zoom level
       }
+    }
+  };
+
+  // Auto-center and zoom when graph data changes
+  useEffect(() => {
+    if (graphData.nodes.length > 0 && fgRef.current) {
+      setTimeout(() => {
+        if (use3D) {
+          fgRef.current.cameraPosition(
+            { x: 0, y: 0, z: 250 }, // Better initial distance
+            { x: 0, y: 0, z: 0 },
+            1000
+          );
+        } else {
+          fgRef.current.zoom(2, 1000); // Auto zoom to comfortable level
+        }
+      }, 100); // Small delay to ensure graph is rendered
+    }
+  }, [graphData, use3D]);
+
+  const handleCloseNode = () => {
+    setSelectedNode(null);
+    // Don't reset to far view, just pull back slightly
+    if (fgRef.current && use3D) {
+      fgRef.current.cameraPosition(
+        { x: 0, y: 0, z: 300 }, // Comfortable viewing distance
+        { x: 0, y: 0, z: 0 },
+        1500
+      );
+    } else if (fgRef.current && !use3D) {
+      fgRef.current.zoom(2.5, 1000); // Maintain good zoom level
     }
   };
 
@@ -175,24 +211,36 @@ export const GraphView: React.FC<GraphViewProps> = ({
             `}
             nodeColor={(node: any) => node.color}
             nodeVal={(node: any) => node.size}
-            nodeRelSize={1}
+            nodeRelSize={2} // Larger nodes for better visibility
             onNodeClick={handleNodeClick}
             
             // Link configuration
             linkLabel={(link: any) => link.label || link.type}
             linkColor={(link: any) => link.color}
-            linkWidth={1.5}
-            linkOpacity={0.6}
+            linkWidth={2} // Thicker links for better visibility
+            linkOpacity={0.8}
             
             // Physics configuration
-            d3AlphaDecay={0.02}
-            d3VelocityDecay={0.3}
+            d3AlphaDecay={0.01} // Slower decay for better settling
+            d3VelocityDecay={0.4}
             numDimensions={3}
             
             // Camera configuration
             controlType="orbit"
             showNavInfo={false}
-            onEngineStop={() => setGraphLoadError(false)}
+            onEngineStop={() => {
+              setGraphLoadError(false);
+              // Auto-position camera when simulation stops
+              if (fgRef.current && graphData.nodes.length > 0) {
+                setTimeout(() => {
+                  fgRef.current.cameraPosition(
+                    { x: 0, y: 0, z: 250 },
+                    { x: 0, y: 0, z: 0 },
+                    1000
+                  );
+                }, 500);
+              }
+            }}
           />
         </React.Suspense>
       );
@@ -219,17 +267,26 @@ export const GraphView: React.FC<GraphViewProps> = ({
           nodeLabel={(node: any) => `${node.type}: ${node.name}`}
           nodeColor={(node: any) => node.color}
           nodeVal={(node: any) => node.size}
-          nodeRelSize={4}
+          nodeRelSize={6} // Larger nodes for 2D
           onNodeClick={handleNodeClick}
           
           // Link configuration
           linkLabel={(link: any) => link.label || link.type}
           linkColor={(link: any) => link.color}
-          linkWidth={2}
+          linkWidth={3} // Thicker links for 2D
           
           // Physics configuration
-          d3AlphaDecay={0.02}
-          d3VelocityDecay={0.3}
+          d3AlphaDecay={0.01}
+          d3VelocityDecay={0.4}
+          
+          // Auto-zoom when engine stops
+          onEngineStop={() => {
+            if (fgRef.current && graphData.nodes.length > 0) {
+              setTimeout(() => {
+                fgRef.current.zoomToFit(1000, 50); // Auto-fit with padding
+              }, 500);
+            }
+          }}
         />
       </React.Suspense>
     );
@@ -438,7 +495,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
               <Button 
                 size="xs" 
                 colorScheme="blue"
-                onClick={() => setSelectedNode(null)}
+                onClick={handleCloseNode}
               >
                 Close
               </Button>
