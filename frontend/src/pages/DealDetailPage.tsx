@@ -65,7 +65,6 @@ import { DealCustomFieldsPanel } from '../components/deals/DealCustomFieldsPanel
 import { DealRelatedPanel } from '../components/deals/DealRelatedPanel';
 import { DealHistoryPanel } from '../components/deals/DealHistoryPanel';
 import { DealOverviewPanel } from '../components/deals/DealOverviewPanel';
-import { AIActivityRecommendations } from '../components/deals/AIActivityRecommendations';
 
 // Type imports
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
@@ -362,13 +361,6 @@ const DealDetailPage = () => {
                                           </TabPanel>
                       
                                           <TabPanel>
-                        {/* AI Activity Recommendations */}
-                        {dealId && (
-                          <Box mb={6}>
-                            <AIActivityRecommendations dealId={dealId} />
-                          </Box>
-                        )}
-                        
                         <DealActivitiesPanel
                           activities={dealActivities}
                           loading={activitiesLoading}
