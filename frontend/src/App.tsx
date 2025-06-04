@@ -135,7 +135,87 @@ function App() {
         <Box maxW="md" w="full" bg={colors.bg.surface} boxShadow="lg" rounded="lg" p={8} borderWidth="1px" borderColor={colors.border.default}>
           <VStack spacing={4} align="stretch">
             <Heading fontSize="2xl" textAlign="center" color={colors.text.primary}>Sign in to your account</Heading>
-            <Auth supabaseClient={supabase} appearance={{ theme: ThemeSupa }} providers={['github']} />
+            <Auth 
+              supabaseClient={supabase} 
+              appearance={{ 
+                theme: ThemeSupa,
+                variables: {
+                  default: {
+                    colors: {
+                      brand: colors.interactive.default,
+                      brandAccent: colors.interactive.hover,
+                      brandButtonText: colors.text.onAccent,
+                      defaultButtonBackground: colors.bg.input,
+                      defaultButtonBackgroundHover: colors.interactive.hover,
+                      defaultButtonBorder: colors.border.input,
+                      defaultButtonText: colors.text.primary,
+                      dividerBackground: colors.border.divider,
+                      inputBackground: colors.bg.input,
+                      inputBorder: colors.border.input,
+                      inputBorderHover: colors.border.focus,
+                      inputBorderFocus: colors.border.focus,
+                      inputText: colors.text.primary,
+                      inputLabelText: colors.text.secondary,
+                      inputPlaceholder: colors.text.muted,
+                      messageText: colors.text.primary,
+                      messageTextDanger: colors.text.error,
+                      anchorTextColor: colors.text.link,
+                      anchorTextHoverColor: colors.interactive.hover,
+                    },
+                    space: {
+                      spaceSmall: '4px',
+                      spaceMedium: '8px',
+                      spaceLarge: '16px',
+                      labelBottomMargin: '8px',
+                      anchorBottomMargin: '4px',
+                      emailInputSpacing: '4px',
+                      socialAuthSpacing: '4px',
+                      buttonPadding: '10px 15px',
+                      inputPadding: '10px 15px',
+                    },
+                    fontSizes: {
+                      baseBodySize: '13px',
+                      baseInputSize: '14px',
+                      baseLabelSize: '14px',
+                      baseButtonSize: '14px',
+                    },
+                    fonts: {
+                      bodyFontFamily: `ui-sans-serif, sans-serif`,
+                      buttonFontFamily: `ui-sans-serif, sans-serif`,
+                      inputFontFamily: `ui-sans-serif, sans-serif`,
+                      labelFontFamily: `ui-sans-serif, sans-serif`,
+                    },
+                    borderWidths: {
+                      buttonBorderWidth: '1px',
+                      inputBorderWidth: '1px',
+                    },
+                    radii: {
+                      borderRadiusButton: '6px',
+                      buttonBorderRadius: '6px',
+                      inputBorderRadius: '6px',
+                    },
+                  },
+                },
+                style: {
+                  button: {
+                    fontSize: '14px',
+                    fontWeight: '500',
+                  },
+                  input: {
+                    fontSize: '14px',
+                    fontWeight: '400',
+                  },
+                  label: {
+                    fontSize: '14px',
+                    fontWeight: '500',
+                  },
+                  message: {
+                    fontSize: '13px',
+                  },
+                },
+              }} 
+              providers={['github']} 
+            />
           </VStack>
         </Box>
       </Flex>
