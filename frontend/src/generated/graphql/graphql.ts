@@ -29,39 +29,6 @@ export type Scalars = {
   JSON: { input: Record<string, any>; output: Record<string, any> };
 };
 
-/** AI-powered activity recommendation system for intelligent sales assistance. */
-export enum AiActivityPriority {
-  High = "HIGH",
-  Low = "LOW",
-  Medium = "MEDIUM",
-  Urgent = "URGENT",
-}
-
-export type AiActivityRecommendation = {
-  __typename?: "AIActivityRecommendation";
-  category?: Maybe<Scalars["String"]["output"]>;
-  completedAt?: Maybe<Scalars["DateTime"]["output"]>;
-  confidence: Scalars["Float"]["output"];
-  description: Scalars["String"]["output"];
-  id: Scalars["ID"]["output"];
-  isActive: Scalars["Boolean"]["output"];
-  isCompleted: Scalars["Boolean"]["output"];
-  priority: AiActivityPriority;
-  reasoning: Scalars["String"]["output"];
-  relatedEntityId?: Maybe<Scalars["String"]["output"]>;
-  relatedEntityType?: Maybe<Scalars["String"]["output"]>;
-  suggestedDueDate: Scalars["DateTime"]["output"];
-  title: Scalars["String"]["output"];
-  user_id: Scalars["ID"]["output"];
-};
-
-export type AiActivityRecommendationsResponse = {
-  __typename?: "AIActivityRecommendationsResponse";
-  contextSummary: Scalars["String"]["output"];
-  primaryRecommendation: AiActivityRecommendation;
-  recommendations: Array<AiActivityRecommendation>;
-};
-
 export type Activity = {
   __typename?: "Activity";
   assignedToUser?: Maybe<User>;
@@ -104,22 +71,6 @@ export enum ActivityType {
   SystemTask = "SYSTEM_TASK",
   Task = "TASK",
 }
-
-/** Represents an additional cost item associated with a price quote. */
-export type AdditionalCost = {
-  __typename?: "AdditionalCost";
-  amount: Scalars["Float"]["output"];
-  created_at: Scalars["DateTime"]["output"];
-  description: Scalars["String"]["output"];
-  id: Scalars["ID"]["output"];
-  updated_at: Scalars["DateTime"]["output"];
-};
-
-/** Input for creating an additional cost item. */
-export type AdditionalCostInput = {
-  amount: Scalars["Float"]["input"];
-  description: Scalars["String"]["input"];
-};
 
 export type AgentConfig = {
   __typename?: "AgentConfig";
@@ -410,18 +361,6 @@ export type DealUpdateInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
-/** Represents a single entry in the invoice payment schedule for a price quote. */
-export type InvoiceScheduleEntry = {
-  __typename?: "InvoiceScheduleEntry";
-  amount_due: Scalars["Float"]["output"];
-  created_at: Scalars["DateTime"]["output"];
-  description?: Maybe<Scalars["String"]["output"]>;
-  due_date: Scalars["String"]["output"];
-  entry_type: Scalars["String"]["output"];
-  id: Scalars["ID"]["output"];
-  updated_at: Scalars["DateTime"]["output"];
-};
-
 export type Lead = {
   __typename?: "Lead";
   activities: Array<Activity>;
@@ -563,8 +502,6 @@ export type LeadsStats = {
 export type Mutation = {
   __typename?: "Mutation";
   addAgentThoughts: Array<AgentThought>;
-  /** Calculates a preview of a price quote. dealId is optional. */
-  calculatePriceQuotePreview: PriceQuote;
   convertLead: LeadConversionResult;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
@@ -573,8 +510,6 @@ export type Mutation = {
   createLead: Lead;
   createOrganization: Organization;
   createPerson: Person;
-  /** Creates a new price quote for a given deal. */
-  createPriceQuote: PriceQuote;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
   createWFMWorkflow: WfmWorkflow;
@@ -587,8 +522,6 @@ export type Mutation = {
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
-  /** Deletes a price quote. */
-  deletePriceQuote?: Maybe<Scalars["Boolean"]["output"]>;
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
@@ -605,8 +538,6 @@ export type Mutation = {
   updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
-  /** Updates an existing price quote. */
-  updatePriceQuote: PriceQuote;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -620,11 +551,6 @@ export type Mutation = {
 export type MutationAddAgentThoughtsArgs = {
   conversationId: Scalars["ID"]["input"];
   thoughts: Array<AgentThoughtInput>;
-};
-
-export type MutationCalculatePriceQuotePreviewArgs = {
-  dealId?: InputMaybe<Scalars["ID"]["input"]>;
-  input: PriceQuoteUpdateInput;
 };
 
 export type MutationConvertLeadArgs = {
@@ -658,11 +584,6 @@ export type MutationCreateOrganizationArgs = {
 
 export type MutationCreatePersonArgs = {
   input: PersonInput;
-};
-
-export type MutationCreatePriceQuoteArgs = {
-  dealId: Scalars["ID"]["input"];
-  input: PriceQuoteCreateInput;
 };
 
 export type MutationCreateWfmProjectTypeArgs = {
@@ -710,10 +631,6 @@ export type MutationDeleteOrganizationArgs = {
 };
 
 export type MutationDeletePersonArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type MutationDeletePriceQuoteArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -788,11 +705,6 @@ export type MutationUpdateOrganizationArgs = {
 export type MutationUpdatePersonArgs = {
   id: Scalars["ID"]["input"];
   input: PersonInput;
-};
-
-export type MutationUpdatePriceQuoteArgs = {
-  id: Scalars["ID"]["input"];
-  input: PriceQuoteUpdateInput;
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -904,71 +816,6 @@ export type PersonUpdateInput = {
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
-/** Represents a price quotation for a deal, including calculated financial metrics and payment terms. */
-export type PriceQuote = {
-  __typename?: "PriceQuote";
-  /** List of additional costs associated with this price quote. */
-  additional_costs: Array<AdditionalCost>;
-  base_minimum_price_mp?: Maybe<Scalars["Float"]["output"]>;
-  calculated_discounted_offer_price?: Maybe<Scalars["Float"]["output"]>;
-  calculated_effective_markup_fop_over_mp?: Maybe<Scalars["Float"]["output"]>;
-  calculated_full_target_price_ftp?: Maybe<Scalars["Float"]["output"]>;
-  calculated_target_price_tp?: Maybe<Scalars["Float"]["output"]>;
-  calculated_total_direct_cost?: Maybe<Scalars["Float"]["output"]>;
-  created_at: Scalars["DateTime"]["output"];
-  /** Associated deal for this price quote. */
-  deal?: Maybe<Deal>;
-  deal_id: Scalars["ID"]["output"];
-  escalation_details?: Maybe<Scalars["JSON"]["output"]>;
-  escalation_status?: Maybe<Scalars["String"]["output"]>;
-  final_offer_price_fop?: Maybe<Scalars["Float"]["output"]>;
-  id: Scalars["ID"]["output"];
-  /** Generated invoice payment schedule for this price quote. */
-  invoice_schedule_entries: Array<InvoiceScheduleEntry>;
-  name?: Maybe<Scalars["String"]["output"]>;
-  overall_discount_percentage?: Maybe<Scalars["Float"]["output"]>;
-  status: Scalars["String"]["output"];
-  subsequent_installments_count?: Maybe<Scalars["Int"]["output"]>;
-  subsequent_installments_interval_days?: Maybe<Scalars["Int"]["output"]>;
-  target_markup_percentage?: Maybe<Scalars["Float"]["output"]>;
-  updated_at: Scalars["DateTime"]["output"];
-  upfront_payment_due_days?: Maybe<Scalars["Int"]["output"]>;
-  upfront_payment_percentage?: Maybe<Scalars["Float"]["output"]>;
-  /** User who created or owns this price quote. */
-  user?: Maybe<User>;
-  user_id: Scalars["ID"]["output"];
-  version_number: Scalars["Int"]["output"];
-};
-
-/** Input for creating a new price quote. */
-export type PriceQuoteCreateInput = {
-  additional_costs?: InputMaybe<Array<AdditionalCostInput>>;
-  base_minimum_price_mp?: InputMaybe<Scalars["Float"]["input"]>;
-  final_offer_price_fop?: InputMaybe<Scalars["Float"]["input"]>;
-  name?: InputMaybe<Scalars["String"]["input"]>;
-  overall_discount_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-  subsequent_installments_count?: InputMaybe<Scalars["Int"]["input"]>;
-  subsequent_installments_interval_days?: InputMaybe<Scalars["Int"]["input"]>;
-  target_markup_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-  upfront_payment_due_days?: InputMaybe<Scalars["Int"]["input"]>;
-  upfront_payment_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-};
-
-/** Input for updating an existing price quote. */
-export type PriceQuoteUpdateInput = {
-  additional_costs?: InputMaybe<Array<AdditionalCostInput>>;
-  base_minimum_price_mp?: InputMaybe<Scalars["Float"]["input"]>;
-  final_offer_price_fop?: InputMaybe<Scalars["Float"]["input"]>;
-  name?: InputMaybe<Scalars["String"]["input"]>;
-  overall_discount_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-  status?: InputMaybe<Scalars["String"]["input"]>;
-  subsequent_installments_count?: InputMaybe<Scalars["Int"]["input"]>;
-  subsequent_installments_interval_days?: InputMaybe<Scalars["Int"]["input"]>;
-  target_markup_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-  upfront_payment_due_days?: InputMaybe<Scalars["Int"]["input"]>;
-  upfront_payment_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-};
-
 export type Query = {
   __typename?: "Query";
   activities: Array<Activity>;
@@ -981,12 +828,6 @@ export type Query = {
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
-  /**
-   * Get AI-powered activity recommendations for a specific deal.
-   * Analyzes deal context, contact information, recent activities, and workflow status
-   * to suggest the most effective next activities to advance the deal.
-   */
-  getAIActivityRecommendations: AiActivityRecommendationsResponse;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
@@ -999,10 +840,6 @@ export type Query = {
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
-  /** Retrieves a single price quote by its ID. */
-  priceQuote?: Maybe<PriceQuote>;
-  /** Retrieves all price quotes associated with a specific deal. */
-  priceQuotesForDeal: Array<PriceQuote>;
   supabaseConnectionTest: Scalars["String"]["output"];
   users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
@@ -1049,10 +886,6 @@ export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type QueryGetAiActivityRecommendationsArgs = {
-  dealId: Scalars["ID"]["input"];
-};
-
 export type QueryGetWfmAllowedTransitionsArgs = {
   fromStepId: Scalars["ID"]["input"];
   workflowId: Scalars["ID"]["input"];
@@ -1072,14 +905,6 @@ export type QueryOrganizationArgs = {
 
 export type QueryPersonArgs = {
   id: Scalars["ID"]["input"];
-};
-
-export type QueryPriceQuoteArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type QueryPriceQuotesForDealArgs = {
-  dealId: Scalars["ID"]["input"];
 };
 
 export type QueryWfmProjectTypeArgs = {
@@ -1343,38 +1168,6 @@ export type GetAgentThoughtsQuery = {
     metadata: Record<string, any>;
     timestamp: string;
   }>;
-};
-
-export type GetAiActivityRecommendationsQueryVariables = Exact<{
-  dealId: Scalars["ID"]["input"];
-}>;
-
-export type GetAiActivityRecommendationsQuery = {
-  __typename?: "Query";
-  getAIActivityRecommendations: {
-    __typename?: "AIActivityRecommendationsResponse";
-    contextSummary: string;
-    primaryRecommendation: {
-      __typename?: "AIActivityRecommendation";
-      id: string;
-      title: string;
-      description: string;
-      priority: AiActivityPriority;
-      suggestedDueDate: string;
-      confidence: number;
-      reasoning: string;
-    };
-    recommendations: Array<{
-      __typename?: "AIActivityRecommendation";
-      id: string;
-      title: string;
-      description: string;
-      priority: AiActivityPriority;
-      suggestedDueDate: string;
-      confidence: number;
-      reasoning: string;
-    }>;
-  };
 };
 
 export type UpdateUserProfileMutationVariables = Exact<{

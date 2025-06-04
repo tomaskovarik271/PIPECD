@@ -38,39 +38,6 @@ export type Scalars = {
   JSON: { input: { [key: string]: any }; output: { [key: string]: any } };
 };
 
-/** AI-powered activity recommendation system for intelligent sales assistance. */
-export enum AiActivityPriority {
-  High = "HIGH",
-  Low = "LOW",
-  Medium = "MEDIUM",
-  Urgent = "URGENT",
-}
-
-export type AiActivityRecommendation = {
-  __typename?: "AIActivityRecommendation";
-  category?: Maybe<Scalars["String"]["output"]>;
-  completedAt?: Maybe<Scalars["DateTime"]["output"]>;
-  confidence: Scalars["Float"]["output"];
-  description: Scalars["String"]["output"];
-  id: Scalars["ID"]["output"];
-  isActive: Scalars["Boolean"]["output"];
-  isCompleted: Scalars["Boolean"]["output"];
-  priority: AiActivityPriority;
-  reasoning: Scalars["String"]["output"];
-  relatedEntityId?: Maybe<Scalars["String"]["output"]>;
-  relatedEntityType?: Maybe<Scalars["String"]["output"]>;
-  suggestedDueDate: Scalars["DateTime"]["output"];
-  title: Scalars["String"]["output"];
-  user_id: Scalars["ID"]["output"];
-};
-
-export type AiActivityRecommendationsResponse = {
-  __typename?: "AIActivityRecommendationsResponse";
-  contextSummary: Scalars["String"]["output"];
-  primaryRecommendation: AiActivityRecommendation;
-  recommendations: Array<AiActivityRecommendation>;
-};
-
 export type Activity = {
   __typename?: "Activity";
   assignedToUser?: Maybe<User>;
@@ -113,22 +80,6 @@ export enum ActivityType {
   SystemTask = "SYSTEM_TASK",
   Task = "TASK",
 }
-
-/** Represents an additional cost item associated with a price quote. */
-export type AdditionalCost = {
-  __typename?: "AdditionalCost";
-  amount: Scalars["Float"]["output"];
-  created_at: Scalars["DateTime"]["output"];
-  description: Scalars["String"]["output"];
-  id: Scalars["ID"]["output"];
-  updated_at: Scalars["DateTime"]["output"];
-};
-
-/** Input for creating an additional cost item. */
-export type AdditionalCostInput = {
-  amount: Scalars["Float"]["input"];
-  description: Scalars["String"]["input"];
-};
 
 export type AgentConfig = {
   __typename?: "AgentConfig";
@@ -419,18 +370,6 @@ export type DealUpdateInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
-/** Represents a single entry in the invoice payment schedule for a price quote. */
-export type InvoiceScheduleEntry = {
-  __typename?: "InvoiceScheduleEntry";
-  amount_due: Scalars["Float"]["output"];
-  created_at: Scalars["DateTime"]["output"];
-  description?: Maybe<Scalars["String"]["output"]>;
-  due_date: Scalars["String"]["output"];
-  entry_type: Scalars["String"]["output"];
-  id: Scalars["ID"]["output"];
-  updated_at: Scalars["DateTime"]["output"];
-};
-
 export type Lead = {
   __typename?: "Lead";
   activities: Array<Activity>;
@@ -572,8 +511,6 @@ export type LeadsStats = {
 export type Mutation = {
   __typename?: "Mutation";
   addAgentThoughts: Array<AgentThought>;
-  /** Calculates a preview of a price quote. dealId is optional. */
-  calculatePriceQuotePreview: PriceQuote;
   convertLead: LeadConversionResult;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
@@ -582,8 +519,6 @@ export type Mutation = {
   createLead: Lead;
   createOrganization: Organization;
   createPerson: Person;
-  /** Creates a new price quote for a given deal. */
-  createPriceQuote: PriceQuote;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
   createWFMWorkflow: WfmWorkflow;
@@ -596,8 +531,6 @@ export type Mutation = {
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
-  /** Deletes a price quote. */
-  deletePriceQuote?: Maybe<Scalars["Boolean"]["output"]>;
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
@@ -614,8 +547,6 @@ export type Mutation = {
   updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
-  /** Updates an existing price quote. */
-  updatePriceQuote: PriceQuote;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -629,11 +560,6 @@ export type Mutation = {
 export type MutationAddAgentThoughtsArgs = {
   conversationId: Scalars["ID"]["input"];
   thoughts: Array<AgentThoughtInput>;
-};
-
-export type MutationCalculatePriceQuotePreviewArgs = {
-  dealId?: InputMaybe<Scalars["ID"]["input"]>;
-  input: PriceQuoteUpdateInput;
 };
 
 export type MutationConvertLeadArgs = {
@@ -667,11 +593,6 @@ export type MutationCreateOrganizationArgs = {
 
 export type MutationCreatePersonArgs = {
   input: PersonInput;
-};
-
-export type MutationCreatePriceQuoteArgs = {
-  dealId: Scalars["ID"]["input"];
-  input: PriceQuoteCreateInput;
 };
 
 export type MutationCreateWfmProjectTypeArgs = {
@@ -719,10 +640,6 @@ export type MutationDeleteOrganizationArgs = {
 };
 
 export type MutationDeletePersonArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type MutationDeletePriceQuoteArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -797,11 +714,6 @@ export type MutationUpdateOrganizationArgs = {
 export type MutationUpdatePersonArgs = {
   id: Scalars["ID"]["input"];
   input: PersonInput;
-};
-
-export type MutationUpdatePriceQuoteArgs = {
-  id: Scalars["ID"]["input"];
-  input: PriceQuoteUpdateInput;
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -913,71 +825,6 @@ export type PersonUpdateInput = {
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
-/** Represents a price quotation for a deal, including calculated financial metrics and payment terms. */
-export type PriceQuote = {
-  __typename?: "PriceQuote";
-  /** List of additional costs associated with this price quote. */
-  additional_costs: Array<AdditionalCost>;
-  base_minimum_price_mp?: Maybe<Scalars["Float"]["output"]>;
-  calculated_discounted_offer_price?: Maybe<Scalars["Float"]["output"]>;
-  calculated_effective_markup_fop_over_mp?: Maybe<Scalars["Float"]["output"]>;
-  calculated_full_target_price_ftp?: Maybe<Scalars["Float"]["output"]>;
-  calculated_target_price_tp?: Maybe<Scalars["Float"]["output"]>;
-  calculated_total_direct_cost?: Maybe<Scalars["Float"]["output"]>;
-  created_at: Scalars["DateTime"]["output"];
-  /** Associated deal for this price quote. */
-  deal?: Maybe<Deal>;
-  deal_id: Scalars["ID"]["output"];
-  escalation_details?: Maybe<Scalars["JSON"]["output"]>;
-  escalation_status?: Maybe<Scalars["String"]["output"]>;
-  final_offer_price_fop?: Maybe<Scalars["Float"]["output"]>;
-  id: Scalars["ID"]["output"];
-  /** Generated invoice payment schedule for this price quote. */
-  invoice_schedule_entries: Array<InvoiceScheduleEntry>;
-  name?: Maybe<Scalars["String"]["output"]>;
-  overall_discount_percentage?: Maybe<Scalars["Float"]["output"]>;
-  status: Scalars["String"]["output"];
-  subsequent_installments_count?: Maybe<Scalars["Int"]["output"]>;
-  subsequent_installments_interval_days?: Maybe<Scalars["Int"]["output"]>;
-  target_markup_percentage?: Maybe<Scalars["Float"]["output"]>;
-  updated_at: Scalars["DateTime"]["output"];
-  upfront_payment_due_days?: Maybe<Scalars["Int"]["output"]>;
-  upfront_payment_percentage?: Maybe<Scalars["Float"]["output"]>;
-  /** User who created or owns this price quote. */
-  user?: Maybe<User>;
-  user_id: Scalars["ID"]["output"];
-  version_number: Scalars["Int"]["output"];
-};
-
-/** Input for creating a new price quote. */
-export type PriceQuoteCreateInput = {
-  additional_costs?: InputMaybe<Array<AdditionalCostInput>>;
-  base_minimum_price_mp?: InputMaybe<Scalars["Float"]["input"]>;
-  final_offer_price_fop?: InputMaybe<Scalars["Float"]["input"]>;
-  name?: InputMaybe<Scalars["String"]["input"]>;
-  overall_discount_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-  subsequent_installments_count?: InputMaybe<Scalars["Int"]["input"]>;
-  subsequent_installments_interval_days?: InputMaybe<Scalars["Int"]["input"]>;
-  target_markup_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-  upfront_payment_due_days?: InputMaybe<Scalars["Int"]["input"]>;
-  upfront_payment_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-};
-
-/** Input for updating an existing price quote. */
-export type PriceQuoteUpdateInput = {
-  additional_costs?: InputMaybe<Array<AdditionalCostInput>>;
-  base_minimum_price_mp?: InputMaybe<Scalars["Float"]["input"]>;
-  final_offer_price_fop?: InputMaybe<Scalars["Float"]["input"]>;
-  name?: InputMaybe<Scalars["String"]["input"]>;
-  overall_discount_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-  status?: InputMaybe<Scalars["String"]["input"]>;
-  subsequent_installments_count?: InputMaybe<Scalars["Int"]["input"]>;
-  subsequent_installments_interval_days?: InputMaybe<Scalars["Int"]["input"]>;
-  target_markup_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-  upfront_payment_due_days?: InputMaybe<Scalars["Int"]["input"]>;
-  upfront_payment_percentage?: InputMaybe<Scalars["Float"]["input"]>;
-};
-
 export type Query = {
   __typename?: "Query";
   activities: Array<Activity>;
@@ -990,12 +837,6 @@ export type Query = {
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
-  /**
-   * Get AI-powered activity recommendations for a specific deal.
-   * Analyzes deal context, contact information, recent activities, and workflow status
-   * to suggest the most effective next activities to advance the deal.
-   */
-  getAIActivityRecommendations: AiActivityRecommendationsResponse;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
@@ -1008,10 +849,6 @@ export type Query = {
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
-  /** Retrieves a single price quote by its ID. */
-  priceQuote?: Maybe<PriceQuote>;
-  /** Retrieves all price quotes associated with a specific deal. */
-  priceQuotesForDeal: Array<PriceQuote>;
   supabaseConnectionTest: Scalars["String"]["output"];
   users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
@@ -1058,10 +895,6 @@ export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type QueryGetAiActivityRecommendationsArgs = {
-  dealId: Scalars["ID"]["input"];
-};
-
 export type QueryGetWfmAllowedTransitionsArgs = {
   fromStepId: Scalars["ID"]["input"];
   workflowId: Scalars["ID"]["input"];
@@ -1081,14 +914,6 @@ export type QueryOrganizationArgs = {
 
 export type QueryPersonArgs = {
   id: Scalars["ID"]["input"];
-};
-
-export type QueryPriceQuoteArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type QueryPriceQuotesForDealArgs = {
-  dealId: Scalars["ID"]["input"];
 };
 
 export type QueryWfmProjectTypeArgs = {
@@ -1443,14 +1268,9 @@ export type DirectiveResolverFn<
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
-  AIActivityPriority: AiActivityPriority;
-  AIActivityRecommendation: ResolverTypeWrapper<AiActivityRecommendation>;
-  AIActivityRecommendationsResponse: ResolverTypeWrapper<AiActivityRecommendationsResponse>;
   Activity: ResolverTypeWrapper<Activity>;
   ActivityFilterInput: ActivityFilterInput;
   ActivityType: ActivityType;
-  AdditionalCost: ResolverTypeWrapper<AdditionalCost>;
-  AdditionalCostInput: AdditionalCostInput;
   AgentConfig: ResolverTypeWrapper<AgentConfig>;
   AgentConfigInput: AgentConfigInput;
   AgentConversation: ResolverTypeWrapper<AgentConversation>;
@@ -1487,7 +1307,6 @@ export type ResolversTypes = {
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
   Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
-  InvoiceScheduleEntry: ResolverTypeWrapper<InvoiceScheduleEntry>;
   JSON: ResolverTypeWrapper<Scalars["JSON"]["output"]>;
   Lead: ResolverTypeWrapper<Lead>;
   LeadConversionInput: LeadConversionInput;
@@ -1506,9 +1325,6 @@ export type ResolversTypes = {
   PersonInput: PersonInput;
   PersonListItem: ResolverTypeWrapper<PersonListItem>;
   PersonUpdateInput: PersonUpdateInput;
-  PriceQuote: ResolverTypeWrapper<PriceQuote>;
-  PriceQuoteCreateInput: PriceQuoteCreateInput;
-  PriceQuoteUpdateInput: PriceQuoteUpdateInput;
   Query: ResolverTypeWrapper<{}>;
   SendMessageInput: SendMessageInput;
   StageType: StageType;
@@ -1538,12 +1354,8 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
-  AIActivityRecommendation: AiActivityRecommendation;
-  AIActivityRecommendationsResponse: AiActivityRecommendationsResponse;
   Activity: Activity;
   ActivityFilterInput: ActivityFilterInput;
-  AdditionalCost: AdditionalCost;
-  AdditionalCostInput: AdditionalCostInput;
   AgentConfig: AgentConfig;
   AgentConfigInput: AgentConfigInput;
   AgentConversation: AgentConversation;
@@ -1576,7 +1388,6 @@ export type ResolversParentTypes = {
   Float: Scalars["Float"]["output"];
   ID: Scalars["ID"]["output"];
   Int: Scalars["Int"]["output"];
-  InvoiceScheduleEntry: InvoiceScheduleEntry;
   JSON: Scalars["JSON"]["output"];
   Lead: Lead;
   LeadConversionInput: LeadConversionInput;
@@ -1594,9 +1405,6 @@ export type ResolversParentTypes = {
   PersonInput: PersonInput;
   PersonListItem: PersonListItem;
   PersonUpdateInput: PersonUpdateInput;
-  PriceQuote: PriceQuote;
-  PriceQuoteCreateInput: PriceQuoteCreateInput;
-  PriceQuoteUpdateInput: PriceQuoteUpdateInput;
   Query: {};
   SendMessageInput: SendMessageInput;
   String: Scalars["String"]["output"];
@@ -1620,67 +1428,6 @@ export type ResolversParentTypes = {
   WFMWorkflowStepMutationResponse: WfmWorkflowStepMutationResponse;
   WFMWorkflowTransition: WfmWorkflowTransition;
   WFMWorkflowTransitionMutationResponse: WfmWorkflowTransitionMutationResponse;
-};
-
-export type AiActivityRecommendationResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["AIActivityRecommendation"] = ResolversParentTypes["AIActivityRecommendation"],
-> = {
-  category?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  completedAt?: Resolver<
-    Maybe<ResolversTypes["DateTime"]>,
-    ParentType,
-    ContextType
-  >;
-  confidence?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
-  description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  isActive?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
-  isCompleted?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
-  priority?: Resolver<
-    ResolversTypes["AIActivityPriority"],
-    ParentType,
-    ContextType
-  >;
-  reasoning?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  relatedEntityId?: Resolver<
-    Maybe<ResolversTypes["String"]>,
-    ParentType,
-    ContextType
-  >;
-  relatedEntityType?: Resolver<
-    Maybe<ResolversTypes["String"]>,
-    ParentType,
-    ContextType
-  >;
-  suggestedDueDate?: Resolver<
-    ResolversTypes["DateTime"],
-    ParentType,
-    ContextType
-  >;
-  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type AiActivityRecommendationsResponseResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["AIActivityRecommendationsResponse"] = ResolversParentTypes["AIActivityRecommendationsResponse"],
-> = {
-  contextSummary?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  primaryRecommendation?: Resolver<
-    ResolversTypes["AIActivityRecommendation"],
-    ParentType,
-    ContextType
-  >;
-  recommendations?: Resolver<
-    Array<ResolversTypes["AIActivityRecommendation"]>,
-    ParentType,
-    ContextType
-  >;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ActivityResolvers<
@@ -1733,19 +1480,6 @@ export type ActivityResolvers<
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type AdditionalCostResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["AdditionalCost"] = ResolversParentTypes["AdditionalCost"],
-> = {
-  amount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
-  created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
-  description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2077,25 +1811,6 @@ export type DealHistoryEntryResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type InvoiceScheduleEntryResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["InvoiceScheduleEntry"] = ResolversParentTypes["InvoiceScheduleEntry"],
-> = {
-  amount_due?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
-  created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
-  description?: Resolver<
-    Maybe<ResolversTypes["String"]>,
-    ParentType,
-    ContextType
-  >;
-  due_date?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  entry_type?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
 export interface JsonScalarConfig
   extends GraphQLScalarTypeConfig<ResolversTypes["JSON"], any> {
   name: "JSON";
@@ -2337,12 +2052,6 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationAddAgentThoughtsArgs, "conversationId" | "thoughts">
   >;
-  calculatePriceQuotePreview?: Resolver<
-    ResolversTypes["PriceQuote"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationCalculatePriceQuotePreviewArgs, "input">
-  >;
   convertLead?: Resolver<
     ResolversTypes["LeadConversionResult"],
     ParentType,
@@ -2390,12 +2099,6 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreatePersonArgs, "input">
-  >;
-  createPriceQuote?: Resolver<
-    ResolversTypes["PriceQuote"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationCreatePriceQuoteArgs, "dealId" | "input">
   >;
   createWFMProjectType?: Resolver<
     ResolversTypes["WFMProjectType"],
@@ -2468,12 +2171,6 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationDeletePersonArgs, "id">
-  >;
-  deletePriceQuote?: Resolver<
-    Maybe<ResolversTypes["Boolean"]>,
-    ParentType,
-    ContextType,
-    RequireFields<MutationDeletePriceQuoteArgs, "id">
   >;
   deleteWFMWorkflowStep?: Resolver<
     ResolversTypes["WFMWorkflowStepMutationResponse"],
@@ -2576,12 +2273,6 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdatePersonArgs, "id" | "input">
-  >;
-  updatePriceQuote?: Resolver<
-    ResolversTypes["PriceQuote"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationUpdatePriceQuoteArgs, "id" | "input">
   >;
   updateUserProfile?: Resolver<
     Maybe<ResolversTypes["User"]>,
@@ -2721,109 +2412,6 @@ export type PersonListItemResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
-export type PriceQuoteResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["PriceQuote"] = ResolversParentTypes["PriceQuote"],
-> = {
-  additional_costs?: Resolver<
-    Array<ResolversTypes["AdditionalCost"]>,
-    ParentType,
-    ContextType
-  >;
-  base_minimum_price_mp?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  calculated_discounted_offer_price?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  calculated_effective_markup_fop_over_mp?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  calculated_full_target_price_ftp?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  calculated_target_price_tp?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  calculated_total_direct_cost?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
-  deal?: Resolver<Maybe<ResolversTypes["Deal"]>, ParentType, ContextType>;
-  deal_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  escalation_details?: Resolver<
-    Maybe<ResolversTypes["JSON"]>,
-    ParentType,
-    ContextType
-  >;
-  escalation_status?: Resolver<
-    Maybe<ResolversTypes["String"]>,
-    ParentType,
-    ContextType
-  >;
-  final_offer_price_fop?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  invoice_schedule_entries?: Resolver<
-    Array<ResolversTypes["InvoiceScheduleEntry"]>,
-    ParentType,
-    ContextType
-  >;
-  name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  overall_discount_percentage?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  status?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  subsequent_installments_count?: Resolver<
-    Maybe<ResolversTypes["Int"]>,
-    ParentType,
-    ContextType
-  >;
-  subsequent_installments_interval_days?: Resolver<
-    Maybe<ResolversTypes["Int"]>,
-    ParentType,
-    ContextType
-  >;
-  target_markup_percentage?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
-  upfront_payment_due_days?: Resolver<
-    Maybe<ResolversTypes["Int"]>,
-    ParentType,
-    ContextType
-  >;
-  upfront_payment_percentage?: Resolver<
-    Maybe<ResolversTypes["Float"]>,
-    ParentType,
-    ContextType
-  >;
-  user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
-  user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  version_number?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
 export type QueryResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -2886,12 +2474,6 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
-  getAIActivityRecommendations?: Resolver<
-    ResolversTypes["AIActivityRecommendationsResponse"],
-    ParentType,
-    ContextType,
-    RequireFields<QueryGetAiActivityRecommendationsArgs, "dealId">
-  >;
   getWfmAllowedTransitions?: Resolver<
     Array<ResolversTypes["WFMWorkflowTransition"]>,
     ParentType,
@@ -2943,18 +2525,6 @@ export type QueryResolvers<
     Array<ResolversTypes["PersonListItem"]>,
     ParentType,
     ContextType
-  >;
-  priceQuote?: Resolver<
-    Maybe<ResolversTypes["PriceQuote"]>,
-    ParentType,
-    ContextType,
-    RequireFields<QueryPriceQuoteArgs, "id">
-  >;
-  priceQuotesForDeal?: Resolver<
-    Array<ResolversTypes["PriceQuote"]>,
-    ParentType,
-    ContextType,
-    RequireFields<QueryPriceQuotesForDealArgs, "dealId">
   >;
   supabaseConnectionTest?: Resolver<
     ResolversTypes["String"],
@@ -3279,10 +2849,7 @@ export type WfmWorkflowTransitionMutationResponseResolvers<
 };
 
 export type Resolvers<ContextType = GraphQLContext> = {
-  AIActivityRecommendation?: AiActivityRecommendationResolvers<ContextType>;
-  AIActivityRecommendationsResponse?: AiActivityRecommendationsResponseResolvers<ContextType>;
   Activity?: ActivityResolvers<ContextType>;
-  AdditionalCost?: AdditionalCostResolvers<ContextType>;
   AgentConfig?: AgentConfigResolvers<ContextType>;
   AgentConversation?: AgentConversationResolvers<ContextType>;
   AgentMessage?: AgentMessageResolvers<ContextType>;
@@ -3297,7 +2864,6 @@ export type Resolvers<ContextType = GraphQLContext> = {
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
-  InvoiceScheduleEntry?: InvoiceScheduleEntryResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   Lead?: LeadResolvers<ContextType>;
   LeadConversionResult?: LeadConversionResultResolvers<ContextType>;
@@ -3307,7 +2873,6 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Organization?: OrganizationResolvers<ContextType>;
   Person?: PersonResolvers<ContextType>;
   PersonListItem?: PersonListItemResolvers<ContextType>;
-  PriceQuote?: PriceQuoteResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;

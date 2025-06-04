@@ -49,7 +49,6 @@ const loadTypeDefs = (): string => {
   const allSchemaFiles = [
     'activity.graphql', 
     'agent.graphql',
-    'aiActivityRecommendations.graphql',
     'base.graphql', 
     'customFields.graphql', 
     'deal.graphql', 
@@ -58,7 +57,6 @@ const loadTypeDefs = (): string => {
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
-    'pricing.graphql', 
     'scalars.graphql', 
     'schema.graphql', 
     'user.graphql', 
