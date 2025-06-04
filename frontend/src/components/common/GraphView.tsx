@@ -1,9 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Box, VStack, HStack, Text, Switch, Button, Select, Spinner, useToast } from '@chakra-ui/react';
-import ForceGraph3D from 'react-force-graph-3d';
+import { Box, VStack, HStack, Text, Switch, Button, Select, Spinner, useToast, Alert, AlertIcon } from '@chakra-ui/react';
 import { useQuery } from '@apollo/client';
 import { gql } from '@apollo/client';
 import { useThemeColors } from '../../hooks/useThemeColors';
+
+// Dynamic imports to handle loading issues
+const ForceGraph2D = React.lazy(() => import('react-force-graph-2d'));
+const ForceGraph3D = React.lazy(() => import('react-force-graph-3d'));
 
 const GET_GRAPH_DATA = gql`
   query GetGraphData($filters: GraphFilters) {
@@ -61,12 +64,14 @@ export const GraphView: React.FC<GraphViewProps> = ({
 
   const [selectedNode, setSelectedNode] = useState<any>(null);
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
+  const [use3D, setUse3D] = useState(true);
+  const [graphError, setGraphError] = useState<string | null>(null);
 
   useEffect(() => {
     if (data?.getGraphData) {
       const { nodes, edges } = data.getGraphData;
       
-      // Transform data for react-force-graph-3d
+      // Transform data for react-force-graph
       const transformedData = {
         nodes: nodes.map((node: any) => ({
           id: node.id,
@@ -93,13 +98,13 @@ export const GraphView: React.FC<GraphViewProps> = ({
   const handleNodeClick = useCallback((node: any) => {
     setSelectedNode(node);
     
-    // Focus camera on clicked node
-    if (fgRef.current) {
+    // Focus camera on clicked node (3D only)
+    if (fgRef.current && use3D) {
       const distance = 40;
-      const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+      const distRatio = 1 + distance / Math.hypot(node.x || 0, node.y || 0, node.z || 0);
       
       fgRef.current.cameraPosition(
-        { x: node.x * distRatio, y: node.y * distRatio, z: node.z * distRatio },
+        { x: (node.x || 0) * distRatio, y: (node.y || 0) * distRatio, z: (node.z || 0) * distRatio },
         node, // lookAt
         3000  // ms transition duration
       );
@@ -112,7 +117,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
       duration: 2000,
       isClosable: true,
     });
-  }, [toast]);
+  }, [toast, use3D]);
 
   const handleEntityTypeChange = (entityType: string, isEnabled: boolean) => {
     setFilters(prev => ({
@@ -129,12 +134,105 @@ export const GraphView: React.FC<GraphViewProps> = ({
 
   const resetCamera = () => {
     if (fgRef.current) {
-      fgRef.current.cameraPosition(
-        { x: 0, y: 0, z: 400 }, // position
-        { x: 0, y: 0, z: 0 },   // lookAt
-        3000 // transition duration
+      if (use3D) {
+        fgRef.current.cameraPosition(
+          { x: 0, y: 0, z: 400 }, // position
+          { x: 0, y: 0, z: 0 },   // lookAt
+          3000 // transition duration
+        );
+      } else {
+        fgRef.current.zoom(1, 1000);
+      }
+    }
+  };
+
+  const GraphComponent = ({ graphData, width, height }: any) => {
+    const [graphLoadError, setGraphLoadError] = useState(false);
+
+    if (use3D && !graphLoadError) {
+      return (
+        <React.Suspense fallback={
+          <Box display="flex" justifyContent="center" alignItems="center" height={height}>
+            <VStack>
+              <Spinner size="xl" color={colors.interactive.default} />
+              <Text color={colors.text.secondary}>Loading 3D visualization...</Text>
+            </VStack>
+          </Box>
+        }>
+          <ForceGraph3D
+            ref={fgRef}
+            graphData={graphData}
+            width={width}
+            height={height}
+            backgroundColor={colors.bg.surface}
+            
+            // Node configuration
+            nodeLabel={(node: any) => `
+              <div style="color: white; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; font-size: 12px;">
+                <strong>${node.type}</strong><br/>
+                ${node.name}
+              </div>
+            `}
+            nodeColor={(node: any) => node.color}
+            nodeVal={(node: any) => node.size}
+            nodeRelSize={1}
+            onNodeClick={handleNodeClick}
+            
+            // Link configuration
+            linkLabel={(link: any) => link.label || link.type}
+            linkColor={(link: any) => link.color}
+            linkWidth={1.5}
+            linkOpacity={0.6}
+            
+            // Physics configuration
+            d3AlphaDecay={0.02}
+            d3VelocityDecay={0.3}
+            numDimensions={3}
+            
+            // Camera configuration
+            controlType="orbit"
+            showNavInfo={false}
+            onEngineStop={() => setGraphLoadError(false)}
+          />
+        </React.Suspense>
       );
     }
+
+    // 2D Fallback
+    return (
+      <React.Suspense fallback={
+        <Box display="flex" justifyContent="center" alignItems="center" height={height}>
+          <VStack>
+            <Spinner size="xl" color={colors.interactive.default} />
+            <Text color={colors.text.secondary}>Loading 2D visualization...</Text>
+          </VStack>
+        </Box>
+      }>
+        <ForceGraph2D
+          ref={fgRef}
+          graphData={graphData}
+          width={width}
+          height={height}
+          backgroundColor={colors.bg.surface}
+          
+          // Node configuration
+          nodeLabel={(node: any) => `${node.type}: ${node.name}`}
+          nodeColor={(node: any) => node.color}
+          nodeVal={(node: any) => node.size}
+          nodeRelSize={4}
+          onNodeClick={handleNodeClick}
+          
+          // Link configuration
+          linkLabel={(link: any) => link.label || link.type}
+          linkColor={(link: any) => link.color}
+          linkWidth={2}
+          
+          // Physics configuration
+          d3AlphaDecay={0.02}
+          d3VelocityDecay={0.3}
+        />
+      </React.Suspense>
+    );
   };
 
   if (loading) {
@@ -191,7 +289,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
           <HStack justify="space-between" wrap="wrap">
             <HStack>
               <Text fontSize="lg" fontWeight="bold" color={colors.text.primary}>
-                Network Graph
+                Network Graph {use3D ? '(3D)' : '(2D)'}
               </Text>
               {summary && (
                 <Text fontSize="sm" color={colors.text.secondary}>
@@ -200,6 +298,12 @@ export const GraphView: React.FC<GraphViewProps> = ({
               )}
             </HStack>
             <HStack>
+              <Switch
+                isChecked={use3D}
+                onChange={(e) => setUse3D(e.target.checked)}
+                size="sm"
+              />
+              <Text fontSize="sm" color={colors.text.secondary}>3D</Text>
               <Button onClick={resetCamera} size="sm" variant="outline">
                 Reset View
               </Button>
@@ -279,6 +383,13 @@ export const GraphView: React.FC<GraphViewProps> = ({
         </VStack>
       </Box>
 
+      {graphError && (
+        <Alert status="warning">
+          <AlertIcon />
+          {graphError}
+        </Alert>
+      )}
+
       {/* Graph Visualization */}
       <Box 
         position="relative"
@@ -289,39 +400,10 @@ export const GraphView: React.FC<GraphViewProps> = ({
         overflow="hidden"
         height={height}
       >
-        <ForceGraph3D
-          ref={fgRef}
+        <GraphComponent 
           graphData={graphData}
           width={width}
           height={height}
-          backgroundColor={colors.bg.surface}
-          
-          // Node configuration
-          nodeLabel={(node: any) => `
-            <div style="color: white; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 4px; font-size: 12px;">
-              <strong>${node.type}</strong><br/>
-              ${node.name}
-            </div>
-          `}
-          nodeColor={(node: any) => node.color}
-          nodeVal={(node: any) => node.size}
-          nodeRelSize={1}
-          onNodeClick={handleNodeClick}
-          
-          // Link configuration
-          linkLabel={(link: any) => link.label || link.type}
-          linkColor={(link: any) => link.color}
-          linkWidth={1.5}
-          linkOpacity={0.6}
-          
-          // Physics configuration
-          d3AlphaDecay={0.02}
-          d3VelocityDecay={0.3}
-          numDimensions={3}
-          
-          // Camera configuration
-          controlType="orbit"
-          showNavInfo={false}
         />
         
         {/* Selected Node Info */}
