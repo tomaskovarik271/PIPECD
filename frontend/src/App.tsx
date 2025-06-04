@@ -20,6 +20,7 @@ import WFMStatusesPage from './pages/admin/WFMStatusesPage';
 import WFMWorkflowsPage from './pages/admin/WFMWorkflowsPage';
 import WFMProjectTypesPage from './pages/admin/WFMProjectTypesPage';
 import ProjectBoardPage from './pages/ProjectBoardPage';
+import { GraphPage } from './pages/GraphPage';
 import { 
   Box, 
   Heading, 
@@ -82,6 +83,7 @@ function AppContent() {
               <Route path="project-types" element={<WFMProjectTypesPage />} />
             </Route>
             <Route path="/project-board" element={<ProjectBoardPage />} />
+            <Route path="/graph" element={<GraphPage />} />
             <Route path="*" element={<Heading size="lg" p={6} color={colors.text.primary}>404 Not Found</Heading>} />
           </Routes>
         </Box>

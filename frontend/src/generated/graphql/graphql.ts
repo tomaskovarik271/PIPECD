@@ -361,6 +361,50 @@ export type DealUpdateInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+export type GraphData = {
+  __typename?: "GraphData";
+  edges: Array<GraphEdge>;
+  nodes: Array<GraphNode>;
+  summary: GraphSummary;
+};
+
+export type GraphEdge = {
+  __typename?: "GraphEdge";
+  color?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  label?: Maybe<Scalars["String"]["output"]>;
+  source: Scalars["ID"]["output"];
+  target: Scalars["ID"]["output"];
+  type: Scalars["String"]["output"];
+};
+
+export type GraphFilters = {
+  centerNodeId?: InputMaybe<Scalars["String"]["input"]>;
+  entityTypes?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  includeActivities?: InputMaybe<Scalars["Boolean"]["input"]>;
+  includeWFMProjects?: InputMaybe<Scalars["Boolean"]["input"]>;
+  maxDepth?: InputMaybe<Scalars["Int"]["input"]>;
+  maxNodes?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type GraphNode = {
+  __typename?: "GraphNode";
+  color: Scalars["String"]["output"];
+  data?: Maybe<Scalars["JSON"]["output"]>;
+  id: Scalars["ID"]["output"];
+  label: Scalars["String"]["output"];
+  size: Scalars["Float"]["output"];
+  type: Scalars["String"]["output"];
+};
+
+export type GraphSummary = {
+  __typename?: "GraphSummary";
+  edgesByType: Scalars["JSON"]["output"];
+  nodesByType: Scalars["JSON"]["output"];
+  totalEdges: Scalars["Int"]["output"];
+  totalNodes: Scalars["Int"]["output"];
+};
+
 export type Lead = {
   __typename?: "Lead";
   activities: Array<Activity>;
@@ -828,6 +872,7 @@ export type Query = {
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
+  getGraphData: GraphData;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
@@ -884,6 +929,10 @@ export type QueryCustomFieldDefinitionsArgs = {
 
 export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryGetGraphDataArgs = {
+  filters?: InputMaybe<GraphFilters>;
 };
 
 export type QueryGetWfmAllowedTransitionsArgs = {

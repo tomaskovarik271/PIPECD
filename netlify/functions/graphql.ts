@@ -40,6 +40,7 @@ import { WFMWorkflowStep as WFMWorkflowStepResolver } from './graphql/resolvers/
 
 // Import Agent Resolvers
 import { agentQueries, agentMutations } from './graphql/resolvers/agentResolvers';
+import { graphQueries } from './graphql/resolvers/graphResolvers';
 
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
@@ -57,6 +58,7 @@ const loadTypeDefs = (): string => {
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
+    'pricing.graphql', 
     'scalars.graphql', 
     'schema.graphql', 
     'user.graphql', 
@@ -77,6 +79,7 @@ const loadTypeDefs = (): string => {
     'deal.graphql', 
     'lead.graphql',
     'enums.graphql', 
+    'graph.graphql',
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
@@ -127,6 +130,7 @@ export const resolvers = {
     ...WFMWorkflowResolvers.Query,
     ...WFMProjectTypeResolvers.Query,
     ...agentQueries,
+    ...graphQueries,
   },
   Mutation: {
     ...BaseMutation,

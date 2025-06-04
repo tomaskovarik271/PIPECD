@@ -370,6 +370,50 @@ export type DealUpdateInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+export type GraphData = {
+  __typename?: "GraphData";
+  edges: Array<GraphEdge>;
+  nodes: Array<GraphNode>;
+  summary: GraphSummary;
+};
+
+export type GraphEdge = {
+  __typename?: "GraphEdge";
+  color?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  label?: Maybe<Scalars["String"]["output"]>;
+  source: Scalars["ID"]["output"];
+  target: Scalars["ID"]["output"];
+  type: Scalars["String"]["output"];
+};
+
+export type GraphFilters = {
+  centerNodeId?: InputMaybe<Scalars["String"]["input"]>;
+  entityTypes?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  includeActivities?: InputMaybe<Scalars["Boolean"]["input"]>;
+  includeWFMProjects?: InputMaybe<Scalars["Boolean"]["input"]>;
+  maxDepth?: InputMaybe<Scalars["Int"]["input"]>;
+  maxNodes?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type GraphNode = {
+  __typename?: "GraphNode";
+  color: Scalars["String"]["output"];
+  data?: Maybe<Scalars["JSON"]["output"]>;
+  id: Scalars["ID"]["output"];
+  label: Scalars["String"]["output"];
+  size: Scalars["Float"]["output"];
+  type: Scalars["String"]["output"];
+};
+
+export type GraphSummary = {
+  __typename?: "GraphSummary";
+  edgesByType: Scalars["JSON"]["output"];
+  nodesByType: Scalars["JSON"]["output"];
+  totalEdges: Scalars["Int"]["output"];
+  totalNodes: Scalars["Int"]["output"];
+};
+
 export type Lead = {
   __typename?: "Lead";
   activities: Array<Activity>;
@@ -837,6 +881,7 @@ export type Query = {
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
+  getGraphData: GraphData;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
@@ -893,6 +938,10 @@ export type QueryCustomFieldDefinitionsArgs = {
 
 export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryGetGraphDataArgs = {
+  filters?: InputMaybe<GraphFilters>;
 };
 
 export type QueryGetWfmAllowedTransitionsArgs = {
@@ -1305,6 +1354,11 @@ export type ResolversTypes = {
   DealInput: DealInput;
   DealUpdateInput: DealUpdateInput;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
+  GraphData: ResolverTypeWrapper<GraphData>;
+  GraphEdge: ResolverTypeWrapper<GraphEdge>;
+  GraphFilters: GraphFilters;
+  GraphNode: ResolverTypeWrapper<GraphNode>;
+  GraphSummary: ResolverTypeWrapper<GraphSummary>;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
   Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
   JSON: ResolverTypeWrapper<Scalars["JSON"]["output"]>;
@@ -1386,6 +1440,11 @@ export type ResolversParentTypes = {
   DealInput: DealInput;
   DealUpdateInput: DealUpdateInput;
   Float: Scalars["Float"]["output"];
+  GraphData: GraphData;
+  GraphEdge: GraphEdge;
+  GraphFilters: GraphFilters;
+  GraphNode: GraphNode;
+  GraphSummary: GraphSummary;
   ID: Scalars["ID"]["output"];
   Int: Scalars["Int"]["output"];
   JSON: Scalars["JSON"]["output"];
@@ -1808,6 +1867,57 @@ export type DealHistoryEntryResolvers<
   eventType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type GraphDataResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GraphData"] = ResolversParentTypes["GraphData"],
+> = {
+  edges?: Resolver<Array<ResolversTypes["GraphEdge"]>, ParentType, ContextType>;
+  nodes?: Resolver<Array<ResolversTypes["GraphNode"]>, ParentType, ContextType>;
+  summary?: Resolver<ResolversTypes["GraphSummary"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type GraphEdgeResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GraphEdge"] = ResolversParentTypes["GraphEdge"],
+> = {
+  color?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  label?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  source?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  target?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type GraphNodeResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GraphNode"] = ResolversParentTypes["GraphNode"],
+> = {
+  color?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  data?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  label?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  size?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  type?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type GraphSummaryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GraphSummary"] = ResolversParentTypes["GraphSummary"],
+> = {
+  edgesByType?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  nodesByType?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  totalEdges?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalNodes?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2474,6 +2584,12 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  getGraphData?: Resolver<
+    ResolversTypes["GraphData"],
+    ParentType,
+    ContextType,
+    Partial<QueryGetGraphDataArgs>
+  >;
   getWfmAllowedTransitions?: Resolver<
     Array<ResolversTypes["WFMWorkflowTransition"]>,
     ParentType,
@@ -2864,6 +2980,10 @@ export type Resolvers<ContextType = GraphQLContext> = {
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
+  GraphData?: GraphDataResolvers<ContextType>;
+  GraphEdge?: GraphEdgeResolvers<ContextType>;
+  GraphNode?: GraphNodeResolvers<ContextType>;
+  GraphSummary?: GraphSummaryResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   Lead?: LeadResolvers<ContextType>;
   LeadConversionResult?: LeadConversionResultResolvers<ContextType>;

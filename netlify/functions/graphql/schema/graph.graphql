@@ -1,0 +1,45 @@
+# Graph View Types for Network Visualization
+
+type GraphNode {
+  id: ID!
+  type: String!  # PERSON, ORGANIZATION, DEAL, LEAD, ACTIVITY, WFM_PROJECT
+  label: String!
+  color: String!
+  size: Float!
+  data: JSON
+}
+
+type GraphEdge {
+  id: ID!
+  source: ID!
+  target: ID!
+  type: String!  # WORKS_AT, BELONGS_TO, ASSIGNED_TO, CONVERTED_TO, etc.
+  label: String
+  color: String
+}
+
+type GraphData {
+  nodes: [GraphNode!]!
+  edges: [GraphEdge!]!
+  summary: GraphSummary!
+}
+
+type GraphSummary {
+  totalNodes: Int!
+  totalEdges: Int!
+  nodesByType: JSON!
+  edgesByType: JSON!
+}
+
+input GraphFilters {
+  entityTypes: [String!]
+  maxNodes: Int
+  includeActivities: Boolean
+  includeWFMProjects: Boolean
+  centerNodeId: String
+  maxDepth: Int
+}
+
+extend type Query {
+  getGraphData(filters: GraphFilters): GraphData!
+} 
