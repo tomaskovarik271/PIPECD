@@ -31,17 +31,19 @@ const GET_AI_ACTIVITY_RECOMMENDATIONS = gql`
     getAIActivityRecommendations(dealId: $dealId) {
       contextSummary
       primaryRecommendation {
-        type
-        subject
-        notes
+        id
+        title
+        description
+        priority
         suggestedDueDate
         confidence
         reasoning
       }
       recommendations {
-        type
-        subject
-        notes
+        id
+        title
+        description
+        priority
         suggestedDueDate
         confidence
         reasoning
@@ -51,9 +53,10 @@ const GET_AI_ACTIVITY_RECOMMENDATIONS = gql`
 `;
 
 interface AIActivityRecommendation {
-  type: ActivityType;
-  subject: string;
-  notes: string;
+  id: string;
+  title: string;
+  description: string;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
   suggestedDueDate: string;
   confidence: number;
   reasoning: string;
@@ -120,13 +123,13 @@ export const AIActivityRecommendations: React.FC<AIActivityRecommendationsProps>
   };
 
   const createActivityFromRecommendation = async (recommendation: AIActivityRecommendation) => {
-    setIsCreatingActivity(recommendation.subject);
+    setIsCreatingActivity(recommendation.title);
     
     try {
       await createActivity({
-        type: recommendation.type,
-        subject: recommendation.subject,
-        notes: recommendation.notes,
+        type: recommendation.priority as ActivityType,
+        subject: recommendation.title,
+        notes: recommendation.description,
         due_date: recommendation.suggestedDueDate,
         deal_id: dealId,
         is_done: false,
@@ -134,7 +137,7 @@ export const AIActivityRecommendations: React.FC<AIActivityRecommendationsProps>
       
       toast({
         title: 'Activity Created',
-        description: `"${recommendation.subject}" has been added to your activities.`,
+        description: `"${recommendation.title}" has been added to your activities.`,
         status: 'success',
         duration: 3000,
         isClosable: true,
@@ -157,8 +160,8 @@ export const AIActivityRecommendations: React.FC<AIActivityRecommendationsProps>
     recommendation, 
     isPrimary = false 
   }) => {
-    const ActivityIcon = getActivityIcon(recommendation.type);
-    const activityColor = getActivityColor(recommendation.type);
+    const ActivityIcon = getActivityIcon(recommendation.priority as ActivityType);
+    const activityColor = getActivityColor(recommendation.priority as ActivityType);
     
     return (
       <Card 
@@ -173,7 +176,7 @@ export const AIActivityRecommendations: React.FC<AIActivityRecommendationsProps>
             <HStack>
               <Icon as={ActivityIcon} color={`${activityColor}.500`} boxSize={5} />
               <Badge colorScheme={activityColor} variant="subtle">
-                {recommendation.type}
+                {recommendation.priority}
               </Badge>
               {isPrimary && (
                 <Badge colorScheme="yellow" variant="solid">
@@ -203,10 +206,10 @@ export const AIActivityRecommendations: React.FC<AIActivityRecommendationsProps>
           <VStack align="stretch" spacing={3}>
             <Box>
               <Heading size="sm" color={colors.text.primary} mb={1}>
-                {recommendation.subject}
+                {recommendation.title}
               </Heading>
               <Text fontSize="sm" color={colors.text.secondary}>
-                {recommendation.notes}
+                {recommendation.description}
               </Text>
             </Box>
             
@@ -231,7 +234,7 @@ export const AIActivityRecommendations: React.FC<AIActivityRecommendationsProps>
                 variant={isPrimary ? "solid" : "outline"}
                 leftIcon={<Icon as={ActivityIcon} />}
                 onClick={() => createActivityFromRecommendation(recommendation)}
-                isLoading={isCreatingActivity === recommendation.subject}
+                isLoading={isCreatingActivity === recommendation.title}
                 loadingText="Creating..."
               >
                 Create Activity

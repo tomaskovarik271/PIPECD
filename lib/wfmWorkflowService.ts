@@ -56,6 +56,7 @@ interface DbWfmWorkflowTransition {
 // It includes status_id for the GraphQL field resolver.
 export interface ServiceLayerWfmWorkflowStep extends Omit<WfmWorkflowStep, 'status'> {
   status_id: string;
+  workflow_id: string;
 }
 
 // --- Mapper Functions ---
@@ -77,6 +78,7 @@ const mapDbStepToGraphqlStep = (dbStep: DbWfmWorkflowStep): ServiceLayerWfmWorkf
   return {
     __typename: 'WFMWorkflowStep',
     id: dbStep.id,
+    workflow_id: dbStep.workflow_id,
     status_id: dbStep.status_id,
     stepOrder: dbStep.step_order,
     isInitialStep: dbStep.is_initial_step,
@@ -282,8 +284,8 @@ export const wfmWorkflowService = {
       is_initial_step: input.isInitialStep ?? false,
       is_final_step: input.isFinalStep ?? false,
       metadata: input.metadata ?? {},
-      // created_by_user_id: userId, // If table had this column
-      // updated_by_user_id: userId, // If table had this column
+      // created_by_user_id: userId, // If table had this
+      // updated_by_user_id: userId, // If table had this
     };
 
     const { data, error } = await context.supabaseClient

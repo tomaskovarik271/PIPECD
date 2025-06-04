@@ -52,8 +52,11 @@ const DealsKanbanView: React.FC<DealsKanbanViewProps> = ({ deals }) => {
   }, [hasInitiallyFetchedDeals, dealsLoading, dealsError, fetchDeals]);
 
   useEffect(() => {
-    // Fetch the Sales Deal workflow if the ID is available
-    if (salesDealWorkflowId && !currentWorkflowWithDetails && !wfmWorkflowLoading && !wfmWorkflowError) {
+    // Fetch the Sales Deal workflow if the ID is available AND
+    // either no workflow is loaded OR the wrong workflow is loaded
+    if (salesDealWorkflowId && 
+        (!currentWorkflowWithDetails || currentWorkflowWithDetails.id !== salesDealWorkflowId) && 
+        !wfmWorkflowLoading && !wfmWorkflowError) {
       // console.log('[DealsKanbanView] salesDealWorkflowId found:', salesDealWorkflowId, "Fetching workflow details...");
       fetchWFMWorkflowWithDetails(salesDealWorkflowId);
     }

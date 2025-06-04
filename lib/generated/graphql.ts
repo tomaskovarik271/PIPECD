@@ -34,20 +34,34 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
-  Date: { input: any; output: any };
   DateTime: { input: Date; output: Date };
   JSON: { input: { [key: string]: any }; output: { [key: string]: any } };
 };
 
 /** AI-powered activity recommendation system for intelligent sales assistance. */
+export enum AiActivityPriority {
+  High = "HIGH",
+  Low = "LOW",
+  Medium = "MEDIUM",
+  Urgent = "URGENT",
+}
+
 export type AiActivityRecommendation = {
   __typename?: "AIActivityRecommendation";
+  category?: Maybe<Scalars["String"]["output"]>;
+  completedAt?: Maybe<Scalars["DateTime"]["output"]>;
   confidence: Scalars["Float"]["output"];
-  notes: Scalars["String"]["output"];
+  description: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  isCompleted: Scalars["Boolean"]["output"];
+  priority: AiActivityPriority;
   reasoning: Scalars["String"]["output"];
-  subject: Scalars["String"]["output"];
-  suggestedDueDate: Scalars["Date"]["output"];
-  type: ActivityType;
+  relatedEntityId?: Maybe<Scalars["String"]["output"]>;
+  relatedEntityType?: Maybe<Scalars["String"]["output"]>;
+  suggestedDueDate: Scalars["DateTime"]["output"];
+  title: Scalars["String"]["output"];
+  user_id: Scalars["ID"]["output"];
 };
 
 export type AiActivityRecommendationsResponse = {
@@ -68,6 +82,8 @@ export type Activity = {
   id: Scalars["ID"]["output"];
   is_done: Scalars["Boolean"]["output"];
   is_system_activity: Scalars["Boolean"]["output"];
+  lead?: Maybe<Lead>;
+  lead_id?: Maybe<Scalars["ID"]["output"]>;
   notes?: Maybe<Scalars["String"]["output"]>;
   organization?: Maybe<Organization>;
   organization_id?: Maybe<Scalars["ID"]["output"]>;
@@ -83,6 +99,7 @@ export type Activity = {
 export type ActivityFilterInput = {
   dealId?: InputMaybe<Scalars["ID"]["input"]>;
   isDone?: InputMaybe<Scalars["Boolean"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
   organizationId?: InputMaybe<Scalars["ID"]["input"]>;
   personId?: InputMaybe<Scalars["ID"]["input"]>;
 };
@@ -213,10 +230,18 @@ export enum AgentThoughtType {
   ToolCall = "TOOL_CALL",
 }
 
+export type ConvertedEntities = {
+  __typename?: "ConvertedEntities";
+  deal?: Maybe<Deal>;
+  organization?: Maybe<Organization>;
+  person?: Maybe<Person>;
+};
+
 export type CreateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   is_done?: InputMaybe<Scalars["Boolean"]["input"]>;
+  lead_id?: InputMaybe<Scalars["ID"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
@@ -285,6 +310,7 @@ export type CustomFieldDefinitionInput = {
 
 export enum CustomFieldEntityType {
   Deal = "DEAL",
+  Lead = "LEAD",
   Organization = "ORGANIZATION",
   Person = "PERSON",
 }
@@ -307,6 +333,7 @@ export enum CustomFieldType {
   MultiSelect = "MULTI_SELECT",
   Number = "NUMBER",
   Text = "TEXT",
+  TextArea = "TEXT_AREA",
 }
 
 export type CustomFieldValue = {
@@ -407,41 +434,42 @@ export type InvoiceScheduleEntry = {
 export type Lead = {
   __typename?: "Lead";
   activities: Array<Activity>;
+  ai_insights?: Maybe<Scalars["JSON"]["output"]>;
   assignedToUser?: Maybe<User>;
+  assigned_at?: Maybe<Scalars["DateTime"]["output"]>;
   assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
+  automation_score_factors?: Maybe<Scalars["JSON"]["output"]>;
   company_name?: Maybe<Scalars["String"]["output"]>;
   contact_email?: Maybe<Scalars["String"]["output"]>;
   contact_name?: Maybe<Scalars["String"]["output"]>;
   contact_phone?: Maybe<Scalars["String"]["output"]>;
   converted_at?: Maybe<Scalars["DateTime"]["output"]>;
+  converted_by_user?: Maybe<User>;
+  converted_by_user_id?: Maybe<Scalars["ID"]["output"]>;
   converted_to_deal?: Maybe<Deal>;
   converted_to_deal_id?: Maybe<Scalars["ID"]["output"]>;
+  converted_to_organization?: Maybe<Organization>;
+  converted_to_organization_id?: Maybe<Scalars["ID"]["output"]>;
+  converted_to_person?: Maybe<Person>;
+  converted_to_person_id?: Maybe<Scalars["ID"]["output"]>;
   createdBy: User;
   created_at: Scalars["DateTime"]["output"];
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
-  custom_field_values?: Maybe<Scalars["JSON"]["output"]>;
   description?: Maybe<Scalars["String"]["output"]>;
   estimated_close_date?: Maybe<Scalars["DateTime"]["output"]>;
   estimated_value?: Maybe<Scalars["Float"]["output"]>;
-  history?: Maybe<Array<LeadHistoryEntry>>;
+  history?: Maybe<Array<Maybe<LeadHistoryEntry>>>;
   id: Scalars["ID"]["output"];
-  is_qualified?: Maybe<Scalars["Boolean"]["output"]>;
-  last_contacted_at?: Maybe<Scalars["DateTime"]["output"]>;
-  lead_score?: Maybe<Scalars["Int"]["output"]>;
-  lead_source?: Maybe<Scalars["String"]["output"]>;
-  lead_source_detail?: Maybe<Scalars["String"]["output"]>;
-  next_follow_up_date?: Maybe<Scalars["DateTime"]["output"]>;
-  notes?: Maybe<Scalars["String"]["output"]>;
-  organization?: Maybe<Organization>;
-  organization_id?: Maybe<Scalars["ID"]["output"]>;
-  person?: Maybe<Person>;
-  person_id?: Maybe<Scalars["ID"]["output"]>;
-  priority?: Maybe<LeadPriority>;
-  qualification_notes?: Maybe<Scalars["String"]["output"]>;
-  tags?: Maybe<Array<Scalars["String"]["output"]>>;
-  title: Scalars["String"]["output"];
+  isQualified: Scalars["Boolean"]["output"];
+  last_activity_at: Scalars["DateTime"]["output"];
+  lead_score: Scalars["Int"]["output"];
+  lead_score_factors?: Maybe<Scalars["JSON"]["output"]>;
+  name: Scalars["String"]["output"];
+  qualificationLevel: Scalars["Float"]["output"];
+  qualificationStatus: Scalars["String"]["output"];
+  source?: Maybe<Scalars["String"]["output"]>;
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
   wfmProject?: Maybe<WfmProject>;
@@ -454,16 +482,40 @@ export type LeadHistoryArgs = {
 };
 
 export type LeadConversionInput = {
-  amount?: InputMaybe<Scalars["Float"]["input"]>;
-  deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
-  expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  name?: InputMaybe<Scalars["String"]["input"]>;
+  createConversionActivity?: InputMaybe<Scalars["Boolean"]["input"]>;
+  dealData?: InputMaybe<DealInput>;
+  organizationData?: InputMaybe<OrganizationInput>;
+  personData?: InputMaybe<PersonInput>;
+  preserveActivities?: InputMaybe<Scalars["Boolean"]["input"]>;
+  targetType: LeadConversionTargetType;
 };
 
 export type LeadConversionResult = {
   __typename?: "LeadConversionResult";
-  deal: Deal;
-  lead: Lead;
+  convertedEntities: ConvertedEntities;
+  leadId: Scalars["ID"]["output"];
+};
+
+export enum LeadConversionTargetType {
+  All = "ALL",
+  Deal = "DEAL",
+  Organization = "ORGANIZATION",
+  Person = "PERSON",
+}
+
+export type LeadFilters = {
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  convertedAfter?: InputMaybe<Scalars["DateTime"]["input"]>;
+  convertedBefore?: InputMaybe<Scalars["DateTime"]["input"]>;
+  createdAfter?: InputMaybe<Scalars["DateTime"]["input"]>;
+  createdBefore?: InputMaybe<Scalars["DateTime"]["input"]>;
+  isQualified?: InputMaybe<Scalars["Boolean"]["input"]>;
+  leadScoreMax?: InputMaybe<Scalars["Int"]["input"]>;
+  leadScoreMin?: InputMaybe<Scalars["Int"]["input"]>;
+  qualificationLevel?: InputMaybe<Scalars["Float"]["input"]>;
+  qualificationStatus?: InputMaybe<Scalars["String"]["input"]>;
+  search?: InputMaybe<Scalars["String"]["input"]>;
+  source?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type LeadHistoryEntry = {
@@ -479,56 +531,42 @@ export type LeadHistoryEntry = {
 
 export type LeadInput = {
   assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
-  company_name?: InputMaybe<Scalars["String"]["input"]>;
-  contact_email?: InputMaybe<Scalars["String"]["input"]>;
-  contact_name?: InputMaybe<Scalars["String"]["input"]>;
-  contact_phone?: InputMaybe<Scalars["String"]["input"]>;
+  companyName?: InputMaybe<Scalars["String"]["input"]>;
+  contactEmail?: InputMaybe<Scalars["String"]["input"]>;
+  contactName?: InputMaybe<Scalars["String"]["input"]>;
+  contactPhone?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   description?: InputMaybe<Scalars["String"]["input"]>;
-  estimated_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  estimated_value?: InputMaybe<Scalars["Float"]["input"]>;
-  lead_score?: InputMaybe<Scalars["Int"]["input"]>;
-  lead_source?: InputMaybe<Scalars["String"]["input"]>;
-  lead_source_detail?: InputMaybe<Scalars["String"]["input"]>;
-  next_follow_up_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  notes?: InputMaybe<Scalars["String"]["input"]>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
-  person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  priority?: InputMaybe<LeadPriority>;
-  qualification_notes?: InputMaybe<Scalars["String"]["input"]>;
-  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
-  title: Scalars["String"]["input"];
+  estimatedCloseDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  estimatedValue?: InputMaybe<Scalars["Float"]["input"]>;
+  name: Scalars["String"]["input"];
+  source?: InputMaybe<Scalars["String"]["input"]>;
+  wfmProjectTypeId: Scalars["ID"]["input"];
 };
-
-export enum LeadPriority {
-  High = "HIGH",
-  Low = "LOW",
-  Medium = "MEDIUM",
-  Urgent = "URGENT",
-}
 
 export type LeadUpdateInput = {
   assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
-  company_name?: InputMaybe<Scalars["String"]["input"]>;
-  contact_email?: InputMaybe<Scalars["String"]["input"]>;
-  contact_name?: InputMaybe<Scalars["String"]["input"]>;
-  contact_phone?: InputMaybe<Scalars["String"]["input"]>;
+  companyName?: InputMaybe<Scalars["String"]["input"]>;
+  contactEmail?: InputMaybe<Scalars["String"]["input"]>;
+  contactName?: InputMaybe<Scalars["String"]["input"]>;
+  contactPhone?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   description?: InputMaybe<Scalars["String"]["input"]>;
-  estimated_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  estimated_value?: InputMaybe<Scalars["Float"]["input"]>;
-  is_qualified?: InputMaybe<Scalars["Boolean"]["input"]>;
-  lead_score?: InputMaybe<Scalars["Int"]["input"]>;
-  lead_source?: InputMaybe<Scalars["String"]["input"]>;
-  lead_source_detail?: InputMaybe<Scalars["String"]["input"]>;
-  next_follow_up_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  notes?: InputMaybe<Scalars["String"]["input"]>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
-  person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  priority?: InputMaybe<LeadPriority>;
-  qualification_notes?: InputMaybe<Scalars["String"]["input"]>;
-  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
-  title?: InputMaybe<Scalars["String"]["input"]>;
+  estimatedCloseDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  estimatedValue?: InputMaybe<Scalars["Float"]["input"]>;
+  leadScore?: InputMaybe<Scalars["Int"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  source?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type LeadsStats = {
+  __typename?: "LeadsStats";
+  averageLeadScore: Scalars["Float"]["output"];
+  averageQualificationLevel: Scalars["Float"]["output"];
+  conversionRate: Scalars["Float"]["output"];
+  convertedLeads: Scalars["Int"]["output"];
+  qualifiedLeads: Scalars["Int"]["output"];
+  totalLeads: Scalars["Int"]["output"];
 };
 
 export type Mutation = {
@@ -536,7 +574,7 @@ export type Mutation = {
   addAgentThoughts: Array<AgentThought>;
   /** Calculates a preview of a price quote. dealId is optional. */
   calculatePriceQuotePreview: PriceQuote;
-  convertLeadToDeal: LeadConversionResult;
+  convertLead: LeadConversionResult;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
   createCustomFieldDefinition: CustomFieldDefinition;
@@ -555,7 +593,7 @@ export type Mutation = {
   deleteActivity: Scalars["ID"]["output"];
   deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
-  deleteLead: Scalars["Boolean"]["output"];
+  deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   /** Deletes a price quote. */
@@ -565,13 +603,14 @@ export type Mutation = {
   deleteWfmStatus: WfmStatusMutationResponse;
   executeAgentStep: AgentResponse;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
+  recalculateLeadScore: Lead;
   sendAgentMessage: AgentResponse;
   updateActivity: Activity;
   updateAgentConversation: AgentConversation;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateDealWFMProgress: Deal;
-  updateLead: Lead;
+  updateLead?: Maybe<Lead>;
   updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
@@ -597,9 +636,9 @@ export type MutationCalculatePriceQuotePreviewArgs = {
   input: PriceQuoteUpdateInput;
 };
 
-export type MutationConvertLeadToDealArgs = {
-  dealData?: InputMaybe<LeadConversionInput>;
-  leadId: Scalars["ID"]["input"];
+export type MutationConvertLeadArgs = {
+  id: Scalars["ID"]["input"];
+  input: LeadConversionInput;
 };
 
 export type MutationCreateActivityArgs = {
@@ -706,6 +745,10 @@ export type MutationExecuteAgentStepArgs = {
 
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type MutationRecalculateLeadScoreArgs = {
+  leadId: Scalars["ID"]["input"];
 };
 
 export type MutationSendAgentMessageArgs = {
@@ -957,6 +1000,7 @@ export type Query = {
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
   leads: Array<Lead>;
+  leadsStats: LeadsStats;
   me?: Maybe<User>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
   organization?: Maybe<Organization>;
@@ -1025,6 +1069,10 @@ export type QueryGetWfmAllowedTransitionsArgs = {
 
 export type QueryLeadArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryLeadsArgs = {
+  filters?: InputMaybe<LeadFilters>;
 };
 
 export type QueryOrganizationArgs = {
@@ -1395,6 +1443,7 @@ export type DirectiveResolverFn<
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  AIActivityPriority: AiActivityPriority;
   AIActivityRecommendation: ResolverTypeWrapper<AiActivityRecommendation>;
   AIActivityRecommendationsResponse: ResolverTypeWrapper<AiActivityRecommendationsResponse>;
   Activity: ResolverTypeWrapper<Activity>;
@@ -1415,6 +1464,7 @@ export type ResolversTypes = {
   AgentThoughtInput: AgentThoughtInput;
   AgentThoughtType: AgentThoughtType;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
+  ConvertedEntities: ResolverTypeWrapper<ConvertedEntities>;
   CreateActivityInput: CreateActivityInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
@@ -1429,7 +1479,6 @@ export type ResolversTypes = {
   CustomFieldType: CustomFieldType;
   CustomFieldValue: ResolverTypeWrapper<CustomFieldValue>;
   CustomFieldValueInput: CustomFieldValueInput;
-  Date: ResolverTypeWrapper<Scalars["Date"]["output"]>;
   DateTime: ResolverTypeWrapper<Scalars["DateTime"]["output"]>;
   Deal: ResolverTypeWrapper<Deal>;
   DealHistoryEntry: ResolverTypeWrapper<DealHistoryEntry>;
@@ -1443,10 +1492,12 @@ export type ResolversTypes = {
   Lead: ResolverTypeWrapper<Lead>;
   LeadConversionInput: LeadConversionInput;
   LeadConversionResult: ResolverTypeWrapper<LeadConversionResult>;
+  LeadConversionTargetType: LeadConversionTargetType;
+  LeadFilters: LeadFilters;
   LeadHistoryEntry: ResolverTypeWrapper<LeadHistoryEntry>;
   LeadInput: LeadInput;
-  LeadPriority: LeadPriority;
   LeadUpdateInput: LeadUpdateInput;
+  LeadsStats: ResolverTypeWrapper<LeadsStats>;
   Mutation: ResolverTypeWrapper<{}>;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationInput: OrganizationInput;
@@ -1504,6 +1555,7 @@ export type ResolversParentTypes = {
   AgentThought: AgentThought;
   AgentThoughtInput: AgentThoughtInput;
   Boolean: Scalars["Boolean"]["output"];
+  ConvertedEntities: ConvertedEntities;
   CreateActivityInput: CreateActivityInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
@@ -1516,7 +1568,6 @@ export type ResolversParentTypes = {
   CustomFieldOptionInput: CustomFieldOptionInput;
   CustomFieldValue: CustomFieldValue;
   CustomFieldValueInput: CustomFieldValueInput;
-  Date: Scalars["Date"]["output"];
   DateTime: Scalars["DateTime"]["output"];
   Deal: Deal;
   DealHistoryEntry: DealHistoryEntry;
@@ -1530,9 +1581,11 @@ export type ResolversParentTypes = {
   Lead: Lead;
   LeadConversionInput: LeadConversionInput;
   LeadConversionResult: LeadConversionResult;
+  LeadFilters: LeadFilters;
   LeadHistoryEntry: LeadHistoryEntry;
   LeadInput: LeadInput;
   LeadUpdateInput: LeadUpdateInput;
+  LeadsStats: LeadsStats;
   Mutation: {};
   Organization: Organization;
   OrganizationInput: OrganizationInput;
@@ -1574,12 +1627,40 @@ export type AiActivityRecommendationResolvers<
   ParentType extends
     ResolversParentTypes["AIActivityRecommendation"] = ResolversParentTypes["AIActivityRecommendation"],
 > = {
+  category?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  completedAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
   confidence?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
-  notes?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isActive?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  isCompleted?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  priority?: Resolver<
+    ResolversTypes["AIActivityPriority"],
+    ParentType,
+    ContextType
+  >;
   reasoning?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  subject?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  suggestedDueDate?: Resolver<ResolversTypes["Date"], ParentType, ContextType>;
-  type?: Resolver<ResolversTypes["ActivityType"], ParentType, ContextType>;
+  relatedEntityId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  relatedEntityType?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  suggestedDueDate?: Resolver<
+    ResolversTypes["DateTime"],
+    ParentType,
+    ContextType
+  >;
+  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -1632,6 +1713,8 @@ export type ActivityResolvers<
     ParentType,
     ContextType
   >;
+  lead?: Resolver<Maybe<ResolversTypes["Lead"]>, ParentType, ContextType>;
+  lead_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
   notes?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   organization?: Resolver<
     Maybe<ResolversTypes["Organization"]>,
@@ -1794,6 +1877,21 @@ export type AgentThoughtResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type ConvertedEntitiesResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["ConvertedEntities"] = ResolversParentTypes["ConvertedEntities"],
+> = {
+  deal?: Resolver<Maybe<ResolversTypes["Deal"]>, ParentType, ContextType>;
+  organization?: Resolver<
+    Maybe<ResolversTypes["Organization"]>,
+    ParentType,
+    ContextType
+  >;
+  person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type CustomFieldDefinitionResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -1872,11 +1970,6 @@ export type CustomFieldValueResolvers<
   >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
-
-export interface DateScalarConfig
-  extends GraphQLScalarTypeConfig<ResolversTypes["Date"], any> {
-  name: "Date";
-}
 
 export interface DateTimeScalarConfig
   extends GraphQLScalarTypeConfig<ResolversTypes["DateTime"], any> {
@@ -2018,13 +2111,28 @@ export type LeadResolvers<
     ParentType,
     ContextType
   >;
+  ai_insights?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
   assignedToUser?: Resolver<
     Maybe<ResolversTypes["User"]>,
     ParentType,
     ContextType
   >;
+  assigned_at?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
   assigned_to_user_id?: Resolver<
     Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
+  automation_score_factors?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
     ParentType,
     ContextType
   >;
@@ -2053,12 +2161,42 @@ export type LeadResolvers<
     ParentType,
     ContextType
   >;
+  converted_by_user?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  converted_by_user_id?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
   converted_to_deal?: Resolver<
     Maybe<ResolversTypes["Deal"]>,
     ParentType,
     ContextType
   >;
   converted_to_deal_id?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
+  converted_to_organization?: Resolver<
+    Maybe<ResolversTypes["Organization"]>,
+    ParentType,
+    ContextType
+  >;
+  converted_to_organization_id?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
+  converted_to_person?: Resolver<
+    Maybe<ResolversTypes["Person"]>,
+    ParentType,
+    ContextType
+  >;
+  converted_to_person_id?: Resolver<
     Maybe<ResolversTypes["ID"]>,
     ParentType,
     ContextType
@@ -2080,11 +2218,6 @@ export type LeadResolvers<
     ParentType,
     ContextType
   >;
-  custom_field_values?: Resolver<
-    Maybe<ResolversTypes["JSON"]>,
-    ParentType,
-    ContextType
-  >;
   description?: Resolver<
     Maybe<ResolversTypes["String"]>,
     ParentType,
@@ -2101,67 +2234,36 @@ export type LeadResolvers<
     ContextType
   >;
   history?: Resolver<
-    Maybe<Array<ResolversTypes["LeadHistoryEntry"]>>,
+    Maybe<Array<Maybe<ResolversTypes["LeadHistoryEntry"]>>>,
     ParentType,
     ContextType,
     Partial<LeadHistoryArgs>
   >;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  is_qualified?: Resolver<
-    Maybe<ResolversTypes["Boolean"]>,
+  isQualified?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  last_activity_at?: Resolver<
+    ResolversTypes["DateTime"],
     ParentType,
     ContextType
   >;
-  last_contacted_at?: Resolver<
-    Maybe<ResolversTypes["DateTime"]>,
+  lead_score?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  lead_score_factors?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
     ParentType,
     ContextType
   >;
-  lead_score?: Resolver<Maybe<ResolversTypes["Int"]>, ParentType, ContextType>;
-  lead_source?: Resolver<
-    Maybe<ResolversTypes["String"]>,
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  qualificationLevel?: Resolver<
+    ResolversTypes["Float"],
     ParentType,
     ContextType
   >;
-  lead_source_detail?: Resolver<
-    Maybe<ResolversTypes["String"]>,
+  qualificationStatus?: Resolver<
+    ResolversTypes["String"],
     ParentType,
     ContextType
   >;
-  next_follow_up_date?: Resolver<
-    Maybe<ResolversTypes["DateTime"]>,
-    ParentType,
-    ContextType
-  >;
-  notes?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  organization?: Resolver<
-    Maybe<ResolversTypes["Organization"]>,
-    ParentType,
-    ContextType
-  >;
-  organization_id?: Resolver<
-    Maybe<ResolversTypes["ID"]>,
-    ParentType,
-    ContextType
-  >;
-  person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
-  person_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
-  priority?: Resolver<
-    Maybe<ResolversTypes["LeadPriority"]>,
-    ParentType,
-    ContextType
-  >;
-  qualification_notes?: Resolver<
-    Maybe<ResolversTypes["String"]>,
-    ParentType,
-    ContextType
-  >;
-  tags?: Resolver<
-    Maybe<Array<ResolversTypes["String"]>>,
-    ParentType,
-    ContextType
-  >;
-  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  source?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   wfmProject?: Resolver<
@@ -2182,8 +2284,12 @@ export type LeadConversionResultResolvers<
   ParentType extends
     ResolversParentTypes["LeadConversionResult"] = ResolversParentTypes["LeadConversionResult"],
 > = {
-  deal?: Resolver<ResolversTypes["Deal"], ParentType, ContextType>;
-  lead?: Resolver<ResolversTypes["Lead"], ParentType, ContextType>;
+  convertedEntities?: Resolver<
+    ResolversTypes["ConvertedEntities"],
+    ParentType,
+    ContextType
+  >;
+  leadId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2199,6 +2305,24 @@ export type LeadHistoryEntryResolvers<
   lead_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
   user_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type LeadsStatsResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["LeadsStats"] = ResolversParentTypes["LeadsStats"],
+> = {
+  averageLeadScore?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  averageQualificationLevel?: Resolver<
+    ResolversTypes["Float"],
+    ParentType,
+    ContextType
+  >;
+  conversionRate?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  convertedLeads?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  qualifiedLeads?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalLeads?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2219,11 +2343,11 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCalculatePriceQuotePreviewArgs, "input">
   >;
-  convertLeadToDeal?: Resolver<
+  convertLead?: Resolver<
     ResolversTypes["LeadConversionResult"],
     ParentType,
     ContextType,
-    RequireFields<MutationConvertLeadToDealArgs, "leadId">
+    RequireFields<MutationConvertLeadArgs, "id" | "input">
   >;
   createActivity?: Resolver<
     ResolversTypes["Activity"],
@@ -2328,7 +2452,7 @@ export type MutationResolvers<
     RequireFields<MutationDeleteDealArgs, "id">
   >;
   deleteLead?: Resolver<
-    ResolversTypes["Boolean"],
+    Maybe<ResolversTypes["Boolean"]>,
     ParentType,
     ContextType,
     RequireFields<MutationDeleteLeadArgs, "id">
@@ -2381,6 +2505,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationReactivateCustomFieldDefinitionArgs, "id">
   >;
+  recalculateLeadScore?: Resolver<
+    ResolversTypes["Lead"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRecalculateLeadScoreArgs, "leadId">
+  >;
   sendAgentMessage?: Resolver<
     ResolversTypes["AgentResponse"],
     ParentType,
@@ -2421,7 +2551,7 @@ export type MutationResolvers<
     >
   >;
   updateLead?: Resolver<
-    ResolversTypes["Lead"],
+    Maybe<ResolversTypes["Lead"]>,
     ParentType,
     ContextType,
     RequireFields<MutationUpdateLeadArgs, "id" | "input">
@@ -2778,7 +2908,13 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryLeadArgs, "id">
   >;
-  leads?: Resolver<Array<ResolversTypes["Lead"]>, ParentType, ContextType>;
+  leads?: Resolver<
+    Array<ResolversTypes["Lead"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryLeadsArgs>
+  >;
+  leadsStats?: Resolver<ResolversTypes["LeadsStats"], ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
   myPermissions?: Resolver<
     Maybe<Array<ResolversTypes["String"]>>,
@@ -3154,10 +3290,10 @@ export type Resolvers<ContextType = GraphQLContext> = {
   AgentPlanStep?: AgentPlanStepResolvers<ContextType>;
   AgentResponse?: AgentResponseResolvers<ContextType>;
   AgentThought?: AgentThoughtResolvers<ContextType>;
+  ConvertedEntities?: ConvertedEntitiesResolvers<ContextType>;
   CustomFieldDefinition?: CustomFieldDefinitionResolvers<ContextType>;
   CustomFieldOption?: CustomFieldOptionResolvers<ContextType>;
   CustomFieldValue?: CustomFieldValueResolvers<ContextType>;
-  Date?: GraphQLScalarType;
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
@@ -3166,6 +3302,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Lead?: LeadResolvers<ContextType>;
   LeadConversionResult?: LeadConversionResultResolvers<ContextType>;
   LeadHistoryEntry?: LeadHistoryEntryResolvers<ContextType>;
+  LeadsStats?: LeadsStatsResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   Person?: PersonResolvers<ContextType>;

@@ -1793,3 +1793,804 @@ For additional resources:
 
 ---
 This guide should provide a solid foundation for developing Project PipeCD. Happy coding! 
+
+## 19. Leads Management System (NEW SECTION)
+
+Project PipeCD implements a comprehensive Leads Management system that seamlessly integrates with the existing WFM (Work Flow Management) infrastructure, AI Agent tools, and custom fields democratization. The system provides a complete lead qualification and conversion workflow.
+
+### 19.1 Overview & Architecture
+
+The Leads Management system follows the exact same architectural patterns as the Deals system, ensuring consistency and leveraging proven infrastructure:
+
+**Core Components:**
+- **Database Schema**: `leads` table with comprehensive lead tracking
+- **WFM Integration**: Lead qualification workflows via WFM system
+- **Service Layer**: `lib/leadService/` with full CRUD and business logic
+- **GraphQL API**: Complete schema and resolvers for lead operations
+- **Frontend Components**: Table and Kanban views with drag-and-drop progression
+- **AI Agent Integration**: 6 specialized lead management tools
+- **Custom Fields**: Full support for dynamic lead data capture
+
+### 19.2 Database Schema & Design
+
+#### 19.2.1 Core Leads Table
+
+The `leads` table is designed following the same patterns as `deals`:
+
+```sql
+CREATE TABLE public.leads (
+  -- Primary Keys & Identity
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  
+  -- Core Lead Information  
+  name TEXT NOT NULL,
+  source TEXT, -- Website, LinkedIn, Referral, Trade Show, etc.
+  description TEXT,
+  
+  -- Contact Information (Pre-conversion data)
+  contact_name TEXT,
+  contact_email TEXT,
+  contact_phone TEXT,
+  company_name TEXT,
+  
+  -- Lead Metrics & Intelligence
+  estimated_value DECIMAL(15,2),
+  estimated_close_date DATE,
+  lead_score INTEGER DEFAULT 0,
+  lead_score_factors JSONB, -- Detailed scoring breakdown
+  
+  -- Qualification Status
+  is_qualified BOOLEAN DEFAULT FALSE,
+  qualification_notes TEXT,
+  qualified_at TIMESTAMPTZ,
+  qualified_by_user_id UUID REFERENCES auth.users(id),
+  
+  -- Assignment & Ownership
+  assigned_to_user_id UUID REFERENCES auth.users(id),
+  assigned_at TIMESTAMPTZ,
+  
+  -- Conversion Tracking
+  converted_at TIMESTAMPTZ,
+  converted_to_deal_id UUID REFERENCES deals(id),
+  converted_to_person_id UUID REFERENCES people(id),
+  converted_to_organization_id UUID REFERENCES organizations(id),
+  converted_by_user_id UUID REFERENCES auth.users(id),
+  
+  -- WFM Integration (Following Deal Pattern)
+  wfm_project_id UUID REFERENCES wfm_projects(id),
+  
+  -- Custom Fields (Following Deal Pattern)
+  custom_field_values JSONB DEFAULT '{}',
+  
+  -- Automation & Intelligence  
+  last_activity_at TIMESTAMPTZ DEFAULT NOW(),
+  automation_score_factors JSONB DEFAULT '{}',
+  ai_insights JSONB DEFAULT '{}', -- AI-generated insights and recommendations
+  
+  -- Audit Fields
+  created_by_user_id UUID REFERENCES auth.users(id) DEFAULT auth.uid(),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### 19.2.2 WFM Integration for Leads
+
+Leads utilize the WFM system for qualification workflows:
+
+**Lead Qualification Workflow Steps:**
+1. **New Lead** - Initial lead capture (initial step)
+2. **Initial Contact** - First contact attempt
+3. **Follow Up** - Ongoing communication
+4. **Qualifying** - Active qualification process
+5. **Qualified Lead** - Ready for conversion
+6. **Converted** - Successfully converted to deal/contact (final step)
+7. **Disqualified** - Not a viable lead (final step)
+8. **Nurturing** - Long-term relationship building
+
+**WFM Configuration:**
+```sql
+-- Lead Project Type
+INSERT INTO public.project_types (name, description, default_workflow_id, icon_name)
+VALUES ('Lead Qualification and Conversion Process', 
+        'Manages lead qualification through to conversion', 
+        '{lead_workflow_id}', 
+        'user-check');
+```
+
+#### 19.2.3 Row Level Security (RLS)
+
+Leads follow the same RLS patterns as deals:
+
+```sql
+-- Users can view leads they own or are assigned to
+CREATE POLICY "Users can view leads they own or are assigned to" ON leads
+  FOR SELECT USING (
+    auth.uid() = user_id OR 
+    auth.uid() = assigned_to_user_id OR
+    public.check_permission(auth.uid(), 'lead', 'read_any')
+  );
+
+-- Users can create leads
+CREATE POLICY "Users can create leads" ON leads
+  FOR INSERT WITH CHECK (
+    auth.uid() = user_id AND
+    public.check_permission(auth.uid(), 'lead', 'create')
+  );
+
+-- Additional policies for UPDATE and DELETE operations
+```
+
+### 19.3 Service Layer Implementation
+
+#### 19.3.1 Lead Service Architecture
+
+Following the exact pattern as `dealService`, the lead service is located at `lib/leadService/`:
+
+```typescript
+// lib/leadService/leadCrud.ts
+export interface LeadServiceContext {
+  supabase: SupabaseClient;
+  userId: string;
+  accessToken: string;
+  aiService?: AIService;
+  activityService?: typeof activityService;
+}
+
+export class LeadService {
+  // Core CRUD Operations (Following dealService pattern)
+  async createLead(input: LeadInput, context: LeadServiceContext): Promise<Lead>
+  async getLeadById(id: string, context: LeadServiceContext): Promise<Lead | null>
+  async updateLead(id: string, input: LeadUpdateInput, context: LeadServiceContext): Promise<Lead>
+  async deleteLead(id: string, context: LeadServiceContext): Promise<boolean>
+  
+  // Lead-Specific Operations
+  async recalculateLeadScore(id: string, context: LeadServiceContext): Promise<Lead>
+  async qualifyLead(id: string, qualificationData: LeadQualificationInput, context: LeadServiceContext): Promise<Lead>
+  async convertLead(id: string, conversionInput: LeadConversionInput, context: LeadServiceContext): Promise<ConversionResult>
+  
+  // WFM Integration (Following deal pattern)
+  async updateLeadWFMProgress(leadId: string, targetStepId: string, context: LeadServiceContext): Promise<Lead>
+  async getLeadWorkflowStatus(leadId: string, context: LeadServiceContext): Promise<LeadWorkflowStatus>
+  
+  // AI Integration
+  async getAILeadInsights(leadId: string, context: LeadServiceContext): Promise<AILeadInsights>
+  async triggerAILeadScoring(leadId: string, context: LeadServiceContext): Promise<Lead>
+}
+```
+
+#### 19.3.2 Lead Scoring Engine
+
+Advanced scoring system leveraging AI insights:
+
+```typescript
+// lib/leadService/leadScoring.ts
+export interface LeadScoringFactors {
+  demographic: {
+    industry_match: number;
+    company_size: number;
+    geographic_location: number;
+  };
+  behavioral: {
+    email_engagement: number;
+    website_activity: number;
+    content_downloads: number;
+    social_media_engagement: number;
+  };
+  interaction: {
+    response_time: number;
+    meeting_attendance: number;
+    call_quality: number;
+  };
+  ai_derived: {
+    sentiment_analysis: number;
+    intent_signals: number;
+    fit_score: number;
+  };
+}
+
+export class LeadScoringEngine {
+  async calculateLeadScore(leadId: string, factors: LeadScoringFactors): Promise<LeadScore> {
+    // Weighted scoring algorithm with AI enhancement
+    const score = this.calculateCompositeScore(factors, weights);
+    const aiAdjustment = await this.getAIScoreAdjustment(leadId, factors);
+    
+    return {
+      total_score: Math.min(100, Math.max(0, score + aiAdjustment)),
+      breakdown: factors,
+      ai_confidence: aiAdjustment.confidence,
+      recommended_actions: await this.getRecommendedActions(score, factors)
+    };
+  }
+}
+```
+
+### 19.4 GraphQL API Implementation
+
+#### 19.4.1 Schema Definition
+
+```graphql
+# netlify/functions/graphql/schema/lead.graphql
+type Lead {
+  id: ID!
+  name: String!
+  source: String
+  description: String
+  contact_name: String
+  contact_email: String
+  contact_phone: String
+  company_name: String
+  estimated_value: Float
+  estimated_close_date: Date
+  lead_score: Int
+  lead_score_factors: JSON
+  is_qualified: Boolean!
+  qualification_notes: String
+  qualified_at: DateTime
+  qualified_by_user_id: ID
+  assigned_to_user_id: ID
+  assigned_at: DateTime
+  converted_at: DateTime
+  converted_to_deal_id: ID
+  converted_to_person_id: ID
+  converted_to_organization_id: ID
+  converted_by_user_id: ID
+  wfm_project_id: ID
+  custom_field_values: JSON
+  last_activity_at: DateTime
+  automation_score_factors: JSON
+  ai_insights: JSON
+  created_at: DateTime!
+  updated_at: DateTime!
+  
+  # Resolved relationships
+  assignedToUser: User
+  convertedToDeal: Deal
+  convertedToPerson: Person
+  convertedToOrganization: Organization
+  wfmProject: WFMProject
+  currentWfmStep: WFMWorkflowStep
+  currentWfmStatus: WFMStatus
+  customFieldValues: [CustomFieldValue!]!
+  activities: [Activity!]!
+}
+
+type Query {
+  leads(filters: LeadFilters): [Lead!]!
+  lead(id: ID!): Lead
+  leadsStats: LeadsStats!
+}
+
+type Mutation {
+  createLead(input: LeadInput!): Lead!
+  updateLead(id: ID!, input: LeadUpdateInput!): Lead!
+  deleteLead(id: ID!): Boolean!
+  qualifyLead(id: ID!, input: LeadQualificationInput!): Lead!
+  convertLead(id: ID!, input: LeadConversionInput!): ConversionResult!
+  updateLeadWFMProgress(leadId: ID!, targetWfmWorkflowStepId: ID!): Lead!
+  recalculateLeadScore(leadId: ID!): Lead!
+}
+```
+
+#### 19.4.2 Resolvers Implementation
+
+Resolvers follow the exact patterns established by deals:
+
+```typescript
+// netlify/functions/graphql/resolvers/lead.ts
+export const leadResolvers: Resolvers = {
+  Query: {
+    leads: async (parent, { filters }, context) => {
+      return await leadService.getLeads(context.userId, filters, context.accessToken);
+    },
+    lead: async (parent, { id }, context) => {
+      return await leadService.getLeadById(context.userId, id, context.accessToken);
+    },
+  },
+  
+  Mutation: {
+    createLead: async (parent, { input }, context) => {
+      const validatedInput = LeadCreateInputSchema.parse(input);
+      return await leadService.createLead(context.userId, validatedInput, context.accessToken);
+    },
+    
+    updateLeadWFMProgress: async (parent, { leadId, targetWfmWorkflowStepId }, context) => {
+      return await leadService.updateLeadWFMProgress(leadId, targetWfmWorkflowStepId, context);
+    },
+  },
+  
+  Lead: {
+    // Field resolvers for relationships
+    assignedToUser: async (lead, args, context) => {
+      if (!lead.assigned_to_user_id) return null;
+      return await userService.getUserById(lead.assigned_to_user_id, context);
+    },
+    
+    currentWfmStatus: async (lead, args, context) => {
+      if (!lead.wfm_project_id) return null;
+      const project = await wfmProjectService.getProjectById(lead.wfm_project_id, context);
+      return project?.currentWfmStatus || null;
+    },
+  },
+};
+```
+
+### 19.5 Frontend Implementation
+
+#### 19.5.1 Component Architecture
+
+The frontend follows the exact patterns as deals:
+
+```typescript
+frontend/src/components/leads/
+├── LeadsPage.tsx                    # Main page with view switching
+├── LeadsTableView.tsx               # Table view with filters/sorting
+├── LeadsKanbanView.tsx              # Kanban view with WFM steps
+├── LeadsKanbanStepColumn.tsx        # Individual workflow step columns
+├── LeadCardKanban.tsx               # Draggable lead cards
+├── CreateLeadModal.tsx              # Lead creation modal
+├── EditLeadModal.tsx                # Lead editing modal
+├── LeadDetailPage.tsx               # Full lead detail view
+├── LeadConversionModal.tsx          # Lead → Entity conversion
+├── LeadQualificationPanel.tsx       # AI-powered qualification
+├── LeadScoringDisplay.tsx           # Score visualization
+├── LeadActivitiesPanel.tsx          # Related activities
+├── LeadCustomFieldsPanel.tsx        # Custom fields management
+└── LeadAIInsightsPanel.tsx          # AI recommendations
+```
+
+#### 19.5.2 State Management
+
+Enhanced Zustand store following deals patterns:
+
+```typescript
+// frontend/src/stores/useLeadsStore.ts
+interface LeadsState {
+  // Core Data
+  leads: Lead[];
+  currentLead: Lead | null;
+  
+  // Loading States
+  leadsLoading: boolean;
+  currentLeadLoading: boolean;
+  
+  // View Management
+  viewMode: 'table' | 'kanban';
+  selectedWorkflowId: string | null;
+  
+  // Filtering & Search
+  filters: LeadFilters;
+  searchTerm: string;
+  sortConfig: SortConfig;
+  
+  // AI Integration
+  aiInsights: Record<string, AILeadInsights>;
+  scoringInProgress: Record<string, boolean>;
+  
+  // Actions
+  fetchLeads: (filters?: LeadFilters) => Promise<void>;
+  createLead: (input: LeadInput) => Promise<Lead>;
+  updateLead: (id: string, input: LeadUpdateInput) => Promise<Lead>;
+  deleteLead: (id: string) => Promise<boolean>;
+  
+  // Lead-Specific Actions
+  qualifyLead: (id: string, data: QualificationInput) => Promise<Lead>;
+  convertLead: (id: string, conversion: ConversionInput) => Promise<ConversionResult>;
+  recalculateScore: (id: string) => Promise<Lead>;
+  updateWFMProgress: (id: string, stepId: string) => Promise<Lead>;
+  
+  // AI Actions
+  getAIInsights: (id: string) => Promise<AILeadInsights>;
+  requestAIQualification: (id: string) => Promise<QualificationResult>;
+}
+```
+
+#### 19.5.3 Kanban View Implementation
+
+Following exact deals kanban patterns with lead-specific enhancements:
+
+```typescript
+// frontend/src/components/leads/LeadsKanbanView.tsx
+export const LeadsKanbanView: React.FC<LeadsKanbanViewProps> = ({ leads }) => {
+  const { currentWorkflow, workflowSteps } = useLeadWorkflow();
+  const { updateLeadWFMProgress } = useLeadsStore();
+  
+  const onDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+    
+    const leadId = result.draggableId;
+    const targetStepId = result.destination.droppableId;
+    
+    try {
+      // Optimistic update with lead-specific logic
+      await updateLeadWFMProgress(leadId, targetStepId);
+      
+      // Trigger AI insights update
+      await requestAIInsights(leadId);
+      
+    } catch (error) {
+      // Revert optimistic update and handle error
+    }
+  };
+  
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      {/* Kanban implementation following exact deals pattern */}
+    </DragDropContext>
+  );
+};
+```
+
+#### 19.5.4 Recent UI Improvements
+
+**Badge Text Visibility Fix:**
+Recent improvements address dark theme visibility issues in lead status badges:
+
+```typescript
+// Fixed implementation in useLeadsTableColumns.tsx
+<Badge
+  size="sm"
+  bg={lead.isQualified ? colors.status.success : colors.bg.input}
+  color={lead.isQualified ? colors.text.onAccent : colors.text.primary}
+  borderWidth="1px"
+  borderColor={lead.isQualified ? colors.status.success : colors.border.default}
+>
+  {lead.isQualified ? 'Qualified' : 'Not Qualified'}
+</Badge>
+```
+
+**Key Improvements:**
+- **Theme-Aware Styling**: Uses `useThemeColors()` hook for consistent theming
+- **Explicit Color Controls**: Replaces unreliable `colorScheme` with explicit styling
+- **Dark Mode Support**: Ensures proper contrast in both light and dark themes
+- **Consistent UX**: Matches styling patterns used across the application
+
+### 19.6 AI Agent Integration
+
+#### 19.6.1 Lead-Specific AI Tools
+
+The AI Agent includes 6 specialized tools for lead management:
+
+**1. search_leads**
+```typescript
+async searchLeads(params: {
+  search_term?: string;
+  source?: string;
+  is_qualified?: boolean;
+  assigned_to_user_id?: string;
+  min_score?: number;
+  max_score?: number;
+  limit?: number;
+}, context: ToolExecutionContext): Promise<ToolResult>
+```
+
+**2. get_lead_details**
+```typescript
+async getLeadDetails(params: { 
+  leadId: string 
+}, context: ToolExecutionContext): Promise<ToolResult>
+```
+
+**3. create_lead**
+```typescript
+async createLead(params: {
+  name: string;
+  source?: string;
+  contact_name?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  company_name?: string;
+  estimated_value?: number;
+  assigned_to_user_id?: string;
+  custom_fields?: object;
+}, context: ToolExecutionContext): Promise<ToolResult>
+```
+
+**4. qualify_lead**
+```typescript
+async qualifyLead(params: {
+  leadId: string;
+  qualification_notes?: string;
+}, context: ToolExecutionContext): Promise<ToolResult>
+```
+
+**5. convert_lead**
+```typescript
+async convertLead(params: {
+  leadId: string;
+  target_type: 'DEAL' | 'PERSON' | 'ORGANIZATION' | 'ALL';
+  deal_data?: object;
+  preserve_activities?: boolean;
+}, context: ToolExecutionContext): Promise<ToolResult>
+```
+
+**6. update_lead_score**
+```typescript
+async updateLeadScore(params: {
+  leadId: string;
+  scoring_factors?: object;
+}, context: ToolExecutionContext): Promise<ToolResult>
+```
+
+#### 19.6.2 AI Lead Qualification Engine
+
+Intelligent lead qualification using conversation analysis:
+
+```typescript
+export class AILeadQualificationEngine {
+  async analyzeLeadConversation(conversation: string, leadData: Lead): Promise<QualificationInsights> {
+    const insights = await this.aiService.analyzeText(conversation, {
+      extract_intent: true,
+      extract_pain_points: true,
+      extract_budget_signals: true,
+      extract_timeline_signals: true,
+      extract_authority_signals: true,
+      sentiment_analysis: true
+    });
+    
+    return {
+      qualification_score: this.calculateQualificationScore(insights),
+      pain_points: insights.pain_points,
+      budget_indicators: insights.budget_signals,
+      timeline_indicators: insights.timeline_signals,
+      authority_level: insights.authority_signals,
+      recommended_next_actions: this.generateNextActions(insights, leadData),
+      suggested_custom_fields: this.suggestCustomFields(insights)
+    };
+  }
+}
+```
+
+### 19.7 Custom Fields Integration
+
+#### 19.7.1 Lead Custom Fields Support
+
+Leads fully support the democratized custom fields system:
+
+**Entity Type Configuration:**
+```sql
+-- Custom field definitions for leads
+INSERT INTO custom_field_definitions (entity_type, field_name, field_label, field_type, is_required, display_order)
+VALUES 
+  ('LEAD', 'industry', 'Industry', 'DROPDOWN', FALSE, 1),
+  ('LEAD', 'company_size', 'Company Size', 'DROPDOWN', FALSE, 2),
+  ('LEAD', 'budget_range', 'Budget Range', 'DROPDOWN', FALSE, 3),
+  ('LEAD', 'decision_timeline', 'Decision Timeline', 'DROPDOWN', FALSE, 4),
+  ('LEAD', 'pain_points', 'Pain Points', 'MULTI_SELECT', FALSE, 5),
+  ('LEAD', 'lead_temperature', 'Lead Temperature', 'DROPDOWN', FALSE, 6);
+```
+
+**AI-Driven Field Creation:**
+The AI Agent can automatically create custom fields for leads based on conversation content:
+
+```typescript
+// Example: AI detects compliance requirements
+// "This lead requires SOC 2 compliance verification"
+
+// AI automatically:
+// 1. Checks existing custom fields for LEAD entity
+// 2. Creates new field if missing:
+await createCustomFieldDefinition({
+  entity_type: 'LEAD',
+  field_name: 'compliance_requirements',
+  field_label: 'Compliance Requirements',
+  field_type: 'MULTI_SELECT',
+  dropdown_options: ['SOC 2', 'GDPR', 'HIPAA', 'ISO 27001']
+});
+// 3. Sets the field value on the lead
+// 4. Explains the action to the user
+```
+
+### 19.8 Lead Conversion Workflows
+
+#### 19.8.1 Comprehensive Conversion System
+
+```typescript
+// lib/leadService/leadConversion.ts
+export interface LeadConversionInput {
+  target_type: 'DEAL' | 'PERSON' | 'ORGANIZATION' | 'ALL';
+  deal_data?: DealInput;
+  person_data?: PersonInput;
+  organization_data?: OrganizationInput;
+  preserve_activities: boolean;
+  create_conversion_activity: boolean;
+}
+
+export class LeadConversionService {
+  async convertLead(leadId: string, input: LeadConversionInput, context: LeadServiceContext): Promise<ConversionResult> {
+    return await this.executeInTransaction(async (trx) => {
+      const lead = await this.getLeadById(leadId, context);
+      
+      const conversionResults: ConversionResult = {
+        lead_id: leadId,
+        converted_entities: {}
+      };
+      
+      // Convert to target entities based on input
+      if (input.target_type === 'PERSON' || input.target_type === 'ALL') {
+        const person = await this.createPersonFromLead(lead, input.person_data, context);
+        conversionResults.converted_entities.person = person;
+      }
+      
+      if (input.target_type === 'ORGANIZATION' || input.target_type === 'ALL') {
+        const organization = await this.createOrganizationFromLead(lead, input.organization_data, context);
+        conversionResults.converted_entities.organization = organization;
+      }
+      
+      if (input.target_type === 'DEAL' || input.target_type === 'ALL') {
+        const deal = await this.createDealFromLead(lead, input.deal_data, context);
+        conversionResults.converted_entities.deal = deal;
+      }
+      
+      // Update lead status and transfer activities
+      await this.markLeadAsConverted(leadId, conversionResults, context);
+      
+      if (input.preserve_activities) {
+        await this.transferActivities(leadId, conversionResults, context);
+      }
+      
+      if (input.create_conversion_activity) {
+        await this.createConversionActivity(leadId, conversionResults, context);
+      }
+      
+      return conversionResults;
+    });
+  }
+}
+```
+
+### 19.9 Performance Optimization
+
+#### 19.9.1 Database Optimization
+
+Comprehensive indexing strategy for leads:
+
+```sql
+-- Core performance indexes
+CREATE INDEX CONCURRENTLY idx_leads_user_id ON leads(user_id);
+CREATE INDEX CONCURRENTLY idx_leads_assigned_to_user_id ON leads(assigned_to_user_id);
+CREATE INDEX CONCURRENTLY idx_leads_source ON leads(source);
+CREATE INDEX CONCURRENTLY idx_leads_lead_score ON leads(lead_score DESC);
+CREATE INDEX CONCURRENTLY idx_leads_is_qualified ON leads(is_qualified);
+CREATE INDEX CONCURRENTLY idx_leads_wfm_project_id ON leads(wfm_project_id);
+CREATE INDEX CONCURRENTLY idx_leads_contact_email ON leads(contact_email);
+CREATE INDEX CONCURRENTLY idx_leads_company_name ON leads(company_name);
+CREATE INDEX CONCURRENTLY idx_leads_qualified_at ON leads(qualified_at DESC);
+CREATE INDEX CONCURRENTLY idx_leads_converted_at ON leads(converted_at DESC);
+CREATE INDEX CONCURRENTLY idx_leads_last_activity_at ON leads(last_activity_at DESC);
+
+-- Composite indexes for common queries
+CREATE INDEX CONCURRENTLY idx_leads_user_qualified ON leads(user_id, is_qualified, lead_score DESC);
+CREATE INDEX CONCURRENTLY idx_leads_source_score ON leads(source, lead_score DESC) WHERE is_qualified = true;
+CREATE INDEX CONCURRENTLY idx_leads_assigned_active ON leads(assigned_to_user_id, last_activity_at DESC) WHERE converted_at IS NULL;
+
+-- JSONB indexes for custom fields
+CREATE INDEX CONCURRENTLY idx_leads_custom_fields_gin ON leads USING GIN (custom_field_values);
+```
+
+### 19.10 Development Best Practices
+
+#### 19.10.1 Following Established Patterns
+
+The leads implementation strictly follows patterns established by the deals system:
+
+**Service Layer Patterns:**
+- Same CRUD operation signatures
+- Identical error handling approaches  
+- Consistent transaction management
+- Shared validation patterns using Zod
+
+**GraphQL API Patterns:**
+- Same resolver structure and naming
+- Identical input validation approaches
+- Consistent error handling and responses
+- Shared authentication and authorization patterns
+
+**Frontend Patterns:**
+- Same component architecture
+- Identical state management approaches
+- Shared UI component patterns
+- Consistent styling and theming
+
+**Testing Patterns:**
+- Same unit test structures
+- Identical integration test approaches
+- Shared E2E test patterns
+- Consistent mocking strategies
+
+### 19.11 Migration and Deployment
+
+#### 19.11.1 Database Migration Strategy
+
+```sql
+-- Migration file: 20250730000020_create_leads_schema.sql
+-- Creates complete leads table with all relationships and constraints
+
+-- Migration file: 20250730000021_create_leads_indexes.sql  
+-- Creates all performance indexes for leads
+
+-- Migration file: 20250730000022_create_leads_rls_policies.sql
+-- Creates all RLS policies for leads
+
+-- Migration file: 20250730000023_setup_lead_wfm_integration.sql
+-- Sets up WFM project type and workflow for leads
+```
+
+#### 19.11.2 Feature Flag Strategy
+
+```typescript
+// Feature flags for leads management rollout
+export const LEADS_FEATURE_FLAGS = {
+  LEADS_MANAGEMENT: 'leads_management_enabled',
+  LEADS_KANBAN_VIEW: 'leads_kanban_view',
+  LEADS_AI_SCORING: 'leads_ai_scoring',
+  LEADS_AUTO_QUALIFICATION: 'leads_auto_qualification',
+  LEADS_CONVERSION_WORKFLOWS: 'leads_conversion_workflows',
+  LEADS_ADVANCED_ANALYTICS: 'leads_advanced_analytics'
+};
+```
+
+### 19.12 Monitoring and Analytics
+
+#### 19.12.1 Key Performance Indicators (KPIs)
+
+Lead management metrics:
+
+```typescript
+export interface LeadMetrics {
+  // Volume Metrics
+  total_leads: number;
+  new_leads_today: number;
+  leads_by_source: Record<string, number>;
+  
+  // Quality Metrics
+  average_lead_score: number;
+  qualification_rate: number;
+  conversion_rate: number;
+  
+  // Performance Metrics
+  average_response_time: number;
+  average_qualification_time: number;
+  average_conversion_time: number;
+  
+  // AI Metrics
+  ai_scoring_accuracy: number;
+  ai_qualification_accuracy: number;
+  ai_recommendations_acceptance: number;
+}
+```
+
+### 19.13 Security Considerations
+
+The leads system implements the same security model as deals:
+
+**Authentication & Authorization:**
+- JWT-based authentication via Supabase
+- Row-level security (RLS) enforcement
+- Permission-based access control
+- User context propagation throughout the system
+
+**Data Protection:**
+- GDPR compliance through Inngest workflows
+- Data anonymization capabilities
+- Audit trail maintenance
+- Secure data handling practices
+
+### 19.14 Future Enhancements
+
+**Planned Features:**
+- **Email Integration**: Automatic lead creation from email parsing
+- **Social Media Integration**: Lead capture from social platforms  
+- **Advanced Scoring**: Machine learning-based lead scoring
+- **Predictive Analytics**: Conversion probability predictions
+- **Marketing Automation**: Automated nurturing campaigns
+- **Lead Intelligence**: External data enrichment
+
+**Technical Improvements:**
+- **Performance Optimization**: Query optimization and caching
+- **Real-time Updates**: WebSocket integration for live updates
+- **Advanced Analytics**: Custom reporting and dashboards
+- **Integration APIs**: Third-party system integrations
+
+The Leads Management system represents a comprehensive, enterprise-grade solution that seamlessly integrates with PipeCD's existing infrastructure while providing advanced AI-driven capabilities for modern sales teams.

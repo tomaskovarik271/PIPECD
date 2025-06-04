@@ -1,0 +1,181 @@
+type Lead {
+  id: ID!
+  user_id: ID!
+  name: String!
+  source: String
+  description: String
+  contact_name: String
+  contact_email: String
+  contact_phone: String
+  company_name: String
+  estimated_value: Float
+  estimated_close_date: DateTime
+  lead_score: Int!
+  lead_score_factors: JSON
+  
+  # Computed qualification fields from WFM step metadata (following deal probability pattern)
+  isQualified: Boolean!              # Computed from currentWfmStep.metadata.is_qualified
+  qualificationLevel: Float!         # Computed from currentWfmStep.metadata.lead_qualification_level
+  qualificationStatus: String!       # Computed from currentWfmStep.metadata.outcome_type
+  
+  assigned_to_user_id: ID
+  assigned_at: DateTime
+  converted_at: DateTime
+  converted_to_deal_id: ID
+  converted_to_deal: Deal
+  converted_to_person_id: ID
+  converted_to_person: Person
+  converted_to_organization_id: ID
+  converted_to_organization: Organization
+  converted_by_user_id: ID
+  converted_by_user: User
+  last_activity_at: DateTime!
+  automation_score_factors: JSON
+  ai_insights: JSON
+  assignedToUser: User
+  wfm_project_id: ID
+  wfmProject: WFMProject
+  currentWfmStep: WFMWorkflowStep
+  currentWfmStatus: WFMStatus
+  activities: [Activity!]!
+  customFieldValues: [CustomFieldValue!]!
+  history(limit: Int, offset: Int): [LeadHistoryEntry]
+  createdBy: User!
+  created_at: DateTime!
+  updated_at: DateTime!
+}
+
+input LeadInput {
+  name: String!
+  source: String
+  description: String
+  contactName: String
+  contactEmail: String
+  contactPhone: String
+  companyName: String
+  estimatedValue: Float
+  estimatedCloseDate: DateTime
+  assignedToUserId: ID
+  customFields: [CustomFieldValueInput!]
+  wfmProjectTypeId: ID!
+}
+
+input LeadUpdateInput {
+  name: String
+  source: String
+  description: String
+  contactName: String
+  contactEmail: String
+  contactPhone: String
+  companyName: String
+  estimatedValue: Float
+  estimatedCloseDate: DateTime
+  assignedToUserId: ID
+  customFields: [CustomFieldValueInput!]
+  leadScore: Int
+  # Note: qualification is now managed via WFM step transitions, not direct field updates
+}
+
+# Removed LeadQualificationInput - qualification now handled via WFM step transitions
+
+input LeadConversionInput {
+  targetType: LeadConversionTargetType!
+  personData: PersonInput
+  organizationData: OrganizationInput
+  dealData: DealInput
+  preserveActivities: Boolean
+  createConversionActivity: Boolean
+}
+
+type LeadConversionResult {
+  leadId: ID!
+  convertedEntities: ConvertedEntities!
+}
+
+type ConvertedEntities {
+  person: Person
+  organization: Organization
+  deal: Deal
+}
+
+enum LeadConversionTargetType {
+  PERSON
+  ORGANIZATION
+  DEAL
+  ALL
+}
+
+input LeadFilters {
+  search: String
+  source: String
+  isQualified: Boolean              # Still supported for filtering, computed from WFM metadata
+  leadScoreMin: Int
+  leadScoreMax: Int
+  assignedToUserId: ID
+  createdAfter: DateTime
+  createdBefore: DateTime
+  convertedAfter: DateTime
+  convertedBefore: DateTime
+  qualificationLevel: Float         # New: filter by qualification level
+  qualificationStatus: String       # New: filter by qualification status (OPEN/CONVERTED/DISQUALIFIED)
+}
+
+type LeadsStats {
+  totalLeads: Int!
+  qualifiedLeads: Int!
+  convertedLeads: Int!
+  averageLeadScore: Float!
+  conversionRate: Float!
+  averageQualificationLevel: Float! # New: average qualification level across leads
+}
+
+type LeadHistoryEntry {
+  id: ID!
+  lead_id: ID!
+  user_id: ID
+  user: User
+  event_type: String!
+  changes: JSON
+  created_at: DateTime!
+}
+
+# Extend existing enums
+extend enum CustomFieldEntityType {
+  LEAD
+}
+
+extend enum CustomFieldType {
+  TEXT_AREA
+}
+
+# Extend Activity to support leads
+extend type Activity {
+  lead_id: ID
+  lead: Lead
+}
+
+extend input ActivityFilterInput {
+  leadId: ID
+}
+
+extend input CreateActivityInput {
+  lead_id: ID
+}
+
+# Extend Query type
+extend type Query {
+  leads(filters: LeadFilters): [Lead!]!
+  lead(id: ID!): Lead
+  leadsStats: LeadsStats!
+}
+
+# Extend Mutation type  
+extend type Mutation {
+  createLead(input: LeadInput!): Lead!
+  updateLead(id: ID!, input: LeadUpdateInput!): Lead
+  deleteLead(id: ID!): Boolean
+  convertLead(id: ID!, input: LeadConversionInput!): LeadConversionResult!
+  recalculateLeadScore(leadId: ID!): Lead!
+  updateLeadWFMProgress(leadId: ID!, targetWfmWorkflowStepId: ID!): Lead!
+  # Removed qualifyLead - qualification now handled via updateLeadWFMProgress
+} 

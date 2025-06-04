@@ -2,13 +2,28 @@
 AI-powered activity recommendation system for intelligent sales assistance.
 """
 
+enum AIActivityPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
 type AIActivityRecommendation {
-  type: ActivityType!
-  subject: String!
-  notes: String!
-  suggestedDueDate: Date!
+  id: ID!
+  user_id: ID!
+  title: String!
+  description: String!
+  priority: AIActivityPriority!
+  suggestedDueDate: DateTime!
+  category: String
+  relatedEntityType: String # DEAL, PERSON, ORGANIZATION
+  relatedEntityId: String
   confidence: Float!
   reasoning: String!
+  isActive: Boolean!
+  isCompleted: Boolean!
+  completedAt: DateTime
 }
 
 type AIActivityRecommendationsResponse {

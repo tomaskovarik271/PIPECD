@@ -33,6 +33,7 @@ export class ToolRegistry {
   private initializeDefaultTools(): void {
     // Register all tools by category
     this.registerDealTools();
+    this.registerLeadTools();
     this.registerOrganizationTools();
     this.registerContactTools();
     this.registerActivityTools();
@@ -123,6 +124,106 @@ export class ToolRegistry {
     ];
 
     this.registerToolsForCategory('deals', dealTools);
+  }
+
+  /**
+   * Register all lead-related tools
+   */
+  private registerLeadTools(): void {
+    const leadTools: MCPTool[] = [
+      {
+        name: 'search_leads',
+        description: 'Search and filter leads by various criteria',
+        parameters: {
+          type: 'object',
+          properties: {
+            search_term: { type: 'string', description: 'Filter by lead name or contact info' },
+            source: { type: 'string', description: 'Filter by lead source' },
+            is_qualified: { type: 'boolean', description: 'Filter by qualification status' },
+            assigned_to_user_id: { type: 'string', description: 'Filter by assigned user' },
+            min_score: { type: 'number', description: 'Minimum lead score' },
+            max_score: { type: 'number', description: 'Maximum lead score' },
+            limit: { type: 'number', description: 'Maximum results to return', default: 20 },
+          },
+        },
+      },
+      {
+        name: 'get_lead_details',
+        description: 'Get comprehensive details for a specific lead',
+        parameters: {
+          type: 'object',
+          properties: {
+            lead_id: { type: 'string', description: 'ID of the lead to analyze' },
+          },
+          required: ['lead_id'],
+        },
+      },
+      {
+        name: 'create_lead',
+        description: 'Create a new lead with comprehensive data and custom fields',
+        parameters: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Lead name' },
+            source: { type: 'string', description: 'Lead source (e.g., Website, LinkedIn, Referral)' },
+            contact_name: { type: 'string', description: 'Contact person name' },
+            contact_email: { type: 'string', description: 'Contact email address' },
+            contact_phone: { type: 'string', description: 'Contact phone number' },
+            company_name: { type: 'string', description: 'Company name' },
+            estimated_value: { type: 'number', description: 'Estimated deal value' },
+            estimated_close_date: { type: 'string', description: 'Estimated close date (YYYY-MM-DD)' },
+            assigned_to_user_id: { type: 'string', description: 'User ID to assign lead to' },
+            wfm_project_type_id: { type: 'string', description: 'WFM project type for lead qualification workflow' },
+            custom_fields: { type: 'object', description: 'Custom field values as key-value pairs' },
+            description: { type: 'string', description: 'Lead description or notes' },
+          },
+          required: ['name'],
+        },
+      },
+      {
+        name: 'qualify_lead',
+        description: 'Analyze and qualify a lead based on available data and interactions',
+        parameters: {
+          type: 'object',
+          properties: {
+            lead_id: { type: 'string', description: 'ID of the lead to qualify' },
+            is_qualified: { type: 'boolean', description: 'Whether the lead is qualified' },
+            qualification_notes: { type: 'string', description: 'Qualification notes and reasoning' },
+          },
+          required: ['lead_id'],
+        },
+      },
+      {
+        name: 'convert_lead',
+        description: 'Convert a qualified lead to deal, person, organization, or all',
+        parameters: {
+          type: 'object',
+          properties: {
+            lead_id: { type: 'string', description: 'ID of the lead to convert' },
+            target_type: { type: 'string', enum: ['DEAL', 'PERSON', 'ORGANIZATION', 'ALL'], description: 'What to convert the lead to' },
+            deal_data: { type: 'object', description: 'Additional deal data if converting to deal' },
+            person_data: { type: 'object', description: 'Additional person data if converting to person' },
+            organization_data: { type: 'object', description: 'Additional organization data if converting to organization' },
+            preserve_activities: { type: 'boolean', description: 'Whether to transfer lead activities', default: true },
+          },
+          required: ['lead_id', 'target_type'],
+        },
+      },
+      {
+        name: 'update_lead_score',
+        description: 'Recalculate and update lead score based on current data and interactions',
+        parameters: {
+          type: 'object',
+          properties: {
+            lead_id: { type: 'string', description: 'ID of the lead to rescore' },
+            scoring_factors: { type: 'object', description: 'Optional manual scoring factor adjustments' },
+          },
+          required: ['lead_id'],
+        },
+      },
+    ];
+
+    this.registerToolsForCategory('leads', leadTools);
   }
 
   /**

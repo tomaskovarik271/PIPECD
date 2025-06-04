@@ -10,6 +10,7 @@ import {
   CalendarIcon,      // Activities (Represents scheduling?)
   ArrowRightIcon,    // Pipelines (Represents flow?)
   ViewIcon, // Added ViewIcon for Project Board
+  StarIcon, // Added for Leads
   // StarIcon, // Placeholder for People
   // LockIcon, // Placeholder for Organizations
   // CopyIcon, // Placeholder for Pipelines
@@ -35,6 +36,7 @@ import { useThemeColors } from '../../hooks/useThemeColors'; // NEW: Use semanti
 
 const NAV_ITEMS = [
   { path: '/deals', label: 'Deals', icon: <CheckCircleIcon /> },
+  { path: '/leads', label: 'Leads', icon: <StarIcon /> },
   { path: '/people', label: 'People', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },

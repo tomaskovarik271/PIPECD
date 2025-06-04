@@ -18,6 +18,7 @@ import { Query as BaseQuery } from './graphql/resolvers/query';
 import { Mutation as BaseMutation } from './graphql/resolvers/mutation';
 import { Person } from './graphql/resolvers/person';
 import { Deal } from './graphql/resolvers/deal';
+import { Lead } from './graphql/resolvers/lead';
 import { Organization } from './graphql/resolvers/organization';
 import {
   Activity,
@@ -56,6 +57,7 @@ const loadTypeDefs = (): string => {
     'base.graphql', 
     'customFields.graphql', 
     'deal.graphql', 
+    'lead.graphql',
     'enums.graphql', 
     'history.graphql', 
     'organization.graphql', 
@@ -80,6 +82,7 @@ const loadTypeDefs = (): string => {
     'base.graphql', 
     'customFields.graphql', 
     'deal.graphql', 
+    'lead.graphql',
     'enums.graphql', 
     'history.graphql', 
     'organization.graphql', 
@@ -146,6 +149,7 @@ export const resolvers = {
   },
   Person,
   Deal,
+  Lead,
   Organization,
   Activity,
   DealHistoryEntry,

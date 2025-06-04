@@ -121,8 +121,9 @@ export const ActivityFilterInputSchema = z.object({
     dealId: z.string().uuid({ message: 'Invalid UUID for filter dealId' }).optional(),
     personId: z.string().uuid({ message: 'Invalid UUID for filter personId' }).optional(),
     organizationId: z.string().uuid({ message: 'Invalid UUID for filter organizationId' }).optional(),
+    leadId: z.string().uuid({ message: 'Invalid UUID for filter leadId' }).optional(),
     isDone: z.boolean().optional(),
-}).optional(); // The whole filter object is optional 
+}).optional();
 
 // --- Pricing Module Schemas ---
 

@@ -12,6 +12,7 @@ import { GraphQLClient } from '../../utils/GraphQLClient';
 
 // Import all domain modules
 import { DealsModule } from './DealsModule';
+import { LeadsModule } from './LeadsModule';
 import { OrganizationsModule } from './OrganizationsModule';
 import { ContactsModule } from './ContactsModule';
 import { ActivitiesModule } from './ActivitiesModule';
@@ -26,6 +27,7 @@ export class DomainRegistry {
   
   // Domain module instances
   private dealsModule: DealsModule;
+  private leadsModule: LeadsModule;
   private organizationsModule: OrganizationsModule;
   private contactsModule: ContactsModule;
   private activitiesModule: ActivitiesModule;
@@ -35,6 +37,7 @@ export class DomainRegistry {
     
     // Initialize domain modules
     this.dealsModule = new DealsModule(graphqlClient);
+    this.leadsModule = new LeadsModule(graphqlClient);
     this.organizationsModule = new OrganizationsModule();
     this.contactsModule = new ContactsModule();
     this.activitiesModule = new ActivitiesModule();
@@ -56,6 +59,16 @@ export class DomainRegistry {
       delete_deal: this.dealsModule.deleteDeal.bind(this.dealsModule),
     });
 
+    // Leads domain
+    this.domains.set('leads', {
+      search_leads: this.leadsModule.searchLeads.bind(this.leadsModule),
+      get_lead_details: this.leadsModule.getLeadDetails.bind(this.leadsModule),
+      create_lead: this.leadsModule.createLead.bind(this.leadsModule),
+      qualify_lead: this.leadsModule.qualifyLead.bind(this.leadsModule),
+      convert_lead: this.leadsModule.convertLead.bind(this.leadsModule),
+      update_lead_score: this.leadsModule.updateLeadScore.bind(this.leadsModule),
+    });
+
     // Organizations domain
     this.domains.set('organizations', {
       search_organizations: this.organizationsModule.searchOrganizations.bind(this.organizationsModule),
@@ -75,7 +88,9 @@ export class DomainRegistry {
     // Activities domain
     this.domains.set('activities', {
       search_activities: this.activitiesModule.searchActivities.bind(this.activitiesModule),
+      get_activity_details: this.activitiesModule.getActivityDetails.bind(this.activitiesModule),
       create_activity: this.activitiesModule.createActivity.bind(this.activitiesModule),
+      update_activity: this.activitiesModule.updateActivity.bind(this.activitiesModule),
       complete_activity: this.activitiesModule.completeActivity.bind(this.activitiesModule),
     });
   }
@@ -89,6 +104,11 @@ export class DomainRegistry {
       return 'deals';
     }
     
+    // Lead tools
+    if (['search_leads', 'get_lead_details', 'create_lead', 'qualify_lead', 'convert_lead', 'update_lead_score'].includes(toolName)) {
+      return 'leads';
+    }
+    
     // Organization tools
     if (['search_organizations', 'get_organization_details', 'create_organization', 'update_organization'].includes(toolName)) {
       return 'organizations';
@@ -100,7 +120,7 @@ export class DomainRegistry {
     }
     
     // Activity tools
-    if (['search_activities', 'create_activity', 'complete_activity'].includes(toolName)) {
+    if (['search_activities', 'get_activity_details', 'create_activity', 'update_activity', 'complete_activity'].includes(toolName)) {
       return 'activities';
     }
 

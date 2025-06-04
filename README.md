@@ -10,8 +10,10 @@ PipeCD now features comprehensive documentation for the **AI Agent System** - a 
 - **[📖 Complete Documentation](PIPECD_AI_AGENT_DOCUMENTATION.md)** - Full system overview, capabilities, custom fields revolution, setup guide, and usage examples
 - **[🚀 Quick Start Guide](AI_AGENT_QUICK_START.md)** - Get up and running with the AI agent in 10 minutes
 - **[📡 API Reference](AI_AGENT_API_REFERENCE.md)** - Comprehensive technical reference for all AI agent interfaces
+- **[🏗️ Architecture Principles](AI_AGENT_ARCHITECTURE_PRINCIPLES.md)** - **CRITICAL FOR DEVELOPERS**: Core architectural principles for building AI tools
 
 ### 🔧 System Architecture
+- **[🏗️ System Architecture](PIPECD_SYSTEM_ARCHITECTURE.md)** - **COMPREHENSIVE**: Complete architectural reference for the entire PipeCD platform
 - **[📋 Developer Guide V2](DEVELOPER_GUIDE_V2.md)** - Complete technical guide and architecture overview
 - **[🏗️ AI Architecture](PIPECD_AI_ARCHITECTURE.md)** - AI system architecture deep dive
 - **[⚙️ AI Integration Setup](AI_INTEGRATION_SETUP.md)** - AI integration configuration guide
@@ -42,27 +44,41 @@ The system utilizes a serverless architecture based on:
 
 *   Core infrastructure is set up (Supabase, Netlify, Inngest).
 *   Authentication (Email/Password, GitHub) is working, managed via Zustand store.
-*   Full CRUD implemented for **People**, **Organizations**.
+*   Full CRUD implemented for **People**, **Organizations**, **Leads**.
+*   **Leads Management System fully implemented:**
+    *   Complete lead qualification workflows via WFM system
+    *   Lead scoring engine with AI-powered intelligence
+    *   Lead conversion workflows (Lead → Deal/Person/Organization)
+    *   AI Agent integration with 6 specialized lead management tools
+    *   Custom fields democratization for dynamic lead data capture
+    *   Kanban and table views with drag-and-drop progression
+    *   Advanced lead analytics and reporting capabilities
 *   **Activities** now support assignments (`assigned_to_user_id`) and system flags (`is_system_activity`), effectively functioning as assignable tasks. CRUD and RLS policies updated accordingly. Backend services, GraphQL API, and Frontend support these enhancements.
 *   **Work Flow Management (WFM) System implemented:**
     *   Core WFM entities (`WFMStatus`, `WFMWorkflow`, `WFMWorkflowStep`, `WFMProjectType`, `WFMProject`, `WFMWorkflowTransition`) and services are in place.
-    *   **Sales Deals are now managed by the WFM system:**
+    *   **Sales Deals and Leads are now managed by the WFM system:**
         *   Legacy **Pipeline** and **Stage** systems have been deprecated and removed.
-        *   Deals are associated with `WFMProject`s.
-        *   Kanban board (`DealsKanbanView`) is driven by WFM workflow steps.
-        *   Deal creation and progression use WFM logic (`updateDealWFMProgress` mutation).
-        *   Deal history logs WFM status changes.
+        *   Deals and Leads are associated with `WFMProject`s.
+        *   Kanban board (`DealsKanbanView`, `LeadsKanbanView`) is driven by WFM workflow steps.
+        *   Deal and Lead creation and progression use WFM logic (`updateDealWFMProgress`, `updateLeadWFMProgress` mutations).
+        *   Deal and Lead history logs WFM status changes.
         *   `WFM_Sales_Kanban_User_Manual.md` created.
 *   **User Profile Management** implemented:
     *   Users can view and edit their `display_name` and `avatar_url`.
     *   Profile data is stored in `user_profiles` table in Supabase.
     *   GraphQL `Query.me` and `Mutation.updateUserProfile` handle profile data.
-    *   Deal history now displays the `display_name` of the user who performed the action.
+    *   Deal and Lead history now displays the `display_name` of the user who performed the action.
 *   **Inngest event-driven automation (ADR-008 Phase 1 Started):**
-    *   `crm/deal.assigned` events published from `dealService`.
-    *   `createDealAssignmentTask` Inngest function implemented to create a "Welcome & Review" system task (Activity) for the deal assignee.
+    *   `crm/deal.assigned` and `crm/lead.assigned` events published from respective services.
+    *   `createDealAssignmentTask` and `createLeadAssignmentTask` Inngest functions implemented to create "Welcome & Review" system tasks (Activity) for assignees.
     *   `SYSTEM_USER_ID` established and used for attributing automated actions.
-*   Basic UI (Chakra UI) implemented for Auth and all core CRUD entities, including WFM-driven Deal Kanban and display of assigned system tasks.
+*   **AI Agent System (Revolutionary Implementation):**
+    *   Claude 4 Sonnet-powered AI Agent with 30+ integrated tools
+    *   Lead management tools: search, create, qualify, convert, score
+    *   Custom fields democratization - all users can create custom fields
+    *   Sequential workflow execution for complex multi-step operations
+    *   Real-time thought tracking and intelligent recommendations
+*   Basic UI (Chakra UI) implemented for Auth and all core CRUD entities, including WFM-driven Deal and Lead Kanban views and display of assigned system tasks.
 *   Unit/Integration tests implemented for backend services (`lib/`).
 *   Basic E2E testing setup (Playwright) with login flow.
 *   Production deployment is live on Netlify.
@@ -135,20 +151,24 @@ PipeCD is a modern, full-stack Customer Relationship Management (CRM) system bui
 
 ### 🎯 Core CRM Functionality
 - **Deal Management**: Complete sales pipeline with customizable stages
+- **Leads Management**: Comprehensive lead qualification and conversion workflows with AI-powered scoring
 - **Contact & Organization Management**: Comprehensive relationship tracking
 - **Activity Tracking**: Tasks, calls, meetings, and follow-ups
 - **Custom Fields**: Flexible data capture for any business need
 - **User Profiles**: Team management and permissions
 
 ### 🤖 AI-Powered Intelligence (NEW)
-- **Natural Language Queries**: Ask questions about your pipeline in plain English
+- **Natural Language Queries**: Ask questions about your pipeline and leads in plain English
 - **Multi-Step Reasoning**: AI performs complex analysis across multiple data points
-- **Intelligent Recommendations**: Get AI-suggested next steps for every deal
+- **Lead Qualification Intelligence**: AI-powered lead scoring and conversion predictions
+- **Intelligent Recommendations**: Get AI-suggested next steps for every deal and lead
 - **Real-Time Insights**: Instant pipeline health monitoring and risk assessment
-- **Automated Analysis**: 10x faster deal analysis through Claude integration
+- **Automated Analysis**: 10x faster deal and lead analysis through Claude integration
+- **Custom Fields Democratization**: AI creates custom fields on-demand from conversation content
 
 ### 🔧 Advanced Workflow Management
 - **Work Flow Management (WFM)**: Generic process management beyond sales
+- **Lead Qualification Workflows**: 8-step lead progression from capture to conversion
 - **Custom Workflows**: Define multi-step processes for any business operation  
 - **Status Tracking**: Real-time progress monitoring with automatic transitions
 - **Probability Calculation**: Dynamic deal scoring based on workflow position
@@ -170,13 +190,14 @@ PipeCD features a revolutionary **Model Context Protocol (MCP)** server that tra
 
 ### Quick AI Demo
 ```
-You: "Analyze my current pipeline"
+You: "Analyze my current pipeline and lead funnel"
 
 AI Response: "Your current pipeline shows 6 active deals with a total value of $114,500. 
 The deals are distributed primarily between User B (4 deals worth $71,000) and one 
-unassigned deal worth $26,000. The average deal size is about $19,000, suggesting 
-mid-sized opportunities. However, no deals are expected to close this month, which 
-might indicate a need to review close dates or push some deals forward..."
+unassigned deal worth $26,000. Your lead funnel shows 12 active leads with an average 
+score of 45. 3 leads are qualified and ready for conversion, while 5 leads in the 
+'Initial Contact' stage need immediate follow-up. The qualification rate is 67% which 
+is above industry average..."
 ```
 
 **Learn more**: See `mcp/README.md` for full AI setup instructions.
@@ -293,12 +314,19 @@ PIPECD/
 - Rich deal details with custom fields
 - Activity timeline and history tracking
 
+### Lead Management
+- Complete lead qualification workflows with 8-step progression
+- AI-powered lead scoring with demographic, behavioral, and interaction factors
+- Lead conversion workflows (Lead → Deal/Person/Organization)
+- Lead source attribution and performance tracking
+- Automated lead nurturing and follow-up sequences
+
 ### Work Flow Management (WFM)
 - Generic workflow engine for any business process
 - Configurable workflow steps and transitions
 - Status-based progression with validation
 - Metadata support for workflow-specific data
-- Currently powers sales pipeline, extensible to support, onboarding, etc.
+- Currently powers sales pipeline and lead qualification, extensible to support, onboarding, etc.
 
 ### Activity Management
 - Task creation and assignment
@@ -309,11 +337,15 @@ PIPECD/
 
 ### AI-Powered Insights
 - **search_deals**: Intelligent deal filtering
+- **search_leads**: Advanced lead discovery and qualification analysis
 - **get_deal_details**: Comprehensive deal analysis
+- **get_lead_details**: Complete lead profile with scoring insights
 - **search_contacts**: Contact relationship mapping
 - **analyze_pipeline**: Performance trends and metrics
 - **create_deal**: Natural language deal creation
-
+- **create_lead**: AI-driven lead capture with automatic custom field creation
+- **qualify_lead**: Intelligent lead qualification with scoring
+- **convert_lead**: Seamless lead-to-deal conversion workflows
 
 ## 🧪 Testing
 

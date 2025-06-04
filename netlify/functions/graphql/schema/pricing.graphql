@@ -60,7 +60,7 @@ type InvoiceScheduleEntry {
   id: ID!
   # price_quote_id: ID! # Implicitly linked via PriceQuote.invoice_schedule_entries resolver
   entry_type: String! # e.g., 'upfront', 'installment_1', 'milestone_fee'
-  due_date: String! # Representing as Date string (YYYY-MM-DD), resolver handles Date object from DB
+  due_date: String! # Representing as datetime string (YYYY-MM-DD), resolver handles datetime object from DB
   amount_due: Float!
   description: String
   created_at: DateTime!

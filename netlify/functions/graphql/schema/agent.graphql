@@ -5,9 +5,6 @@
 # Base Types
 # ================================
 
-scalar DateTime
-scalar JSON
-
 enum AgentThoughtType {
   REASONING
   QUESTION

@@ -21,6 +21,7 @@ const config: CodegenConfig = {
         // Optional: Specify custom scalars if you have them
         scalars: {
           DateTime: 'Date',
+          Date: 'Date',
           JSON: '{ [key: string]: any }',
         }
       },
@@ -39,6 +40,7 @@ const config: CodegenConfig = {
         // Ensure scalars are mapped correctly if needed for frontend (e.g., DateTime to string)
         scalars: {
           DateTime: 'string', // For frontend, string is often preferred for DateTime
+          Date: 'string', // For frontend, string is often preferred for Date
           JSON: 'Record<string, any>', // For frontend
         },
         // Avoids __typename on everything if not strictly needed by client cache/logic

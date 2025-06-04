@@ -15,6 +15,7 @@ import {
 import { wfmStatusService } from '../../../../lib/wfmStatusService';
 import { wfmWorkflowService } from '../../../../lib/wfmWorkflowService';
 import { wfmProjectTypeService } from '../../../../lib/wfmProjectTypeService';
+import * as leadService from '../../../../lib/leadService';
 
 // Import generated types from backend codegen
 import type {
@@ -240,6 +241,118 @@ export const Query: QueryResolvers<GraphQLContext> = {
            } as any; 
        } catch (e) {
            throw processZodError(e, 'fetching deal by ID');
+       }
+    },
+
+    // --- Lead Resolvers ---
+    leads: async (_parent, args, context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context)!;
+       try {
+           const leadList = await leadService.getLeads(context.currentUser!.id, accessToken);
+           return leadList.map((l: any) => ({
+                id: l.id,
+                user_id: l.user_id,
+                created_at: l.created_at,
+                updated_at: l.updated_at,
+                name: l.name,
+                source: l.source,
+                description: l.description,
+                contact_name: l.contact_name,
+                contact_email: l.contact_email,
+                contact_phone: l.contact_phone,
+                company_name: l.company_name,
+                estimated_value: l.estimated_value,
+                estimated_close_date: l.estimated_close_date,
+                lead_score: l.lead_score,
+                assigned_to_user_id: l.assigned_to_user_id,
+                assigned_at: l.assigned_at,
+                converted_at: l.converted_at,
+                converted_to_deal_id: l.converted_to_deal_id,
+                converted_to_person_id: l.converted_to_person_id,
+                converted_to_organization_id: l.converted_to_organization_id,
+                converted_by_user_id: l.converted_by_user_id,
+                wfm_project_id: l.wfm_project_id,
+                last_activity_at: l.last_activity_at,
+                automation_score_factors: l.automation_score_factors,
+                ai_insights: l.ai_insights,
+                created_by_user_id: l.created_by_user_id,
+                db_custom_field_values: (l as any).custom_field_values,
+           })) as any; 
+       } catch (e) {
+           throw processZodError(e, 'fetching leads list');
+       }
+    },
+    lead: async (_parent, args, context) => {
+       console.log('[Plain Resolver Query.lead] Received args:', JSON.stringify(args, null, 2));
+       if (!args || args.id === undefined || args.id === null) { 
+         console.error('[Plain Resolver Query.lead] args.id is MISSING or null/undefined!', args);
+       }
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context)!;
+       try {
+           const l = await leadService.getLeadById(context.currentUser!.id, args.id, accessToken);
+           if (!l) return null;
+           return {
+                id: l.id,
+                user_id: l.user_id,
+                created_at: l.created_at,
+                updated_at: l.updated_at,
+                name: l.name,
+                source: l.source,
+                description: l.description,
+                contact_name: l.contact_name,
+                contact_email: l.contact_email,
+                contact_phone: l.contact_phone,
+                company_name: l.company_name,
+                estimated_value: l.estimated_value,
+                estimated_close_date: l.estimated_close_date,
+                lead_score: l.lead_score,
+                assigned_to_user_id: l.assigned_to_user_id,
+                assigned_at: l.assigned_at,
+                converted_at: l.converted_at,
+                converted_to_deal_id: l.converted_to_deal_id,
+                converted_to_person_id: l.converted_to_person_id,
+                converted_to_organization_id: l.converted_to_organization_id,
+                converted_by_user_id: l.converted_by_user_id,
+                wfm_project_id: l.wfm_project_id,
+                last_activity_at: l.last_activity_at,
+                automation_score_factors: l.automation_score_factors,
+                ai_insights: l.ai_insights,
+                created_by_user_id: l.created_by_user_id,
+                db_custom_field_values: (l as any).custom_field_values,
+           } as any; 
+       } catch (e) {
+           throw processZodError(e, 'fetching lead by ID');
+       }
+    },
+    leadsStats: async (_parent, _args, context) => {
+       requireAuthentication(context);
+       const accessToken = getAccessToken(context)!;
+       try {
+           const leadList = await leadService.getLeads(context.currentUser!.id, accessToken);
+           
+           const totalLeads = leadList.length;
+           // Note: Since qualification is now computed from WFM metadata, 
+           // we'll use a simple approximation for now - leads that have WFM projects are "qualified"
+           const qualifiedLeads = leadList.filter((l: any) => l.wfm_project_id).length;
+           const convertedLeads = leadList.filter((l: any) => l.converted_at).length;
+           const averageLeadScore = totalLeads > 0 ? 
+               leadList.reduce((sum: number, l: any) => sum + l.lead_score, 0) / totalLeads : 0;
+           const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
+           // Placeholder for averageQualificationLevel - would need WFM metadata computation
+           const averageQualificationLevel = 0.5; // TODO: Compute from WFM step metadata
+           
+           return {
+               totalLeads,
+               qualifiedLeads,
+               convertedLeads,
+               averageLeadScore,
+               conversionRate,
+               averageQualificationLevel,
+           };
+       } catch (e) {
+           throw processZodError(e, 'fetching leads stats');
        }
     },
     // --- My Permissions Query ---\

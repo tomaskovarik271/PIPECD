@@ -1,5 +1,0 @@
-user_id,display_name,avatar_url,created_at,updated_at,email
-2748e855-eebf-449e-8b2c-34a593b6666d,User B,,2025-05-26 20:11:17.058274+00,2025-05-27 12:45:31.499741+00,user_b@user.cz
-3cdb2ed5-c18a-4863-8358-f00d667d0f0e,Tomáš,,2025-05-26 20:18:03.372601+00,2025-05-27 06:40:52.317721+00,tomas@kovarik.cz
-9db26ede-9820-45ac-8691-d9bc74d3c8fe,system_automation@pipecd.kovarik.cz,,2025-05-28 08:25:43.603157+00,2025-05-28 08:25:43.603157+00,system_automation@pipecd.kovarik.cz
-ad107318-3cb6-4d80-8b81-8504234b2316,User A,,2025-05-26 20:11:07.333161+00,2025-05-27 12:50:54.316501+00,user_a@user.cz

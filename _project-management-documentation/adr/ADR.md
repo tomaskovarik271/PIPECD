@@ -135,7 +135,7 @@ sequenceDiagram
 
 |  #  | Domain Module (Conceptual Microservice) | Core Responsibilities                                | Initial MVP Scope                           | Status / Notes                                       |
 | :-: | --------------------------------------- | ---------------------------------------------------- | ------------------------------------------- | ---------------------------------------------------- |
-|  1  | **Lead Management**                     | Capture, store, qualify leads → promote to deals.    | ✅ *In* (basic lead inbox, convert to deal)  | ⬜ *Later* (Requires dedicated implementation)        |
+|  1  | **Lead Management**                     | Capture, store, qualify leads → promote to deals.    | ✅ *In* (basic lead inbox, convert to deal)  | ✅ Done (Complete lead qualification workflows, AI-powered scoring, WFM integration, conversion workflows implemented) |
 |  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ *In* (CRUD implemented)                   | ✅ Done (Core CRUD, WFM-driven, assignment event publishing) |
 |  3  | **WFM Configuration**                   | Define & manage WFM entities (Statuses, Workflows, Steps, Transitions, Project Types) that constitute processes. | ✅ *In* (Core WFM entities defined)          | ✅ Done (Replaces legacy Pipeline/Stage Management. See ADR-006) |
 |  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ *In* (basic CRUD)                         | ✅ Done (Person/Org CRUD)                             |

@@ -863,27 +863,53 @@ Based on this result, do you need to execute any additional tools to complete th
       return false;
     }
     
-    // PURE search/analysis requests (not deal creation) - complete after results
+    // Lead creation requests - check if lead was successfully created
+    if (originalUserMessage.toLowerCase().includes('create lead') || 
+        originalUserMessage.toLowerCase().includes('new lead') ||
+        originalUserMessage.toLowerCase().includes('add lead')) {
+      
+      if (toolName === 'create_lead' && toolResultText.includes('✅ Lead created successfully')) {
+        return true; // Lead creation task is complete
+      }
+      // search operations are just steps, not completion for lead creation requests
+      return false;
+    }
+    
+    // Lead conversion requests - check if lead was successfully converted
+    if (originalUserMessage.toLowerCase().includes('convert lead') || 
+        originalUserMessage.toLowerCase().includes('qualify lead')) {
+      
+      if (toolName === 'convert_lead' && toolResultText.includes('✅ Lead converted successfully')) {
+        return true; // Lead conversion task is complete
+      }
+      if (toolName === 'qualify_lead' && toolResultText.includes('✅ Lead qualified successfully')) {
+        return true; // Lead qualification task is complete
+      }
+      return false;
+    }
+    
+    // PURE search/analysis requests (not creation) - complete after results
     if (originalUserMessage.toLowerCase().includes('search') ||
         originalUserMessage.toLowerCase().includes('find') ||
         originalUserMessage.includes('analyze') ||
         originalUserMessage.includes('pipeline')) {
       
-      // But NOT if this is part of a deal creation workflow
+      // But NOT if this is part of a creation workflow
       if (originalUserMessage.toLowerCase().includes('create') ||
           originalUserMessage.toLowerCase().includes('rfp') ||
-          originalUserMessage.toLowerCase().includes('deal')) {
-        return false; // Continue with deal creation workflow
+          originalUserMessage.toLowerCase().includes('deal') ||
+          originalUserMessage.toLowerCase().includes('lead')) {
+        return false; // Continue with creation workflow
       }
       
-      if (toolName === 'search_deals' || toolName === 'search_contacts' || 
+      if (toolName === 'search_deals' || toolName === 'search_leads' || toolName === 'search_contacts' || 
           toolName === 'search_organizations' || toolName === 'analyze_pipeline') {
         return true; // Search/analysis task is complete after first result
       }
     }
     
     // If we just got details about something, that's usually complete
-    if (toolName === 'get_deal_details' && !toolResultText.includes('not found')) {
+    if ((toolName === 'get_deal_details' || toolName === 'get_lead_details') && !toolResultText.includes('not found')) {
       return true;
     }
     

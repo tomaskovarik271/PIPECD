@@ -46,6 +46,15 @@ const GET_ALL_CUSTOM_FIELD_DEFINITIONS = gql`
       isActive
       dropdownOptions { value label }
     }
+    leadCustomFields: customFieldDefinitions(entityType: LEAD, includeInactive: $includeInactive) {
+      id
+      fieldName
+      fieldLabel
+      fieldType
+      entityType
+      isActive
+      dropdownOptions { value label }
+    }
   }
 `;
 
@@ -72,12 +81,14 @@ const fetchAllCustomFields = async (includeInactive: boolean = false): Promise<R
         dealCustomFields: CustomFieldDefinition[];
         personCustomFields: CustomFieldDefinition[];
         organizationCustomFields: CustomFieldDefinition[];
+        leadCustomFields: CustomFieldDefinition[];
       }>(GET_ALL_CUSTOM_FIELD_DEFINITIONS, { includeInactive });
 
       const result = {
         DEAL: data.dealCustomFields || [],
         PERSON: data.personCustomFields || [],
         ORGANIZATION: data.organizationCustomFields || [],
+        LEAD: data.leadCustomFields || [],
       };
 
       // Add timestamp for cache invalidation
@@ -102,6 +113,7 @@ export const useOptimizedCustomFields = (
     DEAL: [],
     PERSON: [],
     ORGANIZATION: [],
+    LEAD: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

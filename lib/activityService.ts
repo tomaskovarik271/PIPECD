@@ -54,6 +54,7 @@ export interface ActivityFilter {
     dealId?: string;
     personId?: string;
     organizationId?: string;
+    leadId?: string;
     isDone?: boolean;
 }
 
@@ -73,6 +74,7 @@ export const getActivities = async (_userId: string, accessToken: string, filter
   if (filter?.dealId) query = query.eq('deal_id', filter.dealId);
   if (filter?.personId) query = query.eq('person_id', filter.personId);
   if (filter?.organizationId) query = query.eq('organization_id', filter.organizationId);
+  if (filter?.leadId) query = query.eq('lead_id', filter.leadId);
   if (filter?.isDone !== undefined) query = query.eq('is_done', filter.isDone);
 
   // Ordering logic remains the same

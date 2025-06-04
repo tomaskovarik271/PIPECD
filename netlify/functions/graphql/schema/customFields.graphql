@@ -13,6 +13,7 @@ enum CustomFieldEntityType {
   DEAL
   PERSON
   ORGANIZATION
+  LEAD
 }
 
 # Represents an option for a DROPDOWN or MULTI_SELECT custom field.

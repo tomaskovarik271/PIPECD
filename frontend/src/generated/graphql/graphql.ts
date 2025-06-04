@@ -25,20 +25,34 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
-  Date: { input: any; output: any };
   DateTime: { input: string; output: string };
   JSON: { input: Record<string, any>; output: Record<string, any> };
 };
 
 /** AI-powered activity recommendation system for intelligent sales assistance. */
+export enum AiActivityPriority {
+  High = "HIGH",
+  Low = "LOW",
+  Medium = "MEDIUM",
+  Urgent = "URGENT",
+}
+
 export type AiActivityRecommendation = {
   __typename?: "AIActivityRecommendation";
+  category?: Maybe<Scalars["String"]["output"]>;
+  completedAt?: Maybe<Scalars["DateTime"]["output"]>;
   confidence: Scalars["Float"]["output"];
-  notes: Scalars["String"]["output"];
+  description: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  isCompleted: Scalars["Boolean"]["output"];
+  priority: AiActivityPriority;
   reasoning: Scalars["String"]["output"];
-  subject: Scalars["String"]["output"];
-  suggestedDueDate: Scalars["Date"]["output"];
-  type: ActivityType;
+  relatedEntityId?: Maybe<Scalars["String"]["output"]>;
+  relatedEntityType?: Maybe<Scalars["String"]["output"]>;
+  suggestedDueDate: Scalars["DateTime"]["output"];
+  title: Scalars["String"]["output"];
+  user_id: Scalars["ID"]["output"];
 };
 
 export type AiActivityRecommendationsResponse = {
@@ -59,6 +73,8 @@ export type Activity = {
   id: Scalars["ID"]["output"];
   is_done: Scalars["Boolean"]["output"];
   is_system_activity: Scalars["Boolean"]["output"];
+  lead?: Maybe<Lead>;
+  lead_id?: Maybe<Scalars["ID"]["output"]>;
   notes?: Maybe<Scalars["String"]["output"]>;
   organization?: Maybe<Organization>;
   organization_id?: Maybe<Scalars["ID"]["output"]>;
@@ -74,6 +90,7 @@ export type Activity = {
 export type ActivityFilterInput = {
   dealId?: InputMaybe<Scalars["ID"]["input"]>;
   isDone?: InputMaybe<Scalars["Boolean"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
   organizationId?: InputMaybe<Scalars["ID"]["input"]>;
   personId?: InputMaybe<Scalars["ID"]["input"]>;
 };
@@ -204,10 +221,18 @@ export enum AgentThoughtType {
   ToolCall = "TOOL_CALL",
 }
 
+export type ConvertedEntities = {
+  __typename?: "ConvertedEntities";
+  deal?: Maybe<Deal>;
+  organization?: Maybe<Organization>;
+  person?: Maybe<Person>;
+};
+
 export type CreateActivityInput = {
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   is_done?: InputMaybe<Scalars["Boolean"]["input"]>;
+  lead_id?: InputMaybe<Scalars["ID"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
@@ -276,6 +301,7 @@ export type CustomFieldDefinitionInput = {
 
 export enum CustomFieldEntityType {
   Deal = "DEAL",
+  Lead = "LEAD",
   Organization = "ORGANIZATION",
   Person = "PERSON",
 }
@@ -298,6 +324,7 @@ export enum CustomFieldType {
   MultiSelect = "MULTI_SELECT",
   Number = "NUMBER",
   Text = "TEXT",
+  TextArea = "TEXT_AREA",
 }
 
 export type CustomFieldValue = {
@@ -398,41 +425,42 @@ export type InvoiceScheduleEntry = {
 export type Lead = {
   __typename?: "Lead";
   activities: Array<Activity>;
+  ai_insights?: Maybe<Scalars["JSON"]["output"]>;
   assignedToUser?: Maybe<User>;
+  assigned_at?: Maybe<Scalars["DateTime"]["output"]>;
   assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
+  automation_score_factors?: Maybe<Scalars["JSON"]["output"]>;
   company_name?: Maybe<Scalars["String"]["output"]>;
   contact_email?: Maybe<Scalars["String"]["output"]>;
   contact_name?: Maybe<Scalars["String"]["output"]>;
   contact_phone?: Maybe<Scalars["String"]["output"]>;
   converted_at?: Maybe<Scalars["DateTime"]["output"]>;
+  converted_by_user?: Maybe<User>;
+  converted_by_user_id?: Maybe<Scalars["ID"]["output"]>;
   converted_to_deal?: Maybe<Deal>;
   converted_to_deal_id?: Maybe<Scalars["ID"]["output"]>;
+  converted_to_organization?: Maybe<Organization>;
+  converted_to_organization_id?: Maybe<Scalars["ID"]["output"]>;
+  converted_to_person?: Maybe<Person>;
+  converted_to_person_id?: Maybe<Scalars["ID"]["output"]>;
   createdBy: User;
   created_at: Scalars["DateTime"]["output"];
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
-  custom_field_values?: Maybe<Scalars["JSON"]["output"]>;
   description?: Maybe<Scalars["String"]["output"]>;
   estimated_close_date?: Maybe<Scalars["DateTime"]["output"]>;
   estimated_value?: Maybe<Scalars["Float"]["output"]>;
-  history?: Maybe<Array<LeadHistoryEntry>>;
+  history?: Maybe<Array<Maybe<LeadHistoryEntry>>>;
   id: Scalars["ID"]["output"];
-  is_qualified?: Maybe<Scalars["Boolean"]["output"]>;
-  last_contacted_at?: Maybe<Scalars["DateTime"]["output"]>;
-  lead_score?: Maybe<Scalars["Int"]["output"]>;
-  lead_source?: Maybe<Scalars["String"]["output"]>;
-  lead_source_detail?: Maybe<Scalars["String"]["output"]>;
-  next_follow_up_date?: Maybe<Scalars["DateTime"]["output"]>;
-  notes?: Maybe<Scalars["String"]["output"]>;
-  organization?: Maybe<Organization>;
-  organization_id?: Maybe<Scalars["ID"]["output"]>;
-  person?: Maybe<Person>;
-  person_id?: Maybe<Scalars["ID"]["output"]>;
-  priority?: Maybe<LeadPriority>;
-  qualification_notes?: Maybe<Scalars["String"]["output"]>;
-  tags?: Maybe<Array<Scalars["String"]["output"]>>;
-  title: Scalars["String"]["output"];
+  isQualified: Scalars["Boolean"]["output"];
+  last_activity_at: Scalars["DateTime"]["output"];
+  lead_score: Scalars["Int"]["output"];
+  lead_score_factors?: Maybe<Scalars["JSON"]["output"]>;
+  name: Scalars["String"]["output"];
+  qualificationLevel: Scalars["Float"]["output"];
+  qualificationStatus: Scalars["String"]["output"];
+  source?: Maybe<Scalars["String"]["output"]>;
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
   wfmProject?: Maybe<WfmProject>;
@@ -445,16 +473,40 @@ export type LeadHistoryArgs = {
 };
 
 export type LeadConversionInput = {
-  amount?: InputMaybe<Scalars["Float"]["input"]>;
-  deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
-  expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  name?: InputMaybe<Scalars["String"]["input"]>;
+  createConversionActivity?: InputMaybe<Scalars["Boolean"]["input"]>;
+  dealData?: InputMaybe<DealInput>;
+  organizationData?: InputMaybe<OrganizationInput>;
+  personData?: InputMaybe<PersonInput>;
+  preserveActivities?: InputMaybe<Scalars["Boolean"]["input"]>;
+  targetType: LeadConversionTargetType;
 };
 
 export type LeadConversionResult = {
   __typename?: "LeadConversionResult";
-  deal: Deal;
-  lead: Lead;
+  convertedEntities: ConvertedEntities;
+  leadId: Scalars["ID"]["output"];
+};
+
+export enum LeadConversionTargetType {
+  All = "ALL",
+  Deal = "DEAL",
+  Organization = "ORGANIZATION",
+  Person = "PERSON",
+}
+
+export type LeadFilters = {
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  convertedAfter?: InputMaybe<Scalars["DateTime"]["input"]>;
+  convertedBefore?: InputMaybe<Scalars["DateTime"]["input"]>;
+  createdAfter?: InputMaybe<Scalars["DateTime"]["input"]>;
+  createdBefore?: InputMaybe<Scalars["DateTime"]["input"]>;
+  isQualified?: InputMaybe<Scalars["Boolean"]["input"]>;
+  leadScoreMax?: InputMaybe<Scalars["Int"]["input"]>;
+  leadScoreMin?: InputMaybe<Scalars["Int"]["input"]>;
+  qualificationLevel?: InputMaybe<Scalars["Float"]["input"]>;
+  qualificationStatus?: InputMaybe<Scalars["String"]["input"]>;
+  search?: InputMaybe<Scalars["String"]["input"]>;
+  source?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type LeadHistoryEntry = {
@@ -470,56 +522,42 @@ export type LeadHistoryEntry = {
 
 export type LeadInput = {
   assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
-  company_name?: InputMaybe<Scalars["String"]["input"]>;
-  contact_email?: InputMaybe<Scalars["String"]["input"]>;
-  contact_name?: InputMaybe<Scalars["String"]["input"]>;
-  contact_phone?: InputMaybe<Scalars["String"]["input"]>;
+  companyName?: InputMaybe<Scalars["String"]["input"]>;
+  contactEmail?: InputMaybe<Scalars["String"]["input"]>;
+  contactName?: InputMaybe<Scalars["String"]["input"]>;
+  contactPhone?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   description?: InputMaybe<Scalars["String"]["input"]>;
-  estimated_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  estimated_value?: InputMaybe<Scalars["Float"]["input"]>;
-  lead_score?: InputMaybe<Scalars["Int"]["input"]>;
-  lead_source?: InputMaybe<Scalars["String"]["input"]>;
-  lead_source_detail?: InputMaybe<Scalars["String"]["input"]>;
-  next_follow_up_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  notes?: InputMaybe<Scalars["String"]["input"]>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
-  person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  priority?: InputMaybe<LeadPriority>;
-  qualification_notes?: InputMaybe<Scalars["String"]["input"]>;
-  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
-  title: Scalars["String"]["input"];
+  estimatedCloseDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  estimatedValue?: InputMaybe<Scalars["Float"]["input"]>;
+  name: Scalars["String"]["input"];
+  source?: InputMaybe<Scalars["String"]["input"]>;
+  wfmProjectTypeId: Scalars["ID"]["input"];
 };
-
-export enum LeadPriority {
-  High = "HIGH",
-  Low = "LOW",
-  Medium = "MEDIUM",
-  Urgent = "URGENT",
-}
 
 export type LeadUpdateInput = {
   assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
-  company_name?: InputMaybe<Scalars["String"]["input"]>;
-  contact_email?: InputMaybe<Scalars["String"]["input"]>;
-  contact_name?: InputMaybe<Scalars["String"]["input"]>;
-  contact_phone?: InputMaybe<Scalars["String"]["input"]>;
+  companyName?: InputMaybe<Scalars["String"]["input"]>;
+  contactEmail?: InputMaybe<Scalars["String"]["input"]>;
+  contactName?: InputMaybe<Scalars["String"]["input"]>;
+  contactPhone?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   description?: InputMaybe<Scalars["String"]["input"]>;
-  estimated_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  estimated_value?: InputMaybe<Scalars["Float"]["input"]>;
-  is_qualified?: InputMaybe<Scalars["Boolean"]["input"]>;
-  lead_score?: InputMaybe<Scalars["Int"]["input"]>;
-  lead_source?: InputMaybe<Scalars["String"]["input"]>;
-  lead_source_detail?: InputMaybe<Scalars["String"]["input"]>;
-  next_follow_up_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  notes?: InputMaybe<Scalars["String"]["input"]>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
-  person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  priority?: InputMaybe<LeadPriority>;
-  qualification_notes?: InputMaybe<Scalars["String"]["input"]>;
-  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
-  title?: InputMaybe<Scalars["String"]["input"]>;
+  estimatedCloseDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  estimatedValue?: InputMaybe<Scalars["Float"]["input"]>;
+  leadScore?: InputMaybe<Scalars["Int"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  source?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type LeadsStats = {
+  __typename?: "LeadsStats";
+  averageLeadScore: Scalars["Float"]["output"];
+  averageQualificationLevel: Scalars["Float"]["output"];
+  conversionRate: Scalars["Float"]["output"];
+  convertedLeads: Scalars["Int"]["output"];
+  qualifiedLeads: Scalars["Int"]["output"];
+  totalLeads: Scalars["Int"]["output"];
 };
 
 export type Mutation = {
@@ -527,7 +565,7 @@ export type Mutation = {
   addAgentThoughts: Array<AgentThought>;
   /** Calculates a preview of a price quote. dealId is optional. */
   calculatePriceQuotePreview: PriceQuote;
-  convertLeadToDeal: LeadConversionResult;
+  convertLead: LeadConversionResult;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
   createCustomFieldDefinition: CustomFieldDefinition;
@@ -546,7 +584,7 @@ export type Mutation = {
   deleteActivity: Scalars["ID"]["output"];
   deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
-  deleteLead: Scalars["Boolean"]["output"];
+  deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   /** Deletes a price quote. */
@@ -556,13 +594,14 @@ export type Mutation = {
   deleteWfmStatus: WfmStatusMutationResponse;
   executeAgentStep: AgentResponse;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
+  recalculateLeadScore: Lead;
   sendAgentMessage: AgentResponse;
   updateActivity: Activity;
   updateAgentConversation: AgentConversation;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateDealWFMProgress: Deal;
-  updateLead: Lead;
+  updateLead?: Maybe<Lead>;
   updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
@@ -588,9 +627,9 @@ export type MutationCalculatePriceQuotePreviewArgs = {
   input: PriceQuoteUpdateInput;
 };
 
-export type MutationConvertLeadToDealArgs = {
-  dealData?: InputMaybe<LeadConversionInput>;
-  leadId: Scalars["ID"]["input"];
+export type MutationConvertLeadArgs = {
+  id: Scalars["ID"]["input"];
+  input: LeadConversionInput;
 };
 
 export type MutationCreateActivityArgs = {
@@ -697,6 +736,10 @@ export type MutationExecuteAgentStepArgs = {
 
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type MutationRecalculateLeadScoreArgs = {
+  leadId: Scalars["ID"]["input"];
 };
 
 export type MutationSendAgentMessageArgs = {
@@ -948,6 +991,7 @@ export type Query = {
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
   leads: Array<Lead>;
+  leadsStats: LeadsStats;
   me?: Maybe<User>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
   organization?: Maybe<Organization>;
@@ -1016,6 +1060,10 @@ export type QueryGetWfmAllowedTransitionsArgs = {
 
 export type QueryLeadArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryLeadsArgs = {
+  filters?: InputMaybe<LeadFilters>;
 };
 
 export type QueryOrganizationArgs = {
@@ -1308,19 +1356,21 @@ export type GetAiActivityRecommendationsQuery = {
     contextSummary: string;
     primaryRecommendation: {
       __typename?: "AIActivityRecommendation";
-      type: ActivityType;
-      subject: string;
-      notes: string;
-      suggestedDueDate: any;
+      id: string;
+      title: string;
+      description: string;
+      priority: AiActivityPriority;
+      suggestedDueDate: string;
       confidence: number;
       reasoning: string;
     };
     recommendations: Array<{
       __typename?: "AIActivityRecommendation";
-      type: ActivityType;
-      subject: string;
-      notes: string;
-      suggestedDueDate: any;
+      id: string;
+      title: string;
+      description: string;
+      priority: AiActivityPriority;
+      suggestedDueDate: string;
       confidence: number;
       reasoning: string;
     }>;
@@ -1397,6 +1447,20 @@ export type GetAllCustomFieldDefinitionsQuery = {
     }> | null;
   }>;
   organizationCustomFields: Array<{
+    __typename?: "CustomFieldDefinition";
+    id: string;
+    fieldName: string;
+    fieldLabel: string;
+    fieldType: CustomFieldType;
+    entityType: CustomFieldEntityType;
+    isActive: boolean;
+    dropdownOptions?: Array<{
+      __typename?: "CustomFieldOption";
+      value: string;
+      label: string;
+    }> | null;
+  }>;
+  leadCustomFields: Array<{
     __typename?: "CustomFieldDefinition";
     id: string;
     fieldName: string;
@@ -2876,6 +2940,374 @@ export type UpdateDealWfmProgressMutation = {
   };
 };
 
+export type LeadCoreFieldsFragment = {
+  __typename?: "Lead";
+  id: string;
+  name: string;
+  source?: string | null;
+  description?: string | null;
+  contact_name?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  company_name?: string | null;
+  estimated_value?: number | null;
+  estimated_close_date?: string | null;
+  lead_score: number;
+  lead_score_factors?: Record<string, any> | null;
+  isQualified: boolean;
+  qualificationLevel: number;
+  qualificationStatus: string;
+  assigned_to_user_id?: string | null;
+  assigned_at?: string | null;
+  converted_at?: string | null;
+  converted_to_deal_id?: string | null;
+  converted_to_person_id?: string | null;
+  converted_to_organization_id?: string | null;
+  converted_by_user_id?: string | null;
+  wfm_project_id?: string | null;
+  last_activity_at: string;
+  automation_score_factors?: Record<string, any> | null;
+  ai_insights?: Record<string, any> | null;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  customFieldValues: Array<{
+    __typename?: "CustomFieldValue";
+    stringValue?: string | null;
+    numberValue?: number | null;
+    booleanValue?: boolean | null;
+    dateValue?: string | null;
+    selectedOptionValues?: Array<string> | null;
+    definition: {
+      __typename?: "CustomFieldDefinition";
+      id: string;
+      fieldName: string;
+      fieldType: CustomFieldType;
+    };
+  }>;
+};
+
+export type GetLeadsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetLeadsQuery = {
+  __typename?: "Query";
+  leads: Array<{
+    __typename?: "Lead";
+    id: string;
+    name: string;
+    source?: string | null;
+    description?: string | null;
+    contact_name?: string | null;
+    contact_email?: string | null;
+    contact_phone?: string | null;
+    company_name?: string | null;
+    estimated_value?: number | null;
+    estimated_close_date?: string | null;
+    lead_score: number;
+    lead_score_factors?: Record<string, any> | null;
+    isQualified: boolean;
+    qualificationLevel: number;
+    qualificationStatus: string;
+    assigned_to_user_id?: string | null;
+    assigned_at?: string | null;
+    converted_at?: string | null;
+    converted_to_deal_id?: string | null;
+    converted_to_person_id?: string | null;
+    converted_to_organization_id?: string | null;
+    converted_by_user_id?: string | null;
+    wfm_project_id?: string | null;
+    last_activity_at: string;
+    automation_score_factors?: Record<string, any> | null;
+    ai_insights?: Record<string, any> | null;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+    activities: Array<{
+      __typename?: "Activity";
+      id: string;
+      type: ActivityType;
+      subject: string;
+      due_date?: string | null;
+      is_done: boolean;
+    }>;
+    currentWfmStep?: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      stepOrder: number;
+      isInitialStep: boolean;
+      isFinalStep: boolean;
+      metadata?: Record<string, any> | null;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    } | null;
+    currentWfmStatus?: {
+      __typename?: "WFMStatus";
+      id: string;
+      name: string;
+      color?: string | null;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldType: CustomFieldType;
+      };
+    }>;
+  }>;
+};
+
+export type CreateLeadMutationVariables = Exact<{
+  input: LeadInput;
+}>;
+
+export type CreateLeadMutation = {
+  __typename?: "Mutation";
+  createLead: {
+    __typename?: "Lead";
+    id: string;
+    name: string;
+    source?: string | null;
+    description?: string | null;
+    contact_name?: string | null;
+    contact_email?: string | null;
+    contact_phone?: string | null;
+    company_name?: string | null;
+    estimated_value?: number | null;
+    estimated_close_date?: string | null;
+    lead_score: number;
+    lead_score_factors?: Record<string, any> | null;
+    isQualified: boolean;
+    qualificationLevel: number;
+    qualificationStatus: string;
+    assigned_to_user_id?: string | null;
+    assigned_at?: string | null;
+    converted_at?: string | null;
+    converted_to_deal_id?: string | null;
+    converted_to_person_id?: string | null;
+    converted_to_organization_id?: string | null;
+    converted_by_user_id?: string | null;
+    wfm_project_id?: string | null;
+    last_activity_at: string;
+    automation_score_factors?: Record<string, any> | null;
+    ai_insights?: Record<string, any> | null;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+    currentWfmStep?: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      stepOrder: number;
+      isInitialStep: boolean;
+      isFinalStep: boolean;
+      metadata?: Record<string, any> | null;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    } | null;
+    currentWfmStatus?: {
+      __typename?: "WFMStatus";
+      id: string;
+      name: string;
+      color?: string | null;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldType: CustomFieldType;
+      };
+    }>;
+  };
+};
+
+export type UpdateLeadMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: LeadUpdateInput;
+}>;
+
+export type UpdateLeadMutation = {
+  __typename?: "Mutation";
+  updateLead?: {
+    __typename?: "Lead";
+    id: string;
+    name: string;
+    source?: string | null;
+    description?: string | null;
+    contact_name?: string | null;
+    contact_email?: string | null;
+    contact_phone?: string | null;
+    company_name?: string | null;
+    estimated_value?: number | null;
+    estimated_close_date?: string | null;
+    lead_score: number;
+    lead_score_factors?: Record<string, any> | null;
+    isQualified: boolean;
+    qualificationLevel: number;
+    qualificationStatus: string;
+    assigned_to_user_id?: string | null;
+    assigned_at?: string | null;
+    converted_at?: string | null;
+    converted_to_deal_id?: string | null;
+    converted_to_person_id?: string | null;
+    converted_to_organization_id?: string | null;
+    converted_by_user_id?: string | null;
+    wfm_project_id?: string | null;
+    last_activity_at: string;
+    automation_score_factors?: Record<string, any> | null;
+    ai_insights?: Record<string, any> | null;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldType: CustomFieldType;
+      };
+    }>;
+  } | null;
+};
+
+export type DeleteLeadMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteLeadMutation = {
+  __typename?: "Mutation";
+  deleteLead?: boolean | null;
+};
+
+export type UpdateLeadWfmProgressMutationVariables = Exact<{
+  leadId: Scalars["ID"]["input"];
+  targetWfmWorkflowStepId: Scalars["ID"]["input"];
+}>;
+
+export type UpdateLeadWfmProgressMutation = {
+  __typename?: "Mutation";
+  updateLeadWFMProgress: {
+    __typename?: "Lead";
+    id: string;
+    name: string;
+    source?: string | null;
+    description?: string | null;
+    contact_name?: string | null;
+    contact_email?: string | null;
+    contact_phone?: string | null;
+    company_name?: string | null;
+    estimated_value?: number | null;
+    estimated_close_date?: string | null;
+    lead_score: number;
+    lead_score_factors?: Record<string, any> | null;
+    isQualified: boolean;
+    qualificationLevel: number;
+    qualificationStatus: string;
+    assigned_to_user_id?: string | null;
+    assigned_at?: string | null;
+    converted_at?: string | null;
+    converted_to_deal_id?: string | null;
+    converted_to_person_id?: string | null;
+    converted_to_organization_id?: string | null;
+    converted_by_user_id?: string | null;
+    wfm_project_id?: string | null;
+    last_activity_at: string;
+    automation_score_factors?: Record<string, any> | null;
+    ai_insights?: Record<string, any> | null;
+    user_id: string;
+    created_at: string;
+    updated_at: string;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+    currentWfmStep?: {
+      __typename?: "WFMWorkflowStep";
+      id: string;
+      stepOrder: number;
+      isInitialStep: boolean;
+      isFinalStep: boolean;
+      metadata?: Record<string, any> | null;
+      status: {
+        __typename?: "WFMStatus";
+        id: string;
+        name: string;
+        color?: string | null;
+      };
+    } | null;
+    currentWfmStatus?: {
+      __typename?: "WFMStatus";
+      id: string;
+      name: string;
+      color?: string | null;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldType: CustomFieldType;
+      };
+    }>;
+  };
+};
+
 export type CustomFieldValuesDataFragment = {
   __typename?: "CustomFieldValue";
   stringValue?: string | null;
@@ -3279,16 +3711,20 @@ export type GetUserListQuery = {
   }>;
 };
 
-export type GetWfmProjectTypeByNameQueryVariables = Exact<{
+export type GetWfmProjectTypeByNameForConfigQueryVariables = Exact<{
   name: Scalars["String"]["input"];
 }>;
 
-export type GetWfmProjectTypeByNameQuery = {
+export type GetWfmProjectTypeByNameForConfigQuery = {
   __typename?: "Query";
   wfmProjectTypeByName?: {
     __typename?: "WFMProjectType";
     id: string;
     name: string;
-    defaultWorkflow?: { __typename?: "WFMWorkflow"; id: string } | null;
+    defaultWorkflow?: {
+      __typename?: "WFMWorkflow";
+      id: string;
+      name: string;
+    } | null;
   } | null;
 };

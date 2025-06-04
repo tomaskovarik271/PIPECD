@@ -99,6 +99,7 @@ const CustomFieldDefinitionList: React.FC = () => {
       case CustomFieldEntityType.Deal: return 'Deals';
       case CustomFieldEntityType.Person: return 'People';
       case CustomFieldEntityType.Organization: return 'Organizations';
+      case CustomFieldEntityType.Lead: return 'Leads';
       default: return '';
     }
   };
@@ -119,6 +120,7 @@ const CustomFieldDefinitionList: React.FC = () => {
             <option value={CustomFieldEntityType.Deal}>Deals</option>
             <option value={CustomFieldEntityType.Person}>People</option>
             <option value={CustomFieldEntityType.Organization}>Organizations</option>
+            <option value={CustomFieldEntityType.Lead}>Leads</option>
           </Select>
         </HStack>
         <Button 

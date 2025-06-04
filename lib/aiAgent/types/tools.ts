@@ -10,6 +10,7 @@
 
 export interface ToolExecutionContext {
   authToken?: string;
+  accessToken?: string;
   userId?: string;
   conversationId?: string;
   requestId?: string;
@@ -24,6 +25,8 @@ export interface ToolResult {
     toolName: string;
     parameters: Record<string, any>;
     timestamp: string;
+    // Allow additional metadata properties
+    [key: string]: any;
   };
 }
 
@@ -170,12 +173,12 @@ export interface CompleteActivityParams {
 
 // Custom Field Tools
 export interface GetCustomFieldDefinitionsParams {
-  entity_type: 'DEAL' | 'PERSON' | 'ORGANIZATION';
+  entity_type: 'DEAL' | 'PERSON' | 'ORGANIZATION' | 'LEAD';
   include_inactive?: boolean;
 }
 
 export interface CreateCustomFieldDefinitionParams {
-  entity_type: 'DEAL' | 'PERSON' | 'ORGANIZATION';
+  entity_type: 'DEAL' | 'PERSON' | 'ORGANIZATION' | 'LEAD';
   field_name: string;
   field_label: string;
   field_type: 'TEXT' | 'NUMBER' | 'DATE' | 'BOOLEAN' | 'DROPDOWN' | 'MULTI_SELECT';
@@ -185,12 +188,12 @@ export interface CreateCustomFieldDefinitionParams {
 }
 
 export interface GetEntityCustomFieldsParams {
-  entity_type: 'DEAL' | 'PERSON' | 'ORGANIZATION';
+  entity_type: 'DEAL' | 'PERSON' | 'ORGANIZATION' | 'LEAD';
   entity_id: string;
 }
 
 export interface SetEntityCustomFieldsParams {
-  entity_type: 'DEAL' | 'PERSON' | 'ORGANIZATION';
+  entity_type: 'DEAL' | 'PERSON' | 'ORGANIZATION' | 'LEAD';
   entity_id: string;
   custom_fields: CustomFieldValue[];
 }
@@ -337,6 +340,7 @@ export interface UserData {
 
 export type ToolCategory = 
   | 'deals'
+  | 'leads'
   | 'organizations' 
   | 'contacts'
   | 'activities'

@@ -218,6 +218,99 @@ This phase will occur after the core WFM is implemented and stable. The goal is 
     *   **TODO:** Archive and then delete old `public.pipelines` and `public.stages` tables.
     *   **TODO:** Clean up unused code related to the old system.
 
+### 4.3. Phase 3: Lead Management Integration with WFM (COMPLETED)
+
+Following the successful integration of deals with the WFM system, lead management has been implemented to leverage the same WFM infrastructure, providing a consistent process management approach across the CRM.
+
+#### 4.3.1. Lead-Specific WFM Configuration
+
+**COMPLETED:** Lead Qualification Workflow Definition
+*   **Lead Qualification Statuses**: Created global `WFMStatus` records for lead-specific stages:
+    *   "New Lead" (initial step)
+    *   "Initial Contact"
+    *   "Follow Up"
+    *   "Qualifying"
+    *   "Qualified Lead"
+    *   "Converted" (final step)
+    *   "Disqualified" (final step)
+    *   "Nurturing"
+
+*   **Lead Qualification Workflow**: Defined "Lead Qualification and Conversion Process" `WFMWorkflow`
+    *   Configured `WFMWorkflowSteps` with appropriate order and flags
+    *   Populated `metadata` for lead-specific attributes (e.g., `lead_score_threshold`, `qualification_required`, `stage_name`)
+    *   Established `WFMWorkflowTransitions` between all valid step combinations
+
+*   **Lead Project Type**: Created "Lead Qualification and Conversion Process" `WFMProjectType`
+    *   Assigned lead qualification workflow as default
+    *   Configured with appropriate icon and description
+
+#### 4.3.2. Lead Database Schema Implementation
+
+**COMPLETED:** Lead Management Tables
+*   **`leads` Table**: Core lead entity with comprehensive tracking:
+    *   Standard fields: `id`, `name`, `source`, `description`, `contact_*` fields
+    *   Qualification tracking: `is_qualified`, `qualification_notes`, `qualified_at`
+    *   Scoring system: `lead_score`, `lead_score_factors`, `ai_insights`
+    *   Assignment: `assigned_to_user_id`, `assigned_at`
+    *   Conversion tracking: `converted_at`, `converted_to_*` fields
+    *   **WFM Integration**: `wfm_project_id` FK to `wfm_projects(id)`
+    *   **Custom Fields**: `custom_field_values` JSONB column
+
+*   **RLS Policies**: Implemented comprehensive row-level security following deal patterns
+*   **Performance Indexes**: Created optimized indexes for lead queries and filtering
+*   **Custom Fields Support**: Full integration with existing custom fields system
+
+#### 4.3.3. Lead Service Layer Implementation
+
+**COMPLETED:** Lead Service Architecture
+*   **`lib/leadService/`** directory structure following `dealService` patterns:
+    *   `leadCrud.ts` - Core CRUD operations with WFM integration
+    *   `leadScoring.ts` - AI-powered lead scoring engine
+    *   `leadConversion.ts` - Lead-to-entity conversion workflows
+    *   `leadQualification.ts` - AI-powered qualification logic
+
+*   **WFM Project Creation**: Automatic WFM project initialization during lead creation
+*   **Lead Scoring Engine**: Advanced scoring with demographic, behavioral, and AI factors
+*   **Conversion Workflows**: Seamless lead conversion to deals/contacts/organizations
+
+#### 4.3.4. Lead GraphQL API Implementation
+
+**COMPLETED:** GraphQL Schema and Resolvers
+*   **Schema Definition**: Complete `lead.graphql` with all entity relationships
+*   **Resolvers**: Full resolver implementation following deal patterns
+*   **WFM Integration**: Lead resolvers include WFM status and project data
+*   **Mutations**: Complete set including `updateLeadWFMProgress` for workflow progression
+
+#### 4.3.5. Lead Frontend Implementation
+
+**COMPLETED:** UI Components and Views
+*   **Lead Management Pages**: Complete table and kanban views
+*   **Kanban Board**: WFM-driven columns with drag-and-drop progression
+*   **Lead Cards**: Rich display of lead information and status
+*   **Modals**: Create/edit lead modals with custom fields support
+*   **Detail Page**: Comprehensive lead detail view with activities and conversion options
+
+#### 4.3.6. AI Agent Integration
+
+**COMPLETED:** Lead-Specific AI Tools
+*   **6 Specialized Tools**: search_leads, get_lead_details, create_lead, qualify_lead, convert_lead, update_lead_score
+*   **Custom Fields Democratization**: AI can create custom fields for leads on-demand
+*   **Sequential Workflows**: Multi-step lead qualification and conversion processes
+*   **Intelligence Engine**: AI-powered lead scoring and qualification recommendations
+
+#### 4.3.7. Lead Management Benefits from WFM
+
+The integration of leads with the WFM system provides:
+
+*   **Consistent Process Management**: Same workflow engine for leads and deals
+*   **Configurable Qualification Stages**: Easily modify lead progression steps
+*   **Transition Validation**: Enforced workflow transitions prevent invalid state changes
+*   **Extensibility**: Can easily add new lead types or qualification processes
+*   **Reporting Consistency**: Unified reporting across all WFM-managed processes
+*   **AI Integration**: WFM metadata enables intelligent automation and scoring
+
+This implementation demonstrates the strategic value of WFM as the core process engine, successfully extending beyond deals to encompass complete lead lifecycle management with advanced AI capabilities.
+
 ### 4.3. Development Plan & Sequencing Priorities
 
 1.  **Phase 1: Core WFM Foundational Implementation:**
