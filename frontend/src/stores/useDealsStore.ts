@@ -100,6 +100,7 @@ const DEAL_CORE_FIELDS_FRAGMENT = gql`
     created_at
     updated_at
     person_id
+    organization_id
     user_id # creator
     assigned_to_user_id
     deal_specific_probability
@@ -245,16 +246,16 @@ interface DealsState {
   deleteDeal: (id: string) => Promise<boolean>;
   updateDealWFMProgress: (dealId: string, targetWfmWorkflowStepId: string) => Promise<Deal | null>;
 
-  // Kanban View State and Actions
-  dealsViewMode: 'table' | 'kanban';
-  setDealsViewMode: (mode: 'table' | 'kanban') => void;
+  // View State and Actions - now supports construction view
+  dealsViewMode: 'table' | 'kanban' | 'construction';
+  setDealsViewMode: (mode: 'table' | 'kanban' | 'construction') => void;
 }
 
 // Helper to safely get from localStorage
-const getDealsViewModeFromLocalStorage = (): 'table' | 'kanban' => {
+const getDealsViewModeFromLocalStorage = (): 'table' | 'kanban' | 'construction' => {
   try {
     const mode = localStorage.getItem('dealsViewMode');
-    return mode === 'kanban' ? 'kanban' : 'table'; // Default to 'table' if not 'kanban'
+    return mode === 'kanban' ? 'kanban' : mode === 'construction' ? 'construction' : 'table'; // Default to 'table'
   } catch (error) {
     // In case localStorage is not available (e.g. SSR or privacy settings)
     console.warn('Could not access localStorage to get dealsViewMode.', error);
@@ -393,7 +394,7 @@ export const useDealsStore = create<DealsState>((set, get) => ({
     }
   },
 
-  setDealsViewMode: (mode: 'table' | 'kanban') => {
+  setDealsViewMode: (mode: 'table' | 'kanban' | 'construction') => {
     set({ dealsViewMode: mode });
     try {
       localStorage.setItem('dealsViewMode', mode);

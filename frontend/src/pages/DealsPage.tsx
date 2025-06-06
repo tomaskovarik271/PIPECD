@@ -19,6 +19,7 @@ import SortableTable, { ColumnDefinition } from '../components/common/SortableTa
 import ColumnSelector from '../components/common/ColumnSelector';
 import EmptyState from '../components/common/EmptyState';
 import DealsKanbanPageLayout from '../components/deals/DealsKanbanPageLayout';
+import ConstructionProjectsDashboard from '../components/gamification/ConstructionProjectsDashboard';
 import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
 
 import { useDealsPageModals } from '../hooks/useDealsPageModals';
@@ -210,6 +211,54 @@ function DealsPage() {
       Columns
     </Button>
   ) : null;
+
+  // Construction view (Pipeline City)
+  if (dealsViewMode === 'construction') {
+    return (
+      <>
+        <ConstructionProjectsDashboard deals={displayedDeals} />
+
+        {/* Modals - construction view needs these too */}
+        {isCreateModalOpen && (
+          <CreateDealModal
+            isOpen={isCreateModalOpen}
+            onClose={closeCreateModal}
+            onDealCreated={() => {
+              closeCreateModal();
+              fetchDeals();
+              toast({ title: '🏗️ New construction project started!', status: 'success', duration: 3000, isClosable: true });
+            }}
+          />
+        )}
+
+        {isEditModalOpen && dealToEdit && (
+          <EditDealModal
+            isOpen={isEditModalOpen}
+            onClose={closeEditModal}
+            deal={dealToEdit}
+            onDealUpdated={() => {
+              closeEditModal();
+              fetchDeals();
+              toast({ title: '🔧 Construction project updated!', status: 'success', duration: 3000, isClosable: true });
+            }}
+          />
+        )}
+
+        {isConfirmDeleteDialogOpen && dealIdPendingConfirmation && (
+          <ConfirmationDialog
+            isOpen={isConfirmDeleteDialogOpen}
+            onClose={closeConfirmDeleteModal}
+            title="Cancel Construction Project"
+            body="Are you sure you want to cancel this construction project? This action cannot be undone."
+            confirmButtonText="Cancel Project"
+            confirmButtonColor="red"
+            onConfirm={() => confirmDeleteHandler(dealIdPendingConfirmation)}
+            isConfirmLoading={isDeletingDeal}
+          />
+        )}
+      </>
+    );
+  }
 
   if (dealsViewMode === 'kanban') {
     return (
