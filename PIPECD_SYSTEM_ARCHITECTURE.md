@@ -11,15 +11,16 @@
 3. [Work Flow Management (WFM) - Core Architectural Component](#-work-flow-management-wfm---core-architectural-component)
    - [WFM Developer Guide: Implementing WFM for New Entities](#-wfm-developer-guide-implementing-wfm-for-new-entities)
 4. [Event-Driven Automation Architecture (Inngest + Activities)](#-event-driven-automation-architecture-inngest--activities)
-5. [Technology Stack](#-technology-stack)
-6. [System Architecture Layers](#-system-architecture-layers)
-7. [Key Architectural Patterns](#-key-architectural-patterns)
-8. [Data Architecture](#-data-architecture)
-9. [Security Architecture](#-security-architecture)
-10. [AI Integration Architecture](#-ai-integration-architecture)
-11. [Architectural Compliance & Risk Assessment](#-architectural-compliance--risk-assessment)
-12. [Development Principles](#-development-principles)
-13. [Deployment Architecture](#-deployment-architecture)
+5. [Relationship Intelligence Platform - Revolutionary Visualization](#-relationship-intelligence-platform---revolutionary-visualization)
+6. [Technology Stack](#-technology-stack)
+7. [System Architecture Layers](#-system-architecture-layers)
+8. [Key Architectural Patterns](#-key-architectural-patterns)
+9. [Data Architecture](#-data-architecture)
+10. [Security Architecture](#-security-architecture)
+11. [AI Integration Architecture](#-ai-integration-architecture)
+12. [Architectural Compliance & Risk Assessment](#-architectural-compliance--risk-assessment)
+13. [Development Principles](#-development-principles)
+14. [Deployment Architecture](#-deployment-architecture)
 
 ---
 
@@ -35,8 +36,8 @@ PipeCD is a **modern, AI-first CRM platform** built with enterprise-grade archit
 
 - **🤖 AI-First Design**: Not just a CRM with AI features, but an AI reasoning engine for sales
 - **🔄 Generic Workflow Engine**: WFM system powers all business processes with unlimited flexibility
-- **⚡ Event-Driven Automation**: Inngest + Activities create intelligent, scalable automation workflows
-- **🔒 Enterprise Security**: Database-level security with Row Level Security (RLS) and granular permissions
+- ⚡ **Event-Driven Automation**: Inngest + Activities create intelligent, scalable automation workflows
+- 🔒 **Enterprise Security**: Database-level security with Row Level Security (RLS) and granular permissions
 - ⚡ **Serverless Scale**: Infinite scalability without infrastructure management
 - 🎨 **Modern UX**: React-based interface with real-time updates and responsive design
 - 🔧 **Developer Experience**: Type-safe from database to UI with comprehensive tooling
@@ -703,6 +704,196 @@ describe('YourEntity WFM resolvers', () => {
 
 ---
 
+## 🕸️ Relationship Intelligence Platform - Revolutionary Visualization
+
+### **🎯 Transforming CRM into Intelligent Relationship Networks**
+
+**PipeCD's Relationship Intelligence Platform** represents a revolutionary leap from traditional CRM data management to dynamic, AI-powered relationship visualization and analysis. This system transforms flat organizational data into interactive network intelligence that guides strategic relationship building.
+
+#### **🏗️ Relationship Intelligence Architecture**
+
+```
+🧠 AI-Powered Relationship Engine
+├── 📊 Network Visualization Layer (D3.js + React)
+├── 🔍 Stakeholder Analysis Engine  
+├── 🕸️ Cross-Entity Relationship Mapping
+├── 📈 Influence Scoring & Authority Detection
+└── 🎯 Automated Gap Analysis & Recommendations
+```
+
+#### **🌟 Core Capabilities (PRODUCTION-READY)**
+
+**Interactive Network Visualization**
+```typescript
+// Multi-modal visualization system
+interface NetworkVisualization {
+  influenceView: ForceDirectedGraph;    // Red gradient by influence score
+  engagementView: NodeColorMapping;     // Champion/Neutral/Blocker analysis  
+  hierarchyView: AuthorityVisualization; // C-Level/VP/Manager hierarchy
+  territoryView: GeographicMapping;     // Future: Location-based networks
+}
+
+// Real-time physics simulation
+const networkSimulation = d3.forceSimulation()
+  .force("link", d3.forceLink().strength(0.3))
+  .force("charge", d3.forceManyBody().strength(-200))
+  .force("center", d3.forceCenter(width/2, height/2))
+  .force("collision", d3.forceCollide().radius(25));
+```
+
+**Comprehensive Stakeholder Analysis**
+```typescript
+// AI-powered stakeholder intelligence
+interface StakeholderAnalysis {
+  coverage_percentage: number;          // 66.7% stakeholder coverage
+  seniority_distribution: SeniorityMap; // C-Level/VP/Manager breakdown
+  department_coverage: DepartmentMap;   // Engineering/Sales/Marketing gaps
+  priority_gaps: PriorityGap[];         // High/Medium/Low priority missing roles
+  ai_insights: AIInsight[];             // Risk alerts & opportunities
+  actionable_recommendations: Action[]; // Specific engagement strategies
+}
+```
+
+**Advanced Relationship Data Model**
+```sql
+-- Organization relationship networks
+organization_relationships:
+  - subsidiary, division, partnership, supplier, customer
+  - ownership_percentage, relationship_strength (1-10)
+  - start_date/end_date for temporal analysis
+
+-- Person relationship intelligence  
+person_relationships:
+  - reports_to, manages, influences, collaborates_with
+  - relationship_strength, is_bidirectional
+  - interaction_frequency (daily/weekly/monthly)
+  - relationship_context (work/personal/industry)
+
+-- Multi-role organizational mapping
+person_organizational_roles:
+  - role_title, department, seniority_level
+  - budget_authority_usd, team_size
+  - reporting_structure (manager/direct_reports)
+  - responsibilities (JSON array)
+
+-- Deal-specific stakeholder analysis
+stakeholder_analysis:
+  - influence_score (1-10), decision_authority
+  - budget_authority_level, engagement_level
+  - pain_points[], motivations[], approach_strategy
+  - ai_personality_profile, ai_communication_style
+```
+
+#### **🎨 Revolutionary User Experience**
+
+**Interactive Network Visualization (`StakeholderNetworkVisualization.tsx`)**
+- **Force-Directed Network Graph**: Physics-based relationship simulation
+- **Multi-Modal Views**: Switch between Influence, Engagement, and Hierarchy perspectives
+- **Interactive Node Manipulation**: Drag, zoom, click for detailed analysis
+- **Authority Indicators**: Visual crowns, lightning, shields for decision makers
+- **Smart Node Sizing**: Node size correlates with influence score (1-10)
+- **Connection Visualization**: Relationship links with strength-based thickness
+- **Real-time Layout Optimization**: Auto-organizing network for clarity
+
+**AI-Powered Analysis Dashboard (`StakeholderAnalysisDashboard.tsx`)**
+- **Coverage Percentage Tracking**: Real-time stakeholder mapping progress
+- **Seniority Level Analysis**: Visual breakdown of C-Level, VP, Manager coverage
+- **Department Coverage**: Color-coded progress bars for each department
+- **Priority Gap Identification**: High/Medium/Low priority missing roles
+- **AI Network Insights**: Risk alerts, opportunities, and coverage gaps
+- **Actionable Recommendations**: Specific strategies for engaging missing stakeholders
+
+**Comprehensive Intelligence Page (`RelationshipIntelligencePage.tsx`)**
+- **Context Selection**: Organization, Deal, and Lead filtering
+- **Search Functionality**: Real-time stakeholder search
+- **Tabbed Interface**: Network Map, Analysis Dashboard, Action Items, Territory View
+- **Smart Navigation**: Auto-switching between views based on actions
+- **Export & Sharing**: Network data export and sharing capabilities
+
+#### **🔧 Technical Implementation**
+
+**Visualization Technology Stack**
+```typescript
+// D3.js integration for network visualization
+import * as d3 from 'd3';
+import { Simulation, SimulationNodeDatum, SimulationLinkDatum } from 'd3';
+
+// React component architecture
+const StakeholderNetworkVisualization: React.FC = () => {
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [simulation, setSimulation] = useState<Simulation<NodeDatum, LinkDatum>>();
+  
+  // Physics simulation with force-directed layout
+  useEffect(() => {
+    const svg = d3.select(svgRef.current);
+    const simulation = d3.forceSimulation(nodes)
+      .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+      .force("charge", d3.forceManyBody().strength(-300))
+      .force("center", d3.forceCenter(width / 2, height / 2));
+  }, [nodes, links]);
+};
+```
+
+**Database Integration Patterns**
+```sql
+-- Complex relationship queries
+WITH stakeholder_hierarchy AS (
+  SELECT 
+    p.id, p.name, por.seniority_level, por.department,
+    sa.influence_score, sa.decision_authority,
+    array_agg(pr.to_person_id) as influences
+  FROM people p
+  JOIN person_organizational_roles por ON p.id = por.person_id
+  LEFT JOIN stakeholder_analysis sa ON p.id = sa.person_id
+  LEFT JOIN person_relationships pr ON p.id = pr.from_person_id 
+    AND pr.relationship_type = 'influences'
+  WHERE por.organization_id = $1
+  GROUP BY p.id, p.name, por.seniority_level, por.department, 
+           sa.influence_score, sa.decision_authority
+)
+SELECT * FROM stakeholder_hierarchy
+ORDER BY sa.influence_score DESC, por.seniority_level;
+```
+
+#### **🚀 Architectural Benefits**
+
+**Strategic Relationship Intelligence**
+- **Visual Relationship Mapping**: See entire stakeholder networks instantly
+- **AI-Powered Gap Analysis**: Never miss critical decision makers
+- **Influence Scoring**: Focus efforts on high-impact relationships
+- **Engagement Tracking**: Monitor stakeholder sentiment visually
+- **Action-Oriented Insights**: Clear next steps for relationship building
+
+**Enterprise-Grade Implementation**
+- **D3.js Professional Visualization**: Industry-leading network rendering
+- **Responsive Design**: Works across all devices and screen sizes
+- **TypeScript Safety**: Full type safety throughout visualization pipeline
+- **Chakra UI Integration**: Consistent design system and accessibility
+- **Real-time Updates**: Live data synchronization with relationship changes
+
+**Competitive Advantage**
+- **No other CRM** has this level of relationship visualization
+- **AI-powered insights** provide unfair competitive advantage
+- **Visual storytelling** makes complex data immediately actionable
+- **Enterprise-ready** with security and scalability built-in
+
+#### **🎯 Future Expansion Roadmap**
+
+**Phase 4: Advanced Intelligence**
+- **Geographic Territory Mapping**: Stakeholder location visualization
+- **Influence Scoring ML Model**: Predictive influence algorithms
+- **Relationship Health Monitoring**: Track relationship strength over time
+- **Automated Stakeholder Discovery**: AI-powered contact identification
+- **Social Media Integration**: LinkedIn/Twitter relationship mapping
+
+**Phase 5: Predictive Analytics**
+- **Deal Probability Scoring**: Based on stakeholder network strength
+- **Churn Risk Prediction**: Early warning for relationship degradation
+- **Optimal Engagement Timing**: AI-recommended contact schedules
+- **Network Effect Analysis**: Understand influence cascade effects
+
+---
+
 ## 💻 Technology Stack
 
 ### **Frontend Stack**
@@ -712,6 +903,8 @@ React 18 + TypeScript
 ├── 🗄️ State: Zustand for global state management  
 ├── 🔄 Routing: React Router for navigation
 ├── 📡 API: Apollo Client for GraphQL
+├── 🕸️ Visualization: D3.js for network graphs and force simulations
+├── 🎯 Icons: Lucide React for beautiful, consistent iconography
 ├── 🧪 Testing: Vitest + React Testing Library
 └── 📦 Build: Vite for development and bundling
 ```
@@ -1124,7 +1317,47 @@ interface DealsPageProps {
 }
 ```
 
-### **2. 🧪 Test-Driven Development**
+### **2. 🎨 User Experience Excellence**
+
+**Text Display Standards (Updated)**
+- **Full Text Display**: Eliminated ellipsis truncation (`noOfLines` restrictions) from critical UI components
+- **Deal Names**: Full deal names display without truncation in kanban cards
+- **Organization Names**: Complete organization names visible in deal cards
+- **Column Headers**: Full workflow step names displayed in kanban columns
+- **Responsive Design**: Text wraps naturally instead of being cut off with "..."
+
+**Implementation Pattern:**
+```typescript
+// ✅ AFTER: Full text display
+<Text 
+  fontWeight="bold" 
+  color={colors.text.primary}
+  _hover={{ color: colors.text.link }}
+  fontSize="md"
+  lineHeight="1.3"
+>
+  {deal.name}
+</Text>
+
+// ❌ BEFORE: Truncated text
+<Text 
+  fontWeight="bold" 
+  color={colors.text.primary}
+  noOfLines={2}  // Removed - caused ellipsis truncation
+  _hover={{ color: colors.text.link }}
+  fontSize="md"
+>
+  {deal.name}
+</Text>
+```
+
+**Benefits:**
+- **Complete Information**: Users see full context without hovering or clicking
+- **Professional Appearance**: No jarring "..." interruptions in text flow
+- **Better Accessibility**: Screen readers can access complete text content
+- **Improved Scanning**: Users can quickly scan full deal/organization names
+
+### **3. 🧪 Test-Driven Development**
 
 ```
 Unit Tests → Integration Tests → E2E Tests
@@ -1132,14 +1365,14 @@ Unit Tests → Integration Tests → E2E Tests
 Service Layer → API Layer → User Workflows
 ```
 
-### **3. 📚 Documentation-Driven Development**
+### **4. 📚 Documentation-Driven Development**
 
 - **API Documentation**: GraphQL schema introspection
 - **Architecture Decisions**: Recorded in ADR documents
 - **User Documentation**: Feature guides and manuals
 - **Developer Documentation**: Code comments and README files
 
-### **4. 🔄 Continuous Integration/Deployment**
+### **5. 🔄 Continuous Integration/Deployment**
 
 ```
 Git Push → Tests Run → Build → Deploy → Verify

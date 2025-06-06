@@ -12,6 +12,7 @@ Project PipeCD is a revolutionary **Claude 4 Sonnet-powered CRM system** featuri
 - **30+ AI Tools** for autonomous deal, lead, and contact management
 - **Complete Leads Management** with qualification workflows and conversion
 - **Custom Fields Democratization** - all users can create fields via AI
+- **Relationship Intelligence Platform** - Interactive network visualization with D3.js
 - **Event-Driven Automation** via Inngest for deal assignment and lead workflows
 - **Comprehensive WFM Integration** for sales pipeline and lead qualification
 - **Modern Architecture** with GraphQL, Supabase, and serverless deployment
@@ -48,6 +49,7 @@ The architecture emphasizes separation of concerns, type safety, AI-powered auto
 - ✅ **Activity Management** - Tasks, meetings, calls with assignment automation
 - ✅ **Work Flow Management (WFM)** - Replaces legacy pipeline system with flexible workflows
 - ✅ **Custom Fields System** - Democratized custom field creation for all entity types
+- ✅ **Relationship Intelligence Platform** - Interactive network visualization with D3.js
 - ✅ **User Profile Management** - Profile editing with display names and avatars
 - ✅ **Event-Driven Automation** - Inngest-powered background task processing
 
