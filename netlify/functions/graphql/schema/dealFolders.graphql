@@ -1,0 +1,24 @@
+type DealFolderInfo {
+  exists: Boolean!
+  dealFolder: DriveFolder
+  subfolders: DealSubfolders
+}
+
+type DealSubfolders {
+  proposals: DriveFolder
+  contracts: DriveFolder
+  legal: DriveFolder
+  presentations: DriveFolder
+  correspondence: DriveFolder
+  financial: DriveFolder
+  technical: DriveFolder
+  other: DriveFolder
+}
+
+extend type Query {
+  """Get deal folder information, auto-creating if needed"""
+  dealFolderInfo(dealId: ID!): DealFolderInfo!
+  
+  """Get files in the deal folder or specific subfolder"""
+  dealFolderFiles(dealId: ID!, folderId: ID): [DriveFile!]!
+} 

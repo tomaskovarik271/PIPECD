@@ -40,6 +40,7 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
       weighted_amount
       assigned_to_user_id
       project_id
+      wfm_project_id
       assignedToUser {
         id
         display_name

@@ -1,0 +1,176 @@
+type DriveFile {
+  id: ID!
+  name: String!
+  mimeType: String!
+  size: Int
+  modifiedTime: String!
+  createdTime: String!
+  webViewLink: String
+  webContentLink: String
+  owners: [DriveFileOwner!]
+  parents: [String!]
+  thumbnailLink: String
+  iconLink: String
+}
+
+type DriveFileOwner {
+  displayName: String!
+  emailAddress: String!
+}
+
+type DriveFolder {
+  id: ID!
+  name: String!
+  parents: [String!]
+  webViewLink: String!
+  createdTime: String!
+  modifiedTime: String!
+}
+
+type DriveFolderStructure {
+  dealFolder: DriveFolder!
+  subfolders: DriveFolderSubfolders!
+}
+
+type DriveFolderSubfolders {
+  proposals: DriveFolder
+  contracts: DriveFolder
+  legal: DriveFolder
+  presentations: DriveFolder
+  correspondence: DriveFolder
+}
+
+type DriveFileConnection {
+  files: [DriveFile!]!
+  totalCount: Int!
+}
+
+type DriveFolderConnection {
+  folders: [DriveFolder!]!
+  totalCount: Int!
+}
+
+type DealDocumentAttachment {
+  id: ID!
+  dealId: ID!
+  fileId: String!
+  fileName: String!
+  fileUrl: String!
+  category: DocumentCategory
+  attachedAt: String!
+  attachedBy: ID!
+}
+
+enum DocumentCategory {
+  PROPOSALS
+  CONTRACTS
+  LEGAL
+  PRESENTATIONS
+  CORRESPONDENCE
+  OTHER
+}
+
+input CreateDealFolderInput {
+  dealName: String!
+  dealId: ID!
+  parentFolderId: String
+  templateStructure: Boolean = true
+}
+
+input AttachFileInput {
+  fileId: String!
+  dealId: ID!
+  category: DocumentCategory
+}
+
+input UploadFileInput {
+  name: String!
+  content: String! # Base64 encoded content
+  mimeType: String!
+  parentFolderId: String
+  dealId: ID
+  category: DocumentCategory
+}
+
+input DriveSearchInput {
+  query: String
+  folderId: String
+  limit: Int = 20
+}
+
+input DriveFolderBrowseInput {
+  parentFolderId: String
+  includeFiles: Boolean = false
+}
+
+input DrivePermissionInput {
+  type: DrivePermissionType!
+  role: DrivePermissionRole!
+  emailAddress: String
+  domain: String
+}
+
+enum DrivePermissionType {
+  USER
+  GROUP
+  DOMAIN
+  ANYONE
+}
+
+enum DrivePermissionRole {
+  OWNER
+  ORGANIZER
+  FILE_ORGANIZER
+  WRITER
+  COMMENTER
+  READER
+}
+
+extend type Query {
+  # Get files in a specific folder or search
+  getDriveFiles(input: DriveSearchInput!): DriveFileConnection!
+  
+  # Browse folder structure
+  getDriveFolders(input: DriveFolderBrowseInput!): DriveFolderConnection!
+  
+  # Get specific file details
+  getDriveFile(fileId: String!): DriveFile!
+  
+  # Search across all Drive files
+  searchDriveFiles(query: String!): DriveFileConnection!
+  
+  # Get recent files for quick access
+  getRecentDriveFiles(limit: Int = 10): DriveFileConnection!
+  
+  # Get deal's attached documents
+  getDealDocuments(dealId: ID!): [DealDocumentAttachment!]!
+  
+  # Get deal's Drive folder if it exists
+  getDealFolder(dealId: ID!): DriveFolder
+}
+
+extend type Mutation {
+  # Create deal folder structure
+  createDealFolder(input: CreateDealFolderInput!): DriveFolderStructure!
+  
+  # Upload file to Drive
+  uploadFileToDrive(input: UploadFileInput!): DriveFile!
+  
+  # Attach existing Drive file to deal
+  attachFileToDeal(input: AttachFileInput!): DealDocumentAttachment!
+  
+  # Remove file attachment from deal (doesn't delete the file)
+  detachFileFromDeal(attachmentId: ID!): Boolean!
+  
+  # Share folder with specific permissions
+  shareDriveFolder(folderId: String!, permissions: [DrivePermissionInput!]!): Boolean!
+  
+  # Move file to different folder
+  moveDriveFile(fileId: String!, newParentId: String!, oldParentId: String): DriveFile!
+  
+  # Copy file to different folder
+  copyDriveFile(fileId: String!, newParentId: String!, newName: String): DriveFile!
+  
+  # Delete file from Drive
+  deleteDriveFile(fileId: String!): Boolean!
+} 

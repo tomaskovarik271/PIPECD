@@ -181,6 +181,12 @@ export enum AgentThoughtType {
   ToolCall = "TOOL_CALL",
 }
 
+export type AttachFileInput = {
+  category?: InputMaybe<DocumentCategory>;
+  dealId: Scalars["ID"]["input"];
+  fileId: Scalars["String"]["input"];
+};
+
 export enum BudgetAuthorityLevel {
   High = "HIGH",
   Low = "LOW",
@@ -197,6 +203,23 @@ export enum CommunicationPreference {
   Slack = "SLACK",
   Teams = "TEAMS",
 }
+
+export type ComposeEmailInput = {
+  attachments?: InputMaybe<Array<EmailAttachmentInput>>;
+  bcc?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  body: Scalars["String"]["input"];
+  cc?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  dealId?: InputMaybe<Scalars["String"]["input"]>;
+  entityId?: InputMaybe<Scalars["String"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  subject: Scalars["String"]["input"];
+  threadId?: InputMaybe<Scalars["String"]["input"]>;
+  to: Array<Scalars["String"]["input"]>;
+};
+
+export type ConnectGoogleIntegrationInput = {
+  tokenData: GoogleTokenInput;
+};
 
 export type ConvertedEntities = {
   __typename?: "ConvertedEntities";
@@ -215,6 +238,41 @@ export type CreateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject: Scalars["String"]["input"];
   type: ActivityType;
+};
+
+export type CreateDealFolderInput = {
+  dealId: Scalars["ID"]["input"];
+  dealName: Scalars["String"]["input"];
+  parentFolderId?: InputMaybe<Scalars["String"]["input"]>;
+  templateStructure?: InputMaybe<Scalars["Boolean"]["input"]>;
+};
+
+export type CreateDocumentInput = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+  fileName: Scalars["String"]["input"];
+  fileSizeBytes?: InputMaybe<Scalars["Int"]["input"]>;
+  googleDriveFileId?: InputMaybe<Scalars["String"]["input"]>;
+  mimeType?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type CreateEmailInput = {
+  bccEmails?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  bodyPreview?: InputMaybe<Scalars["String"]["input"]>;
+  ccEmails?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<EntityType>;
+  fromEmail: Scalars["String"]["input"];
+  fullBody?: InputMaybe<Scalars["String"]["input"]>;
+  gmailLabels?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  gmailMessageId?: InputMaybe<Scalars["String"]["input"]>;
+  gmailThreadId?: InputMaybe<Scalars["String"]["input"]>;
+  hasAttachments: Scalars["Boolean"]["input"];
+  isOutbound: Scalars["Boolean"]["input"];
+  isRead: Scalars["Boolean"]["input"];
+  sentAt: Scalars["DateTime"]["input"];
+  subject: Scalars["String"]["input"];
+  toEmails: Array<Scalars["String"]["input"]>;
 };
 
 export type CreateOrganizationRelationshipInput = {
@@ -273,6 +331,33 @@ export type CreateStakeholderAnalysisInput = {
   personId: Scalars["ID"]["input"];
   preferredMeetingTime?: InputMaybe<Scalars["String"]["input"]>;
   successMetrics?: InputMaybe<Scalars["JSON"]["input"]>;
+};
+
+export type CreateStickerInput = {
+  categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  color?: InputMaybe<Scalars["String"]["input"]>;
+  content?: InputMaybe<Scalars["String"]["input"]>;
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+  height?: InputMaybe<Scalars["Int"]["input"]>;
+  isPinned?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isPrivate?: InputMaybe<Scalars["Boolean"]["input"]>;
+  mentions?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  positionX?: InputMaybe<Scalars["Int"]["input"]>;
+  positionY?: InputMaybe<Scalars["Int"]["input"]>;
+  priority?: InputMaybe<StickerPriority>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  title: Scalars["String"]["input"];
+  width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type CreateTaskFromEmailInput = {
+  assigneeId?: InputMaybe<Scalars["String"]["input"]>;
+  dealId?: InputMaybe<Scalars["String"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  dueDate?: InputMaybe<Scalars["String"]["input"]>;
+  emailId: Scalars["String"]["input"];
+  subject: Scalars["String"]["input"];
 };
 
 export type CreateTerritoryInput = {
@@ -428,6 +513,18 @@ export type DealHistoryArgs = {
   offset?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
+export type DealDocumentAttachment = {
+  __typename?: "DealDocumentAttachment";
+  attachedAt: Scalars["String"]["output"];
+  attachedBy: Scalars["ID"]["output"];
+  category?: Maybe<DocumentCategory>;
+  dealId: Scalars["ID"]["output"];
+  fileId: Scalars["String"]["output"];
+  fileName: Scalars["String"]["output"];
+  fileUrl: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+};
+
 export type DealHistoryEntry = {
   __typename?: "DealHistoryEntry";
   changes?: Maybe<Scalars["JSON"]["output"]>;
@@ -470,6 +567,255 @@ export enum DecisionAuthority {
   StrongInfluence = "STRONG_INFLUENCE",
 }
 
+export type Document = {
+  __typename?: "Document";
+  createdAt: Scalars["DateTime"]["output"];
+  createdByUser: User;
+  entityId: Scalars["ID"]["output"];
+  entityType: EntityType;
+  fileName: Scalars["String"]["output"];
+  fileSizeBytes?: Maybe<Scalars["Int"]["output"]>;
+  googleDriveDownloadLink?: Maybe<Scalars["String"]["output"]>;
+  googleDriveFileId?: Maybe<Scalars["String"]["output"]>;
+  googleDriveFolderId?: Maybe<Scalars["String"]["output"]>;
+  googleDriveWebViewLink?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isPublic: Scalars["Boolean"]["output"];
+  lastSyncedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  mimeType?: Maybe<Scalars["String"]["output"]>;
+  sharedWithUsers: Array<Scalars["ID"]["output"]>;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export enum DocumentCategory {
+  Contracts = "CONTRACTS",
+  Correspondence = "CORRESPONDENCE",
+  Legal = "LEGAL",
+  Other = "OTHER",
+  Presentations = "PRESENTATIONS",
+  Proposals = "PROPOSALS",
+}
+
+export type DriveFile = {
+  __typename?: "DriveFile";
+  createdTime: Scalars["String"]["output"];
+  iconLink?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  mimeType: Scalars["String"]["output"];
+  modifiedTime: Scalars["String"]["output"];
+  name: Scalars["String"]["output"];
+  owners?: Maybe<Array<DriveFileOwner>>;
+  parents?: Maybe<Array<Scalars["String"]["output"]>>;
+  size?: Maybe<Scalars["Int"]["output"]>;
+  thumbnailLink?: Maybe<Scalars["String"]["output"]>;
+  webContentLink?: Maybe<Scalars["String"]["output"]>;
+  webViewLink?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type DriveFileConnection = {
+  __typename?: "DriveFileConnection";
+  files: Array<DriveFile>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type DriveFileOwner = {
+  __typename?: "DriveFileOwner";
+  displayName: Scalars["String"]["output"];
+  emailAddress: Scalars["String"]["output"];
+};
+
+export type DriveFolder = {
+  __typename?: "DriveFolder";
+  createdTime: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  modifiedTime: Scalars["String"]["output"];
+  name: Scalars["String"]["output"];
+  parents?: Maybe<Array<Scalars["String"]["output"]>>;
+  webViewLink: Scalars["String"]["output"];
+};
+
+export type DriveFolderBrowseInput = {
+  includeFiles?: InputMaybe<Scalars["Boolean"]["input"]>;
+  parentFolderId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type DriveFolderConnection = {
+  __typename?: "DriveFolderConnection";
+  folders: Array<DriveFolder>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type DriveFolderStructure = {
+  __typename?: "DriveFolderStructure";
+  dealFolder: DriveFolder;
+  subfolders: DriveFolderSubfolders;
+};
+
+export type DriveFolderSubfolders = {
+  __typename?: "DriveFolderSubfolders";
+  contracts?: Maybe<DriveFolder>;
+  correspondence?: Maybe<DriveFolder>;
+  legal?: Maybe<DriveFolder>;
+  presentations?: Maybe<DriveFolder>;
+  proposals?: Maybe<DriveFolder>;
+};
+
+export type DrivePermissionInput = {
+  domain?: InputMaybe<Scalars["String"]["input"]>;
+  emailAddress?: InputMaybe<Scalars["String"]["input"]>;
+  role: DrivePermissionRole;
+  type: DrivePermissionType;
+};
+
+export enum DrivePermissionRole {
+  Commenter = "COMMENTER",
+  FileOrganizer = "FILE_ORGANIZER",
+  Organizer = "ORGANIZER",
+  Owner = "OWNER",
+  Reader = "READER",
+  Writer = "WRITER",
+}
+
+export enum DrivePermissionType {
+  Anyone = "ANYONE",
+  Domain = "DOMAIN",
+  Group = "GROUP",
+  User = "USER",
+}
+
+export type DriveSearchInput = {
+  folderId?: InputMaybe<Scalars["String"]["input"]>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type Email = {
+  __typename?: "Email";
+  bccEmails: Array<Scalars["String"]["output"]>;
+  bodyPreview?: Maybe<Scalars["String"]["output"]>;
+  ccEmails: Array<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  createdByUser: User;
+  entityId?: Maybe<Scalars["ID"]["output"]>;
+  entityType?: Maybe<EntityType>;
+  fromEmail: Scalars["String"]["output"];
+  fullBody?: Maybe<Scalars["String"]["output"]>;
+  gmailLabels: Array<Scalars["String"]["output"]>;
+  gmailMessageId?: Maybe<Scalars["String"]["output"]>;
+  gmailThreadId?: Maybe<Scalars["String"]["output"]>;
+  hasAttachments: Scalars["Boolean"]["output"];
+  id: Scalars["ID"]["output"];
+  isOutbound: Scalars["Boolean"]["output"];
+  isRead: Scalars["Boolean"]["output"];
+  sentAt: Scalars["DateTime"]["output"];
+  subject: Scalars["String"]["output"];
+  toEmails: Array<Scalars["String"]["output"]>;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type EmailActivity = {
+  __typename?: "EmailActivity";
+  activityType: EmailActivityType;
+  createdAt: Scalars["DateTime"]["output"];
+  email: Email;
+  id: Scalars["ID"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  occurredAt: Scalars["DateTime"]["output"];
+};
+
+export enum EmailActivityType {
+  ClickedLink = "CLICKED_LINK",
+  Delivered = "DELIVERED",
+  Forwarded = "FORWARDED",
+  Opened = "OPENED",
+  Replied = "REPLIED",
+  Sent = "SENT",
+}
+
+export type EmailAnalytics = {
+  __typename?: "EmailAnalytics";
+  avgResponseTime?: Maybe<Scalars["String"]["output"]>;
+  emailSentiment?: Maybe<Scalars["String"]["output"]>;
+  lastContactTime?: Maybe<Scalars["String"]["output"]>;
+  responseRate?: Maybe<Scalars["Float"]["output"]>;
+  totalThreads: Scalars["Int"]["output"];
+  unreadCount: Scalars["Int"]["output"];
+};
+
+export type EmailAttachment = {
+  __typename?: "EmailAttachment";
+  downloadUrl?: Maybe<Scalars["String"]["output"]>;
+  filename: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  mimeType: Scalars["String"]["output"];
+  size: Scalars["Int"]["output"];
+};
+
+export type EmailAttachmentInput = {
+  content: Scalars["String"]["input"];
+  filename: Scalars["String"]["input"];
+  mimeType: Scalars["String"]["input"];
+};
+
+export enum EmailImportance {
+  High = "HIGH",
+  Low = "LOW",
+  Normal = "NORMAL",
+}
+
+export type EmailMessage = {
+  __typename?: "EmailMessage";
+  attachments?: Maybe<Array<EmailAttachment>>;
+  bcc?: Maybe<Array<Scalars["String"]["output"]>>;
+  body: Scalars["String"]["output"];
+  cc?: Maybe<Array<Scalars["String"]["output"]>>;
+  from: Scalars["String"]["output"];
+  hasAttachments: Scalars["Boolean"]["output"];
+  htmlBody?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  importance?: Maybe<EmailImportance>;
+  isUnread: Scalars["Boolean"]["output"];
+  labels?: Maybe<Array<Scalars["String"]["output"]>>;
+  subject: Scalars["String"]["output"];
+  threadId: Scalars["String"]["output"];
+  timestamp: Scalars["String"]["output"];
+  to: Array<Scalars["String"]["output"]>;
+};
+
+export type EmailThread = {
+  __typename?: "EmailThread";
+  dealId?: Maybe<Scalars["String"]["output"]>;
+  entityId?: Maybe<Scalars["String"]["output"]>;
+  entityType?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isUnread: Scalars["Boolean"]["output"];
+  lastActivity: Scalars["String"]["output"];
+  latestMessage?: Maybe<EmailMessage>;
+  messageCount: Scalars["Int"]["output"];
+  participants: Array<Scalars["String"]["output"]>;
+  subject: Scalars["String"]["output"];
+};
+
+export type EmailThreadConnection = {
+  __typename?: "EmailThreadConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  nextPageToken?: Maybe<Scalars["String"]["output"]>;
+  threads: Array<EmailThread>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type EmailThreadsFilterInput = {
+  contactEmail?: InputMaybe<Scalars["String"]["input"]>;
+  dateFrom?: InputMaybe<Scalars["String"]["input"]>;
+  dateTo?: InputMaybe<Scalars["String"]["input"]>;
+  dealId?: InputMaybe<Scalars["String"]["input"]>;
+  hasAttachments?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isUnread?: InputMaybe<Scalars["Boolean"]["input"]>;
+  keywords?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  pageToken?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export enum EngagementLevel {
   Blocker = "BLOCKER",
   Champion = "CHAMPION",
@@ -484,6 +830,31 @@ export enum EntityType {
   Organization = "ORGANIZATION",
   Person = "PERSON",
 }
+
+export type GoogleIntegrationStatus = {
+  __typename?: "GoogleIntegrationStatus";
+  hasDriveAccess: Scalars["Boolean"]["output"];
+  hasGmailAccess: Scalars["Boolean"]["output"];
+  hasGoogleAuth: Scalars["Boolean"]["output"];
+  isConnected: Scalars["Boolean"]["output"];
+  missingScopes: Array<Scalars["String"]["output"]>;
+  tokenExpiry?: Maybe<Scalars["DateTime"]["output"]>;
+};
+
+export type GoogleTokenData = {
+  __typename?: "GoogleTokenData";
+  access_token: Scalars["String"]["output"];
+  expires_at?: Maybe<Scalars["DateTime"]["output"]>;
+  granted_scopes: Array<Scalars["String"]["output"]>;
+  refresh_token?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type GoogleTokenInput = {
+  access_token: Scalars["String"]["input"];
+  expires_at?: InputMaybe<Scalars["DateTime"]["input"]>;
+  granted_scopes: Array<Scalars["String"]["input"]>;
+  refresh_token?: InputMaybe<Scalars["String"]["input"]>;
+};
 
 export enum InsightStatus {
   ActingOn = "ACTING_ON",
@@ -663,12 +1034,20 @@ export type MissingStakeholderRecommendations = {
 export type Mutation = {
   __typename?: "Mutation";
   addAgentThoughts: Array<AgentThought>;
+  archiveThread: Scalars["Boolean"]["output"];
   assignAccountToTerritory: AccountTerritory;
+  attachFileToDeal: DealDocumentAttachment;
+  composeEmail: EmailMessage;
+  connectGoogleIntegration: GoogleIntegrationStatus;
   convertLead: LeadConversionResult;
+  copyDriveFile: DriveFile;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
+  createDealFolder: DriveFolderStructure;
+  createDocument: Document;
+  createEmail: Email;
   createLead: Lead;
   createOrganization: Organization;
   createOrganizationRelationship: OrganizationRelationship;
@@ -676,6 +1055,8 @@ export type Mutation = {
   createPersonOrganizationalRole: PersonOrganizationalRole;
   createPersonRelationship: PersonRelationship;
   createStakeholderAnalysis: StakeholderAnalysis;
+  createSticker: SmartSticker;
+  createTaskFromEmail: Activity;
   createTerritory: Territory;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
@@ -686,6 +1067,7 @@ export type Mutation = {
   deleteActivity: Scalars["ID"]["output"];
   deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteDriveFile: Scalars["Boolean"]["output"];
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganizationRelationship: Scalars["Boolean"]["output"];
@@ -693,16 +1075,27 @@ export type Mutation = {
   deletePersonOrganizationalRole: Scalars["Boolean"]["output"];
   deletePersonRelationship: Scalars["Boolean"]["output"];
   deleteStakeholderAnalysis: Scalars["Boolean"]["output"];
+  deleteSticker: Scalars["Boolean"]["output"];
   deleteTerritory: Scalars["Boolean"]["output"];
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
+  detachFileFromDeal: Scalars["Boolean"]["output"];
   dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
+  linkEmailToDeal: Scalars["Boolean"]["output"];
+  markThreadAsRead: Scalars["Boolean"]["output"];
+  markThreadAsUnread: Scalars["Boolean"]["output"];
+  moveDriveFile: DriveFile;
+  moveStickersBulk: Array<SmartSticker>;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
   removeAccountFromTerritory: Scalars["Boolean"]["output"];
+  revokeGoogleIntegration: Scalars["Boolean"]["output"];
   sendAgentMessage: AgentResponse;
+  shareDriveFolder: Scalars["Boolean"]["output"];
+  syncGmailEmails: Array<Email>;
+  toggleStickerPin: SmartSticker;
   updateActivity: Activity;
   updateAgentConversation: AgentConversation;
   updateCustomFieldDefinition: CustomFieldDefinition;
@@ -715,6 +1108,8 @@ export type Mutation = {
   updatePersonOrganizationalRole: PersonOrganizationalRole;
   updateRelationshipInsight: RelationshipInsight;
   updateStakeholderAnalysis: StakeholderAnalysis;
+  updateSticker: SmartSticker;
+  updateStickerTags: SmartSticker;
   updateTerritory: Territory;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
@@ -724,11 +1119,17 @@ export type Mutation = {
   updateWFMWorkflowStep: WfmWorkflowStep;
   updateWFMWorkflowStepsOrder?: Maybe<WfmWorkflow>;
   updateWFMWorkflowTransition: WfmWorkflowTransition;
+  uploadFileToDrive: DriveFile;
+  uploadToGoogleDrive: Document;
 };
 
 export type MutationAddAgentThoughtsArgs = {
   conversationId: Scalars["ID"]["input"];
   thoughts: Array<AgentThoughtInput>;
+};
+
+export type MutationArchiveThreadArgs = {
+  threadId: Scalars["String"]["input"];
 };
 
 export type MutationAssignAccountToTerritoryArgs = {
@@ -738,9 +1139,27 @@ export type MutationAssignAccountToTerritoryArgs = {
   territoryId: Scalars["ID"]["input"];
 };
 
+export type MutationAttachFileToDealArgs = {
+  input: AttachFileInput;
+};
+
+export type MutationComposeEmailArgs = {
+  input: ComposeEmailInput;
+};
+
+export type MutationConnectGoogleIntegrationArgs = {
+  input: ConnectGoogleIntegrationInput;
+};
+
 export type MutationConvertLeadArgs = {
   id: Scalars["ID"]["input"];
   input: LeadConversionInput;
+};
+
+export type MutationCopyDriveFileArgs = {
+  fileId: Scalars["String"]["input"];
+  newName?: InputMaybe<Scalars["String"]["input"]>;
+  newParentId: Scalars["String"]["input"];
 };
 
 export type MutationCreateActivityArgs = {
@@ -757,6 +1176,18 @@ export type MutationCreateCustomFieldDefinitionArgs = {
 
 export type MutationCreateDealArgs = {
   input: DealInput;
+};
+
+export type MutationCreateDealFolderArgs = {
+  input: CreateDealFolderInput;
+};
+
+export type MutationCreateDocumentArgs = {
+  input: CreateDocumentInput;
+};
+
+export type MutationCreateEmailArgs = {
+  input: CreateEmailInput;
 };
 
 export type MutationCreateLeadArgs = {
@@ -785,6 +1216,14 @@ export type MutationCreatePersonRelationshipArgs = {
 
 export type MutationCreateStakeholderAnalysisArgs = {
   input: CreateStakeholderAnalysisInput;
+};
+
+export type MutationCreateStickerArgs = {
+  input: CreateStickerInput;
+};
+
+export type MutationCreateTaskFromEmailArgs = {
+  input: CreateTaskFromEmailInput;
 };
 
 export type MutationCreateTerritoryArgs = {
@@ -827,6 +1266,10 @@ export type MutationDeleteDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteDriveFileArgs = {
+  fileId: Scalars["String"]["input"];
+};
+
 export type MutationDeleteLeadArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -855,6 +1298,10 @@ export type MutationDeleteStakeholderAnalysisArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteStickerArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteTerritoryArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -871,6 +1318,10 @@ export type MutationDeleteWfmStatusArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDetachFileFromDealArgs = {
+  attachmentId: Scalars["ID"]["input"];
+};
+
 export type MutationDismissRelationshipInsightArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -878,6 +1329,29 @@ export type MutationDismissRelationshipInsightArgs = {
 export type MutationExecuteAgentStepArgs = {
   conversationId: Scalars["ID"]["input"];
   stepId: Scalars["String"]["input"];
+};
+
+export type MutationLinkEmailToDealArgs = {
+  dealId: Scalars["String"]["input"];
+  emailId: Scalars["String"]["input"];
+};
+
+export type MutationMarkThreadAsReadArgs = {
+  threadId: Scalars["String"]["input"];
+};
+
+export type MutationMarkThreadAsUnreadArgs = {
+  threadId: Scalars["String"]["input"];
+};
+
+export type MutationMoveDriveFileArgs = {
+  fileId: Scalars["String"]["input"];
+  newParentId: Scalars["String"]["input"];
+  oldParentId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type MutationMoveStickersBulkArgs = {
+  moves: Array<StickerMoveInput>;
 };
 
 export type MutationReactivateCustomFieldDefinitionArgs = {
@@ -895,6 +1369,20 @@ export type MutationRemoveAccountFromTerritoryArgs = {
 
 export type MutationSendAgentMessageArgs = {
   input: SendMessageInput;
+};
+
+export type MutationShareDriveFolderArgs = {
+  folderId: Scalars["String"]["input"];
+  permissions: Array<DrivePermissionInput>;
+};
+
+export type MutationSyncGmailEmailsArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+};
+
+export type MutationToggleStickerPinArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationUpdateActivityArgs = {
@@ -956,6 +1444,16 @@ export type MutationUpdateStakeholderAnalysisArgs = {
   input: UpdateStakeholderAnalysisInput;
 };
 
+export type MutationUpdateStickerArgs = {
+  input: UpdateStickerInput;
+};
+
+export type MutationUpdateStickerTagsArgs = {
+  id: Scalars["ID"]["input"];
+  tagsToAdd?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  tagsToRemove?: InputMaybe<Array<Scalars["String"]["input"]>>;
+};
+
 export type MutationUpdateTerritoryArgs = {
   id: Scalars["ID"]["input"];
   input: CreateTerritoryInput;
@@ -993,6 +1491,18 @@ export type MutationUpdateWfmWorkflowStepsOrderArgs = {
 export type MutationUpdateWfmWorkflowTransitionArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateWfmWorkflowTransitionInput;
+};
+
+export type MutationUploadFileToDriveArgs = {
+  input: UploadFileInput;
+};
+
+export type MutationUploadToGoogleDriveArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+  fileContent: Scalars["String"]["input"];
+  fileName: Scalars["String"]["input"];
+  mimeType: Scalars["String"]["input"];
 };
 
 /** Defines the Organization type and related queries/mutations. */
@@ -1169,7 +1679,24 @@ export type Query = {
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   findMissingStakeholders: MissingStakeholderRecommendations;
+  getDealDocuments: Array<DealDocumentAttachment>;
+  getDealFolder?: Maybe<DriveFolder>;
+  getDriveFile: DriveFile;
+  getDriveFiles: DriveFileConnection;
+  getDriveFolders: DriveFolderConnection;
+  getEmailAnalytics?: Maybe<EmailAnalytics>;
+  getEmailMessage?: Maybe<EmailMessage>;
+  getEmailThread?: Maybe<EmailThread>;
+  getEmailThreads: EmailThreadConnection;
+  getEntityDocuments: Array<Document>;
+  getEntityEmails: Array<Email>;
+  getEntityStickers: StickerConnection;
+  getPinnedStickers: StickerConnection;
+  getRecentDriveFiles: DriveFileConnection;
+  getSticker?: Maybe<SmartSticker>;
+  getStickerCategories: Array<StickerCategory>;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
+  googleIntegrationStatus: GoogleIntegrationStatus;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
   leads: Array<Lead>;
@@ -1188,6 +1715,9 @@ export type Query = {
   personRelationships: Array<PersonRelationship>;
   relationshipInsight?: Maybe<RelationshipInsight>;
   relationshipInsights: Array<RelationshipInsight>;
+  searchDriveFiles: DriveFileConnection;
+  searchEmails: Array<Email>;
+  searchStickers: StickerConnection;
   stakeholderAnalyses: Array<StakeholderAnalysis>;
   stakeholderAnalysis?: Maybe<StakeholderAnalysis>;
   supabaseConnectionTest: Scalars["String"]["output"];
@@ -1257,6 +1787,74 @@ export type QueryFindMissingStakeholdersArgs = {
   organizationId: Scalars["ID"]["input"];
 };
 
+export type QueryGetDealDocumentsArgs = {
+  dealId: Scalars["ID"]["input"];
+};
+
+export type QueryGetDealFolderArgs = {
+  dealId: Scalars["ID"]["input"];
+};
+
+export type QueryGetDriveFileArgs = {
+  fileId: Scalars["String"]["input"];
+};
+
+export type QueryGetDriveFilesArgs = {
+  input: DriveSearchInput;
+};
+
+export type QueryGetDriveFoldersArgs = {
+  input: DriveFolderBrowseInput;
+};
+
+export type QueryGetEmailAnalyticsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
+export type QueryGetEmailMessageArgs = {
+  messageId: Scalars["String"]["input"];
+};
+
+export type QueryGetEmailThreadArgs = {
+  threadId: Scalars["String"]["input"];
+};
+
+export type QueryGetEmailThreadsArgs = {
+  filter: EmailThreadsFilterInput;
+};
+
+export type QueryGetEntityDocumentsArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+};
+
+export type QueryGetEntityEmailsArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+};
+
+export type QueryGetEntityStickersArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+  filters?: InputMaybe<StickerFilters>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  sortBy?: InputMaybe<StickerSortBy>;
+};
+
+export type QueryGetPinnedStickersArgs = {
+  entityType?: InputMaybe<EntityType>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryGetRecentDriveFilesArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryGetStickerArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type QueryGetWfmAllowedTransitionsArgs = {
   fromStepId: Scalars["ID"]["input"];
   workflowId: Scalars["ID"]["input"];
@@ -1307,6 +1905,23 @@ export type QueryRelationshipInsightsArgs = {
   entityId?: InputMaybe<Scalars["ID"]["input"]>;
   entityType?: InputMaybe<EntityType>;
   status?: InputMaybe<InsightStatus>;
+};
+
+export type QuerySearchDriveFilesArgs = {
+  query: Scalars["String"]["input"];
+};
+
+export type QuerySearchEmailsArgs = {
+  entityType?: InputMaybe<EntityType>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  query: Scalars["String"]["input"];
+};
+
+export type QuerySearchStickersArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  filters: StickerFilters;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  sortBy?: InputMaybe<StickerSortBy>;
 };
 
 export type QueryStakeholderAnalysesArgs = {
@@ -1394,6 +2009,38 @@ export enum SeniorityLevel {
   Vp = "VP",
 }
 
+export type SmartSticker = {
+  __typename?: "SmartSticker";
+  category?: Maybe<StickerCategory>;
+  color: Scalars["String"]["output"];
+  content?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  createdBy?: Maybe<User>;
+  createdByUserId: Scalars["ID"]["output"];
+  entityId: Scalars["ID"]["output"];
+  entityType: EntityType;
+  height: Scalars["Int"]["output"];
+  id: Scalars["ID"]["output"];
+  isPinned: Scalars["Boolean"]["output"];
+  isPrivate: Scalars["Boolean"]["output"];
+  lastEditedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  lastEditedBy?: Maybe<User>;
+  lastEditedByUserId?: Maybe<Scalars["ID"]["output"]>;
+  mentions: Array<Scalars["ID"]["output"]>;
+  positionX: Scalars["Int"]["output"];
+  positionY: Scalars["Int"]["output"];
+  priority: StickerPriority;
+  tags: Array<Scalars["String"]["output"]>;
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  width: Scalars["Int"]["output"];
+};
+
+export enum SortDirection {
+  Asc = "ASC",
+  Desc = "DESC",
+}
+
 export enum StageType {
   Lost = "LOST",
   Open = "OPEN",
@@ -1443,6 +2090,65 @@ export type StakeholderNetworkAnalysis = {
   stakeholderCount: Scalars["Int"]["output"];
   stakeholders: Array<StakeholderAnalysis>;
 };
+
+export type StickerCategory = {
+  __typename?: "StickerCategory";
+  color: Scalars["String"]["output"];
+  createdAt: Scalars["DateTime"]["output"];
+  description?: Maybe<Scalars["String"]["output"]>;
+  displayOrder: Scalars["Int"]["output"];
+  icon?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isSystem: Scalars["Boolean"]["output"];
+  name: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type StickerConnection = {
+  __typename?: "StickerConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  nodes: Array<SmartSticker>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type StickerFilters = {
+  categoryIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  createdByUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<EntityType>;
+  isPinned?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isPrivate?: InputMaybe<Scalars["Boolean"]["input"]>;
+  priority?: InputMaybe<StickerPriority>;
+  search?: InputMaybe<Scalars["String"]["input"]>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+};
+
+export type StickerMoveInput = {
+  id: Scalars["ID"]["input"];
+  positionX: Scalars["Int"]["input"];
+  positionY: Scalars["Int"]["input"];
+};
+
+export enum StickerPriority {
+  High = "HIGH",
+  Normal = "NORMAL",
+  Urgent = "URGENT",
+}
+
+export type StickerSortBy = {
+  direction?: InputMaybe<SortDirection>;
+  field: StickerSortField;
+};
+
+export enum StickerSortField {
+  CreatedAt = "CREATED_AT",
+  PositionX = "POSITION_X",
+  PositionY = "POSITION_Y",
+  Priority = "PRIORITY",
+  Title = "TITLE",
+  UpdatedAt = "UPDATED_AT",
+}
 
 export type Subscription = {
   __typename?: "Subscription";
@@ -1549,6 +2255,23 @@ export type UpdateStakeholderAnalysisInput = {
   successMetrics?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
+export type UpdateStickerInput = {
+  categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  color?: InputMaybe<Scalars["String"]["input"]>;
+  content?: InputMaybe<Scalars["String"]["input"]>;
+  height?: InputMaybe<Scalars["Int"]["input"]>;
+  id: Scalars["ID"]["input"];
+  isPinned?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isPrivate?: InputMaybe<Scalars["Boolean"]["input"]>;
+  mentions?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  positionX?: InputMaybe<Scalars["Int"]["input"]>;
+  positionY?: InputMaybe<Scalars["Int"]["input"]>;
+  priority?: InputMaybe<StickerPriority>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  title?: InputMaybe<Scalars["String"]["input"]>;
+  width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
 /**
  * Input type for updating a user's profile.
  * Only fields intended for update should be included.
@@ -1591,6 +2314,15 @@ export type UpdateWfmWorkflowStepInput = {
 
 export type UpdateWfmWorkflowTransitionInput = {
   name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UploadFileInput = {
+  category?: InputMaybe<DocumentCategory>;
+  content: Scalars["String"]["input"];
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  mimeType: Scalars["String"]["input"];
+  name: Scalars["String"]["input"];
+  parentFolderId?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type User = {
@@ -1836,6 +2568,134 @@ export type GetAgentThoughtsQuery = {
   }>;
 };
 
+export type GetEmailThreadsQueryVariables = Exact<{
+  filter: EmailThreadsFilterInput;
+}>;
+
+export type GetEmailThreadsQuery = {
+  __typename?: "Query";
+  getEmailThreads: {
+    __typename?: "EmailThreadConnection";
+    totalCount: number;
+    hasNextPage: boolean;
+    nextPageToken?: string | null;
+    threads: Array<{
+      __typename?: "EmailThread";
+      id: string;
+      subject: string;
+      participants: Array<string>;
+      messageCount: number;
+      isUnread: boolean;
+      lastActivity: string;
+      latestMessage?: {
+        __typename?: "EmailMessage";
+        id: string;
+        from: string;
+        body: string;
+        timestamp: string;
+        hasAttachments: boolean;
+      } | null;
+    }>;
+  };
+};
+
+export type GetEmailThreadQueryVariables = Exact<{
+  threadId: Scalars["String"]["input"];
+}>;
+
+export type GetEmailThreadQuery = {
+  __typename?: "Query";
+  getEmailThread?: {
+    __typename?: "EmailThread";
+    id: string;
+    subject: string;
+    participants: Array<string>;
+    messageCount: number;
+    isUnread: boolean;
+    lastActivity: string;
+    latestMessage?: {
+      __typename?: "EmailMessage";
+      id: string;
+      threadId: string;
+      subject: string;
+      from: string;
+      to: Array<string>;
+      cc?: Array<string> | null;
+      bcc?: Array<string> | null;
+      body: string;
+      htmlBody?: string | null;
+      timestamp: string;
+      isUnread: boolean;
+      hasAttachments: boolean;
+      importance?: EmailImportance | null;
+      attachments?: Array<{
+        __typename?: "EmailAttachment";
+        id: string;
+        filename: string;
+        mimeType: string;
+        size: number;
+      }> | null;
+    } | null;
+  } | null;
+};
+
+export type GetEmailAnalyticsQueryVariables = Exact<{
+  dealId: Scalars["String"]["input"];
+}>;
+
+export type GetEmailAnalyticsQuery = {
+  __typename?: "Query";
+  getEmailAnalytics?: {
+    __typename?: "EmailAnalytics";
+    totalThreads: number;
+    unreadCount: number;
+    avgResponseTime?: string | null;
+    lastContactTime?: string | null;
+    emailSentiment?: string | null;
+    responseRate?: number | null;
+  } | null;
+};
+
+export type ComposeEmailMutationVariables = Exact<{
+  input: ComposeEmailInput;
+}>;
+
+export type ComposeEmailMutation = {
+  __typename?: "Mutation";
+  composeEmail: {
+    __typename?: "EmailMessage";
+    id: string;
+    subject: string;
+    from: string;
+    to: Array<string>;
+    timestamp: string;
+  };
+};
+
+export type CreateTaskFromEmailMutationVariables = Exact<{
+  input: CreateTaskFromEmailInput;
+}>;
+
+export type CreateTaskFromEmailMutation = {
+  __typename?: "Mutation";
+  createTaskFromEmail: {
+    __typename?: "Activity";
+    id: string;
+    subject: string;
+    notes?: string | null;
+    due_date?: string | null;
+  };
+};
+
+export type MarkThreadAsReadMutationVariables = Exact<{
+  threadId: Scalars["String"]["input"];
+}>;
+
+export type MarkThreadAsReadMutation = {
+  __typename?: "Mutation";
+  markThreadAsRead: boolean;
+};
+
 export type UpdateUserProfileMutationVariables = Exact<{
   input: UpdateUserProfileInput;
 }>;
@@ -2052,6 +2912,175 @@ export type GetAllCustomFieldDefinitionsQuery = {
       value: string;
       label: string;
     }> | null;
+  }>;
+};
+
+export type GetEntityStickersQueryVariables = Exact<{
+  entityType: EntityType;
+  entityId: Scalars["ID"]["input"];
+  filters?: InputMaybe<StickerFilters>;
+}>;
+
+export type GetEntityStickersQuery = {
+  __typename?: "Query";
+  getEntityStickers: {
+    __typename?: "StickerConnection";
+    totalCount: number;
+    nodes: Array<{
+      __typename?: "SmartSticker";
+      id: string;
+      title: string;
+      content?: string | null;
+      entityType: EntityType;
+      entityId: string;
+      positionX: number;
+      positionY: number;
+      width: number;
+      height: number;
+      color: string;
+      isPinned: boolean;
+      isPrivate: boolean;
+      priority: StickerPriority;
+      mentions: Array<string>;
+      tags: Array<string>;
+      createdAt: string;
+      updatedAt: string;
+      createdByUserId: string;
+      category?: {
+        __typename?: "StickerCategory";
+        id: string;
+        name: string;
+        color: string;
+        icon?: string | null;
+      } | null;
+    }>;
+  };
+};
+
+export type GetStickerCategoriesQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetStickerCategoriesQuery = {
+  __typename?: "Query";
+  getStickerCategories: Array<{
+    __typename?: "StickerCategory";
+    id: string;
+    name: string;
+    color: string;
+    icon?: string | null;
+    isSystem: boolean;
+    displayOrder: number;
+  }>;
+};
+
+export type CreateStickerMutationVariables = Exact<{
+  input: CreateStickerInput;
+}>;
+
+export type CreateStickerMutation = {
+  __typename?: "Mutation";
+  createSticker: {
+    __typename?: "SmartSticker";
+    id: string;
+    title: string;
+    content?: string | null;
+    entityType: EntityType;
+    entityId: string;
+    positionX: number;
+    positionY: number;
+    width: number;
+    height: number;
+    color: string;
+    isPinned: boolean;
+    isPrivate: boolean;
+    priority: StickerPriority;
+    mentions: Array<string>;
+    tags: Array<string>;
+    createdAt: string;
+    updatedAt: string;
+    createdByUserId: string;
+    category?: {
+      __typename?: "StickerCategory";
+      id: string;
+      name: string;
+      color: string;
+      icon?: string | null;
+    } | null;
+  };
+};
+
+export type UpdateStickerMutationVariables = Exact<{
+  input: UpdateStickerInput;
+}>;
+
+export type UpdateStickerMutation = {
+  __typename?: "Mutation";
+  updateSticker: {
+    __typename?: "SmartSticker";
+    id: string;
+    title: string;
+    content?: string | null;
+    entityType: EntityType;
+    entityId: string;
+    positionX: number;
+    positionY: number;
+    width: number;
+    height: number;
+    color: string;
+    isPinned: boolean;
+    isPrivate: boolean;
+    priority: StickerPriority;
+    mentions: Array<string>;
+    tags: Array<string>;
+    createdAt: string;
+    updatedAt: string;
+    createdByUserId: string;
+    category?: {
+      __typename?: "StickerCategory";
+      id: string;
+      name: string;
+      color: string;
+      icon?: string | null;
+    } | null;
+  };
+};
+
+export type DeleteStickerMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteStickerMutation = {
+  __typename?: "Mutation";
+  deleteSticker: boolean;
+};
+
+export type ToggleStickerPinMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type ToggleStickerPinMutation = {
+  __typename?: "Mutation";
+  toggleStickerPin: {
+    __typename?: "SmartSticker";
+    id: string;
+    isPinned: boolean;
+    updatedAt: string;
+  };
+};
+
+export type MoveStickersBulkMutationVariables = Exact<{
+  moves: Array<StickerMoveInput> | StickerMoveInput;
+}>;
+
+export type MoveStickersBulkMutation = {
+  __typename?: "Mutation";
+  moveStickersBulk: Array<{
+    __typename?: "SmartSticker";
+    id: string;
+    positionX: number;
+    positionY: number;
+    updatedAt: string;
   }>;
 };
 
@@ -2756,6 +3785,49 @@ export type UpdateWfmWorkflowTransitionMutation = {
   };
 };
 
+export type GetGoogleIntegrationStatusQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetGoogleIntegrationStatusQuery = {
+  __typename?: "Query";
+  googleIntegrationStatus: {
+    __typename?: "GoogleIntegrationStatus";
+    isConnected: boolean;
+    hasGoogleAuth: boolean;
+    hasDriveAccess: boolean;
+    hasGmailAccess: boolean;
+    tokenExpiry?: string | null;
+    missingScopes: Array<string>;
+  };
+};
+
+export type RevokeGoogleIntegrationMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type RevokeGoogleIntegrationMutation = {
+  __typename?: "Mutation";
+  revokeGoogleIntegration: boolean;
+};
+
+export type ConnectGoogleIntegrationMutationVariables = Exact<{
+  input: ConnectGoogleIntegrationInput;
+}>;
+
+export type ConnectGoogleIntegrationMutation = {
+  __typename?: "Mutation";
+  connectGoogleIntegration: {
+    __typename?: "GoogleIntegrationStatus";
+    isConnected: boolean;
+    hasGoogleAuth: boolean;
+    hasDriveAccess: boolean;
+    hasGmailAccess: boolean;
+    tokenExpiry?: string | null;
+    missingScopes: Array<string>;
+  };
+};
+
 export type GetPersonCustomFieldDefinitionsQueryVariables = Exact<{
   [key: string]: never;
 }>;
@@ -3152,6 +4224,7 @@ export type GetDealWithHistoryQuery = {
     deal_specific_probability?: number | null;
     weighted_amount?: number | null;
     assigned_to_user_id?: string | null;
+    project_id: string;
     assignedToUser?: {
       __typename?: "User";
       id: string;

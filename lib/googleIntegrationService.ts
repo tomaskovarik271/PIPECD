@@ -90,6 +90,13 @@ const storeExtendedTokens = async (
   const supabase = getAuthenticatedClient(accessToken);
   
   try {
+    // First, deactivate any existing tokens for this user
+    await supabase
+      .from('google_oauth_tokens')
+      .update({ is_active: false })
+      .eq('user_id', userId);
+
+    // Then insert the new tokens
     const { error } = await supabase
       .from('google_oauth_tokens')
       .upsert({
@@ -100,6 +107,9 @@ const storeExtendedTokens = async (
         granted_scopes: tokenData.granted_scopes,
         is_active: true,
         last_used_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id',
+        ignoreDuplicates: false
       });
 
     handleSupabaseError(error, 'storing Google tokens');

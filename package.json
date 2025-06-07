@@ -62,6 +62,7 @@
     "@whatwg-node/server": "^0.10.5",
     "d3": "^7.9.0",
     "deep-diff": "^1.0.2",
+    "googleapis": "^150.0.1",
     "graphql-yoga": "^5.13.4",
     "inngest": "^3.35.1",
     "lucide-react": "^0.513.0",

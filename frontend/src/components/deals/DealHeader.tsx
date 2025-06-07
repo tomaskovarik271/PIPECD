@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Flex,
   VStack,
@@ -17,9 +17,40 @@ import { Link as RouterLink } from 'react-router-dom';
 import { CheckIcon, TimeIcon, WarningIcon, CalendarIcon } from '@chakra-ui/icons';
 import { Deal } from '../../stores/useDealsStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { gql } from 'graphql-request';
+import { gqlClient } from '../../lib/graphqlClient';
+
+// Add GraphQL query for workflow steps
+const GET_DEAL_WORKFLOW_STEPS = gql`
+  query GetDealWorkflowSteps($dealId: ID!) {
+    deal(id: $dealId) {
+      id
+      wfmProject {
+        id
+        workflow {
+          id
+          name
+          steps {
+            id
+            stepOrder
+            isInitialStep
+            isFinalStep
+            status {
+              id
+              name
+              color
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 
 interface DealHeaderProps {
   deal: Deal;
+  isEditing?: boolean;
+  setIsEditing?: (editing: boolean) => void;
   onCreateActivity?: () => void;
   dealActivities?: Array<{
     id: string;
@@ -30,9 +61,55 @@ interface DealHeaderProps {
   }>;
 }
 
-export const DealHeader: React.FC<DealHeaderProps> = ({ deal, onCreateActivity, dealActivities = [] }) => {
+export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing, setIsEditing, onCreateActivity, dealActivities = [] }) => {
   const colors = useThemeColors();
+  const [workflowSteps, setWorkflowSteps] = useState<any[]>([]);
+  const [isLoadingSteps, setIsLoadingSteps] = useState(false);
   
+  // Fetch workflow steps when component mounts
+  React.useEffect(() => {
+    const fetchWorkflowSteps = async () => {
+      console.log('[DealHeader] Deal data:', { 
+        id: deal.id, 
+        wfm_project_id: deal.wfm_project_id,
+        currentWfmStep: deal.currentWfmStep 
+      });
+      
+      if (!deal.wfm_project_id) {
+        console.log('[DealHeader] No wfm_project_id, skipping workflow steps fetch');
+        return;
+      }
+      
+      setIsLoadingSteps(true);
+      try {
+        console.log('[DealHeader] Fetching workflow steps for deal:', deal.id);
+        const response = await gqlClient.request(GET_DEAL_WORKFLOW_STEPS, {
+          dealId: deal.id
+        }) as any;
+        
+        console.log('[DealHeader] GraphQL response:', response);
+        
+        if (response.deal?.wfmProject?.workflow?.steps) {
+          const steps = response.deal.wfmProject.workflow.steps;
+          console.log('[DealHeader] Found workflow steps:', steps);
+          // Sort by stepOrder to ensure correct sequence
+          steps.sort((a: any, b: any) => a.stepOrder - b.stepOrder);
+          setWorkflowSteps(steps);
+        } else {
+          console.log('[DealHeader] No workflow steps found in response');
+          setWorkflowSteps([]);
+        }
+      } catch (error) {
+        console.error('[DealHeader] Error fetching workflow steps:', error);
+        setWorkflowSteps([]);
+      } finally {
+        setIsLoadingSteps(false);
+      }
+    };
+
+    fetchWorkflowSteps();
+  }, [deal.id, deal.wfm_project_id]);
+
   // Calculate deal health metrics
   const getDealHealth = () => {
     const daysSinceUpdate = Math.ceil((new Date().getTime() - new Date(deal.updated_at).getTime()) / (1000 * 60 * 60 * 24));
@@ -47,21 +124,65 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, onCreateActivity, 
     return { status: 'On Track', color: 'blue', icon: CheckIcon };
   };
 
-  // Calculate pipeline progress (mock data - you'd replace with real pipeline steps)
+  // Calculate pipeline progress based on actual WFM workflow steps
   const getPipelineProgress = () => {
-    const steps = ['Prospect', 'Qualification', 'Proposal', 'Negotiation', 'Closed'];
-    const currentStepName = deal.currentWfmStep?.status?.name || 'Prospect';
+    const currentStep = deal.currentWfmStep;
     
-    let currentIndex = 0;
-    if (currentStepName.includes('Qualif')) currentIndex = 1;
-    else if (currentStepName.includes('Proposal')) currentIndex = 2;
-    else if (currentStepName.includes('Negotiat')) currentIndex = 3;
-    else if (currentStepName.includes('Won') || currentStepName.includes('Lost')) currentIndex = 4;
+    // If we have real workflow steps, use them
+    if (workflowSteps.length > 0 && currentStep) {
+      const currentStepIndex = workflowSteps.findIndex(step => step.id === currentStep.id);
+      
+      if (currentStepIndex >= 0) {
+        const stepNames = workflowSteps.map(step => step.status.name);
+        const progress = workflowSteps.length > 1 
+          ? (currentStepIndex / (workflowSteps.length - 1)) * 100 
+          : 0;
+        
+        return {
+          steps: stepNames,
+          currentIndex: currentStepIndex,
+          progress,
+          currentStepName: currentStep.status?.name
+        };
+      }
+    }
+    
+    // Fallback for when workflow steps aren't loaded yet or don't exist
+    if (!currentStep) {
+      return {
+        steps: ['Not Started'],
+        currentIndex: 0,
+        progress: 0,
+        currentStepName: 'Not Started'
+      };
+    }
+
+    const currentStepName = currentStep.status?.name || 'Unknown';
+    const stepOrder = currentStep.stepOrder || 0;
+    
+    // Create a simplified view showing the actual current step
+    const steps = [];
+    let currentIndex = 1; // Middle position
+    
+    if (stepOrder > 1) {
+      steps.push('Previous Steps');
+    }
+    
+    steps.push(currentStepName);
+    
+    if (!currentStep.isFinalStep) {
+      steps.push('Next Steps');
+    }
+    
+    // Calculate progress based on step order
+    const estimatedTotalSteps = 5;
+    const normalizedProgress = Math.min((stepOrder - 1) / (estimatedTotalSteps - 1), 1) * 100;
     
     return {
       steps,
-      currentIndex,
-      progress: (currentIndex / (steps.length - 1)) * 100
+      currentIndex: Math.max(0, steps.findIndex(step => step === currentStepName)),
+      progress: normalizedProgress,
+      currentStepName
     };
   };
 

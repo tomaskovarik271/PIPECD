@@ -1,0 +1,199 @@
+# GraphQL schema for Google Drive and Gmail Integration
+# Leverages existing Supabase Google OAuth with extended scopes
+
+type GoogleIntegrationStatus {
+  isConnected: Boolean!
+  hasGoogleAuth: Boolean!
+  hasDriveAccess: Boolean!
+  hasGmailAccess: Boolean!
+  tokenExpiry: DateTime
+  missingScopes: [String!]!
+}
+
+type GoogleTokenData {
+  access_token: String!
+  refresh_token: String
+  expires_at: DateTime
+  granted_scopes: [String!]!
+}
+
+input GoogleTokenInput {
+  access_token: String!
+  refresh_token: String
+  expires_at: DateTime
+  granted_scopes: [String!]!
+}
+
+# Documents attached to CRM entities via Google Drive
+type Document {
+  id: ID!
+  entityType: EntityType!
+  entityId: ID!
+  
+  # Google Drive integration
+  googleDriveFileId: String
+  googleDriveWebViewLink: String
+  googleDriveDownloadLink: String
+  googleDriveFolderId: String
+  
+  # Document metadata
+  fileName: String!
+  mimeType: String
+  fileSizeBytes: Int
+  
+  # Permissions and sharing
+  isPublic: Boolean!
+  sharedWithUsers: [ID!]!
+  
+  # Audit fields
+  createdByUser: User!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  lastSyncedAt: DateTime
+}
+
+# Emails associated with CRM entities via Gmail
+type Email {
+  id: ID!
+  
+  # Gmail integration
+  gmailMessageId: String
+  gmailThreadId: String
+  
+  # Polymorphic entity attachment
+  entityType: EntityType
+  entityId: ID
+  
+  # Email metadata
+  subject: String!
+  bodyPreview: String
+  fullBody: String
+  
+  # Participants
+  fromEmail: String!
+  toEmails: [String!]!
+  ccEmails: [String!]!
+  bccEmails: [String!]!
+  
+  # Status
+  isOutbound: Boolean!
+  isRead: Boolean!
+  hasAttachments: Boolean!
+  
+  # Gmail labels
+  gmailLabels: [String!]!
+  
+  # Timing
+  sentAt: DateTime!
+  
+  # Audit fields
+  createdByUser: User!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type EmailActivity {
+  id: ID!
+  email: Email!
+  activityType: EmailActivityType!
+  occurredAt: DateTime!
+  metadata: JSON
+  createdAt: DateTime!
+}
+
+enum EmailActivityType {
+  SENT
+  DELIVERED
+  OPENED
+  REPLIED
+  FORWARDED
+  CLICKED_LINK
+}
+
+# Input types for mutations
+input ConnectGoogleIntegrationInput {
+  tokenData: GoogleTokenInput!
+}
+
+input CreateDocumentInput {
+  entityType: EntityType!
+  entityId: ID!
+  fileName: String!
+  googleDriveFileId: String
+  mimeType: String
+  fileSizeBytes: Int
+}
+
+input CreateEmailInput {
+  gmailMessageId: String
+  gmailThreadId: String
+  entityType: EntityType
+  entityId: ID
+  subject: String!
+  bodyPreview: String
+  fullBody: String
+  fromEmail: String!
+  toEmails: [String!]!
+  ccEmails: [String!] = []
+  bccEmails: [String!] = []
+  isOutbound: Boolean!
+  isRead: Boolean!
+  hasAttachments: Boolean!
+  gmailLabels: [String!] = []
+  sentAt: DateTime!
+}
+
+# Extend existing Query type
+extend type Query {
+  # Check user's Google integration status
+  googleIntegrationStatus: GoogleIntegrationStatus!
+  
+  # Get documents for an entity
+  getEntityDocuments(
+    entityType: EntityType!
+    entityId: ID!
+  ): [Document!]!
+  
+  # Get emails for an entity
+  getEntityEmails(
+    entityType: EntityType!
+    entityId: ID!
+  ): [Email!]!
+  
+  # Search emails
+  searchEmails(
+    query: String!
+    entityType: EntityType
+    limit: Int = 20
+  ): [Email!]!
+}
+
+# Extend existing Mutation type
+extend type Mutation {
+  # Connect Google integration with extended permissions
+  connectGoogleIntegration(input: ConnectGoogleIntegrationInput!): GoogleIntegrationStatus!
+  
+  # Revoke Google integration
+  revokeGoogleIntegration: Boolean!
+  
+  # Create a document record
+  createDocument(input: CreateDocumentInput!): Document!
+  
+  # Create an email record (usually from Gmail sync)
+  createEmail(input: CreateEmailInput!): Email!
+  
+  # Sync Gmail emails for an entity
+  syncGmailEmails(
+    entityType: EntityType!
+    entityId: ID!
+  ): [Email!]!
+  
+  # Upload file to Google Drive and attach to entity
+  uploadToGoogleDrive(
+    entityType: EntityType!
+    entityId: ID!
+    fileName: String!
+    fileContent: String! # Base64 encoded
+    mimeType: String!
+  ): Document!
+} 

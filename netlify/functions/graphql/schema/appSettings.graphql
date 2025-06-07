@@ -1,0 +1,38 @@
+type AppSetting {
+  id: ID!
+  settingKey: String!
+  settingValue: JSON
+  settingType: String!
+  description: String
+  isPublic: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+input UpdateAppSettingInput {
+  settingKey: String!
+  settingValue: JSON!
+}
+
+type Query {
+  """Get all app settings (admin only for private settings)"""
+  appSettings: [AppSetting!]!
+  
+  """Get a specific app setting by key"""
+  appSetting(settingKey: String!): AppSetting
+  
+  """Get Google Drive configuration settings"""
+  googleDriveSettings: GoogleDriveConfig!
+}
+
+type Mutation {
+  """Update an app setting (admin only)"""
+  updateAppSetting(input: UpdateAppSettingInput!): AppSetting!
+}
+
+"""Google Drive specific configuration"""
+type GoogleDriveConfig {
+  pipecd_deals_folder_id: String
+  auto_create_deal_folders: Boolean!
+  deal_folder_template: Boolean!
+} 

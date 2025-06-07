@@ -46,11 +46,13 @@ const NAV_ITEMS = [
 
 const ADMIN_NAV_ITEMS = [
   { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon />, permission: 'custom_fields:manage_definitions' },
+  { path: '/admin/google-drive', label: 'Google Drive Settings', icon: <SettingsIcon />, permission: null }, // Allow any admin user to see Google Drive settings
   { path: '/admin/wfm', label: 'Workflow Management', icon: <SettingsIcon />, permission: null }, // Allow any admin user to see WFM
 ];
 
 const USER_NAV_ITEMS = [
     { path: '/profile', label: 'My Profile', icon: <SettingsIcon /> },
+    { path: '/google-integration', label: 'Google Integration', icon: <SettingsIcon /> },
 ];
 
 function Sidebar() {

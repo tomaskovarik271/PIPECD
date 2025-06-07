@@ -13,12 +13,15 @@ import ActivitiesPage from './pages/ActivitiesPage';
 import ActivityDetailPage from './pages/ActivityDetailPage';
 import DealDetailPage from './pages/DealDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import GoogleIntegrationPage from './pages/GoogleIntegrationPage';
+import GoogleOAuthCallback from './pages/GoogleOAuthCallback';
 import AgentPage from './pages/AgentPage';
 import CustomFieldsPage from './pages/admin/CustomFieldsPage';
 import WfmAdminPage from './pages/admin/WfmAdminPage';
 import WFMStatusesPage from './pages/admin/WFMStatusesPage';
 import WFMWorkflowsPage from './pages/admin/WFMWorkflowsPage';
 import WFMProjectTypesPage from './pages/admin/WFMProjectTypesPage';
+import GoogleDriveSettingsPage from './pages/admin/GoogleDriveSettingsPage';
 import { RelationshipIntelligencePage } from './pages/RelationshipIntelligencePage';
 import CrossEntityNetworkPage from './pages/CrossEntityNetworkPage';
 import { 
@@ -77,7 +80,10 @@ function AppContent() {
             <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
             <Route path="/agent" element={<AgentPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/google-integration" element={<GoogleIntegrationPage />} />
+            <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
             <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
+            <Route path="/admin/google-drive" element={<GoogleDriveSettingsPage />} />
             <Route path="/admin/wfm" element={<WfmAdminPage />}>
               <Route index element={<WFMStatusesPage />} />
               <Route path="statuses" element={<WFMStatusesPage />} />
@@ -216,7 +222,7 @@ function App() {
                   },
                 },
               }} 
-              providers={['github']} 
+              providers={['github', 'google']} 
             />
           </VStack>
         </Box>

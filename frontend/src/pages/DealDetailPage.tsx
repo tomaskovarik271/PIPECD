@@ -65,6 +65,8 @@ import { DealCustomFieldsPanel } from '../components/deals/DealCustomFieldsPanel
 import { DealHistoryPanel } from '../components/deals/DealHistoryPanel';
 import { DealOverviewPanel } from '../components/deals/DealOverviewPanel';
 import { DealOrganizationContactsPanel } from '../components/deals/DealOrganizationContactsPanel';
+import DealEmailsPanel from '../components/deals/DealEmailsPanel';
+import DealDocumentsPanel from '../components/deals/DealDocumentsPanel';
 import { StickerBoard } from '../components/common/StickerBoard';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 
@@ -394,6 +396,12 @@ const DealDetailPage = () => {
                         Activities ({dealActivities.length})
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                        Emails
+                      </Tab>
+                      <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                        Documents
+                      </Tab>
+                      <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         Custom Fields
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
@@ -428,7 +436,21 @@ const DealDetailPage = () => {
                           getActivityTypeIcon={getActivityTypeIcon}
                         />
                                           </TabPanel>
-                      
+
+                      <TabPanel>
+                        <DealEmailsPanel
+                          dealId={currentDeal.id}
+                          primaryContactEmail={currentDeal.person?.email}
+                        />
+                                                                </TabPanel>
+
+                      <TabPanel>
+                        <DealDocumentsPanel
+                          dealId={currentDeal.id}
+                          dealName={currentDeal.name || undefined}
+                        />
+                      </TabPanel>
+
                       <TabPanel>
                         <DealCustomFieldsPanel
                           customFieldDefinitions={customFieldDefinitions || []}

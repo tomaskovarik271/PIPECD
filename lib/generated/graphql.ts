@@ -190,6 +190,12 @@ export enum AgentThoughtType {
   ToolCall = "TOOL_CALL",
 }
 
+export type AttachFileInput = {
+  category?: InputMaybe<DocumentCategory>;
+  dealId: Scalars["ID"]["input"];
+  fileId: Scalars["String"]["input"];
+};
+
 export enum BudgetAuthorityLevel {
   High = "HIGH",
   Low = "LOW",
@@ -206,6 +212,23 @@ export enum CommunicationPreference {
   Slack = "SLACK",
   Teams = "TEAMS",
 }
+
+export type ComposeEmailInput = {
+  attachments?: InputMaybe<Array<EmailAttachmentInput>>;
+  bcc?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  body: Scalars["String"]["input"];
+  cc?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  dealId?: InputMaybe<Scalars["String"]["input"]>;
+  entityId?: InputMaybe<Scalars["String"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  subject: Scalars["String"]["input"];
+  threadId?: InputMaybe<Scalars["String"]["input"]>;
+  to: Array<Scalars["String"]["input"]>;
+};
+
+export type ConnectGoogleIntegrationInput = {
+  tokenData: GoogleTokenInput;
+};
 
 export type ConvertedEntities = {
   __typename?: "ConvertedEntities";
@@ -224,6 +247,41 @@ export type CreateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject: Scalars["String"]["input"];
   type: ActivityType;
+};
+
+export type CreateDealFolderInput = {
+  dealId: Scalars["ID"]["input"];
+  dealName: Scalars["String"]["input"];
+  parentFolderId?: InputMaybe<Scalars["String"]["input"]>;
+  templateStructure?: InputMaybe<Scalars["Boolean"]["input"]>;
+};
+
+export type CreateDocumentInput = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+  fileName: Scalars["String"]["input"];
+  fileSizeBytes?: InputMaybe<Scalars["Int"]["input"]>;
+  googleDriveFileId?: InputMaybe<Scalars["String"]["input"]>;
+  mimeType?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type CreateEmailInput = {
+  bccEmails?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  bodyPreview?: InputMaybe<Scalars["String"]["input"]>;
+  ccEmails?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<EntityType>;
+  fromEmail: Scalars["String"]["input"];
+  fullBody?: InputMaybe<Scalars["String"]["input"]>;
+  gmailLabels?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  gmailMessageId?: InputMaybe<Scalars["String"]["input"]>;
+  gmailThreadId?: InputMaybe<Scalars["String"]["input"]>;
+  hasAttachments: Scalars["Boolean"]["input"];
+  isOutbound: Scalars["Boolean"]["input"];
+  isRead: Scalars["Boolean"]["input"];
+  sentAt: Scalars["DateTime"]["input"];
+  subject: Scalars["String"]["input"];
+  toEmails: Array<Scalars["String"]["input"]>;
 };
 
 export type CreateOrganizationRelationshipInput = {
@@ -282,6 +340,33 @@ export type CreateStakeholderAnalysisInput = {
   personId: Scalars["ID"]["input"];
   preferredMeetingTime?: InputMaybe<Scalars["String"]["input"]>;
   successMetrics?: InputMaybe<Scalars["JSON"]["input"]>;
+};
+
+export type CreateStickerInput = {
+  categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  color?: InputMaybe<Scalars["String"]["input"]>;
+  content?: InputMaybe<Scalars["String"]["input"]>;
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+  height?: InputMaybe<Scalars["Int"]["input"]>;
+  isPinned?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isPrivate?: InputMaybe<Scalars["Boolean"]["input"]>;
+  mentions?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  positionX?: InputMaybe<Scalars["Int"]["input"]>;
+  positionY?: InputMaybe<Scalars["Int"]["input"]>;
+  priority?: InputMaybe<StickerPriority>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  title: Scalars["String"]["input"];
+  width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type CreateTaskFromEmailInput = {
+  assigneeId?: InputMaybe<Scalars["String"]["input"]>;
+  dealId?: InputMaybe<Scalars["String"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  dueDate?: InputMaybe<Scalars["String"]["input"]>;
+  emailId: Scalars["String"]["input"];
+  subject: Scalars["String"]["input"];
 };
 
 export type CreateTerritoryInput = {
@@ -437,6 +522,18 @@ export type DealHistoryArgs = {
   offset?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
+export type DealDocumentAttachment = {
+  __typename?: "DealDocumentAttachment";
+  attachedAt: Scalars["String"]["output"];
+  attachedBy: Scalars["ID"]["output"];
+  category?: Maybe<DocumentCategory>;
+  dealId: Scalars["ID"]["output"];
+  fileId: Scalars["String"]["output"];
+  fileName: Scalars["String"]["output"];
+  fileUrl: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+};
+
 export type DealHistoryEntry = {
   __typename?: "DealHistoryEntry";
   changes?: Maybe<Scalars["JSON"]["output"]>;
@@ -479,6 +576,255 @@ export enum DecisionAuthority {
   StrongInfluence = "STRONG_INFLUENCE",
 }
 
+export type Document = {
+  __typename?: "Document";
+  createdAt: Scalars["DateTime"]["output"];
+  createdByUser: User;
+  entityId: Scalars["ID"]["output"];
+  entityType: EntityType;
+  fileName: Scalars["String"]["output"];
+  fileSizeBytes?: Maybe<Scalars["Int"]["output"]>;
+  googleDriveDownloadLink?: Maybe<Scalars["String"]["output"]>;
+  googleDriveFileId?: Maybe<Scalars["String"]["output"]>;
+  googleDriveFolderId?: Maybe<Scalars["String"]["output"]>;
+  googleDriveWebViewLink?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isPublic: Scalars["Boolean"]["output"];
+  lastSyncedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  mimeType?: Maybe<Scalars["String"]["output"]>;
+  sharedWithUsers: Array<Scalars["ID"]["output"]>;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export enum DocumentCategory {
+  Contracts = "CONTRACTS",
+  Correspondence = "CORRESPONDENCE",
+  Legal = "LEGAL",
+  Other = "OTHER",
+  Presentations = "PRESENTATIONS",
+  Proposals = "PROPOSALS",
+}
+
+export type DriveFile = {
+  __typename?: "DriveFile";
+  createdTime: Scalars["String"]["output"];
+  iconLink?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  mimeType: Scalars["String"]["output"];
+  modifiedTime: Scalars["String"]["output"];
+  name: Scalars["String"]["output"];
+  owners?: Maybe<Array<DriveFileOwner>>;
+  parents?: Maybe<Array<Scalars["String"]["output"]>>;
+  size?: Maybe<Scalars["Int"]["output"]>;
+  thumbnailLink?: Maybe<Scalars["String"]["output"]>;
+  webContentLink?: Maybe<Scalars["String"]["output"]>;
+  webViewLink?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type DriveFileConnection = {
+  __typename?: "DriveFileConnection";
+  files: Array<DriveFile>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type DriveFileOwner = {
+  __typename?: "DriveFileOwner";
+  displayName: Scalars["String"]["output"];
+  emailAddress: Scalars["String"]["output"];
+};
+
+export type DriveFolder = {
+  __typename?: "DriveFolder";
+  createdTime: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  modifiedTime: Scalars["String"]["output"];
+  name: Scalars["String"]["output"];
+  parents?: Maybe<Array<Scalars["String"]["output"]>>;
+  webViewLink: Scalars["String"]["output"];
+};
+
+export type DriveFolderBrowseInput = {
+  includeFiles?: InputMaybe<Scalars["Boolean"]["input"]>;
+  parentFolderId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type DriveFolderConnection = {
+  __typename?: "DriveFolderConnection";
+  folders: Array<DriveFolder>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type DriveFolderStructure = {
+  __typename?: "DriveFolderStructure";
+  dealFolder: DriveFolder;
+  subfolders: DriveFolderSubfolders;
+};
+
+export type DriveFolderSubfolders = {
+  __typename?: "DriveFolderSubfolders";
+  contracts?: Maybe<DriveFolder>;
+  correspondence?: Maybe<DriveFolder>;
+  legal?: Maybe<DriveFolder>;
+  presentations?: Maybe<DriveFolder>;
+  proposals?: Maybe<DriveFolder>;
+};
+
+export type DrivePermissionInput = {
+  domain?: InputMaybe<Scalars["String"]["input"]>;
+  emailAddress?: InputMaybe<Scalars["String"]["input"]>;
+  role: DrivePermissionRole;
+  type: DrivePermissionType;
+};
+
+export enum DrivePermissionRole {
+  Commenter = "COMMENTER",
+  FileOrganizer = "FILE_ORGANIZER",
+  Organizer = "ORGANIZER",
+  Owner = "OWNER",
+  Reader = "READER",
+  Writer = "WRITER",
+}
+
+export enum DrivePermissionType {
+  Anyone = "ANYONE",
+  Domain = "DOMAIN",
+  Group = "GROUP",
+  User = "USER",
+}
+
+export type DriveSearchInput = {
+  folderId?: InputMaybe<Scalars["String"]["input"]>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type Email = {
+  __typename?: "Email";
+  bccEmails: Array<Scalars["String"]["output"]>;
+  bodyPreview?: Maybe<Scalars["String"]["output"]>;
+  ccEmails: Array<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  createdByUser: User;
+  entityId?: Maybe<Scalars["ID"]["output"]>;
+  entityType?: Maybe<EntityType>;
+  fromEmail: Scalars["String"]["output"];
+  fullBody?: Maybe<Scalars["String"]["output"]>;
+  gmailLabels: Array<Scalars["String"]["output"]>;
+  gmailMessageId?: Maybe<Scalars["String"]["output"]>;
+  gmailThreadId?: Maybe<Scalars["String"]["output"]>;
+  hasAttachments: Scalars["Boolean"]["output"];
+  id: Scalars["ID"]["output"];
+  isOutbound: Scalars["Boolean"]["output"];
+  isRead: Scalars["Boolean"]["output"];
+  sentAt: Scalars["DateTime"]["output"];
+  subject: Scalars["String"]["output"];
+  toEmails: Array<Scalars["String"]["output"]>;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type EmailActivity = {
+  __typename?: "EmailActivity";
+  activityType: EmailActivityType;
+  createdAt: Scalars["DateTime"]["output"];
+  email: Email;
+  id: Scalars["ID"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  occurredAt: Scalars["DateTime"]["output"];
+};
+
+export enum EmailActivityType {
+  ClickedLink = "CLICKED_LINK",
+  Delivered = "DELIVERED",
+  Forwarded = "FORWARDED",
+  Opened = "OPENED",
+  Replied = "REPLIED",
+  Sent = "SENT",
+}
+
+export type EmailAnalytics = {
+  __typename?: "EmailAnalytics";
+  avgResponseTime?: Maybe<Scalars["String"]["output"]>;
+  emailSentiment?: Maybe<Scalars["String"]["output"]>;
+  lastContactTime?: Maybe<Scalars["String"]["output"]>;
+  responseRate?: Maybe<Scalars["Float"]["output"]>;
+  totalThreads: Scalars["Int"]["output"];
+  unreadCount: Scalars["Int"]["output"];
+};
+
+export type EmailAttachment = {
+  __typename?: "EmailAttachment";
+  downloadUrl?: Maybe<Scalars["String"]["output"]>;
+  filename: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  mimeType: Scalars["String"]["output"];
+  size: Scalars["Int"]["output"];
+};
+
+export type EmailAttachmentInput = {
+  content: Scalars["String"]["input"];
+  filename: Scalars["String"]["input"];
+  mimeType: Scalars["String"]["input"];
+};
+
+export enum EmailImportance {
+  High = "HIGH",
+  Low = "LOW",
+  Normal = "NORMAL",
+}
+
+export type EmailMessage = {
+  __typename?: "EmailMessage";
+  attachments?: Maybe<Array<EmailAttachment>>;
+  bcc?: Maybe<Array<Scalars["String"]["output"]>>;
+  body: Scalars["String"]["output"];
+  cc?: Maybe<Array<Scalars["String"]["output"]>>;
+  from: Scalars["String"]["output"];
+  hasAttachments: Scalars["Boolean"]["output"];
+  htmlBody?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  importance?: Maybe<EmailImportance>;
+  isUnread: Scalars["Boolean"]["output"];
+  labels?: Maybe<Array<Scalars["String"]["output"]>>;
+  subject: Scalars["String"]["output"];
+  threadId: Scalars["String"]["output"];
+  timestamp: Scalars["String"]["output"];
+  to: Array<Scalars["String"]["output"]>;
+};
+
+export type EmailThread = {
+  __typename?: "EmailThread";
+  dealId?: Maybe<Scalars["String"]["output"]>;
+  entityId?: Maybe<Scalars["String"]["output"]>;
+  entityType?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isUnread: Scalars["Boolean"]["output"];
+  lastActivity: Scalars["String"]["output"];
+  latestMessage?: Maybe<EmailMessage>;
+  messageCount: Scalars["Int"]["output"];
+  participants: Array<Scalars["String"]["output"]>;
+  subject: Scalars["String"]["output"];
+};
+
+export type EmailThreadConnection = {
+  __typename?: "EmailThreadConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  nextPageToken?: Maybe<Scalars["String"]["output"]>;
+  threads: Array<EmailThread>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type EmailThreadsFilterInput = {
+  contactEmail?: InputMaybe<Scalars["String"]["input"]>;
+  dateFrom?: InputMaybe<Scalars["String"]["input"]>;
+  dateTo?: InputMaybe<Scalars["String"]["input"]>;
+  dealId?: InputMaybe<Scalars["String"]["input"]>;
+  hasAttachments?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isUnread?: InputMaybe<Scalars["Boolean"]["input"]>;
+  keywords?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  pageToken?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export enum EngagementLevel {
   Blocker = "BLOCKER",
   Champion = "CHAMPION",
@@ -493,6 +839,31 @@ export enum EntityType {
   Organization = "ORGANIZATION",
   Person = "PERSON",
 }
+
+export type GoogleIntegrationStatus = {
+  __typename?: "GoogleIntegrationStatus";
+  hasDriveAccess: Scalars["Boolean"]["output"];
+  hasGmailAccess: Scalars["Boolean"]["output"];
+  hasGoogleAuth: Scalars["Boolean"]["output"];
+  isConnected: Scalars["Boolean"]["output"];
+  missingScopes: Array<Scalars["String"]["output"]>;
+  tokenExpiry?: Maybe<Scalars["DateTime"]["output"]>;
+};
+
+export type GoogleTokenData = {
+  __typename?: "GoogleTokenData";
+  access_token: Scalars["String"]["output"];
+  expires_at?: Maybe<Scalars["DateTime"]["output"]>;
+  granted_scopes: Array<Scalars["String"]["output"]>;
+  refresh_token?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type GoogleTokenInput = {
+  access_token: Scalars["String"]["input"];
+  expires_at?: InputMaybe<Scalars["DateTime"]["input"]>;
+  granted_scopes: Array<Scalars["String"]["input"]>;
+  refresh_token?: InputMaybe<Scalars["String"]["input"]>;
+};
 
 export enum InsightStatus {
   ActingOn = "ACTING_ON",
@@ -672,12 +1043,20 @@ export type MissingStakeholderRecommendations = {
 export type Mutation = {
   __typename?: "Mutation";
   addAgentThoughts: Array<AgentThought>;
+  archiveThread: Scalars["Boolean"]["output"];
   assignAccountToTerritory: AccountTerritory;
+  attachFileToDeal: DealDocumentAttachment;
+  composeEmail: EmailMessage;
+  connectGoogleIntegration: GoogleIntegrationStatus;
   convertLead: LeadConversionResult;
+  copyDriveFile: DriveFile;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
+  createDealFolder: DriveFolderStructure;
+  createDocument: Document;
+  createEmail: Email;
   createLead: Lead;
   createOrganization: Organization;
   createOrganizationRelationship: OrganizationRelationship;
@@ -685,6 +1064,8 @@ export type Mutation = {
   createPersonOrganizationalRole: PersonOrganizationalRole;
   createPersonRelationship: PersonRelationship;
   createStakeholderAnalysis: StakeholderAnalysis;
+  createSticker: SmartSticker;
+  createTaskFromEmail: Activity;
   createTerritory: Territory;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
@@ -695,6 +1076,7 @@ export type Mutation = {
   deleteActivity: Scalars["ID"]["output"];
   deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteDriveFile: Scalars["Boolean"]["output"];
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganizationRelationship: Scalars["Boolean"]["output"];
@@ -702,16 +1084,27 @@ export type Mutation = {
   deletePersonOrganizationalRole: Scalars["Boolean"]["output"];
   deletePersonRelationship: Scalars["Boolean"]["output"];
   deleteStakeholderAnalysis: Scalars["Boolean"]["output"];
+  deleteSticker: Scalars["Boolean"]["output"];
   deleteTerritory: Scalars["Boolean"]["output"];
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
+  detachFileFromDeal: Scalars["Boolean"]["output"];
   dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
+  linkEmailToDeal: Scalars["Boolean"]["output"];
+  markThreadAsRead: Scalars["Boolean"]["output"];
+  markThreadAsUnread: Scalars["Boolean"]["output"];
+  moveDriveFile: DriveFile;
+  moveStickersBulk: Array<SmartSticker>;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
   removeAccountFromTerritory: Scalars["Boolean"]["output"];
+  revokeGoogleIntegration: Scalars["Boolean"]["output"];
   sendAgentMessage: AgentResponse;
+  shareDriveFolder: Scalars["Boolean"]["output"];
+  syncGmailEmails: Array<Email>;
+  toggleStickerPin: SmartSticker;
   updateActivity: Activity;
   updateAgentConversation: AgentConversation;
   updateCustomFieldDefinition: CustomFieldDefinition;
@@ -724,6 +1117,8 @@ export type Mutation = {
   updatePersonOrganizationalRole: PersonOrganizationalRole;
   updateRelationshipInsight: RelationshipInsight;
   updateStakeholderAnalysis: StakeholderAnalysis;
+  updateSticker: SmartSticker;
+  updateStickerTags: SmartSticker;
   updateTerritory: Territory;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
@@ -733,11 +1128,17 @@ export type Mutation = {
   updateWFMWorkflowStep: WfmWorkflowStep;
   updateWFMWorkflowStepsOrder?: Maybe<WfmWorkflow>;
   updateWFMWorkflowTransition: WfmWorkflowTransition;
+  uploadFileToDrive: DriveFile;
+  uploadToGoogleDrive: Document;
 };
 
 export type MutationAddAgentThoughtsArgs = {
   conversationId: Scalars["ID"]["input"];
   thoughts: Array<AgentThoughtInput>;
+};
+
+export type MutationArchiveThreadArgs = {
+  threadId: Scalars["String"]["input"];
 };
 
 export type MutationAssignAccountToTerritoryArgs = {
@@ -747,9 +1148,27 @@ export type MutationAssignAccountToTerritoryArgs = {
   territoryId: Scalars["ID"]["input"];
 };
 
+export type MutationAttachFileToDealArgs = {
+  input: AttachFileInput;
+};
+
+export type MutationComposeEmailArgs = {
+  input: ComposeEmailInput;
+};
+
+export type MutationConnectGoogleIntegrationArgs = {
+  input: ConnectGoogleIntegrationInput;
+};
+
 export type MutationConvertLeadArgs = {
   id: Scalars["ID"]["input"];
   input: LeadConversionInput;
+};
+
+export type MutationCopyDriveFileArgs = {
+  fileId: Scalars["String"]["input"];
+  newName?: InputMaybe<Scalars["String"]["input"]>;
+  newParentId: Scalars["String"]["input"];
 };
 
 export type MutationCreateActivityArgs = {
@@ -766,6 +1185,18 @@ export type MutationCreateCustomFieldDefinitionArgs = {
 
 export type MutationCreateDealArgs = {
   input: DealInput;
+};
+
+export type MutationCreateDealFolderArgs = {
+  input: CreateDealFolderInput;
+};
+
+export type MutationCreateDocumentArgs = {
+  input: CreateDocumentInput;
+};
+
+export type MutationCreateEmailArgs = {
+  input: CreateEmailInput;
 };
 
 export type MutationCreateLeadArgs = {
@@ -794,6 +1225,14 @@ export type MutationCreatePersonRelationshipArgs = {
 
 export type MutationCreateStakeholderAnalysisArgs = {
   input: CreateStakeholderAnalysisInput;
+};
+
+export type MutationCreateStickerArgs = {
+  input: CreateStickerInput;
+};
+
+export type MutationCreateTaskFromEmailArgs = {
+  input: CreateTaskFromEmailInput;
 };
 
 export type MutationCreateTerritoryArgs = {
@@ -836,6 +1275,10 @@ export type MutationDeleteDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteDriveFileArgs = {
+  fileId: Scalars["String"]["input"];
+};
+
 export type MutationDeleteLeadArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -864,6 +1307,10 @@ export type MutationDeleteStakeholderAnalysisArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteStickerArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteTerritoryArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -880,6 +1327,10 @@ export type MutationDeleteWfmStatusArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDetachFileFromDealArgs = {
+  attachmentId: Scalars["ID"]["input"];
+};
+
 export type MutationDismissRelationshipInsightArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -887,6 +1338,29 @@ export type MutationDismissRelationshipInsightArgs = {
 export type MutationExecuteAgentStepArgs = {
   conversationId: Scalars["ID"]["input"];
   stepId: Scalars["String"]["input"];
+};
+
+export type MutationLinkEmailToDealArgs = {
+  dealId: Scalars["String"]["input"];
+  emailId: Scalars["String"]["input"];
+};
+
+export type MutationMarkThreadAsReadArgs = {
+  threadId: Scalars["String"]["input"];
+};
+
+export type MutationMarkThreadAsUnreadArgs = {
+  threadId: Scalars["String"]["input"];
+};
+
+export type MutationMoveDriveFileArgs = {
+  fileId: Scalars["String"]["input"];
+  newParentId: Scalars["String"]["input"];
+  oldParentId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type MutationMoveStickersBulkArgs = {
+  moves: Array<StickerMoveInput>;
 };
 
 export type MutationReactivateCustomFieldDefinitionArgs = {
@@ -904,6 +1378,20 @@ export type MutationRemoveAccountFromTerritoryArgs = {
 
 export type MutationSendAgentMessageArgs = {
   input: SendMessageInput;
+};
+
+export type MutationShareDriveFolderArgs = {
+  folderId: Scalars["String"]["input"];
+  permissions: Array<DrivePermissionInput>;
+};
+
+export type MutationSyncGmailEmailsArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+};
+
+export type MutationToggleStickerPinArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationUpdateActivityArgs = {
@@ -965,6 +1453,16 @@ export type MutationUpdateStakeholderAnalysisArgs = {
   input: UpdateStakeholderAnalysisInput;
 };
 
+export type MutationUpdateStickerArgs = {
+  input: UpdateStickerInput;
+};
+
+export type MutationUpdateStickerTagsArgs = {
+  id: Scalars["ID"]["input"];
+  tagsToAdd?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  tagsToRemove?: InputMaybe<Array<Scalars["String"]["input"]>>;
+};
+
 export type MutationUpdateTerritoryArgs = {
   id: Scalars["ID"]["input"];
   input: CreateTerritoryInput;
@@ -1002,6 +1500,18 @@ export type MutationUpdateWfmWorkflowStepsOrderArgs = {
 export type MutationUpdateWfmWorkflowTransitionArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateWfmWorkflowTransitionInput;
+};
+
+export type MutationUploadFileToDriveArgs = {
+  input: UploadFileInput;
+};
+
+export type MutationUploadToGoogleDriveArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+  fileContent: Scalars["String"]["input"];
+  fileName: Scalars["String"]["input"];
+  mimeType: Scalars["String"]["input"];
 };
 
 /** Defines the Organization type and related queries/mutations. */
@@ -1178,7 +1688,24 @@ export type Query = {
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   findMissingStakeholders: MissingStakeholderRecommendations;
+  getDealDocuments: Array<DealDocumentAttachment>;
+  getDealFolder?: Maybe<DriveFolder>;
+  getDriveFile: DriveFile;
+  getDriveFiles: DriveFileConnection;
+  getDriveFolders: DriveFolderConnection;
+  getEmailAnalytics?: Maybe<EmailAnalytics>;
+  getEmailMessage?: Maybe<EmailMessage>;
+  getEmailThread?: Maybe<EmailThread>;
+  getEmailThreads: EmailThreadConnection;
+  getEntityDocuments: Array<Document>;
+  getEntityEmails: Array<Email>;
+  getEntityStickers: StickerConnection;
+  getPinnedStickers: StickerConnection;
+  getRecentDriveFiles: DriveFileConnection;
+  getSticker?: Maybe<SmartSticker>;
+  getStickerCategories: Array<StickerCategory>;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
+  googleIntegrationStatus: GoogleIntegrationStatus;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
   leads: Array<Lead>;
@@ -1197,6 +1724,9 @@ export type Query = {
   personRelationships: Array<PersonRelationship>;
   relationshipInsight?: Maybe<RelationshipInsight>;
   relationshipInsights: Array<RelationshipInsight>;
+  searchDriveFiles: DriveFileConnection;
+  searchEmails: Array<Email>;
+  searchStickers: StickerConnection;
   stakeholderAnalyses: Array<StakeholderAnalysis>;
   stakeholderAnalysis?: Maybe<StakeholderAnalysis>;
   supabaseConnectionTest: Scalars["String"]["output"];
@@ -1266,6 +1796,74 @@ export type QueryFindMissingStakeholdersArgs = {
   organizationId: Scalars["ID"]["input"];
 };
 
+export type QueryGetDealDocumentsArgs = {
+  dealId: Scalars["ID"]["input"];
+};
+
+export type QueryGetDealFolderArgs = {
+  dealId: Scalars["ID"]["input"];
+};
+
+export type QueryGetDriveFileArgs = {
+  fileId: Scalars["String"]["input"];
+};
+
+export type QueryGetDriveFilesArgs = {
+  input: DriveSearchInput;
+};
+
+export type QueryGetDriveFoldersArgs = {
+  input: DriveFolderBrowseInput;
+};
+
+export type QueryGetEmailAnalyticsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
+export type QueryGetEmailMessageArgs = {
+  messageId: Scalars["String"]["input"];
+};
+
+export type QueryGetEmailThreadArgs = {
+  threadId: Scalars["String"]["input"];
+};
+
+export type QueryGetEmailThreadsArgs = {
+  filter: EmailThreadsFilterInput;
+};
+
+export type QueryGetEntityDocumentsArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+};
+
+export type QueryGetEntityEmailsArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+};
+
+export type QueryGetEntityStickersArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityType;
+  filters?: InputMaybe<StickerFilters>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  sortBy?: InputMaybe<StickerSortBy>;
+};
+
+export type QueryGetPinnedStickersArgs = {
+  entityType?: InputMaybe<EntityType>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryGetRecentDriveFilesArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryGetStickerArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type QueryGetWfmAllowedTransitionsArgs = {
   fromStepId: Scalars["ID"]["input"];
   workflowId: Scalars["ID"]["input"];
@@ -1316,6 +1914,23 @@ export type QueryRelationshipInsightsArgs = {
   entityId?: InputMaybe<Scalars["ID"]["input"]>;
   entityType?: InputMaybe<EntityType>;
   status?: InputMaybe<InsightStatus>;
+};
+
+export type QuerySearchDriveFilesArgs = {
+  query: Scalars["String"]["input"];
+};
+
+export type QuerySearchEmailsArgs = {
+  entityType?: InputMaybe<EntityType>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  query: Scalars["String"]["input"];
+};
+
+export type QuerySearchStickersArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  filters: StickerFilters;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  sortBy?: InputMaybe<StickerSortBy>;
 };
 
 export type QueryStakeholderAnalysesArgs = {
@@ -1403,6 +2018,38 @@ export enum SeniorityLevel {
   Vp = "VP",
 }
 
+export type SmartSticker = {
+  __typename?: "SmartSticker";
+  category?: Maybe<StickerCategory>;
+  color: Scalars["String"]["output"];
+  content?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  createdBy?: Maybe<User>;
+  createdByUserId: Scalars["ID"]["output"];
+  entityId: Scalars["ID"]["output"];
+  entityType: EntityType;
+  height: Scalars["Int"]["output"];
+  id: Scalars["ID"]["output"];
+  isPinned: Scalars["Boolean"]["output"];
+  isPrivate: Scalars["Boolean"]["output"];
+  lastEditedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  lastEditedBy?: Maybe<User>;
+  lastEditedByUserId?: Maybe<Scalars["ID"]["output"]>;
+  mentions: Array<Scalars["ID"]["output"]>;
+  positionX: Scalars["Int"]["output"];
+  positionY: Scalars["Int"]["output"];
+  priority: StickerPriority;
+  tags: Array<Scalars["String"]["output"]>;
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  width: Scalars["Int"]["output"];
+};
+
+export enum SortDirection {
+  Asc = "ASC",
+  Desc = "DESC",
+}
+
 export enum StageType {
   Lost = "LOST",
   Open = "OPEN",
@@ -1452,6 +2099,65 @@ export type StakeholderNetworkAnalysis = {
   stakeholderCount: Scalars["Int"]["output"];
   stakeholders: Array<StakeholderAnalysis>;
 };
+
+export type StickerCategory = {
+  __typename?: "StickerCategory";
+  color: Scalars["String"]["output"];
+  createdAt: Scalars["DateTime"]["output"];
+  description?: Maybe<Scalars["String"]["output"]>;
+  displayOrder: Scalars["Int"]["output"];
+  icon?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isSystem: Scalars["Boolean"]["output"];
+  name: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type StickerConnection = {
+  __typename?: "StickerConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  nodes: Array<SmartSticker>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type StickerFilters = {
+  categoryIds?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  createdByUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<EntityType>;
+  isPinned?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isPrivate?: InputMaybe<Scalars["Boolean"]["input"]>;
+  priority?: InputMaybe<StickerPriority>;
+  search?: InputMaybe<Scalars["String"]["input"]>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+};
+
+export type StickerMoveInput = {
+  id: Scalars["ID"]["input"];
+  positionX: Scalars["Int"]["input"];
+  positionY: Scalars["Int"]["input"];
+};
+
+export enum StickerPriority {
+  High = "HIGH",
+  Normal = "NORMAL",
+  Urgent = "URGENT",
+}
+
+export type StickerSortBy = {
+  direction?: InputMaybe<SortDirection>;
+  field: StickerSortField;
+};
+
+export enum StickerSortField {
+  CreatedAt = "CREATED_AT",
+  PositionX = "POSITION_X",
+  PositionY = "POSITION_Y",
+  Priority = "PRIORITY",
+  Title = "TITLE",
+  UpdatedAt = "UPDATED_AT",
+}
 
 export type Subscription = {
   __typename?: "Subscription";
@@ -1558,6 +2264,23 @@ export type UpdateStakeholderAnalysisInput = {
   successMetrics?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
+export type UpdateStickerInput = {
+  categoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  color?: InputMaybe<Scalars["String"]["input"]>;
+  content?: InputMaybe<Scalars["String"]["input"]>;
+  height?: InputMaybe<Scalars["Int"]["input"]>;
+  id: Scalars["ID"]["input"];
+  isPinned?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isPrivate?: InputMaybe<Scalars["Boolean"]["input"]>;
+  mentions?: InputMaybe<Array<Scalars["ID"]["input"]>>;
+  positionX?: InputMaybe<Scalars["Int"]["input"]>;
+  positionY?: InputMaybe<Scalars["Int"]["input"]>;
+  priority?: InputMaybe<StickerPriority>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  title?: InputMaybe<Scalars["String"]["input"]>;
+  width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
 /**
  * Input type for updating a user's profile.
  * Only fields intended for update should be included.
@@ -1600,6 +2323,15 @@ export type UpdateWfmWorkflowStepInput = {
 
 export type UpdateWfmWorkflowTransitionInput = {
   name?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UploadFileInput = {
+  category?: InputMaybe<DocumentCategory>;
+  content: Scalars["String"]["input"];
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  mimeType: Scalars["String"]["input"];
+  name: Scalars["String"]["input"];
+  parentFolderId?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type User = {
@@ -1836,15 +2568,23 @@ export type ResolversTypes = {
   AgentThought: ResolverTypeWrapper<AgentThought>;
   AgentThoughtInput: AgentThoughtInput;
   AgentThoughtType: AgentThoughtType;
+  AttachFileInput: AttachFileInput;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
   BudgetAuthorityLevel: BudgetAuthorityLevel;
   CommunicationPreference: CommunicationPreference;
+  ComposeEmailInput: ComposeEmailInput;
+  ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
   ConvertedEntities: ResolverTypeWrapper<ConvertedEntities>;
   CreateActivityInput: CreateActivityInput;
+  CreateDealFolderInput: CreateDealFolderInput;
+  CreateDocumentInput: CreateDocumentInput;
+  CreateEmailInput: CreateEmailInput;
   CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
   CreatePersonOrganizationalRoleInput: CreatePersonOrganizationalRoleInput;
   CreatePersonRelationshipInput: CreatePersonRelationshipInput;
   CreateStakeholderAnalysisInput: CreateStakeholderAnalysisInput;
+  CreateStickerInput: CreateStickerInput;
+  CreateTaskFromEmailInput: CreateTaskFromEmailInput;
   CreateTerritoryInput: CreateTerritoryInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
@@ -1861,13 +2601,42 @@ export type ResolversTypes = {
   CustomFieldValueInput: CustomFieldValueInput;
   DateTime: ResolverTypeWrapper<Scalars["DateTime"]["output"]>;
   Deal: ResolverTypeWrapper<Deal>;
+  DealDocumentAttachment: ResolverTypeWrapper<DealDocumentAttachment>;
   DealHistoryEntry: ResolverTypeWrapper<DealHistoryEntry>;
   DealInput: DealInput;
   DealUpdateInput: DealUpdateInput;
   DecisionAuthority: DecisionAuthority;
+  Document: ResolverTypeWrapper<Document>;
+  DocumentCategory: DocumentCategory;
+  DriveFile: ResolverTypeWrapper<DriveFile>;
+  DriveFileConnection: ResolverTypeWrapper<DriveFileConnection>;
+  DriveFileOwner: ResolverTypeWrapper<DriveFileOwner>;
+  DriveFolder: ResolverTypeWrapper<DriveFolder>;
+  DriveFolderBrowseInput: DriveFolderBrowseInput;
+  DriveFolderConnection: ResolverTypeWrapper<DriveFolderConnection>;
+  DriveFolderStructure: ResolverTypeWrapper<DriveFolderStructure>;
+  DriveFolderSubfolders: ResolverTypeWrapper<DriveFolderSubfolders>;
+  DrivePermissionInput: DrivePermissionInput;
+  DrivePermissionRole: DrivePermissionRole;
+  DrivePermissionType: DrivePermissionType;
+  DriveSearchInput: DriveSearchInput;
+  Email: ResolverTypeWrapper<Email>;
+  EmailActivity: ResolverTypeWrapper<EmailActivity>;
+  EmailActivityType: EmailActivityType;
+  EmailAnalytics: ResolverTypeWrapper<EmailAnalytics>;
+  EmailAttachment: ResolverTypeWrapper<EmailAttachment>;
+  EmailAttachmentInput: EmailAttachmentInput;
+  EmailImportance: EmailImportance;
+  EmailMessage: ResolverTypeWrapper<EmailMessage>;
+  EmailThread: ResolverTypeWrapper<EmailThread>;
+  EmailThreadConnection: ResolverTypeWrapper<EmailThreadConnection>;
+  EmailThreadsFilterInput: EmailThreadsFilterInput;
   EngagementLevel: EngagementLevel;
   EntityType: EntityType;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
+  GoogleIntegrationStatus: ResolverTypeWrapper<GoogleIntegrationStatus>;
+  GoogleTokenData: ResolverTypeWrapper<GoogleTokenData>;
+  GoogleTokenInput: GoogleTokenInput;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
   InsightStatus: InsightStatus;
   InsightType: InsightType;
@@ -1902,9 +2671,18 @@ export type ResolversTypes = {
   RelationshipInsight: ResolverTypeWrapper<RelationshipInsight>;
   SendMessageInput: SendMessageInput;
   SeniorityLevel: SeniorityLevel;
+  SmartSticker: ResolverTypeWrapper<SmartSticker>;
+  SortDirection: SortDirection;
   StageType: StageType;
   StakeholderAnalysis: ResolverTypeWrapper<StakeholderAnalysis>;
   StakeholderNetworkAnalysis: ResolverTypeWrapper<StakeholderNetworkAnalysis>;
+  StickerCategory: ResolverTypeWrapper<StickerCategory>;
+  StickerConnection: ResolverTypeWrapper<StickerConnection>;
+  StickerFilters: StickerFilters;
+  StickerMoveInput: StickerMoveInput;
+  StickerPriority: StickerPriority;
+  StickerSortBy: StickerSortBy;
+  StickerSortField: StickerSortField;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
   Subscription: ResolverTypeWrapper<{}>;
   Territory: ResolverTypeWrapper<Territory>;
@@ -1915,12 +2693,14 @@ export type ResolversTypes = {
   UpdateConversationInput: UpdateConversationInput;
   UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
+  UpdateStickerInput: UpdateStickerInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
   UpdateWFMWorkflowInput: UpdateWfmWorkflowInput;
   UpdateWFMWorkflowStepInput: UpdateWfmWorkflowStepInput;
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
+  UploadFileInput: UploadFileInput;
   User: ResolverTypeWrapper<User>;
   WFMProject: ResolverTypeWrapper<WfmProject>;
   WFMProjectType: ResolverTypeWrapper<WfmProjectType>;
@@ -1948,13 +2728,21 @@ export type ResolversParentTypes = {
   AgentResponse: AgentResponse;
   AgentThought: AgentThought;
   AgentThoughtInput: AgentThoughtInput;
+  AttachFileInput: AttachFileInput;
   Boolean: Scalars["Boolean"]["output"];
+  ComposeEmailInput: ComposeEmailInput;
+  ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
   ConvertedEntities: ConvertedEntities;
   CreateActivityInput: CreateActivityInput;
+  CreateDealFolderInput: CreateDealFolderInput;
+  CreateDocumentInput: CreateDocumentInput;
+  CreateEmailInput: CreateEmailInput;
   CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
   CreatePersonOrganizationalRoleInput: CreatePersonOrganizationalRoleInput;
   CreatePersonRelationshipInput: CreatePersonRelationshipInput;
   CreateStakeholderAnalysisInput: CreateStakeholderAnalysisInput;
+  CreateStickerInput: CreateStickerInput;
+  CreateTaskFromEmailInput: CreateTaskFromEmailInput;
   CreateTerritoryInput: CreateTerritoryInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
@@ -1969,10 +2757,34 @@ export type ResolversParentTypes = {
   CustomFieldValueInput: CustomFieldValueInput;
   DateTime: Scalars["DateTime"]["output"];
   Deal: Deal;
+  DealDocumentAttachment: DealDocumentAttachment;
   DealHistoryEntry: DealHistoryEntry;
   DealInput: DealInput;
   DealUpdateInput: DealUpdateInput;
+  Document: Document;
+  DriveFile: DriveFile;
+  DriveFileConnection: DriveFileConnection;
+  DriveFileOwner: DriveFileOwner;
+  DriveFolder: DriveFolder;
+  DriveFolderBrowseInput: DriveFolderBrowseInput;
+  DriveFolderConnection: DriveFolderConnection;
+  DriveFolderStructure: DriveFolderStructure;
+  DriveFolderSubfolders: DriveFolderSubfolders;
+  DrivePermissionInput: DrivePermissionInput;
+  DriveSearchInput: DriveSearchInput;
+  Email: Email;
+  EmailActivity: EmailActivity;
+  EmailAnalytics: EmailAnalytics;
+  EmailAttachment: EmailAttachment;
+  EmailAttachmentInput: EmailAttachmentInput;
+  EmailMessage: EmailMessage;
+  EmailThread: EmailThread;
+  EmailThreadConnection: EmailThreadConnection;
+  EmailThreadsFilterInput: EmailThreadsFilterInput;
   Float: Scalars["Float"]["output"];
+  GoogleIntegrationStatus: GoogleIntegrationStatus;
+  GoogleTokenData: GoogleTokenData;
+  GoogleTokenInput: GoogleTokenInput;
   ID: Scalars["ID"]["output"];
   Int: Scalars["Int"]["output"];
   JSON: Scalars["JSON"]["output"];
@@ -1999,8 +2811,14 @@ export type ResolversParentTypes = {
   Query: {};
   RelationshipInsight: RelationshipInsight;
   SendMessageInput: SendMessageInput;
+  SmartSticker: SmartSticker;
   StakeholderAnalysis: StakeholderAnalysis;
   StakeholderNetworkAnalysis: StakeholderNetworkAnalysis;
+  StickerCategory: StickerCategory;
+  StickerConnection: StickerConnection;
+  StickerFilters: StickerFilters;
+  StickerMoveInput: StickerMoveInput;
+  StickerSortBy: StickerSortBy;
   String: Scalars["String"]["output"];
   Subscription: {};
   Territory: Territory;
@@ -2009,12 +2827,14 @@ export type ResolversParentTypes = {
   UpdateConversationInput: UpdateConversationInput;
   UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
+  UpdateStickerInput: UpdateStickerInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
   UpdateWFMWorkflowInput: UpdateWfmWorkflowInput;
   UpdateWFMWorkflowStepInput: UpdateWfmWorkflowStepInput;
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
+  UploadFileInput: UploadFileInput;
   User: User;
   WFMProject: WfmProject;
   WFMProjectType: WfmProjectType;
@@ -2417,6 +3237,26 @@ export type DealResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type DealDocumentAttachmentResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DealDocumentAttachment"] = ResolversParentTypes["DealDocumentAttachment"],
+> = {
+  attachedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  attachedBy?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  category?: Resolver<
+    Maybe<ResolversTypes["DocumentCategory"]>,
+    ParentType,
+    ContextType
+  >;
+  dealId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  fileId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fileName?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fileUrl?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type DealHistoryEntryResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -2427,6 +3267,453 @@ export type DealHistoryEntryResolvers<
   eventType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DocumentResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["Document"] = ResolversParentTypes["Document"],
+> = {
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  createdByUser?: Resolver<ResolversTypes["User"], ParentType, ContextType>;
+  entityId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  entityType?: Resolver<ResolversTypes["EntityType"], ParentType, ContextType>;
+  fileName?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fileSizeBytes?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
+  googleDriveDownloadLink?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  googleDriveFileId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  googleDriveFolderId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  googleDriveWebViewLink?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isPublic?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  lastSyncedAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  mimeType?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  sharedWithUsers?: Resolver<
+    Array<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DriveFileResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DriveFile"] = ResolversParentTypes["DriveFile"],
+> = {
+  createdTime?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  iconLink?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  mimeType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  modifiedTime?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  owners?: Resolver<
+    Maybe<Array<ResolversTypes["DriveFileOwner"]>>,
+    ParentType,
+    ContextType
+  >;
+  parents?: Resolver<
+    Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  size?: Resolver<Maybe<ResolversTypes["Int"]>, ParentType, ContextType>;
+  thumbnailLink?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  webContentLink?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  webViewLink?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DriveFileConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DriveFileConnection"] = ResolversParentTypes["DriveFileConnection"],
+> = {
+  files?: Resolver<Array<ResolversTypes["DriveFile"]>, ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DriveFileOwnerResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DriveFileOwner"] = ResolversParentTypes["DriveFileOwner"],
+> = {
+  displayName?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  emailAddress?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DriveFolderResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DriveFolder"] = ResolversParentTypes["DriveFolder"],
+> = {
+  createdTime?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  modifiedTime?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  parents?: Resolver<
+    Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  webViewLink?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DriveFolderConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DriveFolderConnection"] = ResolversParentTypes["DriveFolderConnection"],
+> = {
+  folders?: Resolver<
+    Array<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DriveFolderStructureResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DriveFolderStructure"] = ResolversParentTypes["DriveFolderStructure"],
+> = {
+  dealFolder?: Resolver<ResolversTypes["DriveFolder"], ParentType, ContextType>;
+  subfolders?: Resolver<
+    ResolversTypes["DriveFolderSubfolders"],
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DriveFolderSubfoldersResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DriveFolderSubfolders"] = ResolversParentTypes["DriveFolderSubfolders"],
+> = {
+  contracts?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  correspondence?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  legal?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  presentations?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  proposals?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EmailResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["Email"] = ResolversParentTypes["Email"],
+> = {
+  bccEmails?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  bodyPreview?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  ccEmails?: Resolver<Array<ResolversTypes["String"]>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  createdByUser?: Resolver<ResolversTypes["User"], ParentType, ContextType>;
+  entityId?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
+  entityType?: Resolver<
+    Maybe<ResolversTypes["EntityType"]>,
+    ParentType,
+    ContextType
+  >;
+  fromEmail?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fullBody?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  gmailLabels?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  gmailMessageId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  gmailThreadId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  hasAttachments?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isOutbound?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  isRead?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  sentAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  subject?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  toEmails?: Resolver<Array<ResolversTypes["String"]>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EmailActivityResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["EmailActivity"] = ResolversParentTypes["EmailActivity"],
+> = {
+  activityType?: Resolver<
+    ResolversTypes["EmailActivityType"],
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  email?: Resolver<ResolversTypes["Email"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  occurredAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EmailAnalyticsResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["EmailAnalytics"] = ResolversParentTypes["EmailAnalytics"],
+> = {
+  avgResponseTime?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  emailSentiment?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  lastContactTime?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  responseRate?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  totalThreads?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  unreadCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EmailAttachmentResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["EmailAttachment"] = ResolversParentTypes["EmailAttachment"],
+> = {
+  downloadUrl?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  filename?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  mimeType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  size?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EmailMessageResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["EmailMessage"] = ResolversParentTypes["EmailMessage"],
+> = {
+  attachments?: Resolver<
+    Maybe<Array<ResolversTypes["EmailAttachment"]>>,
+    ParentType,
+    ContextType
+  >;
+  bcc?: Resolver<
+    Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  body?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  cc?: Resolver<
+    Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  from?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  hasAttachments?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  htmlBody?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  importance?: Resolver<
+    Maybe<ResolversTypes["EmailImportance"]>,
+    ParentType,
+    ContextType
+  >;
+  isUnread?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  labels?: Resolver<
+    Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  subject?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  threadId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  timestamp?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  to?: Resolver<Array<ResolversTypes["String"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EmailThreadResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["EmailThread"] = ResolversParentTypes["EmailThread"],
+> = {
+  dealId?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  entityId?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  entityType?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isUnread?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  lastActivity?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  latestMessage?: Resolver<
+    Maybe<ResolversTypes["EmailMessage"]>,
+    ParentType,
+    ContextType
+  >;
+  messageCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  participants?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  subject?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EmailThreadConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["EmailThreadConnection"] = ResolversParentTypes["EmailThreadConnection"],
+> = {
+  hasNextPage?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  nextPageToken?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  threads?: Resolver<
+    Array<ResolversTypes["EmailThread"]>,
+    ParentType,
+    ContextType
+  >;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type GoogleIntegrationStatusResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GoogleIntegrationStatus"] = ResolversParentTypes["GoogleIntegrationStatus"],
+> = {
+  hasDriveAccess?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  hasGmailAccess?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  hasGoogleAuth?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  isConnected?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  missingScopes?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  tokenExpiry?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type GoogleTokenDataResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GoogleTokenData"] = ResolversParentTypes["GoogleTokenData"],
+> = {
+  access_token?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  expires_at?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  granted_scopes?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  refresh_token?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2693,6 +3980,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationAddAgentThoughtsArgs, "conversationId" | "thoughts">
   >;
+  archiveThread?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationArchiveThreadArgs, "threadId">
+  >;
   assignAccountToTerritory?: Resolver<
     ResolversTypes["AccountTerritory"],
     ParentType,
@@ -2702,11 +3995,35 @@ export type MutationResolvers<
       "isPrimary" | "organizationId" | "territoryId"
     >
   >;
+  attachFileToDeal?: Resolver<
+    ResolversTypes["DealDocumentAttachment"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAttachFileToDealArgs, "input">
+  >;
+  composeEmail?: Resolver<
+    ResolversTypes["EmailMessage"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationComposeEmailArgs, "input">
+  >;
+  connectGoogleIntegration?: Resolver<
+    ResolversTypes["GoogleIntegrationStatus"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationConnectGoogleIntegrationArgs, "input">
+  >;
   convertLead?: Resolver<
     ResolversTypes["LeadConversionResult"],
     ParentType,
     ContextType,
     RequireFields<MutationConvertLeadArgs, "id" | "input">
+  >;
+  copyDriveFile?: Resolver<
+    ResolversTypes["DriveFile"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCopyDriveFileArgs, "fileId" | "newParentId">
   >;
   createActivity?: Resolver<
     ResolversTypes["Activity"],
@@ -2731,6 +4048,24 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateDealArgs, "input">
+  >;
+  createDealFolder?: Resolver<
+    ResolversTypes["DriveFolderStructure"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateDealFolderArgs, "input">
+  >;
+  createDocument?: Resolver<
+    ResolversTypes["Document"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateDocumentArgs, "input">
+  >;
+  createEmail?: Resolver<
+    ResolversTypes["Email"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateEmailArgs, "input">
   >;
   createLead?: Resolver<
     ResolversTypes["Lead"],
@@ -2773,6 +4108,18 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateStakeholderAnalysisArgs, "input">
+  >;
+  createSticker?: Resolver<
+    ResolversTypes["SmartSticker"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateStickerArgs, "input">
+  >;
+  createTaskFromEmail?: Resolver<
+    ResolversTypes["Activity"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateTaskFromEmailArgs, "input">
   >;
   createTerritory?: Resolver<
     ResolversTypes["Territory"],
@@ -2834,6 +4181,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteDealArgs, "id">
   >;
+  deleteDriveFile?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteDriveFileArgs, "fileId">
+  >;
   deleteLead?: Resolver<
     Maybe<ResolversTypes["Boolean"]>,
     ParentType,
@@ -2876,6 +4229,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteStakeholderAnalysisArgs, "id">
   >;
+  deleteSticker?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteStickerArgs, "id">
+  >;
   deleteTerritory?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -2900,6 +4259,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteWfmStatusArgs, "id">
   >;
+  detachFileFromDeal?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDetachFileFromDealArgs, "attachmentId">
+  >;
   dismissRelationshipInsight?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -2911,6 +4276,36 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationExecuteAgentStepArgs, "conversationId" | "stepId">
+  >;
+  linkEmailToDeal?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationLinkEmailToDealArgs, "dealId" | "emailId">
+  >;
+  markThreadAsRead?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkThreadAsReadArgs, "threadId">
+  >;
+  markThreadAsUnread?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkThreadAsUnreadArgs, "threadId">
+  >;
+  moveDriveFile?: Resolver<
+    ResolversTypes["DriveFile"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMoveDriveFileArgs, "fileId" | "newParentId">
+  >;
+  moveStickersBulk?: Resolver<
+    Array<ResolversTypes["SmartSticker"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationMoveStickersBulkArgs, "moves">
   >;
   reactivateCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
@@ -2933,11 +4328,34 @@ export type MutationResolvers<
       "organizationId" | "territoryId"
     >
   >;
+  revokeGoogleIntegration?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
   sendAgentMessage?: Resolver<
     ResolversTypes["AgentResponse"],
     ParentType,
     ContextType,
     RequireFields<MutationSendAgentMessageArgs, "input">
+  >;
+  shareDriveFolder?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationShareDriveFolderArgs, "folderId" | "permissions">
+  >;
+  syncGmailEmails?: Resolver<
+    Array<ResolversTypes["Email"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationSyncGmailEmailsArgs, "entityId" | "entityType">
+  >;
+  toggleStickerPin?: Resolver<
+    ResolversTypes["SmartSticker"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationToggleStickerPinArgs, "id">
   >;
   updateActivity?: Resolver<
     ResolversTypes["Activity"],
@@ -3017,6 +4435,21 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateStakeholderAnalysisArgs, "id" | "input">
   >;
+  updateSticker?: Resolver<
+    ResolversTypes["SmartSticker"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateStickerArgs, "input">
+  >;
+  updateStickerTags?: Resolver<
+    ResolversTypes["SmartSticker"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationUpdateStickerTagsArgs,
+      "id" | "tagsToAdd" | "tagsToRemove"
+    >
+  >;
   updateTerritory?: Resolver<
     ResolversTypes["Territory"],
     ParentType,
@@ -3067,6 +4500,21 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateWfmWorkflowTransitionArgs, "id" | "input">
+  >;
+  uploadFileToDrive?: Resolver<
+    ResolversTypes["DriveFile"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUploadFileToDriveArgs, "input">
+  >;
+  uploadToGoogleDrive?: Resolver<
+    ResolversTypes["Document"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationUploadToGoogleDriveArgs,
+      "entityId" | "entityType" | "fileContent" | "fileName" | "mimeType"
+    >
   >;
 };
 
@@ -3387,6 +4835,104 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryFindMissingStakeholdersArgs, "organizationId">
   >;
+  getDealDocuments?: Resolver<
+    Array<ResolversTypes["DealDocumentAttachment"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetDealDocumentsArgs, "dealId">
+  >;
+  getDealFolder?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetDealFolderArgs, "dealId">
+  >;
+  getDriveFile?: Resolver<
+    ResolversTypes["DriveFile"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetDriveFileArgs, "fileId">
+  >;
+  getDriveFiles?: Resolver<
+    ResolversTypes["DriveFileConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetDriveFilesArgs, "input">
+  >;
+  getDriveFolders?: Resolver<
+    ResolversTypes["DriveFolderConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetDriveFoldersArgs, "input">
+  >;
+  getEmailAnalytics?: Resolver<
+    Maybe<ResolversTypes["EmailAnalytics"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetEmailAnalyticsArgs, "dealId">
+  >;
+  getEmailMessage?: Resolver<
+    Maybe<ResolversTypes["EmailMessage"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetEmailMessageArgs, "messageId">
+  >;
+  getEmailThread?: Resolver<
+    Maybe<ResolversTypes["EmailThread"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetEmailThreadArgs, "threadId">
+  >;
+  getEmailThreads?: Resolver<
+    ResolversTypes["EmailThreadConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetEmailThreadsArgs, "filter">
+  >;
+  getEntityDocuments?: Resolver<
+    Array<ResolversTypes["Document"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetEntityDocumentsArgs, "entityId" | "entityType">
+  >;
+  getEntityEmails?: Resolver<
+    Array<ResolversTypes["Email"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetEntityEmailsArgs, "entityId" | "entityType">
+  >;
+  getEntityStickers?: Resolver<
+    ResolversTypes["StickerConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      QueryGetEntityStickersArgs,
+      "entityId" | "entityType" | "first"
+    >
+  >;
+  getPinnedStickers?: Resolver<
+    ResolversTypes["StickerConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetPinnedStickersArgs, "first">
+  >;
+  getRecentDriveFiles?: Resolver<
+    ResolversTypes["DriveFileConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetRecentDriveFilesArgs, "limit">
+  >;
+  getSticker?: Resolver<
+    Maybe<ResolversTypes["SmartSticker"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetStickerArgs, "id">
+  >;
+  getStickerCategories?: Resolver<
+    Array<ResolversTypes["StickerCategory"]>,
+    ParentType,
+    ContextType
+  >;
   getWfmAllowedTransitions?: Resolver<
     Array<ResolversTypes["WFMWorkflowTransition"]>,
     ParentType,
@@ -3395,6 +4941,11 @@ export type QueryResolvers<
       QueryGetWfmAllowedTransitionsArgs,
       "fromStepId" | "workflowId"
     >
+  >;
+  googleIntegrationStatus?: Resolver<
+    ResolversTypes["GoogleIntegrationStatus"],
+    ParentType,
+    ContextType
   >;
   health?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   lead?: Resolver<
@@ -3483,6 +5034,24 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     Partial<QueryRelationshipInsightsArgs>
+  >;
+  searchDriveFiles?: Resolver<
+    ResolversTypes["DriveFileConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QuerySearchDriveFilesArgs, "query">
+  >;
+  searchEmails?: Resolver<
+    Array<ResolversTypes["Email"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QuerySearchEmailsArgs, "limit" | "query">
+  >;
+  searchStickers?: Resolver<
+    ResolversTypes["StickerConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QuerySearchStickersArgs, "filters" | "first">
   >;
   stakeholderAnalyses?: Resolver<
     Array<ResolversTypes["StakeholderAnalysis"]>,
@@ -3616,6 +5185,57 @@ export type RelationshipInsightResolvers<
     ContextType
   >;
   updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type SmartStickerResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["SmartSticker"] = ResolversParentTypes["SmartSticker"],
+> = {
+  category?: Resolver<
+    Maybe<ResolversTypes["StickerCategory"]>,
+    ParentType,
+    ContextType
+  >;
+  color?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  content?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  createdByUserId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  entityId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  entityType?: Resolver<ResolversTypes["EntityType"], ParentType, ContextType>;
+  height?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isPinned?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  isPrivate?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  lastEditedAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  lastEditedBy?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  lastEditedByUserId?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
+  mentions?: Resolver<Array<ResolversTypes["ID"]>, ParentType, ContextType>;
+  positionX?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  positionY?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  priority?: Resolver<
+    ResolversTypes["StickerPriority"],
+    ParentType,
+    ContextType
+  >;
+  tags?: Resolver<Array<ResolversTypes["String"]>, ParentType, ContextType>;
+  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  width?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3756,6 +5376,47 @@ export type StakeholderNetworkAnalysisResolvers<
     ParentType,
     ContextType
   >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type StickerCategoryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["StickerCategory"] = ResolversParentTypes["StickerCategory"],
+> = {
+  color?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  displayOrder?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  icon?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isSystem?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type StickerConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["StickerConnection"] = ResolversParentTypes["StickerConnection"],
+> = {
+  hasNextPage?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  hasPreviousPage?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  nodes?: Resolver<
+    Array<ResolversTypes["SmartSticker"]>,
+    ParentType,
+    ContextType
+  >;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4104,7 +5765,25 @@ export type Resolvers<ContextType = GraphQLContext> = {
   CustomFieldValue?: CustomFieldValueResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
+  DealDocumentAttachment?: DealDocumentAttachmentResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
+  Document?: DocumentResolvers<ContextType>;
+  DriveFile?: DriveFileResolvers<ContextType>;
+  DriveFileConnection?: DriveFileConnectionResolvers<ContextType>;
+  DriveFileOwner?: DriveFileOwnerResolvers<ContextType>;
+  DriveFolder?: DriveFolderResolvers<ContextType>;
+  DriveFolderConnection?: DriveFolderConnectionResolvers<ContextType>;
+  DriveFolderStructure?: DriveFolderStructureResolvers<ContextType>;
+  DriveFolderSubfolders?: DriveFolderSubfoldersResolvers<ContextType>;
+  Email?: EmailResolvers<ContextType>;
+  EmailActivity?: EmailActivityResolvers<ContextType>;
+  EmailAnalytics?: EmailAnalyticsResolvers<ContextType>;
+  EmailAttachment?: EmailAttachmentResolvers<ContextType>;
+  EmailMessage?: EmailMessageResolvers<ContextType>;
+  EmailThread?: EmailThreadResolvers<ContextType>;
+  EmailThreadConnection?: EmailThreadConnectionResolvers<ContextType>;
+  GoogleIntegrationStatus?: GoogleIntegrationStatusResolvers<ContextType>;
+  GoogleTokenData?: GoogleTokenDataResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   Lead?: LeadResolvers<ContextType>;
   LeadConversionResult?: LeadConversionResultResolvers<ContextType>;
@@ -4120,8 +5799,11 @@ export type Resolvers<ContextType = GraphQLContext> = {
   PersonRelationship?: PersonRelationshipResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   RelationshipInsight?: RelationshipInsightResolvers<ContextType>;
+  SmartSticker?: SmartStickerResolvers<ContextType>;
   StakeholderAnalysis?: StakeholderAnalysisResolvers<ContextType>;
   StakeholderNetworkAnalysis?: StakeholderNetworkAnalysisResolvers<ContextType>;
+  StickerCategory?: StickerCategoryResolvers<ContextType>;
+  StickerConnection?: StickerConnectionResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   Territory?: TerritoryResolvers<ContextType>;
   ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;

@@ -16,6 +16,7 @@ import { wfmStatusService } from '../../../../lib/wfmStatusService';
 import { wfmWorkflowService } from '../../../../lib/wfmWorkflowService';
 import { wfmProjectTypeService } from '../../../../lib/wfmProjectTypeService';
 import * as leadService from '../../../../lib/leadService';
+import { googleIntegrationService } from '../../../../lib/googleIntegrationService';
 
 // Import generated types from backend codegen
 import type {
@@ -433,5 +434,53 @@ export const Query: QueryResolvers<GraphQLContext> = {
           display_name: profile.display_name,
           avatar_url: profile.avatar_url,
         })) as GraphQLUser[]; // Cast to GraphQLUser[] as User type in resolver can be more generic
+    },
+
+    // --- Google Integration Resolvers ---
+    googleIntegrationStatus: async (_parent, _args, context) => {
+      const { userId, accessToken } = requireAuthentication(context);
+      
+      try {
+        return await googleIntegrationService.getIntegrationStatus(userId, accessToken);
+      } catch (error) {
+        console.error('Error getting Google integration status:', error);
+        throw new GraphQLError('Failed to get Google integration status');
+      }
+    },
+
+    getEntityDocuments: async (_parent, { entityType, entityId }, context) => {
+      const { userId, accessToken } = requireAuthentication(context);
+      
+      try {
+        // TODO: Implement document retrieval service
+        throw new GraphQLError('Document retrieval not yet implemented');
+      } catch (error) {
+        console.error('Error getting entity documents:', error);
+        throw new GraphQLError('Failed to get entity documents');
+      }
+    },
+
+    getEntityEmails: async (_parent, { entityType, entityId }, context) => {
+      const { userId, accessToken } = requireAuthentication(context);
+      
+      try {
+        // TODO: Implement email retrieval service
+        throw new GraphQLError('Email retrieval not yet implemented');
+      } catch (error) {
+        console.error('Error getting entity emails:', error);
+        throw new GraphQLError('Failed to get entity emails');
+      }
+    },
+
+    searchEmails: async (_parent, { query, entityType, limit }, context) => {
+      const { userId, accessToken } = requireAuthentication(context);
+      
+      try {
+        // TODO: Implement email search service
+        throw new GraphQLError('Email search not yet implemented');
+      } catch (error) {
+        console.error('Error searching emails:', error);
+        throw new GraphQLError('Failed to search emails');
+      }
     }
 }; 

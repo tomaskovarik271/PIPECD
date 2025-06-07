@@ -57,6 +57,18 @@ import {
   smartStickerMutations
 } from './graphql/resolvers/smartStickers';
 
+// Import Email Resolvers
+import { emailQueries } from './graphql/resolvers/queries/emailQueries';
+import { emailMutations } from './graphql/resolvers/mutations/emailMutations';
+
+// Import Drive Resolvers
+import { driveQueries } from './graphql/resolvers/queries/driveQueries';
+import { driveMutations } from './graphql/resolvers/mutations/driveMutations';
+import { appSettingsQueries } from './graphql/resolvers/queries/appSettingsQueries';
+import { appSettingsMutations } from './graphql/resolvers/mutations/appSettingsMutations';
+
+
+
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
 
@@ -67,9 +79,13 @@ const loadTypeDefs = (): string => {
     'agent.graphql',
     'base.graphql', 
     'customFields.graphql', 
-    'deal.graphql', 
+    'deal.graphql',
+    'dealFolders.graphql',
+    'emails.graphql',
+    'googleDrive.graphql',
     'lead.graphql',
     'enums.graphql', 
+    'googleIntegration.graphql',
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
@@ -90,11 +106,16 @@ const loadTypeDefs = (): string => {
   const filesToLoad = [
     'activity.graphql', 
     'agent.graphql',
+    'appSettings.graphql',
     'base.graphql', 
     'customFields.graphql', 
-    'deal.graphql', 
+    'deal.graphql',
+    'dealFolders.graphql',
+    'emails.graphql',
+    'googleDrive.graphql',
     'lead.graphql',
     'enums.graphql', 
+    'googleIntegration.graphql',
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
@@ -149,6 +170,9 @@ export const resolvers = {
     ...agentQueries,
     ...relationshipQueries,
     ...smartStickerQueries,
+    ...emailQueries,
+    ...driveQueries,
+    ...appSettingsQueries,
   },
   Mutation: {
     ...BaseMutation,
@@ -160,6 +184,11 @@ export const resolvers = {
     ...agentMutations,
     ...relationshipMutations,
     ...smartStickerMutations,
+    ...emailMutations,
+    ...driveMutations,
+
+    ...appSettingsMutations,
+
   },
   Person,
   Deal,

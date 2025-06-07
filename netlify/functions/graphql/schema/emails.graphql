@@ -1,0 +1,116 @@
+type EmailThread {
+  id: ID!
+  subject: String!
+  participants: [String!]!
+  messageCount: Int!
+  latestMessage: EmailMessage
+  isUnread: Boolean!
+  lastActivity: String!
+  dealId: String
+  entityType: String
+  entityId: String
+}
+
+type EmailMessage {
+  id: ID!
+  threadId: String!
+  subject: String!
+  from: String!
+  to: [String!]!
+  cc: [String!]
+  bcc: [String!]
+  body: String!
+  htmlBody: String
+  timestamp: String!
+  isUnread: Boolean!
+  hasAttachments: Boolean!
+  attachments: [EmailAttachment!]
+  labels: [String!]
+  importance: EmailImportance
+}
+
+type EmailAttachment {
+  id: ID!
+  filename: String!
+  mimeType: String!
+  size: Int!
+  downloadUrl: String
+}
+
+enum EmailImportance {
+  LOW
+  NORMAL
+  HIGH
+}
+
+type EmailThreadConnection {
+  threads: [EmailThread!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+  nextPageToken: String
+}
+
+input EmailThreadsFilterInput {
+  dealId: String
+  contactEmail: String
+  keywords: [String!]
+  dateFrom: String
+  dateTo: String
+  isUnread: Boolean
+  hasAttachments: Boolean
+  limit: Int
+  pageToken: String
+}
+
+input ComposeEmailInput {
+  to: [String!]!
+  cc: [String!]
+  bcc: [String!]
+  subject: String!
+  body: String!
+  attachments: [EmailAttachmentInput!]
+  dealId: String
+  entityType: String
+  entityId: String
+  threadId: String
+}
+
+input EmailAttachmentInput {
+  filename: String!
+  content: String!
+  mimeType: String!
+}
+
+input CreateTaskFromEmailInput {
+  emailId: String!
+  subject: String!
+  description: String
+  dueDate: String
+  assigneeId: String
+  dealId: String
+}
+
+type EmailAnalytics {
+  totalThreads: Int!
+  unreadCount: Int!
+  avgResponseTime: String
+  lastContactTime: String
+  emailSentiment: String
+  responseRate: Float
+}
+
+extend type Query {
+  getEmailThreads(filter: EmailThreadsFilterInput!): EmailThreadConnection!
+  getEmailThread(threadId: String!): EmailThread
+  getEmailMessage(messageId: String!): EmailMessage
+  getEmailAnalytics(dealId: String!): EmailAnalytics
+}
+
+extend type Mutation {
+  composeEmail(input: ComposeEmailInput!): EmailMessage!
+  markThreadAsRead(threadId: String!): Boolean!
+  markThreadAsUnread(threadId: String!): Boolean!
+  archiveThread(threadId: String!): Boolean!
+  createTaskFromEmail(input: CreateTaskFromEmailInput!): Activity!
+  linkEmailToDeal(emailId: String!, dealId: String!): Boolean!
+} 
