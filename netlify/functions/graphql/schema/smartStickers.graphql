@@ -1,0 +1,205 @@
+# Smart Stickers GraphQL Schema
+# Visual sticky notes system for deals, organizations, and people
+
+enum EntityType {
+  DEAL
+  PERSON
+  ORGANIZATION
+}
+
+enum StickerPriority {
+  NORMAL
+  HIGH
+  URGENT
+}
+
+type StickerCategory {
+  id: ID!
+  name: String!
+  color: String!
+  icon: String
+  description: String
+  isSystem: Boolean!
+  displayOrder: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type SmartSticker {
+  id: ID!
+  
+  # Entity relationship
+  entityType: EntityType!
+  entityId: ID!
+  
+  # Content
+  title: String!
+  content: String
+  category: StickerCategory
+  
+  # Visual positioning
+  positionX: Int!
+  positionY: Int!
+  width: Int!
+  height: Int!
+  
+  # Properties
+  color: String!
+  isPinned: Boolean!
+  isPrivate: Boolean!
+  priority: StickerPriority!
+  
+  # Collaboration
+  mentions: [ID!]!
+  tags: [String!]!
+  
+  # Metadata
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdByUserId: ID!
+  lastEditedByUserId: ID
+  lastEditedAt: DateTime
+  
+  # Relations
+  createdBy: User
+  lastEditedBy: User
+}
+
+input CreateStickerInput {
+  entityType: EntityType!
+  entityId: ID!
+  title: String!
+  content: String
+  categoryId: ID
+  positionX: Int = 0
+  positionY: Int = 0
+  width: Int = 200
+  height: Int = 150
+  color: String = "#FFE066"
+  isPinned: Boolean = false
+  isPrivate: Boolean = false
+  priority: StickerPriority = NORMAL
+  mentions: [ID!] = []
+  tags: [String!] = []
+}
+
+input UpdateStickerInput {
+  id: ID!
+  title: String
+  content: String
+  categoryId: ID
+  positionX: Int
+  positionY: Int
+  width: Int
+  height: Int
+  color: String
+  isPinned: Boolean
+  isPrivate: Boolean
+  priority: StickerPriority
+  mentions: [ID!]
+  tags: [String!]
+}
+
+input StickerFilters {
+  entityType: EntityType
+  entityId: ID
+  categoryIds: [ID!]
+  isPinned: Boolean
+  isPrivate: Boolean
+  priority: StickerPriority
+  tags: [String!]
+  createdByUserId: ID
+  search: String # Search in title and content
+}
+
+input StickerSortBy {
+  field: StickerSortField!
+  direction: SortDirection = DESC
+}
+
+enum StickerSortField {
+  CREATED_AT
+  UPDATED_AT
+  TITLE
+  PRIORITY
+  POSITION_X
+  POSITION_Y
+}
+
+enum SortDirection {
+  ASC
+  DESC
+}
+
+type StickerConnection {
+  nodes: [SmartSticker!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+# Queries
+extend type Query {
+  # Get stickers for a specific entity
+  getEntityStickers(
+    entityType: EntityType!
+    entityId: ID!
+    filters: StickerFilters
+    sortBy: StickerSortBy
+    first: Int = 20
+    after: String
+  ): StickerConnection!
+  
+  # Search stickers across entities
+  searchStickers(
+    filters: StickerFilters!
+    sortBy: StickerSortBy
+    first: Int = 20
+    after: String
+  ): StickerConnection!
+  
+  # Get a specific sticker
+  getSticker(id: ID!): SmartSticker
+  
+  # Get all sticker categories
+  getStickerCategories: [StickerCategory!]!
+  
+  # Get user's pinned stickers
+  getPinnedStickers(
+    entityType: EntityType
+    first: Int = 10
+  ): StickerConnection!
+}
+
+# Mutations
+extend type Mutation {
+  # Create a new sticker
+  createSticker(input: CreateStickerInput!): SmartSticker!
+  
+  # Update an existing sticker
+  updateSticker(input: UpdateStickerInput!): SmartSticker!
+  
+  # Delete a sticker
+  deleteSticker(id: ID!): Boolean!
+  
+  # Bulk move stickers (for repositioning multiple stickers)
+  moveStickersBulk(
+    moves: [StickerMoveInput!]!
+  ): [SmartSticker!]!
+  
+  # Toggle pin status
+  toggleStickerPin(id: ID!): SmartSticker!
+  
+  # Add/remove tags
+  updateStickerTags(
+    id: ID!
+    tagsToAdd: [String!] = []
+    tagsToRemove: [String!] = []
+  ): SmartSticker!
+}
+
+input StickerMoveInput {
+  id: ID!
+  positionX: Int!
+  positionY: Int!
+} 

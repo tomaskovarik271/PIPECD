@@ -29,6 +29,15 @@ export type Scalars = {
   JSON: { input: Record<string, any>; output: Record<string, any> };
 };
 
+export type AccountTerritory = {
+  __typename?: "AccountTerritory";
+  assignmentReason?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  isPrimary: Scalars["Boolean"]["output"];
+  organization: Organization;
+  territory: Territory;
+};
+
 export type Activity = {
   __typename?: "Activity";
   assignedToUser?: Maybe<User>;
@@ -172,6 +181,23 @@ export enum AgentThoughtType {
   ToolCall = "TOOL_CALL",
 }
 
+export enum BudgetAuthorityLevel {
+  High = "HIGH",
+  Low = "LOW",
+  Medium = "MEDIUM",
+  None = "NONE",
+  Unlimited = "UNLIMITED",
+}
+
+export enum CommunicationPreference {
+  Email = "EMAIL",
+  FormalMeetings = "FORMAL_MEETINGS",
+  InPerson = "IN_PERSON",
+  Phone = "PHONE",
+  Slack = "SLACK",
+  Teams = "TEAMS",
+}
+
 export type ConvertedEntities = {
   __typename?: "ConvertedEntities";
   deal?: Maybe<Deal>;
@@ -189,6 +215,78 @@ export type CreateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject: Scalars["String"]["input"];
   type: ActivityType;
+};
+
+export type CreateOrganizationRelationshipInput = {
+  childOrgId: Scalars["ID"]["input"];
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  ownershipPercentage?: InputMaybe<Scalars["Float"]["input"]>;
+  parentOrgId: Scalars["ID"]["input"];
+  relationshipStrength?: InputMaybe<Scalars["Int"]["input"]>;
+  relationshipType: OrganizationRelationshipType;
+  startDate?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type CreatePersonOrganizationalRoleInput = {
+  budgetAuthorityUsd?: InputMaybe<Scalars["Float"]["input"]>;
+  department?: InputMaybe<Scalars["String"]["input"]>;
+  endDate?: InputMaybe<Scalars["String"]["input"]>;
+  isPrimaryRole?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+  personId: Scalars["ID"]["input"];
+  reportingStructure?: InputMaybe<Scalars["JSON"]["input"]>;
+  responsibilities?: InputMaybe<Scalars["JSON"]["input"]>;
+  roleTitle: Scalars["String"]["input"];
+  seniorityLevel?: InputMaybe<SeniorityLevel>;
+  startDate?: InputMaybe<Scalars["String"]["input"]>;
+  teamSize?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type CreatePersonRelationshipInput = {
+  fromPersonId: Scalars["ID"]["input"];
+  interactionFrequency?: InputMaybe<InteractionFrequency>;
+  isBidirectional?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  relationshipContext?: InputMaybe<Scalars["String"]["input"]>;
+  relationshipStrength?: InputMaybe<Scalars["Int"]["input"]>;
+  relationshipType: PersonRelationshipType;
+  toPersonId: Scalars["ID"]["input"];
+};
+
+export type CreateStakeholderAnalysisInput = {
+  approachStrategy?: InputMaybe<Scalars["String"]["input"]>;
+  budgetAuthorityLevel?: InputMaybe<BudgetAuthorityLevel>;
+  communicationPreference?: InputMaybe<CommunicationPreference>;
+  concerns?: InputMaybe<Scalars["JSON"]["input"]>;
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  decisionAuthority?: InputMaybe<DecisionAuthority>;
+  engagementLevel?: InputMaybe<EngagementLevel>;
+  influenceScore?: InputMaybe<Scalars["Int"]["input"]>;
+  lastInteractionDate?: InputMaybe<Scalars["String"]["input"]>;
+  lastInteractionType?: InputMaybe<Scalars["String"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  motivations?: InputMaybe<Scalars["JSON"]["input"]>;
+  nextBestAction?: InputMaybe<Scalars["String"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+  painPoints?: InputMaybe<Scalars["JSON"]["input"]>;
+  personId: Scalars["ID"]["input"];
+  preferredMeetingTime?: InputMaybe<Scalars["String"]["input"]>;
+  successMetrics?: InputMaybe<Scalars["JSON"]["input"]>;
+};
+
+export type CreateTerritoryInput = {
+  accountSizeRange?: InputMaybe<Scalars["String"]["input"]>;
+  assignedUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  city?: InputMaybe<Scalars["String"]["input"]>;
+  country?: InputMaybe<Scalars["String"]["input"]>;
+  industryFocus?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  name: Scalars["String"]["input"];
+  parentTerritoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  region?: InputMaybe<Scalars["String"]["input"]>;
+  stateProvince?: InputMaybe<Scalars["String"]["input"]>;
+  territoryType: TerritoryType;
 };
 
 export type CreateWfmProjectTypeInput = {
@@ -317,6 +415,7 @@ export type Deal = {
   organization_id?: Maybe<Scalars["ID"]["output"]>;
   person?: Maybe<Person>;
   person_id?: Maybe<Scalars["ID"]["output"]>;
+  project_id: Scalars["String"]["output"];
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
   weighted_amount?: Maybe<Scalars["Float"]["output"]>;
@@ -361,49 +460,57 @@ export type DealUpdateInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
-export type GraphData = {
-  __typename?: "GraphData";
-  edges: Array<GraphEdge>;
-  nodes: Array<GraphNode>;
-  summary: GraphSummary;
-};
+export enum DecisionAuthority {
+  Blocker = "BLOCKER",
+  EndUser = "END_USER",
+  FinalDecision = "FINAL_DECISION",
+  Gatekeeper = "GATEKEEPER",
+  Influencer = "INFLUENCER",
+  Recommender = "RECOMMENDER",
+  StrongInfluence = "STRONG_INFLUENCE",
+}
 
-export type GraphEdge = {
-  __typename?: "GraphEdge";
-  color?: Maybe<Scalars["String"]["output"]>;
-  id: Scalars["ID"]["output"];
-  label?: Maybe<Scalars["String"]["output"]>;
-  source: Scalars["ID"]["output"];
-  target: Scalars["ID"]["output"];
-  type: Scalars["String"]["output"];
-};
+export enum EngagementLevel {
+  Blocker = "BLOCKER",
+  Champion = "CHAMPION",
+  Neutral = "NEUTRAL",
+  Skeptic = "SKEPTIC",
+  Supporter = "SUPPORTER",
+}
 
-export type GraphFilters = {
-  centerNodeId?: InputMaybe<Scalars["String"]["input"]>;
-  entityTypes?: InputMaybe<Array<Scalars["String"]["input"]>>;
-  includeActivities?: InputMaybe<Scalars["Boolean"]["input"]>;
-  includeWFMProjects?: InputMaybe<Scalars["Boolean"]["input"]>;
-  maxDepth?: InputMaybe<Scalars["Int"]["input"]>;
-  maxNodes?: InputMaybe<Scalars["Int"]["input"]>;
-};
+export enum EntityType {
+  Deal = "DEAL",
+  Lead = "LEAD",
+  Organization = "ORGANIZATION",
+  Person = "PERSON",
+}
 
-export type GraphNode = {
-  __typename?: "GraphNode";
-  color: Scalars["String"]["output"];
-  data?: Maybe<Scalars["JSON"]["output"]>;
-  id: Scalars["ID"]["output"];
-  label: Scalars["String"]["output"];
-  size: Scalars["Float"]["output"];
-  type: Scalars["String"]["output"];
-};
+export enum InsightStatus {
+  ActingOn = "ACTING_ON",
+  Completed = "COMPLETED",
+  Dismissed = "DISMISSED",
+  New = "NEW",
+  Reviewed = "REVIEWED",
+}
 
-export type GraphSummary = {
-  __typename?: "GraphSummary";
-  edgesByType: Scalars["JSON"]["output"];
-  nodesByType: Scalars["JSON"]["output"];
-  totalEdges: Scalars["Int"]["output"];
-  totalNodes: Scalars["Int"]["output"];
-};
+export enum InsightType {
+  DecisionPath = "DECISION_PATH",
+  InfluencePattern = "INFLUENCE_PATTERN",
+  MissingStakeholder = "MISSING_STAKEHOLDER",
+  Opportunity = "OPPORTUNITY",
+  RelationshipGap = "RELATIONSHIP_GAP",
+  RelationshipStrengthChange = "RELATIONSHIP_STRENGTH_CHANGE",
+  RiskAlert = "RISK_ALERT",
+}
+
+export enum InteractionFrequency {
+  Annually = "ANNUALLY",
+  Daily = "DAILY",
+  Monthly = "MONTHLY",
+  Quarterly = "QUARTERLY",
+  Rarely = "RARELY",
+  Weekly = "WEEKLY",
+}
 
 export type Lead = {
   __typename?: "Lead";
@@ -543,9 +650,20 @@ export type LeadsStats = {
   totalLeads: Scalars["Int"]["output"];
 };
 
+export type MissingStakeholderRecommendations = {
+  __typename?: "MissingStakeholderRecommendations";
+  coveragePercentage: Scalars["Float"]["output"];
+  currentCoverage: Scalars["Int"]["output"];
+  missingRoles: Scalars["JSON"]["output"];
+  priorityAdditions: Scalars["JSON"]["output"];
+  recommendedCoverage: Scalars["Int"]["output"];
+  suggestedActions: Scalars["JSON"]["output"];
+};
+
 export type Mutation = {
   __typename?: "Mutation";
   addAgentThoughts: Array<AgentThought>;
+  assignAccountToTerritory: AccountTerritory;
   convertLead: LeadConversionResult;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
@@ -553,7 +671,12 @@ export type Mutation = {
   createDeal: Deal;
   createLead: Lead;
   createOrganization: Organization;
+  createOrganizationRelationship: OrganizationRelationship;
   createPerson: Person;
+  createPersonOrganizationalRole: PersonOrganizationalRole;
+  createPersonRelationship: PersonRelationship;
+  createStakeholderAnalysis: StakeholderAnalysis;
+  createTerritory: Territory;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
   createWFMWorkflow: WfmWorkflow;
@@ -565,13 +688,20 @@ export type Mutation = {
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteOrganizationRelationship: Scalars["Boolean"]["output"];
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
+  deletePersonOrganizationalRole: Scalars["Boolean"]["output"];
+  deletePersonRelationship: Scalars["Boolean"]["output"];
+  deleteStakeholderAnalysis: Scalars["Boolean"]["output"];
+  deleteTerritory: Scalars["Boolean"]["output"];
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
+  dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
+  removeAccountFromTerritory: Scalars["Boolean"]["output"];
   sendAgentMessage: AgentResponse;
   updateActivity: Activity;
   updateAgentConversation: AgentConversation;
@@ -582,6 +712,10 @@ export type Mutation = {
   updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
+  updatePersonOrganizationalRole: PersonOrganizationalRole;
+  updateRelationshipInsight: RelationshipInsight;
+  updateStakeholderAnalysis: StakeholderAnalysis;
+  updateTerritory: Territory;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -595,6 +729,13 @@ export type Mutation = {
 export type MutationAddAgentThoughtsArgs = {
   conversationId: Scalars["ID"]["input"];
   thoughts: Array<AgentThoughtInput>;
+};
+
+export type MutationAssignAccountToTerritoryArgs = {
+  assignmentReason?: InputMaybe<Scalars["String"]["input"]>;
+  isPrimary?: InputMaybe<Scalars["Boolean"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+  territoryId: Scalars["ID"]["input"];
 };
 
 export type MutationConvertLeadArgs = {
@@ -626,8 +767,28 @@ export type MutationCreateOrganizationArgs = {
   input: OrganizationInput;
 };
 
+export type MutationCreateOrganizationRelationshipArgs = {
+  input: CreateOrganizationRelationshipInput;
+};
+
 export type MutationCreatePersonArgs = {
   input: PersonInput;
+};
+
+export type MutationCreatePersonOrganizationalRoleArgs = {
+  input: CreatePersonOrganizationalRoleInput;
+};
+
+export type MutationCreatePersonRelationshipArgs = {
+  input: CreatePersonRelationshipInput;
+};
+
+export type MutationCreateStakeholderAnalysisArgs = {
+  input: CreateStakeholderAnalysisInput;
+};
+
+export type MutationCreateTerritoryArgs = {
+  input: CreateTerritoryInput;
 };
 
 export type MutationCreateWfmProjectTypeArgs = {
@@ -674,7 +835,27 @@ export type MutationDeleteOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteOrganizationRelationshipArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeletePersonArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeletePersonOrganizationalRoleArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeletePersonRelationshipArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteStakeholderAnalysisArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteTerritoryArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -690,6 +871,10 @@ export type MutationDeleteWfmStatusArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDismissRelationshipInsightArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationExecuteAgentStepArgs = {
   conversationId: Scalars["ID"]["input"];
   stepId: Scalars["String"]["input"];
@@ -701,6 +886,11 @@ export type MutationReactivateCustomFieldDefinitionArgs = {
 
 export type MutationRecalculateLeadScoreArgs = {
   leadId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveAccountFromTerritoryArgs = {
+  organizationId: Scalars["ID"]["input"];
+  territoryId: Scalars["ID"]["input"];
 };
 
 export type MutationSendAgentMessageArgs = {
@@ -749,6 +939,26 @@ export type MutationUpdateOrganizationArgs = {
 export type MutationUpdatePersonArgs = {
   id: Scalars["ID"]["input"];
   input: PersonInput;
+};
+
+export type MutationUpdatePersonOrganizationalRoleArgs = {
+  id: Scalars["ID"]["input"];
+  input: CreatePersonOrganizationalRoleInput;
+};
+
+export type MutationUpdateRelationshipInsightArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateRelationshipInsightInput;
+};
+
+export type MutationUpdateStakeholderAnalysisArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateStakeholderAnalysisInput;
+};
+
+export type MutationUpdateTerritoryArgs = {
+  id: Scalars["ID"]["input"];
+  input: CreateTerritoryInput;
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -808,6 +1018,34 @@ export type OrganizationInput = {
   notes?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type OrganizationRelationship = {
+  __typename?: "OrganizationRelationship";
+  childOrg: Organization;
+  createdAt: Scalars["String"]["output"];
+  createdByUser?: Maybe<User>;
+  endDate?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notes?: Maybe<Scalars["String"]["output"]>;
+  ownershipPercentage?: Maybe<Scalars["Float"]["output"]>;
+  parentOrg: Organization;
+  relationshipStrength?: Maybe<Scalars["Int"]["output"]>;
+  relationshipType: OrganizationRelationshipType;
+  startDate?: Maybe<Scalars["String"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export enum OrganizationRelationshipType {
+  AcquisitionTarget = "ACQUISITION_TARGET",
+  Competitor = "COMPETITOR",
+  Customer = "CUSTOMER",
+  Division = "DIVISION",
+  JointVenture = "JOINT_VENTURE",
+  Partnership = "PARTNERSHIP",
+  Subsidiary = "SUBSIDIARY",
+  Supplier = "SUPPLIER",
+}
+
 export type OrganizationUpdateInput = {
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
@@ -850,6 +1088,55 @@ export type PersonListItem = {
   name: Scalars["String"]["output"];
 };
 
+export type PersonOrganizationalRole = {
+  __typename?: "PersonOrganizationalRole";
+  budgetAuthorityUsd?: Maybe<Scalars["Float"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  createdByUser?: Maybe<User>;
+  department?: Maybe<Scalars["String"]["output"]>;
+  endDate?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isPrimaryRole: Scalars["Boolean"]["output"];
+  notes?: Maybe<Scalars["String"]["output"]>;
+  organization: Organization;
+  person: Person;
+  reportingStructure?: Maybe<Scalars["JSON"]["output"]>;
+  responsibilities?: Maybe<Scalars["JSON"]["output"]>;
+  roleTitle: Scalars["String"]["output"];
+  seniorityLevel?: Maybe<SeniorityLevel>;
+  startDate?: Maybe<Scalars["String"]["output"]>;
+  teamSize?: Maybe<Scalars["Int"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type PersonRelationship = {
+  __typename?: "PersonRelationship";
+  createdAt: Scalars["String"]["output"];
+  createdByUser?: Maybe<User>;
+  fromPerson: Person;
+  id: Scalars["ID"]["output"];
+  interactionFrequency?: Maybe<InteractionFrequency>;
+  isBidirectional: Scalars["Boolean"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notes?: Maybe<Scalars["String"]["output"]>;
+  relationshipContext?: Maybe<Scalars["String"]["output"]>;
+  relationshipStrength?: Maybe<Scalars["Int"]["output"]>;
+  relationshipType: PersonRelationshipType;
+  toPerson: Person;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export enum PersonRelationshipType {
+  CollaboratesWith = "COLLABORATES_WITH",
+  CompetesWith = "COMPETES_WITH",
+  Influences = "INFLUENCES",
+  Manages = "MANAGES",
+  Mentors = "MENTORS",
+  PartnersWith = "PARTNERS_WITH",
+  RefersTo = "REFERS_TO",
+  ReportsTo = "REPORTS_TO",
+}
+
 export type PersonUpdateInput = {
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   email?: InputMaybe<Scalars["String"]["input"]>;
@@ -860,19 +1147,28 @@ export type PersonUpdateInput = {
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export enum PriorityLevel {
+  Critical = "CRITICAL",
+  High = "HIGH",
+  Low = "LOW",
+  Medium = "MEDIUM",
+}
+
 export type Query = {
   __typename?: "Query";
+  accountTerritories: Array<AccountTerritory>;
   activities: Array<Activity>;
   activity?: Maybe<Activity>;
   agentConversation?: Maybe<AgentConversation>;
   agentConversations: Array<AgentConversation>;
   agentThoughts: Array<AgentThought>;
+  analyzeStakeholderNetwork: StakeholderNetworkAnalysis;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
-  getGraphData: GraphData;
+  findMissingStakeholders: MissingStakeholderRecommendations;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
@@ -881,11 +1177,22 @@ export type Query = {
   me?: Maybe<User>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
   organization?: Maybe<Organization>;
+  organizationPersonRelationships: Array<PersonRelationship>;
+  organizationRelationships: Array<OrganizationRelationship>;
+  organizationRoles: Array<PersonOrganizationalRole>;
   organizations: Array<Organization>;
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
+  personOrganizationalRoles: Array<PersonOrganizationalRole>;
+  personRelationships: Array<PersonRelationship>;
+  relationshipInsight?: Maybe<RelationshipInsight>;
+  relationshipInsights: Array<RelationshipInsight>;
+  stakeholderAnalyses: Array<StakeholderAnalysis>;
+  stakeholderAnalysis?: Maybe<StakeholderAnalysis>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  territories: Array<Territory>;
+  territory?: Maybe<Territory>;
   users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
@@ -894,6 +1201,10 @@ export type Query = {
   wfmStatuses: Array<WfmStatus>;
   wfmWorkflow?: Maybe<WfmWorkflow>;
   wfmWorkflows: Array<WfmWorkflow>;
+};
+
+export type QueryAccountTerritoriesArgs = {
+  organizationId: Scalars["ID"]["input"];
 };
 
 export type QueryActivitiesArgs = {
@@ -918,6 +1229,13 @@ export type QueryAgentThoughtsArgs = {
   limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
+export type QueryAnalyzeStakeholderNetworkArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  includeInactiveRoles?: InputMaybe<Scalars["Boolean"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+};
+
 export type QueryCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -931,8 +1249,12 @@ export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type QueryGetGraphDataArgs = {
-  filters?: InputMaybe<GraphFilters>;
+export type QueryFindMissingStakeholdersArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  dealSize?: InputMaybe<Scalars["String"]["input"]>;
+  industryType?: InputMaybe<Scalars["String"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
 };
 
 export type QueryGetWfmAllowedTransitionsArgs = {
@@ -952,7 +1274,56 @@ export type QueryOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type QueryOrganizationPersonRelationshipsArgs = {
+  organizationId: Scalars["ID"]["input"];
+};
+
+export type QueryOrganizationRelationshipsArgs = {
+  organizationId: Scalars["ID"]["input"];
+};
+
+export type QueryOrganizationRolesArgs = {
+  includeInactive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+};
+
 export type QueryPersonArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryPersonOrganizationalRolesArgs = {
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryPersonRelationshipsArgs = {
+  personId: Scalars["ID"]["input"];
+};
+
+export type QueryRelationshipInsightArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryRelationshipInsightsArgs = {
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<EntityType>;
+  status?: InputMaybe<InsightStatus>;
+};
+
+export type QueryStakeholderAnalysesArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryStakeholderAnalysisArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryTerritoriesArgs = {
+  assignedToUser?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryTerritoryArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -984,17 +1355,94 @@ export type QueryWfmWorkflowsArgs = {
   isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
+export type RelationshipInsight = {
+  __typename?: "RelationshipInsight";
+  aiReasoning?: Maybe<Scalars["String"]["output"]>;
+  confidenceScore?: Maybe<Scalars["Float"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  entityId: Scalars["ID"]["output"];
+  entityType: EntityType;
+  expiresAt?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  insightDescription: Scalars["String"]["output"];
+  insightTitle: Scalars["String"]["output"];
+  insightType: InsightType;
+  priorityLevel?: Maybe<PriorityLevel>;
+  recommendedActions?: Maybe<Scalars["JSON"]["output"]>;
+  reviewedAt?: Maybe<Scalars["String"]["output"]>;
+  reviewedBy?: Maybe<User>;
+  status: InsightStatus;
+  supportingData?: Maybe<Scalars["JSON"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
 export type SendMessageInput = {
   config?: InputMaybe<AgentConfigInput>;
   content: Scalars["String"]["input"];
   conversationId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+export enum SeniorityLevel {
+  CLevel = "C_LEVEL",
+  Director = "DIRECTOR",
+  Entry = "ENTRY",
+  Founder = "FOUNDER",
+  Lead = "LEAD",
+  Manager = "MANAGER",
+  Mid = "MID",
+  Senior = "SENIOR",
+  Vp = "VP",
+}
+
 export enum StageType {
   Lost = "LOST",
   Open = "OPEN",
   Won = "WON",
 }
+
+export type StakeholderAnalysis = {
+  __typename?: "StakeholderAnalysis";
+  aiCommunicationStyle?: Maybe<Scalars["String"]["output"]>;
+  aiDecisionPattern?: Maybe<Scalars["String"]["output"]>;
+  aiInfluenceNetwork?: Maybe<Scalars["JSON"]["output"]>;
+  aiPersonalityProfile?: Maybe<Scalars["JSON"]["output"]>;
+  approachStrategy?: Maybe<Scalars["String"]["output"]>;
+  budgetAuthorityLevel?: Maybe<BudgetAuthorityLevel>;
+  communicationPreference?: Maybe<CommunicationPreference>;
+  concerns?: Maybe<Scalars["JSON"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  createdByUser?: Maybe<User>;
+  deal?: Maybe<Deal>;
+  decisionAuthority?: Maybe<DecisionAuthority>;
+  engagementLevel?: Maybe<EngagementLevel>;
+  id: Scalars["ID"]["output"];
+  influenceScore?: Maybe<Scalars["Int"]["output"]>;
+  lastInteractionDate?: Maybe<Scalars["String"]["output"]>;
+  lastInteractionType?: Maybe<Scalars["String"]["output"]>;
+  lead?: Maybe<Lead>;
+  motivations?: Maybe<Scalars["JSON"]["output"]>;
+  nextBestAction?: Maybe<Scalars["String"]["output"]>;
+  organization: Organization;
+  painPoints?: Maybe<Scalars["JSON"]["output"]>;
+  person: Person;
+  preferredMeetingTime?: Maybe<Scalars["String"]["output"]>;
+  successMetrics?: Maybe<Scalars["JSON"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type StakeholderNetworkAnalysis = {
+  __typename?: "StakeholderNetworkAnalysis";
+  coverageAnalysis: Scalars["JSON"]["output"];
+  influenceMap: Scalars["JSON"]["output"];
+  networkInsights: Scalars["JSON"]["output"];
+  organization: Organization;
+  relationshipCount: Scalars["Int"]["output"];
+  relationships: Array<PersonRelationship>;
+  roleCount: Scalars["Int"]["output"];
+  roles: Array<PersonOrganizationalRole>;
+  stakeholderCount: Scalars["Int"]["output"];
+  stakeholders: Array<StakeholderAnalysis>;
+};
 
 export type Subscription = {
   __typename?: "Subscription";
@@ -1014,6 +1462,35 @@ export type SubscriptionAgentPlanUpdatedArgs = {
 export type SubscriptionAgentThoughtsAddedArgs = {
   conversationId: Scalars["ID"]["input"];
 };
+
+export type Territory = {
+  __typename?: "Territory";
+  accountSizeRange?: Maybe<Scalars["String"]["output"]>;
+  assignedUser?: Maybe<User>;
+  childTerritories: Array<Territory>;
+  city?: Maybe<Scalars["String"]["output"]>;
+  country?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  industryFocus?: Maybe<Array<Scalars["String"]["output"]>>;
+  isActive: Scalars["Boolean"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  name: Scalars["String"]["output"];
+  organizations: Array<Organization>;
+  parentTerritory?: Maybe<Territory>;
+  region?: Maybe<Scalars["String"]["output"]>;
+  stateProvince?: Maybe<Scalars["String"]["output"]>;
+  territoryType: TerritoryType;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export enum TerritoryType {
+  AccountSize = "ACCOUNT_SIZE",
+  Geographic = "GEOGRAPHIC",
+  Hybrid = "HYBRID",
+  Industry = "INDUSTRY",
+  ProductLine = "PRODUCT_LINE",
+}
 
 export enum ThinkingBudget {
   Standard = "STANDARD",
@@ -1044,6 +1521,32 @@ export type UpdateConversationInput = {
   context?: InputMaybe<Scalars["JSON"]["input"]>;
   conversationId: Scalars["ID"]["input"];
   plan?: InputMaybe<Scalars["JSON"]["input"]>;
+};
+
+export type UpdateRelationshipInsightInput = {
+  reviewedAt?: InputMaybe<Scalars["String"]["input"]>;
+  status: InsightStatus;
+};
+
+export type UpdateStakeholderAnalysisInput = {
+  aiCommunicationStyle?: InputMaybe<Scalars["String"]["input"]>;
+  aiDecisionPattern?: InputMaybe<Scalars["String"]["input"]>;
+  aiInfluenceNetwork?: InputMaybe<Scalars["JSON"]["input"]>;
+  aiPersonalityProfile?: InputMaybe<Scalars["JSON"]["input"]>;
+  approachStrategy?: InputMaybe<Scalars["String"]["input"]>;
+  budgetAuthorityLevel?: InputMaybe<BudgetAuthorityLevel>;
+  communicationPreference?: InputMaybe<CommunicationPreference>;
+  concerns?: InputMaybe<Scalars["JSON"]["input"]>;
+  decisionAuthority?: InputMaybe<DecisionAuthority>;
+  engagementLevel?: InputMaybe<EngagementLevel>;
+  influenceScore?: InputMaybe<Scalars["Int"]["input"]>;
+  lastInteractionDate?: InputMaybe<Scalars["String"]["input"]>;
+  lastInteractionType?: InputMaybe<Scalars["String"]["input"]>;
+  motivations?: InputMaybe<Scalars["JSON"]["input"]>;
+  nextBestAction?: InputMaybe<Scalars["String"]["input"]>;
+  painPoints?: InputMaybe<Scalars["JSON"]["input"]>;
+  preferredMeetingTime?: InputMaybe<Scalars["String"]["input"]>;
+  successMetrics?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
 /**
@@ -1201,6 +1704,120 @@ export type WfmWorkflowTransitionMutationResponse = {
   transitionId?: Maybe<Scalars["ID"]["output"]>;
 };
 
+export type CreatePersonOrganizationalRoleMutationVariables = Exact<{
+  input: CreatePersonOrganizationalRoleInput;
+}>;
+
+export type CreatePersonOrganizationalRoleMutation = {
+  __typename?: "Mutation";
+  createPersonOrganizationalRole: {
+    __typename?: "PersonOrganizationalRole";
+    id: string;
+    roleTitle: string;
+    department?: string | null;
+    seniorityLevel?: SeniorityLevel | null;
+    budgetAuthorityUsd?: number | null;
+    teamSize?: number | null;
+    startDate?: string | null;
+    isPrimaryRole: boolean;
+    notes?: string | null;
+  };
+};
+
+export type CreateStakeholderAnalysisMutationVariables = Exact<{
+  input: CreateStakeholderAnalysisInput;
+}>;
+
+export type CreateStakeholderAnalysisMutation = {
+  __typename?: "Mutation";
+  createStakeholderAnalysis: {
+    __typename?: "StakeholderAnalysis";
+    id: string;
+    influenceScore?: number | null;
+    decisionAuthority?: DecisionAuthority | null;
+    engagementLevel?: EngagementLevel | null;
+    approachStrategy?: string | null;
+    nextBestAction?: string | null;
+  };
+};
+
+export type GetPersonOrganizationalRolesQueryVariables = Exact<{
+  personId: Scalars["ID"]["input"];
+}>;
+
+export type GetPersonOrganizationalRolesQuery = {
+  __typename?: "Query";
+  personOrganizationalRoles: Array<{
+    __typename?: "PersonOrganizationalRole";
+    id: string;
+    roleTitle: string;
+    department?: string | null;
+    seniorityLevel?: SeniorityLevel | null;
+    budgetAuthorityUsd?: number | null;
+    teamSize?: number | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    isPrimaryRole: boolean;
+    notes?: string | null;
+    organization: { __typename?: "Organization"; id: string; name: string };
+  }>;
+};
+
+export type CreatePersonOrgRoleEditMutationVariables = Exact<{
+  input: CreatePersonOrganizationalRoleInput;
+}>;
+
+export type CreatePersonOrgRoleEditMutation = {
+  __typename?: "Mutation";
+  createPersonOrganizationalRole: {
+    __typename?: "PersonOrganizationalRole";
+    id: string;
+    roleTitle: string;
+    department?: string | null;
+    seniorityLevel?: SeniorityLevel | null;
+    isPrimaryRole: boolean;
+    person: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+    };
+    organization: { __typename?: "Organization"; id: string; name: string };
+  };
+};
+
+export type UpdatePersonOrgRoleMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: CreatePersonOrganizationalRoleInput;
+}>;
+
+export type UpdatePersonOrgRoleMutation = {
+  __typename?: "Mutation";
+  updatePersonOrganizationalRole: {
+    __typename?: "PersonOrganizationalRole";
+    id: string;
+    roleTitle: string;
+    department?: string | null;
+    seniorityLevel?: SeniorityLevel | null;
+    budgetAuthorityUsd?: number | null;
+    teamSize?: number | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    isPrimaryRole: boolean;
+    notes?: string | null;
+    organization: { __typename?: "Organization"; id: string; name: string };
+  };
+};
+
+export type DeletePersonOrganizationalRoleMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeletePersonOrganizationalRoleMutation = {
+  __typename?: "Mutation";
+  deletePersonOrganizationalRole: boolean;
+};
+
 export type GetAgentThoughtsQueryVariables = Exact<{
   conversationId: Scalars["ID"]["input"];
   limit?: InputMaybe<Scalars["Int"]["input"]>;
@@ -1232,6 +1849,126 @@ export type UpdateUserProfileMutation = {
     display_name?: string | null;
     avatar_url?: string | null;
   } | null;
+};
+
+export type GetDealsForNetworkQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetDealsForNetworkQuery = {
+  __typename?: "Query";
+  deals: Array<{
+    __typename?: "Deal";
+    id: string;
+    name: string;
+    amount?: number | null;
+    expected_close_date?: string | null;
+    organization_id?: string | null;
+    currentWfmStatus?: {
+      __typename?: "WFMStatus";
+      name: string;
+      color?: string | null;
+    } | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
+    } | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  }>;
+};
+
+export type GetLeadsForNetworkQueryVariables = Exact<{
+  filters?: InputMaybe<LeadFilters>;
+}>;
+
+export type GetLeadsForNetworkQuery = {
+  __typename?: "Query";
+  leads: Array<{
+    __typename?: "Lead";
+    id: string;
+    name: string;
+    lead_score: number;
+    qualificationStatus: string;
+    estimated_value?: number | null;
+    contact_name?: string | null;
+    contact_email?: string | null;
+    company_name?: string | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+    } | null;
+  }>;
+};
+
+export type GetOrganizationsForNetworkQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetOrganizationsForNetworkQuery = {
+  __typename?: "Query";
+  organizations: Array<{
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    address?: string | null;
+    notes?: string | null;
+  }>;
+};
+
+export type GetStakeholderAnalysesForNetworkQueryVariables = Exact<{
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+}>;
+
+export type GetStakeholderAnalysesForNetworkQuery = {
+  __typename?: "Query";
+  stakeholderAnalyses: Array<{
+    __typename?: "StakeholderAnalysis";
+    id: string;
+    influenceScore?: number | null;
+    decisionAuthority?: DecisionAuthority | null;
+    engagementLevel?: EngagementLevel | null;
+    person: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+      organization_id?: string | null;
+    };
+    organization: { __typename?: "Organization"; id: string; name: string };
+  }>;
+};
+
+export type GetPersonRelationshipsForNetworkQueryVariables = Exact<{
+  organizationId: Scalars["ID"]["input"];
+}>;
+
+export type GetPersonRelationshipsForNetworkQuery = {
+  __typename?: "Query";
+  organizationPersonRelationships: Array<{
+    __typename?: "PersonRelationship";
+    id: string;
+    relationshipType: PersonRelationshipType;
+    relationshipStrength?: number | null;
+    fromPerson: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+    };
+    toPerson: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+    };
+  }>;
 };
 
 export type GetDealCustomFieldDefinitionsQueryVariables = Exact<{
@@ -2039,6 +2776,32 @@ export type GetPersonCustomFieldDefinitionsQuery = {
   }>;
 };
 
+export type GetStakeholderAnalysesQueryVariables = Exact<{
+  organizationId: Scalars["ID"]["input"];
+}>;
+
+export type GetStakeholderAnalysesQuery = {
+  __typename?: "Query";
+  stakeholderAnalyses: Array<{
+    __typename?: "StakeholderAnalysis";
+    id: string;
+    influenceScore?: number | null;
+    decisionAuthority?: DecisionAuthority | null;
+    engagementLevel?: EngagementLevel | null;
+    approachStrategy?: string | null;
+    nextBestAction?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    person: {
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+    };
+    organization: { __typename?: "Organization"; id: string; name: string };
+  }>;
+};
+
 export type GetActivitiesQueryVariables = Exact<{
   filter?: InputMaybe<ActivityFilterInput>;
 }>;
@@ -2540,6 +3303,8 @@ export type DealCoreFieldsFragment = {
   created_at: string;
   updated_at: string;
   person_id?: string | null;
+  organization_id?: string | null;
+  project_id: string;
   user_id: string;
   assigned_to_user_id?: string | null;
   deal_specific_probability?: number | null;
@@ -2560,6 +3325,8 @@ export type GetDealsQuery = {
     created_at: string;
     updated_at: string;
     person_id?: string | null;
+    organization_id?: string | null;
+    project_id: string;
     user_id: string;
     assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
@@ -2644,6 +3411,8 @@ export type CreateDealMutation = {
     created_at: string;
     updated_at: string;
     person_id?: string | null;
+    organization_id?: string | null;
+    project_id: string;
     user_id: string;
     assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
@@ -2707,6 +3476,8 @@ export type UpdateDealMutation = {
     created_at: string;
     updated_at: string;
     person_id?: string | null;
+    organization_id?: string | null;
+    project_id: string;
     user_id: string;
     assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;
@@ -2755,6 +3526,8 @@ export type UpdateDealWfmProgressMutation = {
     created_at: string;
     updated_at: string;
     person_id?: string | null;
+    organization_id?: string | null;
+    project_id: string;
     user_id: string;
     assigned_to_user_id?: string | null;
     deal_specific_probability?: number | null;

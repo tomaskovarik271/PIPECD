@@ -16,6 +16,9 @@ type Deal {
   history(limit: Int, offset: Int): [DealHistoryEntry!]
   customFieldValues: [CustomFieldValue!]!
 
+  # System Integration Fields
+  project_id: String! # 4-digit unique identifier for external system integration (auto-generated)
+
   # WFM Fields
   wfm_project_id: ID # The ID of the associated WFMProject
   wfmProject: WFMProject

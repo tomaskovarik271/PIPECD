@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Box,
+  Button,
   Center,
   Flex,
   Heading,
@@ -8,13 +9,21 @@ import {
   Link,
   Text,
   VStack,
+  HStack,
+  IconButton,
+  useToast,
+  Spinner,
 } from '@chakra-ui/react';
-import { ExternalLinkIcon, InfoIcon } from '@chakra-ui/icons';
+import { ExternalLinkIcon, InfoIcon, EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
 import { CustomFieldDefinition, CustomFieldType, CustomFieldValue } from '../../generated/graphql/graphql';
+import { CustomFieldRenderer } from '../common/CustomFieldRenderer';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface DealCustomFieldsPanelProps {
   customFieldDefinitions: CustomFieldDefinition[];
   customFieldValues: CustomFieldValue[];
+  dealId: string;
+  onUpdate?: (fieldId: string, value: any) => Promise<void>;
   getLinkDisplayDetails: (str: string | null | undefined) => {
     isUrl: boolean;
     displayText: string;
@@ -27,113 +36,272 @@ interface DealCustomFieldsPanelProps {
 export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
   customFieldDefinitions,
   customFieldValues,
+  dealId,
+  onUpdate,
   getLinkDisplayDetails,
 }) => {
+  const colors = useThemeColors();
+  const toast = useToast();
+  const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+
   const hasCustomFields = customFieldDefinitions && customFieldValues && customFieldValues.length > 0;
+
+  const processedCustomFields = React.useMemo(() => {
+    if (!hasCustomFields) return [];
+    
+    return customFieldValues
+      .filter(cfv => customFieldDefinitions.find(cfd => cfd.id === cfv.definition.id)?.isActive)
+      .sort((a, b) => {
+        const defA = customFieldDefinitions.find(def => def.id === a.definition.id);
+        const defB = customFieldDefinitions.find(def => def.id === b.definition.id);
+        return (defA?.displayOrder || 0) - (defB?.displayOrder || 0);
+      })
+      .map((cfv) => {
+        const definition = customFieldDefinitions.find(def => def.id === cfv.definition.id);
+        
+        if (!definition) return null;
+
+        // Get current value for the field
+        let currentValue: any = null;
+        switch (definition.fieldType) {
+          case CustomFieldType.Text:
+            currentValue = cfv.stringValue || '';
+            break;
+          case CustomFieldType.Number:
+            currentValue = cfv.numberValue || '';
+            break;
+          case CustomFieldType.Boolean:
+            currentValue = cfv.booleanValue || false;
+            break;
+          case CustomFieldType.Date:
+            currentValue = cfv.dateValue || '';
+            break;
+          case CustomFieldType.Dropdown:
+          case CustomFieldType.MultiSelect:
+            currentValue = cfv.selectedOptionValues || [];
+            break;
+          default:
+            currentValue = cfv.stringValue || '';
+        }
+
+        // Format display value
+        let displayValue: string | React.ReactNode = '-';
+        switch (definition.fieldType) {
+          case CustomFieldType.Text:
+            displayValue = cfv.stringValue || '-';
+            if (cfv.stringValue && (cfv.stringValue.startsWith('http://') || cfv.stringValue.startsWith('https://'))) {
+              const linkDetails = getLinkDisplayDetails(cfv.stringValue);
+              if (linkDetails.isUrl) {
+                displayValue = (
+                  <Link 
+                    href={linkDetails.fullUrl} 
+                    color={colors.text.link} 
+                    isExternal 
+                    _hover={{textDecoration: 'underline'}}
+                  >
+                    {linkDetails.displayText} <ExternalLinkIcon mx='2px' />
+                  </Link>
+                );
+              }
+            }
+            break;
+          case CustomFieldType.Number:
+            displayValue = cfv.numberValue?.toString() || '-';
+            break;
+          case CustomFieldType.Boolean:
+            displayValue = cfv.booleanValue ? 'Yes' : 'No';
+            break;
+          case CustomFieldType.Date:
+            displayValue = cfv.dateValue ? new Date(cfv.dateValue).toLocaleDateString() : '-';
+            break;
+          case CustomFieldType.Dropdown:
+          case CustomFieldType.MultiSelect:
+            if (cfv.selectedOptionValues && cfv.selectedOptionValues.length > 0) {
+              const selectedLabels = cfv.selectedOptionValues.map(val => {
+                const opt = definition.dropdownOptions?.find(o => o.value === val);
+                return opt ? opt.label : val;
+              });
+              displayValue = selectedLabels.join(', ');
+            } else {
+              displayValue = '-';
+            }
+            break;
+          default:
+            displayValue = 'N/A';
+        }
+
+        return {
+          id: definition.id,
+          label: definition.fieldLabel || definition.fieldName,
+          fieldName: definition.fieldName,
+          definition,
+          currentValue,
+          displayValue,
+        };
+      })
+      .filter(Boolean);
+  }, [customFieldDefinitions, customFieldValues, hasCustomFields, getLinkDisplayDetails, colors.text.link]);
+
+  const handleEditClick = useCallback((field: any) => {
+    setEditingFieldId(field.id);
+    setEditValue(field.currentValue);
+  }, []);
+
+  const handleSave = useCallback(async (field: any) => {
+    if (!onUpdate) return;
+    
+    setSaving(true);
+    try {
+      await onUpdate(field.id, editValue);
+      setEditingFieldId(null);
+      setEditValue(null);
+      toast({
+        title: 'Field updated',
+        description: `${field.label} has been updated successfully.`,
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Failed to update custom field:', error);
+      toast({
+        title: 'Update failed',
+        description: `Failed to update ${field.label}. Please try again.`,
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [onUpdate, editValue, toast]);
+
+  const handleCancel = useCallback(() => {
+    setEditingFieldId(null);
+    setEditValue(null);
+  }, []);
 
   if (!hasCustomFields) {
     return (
       <>
-        <Heading size="sm" mb={3} color="white">Custom Information</Heading>
-        <Center minH="100px" flexDirection="column" bg="gray.750" borderRadius="md" p={4}>
-          <Icon as={InfoIcon} w={6} h={6} color="gray.500" mb={3} />
-          <Text color="gray.400" fontSize="sm">No custom information available.</Text>
+        <Heading size="sm" mb={3} color={colors.text.primary}>Custom Information</Heading>
+        <Center minH="100px" flexDirection="column" bg={colors.bg.elevated} borderRadius="md" p={4}>
+          <Icon as={InfoIcon} w={6} h={6} color={colors.text.muted} mb={3} />
+          <Text color={colors.text.secondary} fontSize="sm">No custom information available.</Text>
         </Center>
       </>
     );
   }
 
-  const processedCustomFields = customFieldValues
-    .filter(cfv => customFieldDefinitions.find(cfd => cfd.id === cfv.definition.id)?.isActive)
-    .sort((a, b) => {
-      const defA = customFieldDefinitions.find(def => def.id === a.definition.id);
-      const defB = customFieldDefinitions.find(def => def.id === b.definition.id);
-      return (defA?.displayOrder || 0) - (defB?.displayOrder || 0);
-    })
-    .map(cfv => {
-      let displayValue: string | React.ReactNode = '-';
-      const definition = customFieldDefinitions.find(def => def.id === cfv.definition.id);
-      
-      if (!definition) return null;
-
-      switch (definition.fieldType) {
-        case CustomFieldType.Text:
-          displayValue = cfv.stringValue || '-';
-          if (cfv.stringValue && (cfv.stringValue.startsWith('http://') || cfv.stringValue.startsWith('https://'))) {
-            const linkDetails = getLinkDisplayDetails(cfv.stringValue);
-            if (linkDetails.isUrl) {
-              displayValue = (
-                <Link 
-                  href={linkDetails.fullUrl} 
-                  color="blue.400" 
-                  isExternal 
-                  _hover={{textDecoration: 'underline'}}
-                >
-                  {linkDetails.displayText} <ExternalLinkIcon mx='2px' />
-                </Link>
-              );
-            }
-          }
-          break;
-        case CustomFieldType.Number:
-          displayValue = cfv.numberValue?.toString() || '-';
-          break;
-        case CustomFieldType.Boolean:
-          displayValue = cfv.booleanValue ? 'Yes' : 'No';
-          break;
-        case CustomFieldType.Date:
-          displayValue = cfv.dateValue ? new Date(cfv.dateValue).toLocaleDateString() : '-';
-          break;
-        case CustomFieldType.Dropdown:
-        case CustomFieldType.MultiSelect:
-          if (cfv.selectedOptionValues && cfv.selectedOptionValues.length > 0) {
-            const selectedLabels = cfv.selectedOptionValues.map(val => {
-              const opt = definition.dropdownOptions?.find(o => o.value === val);
-              return opt ? opt.label : val;
-            });
-            displayValue = selectedLabels.join(', ');
-          } else {
-            displayValue = '-';
-          }
-          break;
-        default:
-          if (cfv.stringValue) displayValue = cfv.stringValue;
-          else if (cfv.numberValue !== null && cfv.numberValue !== undefined) displayValue = cfv.numberValue.toString();
-          else if (cfv.booleanValue !== null && cfv.booleanValue !== undefined) displayValue = cfv.booleanValue ? 'Yes' : 'No';
-          else if (cfv.dateValue) displayValue = new Date(cfv.dateValue).toLocaleDateString();
-          else displayValue = 'N/A';
-          break;
-      }
-
-      return {
-        id: definition.id,
-        label: definition.fieldLabel || definition.fieldName,
-        value: displayValue,
-      };
-    })
-    .filter(Boolean);
-
   return (
     <>
-      <Heading size="sm" mb={3} color="white">Custom Information</Heading>
-      <VStack spacing={3} align="stretch" bg="gray.750" p={4} borderRadius="lg" borderWidth="1px" borderColor="gray.600">
-        {processedCustomFields.map((field) => (
-          <Flex 
+      <Flex justifyContent="space-between" alignItems="center" mb={4}>
+        <Heading size="sm" color={colors.text.primary}>Custom Information</Heading>
+        <HStack spacing={2}>
+          <Text fontSize="xs" color={colors.text.muted}>
+            {onUpdate ? 'Click values to edit' : 'Read only'}
+          </Text>
+          {onUpdate && (
+            <Icon as={EditIcon} w={3} h={3} color={colors.text.muted} />
+          )}
+        </HStack>
+      </Flex>
+      <VStack spacing={0} align="stretch">
+        {processedCustomFields.map((field, index) => (
+          <Box 
             key={field!.id} 
-            justifyContent="space-between" 
-            alignItems="center" 
-            py={1.5} 
-            borderBottomWidth="1px" 
-            borderColor="gray.650" 
-            _last={{borderBottomWidth: 0}}
+            p={4}
+            borderTopWidth={index === 0 ? "1px" : "0px"}
+            borderBottomWidth="1px"
+            borderLeftWidth="1px"
+            borderRightWidth="1px"
+            borderTopRadius={index === 0 ? "lg" : "0"}
+            borderBottomRadius={index === processedCustomFields.length - 1 ? "lg" : "0"}
+            bg={editingFieldId === field!.id ? colors.bg.surface : colors.bg.elevated}
+            borderWidth={editingFieldId === field!.id ? '2px' : '1px'}
+            borderColor={editingFieldId === field!.id ? colors.interactive.default : colors.border.default}
+            transition="all 0.2s ease"
+            _hover={!editingFieldId ? { 
+              bg: colors.bg.surface,
+              borderColor: onUpdate ? colors.interactive.default : colors.border.default,
+              cursor: onUpdate ? 'pointer' : 'default'
+            } : {}}
+            onClick={!editingFieldId && onUpdate ? () => handleEditClick(field) : undefined}
           >
-            <Text fontSize="sm" color="gray.400" casing="capitalize">
-              {field!.label}
-            </Text>
-            <Text fontSize="sm" color="gray.200" textAlign="right">
-              {field!.value}
-            </Text>
-          </Flex>
+            {editingFieldId === field!.id ? (
+              // Edit mode
+              <VStack spacing={4} align="stretch">
+                <HStack justify="space-between" align="center">
+                  <Text fontSize="sm" fontWeight="semibold" color={colors.text.primary}>
+                    Editing: {field!.label}
+                  </Text>
+                  <HStack spacing={1}>
+                    <IconButton
+                      icon={<CloseIcon />}
+                      aria-label="Cancel"
+                      size="sm"
+                      variant="ghost"
+                      onClick={handleCancel}
+                      isDisabled={saving}
+                      colorScheme="gray"
+                    />
+                    <IconButton
+                      icon={saving ? <Spinner size="sm" /> : <CheckIcon />}
+                      aria-label="Save"
+                      size="sm"
+                      colorScheme="green"
+                      onClick={() => handleSave(field)}
+                      isDisabled={saving}
+                    />
+                  </HStack>
+                </HStack>
+                <Box p={3} bg={colors.bg.app} borderRadius="md" border="1px solid" borderColor={colors.border.default}>
+                  <CustomFieldRenderer
+                    definition={field!.definition}
+                    value={editValue}
+                    onChange={setEditValue}
+                    isRequired={field!.definition.isRequired}
+                  />
+                </Box>
+              </VStack>
+            ) : (
+              // View mode
+              <Flex 
+                justifyContent="space-between" 
+                alignItems="center" 
+                minH="40px"
+              >
+                <VStack align="start" spacing={1} flex={1}>
+                  <Text fontSize="xs" color={colors.text.secondary} fontWeight="medium" letterSpacing="wide" textTransform="uppercase">
+                    {field!.label}
+                  </Text>
+                  <Text fontSize="sm" color={colors.text.primary} fontWeight="medium">
+                    {field!.displayValue}
+                  </Text>
+                </VStack>
+                {onUpdate && (
+                  <Box>
+                    <IconButton
+                      icon={<EditIcon />}
+                      aria-label={`Edit ${field!.label}`}
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="blue"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(field);
+                      }}
+                      opacity={0.7}
+                      _hover={{ opacity: 1, transform: 'scale(1.1)' }}
+                      transition="all 0.2s"
+                    />
+                  </Box>
+                )}
+              </Flex>
+            )}
+          </Box>
         ))}
       </VStack>
     </>

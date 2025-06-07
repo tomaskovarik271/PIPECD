@@ -29,6 +29,8 @@ interface UserListState {
   error: string | null;
   hasFetched: boolean;
   fetchUsers: () => Promise<void>;
+  refreshUsers: () => Promise<void>;
+  clearUsers: () => void;
 }
 
 export const useUserListStore = create<UserListState>((set, get) => ({
@@ -66,5 +68,15 @@ export const useUserListStore = create<UserListState>((set, get) => ({
       }
       set({ loading: false, error: message, users: [], hasFetched: false });
     }
+  },
+
+  refreshUsers: async () => {
+    // Force refresh by resetting hasFetched flag
+    set({ hasFetched: false });
+    return get().fetchUsers();
+  },
+
+  clearUsers: () => {
+    set({ users: [], loading: false, error: null, hasFetched: false });
   },
 })); 

@@ -101,6 +101,7 @@ const DEAL_CORE_FIELDS_FRAGMENT = gql`
     updated_at
     person_id
     organization_id
+    project_id
     user_id # creator
     assigned_to_user_id
     deal_specific_probability
@@ -246,16 +247,16 @@ interface DealsState {
   deleteDeal: (id: string) => Promise<boolean>;
   updateDealWFMProgress: (dealId: string, targetWfmWorkflowStepId: string) => Promise<Deal | null>;
 
-  // View State and Actions - now supports construction view
-  dealsViewMode: 'table' | 'kanban' | 'construction';
-  setDealsViewMode: (mode: 'table' | 'kanban' | 'construction') => void;
+  // Kanban View State and Actions
+  dealsViewMode: 'table' | 'kanban';
+  setDealsViewMode: (mode: 'table' | 'kanban') => void;
 }
 
 // Helper to safely get from localStorage
-const getDealsViewModeFromLocalStorage = (): 'table' | 'kanban' | 'construction' => {
+const getDealsViewModeFromLocalStorage = (): 'table' | 'kanban' => {
   try {
     const mode = localStorage.getItem('dealsViewMode');
-    return mode === 'kanban' ? 'kanban' : mode === 'construction' ? 'construction' : 'table'; // Default to 'table'
+    return mode === 'kanban' ? 'kanban' : 'table'; // Default to 'table' if not 'kanban'
   } catch (error) {
     // In case localStorage is not available (e.g. SSR or privacy settings)
     console.warn('Could not access localStorage to get dealsViewMode.', error);
@@ -320,6 +321,17 @@ export const useDealsStore = create<DealsState>((set, get) => ({
   updateDeal: async (id: string, input: Partial<DealUpdateInput>): Promise<{ deal: Deal | null; error?: string }> => {
     set({ dealsLoading: true, dealsError: null });
     try {
+      // Validate assignedToUserId if provided
+      if (input.assignedToUserId) {
+        const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input.assignedToUserId);
+        if (!isValidUUID) {
+          const errorMessage = 'Invalid user ID format. Please refresh the page and try again.';
+          console.error('Invalid assignedToUserId format:', input.assignedToUserId);
+          set({ dealsError: errorMessage, dealsLoading: false });
+          return { deal: null, error: errorMessage };
+        }
+      }
+
       const variables: MutationUpdateDealArgs = { id, input: input as DealUpdateInput };
       type UpdateDealMutationResponse = { updateDeal?: Maybe<Deal> };
       
@@ -394,7 +406,7 @@ export const useDealsStore = create<DealsState>((set, get) => ({
     }
   },
 
-  setDealsViewMode: (mode: 'table' | 'kanban' | 'construction') => {
+  setDealsViewMode: (mode: 'table' | 'kanban') => {
     set({ dealsViewMode: mode });
     try {
       localStorage.setItem('dealsViewMode', mode);

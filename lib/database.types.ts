@@ -7,31 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       account_territories: {
@@ -317,6 +292,7 @@ export type Database = {
           name: string
           organization_id: string | null
           person_id: string | null
+          project_id: string | null
           stage_id: string | null
           updated_at: string
           user_id: string
@@ -334,6 +310,7 @@ export type Database = {
           name: string
           organization_id?: string | null
           person_id?: string | null
+          project_id?: string | null
           stage_id?: string | null
           updated_at?: string
           user_id: string
@@ -351,6 +328,7 @@ export type Database = {
           name?: string
           organization_id?: string | null
           person_id?: string | null
+          project_id?: string | null
           stage_id?: string | null
           updated_at?: string
           user_id?: string
@@ -1617,6 +1595,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      generate_project_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_user_permissions: {
         Args: { p_user_id: string }
         Returns: Json
@@ -1772,9 +1754,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       custom_field_type: [

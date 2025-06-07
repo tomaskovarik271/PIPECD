@@ -96,18 +96,45 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
 
   const handleOwnerUpdate = async () => {
     try {
+      // Validate user selection
+      if (newOwnerId && !userList.find(user => user.id === newOwnerId)) {
+        toast({ 
+          title: 'Invalid User Selection', 
+          description: 'The selected user is no longer available. Please refresh the page and try again.', 
+          status: 'warning', 
+          duration: 4000, 
+          isClosable: true 
+        });
+        setIsEditingOwner(false);
+        return;
+      }
+
       await onUpdate(deal.id, { assignedToUserId: newOwnerId });
       toast({ title: 'Owner Updated', status: 'success', duration: 2000, isClosable: true });
       setIsEditingOwner(false);
       onRefresh();
     } catch (e) {
-      toast({ 
-        title: 'Error Updating Owner', 
-        description: (e as Error).message, 
-        status: 'error', 
-        duration: 3000, 
-        isClosable: true 
-      });
+      const errorMessage = (e as Error).message;
+      
+      // Handle specific foreign key constraint error
+      if (errorMessage.includes('violates foreign key constraint') || errorMessage.includes('not present in table')) {
+        toast({ 
+          title: 'User Not Found', 
+          description: 'The selected user no longer exists. Please refresh the page to update the user list.', 
+          status: 'error', 
+          duration: 5000, 
+          isClosable: true 
+        });
+      } else {
+        toast({ 
+          title: 'Error Updating Owner', 
+          description: errorMessage, 
+          status: 'error', 
+          duration: 3000, 
+          isClosable: true 
+        });
+      }
+      setIsEditingOwner(false);
     }
   };
 
@@ -321,6 +348,25 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
               />
             </HStack>
           )}
+        </HStack>
+
+        {/* Project ID Field */}
+        <HStack justifyContent="space-between" alignItems="center">
+          <Text fontSize="sm" color="gray.400">Project ID</Text>
+          <Text 
+            fontSize="md" 
+            fontWeight="bold" 
+            color="blue.300"
+            fontFamily="mono"
+            bg="gray.800"
+            px={3}
+            py={1}
+            borderRadius="md"
+            border="1px solid"
+            borderColor="gray.600"
+          >
+            #{(deal as any).project_id || '-'}
+          </Text>
         </HStack>
       </VStack>
     </Box>

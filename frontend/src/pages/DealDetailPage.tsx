@@ -42,7 +42,7 @@ import {
   Input,
   Progress,
 } from '@chakra-ui/react';
-import { Link as RouterLink, useParams } from 'react-router-dom';
+import { Link as RouterLink, useParams, useNavigate } from 'react-router-dom';
 import { ArrowBackIcon, WarningIcon, InfoIcon, EmailIcon, CalendarIcon, EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
 import { FaClipboardList, FaPhone } from 'react-icons/fa';
 
@@ -62,12 +62,17 @@ import { DealHeader } from '../components/deals/DealHeader';
 import { DealOverviewCard } from '../components/deals/DealOverviewCard';
 import { DealActivitiesPanel } from '../components/deals/DealActivitiesPanel';
 import { DealCustomFieldsPanel } from '../components/deals/DealCustomFieldsPanel';
-import { DealRelatedPanel } from '../components/deals/DealRelatedPanel';
 import { DealHistoryPanel } from '../components/deals/DealHistoryPanel';
 import { DealOverviewPanel } from '../components/deals/DealOverviewPanel';
+import { DealOrganizationContactsPanel } from '../components/deals/DealOrganizationContactsPanel';
+import { StickerBoard } from '../components/common/StickerBoard';
+import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 
 // Type imports
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
+import { 
+  initializeCustomFieldValuesFromEntity, 
+} from '../lib/utils/customFieldProcessing';
 
 interface LinkDisplayDetails {
   isUrl: boolean;
@@ -108,6 +113,7 @@ const getActivityTypeIcon = (type?: GQLActivityType | null) => {
 
 const DealDetailPage = () => {
   const { dealId } = useParams<{ dealId: string }>();
+  const navigate = useNavigate();
   
   // NEW: Use semantic tokens for automatic theme adaptation
   const colors = useThemeColors();
@@ -255,9 +261,14 @@ const DealDetailPage = () => {
 
   // Helper function to convert updateDealStoreAction to expected interface
   const handleDealUpdate = async (dealId: string, updates: any): Promise<void> => {
-    const result = await updateDealStoreAction(dealId, updates);
-    if (result.error) {
-      throw new Error(result.error);
+    try {
+      await updateDealStoreAction(dealId, updates);
+      if (dealId) {
+        fetchDealById(dealId);
+      }
+    } catch (error) {
+      console.error('Failed to update deal:', error);
+      throw error;
     }
   };
 
@@ -268,6 +279,44 @@ const DealDetailPage = () => {
     email: user.email,
     avatar_url: user.avatar_url || undefined
   }));
+
+  // Handle custom field updates
+  const handleCustomFieldUpdate = async (fieldId: string, value: any) => {
+    if (!currentDeal?.id) return;
+    
+    try {
+      // Find the field definition to get the field name
+      const fieldDefinition = customFieldDefinitions?.find(def => def.id === fieldId);
+      if (!fieldDefinition) {
+        throw new Error('Field definition not found');
+      }
+
+      // Create a temporary form values object with just this field
+      const tempFormValues = { [fieldDefinition.fieldName]: value };
+      
+      // Process custom fields using the same utility as EditDealModal
+      const processedCustomFields = processCustomFieldsForSubmission(
+        [fieldDefinition], // Only process this one field
+        tempFormValues
+      );
+
+      if (processedCustomFields.length === 0) {
+        throw new Error('Failed to process custom field value');
+      }
+
+      // Update the deal with the processed custom field
+      await updateDealStoreAction(currentDeal.id, {
+        customFields: processedCustomFields
+      });
+
+      // Refresh the deal data
+      await fetchDealById(currentDeal.id);
+      
+    } catch (error) {
+      console.error('Failed to update custom field:', error);
+      throw error; // Re-throw to be handled by the component
+    }
+  };
 
     return (
     <Box 
@@ -319,7 +368,11 @@ const DealDetailPage = () => {
                       {!isLoadingDeal && !dealError && currentDeal && (
                           <VStack spacing={6} align="stretch">
                 {/* Header Section */}
-                <DealHeader deal={currentDeal} />
+                <DealHeader 
+                  deal={currentDeal} 
+                  onCreateActivity={onCreateActivityModalOpen}
+                  dealActivities={dealActivities}
+                />
 
                 {/* Deal Overview Card */}
                 <DealOverviewCard 
@@ -341,13 +394,16 @@ const DealDetailPage = () => {
                         Activities ({dealActivities.length})
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                        Related
-                      </Tab>
-                      <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         Custom Fields
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                        Organization Contacts
+                      </Tab>
+                      <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         History
+                      </Tab>
+                      <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                        Sticky Notes
                       </Tab>
                                       </TabList>
                     
@@ -373,24 +429,32 @@ const DealDetailPage = () => {
                         />
                                           </TabPanel>
                       
-                                          <TabPanel>
-                        <DealRelatedPanel 
-                          person={currentDeal.person as any}
-                          organization={currentDeal.organization as any}
-                        />
-                                          </TabPanel>
-                      
                       <TabPanel>
                         <DealCustomFieldsPanel
                           customFieldDefinitions={customFieldDefinitions || []}
                           customFieldValues={currentDeal.customFieldValues || []}
+                          dealId={currentDeal.id}
+                          onUpdate={handleCustomFieldUpdate}
                           getLinkDisplayDetails={getLinkDisplayDetails}
                         />
                                           </TabPanel>
+
+                      <TabPanel>
+                        <DealOrganizationContactsPanel
+                          organization={currentDeal.organization ? {
+                            id: currentDeal.organization.id,
+                            name: currentDeal.organization.name
+                          } : null}
+                        />
+                      </TabPanel>
                       
                                           <TabPanel>
                         <DealHistoryPanel historyEntries={currentDeal.history} />
                                           </TabPanel>
+
+                      <TabPanel>
+                        <StickerBoard entityType="DEAL" entityId={currentDeal.id} />
+                      </TabPanel>
                                       </TabPanels>
                                   </Tabs>
                               </Box>
@@ -428,21 +492,32 @@ const DealDetailPage = () => {
                                       <HStack spacing={3} alignItems="center">
                                           <Avatar 
                                               size="md" 
-                                              name={`${currentDeal.person.first_name} ${currentDeal.person.last_name}`}
+                                              name={`${currentDeal.person?.first_name || ''} ${currentDeal.person?.last_name || ''}`}
                                               bg={colors.interactive.default}
                                               color={colors.text.onAccent}
                                           />
-                                          <VStack align="start" spacing={0}>
-                                              <Link as={RouterLink} to={`/people/${currentDeal.person.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
-                                                  {currentDeal.person.first_name} {currentDeal.person.last_name}
+                                          <VStack align="start" spacing={0} flex={1}>
+                                              <Link as={RouterLink} to={`/people/${currentDeal.person?.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
+                                                  {currentDeal.person?.first_name} {currentDeal.person?.last_name}
                                               </Link>
-                        {currentDeal.person.email && (
-                          <Link href={`mailto:${currentDeal.person.email}`} fontSize="sm" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
-                            {currentDeal.person.email}
-                          </Link>
-                        )}
+                                                  {currentDeal.person?.email && (
+                                                      <Text fontSize="sm" color={colors.text.secondary}>
+                                                          {currentDeal.person?.email}
+                                                      </Text>
+                                                  )}
                                           </VStack>
                                       </HStack>
+                                      {currentDeal.person?.email && (
+                                          <Button 
+                                              size="xs" 
+                                              variant="outline" 
+                                              leftIcon={<EmailIcon />}
+                                              onClick={() => window.open(`mailto:${currentDeal.person?.email}`)}
+                                              width="full"
+                                          >
+                                              Email
+                                          </Button>
+                                      )}
                                   </Box>
                               )}
 

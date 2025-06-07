@@ -12,15 +12,16 @@
    - [WFM Developer Guide: Implementing WFM for New Entities](#-wfm-developer-guide-implementing-wfm-for-new-entities)
 4. [Event-Driven Automation Architecture (Inngest + Activities)](#-event-driven-automation-architecture-inngest--activities)
 5. [Relationship Intelligence Platform - Revolutionary Visualization](#-relationship-intelligence-platform---revolutionary-visualization)
-6. [Technology Stack](#-technology-stack)
-7. [System Architecture Layers](#-system-architecture-layers)
-8. [Key Architectural Patterns](#-key-architectural-patterns)
-9. [Data Architecture](#-data-architecture)
-10. [Security Architecture](#-security-architecture)
-11. [AI Integration Architecture](#-ai-integration-architecture)
-12. [Architectural Compliance & Risk Assessment](#-architectural-compliance--risk-assessment)
-13. [Development Principles](#-development-principles)
-14. [Deployment Architecture](#-deployment-architecture)
+6. [Smart Stickers Visual Collaboration Platform](#-smart-stickers-visual-collaboration-platform)
+7. [Technology Stack](#-technology-stack)
+8. [System Architecture Layers](#-system-architecture-layers)
+9. [Key Architectural Patterns](#-key-architectural-patterns)
+10. [Data Architecture](#-data-architecture)
+11. [Security Architecture](#-security-architecture)
+12. [AI Integration Architecture](#-ai-integration-architecture)
+13. [Architectural Compliance & Risk Assessment](#-architectural-compliance--risk-assessment)
+14. [Development Principles](#-development-principles)
+15. [Deployment Architecture](#-deployment-architecture)
 
 ---
 
@@ -37,6 +38,7 @@ PipeCD is a **modern, AI-first CRM platform** built with enterprise-grade archit
 - **🤖 AI-First Design**: Not just a CRM with AI features, but an AI reasoning engine for sales
 - **🔄 Generic Workflow Engine**: WFM system powers all business processes with unlimited flexibility
 - ⚡ **Event-Driven Automation**: Inngest + Activities create intelligent, scalable automation workflows
+- 📝 **Smart Stickers Visual Collaboration**: Revolutionary sticky note system for visual deal context and team collaboration
 - 🔒 **Enterprise Security**: Database-level security with Row Level Security (RLS) and granular permissions
 - ⚡ **Serverless Scale**: Infinite scalability without infrastructure management
 - 🎨 **Modern UX**: React-based interface with real-time updates and responsive design
@@ -59,7 +61,8 @@ lib/
 ├── organizationService.ts   // Organization handling
 ├── activityService.ts       // Activity tracking
 ├── wfmWorkflowService.ts   // Workflow management
-└── customFieldService.ts   // Dynamic field system
+├── customFieldService.ts   // Dynamic field system
+└── smartStickersService.ts // Visual collaboration system
 ```
 
 **Benefits**:
@@ -123,7 +126,7 @@ const useDealsStore = () => {
 - 📁 **Database Schema**: Versioned migrations in `supabase/migrations/`
 - ⚙️ **Deploy Config**: `netlify.toml` defines build and deploy
 - 🧪 **Testing**: Automated test suites for all layers
-- 📝 **Documentation**: Architecture decisions recorded in ADRs
+- �� **Documentation**: Architecture decisions recorded in ADRs
 
 ### 🔄 Work Flow Management (WFM) - Core Architectural Component
 
@@ -891,6 +894,211 @@ ORDER BY sa.influence_score DESC, por.seniority_level;
 - **Churn Risk Prediction**: Early warning for relationship degradation
 - **Optimal Engagement Timing**: AI-recommended contact schedules
 - **Network Effect Analysis**: Understand influence cascade effects
+
+---
+
+## 📝 Smart Stickers Visual Collaboration Platform
+
+### **🎯 Transforming CRM into Visual Collaboration Hub**
+
+**PipeCD's Smart Stickers Platform** revolutionizes traditional CRM data management by introducing a **visual collaboration layer** that transforms static entity pages into dynamic, interactive workspaces where teams can organize thoughts, track action items, and maintain contextual notes directly attached to deals, people, and organizations.
+
+#### **🏗️ Smart Stickers Architecture**
+
+```
+🎨 Visual Collaboration Engine
+├── 📄 React-based StickerBoard (Drag & Drop Interface)
+├── 🗂️ Category Management System (8 Predefined + Custom)
+├── 🔍 Advanced Filtering & Search (Multi-modal Views)
+├── 📊 Professional Table Interface (SortableTable Integration)
+└── 🎯 Entity Integration (Native CRM Integration)
+```
+
+#### **🌟 Core Capabilities (PRODUCTION-READY)**
+
+**Visual Collaboration Interface**
+```typescript
+// Multi-modal sticker management system
+interface StickerBoard {
+  boardView: DragDropCanvas;        // Visual sticky note canvas
+  tableView: ProfessionalTable;     // Enterprise data table interface
+  filterView: AdvancedFilters;      // Multi-criteria filtering system
+  categoryView: ColorCodedSystem;   // 8 predefined categories + custom
+}
+
+// Real-time positioning with optimistic updates
+const stickerDragSystem = {
+  optimisticUpdates: true,         // Immediate UI feedback
+  debouncedPersistence: 500,       // Batch database updates
+  collisionDetection: true,        // Smart positioning
+  autoLayout: EmptySpaceAlgorithm  // Intelligent placement
+};
+```
+
+**Professional Enterprise Interface**
+```typescript
+// Enterprise-grade table view integration
+interface StickerTableView {
+  columns: [
+    'title_with_preview',      // Title + content preview
+    'category_with_icon',      // Color-coded category badges
+    'priority_with_alerts',    // Priority with visual indicators
+    'status_tags',             // Pinned/Private status tags
+    'tags_with_overflow',      // Tag management with +N display
+    'creation_date',           // Sortable date column
+    'actions_toolbar'          // Edit/Delete/Pin controls
+  ];
+  sorting: MultiColumnSorting;
+  filtering: RealTimeFilters;
+  actions: InlineActionToolbar;
+}
+```
+
+**Advanced Category & Organization System**
+```sql
+-- Comprehensive category management
+sticker_categories:
+  - id, name, color, icon, display_order
+  - 8 predefined: Important, Follow Up, Decision, Risk, Opportunity, Research, Technical, Budget
+  - Custom categories supported
+  - Icon integration with React Icons
+
+-- Smart sticker data model
+smart_stickers:
+  - entity_type, entity_id (polymorphic entity attachment)
+  - position_x, position_y, width, height (visual positioning)
+  - category_id, priority, is_pinned, is_private (organization)
+  - tags[], mentions[], metadata (collaboration features)
+  - created_by_user_id, ownership tracking (security)
+```
+
+#### **🎨 Revolutionary User Experience**
+
+**Seamless CRM Integration**
+- **Native Entity Embedding**: Stickers appear as natural tabs/sections in deal, person, and organization detail pages
+- **No Standalone Demo**: Replaced disconnected demo with integrated native functionality
+- **Context-Aware Creation**: New stickers automatically attached to specific entities being viewed
+- **Unified Navigation**: Access through existing entity detail workflows
+
+**Dual-Interface Design**
+- **Visual Canvas Mode**: Drag-and-drop sticky notes with real-time positioning
+- **Professional Table Mode**: Enterprise data table matching people/deals table standards
+- **Intelligent View Switching**: Toggle between visualization and data management modes
+- **Consistent Design Language**: Chakra UI components matching existing CRM design system
+
+**Advanced Interaction Patterns**
+- **Smart Positioning Algorithm**: Automatically finds empty space for new stickers
+- **Collision Avoidance**: Intelligent layout management prevents overlap
+- **Optimistic Updates**: Immediate UI response with background persistence
+- **Debounced Persistence**: Efficient database updates during drag operations
+
+#### **🔧 Technical Implementation Excellence**
+
+**Modern Frontend Architecture**
+```typescript
+// Component architecture
+frontend/src/components/common/
+├── StickerBoard.tsx              // Main orchestration component
+├── SmartSticker.tsx              // Individual sticker rendering
+├── StickerCreateModal.tsx        // Professional creation interface
+├── StickerFilters.tsx            // Advanced filtering system
+└── SortableTable.tsx             // Enterprise table integration
+
+// Integration pattern
+entityDetailPages/
+├── DealDetailPage.tsx            // Smart Stickers tab integration
+├── PersonDetailPage.tsx          // Smart Stickers section integration
+└── OrganizationDetailPage.tsx    // Smart Stickers section integration
+```
+
+**Robust Database Integration**
+```typescript
+// GraphQL resolver integration
+const smartStickersResolvers = {
+  createSticker: EntityContextValidation,  // Validates entity ownership
+  updateSticker: OptimisticPositioning,    // Handles position updates
+  deleteSticker: CascadePermissions,       // Security enforcement
+  categorizeSticker: CategoryValidation,   // Category system integration
+};
+
+// Service layer consistency
+class SmartStickersService {
+  async createSticker(entityType, entityId, stickerData): Promise<Sticker>
+  async updatePosition(stickerId, position): Promise<void>
+  async bulkUpdatePositions(updates): Promise<void>
+  async filterStickers(criteria): Promise<Sticker[]>
+}
+```
+
+**Advanced Filtering & Search System**
+```typescript
+// Multi-criteria filtering system
+interface StickerFilters {
+  categories: CategoryFilter[];        // Multi-select category filtering
+  priority: PriorityFilter;           // NORMAL/HIGH/URGENT filtering
+  status: StatusFilter;               // Pinned/Private status filtering
+  dateRange: DateRangeFilter;         // Creation/update date filtering
+  tags: TagFilter[];                  // Tag-based filtering
+  search: FullTextSearch;             // Content and title search
+}
+
+// Real-time filter application
+const useAdvancedFiltering = () => {
+  const [filters, setFilters] = useState<StickerFilters>({});
+  const filteredStickers = useMemo(() => 
+    applyMultiCriteriaFilter(stickers, filters), [stickers, filters]
+  );
+};
+```
+
+#### **🚀 Architectural Benefits**
+
+**Native CRM Integration**
+- **Contextual Collaboration**: Every sticker tied to specific business entities
+- **Permission Inheritance**: Stickers respect entity-level access controls
+- **Audit Trail Integration**: All sticker actions tracked in entity history
+- **Search Integration**: Sticker content searchable from entity views
+
+**Enterprise-Grade Performance**
+- **Optimized Queries**: Efficient entity-specific sticker loading
+- **Real-time Updates**: Live collaboration without page refreshes
+- **Responsive Design**: Works across all devices and screen sizes
+- **Accessibility Compliance**: Full WCAG compliance through Chakra UI
+
+**Developer Experience Excellence**
+- **Component Reusability**: Sticker system usable across all entity types
+- **Type Safety**: Full TypeScript coverage throughout sticker pipeline
+- **Testing Integration**: Comprehensive test coverage for all sticker operations
+- **Documentation Standards**: Complete API documentation and usage guides
+
+#### **🎯 Future Expansion Roadmap**
+
+**Phase 4: Advanced Collaboration**
+- **Real-time Multi-user Editing**: Live collaborative editing with conflict resolution
+- **Sticker Templates**: Pre-defined sticker templates for common use cases
+- **Workflow Integration**: Sticker-driven task creation and assignment
+- **Analytics Dashboard**: Sticker usage analytics and collaboration metrics
+
+**Phase 5: Intelligence Integration**
+- **AI-Powered Sticker Suggestions**: Automatic sticker creation based on entity changes
+- **Smart Categorization**: AI-driven category suggestions and auto-classification
+- **Content Enhancement**: AI-powered content suggestions and formatting
+- **Relationship Mapping**: Visual connections between related stickers across entities
+
+#### **🔍 Comparison to Traditional CRM Notes**
+
+**Traditional CRM Notes:**
+- Static text fields buried in forms
+- No visual organization or categorization
+- Limited collaboration features
+- Poor discoverability and context
+
+**PipeCD Smart Stickers:**
+- **Visual Canvas**: Drag-and-drop organization with spatial relationships
+- **Rich Categorization**: Color-coded categories with icons and metadata
+- **Professional Table Views**: Enterprise data management when needed
+- **Advanced Filtering**: Multi-criteria search and organization
+- **Native Integration**: Seamlessly embedded in entity workflows
 
 ---
 

@@ -21,6 +21,7 @@ import {
 import { ArrowBackIcon, WarningIcon } from '@chakra-ui/icons';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore'; // Assuming Organization type is exported
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors'; // NEW: Use semantic tokens
+import { StickerBoard } from '../components/common/StickerBoard';
 
 const OrganizationDetailPage = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
@@ -191,6 +192,27 @@ const OrganizationDetailPage = () => {
               </VStack>
             </Box>
             {/* More cards for related deals, people, etc. can be added here */}
+
+            {/* Smart Stickers Section - Full Width */}
+            <Box 
+              bg={colors.bg.elevated}
+              p={6} 
+              borderRadius="xl" 
+              borderWidth="1px" 
+              borderColor={colors.border.default}
+            >
+              <Heading 
+                size="md" 
+                mb={5} 
+                color={colors.text.primary}
+              >
+                📝 Smart Stickers
+              </Heading>
+              <StickerBoard 
+                entityType="ORGANIZATION"
+                entityId={currentOrganization.id}
+              />
+            </Box>
           </VStack>
         )}
         

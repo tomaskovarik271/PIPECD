@@ -12,6 +12,7 @@ Project PipeCD is a revolutionary **Claude 4 Sonnet-powered CRM system** featuri
 - **30+ AI Tools** for autonomous deal, lead, and contact management
 - **Complete Leads Management** with qualification workflows and conversion
 - **Custom Fields Democratization** - all users can create fields via AI
+- **Smart Stickers Visual Collaboration** - Revolutionary sticky note system integrated into all entity detail pages
 - **Relationship Intelligence Platform** - Interactive network visualization with D3.js
 - **Event-Driven Automation** via Inngest for deal assignment and lead workflows
 - **Comprehensive WFM Integration** for sales pipeline and lead qualification
@@ -47,6 +48,7 @@ The architecture emphasizes separation of concerns, type safety, AI-powered auto
 - ✅ **Leads Management** - Full qualification workflows with AI scoring and conversion
 - ✅ **Contact Management** - People and Organizations with custom fields support
 - ✅ **Activity Management** - Tasks, meetings, calls with assignment automation
+- ✅ **Smart Stickers Visual Collaboration** - Drag-and-drop sticky note system with dual-mode interface
 - ✅ **Work Flow Management (WFM)** - Replaces legacy pipeline system with flexible workflows
 - ✅ **Custom Fields System** - Democratized custom field creation for all entity types
 - ✅ **Relationship Intelligence Platform** - Interactive network visualization with D3.js
@@ -56,6 +58,7 @@ The architecture emphasizes separation of concerns, type safety, AI-powered auto
 **Architecture Highlights:**
 - **Service Layer Consistency**: All services follow proven object-based patterns
 - **AI Integration**: Deep integration allowing natural language CRM operations
+- **Visual Collaboration**: Smart Stickers transform static entity pages into interactive workspaces
 - **Custom Fields Revolution**: Any user can create custom fields via AI conversations
 - **Automation Engine**: Event-driven workflows for assignment and qualification tasks
 - **Type Safety**: Comprehensive TypeScript coverage with GraphQL code generation
@@ -1564,3 +1567,524 @@ This ensures:
 - **Code Consistency** - Unified codebase with predictable structure
 - **Easier Maintenance** - Similar patterns across all entity types
 - **Knowledge Transfer** - Developers familiar with deals can easily work with leads
+
+## 20. Smart Stickers Visual Collaboration System (PRODUCTION-READY)
+
+Project PipeCD implements a **revolutionary Smart Stickers system** that transforms traditional CRM entity pages into visual collaboration workspaces. The system provides drag-and-drop sticky note functionality with professional table views, advanced filtering, and seamless integration into deal, person, and organization detail pages.
+
+### 20.1 System Overview & Current Status
+
+**✅ PRODUCTION STATUS: FULLY IMPLEMENTED**
+
+Smart Stickers represents a breakthrough in CRM user experience, moving beyond static notes to dynamic, visual collaboration:
+
+**Core Components:**
+- **Visual Canvas Interface**: React-based drag-and-drop sticky note system
+- **Professional Table View**: Enterprise data table matching people/deals table standards  
+- **Advanced Filtering System**: Multi-criteria filtering with collapsible sections
+- **Category Management**: 8 predefined categories plus custom category support
+- **Entity Integration**: Native embedding in all entity detail pages
+- **Real-time Persistence**: Optimistic updates with debounced database synchronization
+
+### 20.2 Database Implementation
+
+#### 20.2.1 Smart Stickers Schema
+
+```sql
+-- Core stickers table
+CREATE TABLE public.smart_stickers (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  
+  -- Entity Attachment (Polymorphic)
+  entity_type TEXT NOT NULL CHECK (entity_type IN ('DEAL', 'PERSON', 'ORGANIZATION')),
+  entity_id UUID NOT NULL,
+  
+  -- Content & Metadata
+  title TEXT NOT NULL,
+  content TEXT,
+  color TEXT NOT NULL DEFAULT '#FFE066',
+  
+  -- Visual Positioning
+  position_x INTEGER NOT NULL DEFAULT 0,
+  position_y INTEGER NOT NULL DEFAULT 0,
+  width INTEGER NOT NULL DEFAULT 200,
+  height INTEGER NOT NULL DEFAULT 150,
+  
+  -- Organization & Categorization
+  category_id UUID REFERENCES sticker_categories(id) ON DELETE SET NULL,
+  priority INTEGER NOT NULL DEFAULT 0, -- 0=NORMAL, 1=HIGH, 2=URGENT
+  is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+  is_private BOOLEAN NOT NULL DEFAULT FALSE,
+  
+  -- Collaboration Features
+  tags TEXT[] DEFAULT '{}',
+  mentions TEXT[] DEFAULT '{}',
+  
+  -- Ownership & Security
+  created_by_user_id UUID NOT NULL REFERENCES auth.users(id),
+  last_edited_by_user_id UUID REFERENCES auth.users(id),
+  last_edited_at TIMESTAMPTZ,
+  
+  -- Audit Fields
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Categories system
+CREATE TABLE public.sticker_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  color TEXT NOT NULL,
+  icon TEXT,
+  is_system BOOLEAN NOT NULL DEFAULT FALSE,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+```
+
+#### 20.2.2 Performance Optimization
+
+```sql
+-- Critical indexes for performance
+CREATE INDEX CONCURRENTLY idx_smart_stickers_entity ON smart_stickers(entity_type, entity_id);
+CREATE INDEX CONCURRENTLY idx_smart_stickers_user ON smart_stickers(created_by_user_id);
+CREATE INDEX CONCURRENTLY idx_smart_stickers_category ON smart_stickers(category_id);
+CREATE INDEX CONCURRENTLY idx_smart_stickers_priority ON smart_stickers(priority DESC);
+CREATE INDEX CONCURRENTLY idx_smart_stickers_pinned ON smart_stickers(is_pinned) WHERE is_pinned = true;
+
+-- Composite indexes for common queries  
+CREATE INDEX CONCURRENTLY idx_smart_stickers_entity_user ON smart_stickers(entity_type, entity_id, created_by_user_id);
+CREATE INDEX CONCURRENTLY idx_smart_stickers_position ON smart_stickers(entity_type, entity_id, position_x, position_y);
+```
+
+### 20.3 Frontend Architecture & Implementation
+
+#### 20.3.1 Component Architecture
+
+```typescript
+// Smart Stickers component hierarchy
+frontend/src/components/common/
+├── StickerBoard.tsx              // Main orchestration component (600+ lines)
+│   ├── ViewMode: 'board' | 'list' // Dual-interface switching
+│   ├── StickerLayout: Map<string, Layout> // Position management
+│   ├── useDebounce: Hook        // Optimistic updates
+│   └── EmptySpace: Algorithm    // Intelligent positioning
+├── SmartSticker.tsx              // Individual sticker rendering
+│   ├── DragHandle: Component    // Drag-and-drop interface
+│   ├── ResizeHandle: Component  // Resize functionality
+│   ├── ContentEditor: Component // In-place editing
+│   └── ActionMenu: Component    // Context actions
+├── StickerCreateModal.tsx        // Professional creation interface
+│   ├── CategorySelector: Component // Real category integration
+│   ├── PrioritySelector: Component // Priority management
+│   ├── TagsInput: Component     // Tag management
+│   └── FormValidation: Zod      // Input validation
+├── StickerFilters.tsx            // Advanced filtering system (530+ lines)
+│   ├── CollapsibleSections: Component // Category/Status/Priority sections
+│   ├── ActiveFilterBadges: Component  // Filter visualization
+│   ├── FilterCounts: Component  // Active filter indicators
+│   └── ClearAllFilters: Component // Filter management
+└── SortableTable.tsx             // Enterprise table integration
+    ├── ColumnDefinitions: Array // Professional table structure
+    ├── SortingLogic: Multi      // Multi-column sorting
+    ├── ActionToolbar: Component // Inline actions
+    └── ResponsiveDesign: Chakra // Mobile-first design
+```
+
+#### 20.3.2 Entity Integration Pattern
+
+```typescript
+// Integration into entity detail pages
+// Pattern: Add Smart Stickers as tab (deals) or section (people/organizations)
+
+// Deal Detail Page (Tab Integration)
+<TabList>
+  <Tab>Overview</Tab>
+  <Tab>Activities</Tab>
+  <Tab>Smart Stickers</Tab> {/* NEW TAB */}
+</TabList>
+<TabPanels>
+  <TabPanel>{/* Overview content */}</TabPanel>
+  <TabPanel>{/* Activities content */}</TabPanel>
+  <TabPanel>
+    <StickerBoard 
+      entityType="DEAL" 
+      entityId={currentDeal.id}
+      categories={categories}
+    />
+  </TabPanel>
+</TabPanels>
+
+// Person/Organization Detail Page (Section Integration)
+<VStack spacing={6}>
+  {/* Existing entity information */}
+  
+  {/* Smart Stickers Section */}
+  <Box w="full" bg={colors.bg.elevated} borderRadius="xl" p={6}>
+    <Heading size="md" mb={4}>📝 Smart Stickers</Heading>
+    <StickerBoard 
+      entityType="PERSON" 
+      entityId={currentPerson.id}
+      categories={categories}
+    />
+  </Box>
+</VStack>
+```
+
+### 20.4 Backend Implementation
+
+#### 20.4.1 GraphQL Schema & Operations
+
+```graphql
+# Smart Stickers GraphQL schema
+type SmartSticker {
+  id: ID!
+  entityType: EntityType!
+  entityId: ID!
+  title: String!
+  content: String
+  category: StickerCategory
+  positionX: Int!
+  positionY: Int!
+  width: Int!
+  height: Int!
+  color: String!
+  priority: StickerPriority!
+  isPinned: Boolean!
+  isPrivate: Boolean!
+  tags: [String!]!
+  mentions: [String!]!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdByUserId: ID!
+  lastEditedByUserId: ID
+  lastEditedAt: DateTime
+}
+
+type StickerCategory {
+  id: ID!
+  name: String!
+  color: String!
+  icon: String
+  isSystem: Boolean!
+  displayOrder: Int!
+}
+
+enum EntityType {
+  DEAL
+  PERSON  
+  ORGANIZATION
+}
+
+enum StickerPriority {
+  NORMAL
+  HIGH
+  URGENT
+}
+
+# Query operations
+type Query {
+  smartStickers(
+    entityType: EntityType!
+    entityId: ID!
+    filters: StickerFiltersInput
+  ): [SmartSticker!]!
+  
+  stickerCategories: [StickerCategory!]!
+}
+
+# Mutation operations
+type Mutation {
+  createSticker(input: CreateStickerInput!): SmartSticker!
+  updateSticker(id: ID!, input: UpdateStickerInput!): SmartSticker!
+  deleteSticker(id: ID!): Boolean!
+  toggleStickerPin(id: ID!): SmartSticker!
+  bulkUpdateStickerPositions(updates: [StickerPositionUpdate!]!): [SmartSticker!]!
+}
+```
+
+#### 20.4.2 Service Layer Implementation
+
+```typescript
+// Service layer following established patterns
+// lib/smartStickersService.ts
+
+export interface SmartStickersService {
+  // Core CRUD operations
+  getStickers(entityType: EntityType, entityId: string, filters?: StickerFilters): Promise<SmartSticker[]>
+  createSticker(input: CreateStickerInput, context: ServiceContext): Promise<SmartSticker>
+  updateSticker(id: string, input: UpdateStickerInput, context: ServiceContext): Promise<SmartSticker>
+  deleteSticker(id: string, context: ServiceContext): Promise<boolean>
+  
+  // Position management
+  updateStickerPosition(id: string, position: Position, context: ServiceContext): Promise<SmartSticker>
+  bulkUpdatePositions(updates: PositionUpdate[], context: ServiceContext): Promise<SmartSticker[]>
+  
+  // Organization features
+  togglePin(id: string, context: ServiceContext): Promise<SmartSticker>
+  categorizeSticker(id: string, categoryId: string, context: ServiceContext): Promise<SmartSticker>
+  
+  // Category management
+  getCategories(): Promise<StickerCategory[]>
+  createCategory(input: CreateCategoryInput, context: ServiceContext): Promise<StickerCategory>
+}
+```
+
+### 20.5 Advanced Features & Technical Implementation
+
+#### 20.5.1 Optimistic Updates with Debouncing
+
+```typescript
+// Optimistic update system for smooth UX
+const useOptimisticStickers = () => {
+  const [localPositions, setLocalPositions] = useState<Map<string, Position>>();
+  
+  // Immediate UI update
+  const updatePositionOptimistically = (stickerId: string, position: Position) => {
+    setLocalPositions(prev => new Map(prev).set(stickerId, position));
+  };
+  
+  // Debounced server persistence
+  const debouncedServerUpdate = useDebounce(
+    async (stickerId: string, position: Position) => {
+      await updateSticker({ id: stickerId, positionX: position.x, positionY: position.y });
+    }, 
+    500 // 500ms delay
+  );
+  
+  const handleStickerMove = (stickerId: string, position: Position) => {
+    updatePositionOptimistically(stickerId, position);  // Immediate
+    debouncedServerUpdate(stickerId, position);         // Delayed persistence
+  };
+};
+```
+
+#### 20.5.2 Intelligent Empty Space Algorithm
+
+```typescript
+// Smart positioning algorithm for new stickers
+const findEmptySpace = useCallback((
+  existingStickers: SmartSticker[], 
+  boardSize: { width: number; height: number }
+): Position => {
+  const occupiedAreas = existingStickers.map(sticker => ({
+    x: sticker.positionX,
+    y: sticker.positionY,
+    width: sticker.width,
+    height: sticker.height,
+  }));
+
+  const defaultWidth = 200;
+  const defaultHeight = 150;
+  const margin = 20;
+
+  // Grid-based collision detection
+  for (let y = margin; y < boardSize.height - defaultHeight; y += defaultHeight + margin) {
+    for (let x = margin; x < boardSize.width - defaultWidth; x += defaultWidth + margin) {
+      const overlaps = occupiedAreas.some(area => 
+        x < area.x + area.width + margin &&
+        x + defaultWidth + margin > area.x &&
+        y < area.y + area.height + margin &&
+        y + defaultHeight + margin > area.y
+      );
+      
+      if (!overlaps) {
+        return { x, y };
+      }
+    }
+  }
+
+  return { x: margin, y: margin }; // Fallback to origin
+}, []);
+```
+
+#### 20.5.3 Professional Table View Integration
+
+```typescript
+// Enterprise table columns definition
+const stickerTableColumns = useMemo((): ColumnDefinition<StickerData>[] => [
+  {
+    key: 'title',
+    header: 'Title',
+    renderCell: (sticker) => (
+      <VStack align="start" spacing={1}>
+        <Text fontWeight="medium" color={colors.text.primary} noOfLines={1}>
+          {sticker.title}
+        </Text>
+        {sticker.content && (
+          <Text fontSize="xs" color={colors.text.muted} noOfLines={2}>
+            {sticker.content}
+          </Text>
+        )}
+      </VStack>
+    ),
+    isSortable: true,
+    sortAccessor: (sticker) => sticker.title.toLowerCase(),
+  },
+  {
+    key: 'category',
+    header: 'Category',
+    renderCell: (sticker) => (
+      <Badge variant="subtle" colorScheme={sticker.category?.color}>
+        <HStack spacing={1}>
+          {sticker.category?.icon && <Icon as={categoryIcons[sticker.category.icon]} />}
+          <Text>{sticker.category?.name || '-'}</Text>
+        </HStack>
+      </Badge>
+    ),
+    isSortable: true,
+  },
+  // ... additional columns for priority, status, tags, creation date, actions
+], [colors]);
+```
+
+### 20.6 Security & Performance
+
+#### 20.6.1 Row Level Security (RLS)
+
+```sql
+-- Smart Stickers RLS policies
+-- Users can only see stickers for entities they have access to
+CREATE POLICY "smart_stickers_entity_access" ON smart_stickers
+  FOR ALL USING (
+    (entity_type = 'DEAL' AND entity_id IN (
+      SELECT id FROM deals WHERE user_id = auth.uid()
+    )) OR
+    (entity_type = 'PERSON' AND entity_id IN (
+      SELECT id FROM people WHERE user_id = auth.uid()
+    )) OR
+    (entity_type = 'ORGANIZATION' AND entity_id IN (
+      SELECT id FROM organizations WHERE user_id = auth.uid()
+    ))
+  );
+
+-- Users can only create stickers for their own entities
+CREATE POLICY "smart_stickers_create_own" ON smart_stickers
+  FOR INSERT WITH CHECK (
+    created_by_user_id = auth.uid() AND
+    -- Validate entity ownership (same logic as SELECT policy)
+  );
+```
+
+#### 20.6.2 Performance Optimization Strategies
+
+```typescript
+// Query optimization patterns
+const useSmartStickers = (entityType: EntityType, entityId: string) => {
+  // Efficient GraphQL query with field selection
+  const STICKERS_QUERY = gql`
+    query GetSmartStickers($entityType: EntityType!, $entityId: ID!) {
+      smartStickers(entityType: $entityType, entityId: $entityId) {
+        id
+        title
+        content
+        positionX
+        positionY
+        width
+        height
+        color
+        priority
+        isPinned
+        isPrivate
+        tags
+        category {
+          id
+          name
+          color
+          icon
+        }
+        createdAt
+      }
+    }
+  `;
+  
+  // React Query for caching and background updates
+  return useQuery({
+    queryKey: ['stickers', entityType, entityId],
+    queryFn: () => graphqlClient.request(STICKERS_QUERY, { entityType, entityId }),
+    staleTime: 30000, // 30 seconds
+    cacheTime: 300000, // 5 minutes
+  });
+};
+```
+
+### 20.7 Development Best Practices
+
+#### 20.7.1 Component Design Patterns
+
+```typescript
+// Reusable hook pattern for sticker management
+export const useSmartStickers = (entityType: EntityType, entityId: string) => {
+  const [stickers, setStickers] = useState<SmartSticker[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // CRUD operations
+  const createSticker = useCallback(async (input: CreateStickerInput) => {
+    // Optimistic update + server persistence
+  }, []);
+
+  const updateSticker = useCallback(async (id: string, input: UpdateStickerInput) => {
+    // Optimistic update + server persistence
+  }, []);
+
+  return {
+    stickers,
+    loading,
+    error,
+    createSticker,
+    updateSticker,
+    deleteSticker,
+    togglePin,
+    // ... other operations
+  };
+};
+```
+
+#### 20.7.2 Testing Strategy
+
+```typescript
+// Component testing patterns
+describe('StickerBoard', () => {
+  it('should render stickers in board view', () => {
+    render(
+      <StickerBoard 
+        entityType="DEAL" 
+        entityId="test-deal-id"
+        categories={mockCategories}
+      />
+    );
+    
+    expect(screen.getByText('Smart Stickers')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add sticker/i })).toBeInTheDocument();
+  });
+
+  it('should switch between board and table views', () => {
+    const { user } = render(<StickerBoard {...props} />);
+    
+    const tableViewButton = screen.getByLabelText('List view');
+    user.click(tableViewButton);
+    
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+});
+```
+
+### 20.8 Future Enhancements
+
+#### 20.8.1 Planned Features
+- **Real-time Collaboration**: Multi-user editing with conflict resolution
+- **Sticker Templates**: Pre-defined templates for common use cases
+- **Workflow Integration**: Sticker-driven task creation and assignment
+- **AI Integration**: Smart categorization and content suggestions
+- **Mobile Optimization**: Touch-friendly drag-and-drop interface
+
+#### 20.8.2 Scalability Considerations
+- **Database Partitioning**: Partition stickers by entity_type for large datasets
+- **CDN Integration**: Store sticker images and attachments in CDN
+- **Real-time Sync**: WebSocket integration for live collaboration
+- **Caching Strategy**: Redis caching for frequently accessed sticker data
+
+---
+
+## 21. Leads Management System (PRODUCTION-READY)

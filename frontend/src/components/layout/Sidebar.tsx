@@ -9,7 +9,6 @@ import {
   CheckCircleIcon,   // Deals (Represents closing deal?)
   CalendarIcon,      // Activities (Represents scheduling?)
   ArrowRightIcon,    // Pipelines (Represents flow?)
-  ViewIcon, // Added ViewIcon for Project Board
   StarIcon, // Added for Leads
   // StarIcon, // Placeholder for People
   // LockIcon, // Placeholder for Organizations
@@ -21,6 +20,7 @@ import {
   ArrowForwardIcon // For toggle
 } from '@chakra-ui/icons'; // Use appropriate icons
 import { FiCpu } from 'react-icons/fi'; // Import AI/robot icon
+import { Network } from 'lucide-react'; // Import Network icon for Relationship Intelligence
 
 // Comment out direct imports if moving logos to public directory
 // import logoPositiveRoot from '../../assets/logos/logo-positive.svg'; 
@@ -39,6 +39,7 @@ const NAV_ITEMS = [
   { path: '/leads', label: 'Leads', icon: <StarIcon /> },
   { path: '/people', label: 'People', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
+  { path: '/relationships', label: 'Relationship Intelligence', icon: <Network size={16} /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
   { path: '/agent', label: 'AI Assistant', icon: <FiCpu size={16} /> },
 ];
@@ -46,7 +47,6 @@ const NAV_ITEMS = [
 const ADMIN_NAV_ITEMS = [
   { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon />, permission: 'custom_fields:manage_definitions' },
   { path: '/admin/wfm', label: 'Workflow Management', icon: <SettingsIcon />, permission: null }, // Allow any admin user to see WFM
-  { path: '/project-board', label: 'Project Board', icon: <ViewIcon />, permission: null }, // Allow general access
 ];
 
 const USER_NAV_ITEMS = [

@@ -43,6 +43,8 @@ const config: CodegenConfig = {
           Date: 'string', // For frontend, string is often preferred for Date
           JSON: 'Record<string, any>', // For frontend
         },
+        // Generate enums as TypeScript enums instead of union types
+        enumsAsTypes: false,
         // Avoids __typename on everything if not strictly needed by client cache/logic
         // skipTypename: true, 
       }

@@ -41,6 +41,22 @@ import { WFMWorkflowStep as WFMWorkflowStepResolver } from './graphql/resolvers/
 // Import Agent Resolvers
 import { agentQueries, agentMutations } from './graphql/resolvers/agentResolvers';
 
+// Import Relationship Resolvers
+import {
+  OrganizationRelationship,
+  PersonRelationship,
+  PersonOrganizationalRole,
+  StakeholderAnalysis,
+  relationshipQueries,
+  relationshipMutations
+} from './graphql/resolvers/relationships';
+
+// Import Smart Sticker Resolvers
+import {
+  smartStickerQueries,
+  smartStickerMutations
+} from './graphql/resolvers/smartStickers';
+
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
 
@@ -57,8 +73,10 @@ const loadTypeDefs = (): string => {
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
+    'relationships.graphql',
     'scalars.graphql', 
     'schema.graphql', 
+    'smartStickers.graphql',
     'user.graphql', 
     'user_profile.graphql',
     'wfm_definitions.graphql',
@@ -80,8 +98,10 @@ const loadTypeDefs = (): string => {
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
+    'relationships.graphql',
     'scalars.graphql', 
     'schema.graphql', 
+    'smartStickers.graphql',
     'user.graphql', 
     'user_profile.graphql',
     'wfm_definitions.graphql',
@@ -127,6 +147,8 @@ export const resolvers = {
     ...WFMWorkflowResolvers.Query,
     ...WFMProjectTypeResolvers.Query,
     ...agentQueries,
+    ...relationshipQueries,
+    ...smartStickerQueries,
   },
   Mutation: {
     ...BaseMutation,
@@ -136,6 +158,8 @@ export const resolvers = {
     ...WFMWorkflowResolvers.Mutation,
     ...WFMProjectTypeResolvers.Mutation,
     ...agentMutations,
+    ...relationshipMutations,
+    ...smartStickerMutations,
   },
   Person,
   Deal,
@@ -149,6 +173,10 @@ export const resolvers = {
   WFMWorkflowTransition: WFMWorkflowResolvers.WFMWorkflowTransition,
   WFMProjectType: WFMProjectTypeResolvers.WFMProjectType,
   WFMProject,
+  OrganizationRelationship,
+  PersonRelationship,
+  PersonOrganizationalRole,
+  StakeholderAnalysis,
 }; 
 
 const yoga = createYoga<GraphQLContext>({

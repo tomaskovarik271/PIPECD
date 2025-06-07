@@ -19,7 +19,8 @@ import WfmAdminPage from './pages/admin/WfmAdminPage';
 import WFMStatusesPage from './pages/admin/WFMStatusesPage';
 import WFMWorkflowsPage from './pages/admin/WFMWorkflowsPage';
 import WFMProjectTypesPage from './pages/admin/WFMProjectTypesPage';
-import ProjectBoardPage from './pages/ProjectBoardPage';
+import { RelationshipIntelligencePage } from './pages/RelationshipIntelligencePage';
+import CrossEntityNetworkPage from './pages/CrossEntityNetworkPage';
 import { 
   Box, 
   Heading, 
@@ -70,6 +71,8 @@ function AppContent() {
             <Route path="/leads" element={<LeadsPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
             <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
+            <Route path="/relationships" element={<RelationshipIntelligencePage />} />
+            <Route path="/cross-entity-network" element={<CrossEntityNetworkPage />} />
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
             <Route path="/agent" element={<AgentPage />} />
@@ -81,7 +84,6 @@ function AppContent() {
               <Route path="workflows" element={<WFMWorkflowsPage />} />
               <Route path="project-types" element={<WFMProjectTypesPage />} />
             </Route>
-            <Route path="/project-board" element={<ProjectBoardPage />} />
             <Route path="*" element={<Heading size="lg" p={6} color={colors.text.primary}>404 Not Found</Heading>} />
           </Routes>
         </Box>

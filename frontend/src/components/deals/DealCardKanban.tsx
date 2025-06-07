@@ -109,16 +109,31 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
                   <Text 
                     fontWeight="bold" 
                     color={colors.text.primary}
-                    noOfLines={2} 
                     _hover={{ color: colors.text.link }}
                     fontSize="md"
+                    lineHeight="1.3"
                   >
                     {deal.name}
                   </Text>
                 </RouterLink>
-                <Text fontSize="sm" color={colors.text.muted} noOfLines={1}>
+                <Text fontSize="sm" color={colors.text.muted}>
                   {deal.organization?.name || '-'}
                 </Text>
+                {(deal as any).project_id && (
+                  <Text 
+                    fontSize="xs" 
+                    color={colors.text.link}
+                    fontFamily="mono"
+                    fontWeight="medium"
+                    bg={colors.bg.input}
+                    px={2}
+                    py={1}
+                    borderRadius="md"
+                    display="inline-block"
+                  >
+                    #{(deal as any).project_id}
+                  </Text>
+                )}
               </VStack>
               <Text fontSize="lg" fontWeight="bold" color={colors.text.success}>
                 {deal.amount ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits:0, maximumFractionDigits:0 }).format(deal.amount) : '-'}

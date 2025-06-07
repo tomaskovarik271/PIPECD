@@ -38,6 +38,15 @@ export type Scalars = {
   JSON: { input: { [key: string]: any }; output: { [key: string]: any } };
 };
 
+export type AccountTerritory = {
+  __typename?: "AccountTerritory";
+  assignmentReason?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  isPrimary: Scalars["Boolean"]["output"];
+  organization: Organization;
+  territory: Territory;
+};
+
 export type Activity = {
   __typename?: "Activity";
   assignedToUser?: Maybe<User>;
@@ -181,6 +190,23 @@ export enum AgentThoughtType {
   ToolCall = "TOOL_CALL",
 }
 
+export enum BudgetAuthorityLevel {
+  High = "HIGH",
+  Low = "LOW",
+  Medium = "MEDIUM",
+  None = "NONE",
+  Unlimited = "UNLIMITED",
+}
+
+export enum CommunicationPreference {
+  Email = "EMAIL",
+  FormalMeetings = "FORMAL_MEETINGS",
+  InPerson = "IN_PERSON",
+  Phone = "PHONE",
+  Slack = "SLACK",
+  Teams = "TEAMS",
+}
+
 export type ConvertedEntities = {
   __typename?: "ConvertedEntities";
   deal?: Maybe<Deal>;
@@ -198,6 +224,78 @@ export type CreateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject: Scalars["String"]["input"];
   type: ActivityType;
+};
+
+export type CreateOrganizationRelationshipInput = {
+  childOrgId: Scalars["ID"]["input"];
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  ownershipPercentage?: InputMaybe<Scalars["Float"]["input"]>;
+  parentOrgId: Scalars["ID"]["input"];
+  relationshipStrength?: InputMaybe<Scalars["Int"]["input"]>;
+  relationshipType: OrganizationRelationshipType;
+  startDate?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type CreatePersonOrganizationalRoleInput = {
+  budgetAuthorityUsd?: InputMaybe<Scalars["Float"]["input"]>;
+  department?: InputMaybe<Scalars["String"]["input"]>;
+  endDate?: InputMaybe<Scalars["String"]["input"]>;
+  isPrimaryRole?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+  personId: Scalars["ID"]["input"];
+  reportingStructure?: InputMaybe<Scalars["JSON"]["input"]>;
+  responsibilities?: InputMaybe<Scalars["JSON"]["input"]>;
+  roleTitle: Scalars["String"]["input"];
+  seniorityLevel?: InputMaybe<SeniorityLevel>;
+  startDate?: InputMaybe<Scalars["String"]["input"]>;
+  teamSize?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type CreatePersonRelationshipInput = {
+  fromPersonId: Scalars["ID"]["input"];
+  interactionFrequency?: InputMaybe<InteractionFrequency>;
+  isBidirectional?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  relationshipContext?: InputMaybe<Scalars["String"]["input"]>;
+  relationshipStrength?: InputMaybe<Scalars["Int"]["input"]>;
+  relationshipType: PersonRelationshipType;
+  toPersonId: Scalars["ID"]["input"];
+};
+
+export type CreateStakeholderAnalysisInput = {
+  approachStrategy?: InputMaybe<Scalars["String"]["input"]>;
+  budgetAuthorityLevel?: InputMaybe<BudgetAuthorityLevel>;
+  communicationPreference?: InputMaybe<CommunicationPreference>;
+  concerns?: InputMaybe<Scalars["JSON"]["input"]>;
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  decisionAuthority?: InputMaybe<DecisionAuthority>;
+  engagementLevel?: InputMaybe<EngagementLevel>;
+  influenceScore?: InputMaybe<Scalars["Int"]["input"]>;
+  lastInteractionDate?: InputMaybe<Scalars["String"]["input"]>;
+  lastInteractionType?: InputMaybe<Scalars["String"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  motivations?: InputMaybe<Scalars["JSON"]["input"]>;
+  nextBestAction?: InputMaybe<Scalars["String"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+  painPoints?: InputMaybe<Scalars["JSON"]["input"]>;
+  personId: Scalars["ID"]["input"];
+  preferredMeetingTime?: InputMaybe<Scalars["String"]["input"]>;
+  successMetrics?: InputMaybe<Scalars["JSON"]["input"]>;
+};
+
+export type CreateTerritoryInput = {
+  accountSizeRange?: InputMaybe<Scalars["String"]["input"]>;
+  assignedUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  city?: InputMaybe<Scalars["String"]["input"]>;
+  country?: InputMaybe<Scalars["String"]["input"]>;
+  industryFocus?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  name: Scalars["String"]["input"];
+  parentTerritoryId?: InputMaybe<Scalars["ID"]["input"]>;
+  region?: InputMaybe<Scalars["String"]["input"]>;
+  stateProvince?: InputMaybe<Scalars["String"]["input"]>;
+  territoryType: TerritoryType;
 };
 
 export type CreateWfmProjectTypeInput = {
@@ -326,6 +424,7 @@ export type Deal = {
   organization_id?: Maybe<Scalars["ID"]["output"]>;
   person?: Maybe<Person>;
   person_id?: Maybe<Scalars["ID"]["output"]>;
+  project_id: Scalars["String"]["output"];
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
   weighted_amount?: Maybe<Scalars["Float"]["output"]>;
@@ -370,49 +469,57 @@ export type DealUpdateInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
-export type GraphData = {
-  __typename?: "GraphData";
-  edges: Array<GraphEdge>;
-  nodes: Array<GraphNode>;
-  summary: GraphSummary;
-};
+export enum DecisionAuthority {
+  Blocker = "BLOCKER",
+  EndUser = "END_USER",
+  FinalDecision = "FINAL_DECISION",
+  Gatekeeper = "GATEKEEPER",
+  Influencer = "INFLUENCER",
+  Recommender = "RECOMMENDER",
+  StrongInfluence = "STRONG_INFLUENCE",
+}
 
-export type GraphEdge = {
-  __typename?: "GraphEdge";
-  color?: Maybe<Scalars["String"]["output"]>;
-  id: Scalars["ID"]["output"];
-  label?: Maybe<Scalars["String"]["output"]>;
-  source: Scalars["ID"]["output"];
-  target: Scalars["ID"]["output"];
-  type: Scalars["String"]["output"];
-};
+export enum EngagementLevel {
+  Blocker = "BLOCKER",
+  Champion = "CHAMPION",
+  Neutral = "NEUTRAL",
+  Skeptic = "SKEPTIC",
+  Supporter = "SUPPORTER",
+}
 
-export type GraphFilters = {
-  centerNodeId?: InputMaybe<Scalars["String"]["input"]>;
-  entityTypes?: InputMaybe<Array<Scalars["String"]["input"]>>;
-  includeActivities?: InputMaybe<Scalars["Boolean"]["input"]>;
-  includeWFMProjects?: InputMaybe<Scalars["Boolean"]["input"]>;
-  maxDepth?: InputMaybe<Scalars["Int"]["input"]>;
-  maxNodes?: InputMaybe<Scalars["Int"]["input"]>;
-};
+export enum EntityType {
+  Deal = "DEAL",
+  Lead = "LEAD",
+  Organization = "ORGANIZATION",
+  Person = "PERSON",
+}
 
-export type GraphNode = {
-  __typename?: "GraphNode";
-  color: Scalars["String"]["output"];
-  data?: Maybe<Scalars["JSON"]["output"]>;
-  id: Scalars["ID"]["output"];
-  label: Scalars["String"]["output"];
-  size: Scalars["Float"]["output"];
-  type: Scalars["String"]["output"];
-};
+export enum InsightStatus {
+  ActingOn = "ACTING_ON",
+  Completed = "COMPLETED",
+  Dismissed = "DISMISSED",
+  New = "NEW",
+  Reviewed = "REVIEWED",
+}
 
-export type GraphSummary = {
-  __typename?: "GraphSummary";
-  edgesByType: Scalars["JSON"]["output"];
-  nodesByType: Scalars["JSON"]["output"];
-  totalEdges: Scalars["Int"]["output"];
-  totalNodes: Scalars["Int"]["output"];
-};
+export enum InsightType {
+  DecisionPath = "DECISION_PATH",
+  InfluencePattern = "INFLUENCE_PATTERN",
+  MissingStakeholder = "MISSING_STAKEHOLDER",
+  Opportunity = "OPPORTUNITY",
+  RelationshipGap = "RELATIONSHIP_GAP",
+  RelationshipStrengthChange = "RELATIONSHIP_STRENGTH_CHANGE",
+  RiskAlert = "RISK_ALERT",
+}
+
+export enum InteractionFrequency {
+  Annually = "ANNUALLY",
+  Daily = "DAILY",
+  Monthly = "MONTHLY",
+  Quarterly = "QUARTERLY",
+  Rarely = "RARELY",
+  Weekly = "WEEKLY",
+}
 
 export type Lead = {
   __typename?: "Lead";
@@ -552,9 +659,20 @@ export type LeadsStats = {
   totalLeads: Scalars["Int"]["output"];
 };
 
+export type MissingStakeholderRecommendations = {
+  __typename?: "MissingStakeholderRecommendations";
+  coveragePercentage: Scalars["Float"]["output"];
+  currentCoverage: Scalars["Int"]["output"];
+  missingRoles: Scalars["JSON"]["output"];
+  priorityAdditions: Scalars["JSON"]["output"];
+  recommendedCoverage: Scalars["Int"]["output"];
+  suggestedActions: Scalars["JSON"]["output"];
+};
+
 export type Mutation = {
   __typename?: "Mutation";
   addAgentThoughts: Array<AgentThought>;
+  assignAccountToTerritory: AccountTerritory;
   convertLead: LeadConversionResult;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
@@ -562,7 +680,12 @@ export type Mutation = {
   createDeal: Deal;
   createLead: Lead;
   createOrganization: Organization;
+  createOrganizationRelationship: OrganizationRelationship;
   createPerson: Person;
+  createPersonOrganizationalRole: PersonOrganizationalRole;
+  createPersonRelationship: PersonRelationship;
+  createStakeholderAnalysis: StakeholderAnalysis;
+  createTerritory: Territory;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
   createWFMWorkflow: WfmWorkflow;
@@ -574,13 +697,20 @@ export type Mutation = {
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteOrganizationRelationship: Scalars["Boolean"]["output"];
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
+  deletePersonOrganizationalRole: Scalars["Boolean"]["output"];
+  deletePersonRelationship: Scalars["Boolean"]["output"];
+  deleteStakeholderAnalysis: Scalars["Boolean"]["output"];
+  deleteTerritory: Scalars["Boolean"]["output"];
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
+  dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
+  removeAccountFromTerritory: Scalars["Boolean"]["output"];
   sendAgentMessage: AgentResponse;
   updateActivity: Activity;
   updateAgentConversation: AgentConversation;
@@ -591,6 +721,10 @@ export type Mutation = {
   updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
+  updatePersonOrganizationalRole: PersonOrganizationalRole;
+  updateRelationshipInsight: RelationshipInsight;
+  updateStakeholderAnalysis: StakeholderAnalysis;
+  updateTerritory: Territory;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -604,6 +738,13 @@ export type Mutation = {
 export type MutationAddAgentThoughtsArgs = {
   conversationId: Scalars["ID"]["input"];
   thoughts: Array<AgentThoughtInput>;
+};
+
+export type MutationAssignAccountToTerritoryArgs = {
+  assignmentReason?: InputMaybe<Scalars["String"]["input"]>;
+  isPrimary?: InputMaybe<Scalars["Boolean"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+  territoryId: Scalars["ID"]["input"];
 };
 
 export type MutationConvertLeadArgs = {
@@ -635,8 +776,28 @@ export type MutationCreateOrganizationArgs = {
   input: OrganizationInput;
 };
 
+export type MutationCreateOrganizationRelationshipArgs = {
+  input: CreateOrganizationRelationshipInput;
+};
+
 export type MutationCreatePersonArgs = {
   input: PersonInput;
+};
+
+export type MutationCreatePersonOrganizationalRoleArgs = {
+  input: CreatePersonOrganizationalRoleInput;
+};
+
+export type MutationCreatePersonRelationshipArgs = {
+  input: CreatePersonRelationshipInput;
+};
+
+export type MutationCreateStakeholderAnalysisArgs = {
+  input: CreateStakeholderAnalysisInput;
+};
+
+export type MutationCreateTerritoryArgs = {
+  input: CreateTerritoryInput;
 };
 
 export type MutationCreateWfmProjectTypeArgs = {
@@ -683,7 +844,27 @@ export type MutationDeleteOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteOrganizationRelationshipArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeletePersonArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeletePersonOrganizationalRoleArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeletePersonRelationshipArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteStakeholderAnalysisArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteTerritoryArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -699,6 +880,10 @@ export type MutationDeleteWfmStatusArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDismissRelationshipInsightArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationExecuteAgentStepArgs = {
   conversationId: Scalars["ID"]["input"];
   stepId: Scalars["String"]["input"];
@@ -710,6 +895,11 @@ export type MutationReactivateCustomFieldDefinitionArgs = {
 
 export type MutationRecalculateLeadScoreArgs = {
   leadId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveAccountFromTerritoryArgs = {
+  organizationId: Scalars["ID"]["input"];
+  territoryId: Scalars["ID"]["input"];
 };
 
 export type MutationSendAgentMessageArgs = {
@@ -758,6 +948,26 @@ export type MutationUpdateOrganizationArgs = {
 export type MutationUpdatePersonArgs = {
   id: Scalars["ID"]["input"];
   input: PersonInput;
+};
+
+export type MutationUpdatePersonOrganizationalRoleArgs = {
+  id: Scalars["ID"]["input"];
+  input: CreatePersonOrganizationalRoleInput;
+};
+
+export type MutationUpdateRelationshipInsightArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateRelationshipInsightInput;
+};
+
+export type MutationUpdateStakeholderAnalysisArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateStakeholderAnalysisInput;
+};
+
+export type MutationUpdateTerritoryArgs = {
+  id: Scalars["ID"]["input"];
+  input: CreateTerritoryInput;
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -817,6 +1027,34 @@ export type OrganizationInput = {
   notes?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type OrganizationRelationship = {
+  __typename?: "OrganizationRelationship";
+  childOrg: Organization;
+  createdAt: Scalars["String"]["output"];
+  createdByUser?: Maybe<User>;
+  endDate?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notes?: Maybe<Scalars["String"]["output"]>;
+  ownershipPercentage?: Maybe<Scalars["Float"]["output"]>;
+  parentOrg: Organization;
+  relationshipStrength?: Maybe<Scalars["Int"]["output"]>;
+  relationshipType: OrganizationRelationshipType;
+  startDate?: Maybe<Scalars["String"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export enum OrganizationRelationshipType {
+  AcquisitionTarget = "ACQUISITION_TARGET",
+  Competitor = "COMPETITOR",
+  Customer = "CUSTOMER",
+  Division = "DIVISION",
+  JointVenture = "JOINT_VENTURE",
+  Partnership = "PARTNERSHIP",
+  Subsidiary = "SUBSIDIARY",
+  Supplier = "SUPPLIER",
+}
+
 export type OrganizationUpdateInput = {
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
@@ -859,6 +1097,55 @@ export type PersonListItem = {
   name: Scalars["String"]["output"];
 };
 
+export type PersonOrganizationalRole = {
+  __typename?: "PersonOrganizationalRole";
+  budgetAuthorityUsd?: Maybe<Scalars["Float"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  createdByUser?: Maybe<User>;
+  department?: Maybe<Scalars["String"]["output"]>;
+  endDate?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isPrimaryRole: Scalars["Boolean"]["output"];
+  notes?: Maybe<Scalars["String"]["output"]>;
+  organization: Organization;
+  person: Person;
+  reportingStructure?: Maybe<Scalars["JSON"]["output"]>;
+  responsibilities?: Maybe<Scalars["JSON"]["output"]>;
+  roleTitle: Scalars["String"]["output"];
+  seniorityLevel?: Maybe<SeniorityLevel>;
+  startDate?: Maybe<Scalars["String"]["output"]>;
+  teamSize?: Maybe<Scalars["Int"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type PersonRelationship = {
+  __typename?: "PersonRelationship";
+  createdAt: Scalars["String"]["output"];
+  createdByUser?: Maybe<User>;
+  fromPerson: Person;
+  id: Scalars["ID"]["output"];
+  interactionFrequency?: Maybe<InteractionFrequency>;
+  isBidirectional: Scalars["Boolean"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notes?: Maybe<Scalars["String"]["output"]>;
+  relationshipContext?: Maybe<Scalars["String"]["output"]>;
+  relationshipStrength?: Maybe<Scalars["Int"]["output"]>;
+  relationshipType: PersonRelationshipType;
+  toPerson: Person;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export enum PersonRelationshipType {
+  CollaboratesWith = "COLLABORATES_WITH",
+  CompetesWith = "COMPETES_WITH",
+  Influences = "INFLUENCES",
+  Manages = "MANAGES",
+  Mentors = "MENTORS",
+  PartnersWith = "PARTNERS_WITH",
+  RefersTo = "REFERS_TO",
+  ReportsTo = "REPORTS_TO",
+}
+
 export type PersonUpdateInput = {
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   email?: InputMaybe<Scalars["String"]["input"]>;
@@ -869,19 +1156,28 @@ export type PersonUpdateInput = {
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export enum PriorityLevel {
+  Critical = "CRITICAL",
+  High = "HIGH",
+  Low = "LOW",
+  Medium = "MEDIUM",
+}
+
 export type Query = {
   __typename?: "Query";
+  accountTerritories: Array<AccountTerritory>;
   activities: Array<Activity>;
   activity?: Maybe<Activity>;
   agentConversation?: Maybe<AgentConversation>;
   agentConversations: Array<AgentConversation>;
   agentThoughts: Array<AgentThought>;
+  analyzeStakeholderNetwork: StakeholderNetworkAnalysis;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
-  getGraphData: GraphData;
+  findMissingStakeholders: MissingStakeholderRecommendations;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
@@ -890,11 +1186,22 @@ export type Query = {
   me?: Maybe<User>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
   organization?: Maybe<Organization>;
+  organizationPersonRelationships: Array<PersonRelationship>;
+  organizationRelationships: Array<OrganizationRelationship>;
+  organizationRoles: Array<PersonOrganizationalRole>;
   organizations: Array<Organization>;
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
+  personOrganizationalRoles: Array<PersonOrganizationalRole>;
+  personRelationships: Array<PersonRelationship>;
+  relationshipInsight?: Maybe<RelationshipInsight>;
+  relationshipInsights: Array<RelationshipInsight>;
+  stakeholderAnalyses: Array<StakeholderAnalysis>;
+  stakeholderAnalysis?: Maybe<StakeholderAnalysis>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  territories: Array<Territory>;
+  territory?: Maybe<Territory>;
   users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
@@ -903,6 +1210,10 @@ export type Query = {
   wfmStatuses: Array<WfmStatus>;
   wfmWorkflow?: Maybe<WfmWorkflow>;
   wfmWorkflows: Array<WfmWorkflow>;
+};
+
+export type QueryAccountTerritoriesArgs = {
+  organizationId: Scalars["ID"]["input"];
 };
 
 export type QueryActivitiesArgs = {
@@ -927,6 +1238,13 @@ export type QueryAgentThoughtsArgs = {
   limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
+export type QueryAnalyzeStakeholderNetworkArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  includeInactiveRoles?: InputMaybe<Scalars["Boolean"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+};
+
 export type QueryCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -940,8 +1258,12 @@ export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type QueryGetGraphDataArgs = {
-  filters?: InputMaybe<GraphFilters>;
+export type QueryFindMissingStakeholdersArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  dealSize?: InputMaybe<Scalars["String"]["input"]>;
+  industryType?: InputMaybe<Scalars["String"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
 };
 
 export type QueryGetWfmAllowedTransitionsArgs = {
@@ -961,7 +1283,56 @@ export type QueryOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type QueryOrganizationPersonRelationshipsArgs = {
+  organizationId: Scalars["ID"]["input"];
+};
+
+export type QueryOrganizationRelationshipsArgs = {
+  organizationId: Scalars["ID"]["input"];
+};
+
+export type QueryOrganizationRolesArgs = {
+  includeInactive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+};
+
 export type QueryPersonArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryPersonOrganizationalRolesArgs = {
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryPersonRelationshipsArgs = {
+  personId: Scalars["ID"]["input"];
+};
+
+export type QueryRelationshipInsightArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryRelationshipInsightsArgs = {
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<EntityType>;
+  status?: InputMaybe<InsightStatus>;
+};
+
+export type QueryStakeholderAnalysesArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryStakeholderAnalysisArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryTerritoriesArgs = {
+  assignedToUser?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryTerritoryArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -993,17 +1364,94 @@ export type QueryWfmWorkflowsArgs = {
   isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
+export type RelationshipInsight = {
+  __typename?: "RelationshipInsight";
+  aiReasoning?: Maybe<Scalars["String"]["output"]>;
+  confidenceScore?: Maybe<Scalars["Float"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  entityId: Scalars["ID"]["output"];
+  entityType: EntityType;
+  expiresAt?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  insightDescription: Scalars["String"]["output"];
+  insightTitle: Scalars["String"]["output"];
+  insightType: InsightType;
+  priorityLevel?: Maybe<PriorityLevel>;
+  recommendedActions?: Maybe<Scalars["JSON"]["output"]>;
+  reviewedAt?: Maybe<Scalars["String"]["output"]>;
+  reviewedBy?: Maybe<User>;
+  status: InsightStatus;
+  supportingData?: Maybe<Scalars["JSON"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
 export type SendMessageInput = {
   config?: InputMaybe<AgentConfigInput>;
   content: Scalars["String"]["input"];
   conversationId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+export enum SeniorityLevel {
+  CLevel = "C_LEVEL",
+  Director = "DIRECTOR",
+  Entry = "ENTRY",
+  Founder = "FOUNDER",
+  Lead = "LEAD",
+  Manager = "MANAGER",
+  Mid = "MID",
+  Senior = "SENIOR",
+  Vp = "VP",
+}
+
 export enum StageType {
   Lost = "LOST",
   Open = "OPEN",
   Won = "WON",
 }
+
+export type StakeholderAnalysis = {
+  __typename?: "StakeholderAnalysis";
+  aiCommunicationStyle?: Maybe<Scalars["String"]["output"]>;
+  aiDecisionPattern?: Maybe<Scalars["String"]["output"]>;
+  aiInfluenceNetwork?: Maybe<Scalars["JSON"]["output"]>;
+  aiPersonalityProfile?: Maybe<Scalars["JSON"]["output"]>;
+  approachStrategy?: Maybe<Scalars["String"]["output"]>;
+  budgetAuthorityLevel?: Maybe<BudgetAuthorityLevel>;
+  communicationPreference?: Maybe<CommunicationPreference>;
+  concerns?: Maybe<Scalars["JSON"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  createdByUser?: Maybe<User>;
+  deal?: Maybe<Deal>;
+  decisionAuthority?: Maybe<DecisionAuthority>;
+  engagementLevel?: Maybe<EngagementLevel>;
+  id: Scalars["ID"]["output"];
+  influenceScore?: Maybe<Scalars["Int"]["output"]>;
+  lastInteractionDate?: Maybe<Scalars["String"]["output"]>;
+  lastInteractionType?: Maybe<Scalars["String"]["output"]>;
+  lead?: Maybe<Lead>;
+  motivations?: Maybe<Scalars["JSON"]["output"]>;
+  nextBestAction?: Maybe<Scalars["String"]["output"]>;
+  organization: Organization;
+  painPoints?: Maybe<Scalars["JSON"]["output"]>;
+  person: Person;
+  preferredMeetingTime?: Maybe<Scalars["String"]["output"]>;
+  successMetrics?: Maybe<Scalars["JSON"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type StakeholderNetworkAnalysis = {
+  __typename?: "StakeholderNetworkAnalysis";
+  coverageAnalysis: Scalars["JSON"]["output"];
+  influenceMap: Scalars["JSON"]["output"];
+  networkInsights: Scalars["JSON"]["output"];
+  organization: Organization;
+  relationshipCount: Scalars["Int"]["output"];
+  relationships: Array<PersonRelationship>;
+  roleCount: Scalars["Int"]["output"];
+  roles: Array<PersonOrganizationalRole>;
+  stakeholderCount: Scalars["Int"]["output"];
+  stakeholders: Array<StakeholderAnalysis>;
+};
 
 export type Subscription = {
   __typename?: "Subscription";
@@ -1023,6 +1471,35 @@ export type SubscriptionAgentPlanUpdatedArgs = {
 export type SubscriptionAgentThoughtsAddedArgs = {
   conversationId: Scalars["ID"]["input"];
 };
+
+export type Territory = {
+  __typename?: "Territory";
+  accountSizeRange?: Maybe<Scalars["String"]["output"]>;
+  assignedUser?: Maybe<User>;
+  childTerritories: Array<Territory>;
+  city?: Maybe<Scalars["String"]["output"]>;
+  country?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  industryFocus?: Maybe<Array<Scalars["String"]["output"]>>;
+  isActive: Scalars["Boolean"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  name: Scalars["String"]["output"];
+  organizations: Array<Organization>;
+  parentTerritory?: Maybe<Territory>;
+  region?: Maybe<Scalars["String"]["output"]>;
+  stateProvince?: Maybe<Scalars["String"]["output"]>;
+  territoryType: TerritoryType;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export enum TerritoryType {
+  AccountSize = "ACCOUNT_SIZE",
+  Geographic = "GEOGRAPHIC",
+  Hybrid = "HYBRID",
+  Industry = "INDUSTRY",
+  ProductLine = "PRODUCT_LINE",
+}
 
 export enum ThinkingBudget {
   Standard = "STANDARD",
@@ -1053,6 +1530,32 @@ export type UpdateConversationInput = {
   context?: InputMaybe<Scalars["JSON"]["input"]>;
   conversationId: Scalars["ID"]["input"];
   plan?: InputMaybe<Scalars["JSON"]["input"]>;
+};
+
+export type UpdateRelationshipInsightInput = {
+  reviewedAt?: InputMaybe<Scalars["String"]["input"]>;
+  status: InsightStatus;
+};
+
+export type UpdateStakeholderAnalysisInput = {
+  aiCommunicationStyle?: InputMaybe<Scalars["String"]["input"]>;
+  aiDecisionPattern?: InputMaybe<Scalars["String"]["input"]>;
+  aiInfluenceNetwork?: InputMaybe<Scalars["JSON"]["input"]>;
+  aiPersonalityProfile?: InputMaybe<Scalars["JSON"]["input"]>;
+  approachStrategy?: InputMaybe<Scalars["String"]["input"]>;
+  budgetAuthorityLevel?: InputMaybe<BudgetAuthorityLevel>;
+  communicationPreference?: InputMaybe<CommunicationPreference>;
+  concerns?: InputMaybe<Scalars["JSON"]["input"]>;
+  decisionAuthority?: InputMaybe<DecisionAuthority>;
+  engagementLevel?: InputMaybe<EngagementLevel>;
+  influenceScore?: InputMaybe<Scalars["Int"]["input"]>;
+  lastInteractionDate?: InputMaybe<Scalars["String"]["input"]>;
+  lastInteractionType?: InputMaybe<Scalars["String"]["input"]>;
+  motivations?: InputMaybe<Scalars["JSON"]["input"]>;
+  nextBestAction?: InputMaybe<Scalars["String"]["input"]>;
+  painPoints?: InputMaybe<Scalars["JSON"]["input"]>;
+  preferredMeetingTime?: InputMaybe<Scalars["String"]["input"]>;
+  successMetrics?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
 /**
@@ -1317,6 +1820,7 @@ export type DirectiveResolverFn<
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
+  AccountTerritory: ResolverTypeWrapper<AccountTerritory>;
   Activity: ResolverTypeWrapper<Activity>;
   ActivityFilterInput: ActivityFilterInput;
   ActivityType: ActivityType;
@@ -1333,8 +1837,15 @@ export type ResolversTypes = {
   AgentThoughtInput: AgentThoughtInput;
   AgentThoughtType: AgentThoughtType;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
+  BudgetAuthorityLevel: BudgetAuthorityLevel;
+  CommunicationPreference: CommunicationPreference;
   ConvertedEntities: ResolverTypeWrapper<ConvertedEntities>;
   CreateActivityInput: CreateActivityInput;
+  CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
+  CreatePersonOrganizationalRoleInput: CreatePersonOrganizationalRoleInput;
+  CreatePersonRelationshipInput: CreatePersonRelationshipInput;
+  CreateStakeholderAnalysisInput: CreateStakeholderAnalysisInput;
+  CreateTerritoryInput: CreateTerritoryInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
   CreateWFMWorkflowInput: CreateWfmWorkflowInput;
@@ -1353,14 +1864,15 @@ export type ResolversTypes = {
   DealHistoryEntry: ResolverTypeWrapper<DealHistoryEntry>;
   DealInput: DealInput;
   DealUpdateInput: DealUpdateInput;
+  DecisionAuthority: DecisionAuthority;
+  EngagementLevel: EngagementLevel;
+  EntityType: EntityType;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
-  GraphData: ResolverTypeWrapper<GraphData>;
-  GraphEdge: ResolverTypeWrapper<GraphEdge>;
-  GraphFilters: GraphFilters;
-  GraphNode: ResolverTypeWrapper<GraphNode>;
-  GraphSummary: ResolverTypeWrapper<GraphSummary>;
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
+  InsightStatus: InsightStatus;
+  InsightType: InsightType;
   Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
+  InteractionFrequency: InteractionFrequency;
   JSON: ResolverTypeWrapper<Scalars["JSON"]["output"]>;
   Lead: ResolverTypeWrapper<Lead>;
   LeadConversionInput: LeadConversionInput;
@@ -1371,23 +1883,38 @@ export type ResolversTypes = {
   LeadInput: LeadInput;
   LeadUpdateInput: LeadUpdateInput;
   LeadsStats: ResolverTypeWrapper<LeadsStats>;
+  MissingStakeholderRecommendations: ResolverTypeWrapper<MissingStakeholderRecommendations>;
   Mutation: ResolverTypeWrapper<{}>;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationInput: OrganizationInput;
+  OrganizationRelationship: ResolverTypeWrapper<OrganizationRelationship>;
+  OrganizationRelationshipType: OrganizationRelationshipType;
   OrganizationUpdateInput: OrganizationUpdateInput;
   Person: ResolverTypeWrapper<Person>;
   PersonInput: PersonInput;
   PersonListItem: ResolverTypeWrapper<PersonListItem>;
+  PersonOrganizationalRole: ResolverTypeWrapper<PersonOrganizationalRole>;
+  PersonRelationship: ResolverTypeWrapper<PersonRelationship>;
+  PersonRelationshipType: PersonRelationshipType;
   PersonUpdateInput: PersonUpdateInput;
+  PriorityLevel: PriorityLevel;
   Query: ResolverTypeWrapper<{}>;
+  RelationshipInsight: ResolverTypeWrapper<RelationshipInsight>;
   SendMessageInput: SendMessageInput;
+  SeniorityLevel: SeniorityLevel;
   StageType: StageType;
+  StakeholderAnalysis: ResolverTypeWrapper<StakeholderAnalysis>;
+  StakeholderNetworkAnalysis: ResolverTypeWrapper<StakeholderNetworkAnalysis>;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
   Subscription: ResolverTypeWrapper<{}>;
+  Territory: ResolverTypeWrapper<Territory>;
+  TerritoryType: TerritoryType;
   ThinkingBudget: ThinkingBudget;
   ToolDiscoveryResponse: ResolverTypeWrapper<ToolDiscoveryResponse>;
   UpdateActivityInput: UpdateActivityInput;
   UpdateConversationInput: UpdateConversationInput;
+  UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
+  UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
@@ -1408,6 +1935,7 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
+  AccountTerritory: AccountTerritory;
   Activity: Activity;
   ActivityFilterInput: ActivityFilterInput;
   AgentConfig: AgentConfig;
@@ -1423,6 +1951,11 @@ export type ResolversParentTypes = {
   Boolean: Scalars["Boolean"]["output"];
   ConvertedEntities: ConvertedEntities;
   CreateActivityInput: CreateActivityInput;
+  CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
+  CreatePersonOrganizationalRoleInput: CreatePersonOrganizationalRoleInput;
+  CreatePersonRelationshipInput: CreatePersonRelationshipInput;
+  CreateStakeholderAnalysisInput: CreateStakeholderAnalysisInput;
+  CreateTerritoryInput: CreateTerritoryInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
   CreateWFMWorkflowInput: CreateWfmWorkflowInput;
@@ -1440,11 +1973,6 @@ export type ResolversParentTypes = {
   DealInput: DealInput;
   DealUpdateInput: DealUpdateInput;
   Float: Scalars["Float"]["output"];
-  GraphData: GraphData;
-  GraphEdge: GraphEdge;
-  GraphFilters: GraphFilters;
-  GraphNode: GraphNode;
-  GraphSummary: GraphSummary;
   ID: Scalars["ID"]["output"];
   Int: Scalars["Int"]["output"];
   JSON: Scalars["JSON"]["output"];
@@ -1456,21 +1984,31 @@ export type ResolversParentTypes = {
   LeadInput: LeadInput;
   LeadUpdateInput: LeadUpdateInput;
   LeadsStats: LeadsStats;
+  MissingStakeholderRecommendations: MissingStakeholderRecommendations;
   Mutation: {};
   Organization: Organization;
   OrganizationInput: OrganizationInput;
+  OrganizationRelationship: OrganizationRelationship;
   OrganizationUpdateInput: OrganizationUpdateInput;
   Person: Person;
   PersonInput: PersonInput;
   PersonListItem: PersonListItem;
+  PersonOrganizationalRole: PersonOrganizationalRole;
+  PersonRelationship: PersonRelationship;
   PersonUpdateInput: PersonUpdateInput;
   Query: {};
+  RelationshipInsight: RelationshipInsight;
   SendMessageInput: SendMessageInput;
+  StakeholderAnalysis: StakeholderAnalysis;
+  StakeholderNetworkAnalysis: StakeholderNetworkAnalysis;
   String: Scalars["String"]["output"];
   Subscription: {};
+  Territory: Territory;
   ToolDiscoveryResponse: ToolDiscoveryResponse;
   UpdateActivityInput: UpdateActivityInput;
   UpdateConversationInput: UpdateConversationInput;
+  UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
+  UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
@@ -1487,6 +2025,27 @@ export type ResolversParentTypes = {
   WFMWorkflowStepMutationResponse: WfmWorkflowStepMutationResponse;
   WFMWorkflowTransition: WfmWorkflowTransition;
   WFMWorkflowTransitionMutationResponse: WfmWorkflowTransitionMutationResponse;
+};
+
+export type AccountTerritoryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AccountTerritory"] = ResolversParentTypes["AccountTerritory"],
+> = {
+  assignmentReason?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  isPrimary?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  organization?: Resolver<
+    ResolversTypes["Organization"],
+    ParentType,
+    ContextType
+  >;
+  territory?: Resolver<ResolversTypes["Territory"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ActivityResolvers<
@@ -1837,6 +2396,7 @@ export type DealResolvers<
   >;
   person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
   person_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
+  project_id?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   weighted_amount?: Resolver<
@@ -1867,57 +2427,6 @@ export type DealHistoryEntryResolvers<
   eventType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type GraphDataResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["GraphData"] = ResolversParentTypes["GraphData"],
-> = {
-  edges?: Resolver<Array<ResolversTypes["GraphEdge"]>, ParentType, ContextType>;
-  nodes?: Resolver<Array<ResolversTypes["GraphNode"]>, ParentType, ContextType>;
-  summary?: Resolver<ResolversTypes["GraphSummary"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type GraphEdgeResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["GraphEdge"] = ResolversParentTypes["GraphEdge"],
-> = {
-  color?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  label?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
-  source?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  target?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  type?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type GraphNodeResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["GraphNode"] = ResolversParentTypes["GraphNode"],
-> = {
-  color?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  data?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
-  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  label?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  size?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
-  type?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
-};
-
-export type GraphSummaryResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["GraphSummary"] = ResolversParentTypes["GraphSummary"],
-> = {
-  edgesByType?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
-  nodesByType?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
-  totalEdges?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
-  totalNodes?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -2151,6 +2660,28 @@ export type LeadsStatsResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type MissingStakeholderRecommendationsResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["MissingStakeholderRecommendations"] = ResolversParentTypes["MissingStakeholderRecommendations"],
+> = {
+  coveragePercentage?: Resolver<
+    ResolversTypes["Float"],
+    ParentType,
+    ContextType
+  >;
+  currentCoverage?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  missingRoles?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  priorityAdditions?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  recommendedCoverage?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  suggestedActions?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type MutationResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -2161,6 +2692,15 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationAddAgentThoughtsArgs, "conversationId" | "thoughts">
+  >;
+  assignAccountToTerritory?: Resolver<
+    ResolversTypes["AccountTerritory"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationAssignAccountToTerritoryArgs,
+      "isPrimary" | "organizationId" | "territoryId"
+    >
   >;
   convertLead?: Resolver<
     ResolversTypes["LeadConversionResult"],
@@ -2204,11 +2744,41 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateOrganizationArgs, "input">
   >;
+  createOrganizationRelationship?: Resolver<
+    ResolversTypes["OrganizationRelationship"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateOrganizationRelationshipArgs, "input">
+  >;
   createPerson?: Resolver<
     ResolversTypes["Person"],
     ParentType,
     ContextType,
     RequireFields<MutationCreatePersonArgs, "input">
+  >;
+  createPersonOrganizationalRole?: Resolver<
+    ResolversTypes["PersonOrganizationalRole"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreatePersonOrganizationalRoleArgs, "input">
+  >;
+  createPersonRelationship?: Resolver<
+    ResolversTypes["PersonRelationship"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreatePersonRelationshipArgs, "input">
+  >;
+  createStakeholderAnalysis?: Resolver<
+    ResolversTypes["StakeholderAnalysis"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateStakeholderAnalysisArgs, "input">
+  >;
+  createTerritory?: Resolver<
+    ResolversTypes["Territory"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateTerritoryArgs, "input">
   >;
   createWFMProjectType?: Resolver<
     ResolversTypes["WFMProjectType"],
@@ -2276,11 +2846,41 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteOrganizationArgs, "id">
   >;
+  deleteOrganizationRelationship?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteOrganizationRelationshipArgs, "id">
+  >;
   deletePerson?: Resolver<
     Maybe<ResolversTypes["Boolean"]>,
     ParentType,
     ContextType,
     RequireFields<MutationDeletePersonArgs, "id">
+  >;
+  deletePersonOrganizationalRole?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeletePersonOrganizationalRoleArgs, "id">
+  >;
+  deletePersonRelationship?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeletePersonRelationshipArgs, "id">
+  >;
+  deleteStakeholderAnalysis?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteStakeholderAnalysisArgs, "id">
+  >;
+  deleteTerritory?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteTerritoryArgs, "id">
   >;
   deleteWFMWorkflowStep?: Resolver<
     ResolversTypes["WFMWorkflowStepMutationResponse"],
@@ -2300,6 +2900,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteWfmStatusArgs, "id">
   >;
+  dismissRelationshipInsight?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDismissRelationshipInsightArgs, "id">
+  >;
   executeAgentStep?: Resolver<
     ResolversTypes["AgentResponse"],
     ParentType,
@@ -2317,6 +2923,15 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationRecalculateLeadScoreArgs, "leadId">
+  >;
+  removeAccountFromTerritory?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationRemoveAccountFromTerritoryArgs,
+      "organizationId" | "territoryId"
+    >
   >;
   sendAgentMessage?: Resolver<
     ResolversTypes["AgentResponse"],
@@ -2383,6 +2998,30 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdatePersonArgs, "id" | "input">
+  >;
+  updatePersonOrganizationalRole?: Resolver<
+    ResolversTypes["PersonOrganizationalRole"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdatePersonOrganizationalRoleArgs, "id" | "input">
+  >;
+  updateRelationshipInsight?: Resolver<
+    ResolversTypes["RelationshipInsight"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateRelationshipInsightArgs, "id" | "input">
+  >;
+  updateStakeholderAnalysis?: Resolver<
+    ResolversTypes["StakeholderAnalysis"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateStakeholderAnalysisArgs, "id" | "input">
+  >;
+  updateTerritory?: Resolver<
+    ResolversTypes["Territory"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateTerritoryArgs, "id" | "input">
   >;
   updateUserProfile?: Resolver<
     Maybe<ResolversTypes["User"]>,
@@ -2462,6 +3101,47 @@ export type OrganizationResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type OrganizationRelationshipResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["OrganizationRelationship"] = ResolversParentTypes["OrganizationRelationship"],
+> = {
+  childOrg?: Resolver<ResolversTypes["Organization"], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdByUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  endDate?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  notes?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  ownershipPercentage?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  parentOrg?: Resolver<ResolversTypes["Organization"], ParentType, ContextType>;
+  relationshipStrength?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
+  relationshipType?: Resolver<
+    ResolversTypes["OrganizationRelationshipType"],
+    ParentType,
+    ContextType
+  >;
+  startDate?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type PersonResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -2522,11 +3202,119 @@ export type PersonListItemResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type PersonOrganizationalRoleResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["PersonOrganizationalRole"] = ResolversParentTypes["PersonOrganizationalRole"],
+> = {
+  budgetAuthorityUsd?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdByUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  department?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  endDate?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isPrimaryRole?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  notes?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  organization?: Resolver<
+    ResolversTypes["Organization"],
+    ParentType,
+    ContextType
+  >;
+  person?: Resolver<ResolversTypes["Person"], ParentType, ContextType>;
+  reportingStructure?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  responsibilities?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  roleTitle?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  seniorityLevel?: Resolver<
+    Maybe<ResolversTypes["SeniorityLevel"]>,
+    ParentType,
+    ContextType
+  >;
+  startDate?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  teamSize?: Resolver<Maybe<ResolversTypes["Int"]>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type PersonRelationshipResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["PersonRelationship"] = ResolversParentTypes["PersonRelationship"],
+> = {
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdByUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  fromPerson?: Resolver<ResolversTypes["Person"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  interactionFrequency?: Resolver<
+    Maybe<ResolversTypes["InteractionFrequency"]>,
+    ParentType,
+    ContextType
+  >;
+  isBidirectional?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  metadata?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  notes?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  relationshipContext?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  relationshipStrength?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
+  relationshipType?: Resolver<
+    ResolversTypes["PersonRelationshipType"],
+    ParentType,
+    ContextType
+  >;
+  toPerson?: Resolver<ResolversTypes["Person"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type QueryResolvers<
   ContextType = GraphQLContext,
   ParentType extends
     ResolversParentTypes["Query"] = ResolversParentTypes["Query"],
 > = {
+  accountTerritories?: Resolver<
+    Array<ResolversTypes["AccountTerritory"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryAccountTerritoriesArgs, "organizationId">
+  >;
   activities?: Resolver<
     Array<ResolversTypes["Activity"]>,
     ParentType,
@@ -2557,6 +3345,15 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryAgentThoughtsArgs, "conversationId" | "limit">
   >;
+  analyzeStakeholderNetwork?: Resolver<
+    ResolversTypes["StakeholderNetworkAnalysis"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      QueryAnalyzeStakeholderNetworkArgs,
+      "includeInactiveRoles" | "organizationId"
+    >
+  >;
   customFieldDefinition?: Resolver<
     Maybe<ResolversTypes["CustomFieldDefinition"]>,
     ParentType,
@@ -2584,11 +3381,11 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
-  getGraphData?: Resolver<
-    ResolversTypes["GraphData"],
+  findMissingStakeholders?: Resolver<
+    ResolversTypes["MissingStakeholderRecommendations"],
     ParentType,
     ContextType,
-    Partial<QueryGetGraphDataArgs>
+    RequireFields<QueryFindMissingStakeholdersArgs, "organizationId">
   >;
   getWfmAllowedTransitions?: Resolver<
     Array<ResolversTypes["WFMWorkflowTransition"]>,
@@ -2625,6 +3422,27 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryOrganizationArgs, "id">
   >;
+  organizationPersonRelationships?: Resolver<
+    Array<ResolversTypes["PersonRelationship"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryOrganizationPersonRelationshipsArgs, "organizationId">
+  >;
+  organizationRelationships?: Resolver<
+    Array<ResolversTypes["OrganizationRelationship"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryOrganizationRelationshipsArgs, "organizationId">
+  >;
+  organizationRoles?: Resolver<
+    Array<ResolversTypes["PersonOrganizationalRole"]>,
+    ParentType,
+    ContextType,
+    RequireFields<
+      QueryOrganizationRolesArgs,
+      "includeInactive" | "organizationId"
+    >
+  >;
   organizations?: Resolver<
     Array<ResolversTypes["Organization"]>,
     ParentType,
@@ -2642,10 +3460,58 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  personOrganizationalRoles?: Resolver<
+    Array<ResolversTypes["PersonOrganizationalRole"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryPersonOrganizationalRolesArgs>
+  >;
+  personRelationships?: Resolver<
+    Array<ResolversTypes["PersonRelationship"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryPersonRelationshipsArgs, "personId">
+  >;
+  relationshipInsight?: Resolver<
+    Maybe<ResolversTypes["RelationshipInsight"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryRelationshipInsightArgs, "id">
+  >;
+  relationshipInsights?: Resolver<
+    Array<ResolversTypes["RelationshipInsight"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryRelationshipInsightsArgs>
+  >;
+  stakeholderAnalyses?: Resolver<
+    Array<ResolversTypes["StakeholderAnalysis"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryStakeholderAnalysesArgs>
+  >;
+  stakeholderAnalysis?: Resolver<
+    Maybe<ResolversTypes["StakeholderAnalysis"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryStakeholderAnalysisArgs, "id">
+  >;
   supabaseConnectionTest?: Resolver<
     ResolversTypes["String"],
     ParentType,
     ContextType
+  >;
+  territories?: Resolver<
+    Array<ResolversTypes["Territory"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryTerritoriesArgs>
+  >;
+  territory?: Resolver<
+    Maybe<ResolversTypes["Territory"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTerritoryArgs, "id">
   >;
   users?: Resolver<Array<ResolversTypes["User"]>, ParentType, ContextType>;
   wfmProjectType?: Resolver<
@@ -2692,6 +3558,207 @@ export type QueryResolvers<
   >;
 };
 
+export type RelationshipInsightResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["RelationshipInsight"] = ResolversParentTypes["RelationshipInsight"],
+> = {
+  aiReasoning?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  confidenceScore?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  entityId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  entityType?: Resolver<ResolversTypes["EntityType"], ParentType, ContextType>;
+  expiresAt?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  insightDescription?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  insightTitle?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  insightType?: Resolver<
+    ResolversTypes["InsightType"],
+    ParentType,
+    ContextType
+  >;
+  priorityLevel?: Resolver<
+    Maybe<ResolversTypes["PriorityLevel"]>,
+    ParentType,
+    ContextType
+  >;
+  recommendedActions?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  reviewedAt?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  reviewedBy?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  status?: Resolver<ResolversTypes["InsightStatus"], ParentType, ContextType>;
+  supportingData?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type StakeholderAnalysisResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["StakeholderAnalysis"] = ResolversParentTypes["StakeholderAnalysis"],
+> = {
+  aiCommunicationStyle?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  aiDecisionPattern?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  aiInfluenceNetwork?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  aiPersonalityProfile?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  approachStrategy?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  budgetAuthorityLevel?: Resolver<
+    Maybe<ResolversTypes["BudgetAuthorityLevel"]>,
+    ParentType,
+    ContextType
+  >;
+  communicationPreference?: Resolver<
+    Maybe<ResolversTypes["CommunicationPreference"]>,
+    ParentType,
+    ContextType
+  >;
+  concerns?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdByUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  deal?: Resolver<Maybe<ResolversTypes["Deal"]>, ParentType, ContextType>;
+  decisionAuthority?: Resolver<
+    Maybe<ResolversTypes["DecisionAuthority"]>,
+    ParentType,
+    ContextType
+  >;
+  engagementLevel?: Resolver<
+    Maybe<ResolversTypes["EngagementLevel"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  influenceScore?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
+  lastInteractionDate?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  lastInteractionType?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  lead?: Resolver<Maybe<ResolversTypes["Lead"]>, ParentType, ContextType>;
+  motivations?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  nextBestAction?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  organization?: Resolver<
+    ResolversTypes["Organization"],
+    ParentType,
+    ContextType
+  >;
+  painPoints?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  person?: Resolver<ResolversTypes["Person"], ParentType, ContextType>;
+  preferredMeetingTime?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  successMetrics?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type StakeholderNetworkAnalysisResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["StakeholderNetworkAnalysis"] = ResolversParentTypes["StakeholderNetworkAnalysis"],
+> = {
+  coverageAnalysis?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  influenceMap?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  networkInsights?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  organization?: Resolver<
+    ResolversTypes["Organization"],
+    ParentType,
+    ContextType
+  >;
+  relationshipCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  relationships?: Resolver<
+    Array<ResolversTypes["PersonRelationship"]>,
+    ParentType,
+    ContextType
+  >;
+  roleCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  roles?: Resolver<
+    Array<ResolversTypes["PersonOrganizationalRole"]>,
+    ParentType,
+    ContextType
+  >;
+  stakeholderCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  stakeholders?: Resolver<
+    Array<ResolversTypes["StakeholderAnalysis"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type SubscriptionResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -2718,6 +3785,63 @@ export type SubscriptionResolvers<
     ContextType,
     RequireFields<SubscriptionAgentThoughtsAddedArgs, "conversationId">
   >;
+};
+
+export type TerritoryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["Territory"] = ResolversParentTypes["Territory"],
+> = {
+  accountSizeRange?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  assignedUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  childTerritories?: Resolver<
+    Array<ResolversTypes["Territory"]>,
+    ParentType,
+    ContextType
+  >;
+  city?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  country?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  industryFocus?: Resolver<
+    Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  isActive?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  organizations?: Resolver<
+    Array<ResolversTypes["Organization"]>,
+    ParentType,
+    ContextType
+  >;
+  parentTerritory?: Resolver<
+    Maybe<ResolversTypes["Territory"]>,
+    ParentType,
+    ContextType
+  >;
+  region?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  stateProvince?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  territoryType?: Resolver<
+    ResolversTypes["TerritoryType"],
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ToolDiscoveryResponseResolvers<
@@ -2965,6 +4089,7 @@ export type WfmWorkflowTransitionMutationResponseResolvers<
 };
 
 export type Resolvers<ContextType = GraphQLContext> = {
+  AccountTerritory?: AccountTerritoryResolvers<ContextType>;
   Activity?: ActivityResolvers<ContextType>;
   AgentConfig?: AgentConfigResolvers<ContextType>;
   AgentConversation?: AgentConversationResolvers<ContextType>;
@@ -2980,21 +4105,25 @@ export type Resolvers<ContextType = GraphQLContext> = {
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
-  GraphData?: GraphDataResolvers<ContextType>;
-  GraphEdge?: GraphEdgeResolvers<ContextType>;
-  GraphNode?: GraphNodeResolvers<ContextType>;
-  GraphSummary?: GraphSummaryResolvers<ContextType>;
   JSON?: GraphQLScalarType;
   Lead?: LeadResolvers<ContextType>;
   LeadConversionResult?: LeadConversionResultResolvers<ContextType>;
   LeadHistoryEntry?: LeadHistoryEntryResolvers<ContextType>;
   LeadsStats?: LeadsStatsResolvers<ContextType>;
+  MissingStakeholderRecommendations?: MissingStakeholderRecommendationsResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
+  OrganizationRelationship?: OrganizationRelationshipResolvers<ContextType>;
   Person?: PersonResolvers<ContextType>;
   PersonListItem?: PersonListItemResolvers<ContextType>;
+  PersonOrganizationalRole?: PersonOrganizationalRoleResolvers<ContextType>;
+  PersonRelationship?: PersonRelationshipResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  RelationshipInsight?: RelationshipInsightResolvers<ContextType>;
+  StakeholderAnalysis?: StakeholderAnalysisResolvers<ContextType>;
+  StakeholderNetworkAnalysis?: StakeholderNetworkAnalysisResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
+  Territory?: TerritoryResolvers<ContextType>;
   ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   WFMProject?: WfmProjectResolvers<ContextType>;

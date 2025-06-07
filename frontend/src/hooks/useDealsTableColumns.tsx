@@ -37,6 +37,17 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
 
   const standardColumns = useMemo((): ColumnDefinition<Deal>[] => [
     { key: 'name', header: 'Name', renderCell: (d) => d.name, isSortable: true },
+    { 
+      key: 'project_id', 
+      header: 'Project ID', 
+      renderCell: (d) => (
+        <Text fontFamily="mono" fontSize="sm" fontWeight="medium" color="blue.600">
+          {(d as any).project_id || '-'}
+        </Text>
+      ), 
+      isSortable: true, 
+      sortAccessor: (d) => (d as any).project_id || ''
+    },
     {
       key: 'person',
       header: 'Person',

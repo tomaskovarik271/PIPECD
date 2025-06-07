@@ -14,10 +14,8 @@ import {
   StatLabel,
   StatNumber,
   StatGroup,
-  Icon,
 } from '@chakra-ui/react';
 import { SearchIcon, ViewIcon, HamburgerIcon } from '@chakra-ui/icons';
-import { Building2 } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 
@@ -37,8 +35,8 @@ interface UnifiedPageHeaderProps {
   onPrimaryButtonClick?: () => void;
   isPrimaryButtonDisabled?: boolean;
   secondaryActions?: React.ReactNode;
-  viewMode?: 'table' | 'kanban' | 'construction';
-  onViewModeChange?: (mode: 'table' | 'kanban' | 'construction') => void;
+  viewMode?: 'table' | 'kanban';
+  onViewModeChange?: (mode: 'table' | 'kanban') => void;
   showViewModeSwitch?: boolean;
   statistics?: PageStatistic[];
   userPermissions?: string[];
@@ -144,20 +142,6 @@ const UnifiedPageHeader: React.FC<UnifiedPageHeaderProps> = ({
                   bg: viewMode === 'kanban' ? colors.interactive.hover : colors.component.button.secondaryHover
                 }}
                 onClick={() => onViewModeChange('kanban')}
-              />
-              <IconButton
-                aria-label="Construction view (Pipeline City)"
-                icon={<Icon as={Building2} />}
-                size="md"
-                variant={viewMode === 'construction' ? 'solid' : 'outline'}
-                colorScheme={viewMode === 'construction' ? 'blue' : undefined}
-                bg={viewMode === 'construction' ? colors.interactive.default : colors.component.button.secondary}
-                borderColor={colors.border.input}
-                color={viewMode === 'construction' ? colors.text.onAccent : colors.text.primary}
-                _hover={{
-                  bg: viewMode === 'construction' ? colors.interactive.hover : colors.component.button.secondaryHover
-                }}
-                onClick={() => onViewModeChange('construction')}
               />
             </HStack>
           )}

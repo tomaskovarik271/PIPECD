@@ -50,6 +50,10 @@ export const gqlClient: GraphQLClient = new GraphQLClient(endpoint, {
       console.log('[requestMiddleware] Authorization header NOT SET (no session/token).');
     }
     
+    // Add cache-busting headers to prevent stale data
+    headers.set('Cache-Control', 'no-cache');
+    headers.set('Pragma', 'no-cache');
+    
     console.log('[requestMiddleware] Final headers being sent:', Object.fromEntries(headers.entries()));
 
     return {

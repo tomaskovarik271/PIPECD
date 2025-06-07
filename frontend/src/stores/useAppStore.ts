@@ -39,6 +39,7 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
       deal_specific_probability
       weighted_amount
       assigned_to_user_id
+      project_id
       assignedToUser {
         id
         display_name

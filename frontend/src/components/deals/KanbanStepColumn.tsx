@@ -74,8 +74,8 @@ const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, de
                   <Heading 
                     size="md" 
                     color={colors.text.primary}
-                    noOfLines={1} 
                     mb={1}
+                    lineHeight="1.3"
                   >
                     {stepDisplayName}
                   </Heading>

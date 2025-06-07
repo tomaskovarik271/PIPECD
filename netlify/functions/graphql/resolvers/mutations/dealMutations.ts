@@ -58,6 +58,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
             assigned_to_user_id: newDealRecord.assigned_to_user_id,
             person_id: newDealRecord.person_id, 
             organization_id: newDealRecord.organization_id,
+            project_id: newDealRecord.project_id,
             wfm_project_id: newDealRecord.wfm_project_id,
           } as unknown as GraphQLDeal; 
       } catch (error) {
@@ -158,6 +159,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
             assigned_to_user_id: updatedDealRecord.assigned_to_user_id,
             person_id: updatedDealRecord.person_id, 
             organization_id: updatedDealRecord.organization_id,
+            project_id: updatedDealRecord.project_id,
             wfm_project_id: updatedDealRecord.wfm_project_id,
             // Fields like createdBy, assignedToUser, activities, customFieldValues (as array), history, currentWfmStep, currentWfmStatus
             // are typically handled by their own field resolvers on the Deal type and don't need to be explicitly returned here.

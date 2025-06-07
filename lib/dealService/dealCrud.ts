@@ -21,6 +21,7 @@ export interface DbDeal {
   updated_at: string;
   person_id?: string | null;
   organization_id?: string | null;
+  project_id?: string | null;
   deal_specific_probability?: number | null;
   wfm_project_id?: string | null;
   assigned_to_user_id?: string | null;
@@ -47,7 +48,7 @@ export async function getDeals(userId: string, accessToken: string): Promise<DbD
   const supabase = getAuthenticatedClient(accessToken);
   const { data, error } = await supabase
     .from('deals')
-    .select('id, user_id, name, amount, expected_close_date, created_at, updated_at, person_id, organization_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, custom_field_values')
+    .select('id, user_id, name, amount, expected_close_date, created_at, updated_at, person_id, organization_id, project_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, custom_field_values')
     .order('created_at', { ascending: false });
 
   handleSupabaseError(error, 'fetching deals');
@@ -59,7 +60,7 @@ export async function getDealById(userId: string, id: string, accessToken:string
   const supabase = getAuthenticatedClient(accessToken);
   const { data, error } = await supabase
     .from('deals')
-    .select('id, user_id, name, amount, expected_close_date, created_at, updated_at, person_id, organization_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, custom_field_values')
+    .select('id, user_id, name, amount, expected_close_date, created_at, updated_at, person_id, organization_id, project_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, custom_field_values')
     .eq('id', id)
     .single();
 
