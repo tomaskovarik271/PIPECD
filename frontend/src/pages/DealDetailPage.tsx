@@ -371,7 +371,9 @@ const DealDetailPage = () => {
                           <VStack spacing={6} align="stretch">
                 {/* Header Section */}
                 <DealHeader 
-                  deal={currentDeal} 
+                  deal={currentDeal}
+                  isEditing={false}
+                  setIsEditing={() => {}}
                   onCreateActivity={onCreateActivityModalOpen}
                   dealActivities={dealActivities}
                 />
@@ -440,7 +442,7 @@ const DealDetailPage = () => {
                       <TabPanel>
                         <DealEmailsPanel
                           dealId={currentDeal.id}
-                          primaryContactEmail={currentDeal.person?.email}
+                          primaryContactEmail={currentDeal.person?.email || undefined}
                         />
                                                                 </TabPanel>
 

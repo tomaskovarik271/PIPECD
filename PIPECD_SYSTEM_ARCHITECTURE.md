@@ -11,17 +11,18 @@
 3. [Work Flow Management (WFM) - Core Architectural Component](#-work-flow-management-wfm---core-architectural-component)
    - [WFM Developer Guide: Implementing WFM for New Entities](#-wfm-developer-guide-implementing-wfm-for-new-entities)
 4. [Event-Driven Automation Architecture (Inngest + Activities)](#-event-driven-automation-architecture-inngest--activities)
-5. [Relationship Intelligence Platform - Revolutionary Visualization](#-relationship-intelligence-platform---revolutionary-visualization)
-6. [Smart Stickers Visual Collaboration Platform](#-smart-stickers-visual-collaboration-platform)
-7. [Technology Stack](#-technology-stack)
-8. [System Architecture Layers](#-system-architecture-layers)
-9. [Key Architectural Patterns](#-key-architectural-patterns)
-10. [Data Architecture](#-data-architecture)
-11. [Security Architecture](#-security-architecture)
-12. [AI Integration Architecture](#-ai-integration-architecture)
-13. [Architectural Compliance & Risk Assessment](#-architectural-compliance--risk-assessment)
-14. [Development Principles](#-development-principles)
-15. [Deployment Architecture](#-deployment-architecture)
+5. [Google Workspace Integration - Enterprise Document & Email Management](#-google-workspace-integration---enterprise-document--email-management)
+6. [Relationship Intelligence Platform - Revolutionary Visualization](#-relationship-intelligence-platform---revolutionary-visualization)
+7. [Smart Stickers Visual Collaboration Platform](#-smart-stickers-visual-collaboration-platform)
+8. [Technology Stack](#-technology-stack)
+9. [System Architecture Layers](#-system-architecture-layers)
+10. [Key Architectural Patterns](#-key-architectural-patterns)
+11. [Data Architecture](#-data-architecture)
+12. [Security Architecture](#-security-architecture)
+13. [AI Integration Architecture](#-ai-integration-architecture)
+14. [Architectural Compliance & Risk Assessment](#-architectural-compliance--risk-assessment)
+15. [Development Principles](#-development-principles)
+16. [Deployment Architecture](#-deployment-architecture)
 
 ---
 
@@ -29,15 +30,17 @@
 
 PipeCD is a **modern, AI-first CRM platform** built with enterprise-grade architecture principles. It combines traditional CRM functionality with revolutionary AI capabilities through a fully serverless, type-safe, and scalable architecture.
 
-**🔄 Central to PipeCD's architecture are two core systems:**
+**🔄 Central to PipeCD's architecture are three core systems:**
 - **Work Flow Management (WFM)**: Generic workflow engine that powers all business processes  
 - **Event-Driven Automation**: Inngest + Activities system that automates tasks and workflows
+- **Google Workspace Integration**: Enterprise document management with OAuth 2.0, Google Drive folders, and Gmail/Calendar foundation
 
 ### **🌟 Core Value Propositions**
 
 - **🤖 AI-First Design**: Not just a CRM with AI features, but an AI reasoning engine for sales
 - **🔄 Generic Workflow Engine**: WFM system powers all business processes with unlimited flexibility
 - ⚡ **Event-Driven Automation**: Inngest + Activities create intelligent, scalable automation workflows
+- 🔗 **Google Workspace Integration**: Seamless document management, email threading, and calendar sync
 - 📝 **Smart Stickers Visual Collaboration**: Revolutionary sticky note system for visual deal context and team collaboration
 - 🔒 **Enterprise Security**: Database-level security with Row Level Security (RLS) and granular permissions
 - ⚡ **Serverless Scale**: Infinite scalability without infrastructure management
@@ -707,1297 +710,224 @@ describe('YourEntity WFM resolvers', () => {
 
 ---
 
-## 🕸️ Relationship Intelligence Platform - Revolutionary Visualization
+## 🔗 Google Workspace Integration - Enterprise Document & Email Management
 
-### **🎯 Transforming CRM into Intelligent Relationship Networks**
+### **🎯 Transforming CRM into Google Workspace Hub**
 
-**PipeCD's Relationship Intelligence Platform** represents a revolutionary leap from traditional CRM data management to dynamic, AI-powered relationship visualization and analysis. This system transforms flat organizational data into interactive network intelligence that guides strategic relationship building.
+**PipeCD's Google Workspace Integration** provides seamless connectivity with Google Drive, Gmail, and Google Calendar, transforming the CRM into a centralized workspace where users can manage documents, emails, and schedules directly within the context of deals, leads, and contacts.
 
-#### **🏗️ Relationship Intelligence Architecture**
+#### **🏗️ Google Integration Architecture**
 
 ```
-🧠 AI-Powered Relationship Engine
-├── 📊 Network Visualization Layer (D3.js + React)
-├── 🔍 Stakeholder Analysis Engine  
-├── 🕸️ Cross-Entity Relationship Mapping
-├── 📈 Influence Scoring & Authority Detection
-└── 🎯 Automated Gap Analysis & Recommendations
+🔗 Google Workspace Integration Hub
+├── 🔐 OAuth 2.0 Authentication & Token Management
+├── 📁 Google Drive Document Management (Deal-Centric)
+├── 📧 Gmail Integration & Email Threading (Foundation Ready)
+├── 📅 Google Calendar Sync & Meeting Management (Planned)
+├── 🛡️ Enterprise Security & Permission Management
+└── 🎯 CRM-Native User Experience
 ```
 
 #### **🌟 Core Capabilities (PRODUCTION-READY)**
 
-**Interactive Network Visualization**
+**1. Google OAuth 2.0 Authentication**
 ```typescript
-// Multi-modal visualization system
-interface NetworkVisualization {
-  influenceView: ForceDirectedGraph;    // Red gradient by influence score
-  engagementView: NodeColorMapping;     // Champion/Neutral/Blocker analysis  
-  hierarchyView: AuthorityVisualization; // C-Level/VP/Manager hierarchy
-  territoryView: GeographicMapping;     // Future: Location-based networks
+// Secure OAuth flow with serverless endpoint
+const OAUTH_ENDPOINT = '/google-oauth-exchange';
+const REQUIRED_SCOPES = [
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/calendar'
+];
+
+// Environment-based configuration (no secrets in client)
+const CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID;
+const CLIENT_SECRET = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+```
+
+**2. Deal-Centric Document Management**
+```typescript
+// Intelligent document organization system
+interface DealDocumentSystem {
+  autoFolderCreation: DealFolderService;    // Auto-create deal folders
+  categoryOrganization: DocumentCategories; // 8 predefined categories
+  importWorkflow: GoogleDriveImport;        // Import with categorization
+  accessControl: PermissionInheritance;     // CRM permissions → Drive
+  searchIntegration: UnifiedSearch;         // Search from CRM interface
 }
 
-// Real-time physics simulation
-const networkSimulation = d3.forceSimulation()
-  .force("link", d3.forceLink().strength(0.3))
-  .force("charge", d3.forceManyBody().strength(-200))
-  .force("center", d3.forceCenter(width/2, height/2))
-  .force("collision", d3.forceCollide().radius(25));
+const DOCUMENT_CATEGORIES = [
+  'proposals', 'contracts', 'technical_specs', 'presentations',
+  'financial_docs', 'legal_docs', 'correspondence', 'other'
+];
 ```
 
-**Comprehensive Stakeholder Analysis**
+**3. Enterprise Administration Interface**
 ```typescript
-// AI-powered stakeholder intelligence
-interface StakeholderAnalysis {
-  coverage_percentage: number;          // 66.7% stakeholder coverage
-  seniority_distribution: SeniorityMap; // C-Level/VP/Manager breakdown
-  department_coverage: DepartmentMap;   // Engineering/Sales/Marketing gaps
-  priority_gaps: PriorityGap[];         // High/Medium/Low priority missing roles
-  ai_insights: AIInsight[];             // Risk alerts & opportunities
-  actionable_recommendations: Action[]; // Specific engagement strategies
+// Admin settings for workspace integration
+interface GoogleDriveSettings {
+  parentFolderId: string;          // Root folder for deal folders
+  namingConvention: FolderNaming;  // Folder naming patterns
+  permissionTemplate: AccessRules; // Default sharing permissions
+  categoryConfiguration: CategorySettings; // Custom categories
 }
 ```
-
-**Advanced Relationship Data Model**
-```sql
--- Organization relationship networks
-organization_relationships:
-  - subsidiary, division, partnership, supplier, customer
-  - ownership_percentage, relationship_strength (1-10)
-  - start_date/end_date for temporal analysis
-
--- Person relationship intelligence  
-person_relationships:
-  - reports_to, manages, influences, collaborates_with
-  - relationship_strength, is_bidirectional
-  - interaction_frequency (daily/weekly/monthly)
-  - relationship_context (work/personal/industry)
-
--- Multi-role organizational mapping
-person_organizational_roles:
-  - role_title, department, seniority_level
-  - budget_authority_usd, team_size
-  - reporting_structure (manager/direct_reports)
-  - responsibilities (JSON array)
-
--- Deal-specific stakeholder analysis
-stakeholder_analysis:
-  - influence_score (1-10), decision_authority
-  - budget_authority_level, engagement_level
-  - pain_points[], motivations[], approach_strategy
-  - ai_personality_profile, ai_communication_style
-```
-
-#### **🎨 Revolutionary User Experience**
-
-**Interactive Network Visualization (`StakeholderNetworkVisualization.tsx`)**
-- **Force-Directed Network Graph**: Physics-based relationship simulation
-- **Multi-Modal Views**: Switch between Influence, Engagement, and Hierarchy perspectives
-- **Interactive Node Manipulation**: Drag, zoom, click for detailed analysis
-- **Authority Indicators**: Visual crowns, lightning, shields for decision makers
-- **Smart Node Sizing**: Node size correlates with influence score (1-10)
-- **Connection Visualization**: Relationship links with strength-based thickness
-- **Real-time Layout Optimization**: Auto-organizing network for clarity
-
-**AI-Powered Analysis Dashboard (`StakeholderAnalysisDashboard.tsx`)**
-- **Coverage Percentage Tracking**: Real-time stakeholder mapping progress
-- **Seniority Level Analysis**: Visual breakdown of C-Level, VP, Manager coverage
-- **Department Coverage**: Color-coded progress bars for each department
-- **Priority Gap Identification**: High/Medium/Low priority missing roles
-- **AI Network Insights**: Risk alerts, opportunities, and coverage gaps
-- **Actionable Recommendations**: Specific strategies for engaging missing stakeholders
-
-**Comprehensive Intelligence Page (`RelationshipIntelligencePage.tsx`)**
-- **Context Selection**: Organization, Deal, and Lead filtering
-- **Search Functionality**: Real-time stakeholder search
-- **Tabbed Interface**: Network Map, Analysis Dashboard, Action Items, Territory View
-- **Smart Navigation**: Auto-switching between views based on actions
-- **Export & Sharing**: Network data export and sharing capabilities
 
 #### **🔧 Technical Implementation**
 
-**Visualization Technology Stack**
+**Backend Services**
 ```typescript
-// D3.js integration for network visualization
-import * as d3 from 'd3';
-import { Simulation, SimulationNodeDatum, SimulationLinkDatum } from 'd3';
+lib/
+├── googleIntegrationService.ts    // OAuth flow & authentication
+├── googleDriveService.ts          // Drive API operations
+├── dealFolderService.ts           // Deal folder management
+├── emailService.ts                // Gmail integration foundation
+└── appSettingsService.ts          // Admin configuration
 
-// React component architecture
-const StakeholderNetworkVisualization: React.FC = () => {
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [simulation, setSimulation] = useState<Simulation<NodeDatum, LinkDatum>>();
-  
-  // Physics simulation with force-directed layout
-  useEffect(() => {
-    const svg = d3.select(svgRef.current);
-    const simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id(d => d.id).distance(100))
-      .force("charge", d3.forceManyBody().strength(-300))
-      .force("center", d3.forceCenter(width / 2, height / 2));
-  }, [nodes, links]);
-};
+netlify/functions/
+└── google-oauth-exchange.ts       // Serverless OAuth endpoint
 ```
 
-**Database Integration Patterns**
-```sql
--- Complex relationship queries
-WITH stakeholder_hierarchy AS (
-  SELECT 
-    p.id, p.name, por.seniority_level, por.department,
-    sa.influence_score, sa.decision_authority,
-    array_agg(pr.to_person_id) as influences
-  FROM people p
-  JOIN person_organizational_roles por ON p.id = por.person_id
-  LEFT JOIN stakeholder_analysis sa ON p.id = sa.person_id
-  LEFT JOIN person_relationships pr ON p.id = pr.from_person_id 
-    AND pr.relationship_type = 'influences'
-  WHERE por.organization_id = $1
-  GROUP BY p.id, p.name, por.seniority_level, por.department, 
-           sa.influence_score, sa.decision_authority
-)
-SELECT * FROM stakeholder_hierarchy
-ORDER BY sa.influence_score DESC, por.seniority_level;
-```
-
-#### **🚀 Architectural Benefits**
-
-**Strategic Relationship Intelligence**
-- **Visual Relationship Mapping**: See entire stakeholder networks instantly
-- **AI-Powered Gap Analysis**: Never miss critical decision makers
-- **Influence Scoring**: Focus efforts on high-impact relationships
-- **Engagement Tracking**: Monitor stakeholder sentiment visually
-- **Action-Oriented Insights**: Clear next steps for relationship building
-
-**Enterprise-Grade Implementation**
-- **D3.js Professional Visualization**: Industry-leading network rendering
-- **Responsive Design**: Works across all devices and screen sizes
-- **TypeScript Safety**: Full type safety throughout visualization pipeline
-- **Chakra UI Integration**: Consistent design system and accessibility
-- **Real-time Updates**: Live data synchronization with relationship changes
-
-**Competitive Advantage**
-- **No other CRM** has this level of relationship visualization
-- **AI-powered insights** provide unfair competitive advantage
-- **Visual storytelling** makes complex data immediately actionable
-- **Enterprise-ready** with security and scalability built-in
-
-#### **🎯 Future Expansion Roadmap**
-
-**Phase 4: Advanced Intelligence**
-- **Geographic Territory Mapping**: Stakeholder location visualization
-- **Influence Scoring ML Model**: Predictive influence algorithms
-- **Relationship Health Monitoring**: Track relationship strength over time
-- **Automated Stakeholder Discovery**: AI-powered contact identification
-- **Social Media Integration**: LinkedIn/Twitter relationship mapping
-
-**Phase 5: Predictive Analytics**
-- **Deal Probability Scoring**: Based on stakeholder network strength
-- **Churn Risk Prediction**: Early warning for relationship degradation
-- **Optimal Engagement Timing**: AI-recommended contact schedules
-- **Network Effect Analysis**: Understand influence cascade effects
-
----
-
-## 📝 Smart Stickers Visual Collaboration Platform
-
-### **🎯 Transforming CRM into Visual Collaboration Hub**
-
-**PipeCD's Smart Stickers Platform** revolutionizes traditional CRM data management by introducing a **visual collaboration layer** that transforms static entity pages into dynamic, interactive workspaces where teams can organize thoughts, track action items, and maintain contextual notes directly attached to deals, people, and organizations.
-
-#### **🏗️ Smart Stickers Architecture**
-
-```
-🎨 Visual Collaboration Engine
-├── 📄 React-based StickerBoard (Drag & Drop Interface)
-├── 🗂️ Category Management System (8 Predefined + Custom)
-├── 🔍 Advanced Filtering & Search (Multi-modal Views)
-├── 📊 Professional Table Interface (SortableTable Integration)
-└── 🎯 Entity Integration (Native CRM Integration)
-```
-
-#### **🌟 Core Capabilities (PRODUCTION-READY)**
-
-**Visual Collaboration Interface**
-```typescript
-// Multi-modal sticker management system
-interface StickerBoard {
-  boardView: DragDropCanvas;        // Visual sticky note canvas
-  tableView: ProfessionalTable;     // Enterprise data table interface
-  filterView: AdvancedFilters;      // Multi-criteria filtering system
-  categoryView: ColorCodedSystem;   // 8 predefined categories + custom
+**GraphQL Schema**
+```graphql
+type DealFolder {
+  id: ID!
+  deal_id: ID!
+  google_folder_id: String!
+  folder_name: String!
+  folder_url: String!
 }
 
-// Real-time positioning with optimistic updates
-const stickerDragSystem = {
-  optimisticUpdates: true,         // Immediate UI feedback
-  debouncedPersistence: 500,       // Batch database updates
-  collisionDetection: true,        // Smart positioning
-  autoLayout: EmptySpaceAlgorithm  // Intelligent placement
-};
-```
+type DealDocument {
+  id: ID!
+  deal_id: ID!
+  google_file_id: String!
+  file_name: String!
+  file_url: String!
+  category: DocumentCategory!
+  imported_at: DateTime!
+}
 
-**Professional Enterprise Interface**
-```typescript
-// Enterprise-grade table view integration
-interface StickerTableView {
-  columns: [
-    'title_with_preview',      // Title + content preview
-    'category_with_icon',      // Color-coded category badges
-    'priority_with_alerts',    // Priority with visual indicators
-    'status_tags',             // Pinned/Private status tags
-    'tags_with_overflow',      // Tag management with +N display
-    'creation_date',           // Sortable date column
-    'actions_toolbar'          // Edit/Delete/Pin controls
-  ];
-  sorting: MultiColumnSorting;
-  filtering: RealTimeFilters;
-  actions: InlineActionToolbar;
+extend type Mutation {
+  connectGoogleAccount(authCode: String!, redirectUri: String!): GoogleIntegration!
+  createDealFolder(dealId: ID!, folderName: String!): DealFolder!
+  importDocumentFromDrive(input: ImportDocumentInput!): DealDocument!
 }
 ```
 
-**Advanced Category & Organization System**
-```sql
--- Comprehensive category management
-sticker_categories:
-  - id, name, color, icon, display_order
-  - 8 predefined: Important, Follow Up, Decision, Risk, Opportunity, Research, Technical, Budget
-  - Custom categories supported
-  - Icon integration with React Icons
+**Frontend Components**
+```typescript
+frontend/src/components/deals/
+├── DealDocumentsPanel.tsx         // Main document interface
+├── DealEmailsPanel.tsx            // Gmail integration (ready)
 
--- Smart sticker data model
-smart_stickers:
-  - entity_type, entity_id (polymorphic entity attachment)
-  - position_x, position_y, width, height (visual positioning)
-  - category_id, priority, is_pinned, is_private (organization)
-  - tags[], mentions[], metadata (collaboration features)
-  - created_by_user_id, ownership tracking (security)
+frontend/src/pages/
+├── GoogleIntegrationPage.tsx      // OAuth management
+├── GoogleOAuthCallback.tsx        // OAuth callback
+└── admin/GoogleDriveSettingsPage.tsx  // Admin settings
 ```
 
-#### **🎨 Revolutionary User Experience**
+#### **🛡️ Security Architecture**
+
+**OAuth 2.0 Security Model**
+```sql
+-- Secure token storage with RLS
+CREATE TABLE app_settings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  google_access_token TEXT,              -- Server-side only
+  google_refresh_token TEXT,             -- Encrypted storage
+  google_token_expires_at TIMESTAMP,
+  google_drive_parent_folder_id TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(user_id)
+);
+
+CREATE POLICY "app_settings_user_access" ON app_settings
+  FOR ALL USING (user_id = auth.uid());
+```
+
+**Database Schema**
+```sql
+-- Deal folder tracking
+CREATE TABLE deal_folders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  deal_id UUID REFERENCES deals(id) ON DELETE CASCADE,
+  google_folder_id TEXT NOT NULL,
+  folder_name TEXT NOT NULL,
+  folder_url TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Document import tracking
+CREATE TABLE deal_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  deal_id UUID REFERENCES deals(id) ON DELETE CASCADE,
+  google_file_id TEXT NOT NULL UNIQUE,
+  file_name TEXT NOT NULL,
+  file_url TEXT NOT NULL,
+  category document_category_enum NOT NULL,
+  mime_type TEXT,
+  size_bytes BIGINT,
+  imported_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Performance indexes
+CREATE INDEX idx_deal_folders_deal_id ON deal_folders(deal_id);
+CREATE INDEX idx_deal_documents_deal_id ON deal_documents(deal_id);
+CREATE INDEX idx_deal_documents_category ON deal_documents(category);
+```
+
+#### **🎨 User Experience**
 
 **Seamless CRM Integration**
-- **Native Entity Embedding**: Stickers appear as natural tabs/sections in deal, person, and organization detail pages
-- **No Standalone Demo**: Replaced disconnected demo with integrated native functionality
-- **Context-Aware Creation**: New stickers automatically attached to specific entities being viewed
-- **Unified Navigation**: Access through existing entity detail workflows
-
-**Dual-Interface Design**
-- **Visual Canvas Mode**: Drag-and-drop sticky notes with real-time positioning
-- **Professional Table Mode**: Enterprise data table matching people/deals table standards
-- **Intelligent View Switching**: Toggle between visualization and data management modes
-- **Consistent Design Language**: Chakra UI components matching existing CRM design system
-
-**Advanced Interaction Patterns**
-- **Smart Positioning Algorithm**: Automatically finds empty space for new stickers
-- **Collision Avoidance**: Intelligent layout management prevents overlap
-- **Optimistic Updates**: Immediate UI response with background persistence
-- **Debounced Persistence**: Efficient database updates during drag operations
-
-#### **🔧 Technical Implementation Excellence**
-
-**Modern Frontend Architecture**
-```typescript
-// Component architecture
-frontend/src/components/common/
-├── StickerBoard.tsx              // Main orchestration component
-├── SmartSticker.tsx              // Individual sticker rendering
-├── StickerCreateModal.tsx        // Professional creation interface
-├── StickerFilters.tsx            // Advanced filtering system
-└── SortableTable.tsx             // Enterprise table integration
-
-// Integration pattern
-entityDetailPages/
-├── DealDetailPage.tsx            // Smart Stickers tab integration
-├── PersonDetailPage.tsx          // Smart Stickers section integration
-└── OrganizationDetailPage.tsx    // Smart Stickers section integration
-```
-
-**Robust Database Integration**
-```typescript
-// GraphQL resolver integration
-const smartStickersResolvers = {
-  createSticker: EntityContextValidation,  // Validates entity ownership
-  updateSticker: OptimisticPositioning,    // Handles position updates
-  deleteSticker: CascadePermissions,       // Security enforcement
-  categorizeSticker: CategoryValidation,   // Category system integration
-};
-
-// Service layer consistency
-class SmartStickersService {
-  async createSticker(entityType, entityId, stickerData): Promise<Sticker>
-  async updatePosition(stickerId, position): Promise<void>
-  async bulkUpdatePositions(updates): Promise<void>
-  async filterStickers(criteria): Promise<Sticker[]>
-}
-```
-
-**Advanced Filtering & Search System**
-```typescript
-// Multi-criteria filtering system
-interface StickerFilters {
-  categories: CategoryFilter[];        // Multi-select category filtering
-  priority: PriorityFilter;           // NORMAL/HIGH/URGENT filtering
-  status: StatusFilter;               // Pinned/Private status filtering
-  dateRange: DateRangeFilter;         // Creation/update date filtering
-  tags: TagFilter[];                  // Tag-based filtering
-  search: FullTextSearch;             // Content and title search
-}
-
-// Real-time filter application
-const useAdvancedFiltering = () => {
-  const [filters, setFilters] = useState<StickerFilters>({});
-  const filteredStickers = useMemo(() => 
-    applyMultiCriteriaFilter(stickers, filters), [stickers, filters]
-  );
-};
-```
-
-#### **🚀 Architectural Benefits**
-
-**Native CRM Integration**
-- **Contextual Collaboration**: Every sticker tied to specific business entities
-- **Permission Inheritance**: Stickers respect entity-level access controls
-- **Audit Trail Integration**: All sticker actions tracked in entity history
-- **Search Integration**: Sticker content searchable from entity views
-
-**Enterprise-Grade Performance**
-- **Optimized Queries**: Efficient entity-specific sticker loading
-- **Real-time Updates**: Live collaboration without page refreshes
-- **Responsive Design**: Works across all devices and screen sizes
-- **Accessibility Compliance**: Full WCAG compliance through Chakra UI
-
-**Developer Experience Excellence**
-- **Component Reusability**: Sticker system usable across all entity types
-- **Type Safety**: Full TypeScript coverage throughout sticker pipeline
-- **Testing Integration**: Comprehensive test coverage for all sticker operations
-- **Documentation Standards**: Complete API documentation and usage guides
-
-#### **🎯 Future Expansion Roadmap**
-
-**Phase 4: Advanced Collaboration**
-- **Real-time Multi-user Editing**: Live collaborative editing with conflict resolution
-- **Sticker Templates**: Pre-defined sticker templates for common use cases
-- **Workflow Integration**: Sticker-driven task creation and assignment
-- **Analytics Dashboard**: Sticker usage analytics and collaboration metrics
-
-**Phase 5: Intelligence Integration**
-- **AI-Powered Sticker Suggestions**: Automatic sticker creation based on entity changes
-- **Smart Categorization**: AI-driven category suggestions and auto-classification
-- **Content Enhancement**: AI-powered content suggestions and formatting
-- **Relationship Mapping**: Visual connections between related stickers across entities
-
-#### **🔍 Comparison to Traditional CRM Notes**
-
-**Traditional CRM Notes:**
-- Static text fields buried in forms
-- No visual organization or categorization
-- Limited collaboration features
-- Poor discoverability and context
-
-**PipeCD Smart Stickers:**
-- **Visual Canvas**: Drag-and-drop organization with spatial relationships
-- **Rich Categorization**: Color-coded categories with icons and metadata
-- **Professional Table Views**: Enterprise data management when needed
-- **Advanced Filtering**: Multi-criteria search and organization
-- **Native Integration**: Seamlessly embedded in entity workflows
-
----
-
-## 💻 Technology Stack
-
-### **Frontend Stack**
-```
-React 18 + TypeScript
-├── 🎨 UI: Chakra UI component library
-├── 🗄️ State: Zustand for global state management  
-├── 🔄 Routing: React Router for navigation
-├── 📡 API: Apollo Client for GraphQL
-├── 🕸️ Visualization: D3.js for network graphs and force simulations
-├── 🎯 Icons: Lucide React for beautiful, consistent iconography
-├── 🧪 Testing: Vitest + React Testing Library
-└── 📦 Build: Vite for development and bundling
-```
-
-### **Backend Stack**
-```
-GraphQL API (GraphQL Yoga) + TypeScript
-├── 🏃 Runtime: Netlify Functions (Node.js serverless)
-├── 🗃️ Database: Supabase (PostgreSQL) with RLS
-├── 🔐 Auth: Supabase Authentication (JWT)
-├── 🔄 WFM Engine: Generic workflow system (Core Component)
-├── ⚡ Automation Engine: Inngest event-driven functions (Core Component)
-├── 📅 Activity System: Task execution & automation (Core Component)
-├── 🧪 Testing: Vitest for unit/integration tests
-└── 📝 Validation: Zod for schema validation
-```
-
-### **AI Integration Stack**
-```
-Claude 4 Sonnet + Model Context Protocol (MCP)
-├── 🤖 AI Service: Anthropic Claude API integration
-├── 🛠️ Tool System: 26+ specialized CRM tools
-├── 🔄 Sequential Execution: Multi-step workflow engine
-├── 💭 Thought Tracking: Real-time reasoning insights
-└── 📊 Context Management: Persistent conversation state
-```
-
-### **DevOps Stack**
-```
-Serverless + Git-based Deployment
-├── 🌐 Hosting: Netlify with automatic deployments
-├── 🗃️ Database: Supabase managed PostgreSQL
-├── 🔧 Environment: Netlify environment variables
-├── 🧪 Testing: Playwright for E2E testing
-└── 📊 Monitoring: Built-in observability tools
-```
-
----
-
-## 🏗️ System Architecture Layers
-
-### **1. 🎨 Presentation Layer**
-
-**Purpose**: User interface and user experience
-
-```
-📱 React Frontend (SPA)
-├── 🧩 Components: Reusable UI components
-├── 📄 Pages: Route-based page components  
-├── 🗄️ Stores: Zustand state management
-├── 🎣 Hooks: Custom React hooks
-└── 🎨 Theme: Chakra UI design system
-```
-
-**Key Principles**:
-- **Component Composition**: Build complex UIs from simple components
-- **State Colocation**: Keep state close to where it's used
-- **Performance**: React.memo, useMemo, useCallback for optimization
-- **Accessibility**: WCAG compliance with Chakra UI
-
-### **2. 📡 API Layer**
-
-**Purpose**: Unified interface for all client interactions
-
-```
-🌐 GraphQL API (Netlify Functions)
-├── 📋 Schema: Type-safe API definitions
-├── 🔧 Resolvers: Business logic orchestration
-├── 🛡️ Authentication: JWT token validation
-├── ✅ Validation: Input validation with Zod
-└── 📊 Introspection: Self-documenting API
-```
-
-**Key Features**:
-- **Type Safety**: Generated TypeScript types from schema
-- **Flexible Queries**: Clients specify exactly what data they need
-- **Real-time**: Subscriptions for live updates
-- **Caching**: Intelligent query result caching
-
-### **3. 🔧 Service Layer**
-
-**Purpose**: Encapsulated business logic and data operations
-
-```
-📚 Service Modules (/lib/*.ts)
-├── 🔄 WFM Engine: Generic workflow system (CORE)
-├── 🤝 Deal Management: Complete sales pipeline
-├── 🎯 Lead Management: Lead capture to conversion
-├── 👥 Contact Management: People and organizations
-├── 📅 Activity Management: Tasks and interactions
-└── 🔧 Custom Fields: Dynamic data schemas
-```
-
-**Architectural Pattern**:
-```typescript
-// Standard Service Pattern
-export class DealService {
-  // CRUD operations
-  async getDeals(userId: string, token: string): Promise<Deal[]>
-  async createDeal(userId: string, input: CreateDealInput, token: string): Promise<Deal>
-  async updateDeal(userId: string, dealId: string, input: UpdateDealInput, token: string): Promise<Deal>
-  async deleteDeal(userId: string, dealId: string, token: string): Promise<boolean>
-  
-  // Business operations
-  async updateDealWFMProgress(userId: string, dealId: string, stepId: string, token: string): Promise<Deal>
-  async calculateDealProbability(deal: Deal): Promise<number>
-}
-```
-
-### **4. 🗃️ Data Layer**
-
-**Purpose**: Persistent data storage with security and consistency
-
-```
-🗃️ Supabase (PostgreSQL)
-├── 📊 Tables: Normalized relational schema
-├── 🛡️ RLS Policies: Row-level security rules
-├── 🔄 Migrations: Versioned schema changes
-├── 🔐 Auth: User management and JWT tokens
-└── 📡 Real-time: Database change subscriptions
-```
-
----
-
-## 🎭 Key Architectural Patterns
-
-### **1. 🎯 Domain-Driven Design (DDD)**
-
-**Implementation**: Each business domain has its own service module, **powered by the central WFM workflow engine**
-
-```
-Business Domains (All WFM-Powered):
-├── 🔄 Workflow Domain (WFM Core Engine) ⭐ CENTRAL
-├── 💼 Sales Domain (Deals, Pipeline, Forecasting) 
-├── 🎯 Marketing Domain (Leads, Campaigns, Scoring)
-├── 👥 Relationship Domain (Contacts, Organizations)
-├── 📅 Activity Domain (Tasks, Meetings, Calls)
-└── 🔮 Future Domains (Support, Onboarding, etc.)
-```
-
-**WFM Powers All Business Processes:**
-- Sales deals progress through WFM workflows
-- Lead qualification uses WFM status tracking  
-- Future domains will leverage same WFM engine
-- Generic workflow patterns enable rapid domain expansion
-
-### **2. 🔄 Repository Pattern**
-
-**Implementation**: Service layer abstracts data access
-
-```typescript
-// Service acts as repository
-class DealService {
-  private supabase: SupabaseClient;
-  
-  async getDeals(userId: string): Promise<Deal[]> {
-    // Abstract database queries
-    const { data } = await this.supabase
-      .from('deals')
-      .select('*')
-      .eq('user_id', userId);
-    return data;
-  }
-}
-```
-
-### **3. 🏭 Factory Pattern**
-
-**Implementation**: GraphQL resolvers create service instances
-
-```typescript
-// Resolver factory pattern
-const resolvers = {
-  Query: {
-    deals: async (parent, args, context) => {
-      const dealService = new DealService(context.supabase);
-      return dealService.getDeals(context.userId);
-    }
-  }
-};
-```
-
-### **4. 🎭 Adapter Pattern**
-
-**Implementation**: AI tools adapt between AI parameters and service inputs
-
-```typescript
-// AI Adapter Pattern
-export class DealAdapter {
-  static toServiceInput(aiParams: AIDealParams): CreateDealInput {
-    return {
-      name: aiParams.deal_name,
-      amount: aiParams.value,
-      organization_id: aiParams.org_id
-    };
-  }
-  
-  static toAIFormat(deal: Deal): AIDealResponse {
-    return {
-      deal_id: deal.id,
-      deal_name: deal.name,
-      value: deal.amount
-    };
-  }
-}
-```
-
-### **5. 🔄 Command Query Responsibility Segregation (CQRS)**
-
-**Implementation**: Separate read and write operations
-
-```typescript
-// Read operations (Queries)
-const getDeals = async (filters: DealFilters): Promise<Deal[]> => {
-  // Optimized for reading
-};
-
-// Write operations (Commands)  
-const createDeal = async (input: CreateDealInput): Promise<Deal> => {
-  // Includes validation, business rules, events
-};
-```
-
----
-
-## 📊 Data Architecture
-
-### **🗃️ Database Design Principles**
-
-#### **1. Normalized Schema**
-```sql
--- Core entities with proper relationships
-users ←→ deals ←→ organizations
-  ↕        ↕         ↕
-activities  leads   people
-```
-
-#### **2. Audit Trail Pattern**
-```sql
--- Every table includes audit fields
-CREATE TABLE deals (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  created_by UUID REFERENCES auth.users,
-  updated_by UUID REFERENCES auth.users
-);
-```
-
-#### **3. Soft Delete Pattern**
-```sql
--- Logical deletion preserves data integrity
-ALTER TABLE deals ADD COLUMN deleted_at TIMESTAMP;
--- Queries filter out deleted records
-WHERE deleted_at IS NULL
-```
-
-#### **4. Flexible Metadata Pattern**
-```sql
--- JSON columns for extensible data
-ALTER TABLE deals ADD COLUMN metadata JSONB DEFAULT '{}';
--- Enables custom fields without schema changes
-```
-
-### **🔄 Data Flow Architecture**
-
-```
-User Input → Validation → Service Layer → Database
-    ↓            ↓            ↓            ↓
-  Zod Schema → Business Rules → SQL Queries → RLS Policies
-```
-
----
-
-## 🛡️ Security Architecture
-
-### **🔐 Multi-Layer Security Model**
-
-#### **Layer 1: Authentication**
-```
-User Request → JWT Token Validation → User Identity
-```
-
-#### **Layer 2: Authorization**  
-```
-User Identity → Role/Permission Check → Access Decision
-```
-
-#### **Layer 3: Database Security**
-```
-SQL Query → RLS Policy Evaluation → Row-Level Access
-```
-
-#### **Layer 4: Business Logic Security**
-```
-Service Method → Business Rule Validation → Data Access
-```
-
-### **🛡️ Row Level Security (RLS) Policies**
-
-```sql
--- Example: Users can only see their own deals
-CREATE POLICY "deals_user_access" ON deals
-  FOR ALL USING (user_id = auth.uid());
-
--- Example: Team members can see shared organization data  
-CREATE POLICY "organizations_team_access" ON organizations
-  FOR SELECT USING (
-    id IN (
-      SELECT organization_id FROM team_memberships 
-      WHERE user_id = auth.uid()
-    )
-  );
-```
-
-### **🔒 API Security**
-
-```typescript
-// GraphQL field-level security
-const resolvers = {
-  Deal: {
-    sensitive_data: (deal, args, context) => {
-      if (!context.user.hasPermission('view_financials')) {
-        throw new ForbiddenError('Insufficient permissions');
-      }
-      return deal.sensitive_data;
-    }
-  }
-};
-```
-
----
-
-## 🤖 AI Integration Architecture
-
-### **🧠 AI-First Design Principles**
-
-#### **1. Service Reuse Principle**
-> **AI tools MUST reuse existing service layer - never create new backend logic**
-
-```typescript
-// ✅ CORRECT: AI tool uses existing service
-async search_deals(params: AISearchParams, context: ToolContext) {
-  const deals = await dealService.getDeals(context.userId, context.authToken);
-  return AIAdapter.formatDealsForAI(deals);
-}
-
-// ❌ WRONG: AI tool creates new backend logic
-async search_deals(params: AISearchParams, context: ToolContext) {
-  const query = `SELECT * FROM deals WHERE name ILIKE $1`;
-  // This bypasses existing business logic and security!
-}
-```
-
-#### **2. Tool Domain Architecture**
-```
-AI Request → Domain Registry → Specific Module → Existing Service
-```
-
-#### **3. Sequential Workflow Engine**
-```
-Tool 1 Result → AI Analysis → Tool 2 Parameters → Tool 2 Execution → Final Response
-```
-
-### **🔧 AI Tool Architecture Layers**
-
-```
-🤖 Claude 4 Sonnet
-├── 🛠️ Tool Registry: 26+ specialized CRM tools
-├── 🏗️ Domain Registry: Routes tools to appropriate modules
-├── 🎯 Domain Modules: AI-optimized wrappers around services
-├── 🔧 Service Layer: Existing business logic (REUSED)
-└── 🗃️ Database: Same data as frontend
-```
-
-**Key Benefits**:
-- 🎯 **Consistency**: AI and frontend use identical business logic
-- 🛡️ **Security**: AI inherits all existing security controls
-- 🧪 **Testing**: Business logic already tested through frontend
-- 🚀 **Speed**: No duplicate development effort
-
----
-
-## 🔧 Development Principles
-
-### **1. 📝 Type Safety Throughout**
-
-```typescript
-// Database → TypeScript types (generated)
-export interface Deal {
-  id: string;
-  name: string;
-  amount: number;
-  user_id: string;
-}
-
-// GraphQL → TypeScript types (generated)
-export type DealsQuery = {
-  deals: Array<{
-    id: string;
-    name: string;
-    amount: number;
-  }>;
-};
-
-// Frontend → Type-safe components
-interface DealsPageProps {
-  deals: Deal[];
-  onDealSelect: (deal: Deal) => void;
-}
-```
-
-### **2. 🎨 User Experience Excellence**
-
-**Text Display Standards (Updated)**
-- **Full Text Display**: Eliminated ellipsis truncation (`noOfLines` restrictions) from critical UI components
-- **Deal Names**: Full deal names display without truncation in kanban cards
-- **Organization Names**: Complete organization names visible in deal cards
-- **Column Headers**: Full workflow step names displayed in kanban columns
-- **Responsive Design**: Text wraps naturally instead of being cut off with "..."
-
-**Implementation Pattern:**
-```typescript
-// ✅ AFTER: Full text display
-<Text 
-  fontWeight="bold" 
-  color={colors.text.primary}
-  _hover={{ color: colors.text.link }}
-  fontSize="md"
-  lineHeight="1.3"
->
-  {deal.name}
-</Text>
-
-// ❌ BEFORE: Truncated text
-<Text 
-  fontWeight="bold" 
-  color={colors.text.primary}
-  noOfLines={2}  // Removed - caused ellipsis truncation
-  _hover={{ color: colors.text.link }}
-  fontSize="md"
->
-  {deal.name}
-</Text>
-```
-
-**Benefits:**
-- **Complete Information**: Users see full context without hovering or clicking
-- **Professional Appearance**: No jarring "..." interruptions in text flow
-- **Better Accessibility**: Screen readers can access complete text content
-- **Improved Scanning**: Users can quickly scan full deal/organization names
-
-### **3. 🧪 Test-Driven Development**
-
-```
-Unit Tests → Integration Tests → E2E Tests
-    ↓              ↓               ↓
-Service Layer → API Layer → User Workflows
-```
-
-### **4. 📚 Documentation-Driven Development**
-
-- **API Documentation**: GraphQL schema introspection
-- **Architecture Decisions**: Recorded in ADR documents
-- **User Documentation**: Feature guides and manuals
-- **Developer Documentation**: Code comments and README files
-
-### **5. 🔄 Continuous Integration/Deployment**
-
-```
-Git Push → Tests Run → Build → Deploy → Verify
-```
-
----
-
-## 🚀 Deployment Architecture
-
-### **🌐 Serverless Deployment Model**
-
-```
-Frontend (Netlify CDN)
-    ↓
-GraphQL API (Netlify Functions)
-    ↓
-Database (Supabase Managed PostgreSQL)
-    ↓
-Background Jobs (Inngest Managed)
-```
-
-### **📊 Scalability Characteristics**
-
-- **Frontend**: Global CDN with infinite edge locations
-- **API**: Auto-scaling serverless functions
-- **Database**: Managed PostgreSQL with read replicas
-- **Background Jobs**: Event-driven async processing
-
-### **🔧 Environment Management**
-
-```
-Development → Staging → Production
-     ↓           ↓          ↓
-Local DB → Test DB → Production DB
-```
-
-**Configuration**:
-- Development: Local Supabase + Netlify Dev
-- Staging: Staging Supabase + Deploy Preview
-- Production: Production Supabase + Live Site
-
----
-
-## 📈 Future Architecture Considerations
-
-### **🎯 Planned Enhancements**
-
-1. **🔄 Event-Driven Architecture**: Comprehensive event sourcing
-2. **📱 Mobile Applications**: React Native using same GraphQL API
-3. **🌐 Multi-Tenant Architecture**: Supporting multiple organizations
-4. **📊 Advanced Analytics**: Data warehouse integration
-5. **🤖 AI Expansion**: Additional AI models and capabilities
-
-### **⚖️ Architectural Trade-offs**
-
-#### **Serverless vs. Traditional Servers**
-- ✅ **Benefits**: Infinite scale, no ops overhead, pay-per-use
-- ⚠️ **Trade-offs**: Cold starts, vendor lock-in, debugging complexity
-
-#### **GraphQL vs. REST**
-- ✅ **Benefits**: Type safety, flexible queries, single endpoint
-- ⚠️ **Trade-offs**: Learning curve, caching complexity, N+1 queries
-
-#### **Microservices vs. Monolith**
-- ✅ **Current**: Service-oriented monolith (best of both worlds)
-- 🔮 **Future**: Potential microservices as system grows
-
----
-
-## 📝 Summary
-
-PipeCD represents a **modern, AI-first CRM architecture** that successfully combines:
-
-- 🏗️ **Proven architectural patterns** with modern implementation
-- 🤖 **Revolutionary AI capabilities** built on solid foundations  
-- 🛡️ **Enterprise-grade security** with developer-friendly experience
-- ⚡ **Serverless scalability** with predictable performance
-- 🧪 **Comprehensive testing** with type safety throughout
-
-The architecture enables **rapid feature development** while maintaining **enterprise reliability** - exactly what modern businesses need in an AI-driven world.
-
----
-
-**Last Updated**: January 2025  
-**Document Owner**: PipeCD Architecture Team  
-**Next Review**: Quarterly architecture review 
-
----
-
-## 📝 Event-Driven Automation Architecture (Inngest + Activities)
-
-### **🤖 Automation as Core Architecture**
-
-**PipeCD's automation system combines Inngest (event-driven functions) with Activities (task execution) to create a powerful, scalable automation engine** that handles everything from simple notifications to complex multi-step business workflows.
-
-#### **🏗️ Automation Architecture Stack**
-
-```
-🎯 Business Events (Triggers)
-    ↓
-⚡ Inngest Event Processing
-    ↓
-📅 Activity Creation (Tasks)
-    ↓
-👥 User Assignment & Execution
-    ↓
-🔄 Workflow Progression
-```
-
-#### **🔧 Core Components**
-
-**Inngest (Event Engine)**
-```typescript
-// Event-driven function execution
-import { inngest } from './inngestClient';
-
-export const createDealAssignmentTask = inngest.createFunction(
-  { id: 'create-deal-assignment-task' },
-  { event: 'crm/deal.assigned' },
-  async ({ event, step }) => {
-    // Automatically create welcome task when deal is assigned
-    await step.run('create-activity', async () => {
-      return activityService.createActivity(
-        SYSTEM_USER_ID,
-        {
-          title: `Welcome & Review: ${event.data.dealName}`,
-          description: 'Review deal details and create action plan',
-          assigned_to_user_id: event.data.assignedUserId,
-          is_system_activity: true
-        },
-        event.data.authToken
-      );
-    });
-  }
-);
-```
-
-**Activities (Task System)**
-```typescript
-// Enhanced activities with system automation support
-interface Activity {
-  id: string;
-  title: string;
-  description: string;
-  assigned_to_user_id?: string;    // Human assignment
-  is_system_activity: boolean;     // System-generated flag
-  metadata: {
-    automation_trigger?: string;   // What triggered this
-    source_entity_id?: string;     // Related entity
-    workflow_step?: string;        // WFM integration
-  };
-}
-```
-
-### **🎭 Current Automation Implementations**
-
-#### **1. 🤝 Deal Assignment Automation (✅ IMPLEMENTED)**
-```typescript
-// Trigger: Deal assigned to user
-Event: 'crm/deal.assigned'
-  ↓
-Inngest Function: createDealAssignmentTask
-  ↓
-Creates Activity: "Review new deal assignment: [Deal Name]"
-  ↓
-Assigns to: Newly assigned deal owner
-  ↓
-Result: Automatic onboarding task for deal handoff
-```
-
-**Current Implementation Details:**
-- ✅ Event publishing from `dealService` when deals are assigned
-- ✅ `createDealAssignmentTask` Inngest function operational
-- ✅ System activities created with `SYSTEM_USER_ID` attribution
-- ✅ Activities properly assigned to deal owners with `is_system_activity: true`
-
-#### **2. 📅 Activity Creation Events (✅ IMPLEMENTED)**
-```typescript
-// Trigger: New activity created
-Event: 'crm/activity.created'
-  ↓
-Inngest Functions: Multiple logging and processing functions
-  ↓
-Result: Event-driven processing and analytics
-```
-
-#### **3. 🎯 Lead Assignment Automation (🚧 PLANNED)**
-```typescript
-// Trigger: Lead assigned to user  
-Event: 'crm/lead.assigned' (NOT YET IMPLEMENTED)
-  ↓
-Inngest Function: createLeadAssignmentTask (NOT YET IMPLEMENTED)
-  ↓
-Creates Activity: "Welcome & Review: [Lead Name]"
-  ↓
-Assigns to: Newly assigned lead owner
-  ↓
-Result: Automatic follow-up task for lead management
-```
-
-**Status**: Architecture designed, implementation pending
-
-#### **4. 🔄 Foundational Event Types (✅ ACTIVE)**
-Currently implemented and logging:
-- `crm/deal.created` - Deal creation events
-- `crm/deal.assigned` - Deal assignment events (with task automation)
-- `crm/activity.created` - Activity creation events
-- `crm/person.created` - Contact creation events
-- `crm/lead.created` - Lead creation events
-
-#### **5. 🔧 System User Pattern (✅ IMPLEMENTED)**
-```typescript
-// SYSTEM_USER_ID for automated actions
-const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
-
-// All automation-generated activities are attributed to system
-await activityService.createActivity(
-  SYSTEM_USER_ID,
-  activityData,
-  authToken
-);
-
-// Provides clear audit trail of automated vs human actions
-```
-
-### **🏛️ Automation Architectural Benefits**
-
-#### **1. 🔄 Event-Driven Scalability**
-- **Loose Coupling**: Events decouple trigger from action
-- **Horizontal Scale**: Inngest handles concurrent event processing  
-- **Reliability**: Built-in retries and error handling
-- **Observability**: Complete execution tracing
-
-#### **2. 📅 Activities as Universal Task System**
-- **Human Tasks**: Manual activities assigned to users
-- **System Tasks**: Automated activities from business events
-- **Unified Interface**: Same UI handles both manual and automated tasks
-- **WFM Integration**: Activities can trigger workflow progression
-
-#### **3. 🤖 Composable Automation**
-```typescript
-// Events can trigger multiple automation flows
-inngest.createFunction(
-  { id: 'deal-won-automation' },
-  { event: 'crm/deal.won' },
-  async ({ event }) => {
-    // 1. Create customer success handoff task
-    await createCustomerSuccessTask(event.data);
-    
-    // 2. Generate invoice activity
-    await createInvoiceActivity(event.data);
-    
-    // 3. Schedule follow-up meetings
-    await scheduleFollowUpMeetings(event.data);
-    
-    // 4. Update forecasting data
-    await updateForecastingData(event.data);
-  }
-);
-```
-
-### **🚀 Future Automation Capabilities**
-
-#### **Planned Event Types**
-1. **📈 Pipeline Events**: `crm/deal.stage-changed`, `crm/deal.stalled`
-2. **🎯 Lead Events**: `crm/lead.qualified`, `crm/lead.converted`
-3. **👥 Contact Events**: `crm/contact.created`, `crm/organization.updated`
-4. **📅 Activity Events**: `crm/activity.overdue`, `crm/activity.completed`
-5. **🔄 Workflow Events**: `wfm/status-changed`, `wfm/workflow-completed`
-
-#### **Advanced Automation Patterns**
-
-**Smart Assignment Automation**
-```typescript
-// Automatically assign leads based on territory, expertise, workload
-inngest.createFunction(
-  { id: 'smart-lead-assignment' },
-  { event: 'crm/lead.created' },
-  async ({ event }) => {
-    const optimalUser = await calculateOptimalAssignment({
-      leadData: event.data,
-      userWorkloads: await getUserWorkloads(),
-      territoryRules: await getTerritoryRules(),
-      expertiseMatrix: await getExpertiseMatrix()
-    });
-    
-    await assignLeadToUser(event.data.leadId, optimalUser.id);
-  }
-);
-```
-
-**Workflow-Driven Automation**
-```typescript
-// Create activities based on WFM status changes
-inngest.createFunction(
-  { id: 'workflow-automation' },
-  { event: 'wfm/status-changed' },
-  async ({ event }) => {
-    const { entityType, entityId, newStatus, oldStatus } = event.data;
-    
-    // Get automation rules for this status transition
-    const automationRules = await getAutomationRules(entityType, newStatus);
-    
-    for (const rule of automationRules) {
-      await executeAutomationRule(rule, entityId, event.data);
-    }
-  }
-);
-```
-
-**AI-Powered Automation**
-```typescript
-// AI decides what activities to create based on context
-inngest.createFunction(
-  { id: 'ai-activity-generation' },
-  { event: 'crm/deal.risk-detected' },
-  async ({ event }) => {
-    const aiRecommendations = await aiService.generateRiskMitigationTasks({
-      dealData: event.data,
-      historicalData: await getHistoricalRiskData(),
-      currentMarketConditions: await getMarketData()
-    });
-    
-    for (const recommendation of aiRecommendations) {
-      await createActivityFromAIRecommendation(recommendation);
-    }
-  }
-);
-```
-
-### **🎯 Automation Design Patterns**
-
-#### **1. 🔄 Event Sourcing Pattern**
-```typescript
-// All business actions emit events for automation
-class DealService {
-  async assignDeal(dealId: string, userId: string) {
-    const deal = await this.updateDeal(dealId, { assigned_to_user_id: userId });
-    
-    // Emit event for automation processing
-    await inngest.send({
-      name: 'crm/deal.assigned',
-      data: {
-        dealId: deal.id,
-        dealName: deal.name,
-        assignedUserId: userId,
-        previousUserId: deal.previous_assigned_user_id
-      }
-    });
-    
-    return deal;
-  }
-}
-```
-
-#### **2. 🎭 Command-Query Separation for Automation**
-```typescript
-// Commands emit events, queries don't
-// This ensures automation only triggers on actual changes
-
-// Command (triggers automation)
-const updateDealStatus = async (dealId, newStatus) => {
-  const deal = await dealService.updateDeal(dealId, { status: newStatus });
-  await emitStatusChangeEvent(deal);
-  return deal;
-};
-
-// Query (no automation)
-const getDealStatus = async (dealId) => {
-  return dealService.getDeal(dealId);
-};
-```
-
-#### **3. 🤖 Idempotent Automation**
-```typescript
-// Automation functions are idempotent - safe to retry
-inngest.createFunction(
-  { id: 'create-follow-up-task' },
-  { event: 'crm/meeting.completed' },
-  async ({ event }) => {
-    // Check if follow-up already exists
-    const existingFollowUp = await activityService.findActivity({
-      metadata: { source_meeting_id: event.data.meetingId },
-      is_system_activity: true
-    });
-    
-    if (existingFollowUp) {
-      return { skipped: 'Follow-up already exists' };
-    }
-    
-    // Create new follow-up activity
-    return await createFollowUpActivity(event.data);
-  }
-);
-```
-
-### **📊 Automation Analytics & Observability**
-
-#### **Automation Metrics**
-- **Event Processing Rate**: Events/minute processed
-- **Task Creation Rate**: System activities created/hour
-- **Automation Success Rate**: % of successful automation executions
-- **User Engagement**: % of system activities completed by users
-
-#### **Automation Audit Trail**
-```sql
--- Track all automation-generated activities
-SELECT 
-  a.title,
-  a.created_at,
-  a.assigned_to_user_id,
-  a.metadata->>'automation_trigger' as trigger_event,
-  a.metadata->>'source_entity_id' as source_entity
-FROM activities a 
-WHERE a.is_system_activity = true
-ORDER BY a.created_at DESC;
-```
+- **Native Tabs**: Documents appear as tabs in deal detail pages
+- **Collapsible Categories**: Organized by document type
+- **One-Click Import**: Import from Drive with auto-categorization
+- **Permission Inheritance**: Respects CRM user permissions
+- **Real-time Feedback**: Progress indicators during operations
+
+**Enterprise Administration**
+- **Centralized Settings**: Configure Drive integration globally
+- **Folder Management**: Control parent folders and naming
+- **Permission Templates**: Default sharing configurations
+- **Usage Analytics**: Monitor integration usage patterns
+
+#### **🚀 Implementation Status**
+
+**✅ PRODUCTION-READY**
+- OAuth 2.0 authentication flow complete
+- Deal folder auto-creation operational
+- Document import with categorization working
+- Admin settings interface functional
+- Security model with RLS enforcement
+- Native UI integration in deal pages
+
+**🚧 FOUNDATION READY**
+- Gmail integration infrastructure (`emailService`, `DealEmailsPanel`)
+- Calendar integration schema prepared
+- Advanced categorization system ready
+
+**🔮 FUTURE ROADMAP**
+
+**Phase 4: Gmail Integration**
+- Email threading with deals/contacts
+- Email analytics and engagement tracking
+- Template management with merge fields
+- Automated email workflows
+
+**Phase 5: Calendar Integration**
+- Meeting scheduling from CRM
+- Activity sync with Google Calendar
+- Meeting notes integration
+- Availability management
+
+**Phase 6: Advanced Features**
+- Google Sheets data export
+- Google Forms lead capture
+- Google Sites customer portals
+- Google Meet integration
 
 ---
 

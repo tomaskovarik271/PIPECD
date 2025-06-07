@@ -48,6 +48,7 @@ The architecture emphasizes separation of concerns, type safety, AI-powered auto
 - ✅ **Leads Management** - Full qualification workflows with AI scoring and conversion
 - ✅ **Contact Management** - People and Organizations with custom fields support
 - ✅ **Activity Management** - Tasks, meetings, calls with assignment automation
+- ✅ **Google Workspace Integration** - OAuth 2.0, Google Drive document management, deal-centric folders
 - ✅ **Smart Stickers Visual Collaboration** - Drag-and-drop sticky note system with dual-mode interface
 - ✅ **Work Flow Management (WFM)** - Replaces legacy pipeline system with flexible workflows
 - ✅ **Custom Fields System** - Democratized custom field creation for all entity types
