@@ -13,7 +13,6 @@ import type {
   MutationDeleteActivityArgs,
   Maybe,
   ActivityType,
-  CustomFieldValue,
   User,
   Deal,
   Person,
@@ -202,7 +201,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       }
       const data = await gqlClient.request<{ activities: Activity[] }, QueryActivitiesArgs>(GET_ACTIVITIES_QUERY, variables);
       set({
-        activities: (data.activities || []).sort((a, b) => {
+        activities: (data.activities || []).sort((a: Activity, b: Activity) => {
           const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity;
           const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity;
           if (aDate !== bDate) return aDate - bDate;
@@ -231,7 +230,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       );
       if (response.createActivity) {
         set((state) => ({
-          activities: [...state.activities, response.createActivity!].sort((a, b) => {
+          activities: [...state.activities, response.createActivity!].sort((a: Activity, b: Activity) => {
             const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity;
             const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity;
             if (aDate !== bDate) return aDate - bDate;
@@ -265,7 +264,7 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
       if (response.updateActivity) {
         set((state) => ({
           activities: state.activities.map(a => a.id === id ? response.updateActivity! : a)
-            .sort((a, b) => {
+            .sort((a: Activity, b: Activity) => {
               const aDate = a.due_date ? new Date(a.due_date).getTime() : Infinity;
               const bDate = b.due_date ? new Date(b.due_date).getTime() : Infinity;
               if (aDate !== bDate) return aDate - bDate;

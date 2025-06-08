@@ -181,6 +181,18 @@ export enum AgentThoughtType {
   ToolCall = "TOOL_CALL",
 }
 
+export type AppSetting = {
+  __typename?: "AppSetting";
+  createdAt: Scalars["String"]["output"];
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isPublic: Scalars["Boolean"]["output"];
+  settingKey: Scalars["String"]["output"];
+  settingType: Scalars["String"]["output"];
+  settingValue?: Maybe<Scalars["JSON"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
 export type AttachFileInput = {
   category?: InputMaybe<DocumentCategory>;
   dealId: Scalars["ID"]["input"];
@@ -525,6 +537,13 @@ export type DealDocumentAttachment = {
   id: Scalars["ID"]["output"];
 };
 
+export type DealFolderInfo = {
+  __typename?: "DealFolderInfo";
+  dealFolder?: Maybe<DriveFolder>;
+  exists: Scalars["Boolean"]["output"];
+  subfolders?: Maybe<DealSubfolders>;
+};
+
 export type DealHistoryEntry = {
   __typename?: "DealHistoryEntry";
   changes?: Maybe<Scalars["JSON"]["output"]>;
@@ -544,6 +563,18 @@ export type DealInput = {
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   wfmProjectTypeId: Scalars["ID"]["input"];
+};
+
+export type DealSubfolders = {
+  __typename?: "DealSubfolders";
+  contracts?: Maybe<DriveFolder>;
+  correspondence?: Maybe<DriveFolder>;
+  financial?: Maybe<DriveFolder>;
+  legal?: Maybe<DriveFolder>;
+  other?: Maybe<DriveFolder>;
+  presentations?: Maybe<DriveFolder>;
+  proposals?: Maybe<DriveFolder>;
+  technical?: Maybe<DriveFolder>;
 };
 
 export type DealUpdateInput = {
@@ -831,6 +862,14 @@ export enum EntityType {
   Person = "PERSON",
 }
 
+/** Google Drive specific configuration */
+export type GoogleDriveConfig = {
+  __typename?: "GoogleDriveConfig";
+  auto_create_deal_folders: Scalars["Boolean"]["output"];
+  deal_folder_template: Scalars["Boolean"]["output"];
+  pipecd_deals_folder_id?: Maybe<Scalars["String"]["output"]>;
+};
+
 export type GoogleIntegrationStatus = {
   __typename?: "GoogleIntegrationStatus";
   hasDriveAccess: Scalars["Boolean"]["output"];
@@ -1098,6 +1137,8 @@ export type Mutation = {
   toggleStickerPin: SmartSticker;
   updateActivity: Activity;
   updateAgentConversation: AgentConversation;
+  /** Update an app setting (admin only) */
+  updateAppSetting: AppSetting;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateDealWFMProgress: Deal;
@@ -1394,6 +1435,10 @@ export type MutationUpdateAgentConversationArgs = {
   input: UpdateConversationInput;
 };
 
+export type MutationUpdateAppSettingArgs = {
+  input: UpdateAppSettingInput;
+};
+
 export type MutationUpdateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
   input: CustomFieldDefinitionInput;
@@ -1673,9 +1718,17 @@ export type Query = {
   agentConversations: Array<AgentConversation>;
   agentThoughts: Array<AgentThought>;
   analyzeStakeholderNetwork: StakeholderNetworkAnalysis;
+  /** Get a specific app setting by key */
+  appSetting?: Maybe<AppSetting>;
+  /** Get all app settings (admin only for private settings) */
+  appSettings: Array<AppSetting>;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
+  /** Get files in the deal folder or specific subfolder */
+  dealFolderFiles: Array<DriveFile>;
+  /** Get deal folder information, auto-creating if needed */
+  dealFolderInfo: DealFolderInfo;
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   findMissingStakeholders: MissingStakeholderRecommendations;
@@ -1696,6 +1749,8 @@ export type Query = {
   getSticker?: Maybe<SmartSticker>;
   getStickerCategories: Array<StickerCategory>;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
+  /** Get Google Drive configuration settings */
+  googleDriveSettings: GoogleDriveConfig;
   googleIntegrationStatus: GoogleIntegrationStatus;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
@@ -1766,6 +1821,10 @@ export type QueryAnalyzeStakeholderNetworkArgs = {
   organizationId: Scalars["ID"]["input"];
 };
 
+export type QueryAppSettingArgs = {
+  settingKey: Scalars["String"]["input"];
+};
+
 export type QueryCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1777,6 +1836,15 @@ export type QueryCustomFieldDefinitionsArgs = {
 
 export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryDealFolderFilesArgs = {
+  dealId: Scalars["ID"]["input"];
+  folderId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryDealFolderInfoArgs = {
+  dealId: Scalars["ID"]["input"];
 };
 
 export type QueryFindMissingStakeholdersArgs = {
@@ -2221,6 +2289,11 @@ export type UpdateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject?: InputMaybe<Scalars["String"]["input"]>;
   type?: InputMaybe<ActivityType>;
+};
+
+export type UpdateAppSettingInput = {
+  settingKey: Scalars["String"]["input"];
+  settingValue: Scalars["JSON"]["input"];
 };
 
 export type UpdateConversationInput = {
@@ -2696,6 +2769,40 @@ export type MarkThreadAsReadMutation = {
   markThreadAsRead: boolean;
 };
 
+export type GetDealWorkflowStepsQueryVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+}>;
+
+export type GetDealWorkflowStepsQuery = {
+  __typename?: "Query";
+  deal?: {
+    __typename?: "Deal";
+    id: string;
+    wfmProject?: {
+      __typename?: "WFMProject";
+      id: string;
+      workflow: {
+        __typename?: "WFMWorkflow";
+        id: string;
+        name: string;
+        steps?: Array<{
+          __typename?: "WFMWorkflowStep";
+          id: string;
+          stepOrder: number;
+          isInitialStep: boolean;
+          isFinalStep: boolean;
+          status: {
+            __typename?: "WFMStatus";
+            id: string;
+            name: string;
+            color?: string | null;
+          };
+        }> | null;
+      };
+    } | null;
+  } | null;
+};
+
 export type UpdateUserProfileMutationVariables = Exact<{
   input: UpdateUserProfileInput;
 }>;
@@ -3084,6 +3191,72 @@ export type MoveStickersBulkMutation = {
   }>;
 };
 
+export type GetGoogleDriveSettingsQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetGoogleDriveSettingsQuery = {
+  __typename?: "Query";
+  googleDriveSettings: {
+    __typename?: "GoogleDriveConfig";
+    pipecd_deals_folder_id?: string | null;
+    auto_create_deal_folders: boolean;
+    deal_folder_template: boolean;
+  };
+};
+
+export type GetAppSettingQueryVariables = Exact<{
+  settingKey: Scalars["String"]["input"];
+}>;
+
+export type GetAppSettingQuery = {
+  __typename?: "Query";
+  appSetting?: {
+    __typename?: "AppSetting";
+    id: string;
+    settingKey: string;
+    settingValue?: Record<string, any> | null;
+    settingType: string;
+    description?: string | null;
+    isPublic: boolean;
+  } | null;
+};
+
+export type GetAllAppSettingsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetAllAppSettingsQuery = {
+  __typename?: "Query";
+  appSettings: Array<{
+    __typename?: "AppSetting";
+    id: string;
+    settingKey: string;
+    settingValue?: Record<string, any> | null;
+    settingType: string;
+    description?: string | null;
+    isPublic: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+};
+
+export type UpdateAppSettingMutationVariables = Exact<{
+  input: UpdateAppSettingInput;
+}>;
+
+export type UpdateAppSettingMutation = {
+  __typename?: "Mutation";
+  updateAppSetting: {
+    __typename?: "AppSetting";
+    id: string;
+    settingKey: string;
+    settingValue?: Record<string, any> | null;
+    settingType: string;
+    description?: string | null;
+    isPublic: boolean;
+    updatedAt: string;
+  };
+};
+
 export type GetCustomFieldDefinitionsQueryVariables = Exact<{
   entityType: CustomFieldEntityType;
   includeInactive?: InputMaybe<Scalars["Boolean"]["input"]>;
@@ -3215,6 +3388,327 @@ export type ReactivateCustomFieldDefinitionMutation = {
     id: string;
     isActive: boolean;
     updatedAt: string;
+  };
+};
+
+export type GetDealFolderInfoQueryVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+}>;
+
+export type GetDealFolderInfoQuery = {
+  __typename?: "Query";
+  getDealFolder?: {
+    __typename?: "DriveFolder";
+    id: string;
+    name: string;
+    parents?: Array<string> | null;
+    webViewLink: string;
+    createdTime: string;
+    modifiedTime: string;
+  } | null;
+};
+
+export type GetDealFolderFilesQueryVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+  folderId?: InputMaybe<Scalars["String"]["input"]>;
+}>;
+
+export type GetDealFolderFilesQuery = {
+  __typename?: "Query";
+  getDriveFiles: {
+    __typename?: "DriveFileConnection";
+    files: Array<{
+      __typename?: "DriveFile";
+      id: string;
+      name: string;
+      mimeType: string;
+      size?: number | null;
+      modifiedTime: string;
+      createdTime: string;
+      webViewLink?: string | null;
+      webContentLink?: string | null;
+      thumbnailLink?: string | null;
+      iconLink?: string | null;
+      parents?: Array<string> | null;
+      owners?: Array<{
+        __typename?: "DriveFileOwner";
+        displayName: string;
+        emailAddress: string;
+      }> | null;
+    }>;
+  };
+};
+
+export type GetDealDocumentsQueryVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+}>;
+
+export type GetDealDocumentsQuery = {
+  __typename?: "Query";
+  getDealDocuments: Array<{
+    __typename?: "DealDocumentAttachment";
+    id: string;
+    dealId: string;
+    fileId: string;
+    fileName: string;
+    fileUrl: string;
+    category?: DocumentCategory | null;
+    attachedAt: string;
+    attachedBy: string;
+  }>;
+};
+
+export type GetDealFolderQueryVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+}>;
+
+export type GetDealFolderQuery = {
+  __typename?: "Query";
+  getDealFolder?: {
+    __typename?: "DriveFolder";
+    id: string;
+    name: string;
+    parents?: Array<string> | null;
+    webViewLink: string;
+    createdTime: string;
+    modifiedTime: string;
+  } | null;
+};
+
+export type GetDriveFilesQueryVariables = Exact<{
+  input: DriveSearchInput;
+}>;
+
+export type GetDriveFilesQuery = {
+  __typename?: "Query";
+  getDriveFiles: {
+    __typename?: "DriveFileConnection";
+    totalCount: number;
+    files: Array<{
+      __typename?: "DriveFile";
+      id: string;
+      name: string;
+      mimeType: string;
+      size?: number | null;
+      modifiedTime: string;
+      createdTime: string;
+      webViewLink?: string | null;
+      webContentLink?: string | null;
+      parents?: Array<string> | null;
+      thumbnailLink?: string | null;
+      iconLink?: string | null;
+      owners?: Array<{
+        __typename?: "DriveFileOwner";
+        displayName: string;
+        emailAddress: string;
+      }> | null;
+    }>;
+  };
+};
+
+export type GetDriveFoldersQueryVariables = Exact<{
+  input: DriveFolderBrowseInput;
+}>;
+
+export type GetDriveFoldersQuery = {
+  __typename?: "Query";
+  getDriveFolders: {
+    __typename?: "DriveFolderConnection";
+    totalCount: number;
+    folders: Array<{
+      __typename?: "DriveFolder";
+      id: string;
+      name: string;
+      parents?: Array<string> | null;
+      webViewLink: string;
+      createdTime: string;
+      modifiedTime: string;
+    }>;
+  };
+};
+
+export type SearchDriveFilesQueryVariables = Exact<{
+  query: Scalars["String"]["input"];
+}>;
+
+export type SearchDriveFilesQuery = {
+  __typename?: "Query";
+  searchDriveFiles: {
+    __typename?: "DriveFileConnection";
+    totalCount: number;
+    files: Array<{
+      __typename?: "DriveFile";
+      id: string;
+      name: string;
+      mimeType: string;
+      size?: number | null;
+      modifiedTime: string;
+      createdTime: string;
+      webViewLink?: string | null;
+      webContentLink?: string | null;
+      parents?: Array<string> | null;
+      thumbnailLink?: string | null;
+      iconLink?: string | null;
+      owners?: Array<{
+        __typename?: "DriveFileOwner";
+        displayName: string;
+        emailAddress: string;
+      }> | null;
+    }>;
+  };
+};
+
+export type GetRecentDriveFilesQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type GetRecentDriveFilesQuery = {
+  __typename?: "Query";
+  getRecentDriveFiles: {
+    __typename?: "DriveFileConnection";
+    totalCount: number;
+    files: Array<{
+      __typename?: "DriveFile";
+      id: string;
+      name: string;
+      mimeType: string;
+      size?: number | null;
+      modifiedTime: string;
+      createdTime: string;
+      webViewLink?: string | null;
+      webContentLink?: string | null;
+      parents?: Array<string> | null;
+      thumbnailLink?: string | null;
+      iconLink?: string | null;
+      owners?: Array<{
+        __typename?: "DriveFileOwner";
+        displayName: string;
+        emailAddress: string;
+      }> | null;
+    }>;
+  };
+};
+
+export type CreateDealFolderMutationVariables = Exact<{
+  input: CreateDealFolderInput;
+}>;
+
+export type CreateDealFolderMutation = {
+  __typename?: "Mutation";
+  createDealFolder: {
+    __typename?: "DriveFolderStructure";
+    dealFolder: {
+      __typename?: "DriveFolder";
+      id: string;
+      name: string;
+      parents?: Array<string> | null;
+      webViewLink: string;
+      createdTime: string;
+      modifiedTime: string;
+    };
+    subfolders: {
+      __typename?: "DriveFolderSubfolders";
+      proposals?: {
+        __typename?: "DriveFolder";
+        id: string;
+        name: string;
+        parents?: Array<string> | null;
+        webViewLink: string;
+        createdTime: string;
+        modifiedTime: string;
+      } | null;
+      contracts?: {
+        __typename?: "DriveFolder";
+        id: string;
+        name: string;
+        parents?: Array<string> | null;
+        webViewLink: string;
+        createdTime: string;
+        modifiedTime: string;
+      } | null;
+      legal?: {
+        __typename?: "DriveFolder";
+        id: string;
+        name: string;
+        parents?: Array<string> | null;
+        webViewLink: string;
+        createdTime: string;
+        modifiedTime: string;
+      } | null;
+      presentations?: {
+        __typename?: "DriveFolder";
+        id: string;
+        name: string;
+        parents?: Array<string> | null;
+        webViewLink: string;
+        createdTime: string;
+        modifiedTime: string;
+      } | null;
+      correspondence?: {
+        __typename?: "DriveFolder";
+        id: string;
+        name: string;
+        parents?: Array<string> | null;
+        webViewLink: string;
+        createdTime: string;
+        modifiedTime: string;
+      } | null;
+    };
+  };
+};
+
+export type AttachFileToDealMutationVariables = Exact<{
+  input: AttachFileInput;
+}>;
+
+export type AttachFileToDealMutation = {
+  __typename?: "Mutation";
+  attachFileToDeal: {
+    __typename?: "DealDocumentAttachment";
+    id: string;
+    dealId: string;
+    fileId: string;
+    fileName: string;
+    fileUrl: string;
+    category?: DocumentCategory | null;
+    attachedAt: string;
+    attachedBy: string;
+  };
+};
+
+export type DetachFileFromDealMutationVariables = Exact<{
+  attachmentId: Scalars["ID"]["input"];
+}>;
+
+export type DetachFileFromDealMutation = {
+  __typename?: "Mutation";
+  detachFileFromDeal: boolean;
+};
+
+export type UploadFileToDriveMutationVariables = Exact<{
+  input: UploadFileInput;
+}>;
+
+export type UploadFileToDriveMutation = {
+  __typename?: "Mutation";
+  uploadFileToDrive: {
+    __typename?: "DriveFile";
+    id: string;
+    name: string;
+    mimeType: string;
+    size?: number | null;
+    modifiedTime: string;
+    createdTime: string;
+    webViewLink?: string | null;
+    webContentLink?: string | null;
+    parents?: Array<string> | null;
+    thumbnailLink?: string | null;
+    iconLink?: string | null;
+    owners?: Array<{
+      __typename?: "DriveFileOwner";
+      displayName: string;
+      emailAddress: string;
+    }> | null;
   };
 };
 
@@ -3828,6 +4322,66 @@ export type ConnectGoogleIntegrationMutation = {
   };
 };
 
+export type GetLeadDetailsQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetLeadDetailsQuery = {
+  __typename?: "Query";
+  lead?: {
+    __typename?: "Lead";
+    id: string;
+    name: string;
+    source?: string | null;
+    description?: string | null;
+    contact_name?: string | null;
+    contact_email?: string | null;
+    contact_phone?: string | null;
+    company_name?: string | null;
+    estimated_value?: number | null;
+    estimated_close_date?: string | null;
+    lead_score: number;
+    isQualified: boolean;
+    assigned_to_user_id?: string | null;
+    assigned_at?: string | null;
+    converted_at?: string | null;
+    converted_to_deal_id?: string | null;
+    last_activity_at: string;
+    created_at: string;
+    updated_at: string;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      email: string;
+      display_name?: string | null;
+      avatar_url?: string | null;
+    } | null;
+    currentWfmStatus?: {
+      __typename?: "WFMStatus";
+      id: string;
+      name: string;
+      color?: string | null;
+    } | null;
+  } | null;
+};
+
+export type GetStickerCategoriesForLeadQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetStickerCategoriesForLeadQuery = {
+  __typename?: "Query";
+  getStickerCategories: Array<{
+    __typename?: "StickerCategory";
+    id: string;
+    name: string;
+    color: string;
+    icon?: string | null;
+    isSystem: boolean;
+    displayOrder: number;
+  }>;
+};
+
 export type GetPersonCustomFieldDefinitionsQueryVariables = Exact<{
   [key: string]: never;
 }>;
@@ -4225,6 +4779,7 @@ export type GetDealWithHistoryQuery = {
     weighted_amount?: number | null;
     assigned_to_user_id?: string | null;
     project_id: string;
+    wfm_project_id?: string | null;
     assignedToUser?: {
       __typename?: "User";
       id: string;

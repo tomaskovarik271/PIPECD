@@ -36,7 +36,7 @@ import {
 } from '@chakra-ui/react';
 import { SettingsIcon, TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { FiSend, FiUser, FiCpu, FiActivity, FiMessageSquare, FiClock, FiTool, FiEye, FiZap, FiTarget } from 'react-icons/fi';
-import ReactMarkdown from 'react-markdown';
+
 import { useNavigate } from 'react-router-dom';
 import { useAgentStore } from '../../stores/useAgentStore';
 import type { AgentMessage, AgentConversation, AgentThought } from '../../stores/useAgentStore';
@@ -65,6 +65,8 @@ const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> 
   const [isExpanded, setIsExpanded] = useState(false);
   const thoughtBg = useColorModeValue('gray.50', 'gray.800');
   const tooltipBg = useColorModeValue('blue.500', 'blue.600');
+  const reasoningBg = useColorModeValue('gray.50', 'gray.700');
+  const reasoningColor = useColorModeValue('gray.800', 'gray.200');
   
   if (!thoughts || thoughts.length === 0) {
     return null;
@@ -233,8 +235,8 @@ const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> 
                             <Text 
                               fontSize="xs" 
                               p={2} 
-                              bg={useColorModeValue('gray.50', 'gray.700')}
-                              color={useColorModeValue('gray.800', 'gray.200')}
+                              bg={reasoningBg}
+                              color={reasoningColor}
                               borderRadius="md" 
                               fontStyle="italic"
                             >
@@ -270,6 +272,8 @@ const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> 
   );
 });
 
+ThoughtDetailsComponent.displayName = 'ThoughtDetailsComponent';
+
 export const AIAgentChat: React.FC = () => {
   const [messageInput, setMessageInput] = useState('');
   const [localCurrentConversation, setLocalCurrentConversation] = useState<AgentConversation | null>(null);
@@ -295,6 +299,8 @@ export const AIAgentChat: React.FC = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const userMessageBg = useColorModeValue('blue.500', 'blue.600');
   const assistantMessageBg = useColorModeValue('gray.100', 'gray.700');
+  const reasoningBg = useColorModeValue('gray.50', 'gray.700');
+  const reasoningColor = useColorModeValue('gray.800', 'gray.200');
   
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -592,6 +598,8 @@ export const AIAgentChat: React.FC = () => {
       </HStack>
     );
   });
+
+  MessageComponent.displayName = 'MessageComponent';
   
   if (localError) {
     return (

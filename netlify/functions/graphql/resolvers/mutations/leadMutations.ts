@@ -6,7 +6,7 @@ import * as wfmProjectService from '../../../../../lib/wfmProjectService';
 import { wfmWorkflowService } from '../../../../../lib/wfmWorkflowService';
 import { wfmStatusService } from '../../../../../lib/wfmStatusService';
 import { calculateLeadScoreFields } from '../../../../../lib/leadService/leadScoring';
-import type { MutationResolvers, Lead as GraphQLLead, LeadInput as GraphQLLeadInput, LeadUpdateInput as GraphQLLeadUpdateInput, WfmWorkflowStep, User as GraphQLUser } from '../../../../../lib/generated/graphql';
+import type { MutationResolvers, Lead as GraphQLLead, LeadInput as GraphQLLeadInput } from '../../../../../lib/generated/graphql';
 import type { LeadServiceUpdateData } from '../../../../../lib/leadService/leadCrud';
 import { recordEntityHistory, getAuthenticatedClient } from '../../../../../lib/serviceUtils';
 

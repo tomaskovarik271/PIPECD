@@ -1,4 +1,4 @@
-import type { Deal, DealInput, WfmWorkflowStep } from '../generated/graphql';
+import type { Deal, DealInput } from '../generated/graphql';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { handleSupabaseError } from '../serviceUtils'; // For consistent error handling
 import { GraphQLError } from 'graphql';

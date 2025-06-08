@@ -55,7 +55,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
   const [assignedToUserId, setAssignedToUserId] = useState<string | null>(null);
-  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, any>>({});
+  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -135,7 +135,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
     }
   }, [projectTypes, selectedWFMProjectTypeId]);
 
-  const handleCustomFieldChange = (fieldName: string, value: any) => {
+  const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[]) => {
     setCustomFieldFormValues(prev => ({ ...prev, [fieldName]: value }));
   };
 
@@ -198,9 +198,9 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       } else {
         setError(dealsError || 'Failed to create deal. Unknown error.');
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Error submitting deal:", e);
-      setError(e.message || 'An unexpected error occurred.');
+      setError(e instanceof Error ? e.message : 'An unexpected error occurred.');
     } finally {
       setIsLoading(false);
     }

@@ -108,7 +108,7 @@ export class OrganizationsModule {
 | `leadService.ts` | Lead management | `getLeads()`, `createLead()`, `getLeadById()`, `recalculateLeadScore()` |
 | `personService.ts` | Contact management | `getPeople()`, `createPerson()`, `updatePerson()` |
 | `organizationService.ts` | Organization management | `getOrganizations()`, `createOrganization()`, `updateOrganization()` |
-| `activityService.ts` | Activity management | `getActivities()`, `createActivity()`, `updateActivity()` |
+| `activityService.ts` | Activity management | `activityService.getActivities()`, `activityService.createActivity()`, `activityService.updateActivity()` |
 | `userService.ts` | User management | `getUsers()`, `getUserById()` |
 | `customFieldService.ts` | Custom fields | `getCustomFieldDefinitions()`, `createCustomFieldDefinition()` |
 
@@ -183,7 +183,7 @@ export class DealAdapter {
 
 1. **OrganizationsModule**: Uses `organizationService.getOrganizations()`
 2. **ContactsModule**: Uses `personService.getPeople()`
-3. **ActivitiesModule**: Uses `getActivities()` from `activityService`
+3. **ActivitiesModule**: Uses `activityService.getActivities()` with standardized object-based pattern
 4. **LeadsModule**: Uses `leadService.getLeads()` and `leadService.createLead()`
 
 ### **🔍 Code Locations:**

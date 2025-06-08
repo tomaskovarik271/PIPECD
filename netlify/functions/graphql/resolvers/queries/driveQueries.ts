@@ -149,7 +149,7 @@ export const driveQueries = {
       throw new Error('Failed to fetch deal documents');
     }
     
-    return (documents || []).map(doc => ({
+    return (documents || []).map((doc: any) => ({
       id: doc.id,
       dealId: doc.deal_id,
       fileId: doc.file_id,

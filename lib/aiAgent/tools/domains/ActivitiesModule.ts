@@ -12,12 +12,7 @@ import type {
   AICreateActivityParams, 
   AIUpdateActivityParams 
 } from '../../adapters/ActivityAdapter';
-import { 
-  getActivities, 
-  createActivity, 
-  updateActivity, 
-  getActivityById 
-} from '../../../activityService';
+import { activityService } from '../../../activityService';
 
 export class ActivitiesModule {
   /**
@@ -40,7 +35,7 @@ export class ActivitiesModule {
         isDone: params.completed,
       };
 
-      const activities = await getActivities(context.userId, context.authToken, serviceFilter);
+      const activities = await activityService.getActivities(context.userId, context.authToken, serviceFilter);
       
       // Apply AI-specific filtering and sorting
       const filteredActivities = ActivityAdapter.applySearchFilters(activities, params);
@@ -64,7 +59,7 @@ export class ActivitiesModule {
       }
 
       const activityInput = ActivityAdapter.toActivityInput(params);
-      const activity = await createActivity(context.userId, activityInput, context.authToken);
+      const activity = await activityService.createActivity(context.userId, activityInput, context.authToken);
       
       return ActivityAdapter.createCreateResult(activity, params);
     } catch (error) {
@@ -85,7 +80,7 @@ export class ActivitiesModule {
       }
 
       const updateInput = ActivityAdapter.toActivityUpdateInput(params);
-      const activity = await updateActivity(context.userId, params.activity_id, updateInput, context.authToken);
+      const activity = await activityService.updateActivity(context.userId, params.activity_id, updateInput, context.authToken);
       
       return ActivityAdapter.createUpdateResult(activity, params);
     } catch (error) {
@@ -110,7 +105,7 @@ export class ActivitiesModule {
         notes: params.completion_notes,
       };
       
-      const activity = await updateActivity(context.userId, params.activity_id, updateInput, context.authToken);
+      const activity = await activityService.updateActivity(context.userId, params.activity_id, updateInput, context.authToken);
       
       return {
         success: true,
@@ -140,7 +135,7 @@ export class ActivitiesModule {
         return ActivityAdapter.createErrorResult('get_activity_details', new Error('Authentication required'), params);
       }
 
-      const activity = await getActivityById(context.userId, params.activity_id, context.authToken);
+      const activity = await activityService.getActivityById(context.userId, params.activity_id, context.authToken);
       
       if (!activity) {
         return {

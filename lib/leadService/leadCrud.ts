@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { getAuthenticatedClient, handleSupabaseError, recordEntityHistory } from '../serviceUtils';
-import type { Lead, LeadInput, LeadUpdateInput, CustomFieldValueInput } from '../generated/graphql';
+import type { LeadInput, CustomFieldValueInput } from '../generated/graphql';
 import { inngest } from '../inngestClient';
 
 import { processCustomFieldsForCreate, processCustomFieldsForUpdate } from './leadCustomFields';
@@ -316,7 +316,7 @@ export async function updateLead(userId: string, id: string, input: LeadServiceU
     throw new GraphQLError('Lead not found', { extensions: { code: 'NOT_FOUND' } });
   }
 
-  let { customFields, ...leadUpdateData } = input;
+  const { customFields, ...leadUpdateData } = input;
   
   // Process custom fields if provided
   const processedCustomFields = customFields ? 

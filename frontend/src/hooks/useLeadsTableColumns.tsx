@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Badge, IconButton, HStack, Text, VStack, Spinner, Link, Icon } from '@chakra-ui/react';
-import { StarIcon, EditIcon, DeleteIcon, ExternalLinkIcon } from '@chakra-ui/icons';
+import { StarIcon, EditIcon, DeleteIcon, ExternalLinkIcon, ViewIcon } from '@chakra-ui/icons';
+import { Link as RouterLink } from 'react-router-dom';
 import type { ColumnDefinition } from '../components/common/SortableTable';
 import type { Lead } from '../stores/useLeadsStore';
 import type { CustomFieldDefinition } from '../generated/graphql/graphql';
@@ -272,6 +273,14 @@ export function useLeadsTableColumns({
 
       return (
         <HStack spacing={2}>
+          <IconButton
+            as={RouterLink}
+            to={`/leads/${lead.id}`}
+            size="sm"
+            variant="ghost"
+            aria-label="View lead details"
+            icon={<ViewIcon />}
+          />
           {showEdit && (
             <IconButton
               size="sm"

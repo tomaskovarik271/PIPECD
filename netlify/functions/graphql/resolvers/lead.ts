@@ -4,7 +4,7 @@ import { GraphQLContext, requireAuthentication, getAccessToken } from '../helper
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 import { dealService } from '../../../../lib/dealService';
-import * as activityService from '../../../../lib/activityService';
+import { activityService } from '../../../../lib/activityService';
 import type {
     LeadResolvers,
     Person,

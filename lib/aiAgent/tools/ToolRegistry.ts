@@ -9,7 +9,7 @@
  */
 
 import type { MCPTool } from '../types';
-import type { ToolCategory, ToolDefinition } from '../types/tools';
+import type { ToolCategory } from '../types/tools';
 
 export interface ToolRegistryConfig {
   enabledCategories?: ToolCategory[];

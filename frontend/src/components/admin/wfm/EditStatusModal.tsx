@@ -129,7 +129,7 @@ const EditStatusModal: React.FC<EditStatusModalProps> = ({
                 name="name"
                 control={control}
                 rules={{ required: 'Name is required' }}
-                render={({ field }) => <Input id="name" {...field} autoFocus />}
+                render={({ field }) => <Input id="name" {...field} />}
               />
               <FormErrorMessage>{errors.name && errors.name.message}</FormErrorMessage>
             </FormControl>

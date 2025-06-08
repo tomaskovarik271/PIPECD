@@ -2,7 +2,7 @@ import { /* createClient, SupabaseClient, PostgrestError */ } from '@supabase/su
 // import type { User } from '@supabase/supabase-js'; // Keep User type if needed later (Commented out)
 import { GraphQLError } from 'graphql';
 import { getAuthenticatedClient, handleSupabaseError, recordEntityHistory } from './serviceUtils'; // Import shared helpers
-import type { Deal, DealInput, CustomFieldValueInput } from './generated/graphql'; // Changed to DealInput for both create and update, added CustomFieldValueInput
+import type { DealInput } from './generated/graphql'; // Changed to DealInput for both create and update
 import { diff, Diff } from 'deep-diff';
 import { inngest } from './inngestClient'; // Import the shared Inngest client
 import { getCustomFieldDefinitionById } from './customFieldDefinitionService'; // Correctly import the specific function needed

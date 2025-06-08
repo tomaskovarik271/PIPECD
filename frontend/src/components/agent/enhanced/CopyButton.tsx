@@ -28,6 +28,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
   
   const copyColor = useColorModeValue('gray.600', 'gray.400');
   const successColor = useColorModeValue('green.600', 'green.400');
+  const hoverBg = useColorModeValue('gray.100', 'gray.700');
 
   const handleCopy = async () => {
     try {
@@ -70,7 +71,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
           leftIcon={React.cloneElement(icon, { color: iconColor })}
           color={iconColor}
           _hover={{
-            backgroundColor: useColorModeValue('gray.100', 'gray.700'),
+            backgroundColor: hoverBg,
           }}
         >
           <HStack spacing={1}>
@@ -92,7 +93,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
         variant={variant}
         onClick={handleCopy}
         _hover={{
-          backgroundColor: useColorModeValue('gray.100', 'gray.700'),
+          backgroundColor: hoverBg,
         }}
       />
     </Tooltip>

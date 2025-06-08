@@ -27,6 +27,69 @@ type DriveFolder {
   modifiedTime: String!
 }
 
+# Shared Drive types for the new system
+type SharedDrive {
+  id: ID!
+  name: String!
+  createdTime: String!
+  capabilities: SharedDriveCapabilities
+  backgroundImageFile: SharedDriveImage
+  colorRgb: String
+  restrictions: SharedDriveRestrictions
+}
+
+type SharedDriveCapabilities {
+  canAddChildren: Boolean
+  canComment: Boolean
+  canCopy: Boolean
+  canDeleteDrive: Boolean
+  canDownload: Boolean
+  canEdit: Boolean
+  canListChildren: Boolean
+  canManageMembers: Boolean
+  canReadRevisions: Boolean
+  canRename: Boolean
+  canRenameDrive: Boolean
+  canShare: Boolean
+}
+
+type SharedDriveImage {
+  id: String!
+  webViewLink: String!
+}
+
+type SharedDriveRestrictions {
+  adminManagedRestrictions: Boolean
+  copyRequiresWriterPermission: Boolean
+  domainUsersOnly: Boolean
+  driveMembersOnly: Boolean
+}
+
+# New simplified document attachment type
+type DealDocumentAttachment {
+  id: ID!
+  dealId: ID!
+  googleFileId: String!
+  fileName: String!
+  fileUrl: String!
+  sharedDriveId: String
+  category: DocumentCategory
+  attachedAt: String!
+  attachedBy: ID!
+  mimeType: String
+  fileSize: Int
+}
+
+enum DocumentCategory {
+  PROPOSAL
+  CONTRACT
+  PRESENTATION
+  CLIENT_REQUEST
+  CLIENT_DOCUMENT
+  CORRESPONDENCE
+  OTHER
+}
+
 type DriveFolderStructure {
   dealFolder: DriveFolder!
   subfolders: DriveFolderSubfolders!
@@ -50,31 +113,23 @@ type DriveFolderConnection {
   totalCount: Int!
 }
 
-type DealDocumentAttachment {
-  id: ID!
-  dealId: ID!
-  fileId: String!
-  fileName: String!
-  fileUrl: String!
-  category: DocumentCategory
-  attachedAt: String!
-  attachedBy: ID!
-}
-
-enum DocumentCategory {
-  PROPOSALS
-  CONTRACTS
-  LEGAL
-  PRESENTATIONS
-  CORRESPONDENCE
-  OTHER
-}
-
 input CreateDealFolderInput {
   dealName: String!
   dealId: ID!
   parentFolderId: String
   templateStructure: Boolean = true
+}
+
+# New input for simplified document attachment
+input AttachDocumentInput {
+  dealId: ID!
+  googleFileId: String!
+  fileName: String!
+  fileUrl: String!
+  sharedDriveId: String
+  category: DocumentCategory
+  mimeType: String
+  fileSize: Int
 }
 
 input AttachFileInput {
@@ -127,50 +182,39 @@ enum DrivePermissionRole {
 }
 
 extend type Query {
-  # Get files in a specific folder or search
+  # Shared Drive queries
+  getSharedDrives: [SharedDrive!]!
+  getSharedDriveFiles(sharedDriveId: ID!, folderId: ID, query: String): [DriveFile!]!
+  getSharedDriveFolders(sharedDriveId: ID!, parentFolderId: ID): [DriveFolder!]!
+  searchSharedDriveFiles(query: String!, sharedDriveId: ID): [DriveFile!]!
+  getRecentSharedDriveFiles(limit: Int = 20): [DriveFile!]!
+  
+  # Document attachment queries
+  getDealDocumentAttachments(dealId: ID!): [DealDocumentAttachment!]!
+  
+  # Legacy Drive queries (keeping for backward compatibility)
   getDriveFiles(input: DriveSearchInput!): DriveFileConnection!
-  
-  # Browse folder structure
   getDriveFolders(input: DriveFolderBrowseInput!): DriveFolderConnection!
-  
-  # Get specific file details
   getDriveFile(fileId: String!): DriveFile!
-  
-  # Search across all Drive files
   searchDriveFiles(query: String!): DriveFileConnection!
-  
-  # Get recent files for quick access
   getRecentDriveFiles(limit: Int = 10): DriveFileConnection!
-  
-  # Get deal's attached documents
   getDealDocuments(dealId: ID!): [DealDocumentAttachment!]!
-  
-  # Get deal's Drive folder if it exists
   getDealFolder(dealId: ID!): DriveFolder
 }
 
 extend type Mutation {
-  # Create deal folder structure
+  # New document attachment mutations
+  attachDocumentToDeal(input: AttachDocumentInput!): DealDocumentAttachment!
+  removeDocumentAttachment(attachmentId: ID!): Boolean!
+  updateDocumentAttachmentCategory(attachmentId: ID!, category: DocumentCategory!): DealDocumentAttachment!
+  
+  # Legacy mutations (keeping for backward compatibility)
   createDealFolder(input: CreateDealFolderInput!): DriveFolderStructure!
-  
-  # Upload file to Drive
   uploadFileToDrive(input: UploadFileInput!): DriveFile!
-  
-  # Attach existing Drive file to deal
   attachFileToDeal(input: AttachFileInput!): DealDocumentAttachment!
-  
-  # Remove file attachment from deal (doesn't delete the file)
   detachFileFromDeal(attachmentId: ID!): Boolean!
-  
-  # Share folder with specific permissions
   shareDriveFolder(folderId: String!, permissions: [DrivePermissionInput!]!): Boolean!
-  
-  # Move file to different folder
   moveDriveFile(fileId: String!, newParentId: String!, oldParentId: String): DriveFile!
-  
-  # Copy file to different folder
   copyDriveFile(fileId: String!, newParentId: String!, newName: String): DriveFile!
-  
-  # Delete file from Drive
   deleteDriveFile(fileId: String!): Boolean!
 } 

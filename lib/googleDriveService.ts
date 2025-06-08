@@ -35,6 +35,37 @@ export interface DriveFolder {
   ownedByMe?: boolean;
 }
 
+export interface SharedDrive {
+  id: string;
+  name: string;
+  createdTime: string;
+  capabilities?: {
+    canAddChildren?: boolean;
+    canComment?: boolean;
+    canCopy?: boolean;
+    canDeleteDrive?: boolean;
+    canDownload?: boolean;
+    canEdit?: boolean;
+    canListChildren?: boolean;
+    canManageMembers?: boolean;
+    canReadRevisions?: boolean;
+    canRename?: boolean;
+    canRenameDrive?: boolean;
+    canShare?: boolean;
+  };
+  backgroundImageFile?: {
+    id: string;
+    webViewLink: string;
+  };
+  colorRgb?: string;
+  restrictions?: {
+    adminManagedRestrictions?: boolean;
+    copyRequiresWriterPermission?: boolean;
+    domainUsersOnly?: boolean;
+    driveMembersOnly?: boolean;
+  };
+}
+
 export interface DriveFolderStructure {
   dealFolder: DriveFolder;
   subfolders: {
@@ -383,6 +414,145 @@ class GoogleDriveService {
     
     const response = await drive.files.list({
       q: "trashed = false and mimeType != 'application/vnd.google-apps.folder'",
+      fields: 'files(id,name,mimeType,size,modifiedTime,createdTime,webViewLink,webContentLink,owners,parents,thumbnailLink,iconLink)',
+      orderBy: 'viewedByMeTime desc',
+      pageSize: limit,
+    });
+
+    return response.data.files as DriveFile[];
+  }
+
+  /**
+   * List shared drives the user has access to
+   */
+  async listSharedDrives(accessToken: string): Promise<SharedDrive[]> {
+    const drive = this.getDriveClient(accessToken);
+    
+    const response = await drive.drives.list({
+      fields: 'drives(id,name,createdTime,capabilities,backgroundImageFile,colorRgb,restrictions)',
+      pageSize: 100 // Typically organizations don't have many shared drives
+    });
+
+    return response.data.drives as SharedDrive[];
+  }
+
+  /**
+   * Browse files within a shared drive
+   */
+  async listSharedDriveFiles(
+    accessToken: string,
+    sharedDriveId: string,
+    folderId?: string,
+    query?: string
+  ): Promise<DriveFile[]> {
+    const drive = this.getDriveClient(accessToken);
+    
+    let q = 'trashed = false';
+    
+    if (folderId) {
+      q += ` and '${folderId}' in parents`;
+    } else {
+      // If no folder specified, search in the root of the shared drive
+      q += ` and parents in '${sharedDriveId}'`;
+    }
+    
+    if (query) {
+      q += ` and name contains '${query}'`;
+    }
+
+    const response = await drive.files.list({
+      q,
+      driveId: sharedDriveId,
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      corpora: 'drive',
+      fields: 'files(id,name,mimeType,size,modifiedTime,createdTime,webViewLink,webContentLink,owners,parents,thumbnailLink,iconLink)',
+      orderBy: 'modifiedTime desc',
+      pageSize: 100
+    });
+
+    return response.data.files as DriveFile[];
+  }
+
+  /**
+   * Search files across all shared drives
+   */
+  async searchSharedDriveFiles(
+    accessToken: string,
+    searchQuery: string,
+    sharedDriveId?: string
+  ): Promise<DriveFile[]> {
+    const drive = this.getDriveClient(accessToken);
+    
+    let q = `name contains '${searchQuery}' and trashed = false`;
+    
+    const searchParams: any = {
+      q,
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      fields: 'files(id,name,mimeType,size,modifiedTime,createdTime,webViewLink,webContentLink,owners,parents,thumbnailLink,iconLink)',
+      orderBy: 'relevance',
+      pageSize: 50
+    };
+
+    if (sharedDriveId) {
+      // Search within specific shared drive
+      searchParams.driveId = sharedDriveId;
+      searchParams.corpora = 'drive';
+    } else {
+      // Search across all accessible shared drives
+      searchParams.corpora = 'allDrives';
+    }
+
+    const response = await drive.files.list(searchParams);
+
+    return response.data.files as DriveFile[];
+  }
+
+  /**
+   * Get shared drive folders for browsing
+   */
+  async listSharedDriveFolders(
+    accessToken: string,
+    sharedDriveId: string,
+    parentFolderId?: string
+  ): Promise<DriveFolder[]> {
+    const drive = this.getDriveClient(accessToken);
+    
+    let q = "mimeType='application/vnd.google-apps.folder' and trashed = false";
+    
+    if (parentFolderId) {
+      q += ` and '${parentFolderId}' in parents`;
+    } else {
+      // Root level folders in the shared drive
+      q += ` and parents in '${sharedDriveId}'`;
+    }
+
+    const response = await drive.files.list({
+      q,
+      driveId: sharedDriveId,
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      corpora: 'drive',
+      fields: 'files(id,name,parents,webViewLink,createdTime,modifiedTime,shared,ownedByMe)',
+      orderBy: 'name',
+      pageSize: 100
+    });
+
+    return response.data.files as DriveFolder[];
+  }
+
+  /**
+   * Get recent files from shared drives only
+   */
+  async getRecentSharedDriveFiles(accessToken: string, limit = 20): Promise<DriveFile[]> {
+    const drive = this.getDriveClient(accessToken);
+    
+    const response = await drive.files.list({
+      q: "trashed = false and mimeType != 'application/vnd.google-apps.folder'",
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      corpora: 'allDrives',
       fields: 'files(id,name,mimeType,size,modifiedTime,createdTime,webViewLink,webContentLink,owners,parents,thumbnailLink,iconLink)',
       orderBy: 'viewedByMeTime desc',
       pageSize: limit,

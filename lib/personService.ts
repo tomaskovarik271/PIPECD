@@ -1,6 +1,6 @@
 import { GraphQLError } from 'graphql';
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils';
-import type { Person, PersonInput, CustomFieldValueInput } from './generated/graphql';
+import type { Person, PersonInput } from './generated/graphql';
 import { CustomFieldEntityType } from './generated/graphql';
 import { processCustomFieldsForCreate, processCustomFieldsForUpdate } from './customFieldUtils';
 import type { SupabaseClient } from '@supabase/supabase-js';

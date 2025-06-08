@@ -159,7 +159,7 @@ class DealFolderService {
     }
 
     // Check if folder already exists
-    let folderInfo = await this.getDealFolderInfo(config);
+    const folderInfo = await this.getDealFolderInfo(config);
     if (folderInfo.exists) {
       console.log('Deal folder already exists:', folderInfo.dealFolder?.name);
       return folderInfo;

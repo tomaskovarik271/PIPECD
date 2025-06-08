@@ -531,7 +531,7 @@ export class AgentService {
     conversationHistory: AgentMessage[]
   ): Promise<{ finalResponse: string; allToolResults: string[] }> {
     let currentResponse = initialAssistantResponse;
-    let allToolResults: string[] = [];
+    const allToolResults: string[] = [];
     let remainingTools = [...initialToolCalls];
     let iterationCount = 0;
     const maxIterations = 5; // Prevent infinite loops

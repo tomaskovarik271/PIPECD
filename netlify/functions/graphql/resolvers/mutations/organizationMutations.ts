@@ -3,7 +3,7 @@ import { GraphQLContext, requireAuthentication, getAccessToken, processZodError 
 import { OrganizationInputSchema } from '../../validators';
 import { inngest } from '../../../../../lib/inngestClient';
 import { organizationService } from '../../../../../lib/organizationService';
-import type { MutationResolvers, Organization as GraphQLOrganization } from '../../../../../lib/generated/graphql';
+import type { MutationResolvers } from '../../../../../lib/generated/graphql';
 
 export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'createOrganization' | 'updateOrganization' | 'deleteOrganization'> = {
     createOrganization: async (_parent, args, context) => {

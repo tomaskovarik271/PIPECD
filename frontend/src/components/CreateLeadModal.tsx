@@ -55,13 +55,11 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
     wfmProjectTypeId: '',
   });
   
-  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, any>>({});
+  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use optimized custom fields hook
   const { 
-    loading: customFieldsLoading, 
-    error: customFieldsError,
     getDefinitionsForEntity 
   } = useOptimizedCustomFields({ 
     entityTypes: useMemo(() => ['LEAD' as CustomFieldEntityType], []) 
@@ -109,7 +107,7 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
     }));
   };
 
-  const handleCustomFieldChange = (fieldName: string, value: any) => {
+  const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[]) => {
     setCustomFieldFormValues(prev => ({ ...prev, [fieldName]: value }));
   };
 

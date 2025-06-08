@@ -20,7 +20,7 @@ import {
   Link,
 } from '@chakra-ui/react';
 import { ArrowBackIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
-import { useActivitiesStore, ActivityWithDetails } from '../stores/useActivitiesStore';
+import { useActivitiesStore } from '../stores/useActivitiesStore';
 
 const ActivityDetailPage: React.FC = () => {
   const { activityId } = useParams<{ activityId: string }>();
@@ -32,6 +32,7 @@ const ActivityDetailPage: React.FC = () => {
   } = useActivitiesStore(); 
 
   const toast = useToast();
+  const notesBg = useColorModeValue('gray.50', 'gray.700');
   
   useEffect(() => {
     if (activityId) {
@@ -133,7 +134,7 @@ const ActivityDetailPage: React.FC = () => {
         {notes && (
           <Box>
             <Text fontWeight="bold" mb={1}>Notes:</Text>
-            <Text whiteSpace="pre-wrap" bg={useColorModeValue('gray.50', 'gray.700')} p={3} borderRadius="md">{notes}</Text>
+            <Text whiteSpace="pre-wrap" bg={notesBg} p={3} borderRadius="md">{notes}</Text>
           </Box>
         )}
 

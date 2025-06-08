@@ -179,6 +179,13 @@ PipeCD is a modern, full-stack Customer Relationship Management (CRM) system bui
 - **Supabase Authentication**: Secure user management
 - **Data Isolation**: Multi-tenant architecture
 
+### 🏗️ Standardized Service Architecture
+- **Object-Based Services**: All services follow consistent patterns (85-95% compliance)
+- **Unified Authentication**: Standardized JWT token handling across all services
+- **Consistent Error Handling**: Uniform error processing and logging
+- **Type Safety**: Full TypeScript integration with GraphQL code generation
+- **AI Integration Ready**: Reliable service interfaces for AI tool development
+
 ## 🧠 AI Integration Overview
 
 PipeCD features a revolutionary **Model Context Protocol (MCP)** server that transforms your sales database into an AI reasoning engine. Using Claude Desktop, you can:

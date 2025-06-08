@@ -69,7 +69,7 @@ import { useSmartStickers } from '../../hooks/useSmartStickers';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 
 // Mock entity types for now
-type EntityType = 'DEAL' | 'PERSON' | 'ORGANIZATION';
+type EntityType = 'DEAL' | 'PERSON' | 'ORGANIZATION' | 'LEAD';
 type StickerPriority = 'NORMAL' | 'HIGH' | 'URGENT';
 
 interface StickerBoardProps {

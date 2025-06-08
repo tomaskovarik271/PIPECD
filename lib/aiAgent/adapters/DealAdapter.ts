@@ -5,7 +5,7 @@
  * existing PipeCD dealService interface
  */
 
-import type { Deal, DealInput } from '../../generated/graphql';
+import type { DealInput } from '../../generated/graphql';
 import type { DealServiceUpdateData, DbDeal } from '../../../lib/dealService/dealCrud';
 import type { ToolResult } from '../types/tools';
 import { BaseAdapter } from './BaseAdapter';

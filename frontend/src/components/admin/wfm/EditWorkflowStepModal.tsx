@@ -40,7 +40,7 @@ const EditWorkflowStepModal: React.FC<EditWorkflowStepModalProps> = ({
       const baseMetadata = typeof step.metadata === 'object' && step.metadata !== null ? { ...step.metadata } : {};
 
       // Prepare metadata, always including name and description
-      let metadataUpdate: any = {
+      const metadataUpdate: any = {
         ...baseMetadata,
         name: data.name,
         description: data.description,

@@ -42,7 +42,7 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
-  const [customFieldData, setCustomFieldData] = useState<Record<string, any>>({});
+  const [customFieldData, setCustomFieldData] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   
@@ -86,7 +86,7 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
     }
   }, [isOpen, organizationCustomFieldDefinitions]);
 
-  const handleCustomFieldChange = (fieldName: string, value: any) => {
+  const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[]) => {
     setCustomFieldData(prev => ({ ...prev, [fieldName]: value }));
   };
 

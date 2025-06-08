@@ -5,6 +5,7 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import DealsPage from './pages/DealsPage';
 import LeadsPage from './pages/LeadsPage';
+import LeadDetailPage from './pages/LeadDetailPage';
 import PeoplePage from './pages/PeoplePage';
 import PersonDetailPage from './pages/PersonDetailPage';
 import OrganizationsPage from './pages/OrganizationsPage'; 
@@ -72,6 +73,7 @@ function AppContent() {
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/deals/:dealId" element={<DealDetailPage />} />
             <Route path="/leads" element={<LeadsPage />} />
+            <Route path="/leads/:leadId" element={<LeadDetailPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
             <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
             <Route path="/relationships" element={<RelationshipIntelligencePage />} />

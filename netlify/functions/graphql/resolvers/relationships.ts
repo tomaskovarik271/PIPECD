@@ -1,7 +1,7 @@
 // Relationship Intelligence GraphQL Resolvers
 import { GraphQLError } from 'graphql';
 import { GraphQLContext, requireAuthentication, getAccessToken } from '../helpers';
-import { supabase } from '../../../../lib/supabaseClient';
+import { relationshipService } from '../../../../lib/relationshipService';
 import type {
   QueryResolvers,
   MutationResolvers,
@@ -9,10 +9,9 @@ import type {
   PersonRelationshipResolvers,
   PersonOrganizationalRoleResolvers,
   StakeholderAnalysisResolvers,
-  TerritoryResolvers,
-  RelationshipInsightResolvers,
-  CreateOrganizationRelationshipInput,
-  CreatePersonRelationshipInput,
+
+
+
   CreatePersonOrganizationalRoleInput,
   CreateStakeholderAnalysisInput,
   UpdateStakeholderAnalysisInput,
@@ -23,7 +22,8 @@ import type {
 // Type resolvers for relationship entities
 export const OrganizationRelationship: OrganizationRelationshipResolvers<GraphQLContext> = {
   parentOrg: async (parent, _args, context) => {
-    requireAuthentication(context);
+    const { userId } = requireAuthentication(context);
+    const accessToken = getAccessToken(context);
     const { data, error } = await context.supabaseClient
       .from('organizations')
       .select('*')
@@ -34,7 +34,8 @@ export const OrganizationRelationship: OrganizationRelationshipResolvers<GraphQL
   },
   
   childOrg: async (parent, _args, context) => {
-    requireAuthentication(context);
+    const { userId } = requireAuthentication(context);
+    const accessToken = getAccessToken(context);
     const { data, error } = await context.supabaseClient
       .from('organizations')
       .select('*')
@@ -47,7 +48,7 @@ export const OrganizationRelationship: OrganizationRelationshipResolvers<GraphQL
   createdByUser: async (parent, _args, context) => {
     const userId = (parent as any).created_by_user_id;
     if (!userId) return null;
-    requireAuthentication(context);
+    const { userId: currentUserId } = requireAuthentication(context);
     const { data, error } = await context.supabaseClient
       .from('user_profiles')
       .select('*')
@@ -239,62 +240,30 @@ export const relationshipQueries: Pick<QueryResolvers<GraphQLContext>,
   
   organizationRelationships: async (_parent, { organizationId }, context) => {
     const { userId } = requireAuthentication(context);
-    const { data, error } = await context.supabaseClient
-      .from('organization_relationships')
-      .select('*')
-      .or(`parent_org_id.eq.${organizationId},child_org_id.eq.${organizationId}`);
-    
-    if (error) throw new GraphQLError(`Failed to fetch organization relationships: ${error.message}`);
-    return data || [];
+    const accessToken = getAccessToken(context);
+    if (!accessToken) throw new GraphQLError('Authentication token required');
+    return await relationshipService.getOrganizationRelationships(userId, organizationId, accessToken);
   },
   
   personRelationships: async (_parent, { personId }, context) => {
     const { userId } = requireAuthentication(context);
-    const { data, error } = await context.supabaseClient
-      .from('person_relationships')
-      .select('*')
-      .or(`from_person_id.eq.${personId},to_person_id.eq.${personId}`);
-    
-    if (error) throw new GraphQLError(`Failed to fetch person relationships: ${error.message}`);
-    return data || [];
+    const accessToken = getAccessToken(context);
+    if (!accessToken) throw new GraphQLError('Authentication token required');
+    return await relationshipService.getPersonRelationships(userId, personId, accessToken);
   },
   
   organizationPersonRelationships: async (_parent, { organizationId }, context) => {
     const { userId } = requireAuthentication(context);
-    
-    // First get all people in the organization
-    const { data: roles, error: rolesError } = await context.supabaseClient
-      .from('person_organizational_roles')
-      .select('person_id')
-      .eq('organization_id', organizationId)
-      .is('end_date', null);
-    
-    if (rolesError) throw new GraphQLError(`Failed to fetch organization roles: ${rolesError.message}`);
-    
-    const personIds = roles?.map(role => role.person_id) || [];
-    if (personIds.length === 0) return [];
-    
-    // Get relationships between these people
-    const { data, error } = await context.supabaseClient
-      .from('person_relationships')
-      .select('*')
-      .or(`from_person_id.in.(${personIds.join(',')}),to_person_id.in.(${personIds.join(',')})`);
-    
-    if (error) throw new GraphQLError(`Failed to fetch organization person relationships: ${error.message}`);
-    return data || [];
+    const accessToken = getAccessToken(context);
+    if (!accessToken) throw new GraphQLError('Authentication token required');
+    return await relationshipService.getOrganizationPersonRelationships(userId, organizationId, accessToken);
   },
   
   personOrganizationalRoles: async (_parent, { personId }, context) => {
     const { userId } = requireAuthentication(context);
-    let query = context.supabaseClient.from('person_organizational_roles').select('*');
-    
-    if (personId) {
-      query = query.eq('person_id', personId);
-    }
-    
-    const { data, error } = await query;
-    if (error) throw new GraphQLError(`Failed to fetch organizational roles: ${error.message}`);
-    return data || [];
+    const accessToken = getAccessToken(context);
+    if (!accessToken) throw new GraphQLError('Authentication token required');
+    return await relationshipService.getPersonOrganizationalRoles(userId, accessToken, personId || undefined);
   },
   
   organizationRoles: async (_parent, { organizationId, includeInactive }, context) => {
@@ -329,26 +298,16 @@ export const relationshipQueries: Pick<QueryResolvers<GraphQLContext>,
   
   stakeholderAnalyses: async (_parent, { organizationId, dealId, leadId }, context) => {
     const { userId } = requireAuthentication(context);
-    let query = context.supabaseClient.from('stakeholder_analysis').select('*');
+    const accessToken = getAccessToken(context);
+    if (!accessToken) throw new GraphQLError('Authentication token required');
     
-    if (organizationId) query = query.eq('organization_id', organizationId);
-    if (dealId) query = query.eq('deal_id', dealId);
-    if (leadId) query = query.eq('lead_id', leadId);
-    
-    const { data, error } = await query;
-    if (error) throw new GraphQLError(`Failed to fetch stakeholder analyses: ${error.message}`);
-    
-    // Transform field names and enum values
-    return (data || []).map(stakeholder => ({
-      ...stakeholder,
-      influenceScore: stakeholder.influence_score,
-      decisionAuthority: stakeholder.decision_authority ? transformDecisionAuthority(stakeholder.decision_authority) : null,
-      engagementLevel: stakeholder.engagement_level ? transformEngagementLevel(stakeholder.engagement_level) : null,
-      approachStrategy: stakeholder.approach_strategy,
-      nextBestAction: stakeholder.next_best_action,
-      aiPersonalityProfile: stakeholder.ai_personality_profile,
-      aiCommunicationStyle: stakeholder.ai_communication_style
-    }));
+    return await relationshipService.getStakeholderAnalyses(
+      userId, 
+      accessToken,
+      organizationId || undefined, 
+      dealId || undefined, 
+      leadId || undefined
+    ) as any;
   },
   
   stakeholderAnalysis: async (_parent, { id }, context) => {
@@ -535,47 +494,18 @@ export const relationshipMutations: Pick<MutationResolvers<GraphQLContext>,
   
   createOrganizationRelationship: async (_parent, { input }, context) => {
     const { userId } = requireAuthentication(context);
+    const accessToken = getAccessToken(context);
+    if (!accessToken) throw new GraphQLError('Authentication token required');
     
-    const { data, error } = await context.supabaseClient
-      .from('organization_relationships')
-      .insert({
-        parent_org_id: input.parentOrgId,
-        child_org_id: input.childOrgId,
-        relationship_type: input.relationshipType,
-        ownership_percentage: input.ownershipPercentage,
-        relationship_strength: input.relationshipStrength,
-        start_date: input.startDate,
-        notes: input.notes,
-        created_by_user_id: userId
-      })
-      .select()
-      .single();
-    
-    if (error) throw new GraphQLError(`Failed to create organization relationship: ${error.message}`);
-    return data;
+    return await relationshipService.createOrganizationRelationship(userId, input, accessToken);
   },
   
   createPersonRelationship: async (_parent, { input }, context) => {
     const { userId } = requireAuthentication(context);
+    const accessToken = getAccessToken(context);
+    if (!accessToken) throw new GraphQLError('Authentication token required');
     
-    const { data, error } = await context.supabaseClient
-      .from('person_relationships')
-      .insert({
-        from_person_id: input.fromPersonId,
-        to_person_id: input.toPersonId,
-        relationship_type: input.relationshipType,
-        relationship_strength: input.relationshipStrength,
-        is_bidirectional: input.isBidirectional || false,
-        interaction_frequency: input.interactionFrequency,
-        relationship_context: input.relationshipContext,
-        notes: input.notes,
-        created_by_user_id: userId
-      })
-      .select()
-      .single();
-    
-    if (error) throw new GraphQLError(`Failed to create person relationship: ${error.message}`);
-    return data;
+    return await relationshipService.createPersonRelationship(userId, input, accessToken);
   },
   
   createPersonOrganizationalRole: async (_parent, { input }, context) => {

@@ -104,7 +104,7 @@ export class OrganizationAdapter extends BaseAdapter {
       },
     };
 
-    let filtered = this.applyFilters(organizations, params, filterMappings);
+    const filtered = this.applyFilters(organizations, params, filterMappings);
 
     // Sort by updated_at desc and limit
     filtered.sort((a: Organization, b: Organization) => 

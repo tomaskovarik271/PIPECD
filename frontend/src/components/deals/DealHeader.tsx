@@ -162,7 +162,7 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing, setIsEd
     
     // Create a simplified view showing the actual current step
     const steps = [];
-    let currentIndex = 1; // Middle position
+    const currentIndex = 1; // Middle position
     
     if (stepOrder > 1) {
       steps.push('Previous Steps');

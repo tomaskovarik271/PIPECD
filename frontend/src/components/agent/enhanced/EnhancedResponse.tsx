@@ -7,7 +7,6 @@ import React from 'react';
 import {
   Box,
   VStack,
-  HStack,
   Text,
   Divider,
   Wrap,
@@ -29,6 +28,8 @@ export const EnhancedResponse: React.FC<ResponseEnhancementProps> = ({
   const dividerColor = useColorModeValue('gray.200', 'gray.600');
   const sectionBg = useColorModeValue('gray.50', 'gray.700');
   const labelColor = useColorModeValue('gray.600', 'gray.400');
+  const codeBg = useColorModeValue('gray.100', 'gray.700');
+  const blockquoteBg = useColorModeValue('blue.50', 'blue.900');
 
   // Parse the response for enhancements
   const enhancementData = ResponseParser.parseResponse(content, thoughts);
@@ -110,7 +111,7 @@ export const EnhancedResponse: React.FC<ResponseEnhancementProps> = ({
             code: ({ children }) => (
               <Text
                 as="code"
-                bg={useColorModeValue('gray.100', 'gray.700')}
+                bg={codeBg}
                 px={1}
                 borderRadius="sm"
                 fontFamily="mono"
@@ -125,7 +126,7 @@ export const EnhancedResponse: React.FC<ResponseEnhancementProps> = ({
                 borderColor="blue.300"
                 pl={4}
                 py={2}
-                bg={useColorModeValue('blue.50', 'blue.900')}
+                bg={blockquoteBg}
                 borderRadius="md"
                 mb={2}
               >

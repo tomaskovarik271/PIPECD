@@ -106,7 +106,7 @@ class EmailService {
       const gmail = await this.getGmailClient(userId, accessToken);
 
       // Build query string for Gmail API
-      let queryParts: string[] = [];
+      const queryParts: string[] = [];
       
       if (filter.contactEmail) {
         queryParts.push(`(from:${filter.contactEmail} OR to:${filter.contactEmail})`);

@@ -5,6 +5,7 @@ enum EntityType {
   DEAL
   PERSON
   ORGANIZATION
+  LEAD
 }
 
 enum StickerPriority {

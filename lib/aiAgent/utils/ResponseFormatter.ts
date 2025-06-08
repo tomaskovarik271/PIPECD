@@ -12,7 +12,6 @@ import type {
   ActivityData,
   CustomFieldDefinitionData,
   CustomFieldValueData,
-  UserData,
 } from '../types/tools';
 
 export class ResponseFormatter {

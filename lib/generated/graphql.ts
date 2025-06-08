@@ -190,6 +190,18 @@ export enum AgentThoughtType {
   ToolCall = "TOOL_CALL",
 }
 
+export type AppSetting = {
+  __typename?: "AppSetting";
+  createdAt: Scalars["String"]["output"];
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isPublic: Scalars["Boolean"]["output"];
+  settingKey: Scalars["String"]["output"];
+  settingType: Scalars["String"]["output"];
+  settingValue?: Maybe<Scalars["JSON"]["output"]>;
+  updatedAt: Scalars["String"]["output"];
+};
+
 export type AttachFileInput = {
   category?: InputMaybe<DocumentCategory>;
   dealId: Scalars["ID"]["input"];
@@ -534,6 +546,13 @@ export type DealDocumentAttachment = {
   id: Scalars["ID"]["output"];
 };
 
+export type DealFolderInfo = {
+  __typename?: "DealFolderInfo";
+  dealFolder?: Maybe<DriveFolder>;
+  exists: Scalars["Boolean"]["output"];
+  subfolders?: Maybe<DealSubfolders>;
+};
+
 export type DealHistoryEntry = {
   __typename?: "DealHistoryEntry";
   changes?: Maybe<Scalars["JSON"]["output"]>;
@@ -553,6 +572,18 @@ export type DealInput = {
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   wfmProjectTypeId: Scalars["ID"]["input"];
+};
+
+export type DealSubfolders = {
+  __typename?: "DealSubfolders";
+  contracts?: Maybe<DriveFolder>;
+  correspondence?: Maybe<DriveFolder>;
+  financial?: Maybe<DriveFolder>;
+  legal?: Maybe<DriveFolder>;
+  other?: Maybe<DriveFolder>;
+  presentations?: Maybe<DriveFolder>;
+  proposals?: Maybe<DriveFolder>;
+  technical?: Maybe<DriveFolder>;
 };
 
 export type DealUpdateInput = {
@@ -840,6 +871,14 @@ export enum EntityType {
   Person = "PERSON",
 }
 
+/** Google Drive specific configuration */
+export type GoogleDriveConfig = {
+  __typename?: "GoogleDriveConfig";
+  auto_create_deal_folders: Scalars["Boolean"]["output"];
+  deal_folder_template: Scalars["Boolean"]["output"];
+  pipecd_deals_folder_id?: Maybe<Scalars["String"]["output"]>;
+};
+
 export type GoogleIntegrationStatus = {
   __typename?: "GoogleIntegrationStatus";
   hasDriveAccess: Scalars["Boolean"]["output"];
@@ -1107,6 +1146,8 @@ export type Mutation = {
   toggleStickerPin: SmartSticker;
   updateActivity: Activity;
   updateAgentConversation: AgentConversation;
+  /** Update an app setting (admin only) */
+  updateAppSetting: AppSetting;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateDealWFMProgress: Deal;
@@ -1403,6 +1444,10 @@ export type MutationUpdateAgentConversationArgs = {
   input: UpdateConversationInput;
 };
 
+export type MutationUpdateAppSettingArgs = {
+  input: UpdateAppSettingInput;
+};
+
 export type MutationUpdateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
   input: CustomFieldDefinitionInput;
@@ -1682,9 +1727,17 @@ export type Query = {
   agentConversations: Array<AgentConversation>;
   agentThoughts: Array<AgentThought>;
   analyzeStakeholderNetwork: StakeholderNetworkAnalysis;
+  /** Get a specific app setting by key */
+  appSetting?: Maybe<AppSetting>;
+  /** Get all app settings (admin only for private settings) */
+  appSettings: Array<AppSetting>;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
+  /** Get files in the deal folder or specific subfolder */
+  dealFolderFiles: Array<DriveFile>;
+  /** Get deal folder information, auto-creating if needed */
+  dealFolderInfo: DealFolderInfo;
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   findMissingStakeholders: MissingStakeholderRecommendations;
@@ -1705,6 +1758,8 @@ export type Query = {
   getSticker?: Maybe<SmartSticker>;
   getStickerCategories: Array<StickerCategory>;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
+  /** Get Google Drive configuration settings */
+  googleDriveSettings: GoogleDriveConfig;
   googleIntegrationStatus: GoogleIntegrationStatus;
   health: Scalars["String"]["output"];
   lead?: Maybe<Lead>;
@@ -1775,6 +1830,10 @@ export type QueryAnalyzeStakeholderNetworkArgs = {
   organizationId: Scalars["ID"]["input"];
 };
 
+export type QueryAppSettingArgs = {
+  settingKey: Scalars["String"]["input"];
+};
+
 export type QueryCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1786,6 +1845,15 @@ export type QueryCustomFieldDefinitionsArgs = {
 
 export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryDealFolderFilesArgs = {
+  dealId: Scalars["ID"]["input"];
+  folderId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryDealFolderInfoArgs = {
+  dealId: Scalars["ID"]["input"];
 };
 
 export type QueryFindMissingStakeholdersArgs = {
@@ -2232,6 +2300,11 @@ export type UpdateActivityInput = {
   type?: InputMaybe<ActivityType>;
 };
 
+export type UpdateAppSettingInput = {
+  settingKey: Scalars["String"]["input"];
+  settingValue: Scalars["JSON"]["input"];
+};
+
 export type UpdateConversationInput = {
   context?: InputMaybe<Scalars["JSON"]["input"]>;
   conversationId: Scalars["ID"]["input"];
@@ -2568,6 +2641,7 @@ export type ResolversTypes = {
   AgentThought: ResolverTypeWrapper<AgentThought>;
   AgentThoughtInput: AgentThoughtInput;
   AgentThoughtType: AgentThoughtType;
+  AppSetting: ResolverTypeWrapper<AppSetting>;
   AttachFileInput: AttachFileInput;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
   BudgetAuthorityLevel: BudgetAuthorityLevel;
@@ -2602,8 +2676,10 @@ export type ResolversTypes = {
   DateTime: ResolverTypeWrapper<Scalars["DateTime"]["output"]>;
   Deal: ResolverTypeWrapper<Deal>;
   DealDocumentAttachment: ResolverTypeWrapper<DealDocumentAttachment>;
+  DealFolderInfo: ResolverTypeWrapper<DealFolderInfo>;
   DealHistoryEntry: ResolverTypeWrapper<DealHistoryEntry>;
   DealInput: DealInput;
+  DealSubfolders: ResolverTypeWrapper<DealSubfolders>;
   DealUpdateInput: DealUpdateInput;
   DecisionAuthority: DecisionAuthority;
   Document: ResolverTypeWrapper<Document>;
@@ -2634,6 +2710,7 @@ export type ResolversTypes = {
   EngagementLevel: EngagementLevel;
   EntityType: EntityType;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
+  GoogleDriveConfig: ResolverTypeWrapper<GoogleDriveConfig>;
   GoogleIntegrationStatus: ResolverTypeWrapper<GoogleIntegrationStatus>;
   GoogleTokenData: ResolverTypeWrapper<GoogleTokenData>;
   GoogleTokenInput: GoogleTokenInput;
@@ -2690,6 +2767,7 @@ export type ResolversTypes = {
   ThinkingBudget: ThinkingBudget;
   ToolDiscoveryResponse: ResolverTypeWrapper<ToolDiscoveryResponse>;
   UpdateActivityInput: UpdateActivityInput;
+  UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateConversationInput: UpdateConversationInput;
   UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
@@ -2728,6 +2806,7 @@ export type ResolversParentTypes = {
   AgentResponse: AgentResponse;
   AgentThought: AgentThought;
   AgentThoughtInput: AgentThoughtInput;
+  AppSetting: AppSetting;
   AttachFileInput: AttachFileInput;
   Boolean: Scalars["Boolean"]["output"];
   ComposeEmailInput: ComposeEmailInput;
@@ -2758,8 +2837,10 @@ export type ResolversParentTypes = {
   DateTime: Scalars["DateTime"]["output"];
   Deal: Deal;
   DealDocumentAttachment: DealDocumentAttachment;
+  DealFolderInfo: DealFolderInfo;
   DealHistoryEntry: DealHistoryEntry;
   DealInput: DealInput;
+  DealSubfolders: DealSubfolders;
   DealUpdateInput: DealUpdateInput;
   Document: Document;
   DriveFile: DriveFile;
@@ -2782,6 +2863,7 @@ export type ResolversParentTypes = {
   EmailThreadConnection: EmailThreadConnection;
   EmailThreadsFilterInput: EmailThreadsFilterInput;
   Float: Scalars["Float"]["output"];
+  GoogleDriveConfig: GoogleDriveConfig;
   GoogleIntegrationStatus: GoogleIntegrationStatus;
   GoogleTokenData: GoogleTokenData;
   GoogleTokenInput: GoogleTokenInput;
@@ -2824,6 +2906,7 @@ export type ResolversParentTypes = {
   Territory: Territory;
   ToolDiscoveryResponse: ToolDiscoveryResponse;
   UpdateActivityInput: UpdateActivityInput;
+  UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateConversationInput: UpdateConversationInput;
   UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
@@ -3049,6 +3132,30 @@ export type AgentThoughtResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type AppSettingResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AppSetting"] = ResolversParentTypes["AppSetting"],
+> = {
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isPublic?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  settingKey?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  settingType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  settingValue?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type ConvertedEntitiesResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -3257,6 +3364,25 @@ export type DealDocumentAttachmentResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type DealFolderInfoResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DealFolderInfo"] = ResolversParentTypes["DealFolderInfo"],
+> = {
+  dealFolder?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  exists?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  subfolders?: Resolver<
+    Maybe<ResolversTypes["DealSubfolders"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type DealHistoryEntryResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -3267,6 +3393,54 @@ export type DealHistoryEntryResolvers<
   eventType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DealSubfoldersResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DealSubfolders"] = ResolversParentTypes["DealSubfolders"],
+> = {
+  contracts?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  correspondence?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  financial?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  legal?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  other?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  presentations?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  proposals?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
+  technical?: Resolver<
+    Maybe<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3668,6 +3842,29 @@ export type EmailThreadConnectionResolvers<
     ContextType
   >;
   totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type GoogleDriveConfigResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GoogleDriveConfig"] = ResolversParentTypes["GoogleDriveConfig"],
+> = {
+  auto_create_deal_folders?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  deal_folder_template?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  pipecd_deals_folder_id?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4369,6 +4566,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateAgentConversationArgs, "input">
   >;
+  updateAppSetting?: Resolver<
+    ResolversTypes["AppSetting"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateAppSettingArgs, "input">
+  >;
   updateCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
     ParentType,
@@ -4802,6 +5005,17 @@ export type QueryResolvers<
       "includeInactiveRoles" | "organizationId"
     >
   >;
+  appSetting?: Resolver<
+    Maybe<ResolversTypes["AppSetting"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryAppSettingArgs, "settingKey">
+  >;
+  appSettings?: Resolver<
+    Array<ResolversTypes["AppSetting"]>,
+    ParentType,
+    ContextType
+  >;
   customFieldDefinition?: Resolver<
     Maybe<ResolversTypes["CustomFieldDefinition"]>,
     ParentType,
@@ -4822,6 +5036,18 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryDealArgs, "id">
+  >;
+  dealFolderFiles?: Resolver<
+    Array<ResolversTypes["DriveFile"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryDealFolderFilesArgs, "dealId">
+  >;
+  dealFolderInfo?: Resolver<
+    ResolversTypes["DealFolderInfo"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryDealFolderInfoArgs, "dealId">
   >;
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
   discoverAgentTools?: Resolver<
@@ -4941,6 +5167,11 @@ export type QueryResolvers<
       QueryGetWfmAllowedTransitionsArgs,
       "fromStepId" | "workflowId"
     >
+  >;
+  googleDriveSettings?: Resolver<
+    ResolversTypes["GoogleDriveConfig"],
+    ParentType,
+    ContextType
   >;
   googleIntegrationStatus?: Resolver<
     ResolversTypes["GoogleIntegrationStatus"],
@@ -5759,6 +5990,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   AgentPlanStep?: AgentPlanStepResolvers<ContextType>;
   AgentResponse?: AgentResponseResolvers<ContextType>;
   AgentThought?: AgentThoughtResolvers<ContextType>;
+  AppSetting?: AppSettingResolvers<ContextType>;
   ConvertedEntities?: ConvertedEntitiesResolvers<ContextType>;
   CustomFieldDefinition?: CustomFieldDefinitionResolvers<ContextType>;
   CustomFieldOption?: CustomFieldOptionResolvers<ContextType>;
@@ -5766,7 +5998,9 @@ export type Resolvers<ContextType = GraphQLContext> = {
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
   DealDocumentAttachment?: DealDocumentAttachmentResolvers<ContextType>;
+  DealFolderInfo?: DealFolderInfoResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
+  DealSubfolders?: DealSubfoldersResolvers<ContextType>;
   Document?: DocumentResolvers<ContextType>;
   DriveFile?: DriveFileResolvers<ContextType>;
   DriveFileConnection?: DriveFileConnectionResolvers<ContextType>;
@@ -5782,6 +6016,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   EmailMessage?: EmailMessageResolvers<ContextType>;
   EmailThread?: EmailThreadResolvers<ContextType>;
   EmailThreadConnection?: EmailThreadConnectionResolvers<ContextType>;
+  GoogleDriveConfig?: GoogleDriveConfigResolvers<ContextType>;
   GoogleIntegrationStatus?: GoogleIntegrationStatusResolvers<ContextType>;
   GoogleTokenData?: GoogleTokenDataResolvers<ContextType>;
   JSON?: GraphQLScalarType;

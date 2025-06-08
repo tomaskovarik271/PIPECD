@@ -4,7 +4,7 @@
 -- Create sticker_categories table for organizing different types of stickers
 CREATE TABLE sticker_categories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
+    name TEXT NOT NULL, -- Category name will have unique constraint added in cleanup migration
     color TEXT NOT NULL, -- Hex color code for the sticker
     icon TEXT, -- Icon name from icon library
     description TEXT,
@@ -19,7 +19,7 @@ CREATE TABLE smart_stickers (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
     -- Entity relationship (polymorphic)
-    entity_type TEXT NOT NULL CHECK (entity_type IN ('DEAL', 'PERSON', 'ORGANIZATION')),
+    entity_type TEXT NOT NULL CHECK (entity_type IN ('DEAL', 'PERSON', 'ORGANIZATION', 'LEAD')),
     entity_id UUID NOT NULL,
     
     -- Sticker content
@@ -106,6 +106,9 @@ CREATE POLICY "Users can view stickers for their entities" ON smart_stickers
             WHEN 'ORGANIZATION' THEN EXISTS (
                 SELECT 1 FROM organizations o WHERE o.id = entity_id AND o.user_id = auth.uid()
             )
+            WHEN 'LEAD' THEN EXISTS (
+                SELECT 1 FROM leads l WHERE l.id = entity_id AND l.user_id = auth.uid()
+            )
         END
     );
 
@@ -121,6 +124,9 @@ CREATE POLICY "Users can create stickers for their entities" ON smart_stickers
             )
             WHEN 'ORGANIZATION' THEN EXISTS (
                 SELECT 1 FROM organizations o WHERE o.id = entity_id AND o.user_id = auth.uid()
+            )
+            WHEN 'LEAD' THEN EXISTS (
+                SELECT 1 FROM leads l WHERE l.id = entity_id AND l.user_id = auth.uid()
             )
         END
     );

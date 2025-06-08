@@ -5,11 +5,8 @@ import {
   ActivityFilterInputSchema
 } from '../validators';
 import { 
-    createActivity as createActivityService,
-    getActivities as getActivitiesService,
-    getActivityById as getActivityByIdService,
-    updateActivity as updateActivityService,
-    deleteActivity as deleteActivityService 
+    activityService,
+    type ActivityFilter
 } from '../../../../lib/activityService';
 import { inngest } from '../../../../lib/inngestClient';
 
@@ -24,14 +21,7 @@ import type {
     ActivityResolvers,
     QueryResolvers,
     MutationResolvers,
-    Activity as GraphQLActivity,
-    Deal as GraphQLDeal,
-    Person as GraphQLPerson,
-    Organization as GraphQLOrganization,
-    User as GraphQLUser,
-    CreateActivityInput as GraphQLCreateActivityInput,
-    UpdateActivityInput as GraphQLUpdateActivityInput,
-    ActivityType as GraphQLActivityType
+    User as GraphQLUser
 } from '../../../../lib/generated/graphql';
 import { GraphQLError } from 'graphql';
 
@@ -62,7 +52,7 @@ export const Activity: ActivityResolvers<GraphQLContext> = {
         if (!userId) {
             throw new GraphQLError('User ID not found in context for deal resolver');
         }
-        return dealService.getDealById(parent.deal_id, userId, accessToken);
+        return dealService.getDealById(parent.deal_id, userId, accessToken) as any;
     },
     person: async (parent, _args, context) => {
         if (!parent.person_id) return null;
@@ -98,11 +88,11 @@ export const Query: QueryResolvers<GraphQLContext> = {
     activities: async (_parent, { filter }, context) => {
         const { userId, accessToken } = requireAuthentication(context);
         const validatedFilter = filter ? ActivityFilterInputSchema.parse(filter) : undefined;
-        return getActivitiesService(userId, accessToken, validatedFilter);
+        return activityService.getActivities(userId, accessToken, validatedFilter);
     },
     activity: async (_parent, { id }, context) => {
         const { userId, accessToken } = requireAuthentication(context);
-        return getActivityByIdService(userId, id, accessToken);
+        return activityService.getActivityById(userId, id, accessToken);
     },
 };
 
@@ -110,7 +100,7 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
     createActivity: async (_parent, { input }, context) => {
         const { userId, accessToken } = requireAuthentication(context);
         const validatedInput = CreateActivityInputSchema.parse(input);
-        const createdActivity = await createActivityService(userId, validatedInput, accessToken);
+        const createdActivity = await activityService.createActivity(userId, validatedInput, accessToken);
         
         try {
             await inngest.send({
@@ -133,11 +123,11 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
     updateActivity: async (_parent, { id, input }, context) => {
         const { userId, accessToken } = requireAuthentication(context);
         const validatedInput = UpdateActivityInputSchema.parse(input);
-        return updateActivityService(userId, id, validatedInput, accessToken);
+        return activityService.updateActivity(userId, id, validatedInput, accessToken);
     },
     deleteActivity: async (_parent, { id }, context) => {
         const { userId, accessToken } = requireAuthentication(context);
-        const result = await deleteActivityService(userId, id, accessToken);
+        const result = await activityService.deleteActivity(userId, id, accessToken);
         return result.id;
     },
 }; 

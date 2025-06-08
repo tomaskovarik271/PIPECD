@@ -3,7 +3,11 @@ import { /* createClient, SupabaseClient, */ } from '@supabase/supabase-js';
 // import type { User } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils'; // Import shared helpers
-import type { Organization, OrganizationInput, CustomFieldValueInput, CustomFieldDefinition } from './generated/graphql'; // Added CustomFieldValueInput, CustomFieldDefinition
+import type { 
+  Organization, 
+  OrganizationInput, 
+  CustomFieldValueInput
+} from './generated/graphql';
 import { CustomFieldEntityType, CustomFieldType } from './generated/graphql'; // Import enums
 import * as customFieldDefinitionService from './customFieldDefinitionService'; // For fetching definitions
 import { SupabaseClient } from '@supabase/supabase-js'; // Ensure SupabaseClient is imported for type hints

@@ -3,7 +3,7 @@ import { GraphQLContext, requireAuthentication, getAccessToken, processZodError 
 import { PersonCreateSchema, PersonUpdateSchema } from '../../validators'; // Adjusted path
 import { inngest } from '../../../../../lib/inngestClient'; // Adjusted path
 import { personService } from '../../../../../lib/personService'; // Adjusted path
-import type { MutationResolvers, Person as GraphQLPerson } from '../../../../../lib/generated/graphql'; // Adjusted path
+import type { MutationResolvers } from '../../../../../lib/generated/graphql'; // Adjusted path
 
 export const personMutations: Pick<MutationResolvers<GraphQLContext>, 'createPerson' | 'updatePerson' | 'deletePerson'> = {
     createPerson: async (_parent, args, context) => {

@@ -3,7 +3,7 @@ import { GraphQLError, GraphQLResolveInfo } from 'graphql';
 import { GraphQLContext, requireAuthentication, getAccessToken } from '../helpers';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
-import * as activityService from '../../../../lib/activityService';
+import { activityService } from '../../../../lib/activityService';
 import type {
     DealResolvers,
     Person,

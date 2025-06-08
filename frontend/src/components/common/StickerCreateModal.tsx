@@ -55,10 +55,24 @@ interface StickerCategory {
   icon?: string;
 }
 
+interface StickerFormData {
+  title: string;
+  content: string;
+  categoryId: string;
+  color: string;
+  isPinned: boolean;
+  isPrivate: boolean;
+  priority: 'NORMAL' | 'HIGH' | 'URGENT';
+  tags: string[];
+  mentions: string[];
+  entityType: string;
+  entityId: string;
+}
+
 interface StickerCreateModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: StickerFormData) => void;
   entityType: string;
   entityId: string;
   categories?: StickerCategory[];
@@ -233,7 +247,6 @@ export const StickerCreateModal: React.FC<StickerCreateModalProps> = ({
                   placeholder="Enter sticker title..."
                   {...styles.input}
                   size="lg"
-                  autoFocus
                 />
                 <FormHelperText color={colors.text.muted}>
                   Give your sticker a clear, descriptive title
@@ -281,7 +294,7 @@ export const StickerCreateModal: React.FC<StickerCreateModalProps> = ({
                   {selectedCategory && (
                     <Box mt={2}>
                       <Badge
-                        colorScheme={selectedCategory.color as any}
+                        colorScheme={selectedCategory.color as 'gray' | 'red' | 'orange' | 'yellow' | 'green' | 'teal' | 'blue' | 'cyan' | 'purple' | 'pink'}
                         variant="subtle"
                         px={3}
                         py={1}
@@ -357,7 +370,7 @@ export const StickerCreateModal: React.FC<StickerCreateModalProps> = ({
                 </FormLabel>
                 <RadioGroup
                   value={formData.priority}
-                  onChange={(value) => setFormData(prev => ({ ...prev, priority: value as any }))}
+                  onChange={(value) => setFormData(prev => ({ ...prev, priority: value as 'NORMAL' | 'HIGH' | 'URGENT' }))}
                 >
                   <HStack spacing={6}>
                     <Radio value="NORMAL" colorScheme="blue">

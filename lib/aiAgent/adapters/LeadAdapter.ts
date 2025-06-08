@@ -81,7 +81,7 @@ export class LeadAdapter extends BaseAdapter {
   /**
    * Helper to compute qualification status from WFM metadata (following GraphQL resolver pattern)
    */
-  private static computeQualificationFromWFM(lead: any): boolean {
+  private static computeQualificationFromWFM(_lead: any): boolean {
     // This is a simplified version - in practice, we'd need access to the WFM project data
     // For now, we'll default to false since we can't access the WFM metadata here
     // The AI tools should use GraphQL queries to get properly computed qualification status

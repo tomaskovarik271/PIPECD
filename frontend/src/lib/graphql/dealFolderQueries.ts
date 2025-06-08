@@ -15,7 +15,7 @@ export const GET_DEAL_FOLDER_INFO = gql`
 `;
 
 export const GET_DEAL_FOLDER_FILES = gql`
-  query GetDealFolderFiles($dealId: ID!, $folderId: ID) {
+  query GetDealFolderFiles($dealId: ID!, $folderId: String) {
     getDriveFiles(input: { folderId: $folderId, limit: 50 }) {
       files {
         id
