@@ -388,7 +388,7 @@ export const semanticTokens: ThemeSemanticTokens = {
       table: {
         header: {
           modern: '#2A2D3A',
-          lightModern: '#4a5568',  // NEW: Readable header text
+          lightModern: '#f8fafc',  // FIXED: Light background for table headers
           industrialMetal: 'neutral.800',
           _default: '#f7fafc'
         },

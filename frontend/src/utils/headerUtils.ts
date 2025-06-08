@@ -28,7 +28,7 @@ export const usePageLayoutStyles = (hasStatistics: boolean = false) => {
       pt: dimensions.paddingTop,
       px: dimensions.paddingX,
       pb: 6,
-      bg: colors.bg.content,
+      bg: colors.bg.app,
       color: colors.text.primary,
       minH: '100vh',
     },
