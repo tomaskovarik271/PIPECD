@@ -142,7 +142,20 @@ export const sharedDriveQueries = {
         .eq('deal_id', args.dealId)
         .order('attached_at', { ascending: false });
 
-      return data || [];
+      // Transform the response to match GraphQL schema (snake_case to camelCase)
+      return (data || []).map((attachment: any) => ({
+        id: attachment.id,
+        dealId: attachment.deal_id,
+        googleFileId: attachment.google_file_id,
+        fileName: attachment.file_name,
+        fileUrl: attachment.file_url,
+        sharedDriveId: attachment.shared_drive_id,
+        category: attachment.category?.toUpperCase(),
+        attachedAt: attachment.attached_at,
+        attachedBy: attachment.attached_by,
+        mimeType: attachment.mime_type,
+        fileSize: attachment.file_size,
+      }));
     } catch (error) {
       console.error('Error fetching deal document attachments:', error);
       throw new Error('Failed to fetch deal document attachments');

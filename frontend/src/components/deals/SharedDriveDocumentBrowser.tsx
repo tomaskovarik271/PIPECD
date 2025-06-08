@@ -307,7 +307,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
           fileName: selectedFile.name,
           fileUrl: selectedFile.webViewLink || '',
           sharedDriveId: selectedDrive?.id,
-          category: attachCategory,
+          category: attachCategory.toUpperCase(),
           mimeType: selectedFile.mimeType,
           fileSize: selectedFile.size,
         },
@@ -476,8 +476,8 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
                   </Text>
                   <HStack spacing={4} fontSize="xs" color={colors.text.muted}>
                     {attachment.category && (
-                      <Badge colorScheme={getCategoryColor(attachment.category)} size="sm">
-                        {DOCUMENT_CATEGORIES.find(c => c.value === attachment.category)?.label || attachment.category}
+                      <Badge colorScheme={getCategoryColor(attachment.category.toLowerCase())} size="sm">
+                        {DOCUMENT_CATEGORIES.find(c => c.value === attachment.category.toLowerCase())?.label || attachment.category}
                       </Badge>
                     )}
                     <Text>{formatDate(attachment.attachedAt)}</Text>
