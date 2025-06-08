@@ -46,7 +46,7 @@ const NAV_ITEMS = [
 
 const ADMIN_NAV_ITEMS = [
   { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon />, permission: 'custom_fields:manage_definitions' },
-  { path: '/admin/google-drive', label: 'Google Drive Settings', icon: <SettingsIcon />, permission: null }, // Allow any admin user to see Google Drive settings
+  // { path: '/admin/google-drive', label: 'Google Drive Settings', icon: <SettingsIcon />, permission: null }, // HIDDEN: Not using Google Drive yet
   { path: '/admin/wfm', label: 'Workflow Management', icon: <SettingsIcon />, permission: null }, // Allow any admin user to see WFM
 ];
 
