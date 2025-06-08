@@ -8,8 +8,32 @@ A simplified document attachment system that leverages Google Shared Drives for 
 
 1. **Shared Drives Only**: Focus exclusively on organization shared drives
 2. **Google Drive Permissions**: Let Google handle all access control
-3. **Simple Categories**: Streamlined document categorization
+3. **Simple Categories**: Streamlined document categorization including client-originated documents
 4. **Natural Access**: Users discover access issues when they try to open documents
+5. **🎯 No Wheel Reinvention**: Maximum alignment with Google Workspace functionality
+
+## ✅ Google Workspace Alignment
+
+This design **maximally leverages existing Google Workspace functionality**:
+
+- **📁 Shared Drives**: Use Google's organization-wide shared drives as the single source of truth
+- **🔒 Permission System**: Completely rely on Google's sophisticated permission model
+- **🔍 Search & Discovery**: Leverage Google Drive's native search and folder browsing
+- **📱 User Interface**: Users interact with familiar Google Drive patterns
+- **🔄 Real-time Updates**: File changes reflect immediately (Google handles sync)
+- **📊 Audit Trail**: Google Workspace admin console provides complete audit logs
+
+**We are NOT:**
+- ❌ Creating duplicate folder structures
+- ❌ Managing permissions separately
+- ❌ Building custom file storage
+- ❌ Replicating Google Drive UI patterns
+
+**We ARE:**
+- ✅ Tracking which documents are relevant to which deals
+- ✅ Providing contextual access within the CRM
+- ✅ Categorizing documents for business workflows
+- ✅ Maintaining simple attachment relationships
 
 ## 📊 Database Schema
 
@@ -22,7 +46,7 @@ CREATE TABLE deal_document_attachments (
     file_name TEXT NOT NULL,
     file_url TEXT NOT NULL,
     shared_drive_id TEXT, -- Which shared drive this came from
-    category TEXT CHECK (category IN ('proposal', 'contract', 'presentation', 'correspondence', 'other')),
+    category TEXT CHECK (category IN ('proposal', 'contract', 'presentation', 'client_request', 'client_document', 'correspondence', 'other')),
     attached_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     attached_by UUID NOT NULL REFERENCES auth.users(id),
     
@@ -63,7 +87,7 @@ const attachDocument = async (input: {
   dealId: string;
   googleFileId: string;
   sharedDriveId: string;
-  category: 'proposal' | 'contract' | 'presentation' | 'correspondence' | 'other';
+  category: 'proposal' | 'contract' | 'presentation' | 'client_request' | 'client_document' | 'correspondence' | 'other';
 }) => {
   // 1. Get file metadata from Google Drive
   const file = await googleDriveService.getFile(userToken, input.googleFileId);
@@ -234,3 +258,22 @@ FROM deal_documents_old;
 - **Bulk Attachment**: Select multiple files at once
 - **Drive Integration**: Quick access to drive context (which shared drive, folder path)
 - **Activity Tracking**: Log when documents are attached/accessed 
+
+## 📋 Simplified Categories
+
+```typescript
+const DOCUMENT_CATEGORIES = [
+  // Our documents to clients
+  { value: 'proposal', label: 'Proposals', color: 'blue' },
+  { value: 'contract', label: 'Contracts', color: 'green' },
+  { value: 'presentation', label: 'Presentations', color: 'orange' },
+  
+  // Client documents to us
+  { value: 'client_request', label: 'Client Requests', color: 'purple' },
+  { value: 'client_document', label: 'Client Documents', color: 'teal' },
+  
+  // Bidirectional communication
+  { value: 'correspondence', label: 'Correspondence', color: 'cyan' },
+  { value: 'other', label: 'Other', color: 'gray' },
+];
+``` 
