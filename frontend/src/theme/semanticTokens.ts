@@ -351,25 +351,25 @@ export const semanticTokens: ThemeSemanticTokens = {
         primary: {
           modern: '#667eea',
           lightModern: '#5a67d8',  // NEW: Primary button color
-          industrialMetal: 'primary.500',
+          industrialMetal: 'accentHazard.500',
           _default: '#667eea'
         },
         primaryHover: {
           modern: '#5a6acc',
           lightModern: '#4c51bf',  // NEW: Primary button hover
-          industrialMetal: 'primary.600',
+          industrialMetal: 'accentHazard.600',
           _default: '#5a6acc'
         },
         secondary: {
           modern: '#2A2D3A',
           lightModern: '#f7fafc',  // NEW: Light secondary buttons
-          industrialMetal: 'neutral.700',
+          industrialMetal: 'neutral.800',
           _default: '#edf2f7'
         },
         secondaryHover: {
           modern: '#4A5568',
           lightModern: '#edf2f7',  // NEW: Secondary button hover
-          industrialMetal: 'neutral.600',
+          industrialMetal: 'neutral.700',
           _default: '#e2e8f0'
         },
         ghost: {
@@ -389,7 +389,7 @@ export const semanticTokens: ThemeSemanticTokens = {
         header: {
           modern: '#2A2D3A',
           lightModern: '#f8fafc',  // FIXED: Light background for table headers
-          industrialMetal: 'neutral.800',
+          industrialMetal: 'neutral.900',
           _default: '#f7fafc'
         },
         row: {
@@ -401,13 +401,13 @@ export const semanticTokens: ThemeSemanticTokens = {
         rowHover: {
           modern: '#2D3748',
           lightModern: '#f8fafc',  // NEW: Subtle row hover
-          industrialMetal: 'neutral.700',
+          industrialMetal: 'neutral.800',
           _default: '#f7fafc'
         },
         border: {
           modern: '#2D3748',
           lightModern: '#e2e8f0',  // NEW: Light table borders
-          industrialMetal: 'neutral.700',
+          industrialMetal: 'neutral.600',
           _default: '#e2e8f0'
         }
       },

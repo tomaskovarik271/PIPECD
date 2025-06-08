@@ -186,6 +186,53 @@ export const industrialMetalTheme = extendTheme({
         },
       },
     },
+    IconButton: {
+      baseStyle: {
+        fontFamily: `'Lato', sans-serif`,
+        fontWeight: '600',
+      },
+      variants: {
+        solid: (props: StyleFunctionProps) => {
+          if (props.colorScheme === 'primary' || props.colorScheme === 'blue') {
+            return {
+              bg: 'primary.500',
+              color: 'white',
+              _hover: { bg: 'primary.600' },
+              _active: { bg: 'primary.700' },
+            };
+          }
+          return {};
+        },
+        outline: (props: StyleFunctionProps) => {
+          return {
+            borderColor: 'primary.500',
+            color: 'primary.300',
+            borderWidth: '2px',
+            _hover: { 
+              bg: 'primary.500', 
+              color: 'white',
+              borderColor: 'primary.500'
+            },
+            _active: { 
+              bg: 'primary.600',
+              borderColor: 'primary.600'
+            },
+          };
+        },
+        ghost: (props: StyleFunctionProps) => {
+          return {
+            color: 'primary.300',
+            _hover: { 
+              bg: 'primary.600', 
+              color: 'white' 
+            },
+            _active: { 
+              bg: 'primary.700' 
+            },
+          };
+        },
+      },
+    },
     Card: { 
         baseStyle: {
             bg: 'neutral.800',
@@ -269,14 +316,36 @@ export const industrialMetalTheme = extendTheme({
             fontFamily: `'Bebas Neue', 'Cinzel Decorative', sans-serif`,
             fontSize: 'sm',
             fontWeight: '700',
-            letterSpacing: '0.8px',
+            letterSpacing: '1.2px',
             textTransform: 'uppercase',
             color: 'accentHazard.400',
-            borderColor: 'neutral.700',
-            bg: 'neutral.850',
+            borderColor: 'neutral.600',
+            bg: 'neutral.900',
             py: 4,
-            px: 3,
+            px: 4,
             lineHeight: '1.2',
+            borderBottomWidth: '2px',
+            borderBottomColor: 'accentHazard.600',
+            position: 'relative',
+            _hover: {
+              bg: 'neutral.800',
+              color: 'accentHazard.300',
+              cursor: 'pointer',
+            },
+            _after: {
+              content: '""',
+              position: 'absolute',
+              bottom: '-2px',
+              left: '0',
+              right: '0',
+              height: '2px',
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255,170,0,0.8) 50%, transparent 100%)',
+              opacity: 0,
+              transition: 'opacity 0.2s ease',
+            },
+            _hover_after: {
+              opacity: 1,
+            },
           },
           td: {
             fontFamily: `'Lato', sans-serif`,
@@ -286,7 +355,7 @@ export const industrialMetalTheme = extendTheme({
             borderColor: 'neutral.700',
             color: 'neutral.100',
             py: 3,
-            px: 3,
+            px: 4,
             lineHeight: '1.4',
             _hover: {
               color: 'neutral.50',
@@ -296,10 +365,62 @@ export const industrialMetalTheme = extendTheme({
             tr: {
               bg: 'neutral.850',
               transition: 'all 0.2s ease',
+              borderBottomWidth: '1px',
+              borderBottomColor: 'neutral.700',
               _hover: {
                 bg: 'neutral.800',
                 transform: 'translateY(-1px)',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                borderBottomColor: 'primary.500',
+              },
+            },
+          },
+        }),
+        unstyled: (props: StyleFunctionProps) => ({ // Override for industrial
+          table: {
+            fontFamily: `'Lato', sans-serif`,
+          },
+          th: {
+            fontFamily: `'Bebas Neue', sans-serif`,
+            fontSize: 'sm',
+            fontWeight: '700',
+            letterSpacing: '1.2px',
+            textTransform: 'uppercase',
+            color: 'accentHazard.400',
+            borderColor: 'neutral.600',
+            bg: 'neutral.900',
+            py: 4,
+            px: 4,
+            borderBottomWidth: '2px',
+            borderBottomColor: 'accentHazard.600',
+            _hover: {
+              bg: 'neutral.800',
+              color: 'accentHazard.300',
+            },
+          },
+          td: {
+            fontFamily: `'Lato', sans-serif`,
+            fontSize: 'sm',
+            fontWeight: '400',
+            letterSpacing: '0.3px',
+            borderColor: 'neutral.700',
+            color: 'neutral.100',
+            py: 3,
+            px: 4,
+            _hover: {
+              color: 'neutral.50',
+            },
+          },
+          tbody: {
+            tr: {
+              bg: 'neutral.850',
+              transition: 'all 0.2s ease',
+              borderBottomWidth: '1px',
+              borderBottomColor: 'neutral.700',
+              _hover: {
+                bg: 'neutral.800',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
               },
             },
           },
@@ -349,6 +470,25 @@ export const industrialMetalTheme = extendTheme({
                 }
             })
         }
+    },
+    Stat: {
+      baseStyle: {
+        label: {
+          fontFamily: `'Bebas Neue', sans-serif`,
+          letterSpacing: '1px',
+          textTransform: 'uppercase',
+          fontSize: 'sm',
+          color: 'neutral.300',
+          fontWeight: '600',
+        },
+        number: {
+          fontFamily: `'Courier New', monospace`,
+          fontWeight: '700',
+          color: 'accentHazard.400',
+          letterSpacing: '0.5px',
+          textShadow: '0 1px 2px rgba(0,0,0,0.3)',
+        },
+      },
     },
     // Custom component for numeric table cells
     NumberCell: {
