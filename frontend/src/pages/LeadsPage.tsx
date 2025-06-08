@@ -28,6 +28,7 @@ import { useLeadsTableColumns } from '../hooks/useLeadsTableColumns';
 import { useUserListStore } from '../stores/useUserListStore';
 import { useFilteredLeads } from '../hooks/useFilteredLeads';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { useLeadTheme } from '../hooks/useLeadTheme';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
 import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
@@ -85,7 +86,8 @@ function LeadsPage() {
   // Search term state for the unified header
   const [searchTerm, setSearchTerm] = useState('');
 
-  // NEW: Use semantic tokens instead of manual theme checking
+  // NEW: Use warm theme colors for leads
+  const leadTheme = useLeadTheme();
   const colors = useThemeColors();
   const pageLayoutStyles = usePageLayoutStyles(true); // true for statistics
 
@@ -178,19 +180,23 @@ function LeadsPage() {
         currency: 'USD', 
         minimumFractionDigits: 0, 
         maximumFractionDigits: 0 
-      }).format(Number(value))
+      }).format(Number(value)),
+      color: leadTheme.colors.metrics.totalValue
     },
     {
       label: 'Avg. Score',
       value: Math.round(averageLeadScore),
+      color: leadTheme.colors.metrics.avgScore
     },
     {
       label: 'Qualification Rate',
-      value: `${qualificationRate}%`
+      value: `${qualificationRate}%`,
+      color: leadTheme.colors.metrics.qualificationRate
     },
     {
-      label: 'Total Leads',
-      value: displayedLeads.length
+      label: 'Unqualified Leads',
+      value: displayedLeads.length - displayedLeads.filter(l => l.isQualified).length,
+      color: leadTheme.colors.metrics.unqualified
     }
   ];
 
@@ -235,6 +241,61 @@ function LeadsPage() {
     resetTableToDefaults(TABLE_KEY, defaultVisibleColumnKeys);
   }, [resetTableToDefaults, defaultVisibleColumnKeys]);
 
+  // Early return for kanban mode (matches DealsPage structure)
+  if (leadsViewMode === 'kanban') {
+    return (
+      <>
+        <LeadsKanbanPageLayout
+          displayedLeads={displayedLeads}
+          pageIsLoading={pageIsLoading}
+          leadsError={leadsError}
+          handleCreateLeadClick={handleCreateLeadClick}
+          selectedAssignedUserIds={selectedAssignedUserIds}
+          setSelectedAssignedUserIds={setSelectedAssignedUserIds}
+          userList={userList}
+          usersLoading={usersLoading}
+          userPermissions={userPermissions || []}
+          leadsViewMode={leadsViewMode}
+          setLeadsViewMode={setLeadsViewMode}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+        />
+
+        {/* Modals - moved here so they work in kanban view too */}
+        <CreateLeadModal isOpen={isCreateModalOpen} onClose={closeCreateModal} />
+        {leadToEdit && (
+          <EditLeadModal
+            isOpen={isEditModalOpen}
+            onClose={closeEditModal}
+            lead={leadToEdit}
+          />
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmationDialog
+          isOpen={isConfirmDeleteDialogOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirmation}
+          title="Delete Lead"
+          body="Are you sure you want to delete this lead? This action cannot be undone."
+          confirmButtonText="Delete"
+          confirmButtonColor="red"
+        />
+
+        {/* Column Selector Modal */}
+        <ColumnSelector
+          isOpen={isColumnSelectorOpen}
+          onClose={closeColumnSelectorModal}
+          allAvailableColumns={allAvailableColumns}
+          currentVisibleColumnKeys={currentTableVisibleColumnKeys}
+          defaultVisibleColumnKeys={defaultVisibleColumnKeys}
+          onApply={handleColumnChange}
+          onReset={handleResetColumns}
+        />
+      </>
+    );
+  }
+
   return (
     <>
       <UnifiedPageHeader
@@ -252,12 +313,17 @@ function LeadsPage() {
         statistics={statistics}
       />
 
-      <Box sx={pageLayoutStyles.container}>
+      <Box 
+        sx={{
+          ...pageLayoutStyles.container,
+          bg: leadTheme.colors.bg.primary,
+        }}
+      >
         {pageIsLoading && (
           <VStack justify="center" align="center" minH="300px" w="100%">
             <Spinner 
               size="xl" 
-              color={colors.interactive.default}
+              color={leadTheme.colors.primary}
             />
           </VStack>
         )}
@@ -283,25 +349,7 @@ function LeadsPage() {
           />
         )}
         
-        {!pageIsLoading && !leadsError && displayedLeads.length > 0 && leadsViewMode === 'kanban' && (
-          <LeadsKanbanPageLayout
-            displayedLeads={displayedLeads}
-            pageIsLoading={pageIsLoading}
-            leadsError={leadsError}
-            handleCreateLeadClick={handleCreateLeadClick}
-            selectedAssignedUserIds={selectedAssignedUserIds}
-            setSelectedAssignedUserIds={setSelectedAssignedUserIds}
-            userList={userList}
-            usersLoading={usersLoading}
-            userPermissions={userPermissions || []}
-            leadsViewMode={leadsViewMode}
-            setLeadsViewMode={setLeadsViewMode}
-            searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
-          />
-        )}
-        
-        {!pageIsLoading && !leadsError && displayedLeads.length > 0 && leadsViewMode === 'table' && (
+        {!pageIsLoading && !leadsError && displayedLeads.length > 0 && (
           <Box sx={pageLayoutStyles.content}>
             <SortableTable
               data={displayedLeads}

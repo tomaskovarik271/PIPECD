@@ -10,9 +10,11 @@ import {
   Avatar,
   Tag,
 } from '@chakra-ui/react';
+import { useNavigate } from 'react-router-dom';
 import { Lead } from '../../stores/useLeadsStore';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useLeadTheme } from '../../hooks/useLeadTheme';
 import { StarIcon } from '@chakra-ui/icons';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
 
@@ -23,6 +25,8 @@ interface LeadCardKanbanProps {
 
 const LeadCardKanban: React.FC<LeadCardKanbanProps> = React.memo(({ lead, index }) => {
   const colors = useThemeColors();
+  const leadTheme = useLeadTheme();
+  const navigate = useNavigate();
 
   const placeholderTags = [lead.currentWfmStatus?.name].filter(Boolean) as string[];
   if (lead.estimated_value && lead.estimated_value > 50000) placeholderTags.push('High Value');
@@ -43,39 +47,46 @@ const LeadCardKanban: React.FC<LeadCardKanbanProps> = React.memo(({ lead, index 
     }
   }
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation when dragging
+    if (e.defaultPrevented) return;
+    navigate(`/leads/${lead.id}`);
+  };
+
   const baseStyle = {
-    bg: colors.bg.elevated,
+    bg: leadTheme.colors.bg.card,
     p: 5,
     borderRadius: "lg",
     borderWidth: "1px",
-    borderColor: colors.border.default,
+    borderColor: leadTheme.colors.border.default,
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    cursor: "pointer",
     _hover: {
       transform: "translateY(-4px) scale(1.02)",
       boxShadow: `
-        0 20px 25px -5px rgba(59, 130, 246, 0.15),
-        0 10px 10px -5px rgba(59, 130, 246, 0.1),
-        0 0 20px rgba(59, 130, 246, 0.2),
-        0 0 40px rgba(59, 130, 246, 0.1)
+        0 20px 25px -5px rgba(245, 158, 11, 0.15),
+        0 10px 10px -5px rgba(245, 158, 11, 0.1),
+        0 0 20px rgba(245, 158, 11, 0.2),
+        0 0 40px rgba(245, 158, 11, 0.1)
       `,
-      borderColor: 'rgba(59, 130, 246, 0.5)',
-      bg: colors.bg.elevated,
+      borderColor: leadTheme.colors.border.accent,
+      bg: leadTheme.colors.bg.hover,
       filter: 'brightness(1.05)'
     }
   };
 
   const draggingStyle = {
     ...baseStyle,
-    borderColor: 'rgba(59, 130, 246, 0.8)',
+    borderColor: leadTheme.colors.border.accent,
     boxShadow: `
-      0 25px 50px -12px rgba(59, 130, 246, 0.25),
-      0 15px 15px -5px rgba(59, 130, 246, 0.15),
-      0 0 30px rgba(59, 130, 246, 0.3),
-      0 0 60px rgba(59, 130, 246, 0.15)
+      0 25px 50px -12px rgba(245, 158, 11, 0.25),
+      0 15px 15px -5px rgba(245, 158, 11, 0.15),
+      0 0 30px rgba(245, 158, 11, 0.3),
+      0 0 60px rgba(245, 158, 11, 0.15)
     `,
     transform: 'translateY(-6px) rotate(2deg) scale(1.05)',
     filter: 'brightness(1.1)',
-    bg: colors.bg.elevated,
+    bg: leadTheme.colors.bg.hover,
   };
 
   return (
@@ -89,6 +100,7 @@ const LeadCardKanban: React.FC<LeadCardKanbanProps> = React.memo(({ lead, index 
           mb={4}
           {...(snapshot.isDragging ? draggingStyle : baseStyle)}
           position="relative"
+          onClick={handleCardClick}
         >
           <VStack align="stretch" spacing={3}>
             <HStack justify="space-between" mb={2}>

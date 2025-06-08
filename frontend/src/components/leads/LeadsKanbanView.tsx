@@ -3,6 +3,7 @@ import { Box, Heading, Spinner, Alert, AlertIcon, VStack, Text, Flex, useToast }
 import { useLeadsStore, Lead } from '../../stores/useLeadsStore';
 import { useWFMWorkflowStore } from '../../stores/useWFMWorkflowStore';
 import { useWFMConfigStore } from '../../stores/useWFMConfigStore';
+import { useLeadTheme } from '../../hooks/useLeadTheme';
 import type { WfmWorkflowStep } from '../../generated/graphql/graphql';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import LeadsKanbanStepColumn from './LeadsKanbanStepColumn';
@@ -12,6 +13,7 @@ interface LeadsKanbanViewProps {
 }
 
 const LeadsKanbanView: React.FC<LeadsKanbanViewProps> = ({ leads }) => {
+  const leadTheme = useLeadTheme();
   const {
     leadsLoading,
     leadsError,
@@ -189,8 +191,20 @@ const LeadsKanbanView: React.FC<LeadsKanbanViewProps> = ({ leads }) => {
   }
   
   return (
-    <VStack spacing={4} align="stretch" p={4}>
-      <Heading size="md" mt={6} mb={2} textAlign="center">
+    <VStack 
+      spacing={4} 
+      align="stretch" 
+      p={4}
+      bg={leadTheme.colors.bg.primary}
+      minH="100vh"
+    >
+      <Heading 
+        size="md" 
+        mt={6} 
+        mb={2} 
+        textAlign="center"
+        color={leadTheme.colors.text.primary}
+      >
         {currentWorkflowWithDetails?.name || 'Lead Qualification Kanban'}
       </Heading>
 

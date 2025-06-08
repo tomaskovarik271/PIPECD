@@ -20,6 +20,7 @@ import type { Lead } from '../../stores/useLeadsStore';
 import UnifiedPageHeader from '../layout/UnifiedPageHeader';
 import { usePageLayoutStyles } from '../../utils/headerUtils';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { useLeadTheme } from '../../hooks/useLeadTheme';
 
 interface LeadsKanbanPageLayoutProps {
   displayedLeads: Lead[];
@@ -53,6 +54,7 @@ const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
   onSearchChange,
 }) => {
   const colors = useThemeColors();
+  const leadTheme = useLeadTheme();
   const styles = useThemeStyles();
   const pageLayoutStyles = usePageLayoutStyles(true);
 
@@ -74,21 +76,25 @@ const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
     {
       label: 'Total Value',
       value: totalValue,
-      formatter: (value: string | number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value))
+      formatter: (value: string | number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value)),
+      color: leadTheme.colors.metrics.totalValue
     },
     {
       label: 'Avg. Score',
-      value: Math.round(averageLeadScore)
+      value: Math.round(averageLeadScore),
+      color: leadTheme.colors.metrics.avgScore
     },
     {
       label: 'Qualification Rate',
-      value: `${qualificationRate}%`
+      value: `${qualificationRate}%`,
+      color: leadTheme.colors.metrics.qualificationRate
     },
     {
       label: 'Unqualified Leads',
-      value: unqualifiedLeadsCount
+      value: unqualifiedLeadsCount,
+      color: leadTheme.colors.metrics.unqualified
     }
-  ], [totalValue, averageLeadScore, qualificationRate, unqualifiedLeadsCount]);
+  ], [totalValue, averageLeadScore, qualificationRate, unqualifiedLeadsCount, leadTheme.colors.metrics]);
 
   // Helper function to get user display name
   const getUserDisplayName = useCallback((userId: string) => {
@@ -187,7 +193,12 @@ const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
         statistics={statistics}
       />
 
-      <Box sx={pageLayoutStyles.container}>
+      <Box 
+        sx={{
+          ...pageLayoutStyles.container,
+          bg: leadTheme.colors.bg.primary,
+        }}
+      >
         <LeadsKanbanPageView
           leads={displayedLeads}
           isLoading={pageIsLoading}
