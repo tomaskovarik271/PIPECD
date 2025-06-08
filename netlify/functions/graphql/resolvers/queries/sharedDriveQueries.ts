@@ -133,7 +133,7 @@ export const sharedDriveQueries = {
    * Get document attachments for a deal
    */
   async getDealDocumentAttachments(_: any, args: { dealId: string }, context: any) {
-    const { userId } = requireAuthentication(context);
+    requireAuthentication(context);
     
     try {
       const { data } = await context.supabaseClient

@@ -161,7 +161,7 @@ const DealDocumentsPanel: React.FC<DealDocumentsPanelProps> = ({ dealId, dealNam
         category: doc.category?.toLowerCase() || 'other',
         attachedAt: doc.attachedAt,
         attachedBy: doc.attachedBy,
-        driveFileId: doc.fileId,
+        driveFileId: doc.googleFileId,
         webViewLink: doc.fileUrl,
         fileSize: 0,
         mimeType: ''

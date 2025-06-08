@@ -64,6 +64,10 @@ import { emailMutations } from './graphql/resolvers/mutations/emailMutations';
 // Import Drive Resolvers
 import { driveQueries } from './graphql/resolvers/queries/driveQueries';
 import { driveMutations } from './graphql/resolvers/mutations/driveMutations';
+
+// Import Shared Drive Resolvers
+import { sharedDriveQueries } from './graphql/resolvers/queries/sharedDriveQueries';
+import { sharedDriveMutations } from './graphql/resolvers/mutations/sharedDriveMutations';
 import { appSettingsQueries } from './graphql/resolvers/queries/appSettingsQueries';
 import { appSettingsMutations } from './graphql/resolvers/mutations/appSettingsMutations';
 
@@ -172,6 +176,7 @@ export const resolvers = {
     ...smartStickerQueries,
     ...emailQueries,
     ...driveQueries,
+    ...sharedDriveQueries,
     ...appSettingsQueries,
   },
   Mutation: {
@@ -186,9 +191,8 @@ export const resolvers = {
     ...smartStickerMutations,
     ...emailMutations,
     ...driveMutations,
-
+    ...sharedDriveMutations,
     ...appSettingsMutations,
-
   },
   Person,
   Deal,

@@ -193,6 +193,17 @@ export type AppSetting = {
   updatedAt: Scalars["String"]["output"];
 };
 
+export type AttachDocumentInput = {
+  category?: InputMaybe<DocumentCategory>;
+  dealId: Scalars["ID"]["input"];
+  fileName: Scalars["String"]["input"];
+  fileSize?: InputMaybe<Scalars["Int"]["input"]>;
+  fileUrl: Scalars["String"]["input"];
+  googleFileId: Scalars["String"]["input"];
+  mimeType?: InputMaybe<Scalars["String"]["input"]>;
+  sharedDriveId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type AttachFileInput = {
   category?: InputMaybe<DocumentCategory>;
   dealId: Scalars["ID"]["input"];
@@ -531,10 +542,13 @@ export type DealDocumentAttachment = {
   attachedBy: Scalars["ID"]["output"];
   category?: Maybe<DocumentCategory>;
   dealId: Scalars["ID"]["output"];
-  fileId: Scalars["String"]["output"];
   fileName: Scalars["String"]["output"];
+  fileSize?: Maybe<Scalars["Int"]["output"]>;
   fileUrl: Scalars["String"]["output"];
+  googleFileId: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+  mimeType?: Maybe<Scalars["String"]["output"]>;
+  sharedDriveId?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type DealFolderInfo = {
@@ -619,12 +633,13 @@ export type Document = {
 };
 
 export enum DocumentCategory {
-  Contracts = "CONTRACTS",
+  ClientDocument = "CLIENT_DOCUMENT",
+  ClientRequest = "CLIENT_REQUEST",
+  Contract = "CONTRACT",
   Correspondence = "CORRESPONDENCE",
-  Legal = "LEGAL",
   Other = "OTHER",
-  Presentations = "PRESENTATIONS",
-  Proposals = "PROPOSALS",
+  Presentation = "PRESENTATION",
+  Proposal = "PROPOSAL",
 }
 
 export type DriveFile = {
@@ -1075,6 +1090,7 @@ export type Mutation = {
   addAgentThoughts: Array<AgentThought>;
   archiveThread: Scalars["Boolean"]["output"];
   assignAccountToTerritory: AccountTerritory;
+  attachDocumentToDeal: DealDocumentAttachment;
   attachFileToDeal: DealDocumentAttachment;
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
@@ -1130,6 +1146,7 @@ export type Mutation = {
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
   removeAccountFromTerritory: Scalars["Boolean"]["output"];
+  removeDocumentAttachment: Scalars["Boolean"]["output"];
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
   sendAgentMessage: AgentResponse;
   shareDriveFolder: Scalars["Boolean"]["output"];
@@ -1142,6 +1159,7 @@ export type Mutation = {
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateDealWFMProgress: Deal;
+  updateDocumentAttachmentCategory: DealDocumentAttachment;
   updateLead?: Maybe<Lead>;
   updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
@@ -1178,6 +1196,10 @@ export type MutationAssignAccountToTerritoryArgs = {
   isPrimary?: InputMaybe<Scalars["Boolean"]["input"]>;
   organizationId: Scalars["ID"]["input"];
   territoryId: Scalars["ID"]["input"];
+};
+
+export type MutationAttachDocumentToDealArgs = {
+  input: AttachDocumentInput;
 };
 
 export type MutationAttachFileToDealArgs = {
@@ -1408,6 +1430,10 @@ export type MutationRemoveAccountFromTerritoryArgs = {
   territoryId: Scalars["ID"]["input"];
 };
 
+export type MutationRemoveDocumentAttachmentArgs = {
+  attachmentId: Scalars["ID"]["input"];
+};
+
 export type MutationSendAgentMessageArgs = {
   input: SendMessageInput;
 };
@@ -1452,6 +1478,11 @@ export type MutationUpdateDealArgs = {
 export type MutationUpdateDealWfmProgressArgs = {
   dealId: Scalars["ID"]["input"];
   targetWfmWorkflowStepId: Scalars["ID"]["input"];
+};
+
+export type MutationUpdateDocumentAttachmentCategoryArgs = {
+  attachmentId: Scalars["ID"]["input"];
+  category: DocumentCategory;
 };
 
 export type MutationUpdateLeadArgs = {
@@ -1732,6 +1763,7 @@ export type Query = {
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   findMissingStakeholders: MissingStakeholderRecommendations;
+  getDealDocumentAttachments: Array<DealDocumentAttachment>;
   getDealDocuments: Array<DealDocumentAttachment>;
   getDealFolder?: Maybe<DriveFolder>;
   getDriveFile: DriveFile;
@@ -1746,6 +1778,10 @@ export type Query = {
   getEntityStickers: StickerConnection;
   getPinnedStickers: StickerConnection;
   getRecentDriveFiles: DriveFileConnection;
+  getRecentSharedDriveFiles: Array<DriveFile>;
+  getSharedDriveFiles: Array<DriveFile>;
+  getSharedDriveFolders: Array<DriveFolder>;
+  getSharedDrives: Array<SharedDrive>;
   getSticker?: Maybe<SmartSticker>;
   getStickerCategories: Array<StickerCategory>;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
@@ -1772,6 +1808,7 @@ export type Query = {
   relationshipInsights: Array<RelationshipInsight>;
   searchDriveFiles: DriveFileConnection;
   searchEmails: Array<Email>;
+  searchSharedDriveFiles: Array<DriveFile>;
   searchStickers: StickerConnection;
   stakeholderAnalyses: Array<StakeholderAnalysis>;
   stakeholderAnalysis?: Maybe<StakeholderAnalysis>;
@@ -1855,6 +1892,10 @@ export type QueryFindMissingStakeholdersArgs = {
   organizationId: Scalars["ID"]["input"];
 };
 
+export type QueryGetDealDocumentAttachmentsArgs = {
+  dealId: Scalars["ID"]["input"];
+};
+
 export type QueryGetDealDocumentsArgs = {
   dealId: Scalars["ID"]["input"];
 };
@@ -1917,6 +1958,21 @@ export type QueryGetPinnedStickersArgs = {
 
 export type QueryGetRecentDriveFilesArgs = {
   limit?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryGetRecentSharedDriveFilesArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryGetSharedDriveFilesArgs = {
+  folderId?: InputMaybe<Scalars["ID"]["input"]>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
+  sharedDriveId: Scalars["ID"]["input"];
+};
+
+export type QueryGetSharedDriveFoldersArgs = {
+  parentFolderId?: InputMaybe<Scalars["ID"]["input"]>;
+  sharedDriveId: Scalars["ID"]["input"];
 };
 
 export type QueryGetStickerArgs = {
@@ -1983,6 +2039,11 @@ export type QuerySearchEmailsArgs = {
   entityType?: InputMaybe<EntityType>;
   limit?: InputMaybe<Scalars["Int"]["input"]>;
   query: Scalars["String"]["input"];
+};
+
+export type QuerySearchSharedDriveFilesArgs = {
+  query: Scalars["String"]["input"];
+  sharedDriveId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type QuerySearchStickersArgs = {
@@ -2076,6 +2137,47 @@ export enum SeniorityLevel {
   Senior = "SENIOR",
   Vp = "VP",
 }
+
+export type SharedDrive = {
+  __typename?: "SharedDrive";
+  backgroundImageFile?: Maybe<SharedDriveImage>;
+  capabilities?: Maybe<SharedDriveCapabilities>;
+  colorRgb?: Maybe<Scalars["String"]["output"]>;
+  createdTime: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
+  restrictions?: Maybe<SharedDriveRestrictions>;
+};
+
+export type SharedDriveCapabilities = {
+  __typename?: "SharedDriveCapabilities";
+  canAddChildren?: Maybe<Scalars["Boolean"]["output"]>;
+  canComment?: Maybe<Scalars["Boolean"]["output"]>;
+  canCopy?: Maybe<Scalars["Boolean"]["output"]>;
+  canDeleteDrive?: Maybe<Scalars["Boolean"]["output"]>;
+  canDownload?: Maybe<Scalars["Boolean"]["output"]>;
+  canEdit?: Maybe<Scalars["Boolean"]["output"]>;
+  canListChildren?: Maybe<Scalars["Boolean"]["output"]>;
+  canManageMembers?: Maybe<Scalars["Boolean"]["output"]>;
+  canReadRevisions?: Maybe<Scalars["Boolean"]["output"]>;
+  canRename?: Maybe<Scalars["Boolean"]["output"]>;
+  canRenameDrive?: Maybe<Scalars["Boolean"]["output"]>;
+  canShare?: Maybe<Scalars["Boolean"]["output"]>;
+};
+
+export type SharedDriveImage = {
+  __typename?: "SharedDriveImage";
+  id: Scalars["String"]["output"];
+  webViewLink: Scalars["String"]["output"];
+};
+
+export type SharedDriveRestrictions = {
+  __typename?: "SharedDriveRestrictions";
+  adminManagedRestrictions?: Maybe<Scalars["Boolean"]["output"]>;
+  copyRequiresWriterPermission?: Maybe<Scalars["Boolean"]["output"]>;
+  domainUsersOnly?: Maybe<Scalars["Boolean"]["output"]>;
+  driveMembersOnly?: Maybe<Scalars["Boolean"]["output"]>;
+};
 
 export type SmartSticker = {
   __typename?: "SmartSticker";
@@ -3449,7 +3551,7 @@ export type GetDealDocumentsQuery = {
     __typename?: "DealDocumentAttachment";
     id: string;
     dealId: string;
-    fileId: string;
+    googleFileId: string;
     fileName: string;
     fileUrl: string;
     category?: DocumentCategory | null;
@@ -3667,7 +3769,7 @@ export type AttachFileToDealMutation = {
     __typename?: "DealDocumentAttachment";
     id: string;
     dealId: string;
-    fileId: string;
+    googleFileId: string;
     fileName: string;
     fileUrl: string;
     category?: DocumentCategory | null;
@@ -3709,6 +3811,190 @@ export type UploadFileToDriveMutation = {
       displayName: string;
       emailAddress: string;
     }> | null;
+  };
+};
+
+export type GetSharedDrivesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetSharedDrivesQuery = {
+  __typename?: "Query";
+  getSharedDrives: Array<{
+    __typename?: "SharedDrive";
+    id: string;
+    name: string;
+    createdTime: string;
+    capabilities?: {
+      __typename?: "SharedDriveCapabilities";
+      canAddChildren?: boolean | null;
+      canListChildren?: boolean | null;
+      canDownload?: boolean | null;
+    } | null;
+  }>;
+};
+
+export type GetSharedDriveFilesQueryVariables = Exact<{
+  sharedDriveId: Scalars["ID"]["input"];
+  folderId?: InputMaybe<Scalars["ID"]["input"]>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
+}>;
+
+export type GetSharedDriveFilesQuery = {
+  __typename?: "Query";
+  getSharedDriveFiles: Array<{
+    __typename?: "DriveFile";
+    id: string;
+    name: string;
+    mimeType: string;
+    size?: number | null;
+    modifiedTime: string;
+    createdTime: string;
+    webViewLink?: string | null;
+    parents?: Array<string> | null;
+    thumbnailLink?: string | null;
+    iconLink?: string | null;
+    owners?: Array<{
+      __typename?: "DriveFileOwner";
+      displayName: string;
+      emailAddress: string;
+    }> | null;
+  }>;
+};
+
+export type GetSharedDriveFoldersQueryVariables = Exact<{
+  sharedDriveId: Scalars["ID"]["input"];
+  parentFolderId?: InputMaybe<Scalars["ID"]["input"]>;
+}>;
+
+export type GetSharedDriveFoldersQuery = {
+  __typename?: "Query";
+  getSharedDriveFolders: Array<{
+    __typename?: "DriveFolder";
+    id: string;
+    name: string;
+    parents?: Array<string> | null;
+    webViewLink: string;
+    createdTime: string;
+    modifiedTime: string;
+  }>;
+};
+
+export type SearchSharedDriveFilesQueryVariables = Exact<{
+  query: Scalars["String"]["input"];
+  sharedDriveId?: InputMaybe<Scalars["ID"]["input"]>;
+}>;
+
+export type SearchSharedDriveFilesQuery = {
+  __typename?: "Query";
+  searchSharedDriveFiles: Array<{
+    __typename?: "DriveFile";
+    id: string;
+    name: string;
+    mimeType: string;
+    size?: number | null;
+    modifiedTime: string;
+    createdTime: string;
+    webViewLink?: string | null;
+    parents?: Array<string> | null;
+    thumbnailLink?: string | null;
+    iconLink?: string | null;
+    owners?: Array<{
+      __typename?: "DriveFileOwner";
+      displayName: string;
+      emailAddress: string;
+    }> | null;
+  }>;
+};
+
+export type GetRecentSharedDriveFilesQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type GetRecentSharedDriveFilesQuery = {
+  __typename?: "Query";
+  getRecentSharedDriveFiles: Array<{
+    __typename?: "DriveFile";
+    id: string;
+    name: string;
+    mimeType: string;
+    size?: number | null;
+    modifiedTime: string;
+    createdTime: string;
+    webViewLink?: string | null;
+    parents?: Array<string> | null;
+    thumbnailLink?: string | null;
+    iconLink?: string | null;
+    owners?: Array<{
+      __typename?: "DriveFileOwner";
+      displayName: string;
+      emailAddress: string;
+    }> | null;
+  }>;
+};
+
+export type GetDealDocumentAttachmentsQueryVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+}>;
+
+export type GetDealDocumentAttachmentsQuery = {
+  __typename?: "Query";
+  getDealDocumentAttachments: Array<{
+    __typename?: "DealDocumentAttachment";
+    id: string;
+    dealId: string;
+    googleFileId: string;
+    fileName: string;
+    fileUrl: string;
+    sharedDriveId?: string | null;
+    category?: DocumentCategory | null;
+    attachedAt: string;
+    attachedBy: string;
+    mimeType?: string | null;
+    fileSize?: number | null;
+  }>;
+};
+
+export type AttachDocumentToDealMutationVariables = Exact<{
+  input: AttachDocumentInput;
+}>;
+
+export type AttachDocumentToDealMutation = {
+  __typename?: "Mutation";
+  attachDocumentToDeal: {
+    __typename?: "DealDocumentAttachment";
+    id: string;
+    dealId: string;
+    googleFileId: string;
+    fileName: string;
+    fileUrl: string;
+    sharedDriveId?: string | null;
+    category?: DocumentCategory | null;
+    attachedAt: string;
+    attachedBy: string;
+    mimeType?: string | null;
+    fileSize?: number | null;
+  };
+};
+
+export type RemoveDocumentAttachmentMutationVariables = Exact<{
+  attachmentId: Scalars["ID"]["input"];
+}>;
+
+export type RemoveDocumentAttachmentMutation = {
+  __typename?: "Mutation";
+  removeDocumentAttachment: boolean;
+};
+
+export type UpdateDocumentAttachmentCategoryMutationVariables = Exact<{
+  attachmentId: Scalars["ID"]["input"];
+  category: DocumentCategory;
+}>;
+
+export type UpdateDocumentAttachmentCategoryMutation = {
+  __typename?: "Mutation";
+  updateDocumentAttachmentCategory: {
+    __typename?: "DealDocumentAttachment";
+    id: string;
+    category?: DocumentCategory | null;
   };
 };
 

@@ -1,12 +1,12 @@
 import { gql } from 'graphql-request';
 
-// Query to get deal documents
+// Query to get deal documents (legacy)
 export const GET_DEAL_DOCUMENTS = gql`
   query GetDealDocuments($dealId: ID!) {
     getDealDocuments(dealId: $dealId) {
       id
       dealId
-      fileId
+      googleFileId
       fileName
       fileUrl
       category
@@ -183,13 +183,13 @@ export const CREATE_DEAL_FOLDER = gql`
   }
 `;
 
-// Mutation to attach file to deal
+// Mutation to attach file to deal (legacy)
 export const ATTACH_FILE_TO_DEAL = gql`
   mutation AttachFileToDeal($input: AttachFileInput!) {
     attachFileToDeal(input: $input) {
       id
       dealId
-      fileId
+      googleFileId
       fileName
       fileUrl
       category

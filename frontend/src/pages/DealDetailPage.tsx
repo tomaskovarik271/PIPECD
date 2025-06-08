@@ -67,6 +67,7 @@ import { DealOverviewPanel } from '../components/deals/DealOverviewPanel';
 import { DealOrganizationContactsPanel } from '../components/deals/DealOrganizationContactsPanel';
 import DealEmailsPanel from '../components/deals/DealEmailsPanel';
 import DealDocumentsPanel from '../components/deals/DealDocumentsPanel';
+import { SharedDriveDocumentBrowser } from '../components/deals/SharedDriveDocumentBrowser';
 import { StickerBoard } from '../components/common/StickerBoard';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 
@@ -447,7 +448,7 @@ const DealDetailPage = () => {
                                                                 </TabPanel>
 
                       <TabPanel>
-                        <DealDocumentsPanel
+                        <SharedDriveDocumentBrowser
                           dealId={currentDeal.id}
                           dealName={currentDeal.name || undefined}
                         />

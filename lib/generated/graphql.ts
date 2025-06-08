@@ -202,6 +202,17 @@ export type AppSetting = {
   updatedAt: Scalars["String"]["output"];
 };
 
+export type AttachDocumentInput = {
+  category?: InputMaybe<DocumentCategory>;
+  dealId: Scalars["ID"]["input"];
+  fileName: Scalars["String"]["input"];
+  fileSize?: InputMaybe<Scalars["Int"]["input"]>;
+  fileUrl: Scalars["String"]["input"];
+  googleFileId: Scalars["String"]["input"];
+  mimeType?: InputMaybe<Scalars["String"]["input"]>;
+  sharedDriveId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type AttachFileInput = {
   category?: InputMaybe<DocumentCategory>;
   dealId: Scalars["ID"]["input"];
@@ -540,10 +551,13 @@ export type DealDocumentAttachment = {
   attachedBy: Scalars["ID"]["output"];
   category?: Maybe<DocumentCategory>;
   dealId: Scalars["ID"]["output"];
-  fileId: Scalars["String"]["output"];
   fileName: Scalars["String"]["output"];
+  fileSize?: Maybe<Scalars["Int"]["output"]>;
   fileUrl: Scalars["String"]["output"];
+  googleFileId: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+  mimeType?: Maybe<Scalars["String"]["output"]>;
+  sharedDriveId?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type DealFolderInfo = {
@@ -628,12 +642,13 @@ export type Document = {
 };
 
 export enum DocumentCategory {
-  Contracts = "CONTRACTS",
+  ClientDocument = "CLIENT_DOCUMENT",
+  ClientRequest = "CLIENT_REQUEST",
+  Contract = "CONTRACT",
   Correspondence = "CORRESPONDENCE",
-  Legal = "LEGAL",
   Other = "OTHER",
-  Presentations = "PRESENTATIONS",
-  Proposals = "PROPOSALS",
+  Presentation = "PRESENTATION",
+  Proposal = "PROPOSAL",
 }
 
 export type DriveFile = {
@@ -1084,6 +1099,7 @@ export type Mutation = {
   addAgentThoughts: Array<AgentThought>;
   archiveThread: Scalars["Boolean"]["output"];
   assignAccountToTerritory: AccountTerritory;
+  attachDocumentToDeal: DealDocumentAttachment;
   attachFileToDeal: DealDocumentAttachment;
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
@@ -1139,6 +1155,7 @@ export type Mutation = {
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
   removeAccountFromTerritory: Scalars["Boolean"]["output"];
+  removeDocumentAttachment: Scalars["Boolean"]["output"];
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
   sendAgentMessage: AgentResponse;
   shareDriveFolder: Scalars["Boolean"]["output"];
@@ -1151,6 +1168,7 @@ export type Mutation = {
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
   updateDealWFMProgress: Deal;
+  updateDocumentAttachmentCategory: DealDocumentAttachment;
   updateLead?: Maybe<Lead>;
   updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
@@ -1187,6 +1205,10 @@ export type MutationAssignAccountToTerritoryArgs = {
   isPrimary?: InputMaybe<Scalars["Boolean"]["input"]>;
   organizationId: Scalars["ID"]["input"];
   territoryId: Scalars["ID"]["input"];
+};
+
+export type MutationAttachDocumentToDealArgs = {
+  input: AttachDocumentInput;
 };
 
 export type MutationAttachFileToDealArgs = {
@@ -1417,6 +1439,10 @@ export type MutationRemoveAccountFromTerritoryArgs = {
   territoryId: Scalars["ID"]["input"];
 };
 
+export type MutationRemoveDocumentAttachmentArgs = {
+  attachmentId: Scalars["ID"]["input"];
+};
+
 export type MutationSendAgentMessageArgs = {
   input: SendMessageInput;
 };
@@ -1461,6 +1487,11 @@ export type MutationUpdateDealArgs = {
 export type MutationUpdateDealWfmProgressArgs = {
   dealId: Scalars["ID"]["input"];
   targetWfmWorkflowStepId: Scalars["ID"]["input"];
+};
+
+export type MutationUpdateDocumentAttachmentCategoryArgs = {
+  attachmentId: Scalars["ID"]["input"];
+  category: DocumentCategory;
 };
 
 export type MutationUpdateLeadArgs = {
@@ -1741,6 +1772,7 @@ export type Query = {
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   findMissingStakeholders: MissingStakeholderRecommendations;
+  getDealDocumentAttachments: Array<DealDocumentAttachment>;
   getDealDocuments: Array<DealDocumentAttachment>;
   getDealFolder?: Maybe<DriveFolder>;
   getDriveFile: DriveFile;
@@ -1755,6 +1787,10 @@ export type Query = {
   getEntityStickers: StickerConnection;
   getPinnedStickers: StickerConnection;
   getRecentDriveFiles: DriveFileConnection;
+  getRecentSharedDriveFiles: Array<DriveFile>;
+  getSharedDriveFiles: Array<DriveFile>;
+  getSharedDriveFolders: Array<DriveFolder>;
+  getSharedDrives: Array<SharedDrive>;
   getSticker?: Maybe<SmartSticker>;
   getStickerCategories: Array<StickerCategory>;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
@@ -1781,6 +1817,7 @@ export type Query = {
   relationshipInsights: Array<RelationshipInsight>;
   searchDriveFiles: DriveFileConnection;
   searchEmails: Array<Email>;
+  searchSharedDriveFiles: Array<DriveFile>;
   searchStickers: StickerConnection;
   stakeholderAnalyses: Array<StakeholderAnalysis>;
   stakeholderAnalysis?: Maybe<StakeholderAnalysis>;
@@ -1864,6 +1901,10 @@ export type QueryFindMissingStakeholdersArgs = {
   organizationId: Scalars["ID"]["input"];
 };
 
+export type QueryGetDealDocumentAttachmentsArgs = {
+  dealId: Scalars["ID"]["input"];
+};
+
 export type QueryGetDealDocumentsArgs = {
   dealId: Scalars["ID"]["input"];
 };
@@ -1926,6 +1967,21 @@ export type QueryGetPinnedStickersArgs = {
 
 export type QueryGetRecentDriveFilesArgs = {
   limit?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryGetRecentSharedDriveFilesArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryGetSharedDriveFilesArgs = {
+  folderId?: InputMaybe<Scalars["ID"]["input"]>;
+  query?: InputMaybe<Scalars["String"]["input"]>;
+  sharedDriveId: Scalars["ID"]["input"];
+};
+
+export type QueryGetSharedDriveFoldersArgs = {
+  parentFolderId?: InputMaybe<Scalars["ID"]["input"]>;
+  sharedDriveId: Scalars["ID"]["input"];
 };
 
 export type QueryGetStickerArgs = {
@@ -1992,6 +2048,11 @@ export type QuerySearchEmailsArgs = {
   entityType?: InputMaybe<EntityType>;
   limit?: InputMaybe<Scalars["Int"]["input"]>;
   query: Scalars["String"]["input"];
+};
+
+export type QuerySearchSharedDriveFilesArgs = {
+  query: Scalars["String"]["input"];
+  sharedDriveId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type QuerySearchStickersArgs = {
@@ -2085,6 +2146,47 @@ export enum SeniorityLevel {
   Senior = "SENIOR",
   Vp = "VP",
 }
+
+export type SharedDrive = {
+  __typename?: "SharedDrive";
+  backgroundImageFile?: Maybe<SharedDriveImage>;
+  capabilities?: Maybe<SharedDriveCapabilities>;
+  colorRgb?: Maybe<Scalars["String"]["output"]>;
+  createdTime: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
+  restrictions?: Maybe<SharedDriveRestrictions>;
+};
+
+export type SharedDriveCapabilities = {
+  __typename?: "SharedDriveCapabilities";
+  canAddChildren?: Maybe<Scalars["Boolean"]["output"]>;
+  canComment?: Maybe<Scalars["Boolean"]["output"]>;
+  canCopy?: Maybe<Scalars["Boolean"]["output"]>;
+  canDeleteDrive?: Maybe<Scalars["Boolean"]["output"]>;
+  canDownload?: Maybe<Scalars["Boolean"]["output"]>;
+  canEdit?: Maybe<Scalars["Boolean"]["output"]>;
+  canListChildren?: Maybe<Scalars["Boolean"]["output"]>;
+  canManageMembers?: Maybe<Scalars["Boolean"]["output"]>;
+  canReadRevisions?: Maybe<Scalars["Boolean"]["output"]>;
+  canRename?: Maybe<Scalars["Boolean"]["output"]>;
+  canRenameDrive?: Maybe<Scalars["Boolean"]["output"]>;
+  canShare?: Maybe<Scalars["Boolean"]["output"]>;
+};
+
+export type SharedDriveImage = {
+  __typename?: "SharedDriveImage";
+  id: Scalars["String"]["output"];
+  webViewLink: Scalars["String"]["output"];
+};
+
+export type SharedDriveRestrictions = {
+  __typename?: "SharedDriveRestrictions";
+  adminManagedRestrictions?: Maybe<Scalars["Boolean"]["output"]>;
+  copyRequiresWriterPermission?: Maybe<Scalars["Boolean"]["output"]>;
+  domainUsersOnly?: Maybe<Scalars["Boolean"]["output"]>;
+  driveMembersOnly?: Maybe<Scalars["Boolean"]["output"]>;
+};
 
 export type SmartSticker = {
   __typename?: "SmartSticker";
@@ -2642,6 +2744,7 @@ export type ResolversTypes = {
   AgentThoughtInput: AgentThoughtInput;
   AgentThoughtType: AgentThoughtType;
   AppSetting: ResolverTypeWrapper<AppSetting>;
+  AttachDocumentInput: AttachDocumentInput;
   AttachFileInput: AttachFileInput;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
   BudgetAuthorityLevel: BudgetAuthorityLevel;
@@ -2748,6 +2851,10 @@ export type ResolversTypes = {
   RelationshipInsight: ResolverTypeWrapper<RelationshipInsight>;
   SendMessageInput: SendMessageInput;
   SeniorityLevel: SeniorityLevel;
+  SharedDrive: ResolverTypeWrapper<SharedDrive>;
+  SharedDriveCapabilities: ResolverTypeWrapper<SharedDriveCapabilities>;
+  SharedDriveImage: ResolverTypeWrapper<SharedDriveImage>;
+  SharedDriveRestrictions: ResolverTypeWrapper<SharedDriveRestrictions>;
   SmartSticker: ResolverTypeWrapper<SmartSticker>;
   SortDirection: SortDirection;
   StageType: StageType;
@@ -2807,6 +2914,7 @@ export type ResolversParentTypes = {
   AgentThought: AgentThought;
   AgentThoughtInput: AgentThoughtInput;
   AppSetting: AppSetting;
+  AttachDocumentInput: AttachDocumentInput;
   AttachFileInput: AttachFileInput;
   Boolean: Scalars["Boolean"]["output"];
   ComposeEmailInput: ComposeEmailInput;
@@ -2893,6 +3001,10 @@ export type ResolversParentTypes = {
   Query: {};
   RelationshipInsight: RelationshipInsight;
   SendMessageInput: SendMessageInput;
+  SharedDrive: SharedDrive;
+  SharedDriveCapabilities: SharedDriveCapabilities;
+  SharedDriveImage: SharedDriveImage;
+  SharedDriveRestrictions: SharedDriveRestrictions;
   SmartSticker: SmartSticker;
   StakeholderAnalysis: StakeholderAnalysis;
   StakeholderNetworkAnalysis: StakeholderNetworkAnalysis;
@@ -3357,10 +3469,17 @@ export type DealDocumentAttachmentResolvers<
     ContextType
   >;
   dealId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
-  fileId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   fileName?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fileSize?: Resolver<Maybe<ResolversTypes["Int"]>, ParentType, ContextType>;
   fileUrl?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  googleFileId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  mimeType?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  sharedDriveId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4192,6 +4311,12 @@ export type MutationResolvers<
       "isPrimary" | "organizationId" | "territoryId"
     >
   >;
+  attachDocumentToDeal?: Resolver<
+    ResolversTypes["DealDocumentAttachment"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAttachDocumentToDealArgs, "input">
+  >;
   attachFileToDeal?: Resolver<
     ResolversTypes["DealDocumentAttachment"],
     ParentType,
@@ -4525,6 +4650,12 @@ export type MutationResolvers<
       "organizationId" | "territoryId"
     >
   >;
+  removeDocumentAttachment?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRemoveDocumentAttachmentArgs, "attachmentId">
+  >;
   revokeGoogleIntegration?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -4591,6 +4722,15 @@ export type MutationResolvers<
     RequireFields<
       MutationUpdateDealWfmProgressArgs,
       "dealId" | "targetWfmWorkflowStepId"
+    >
+  >;
+  updateDocumentAttachmentCategory?: Resolver<
+    ResolversTypes["DealDocumentAttachment"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationUpdateDocumentAttachmentCategoryArgs,
+      "attachmentId" | "category"
     >
   >;
   updateLead?: Resolver<
@@ -5061,6 +5201,12 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryFindMissingStakeholdersArgs, "organizationId">
   >;
+  getDealDocumentAttachments?: Resolver<
+    Array<ResolversTypes["DealDocumentAttachment"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetDealDocumentAttachmentsArgs, "dealId">
+  >;
   getDealDocuments?: Resolver<
     Array<ResolversTypes["DealDocumentAttachment"]>,
     ParentType,
@@ -5147,6 +5293,29 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryGetRecentDriveFilesArgs, "limit">
+  >;
+  getRecentSharedDriveFiles?: Resolver<
+    Array<ResolversTypes["DriveFile"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetRecentSharedDriveFilesArgs, "limit">
+  >;
+  getSharedDriveFiles?: Resolver<
+    Array<ResolversTypes["DriveFile"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetSharedDriveFilesArgs, "sharedDriveId">
+  >;
+  getSharedDriveFolders?: Resolver<
+    Array<ResolversTypes["DriveFolder"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetSharedDriveFoldersArgs, "sharedDriveId">
+  >;
+  getSharedDrives?: Resolver<
+    Array<ResolversTypes["SharedDrive"]>,
+    ParentType,
+    ContextType
   >;
   getSticker?: Resolver<
     Maybe<ResolversTypes["SmartSticker"]>,
@@ -5277,6 +5446,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QuerySearchEmailsArgs, "limit" | "query">
+  >;
+  searchSharedDriveFiles?: Resolver<
+    Array<ResolversTypes["DriveFile"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QuerySearchSharedDriveFilesArgs, "query">
   >;
   searchStickers?: Resolver<
     ResolversTypes["StickerConnection"],
@@ -5416,6 +5591,131 @@ export type RelationshipInsightResolvers<
     ContextType
   >;
   updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type SharedDriveResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["SharedDrive"] = ResolversParentTypes["SharedDrive"],
+> = {
+  backgroundImageFile?: Resolver<
+    Maybe<ResolversTypes["SharedDriveImage"]>,
+    ParentType,
+    ContextType
+  >;
+  capabilities?: Resolver<
+    Maybe<ResolversTypes["SharedDriveCapabilities"]>,
+    ParentType,
+    ContextType
+  >;
+  colorRgb?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  createdTime?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  restrictions?: Resolver<
+    Maybe<ResolversTypes["SharedDriveRestrictions"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type SharedDriveCapabilitiesResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["SharedDriveCapabilities"] = ResolversParentTypes["SharedDriveCapabilities"],
+> = {
+  canAddChildren?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  canComment?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  canCopy?: Resolver<Maybe<ResolversTypes["Boolean"]>, ParentType, ContextType>;
+  canDeleteDrive?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  canDownload?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  canEdit?: Resolver<Maybe<ResolversTypes["Boolean"]>, ParentType, ContextType>;
+  canListChildren?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  canManageMembers?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  canReadRevisions?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  canRename?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  canRenameDrive?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  canShare?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type SharedDriveImageResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["SharedDriveImage"] = ResolversParentTypes["SharedDriveImage"],
+> = {
+  id?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  webViewLink?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type SharedDriveRestrictionsResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["SharedDriveRestrictions"] = ResolversParentTypes["SharedDriveRestrictions"],
+> = {
+  adminManagedRestrictions?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  copyRequiresWriterPermission?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  domainUsersOnly?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  driveMembersOnly?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -6034,6 +6334,10 @@ export type Resolvers<ContextType = GraphQLContext> = {
   PersonRelationship?: PersonRelationshipResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   RelationshipInsight?: RelationshipInsightResolvers<ContextType>;
+  SharedDrive?: SharedDriveResolvers<ContextType>;
+  SharedDriveCapabilities?: SharedDriveCapabilitiesResolvers<ContextType>;
+  SharedDriveImage?: SharedDriveImageResolvers<ContextType>;
+  SharedDriveRestrictions?: SharedDriveRestrictionsResolvers<ContextType>;
   SmartSticker?: SmartStickerResolvers<ContextType>;
   StakeholderAnalysis?: StakeholderAnalysisResolvers<ContextType>;
   StakeholderNetworkAnalysis?: StakeholderNetworkAnalysisResolvers<ContextType>;

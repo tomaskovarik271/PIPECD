@@ -1,6 +1,4 @@
-import { googleDriveService } from '../../../../../lib/googleDriveService';
 import { requireAuthentication } from '../../helpers';
-import { googleIntegrationService } from '../../../../../lib/googleIntegrationService';
 
 interface AttachDocumentInput {
   dealId: string;
