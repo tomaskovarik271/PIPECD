@@ -69,7 +69,9 @@ export const industrialMetalTheme = extendTheme({
   config: { ...baseThemeConfig, initialColorMode: 'dark' } as ThemeConfig,
   fonts: {
     heading: `'Press Start 2P', cursive`,
-    body: `'Roboto Condensed', sans-serif`,
+    body: `'Lato', 'Roboto Condensed', sans-serif`,
+    mono: `'Courier New', monospace`,
+    industrial: `'Bebas Neue', 'Cinzel Decorative', sans-serif`,
   },
   colors: {
     ...industrialColors,
@@ -110,8 +112,11 @@ export const industrialMetalTheme = extendTheme({
            _hover: { bg: 'primary.600' },
         },
         headerText: {
-          color: 'neutral.100',
+          color: 'accentHazard.400',
           fontFamily: `'Press Start 2P', cursive`,
+          fontSize: 'xs',
+          letterSpacing: '1px',
+          textShadow: '0 1px 3px rgba(0,0,0,0.5)',
         },
         userInfoText: {
             color: 'neutral.200'
@@ -120,7 +125,11 @@ export const industrialMetalTheme = extendTheme({
     },
     Button: {
       baseStyle: {
-        fontFamily: `'Roboto Condensed', sans-serif`,
+        fontFamily: `'Lato', sans-serif`,
+        fontWeight: '600',
+        letterSpacing: '0.5px',
+        textTransform: 'uppercase',
+        fontSize: 'sm',
       },
       variants: {
         solid: (props: StyleFunctionProps) => {
@@ -186,16 +195,41 @@ export const industrialMetalTheme = extendTheme({
     },
     Heading: {
         baseStyle: {
-            fontFamily: `'Roboto Condensed', sans-serif`,
+            fontFamily: `'Lato', sans-serif`,
             fontWeight: '700',
             color: 'neutral.50',
+            letterSpacing: '0.5px',
+        },
+        variants: {
+          industrial: {
+            fontFamily: `'Bebas Neue', sans-serif`,
+            fontWeight: '700',
+            letterSpacing: '1.5px',
+            textTransform: 'uppercase',
+            color: 'accentHazard.400',
+          },
         },
     },
     Text: {
         baseStyle: {
-            fontFamily: `'Roboto Condensed', sans-serif`,
+            fontFamily: `'Lato', sans-serif`,
             color: 'neutral.200',
-        }
+            lineHeight: '1.5',
+        },
+        variants: {
+          numeric: {
+            fontFamily: `'Courier New', monospace`,
+            fontWeight: '600',
+            color: 'accentHazard.300',
+            letterSpacing: '0.5px',
+          },
+          industrial: {
+            fontFamily: `'Bebas Neue', sans-serif`,
+            letterSpacing: '1px',
+            textTransform: 'uppercase',
+            color: 'neutral.100',
+          },
+        },
     },
     Modal: {
         baseStyle: (props: StyleFunctionProps) => ({ // Added props
@@ -205,9 +239,12 @@ export const industrialMetalTheme = extendTheme({
                 color: 'neutral.100'
             },
             header: {
-                fontFamily: `'Roboto Condensed', sans-serif`,
+                fontFamily: `'Bebas Neue', sans-serif`,
                 fontWeight: '700',
-                color: 'neutral.100',
+                fontSize: 'lg',
+                letterSpacing: '1px',
+                textTransform: 'uppercase',
+                color: 'accentHazard.400',
                 borderColor: 'neutral.700',
             },
             body: {
@@ -225,21 +262,44 @@ export const industrialMetalTheme = extendTheme({
     Table: {
       variants: {
         simple: (props: StyleFunctionProps) => ({ // Added props
+          table: {
+            fontFamily: `'Lato', 'Roboto Condensed', sans-serif`,
+          },
           th: {
-            fontFamily: `'Roboto Condensed', sans-serif`,
-            color: 'neutral.200',
-            borderColor: 'neutral.800',
-            bg: 'neutral.850', // Darker header
+            fontFamily: `'Bebas Neue', 'Cinzel Decorative', sans-serif`,
+            fontSize: 'sm',
+            fontWeight: '700',
+            letterSpacing: '0.8px',
+            textTransform: 'uppercase',
+            color: 'accentHazard.400',
+            borderColor: 'neutral.700',
+            bg: 'neutral.850',
+            py: 4,
+            px: 3,
+            lineHeight: '1.2',
           },
           td: {
+            fontFamily: `'Lato', sans-serif`,
+            fontSize: 'sm',
+            fontWeight: '400',
+            letterSpacing: '0.3px',
             borderColor: 'neutral.700',
             color: 'neutral.100',
+            py: 3,
+            px: 3,
+            lineHeight: '1.4',
+            _hover: {
+              color: 'neutral.50',
+            },
           },
           tbody: {
             tr: {
               bg: 'neutral.850',
+              transition: 'all 0.2s ease',
               _hover: {
                 bg: 'neutral.800',
+                transform: 'translateY(-1px)',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
               },
             },
           },
@@ -250,6 +310,9 @@ export const industrialMetalTheme = extendTheme({
         variants: {
             outline: (props: StyleFunctionProps) => ({ // Added props
                 field: {
+                    fontFamily: `'Lato', sans-serif`,
+                    fontSize: 'sm',
+                    fontWeight: '400',
                     bg: 'neutral.850',
                     borderColor: 'neutral.600',
                     color: 'neutral.100',
@@ -268,6 +331,9 @@ export const industrialMetalTheme = extendTheme({
         variants: {
             outline: (props: StyleFunctionProps) => ({ // Added props
                 field: {
+                    fontFamily: `'Lato', sans-serif`,
+                    fontSize: 'sm',
+                    fontWeight: '400',
                     bg: 'neutral.850',
                     borderColor: 'neutral.600',
                     color: 'neutral.100',
@@ -283,6 +349,44 @@ export const industrialMetalTheme = extendTheme({
                 }
             })
         }
+    },
+    // Custom component for numeric table cells
+    NumberCell: {
+      baseStyle: {
+        fontFamily: `'Courier New', monospace`,
+        fontSize: 'sm',
+        fontWeight: '600',
+        color: 'accentHazard.300',
+        letterSpacing: '0.5px',
+        textAlign: 'right',
+        tabularNums: true, // Use tabular numbers for better alignment
+      },
+    },
+    // Custom component for currency values
+    CurrencyCell: {
+      baseStyle: {
+        fontFamily: `'Courier New', monospace`,
+        fontSize: 'sm',
+        fontWeight: '700',
+        color: 'accentHazard.400',
+        letterSpacing: '0.5px',
+        textAlign: 'right',
+      },
+    },
+    // Custom component for table section headers
+    TableSectionHeader: {
+      baseStyle: {
+        fontFamily: `'Bebas Neue', sans-serif`,
+        fontSize: 'md',
+        fontWeight: '700',
+        letterSpacing: '1.5px',
+        textTransform: 'uppercase',
+        color: 'accentHazard.500',
+        py: 2,
+        px: 3,
+        bg: 'neutral.900',
+        borderColor: 'accentHazard.600',
+      },
     },
   }
 }); 
