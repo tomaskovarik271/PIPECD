@@ -9,12 +9,13 @@
 2. [Getting Started](#getting-started)
 3. [Core CRM Features](#core-crm-features)
 4. [Advanced Features](#advanced-features)
-5. [User Interface Guide](#user-interface-guide)
-6. [AI Assistant](#ai-assistant)
-7. [Smart Stickers](#smart-stickers)
-8. [Administration](#administration)
-9. [Best Practices](#best-practices)
-10. [Troubleshooting](#troubleshooting)
+5. [Shared Drive Document Management](#shared-drive-document-attachments)
+6. [User Interface Guide](#user-interface-guide)
+7. [AI Assistant](#ai-assistant)
+8. [Smart Stickers](#smart-stickers)
+9. [Administration](#administration)
+10. [Best Practices](#best-practices)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -29,6 +30,7 @@ PipeCD is a next-generation Customer Relationship Management (CRM) system design
 - **Complete CRM Suite**: Manage deals, leads, people, and organizations
 - **AI Assistant**: 27+ specialized tools for automation and insights
 - **Smart Stickers**: Visual collaboration system for team coordination
+- **Shared Drive Integration**: Seamless Google Workspace document management
 - **Relationship Intelligence**: Advanced network analysis and relationship mapping
 - **Custom Workflows**: Flexible deal and lead management processes
 - **Beautiful UI**: Modern, responsive interface with multiple themes
@@ -195,6 +197,133 @@ PipeCD automatically maps relationships between people, organizations, and oppor
 3. Click on nodes to see detailed relationship information
 4. Use filters to focus on specific relationship types
 5. Export relationship maps for presentations
+
+### Shared Drive Document Attachments
+
+**Overview:**
+PipeCD integrates with Google Workspace shared drives to provide seamless document management for deals. This system allows you to browse, search, and attach documents directly from your organization's shared drives without leaving the CRM.
+
+**Key Benefits:**
+- **Centralized Access**: Browse all shared drives from within PipeCD
+- **Smart Organization**: Categorize attachments for easy management
+- **Team Collaboration**: Leverage Google Workspace permissions as single source of truth
+- **Simplified Workflow**: No need to switch between applications
+- **Audit Trail**: Track who attached what documents and when
+
+**Prerequisites:**
+- Google Workspace account with shared drive access
+- Connected Google Integration (complete setup in "Google Integration" section)
+- Appropriate permissions to view shared drive content
+
+### Using Shared Drive Documents
+
+**Accessing the Document Browser:**
+1. Navigate to any Deal detail page
+2. Click the "Documents" tab
+3. The Shared Drive Document Browser will display with four main tabs
+
+**Browser Interface:**
+
+**1. Browse Tab:**
+- **Shared Drive Selection**: Choose from available shared drives
+- **Folder Navigation**: Browse through folders with breadcrumb navigation
+- **File Display**: View files with thumbnails, names, and metadata
+- **Quick Actions**: Attach documents directly from the browser
+
+**2. Search Tab:**
+- **Global Search**: Search across all accessible shared drives
+- **Drive-Specific Search**: Limit search to a specific shared drive
+- **Real-time Results**: Instant search results as you type
+- **Metadata Display**: See file details including size, type, and modification date
+
+**3. Recent Tab:**
+- **Recent Files**: View recently modified files from shared drives
+- **Time-based Filtering**: See what's been updated recently
+- **Quick Access**: Fast attachment of recently worked-on documents
+- **Team Activity**: See what your team has been working on
+
+**4. Attachments Tab:**
+- **Current Attachments**: View all documents attached to the deal
+- **Category Management**: Organize attachments by category
+- **Quick Actions**: Remove or recategorize attachments
+- **Direct Links**: Click to open documents in Google Workspace
+
+### Document Categories
+
+**Available Categories:**
+- 📋 **PROPOSAL**: Sales proposals and quotes
+- 📄 **CONTRACT**: Legal agreements and contracts
+- 📊 **PRESENTATION**: Pitch decks and presentations
+- 📥 **CLIENT_REQUEST**: Documents provided by the client
+- 📤 **CLIENT_DOCUMENT**: Documents intended for the client
+- 📧 **CORRESPONDENCE**: Email threads and communications
+- 📁 **OTHER**: General documents and miscellaneous files
+
+**Category Benefits:**
+- **Organization**: Quickly find specific document types
+- **Reporting**: Generate reports by document category
+- **Workflows**: Set up category-based automations
+- **Team Standards**: Maintain consistent document organization
+
+### Document Attachment Workflow
+
+**Attaching Documents:**
+1. **Browse or Search**: Find the document using Browse, Search, or Recent tabs
+2. **Select Document**: Click on the desired file
+3. **Choose Category**: Select appropriate document category
+4. **Attach**: Click "Attach to Deal" button
+5. **Confirmation**: Document appears in Attachments tab
+
+**Managing Attachments:**
+1. **View Attachments**: Switch to Attachments tab
+2. **Open Documents**: Click document name to open in Google Workspace
+3. **Change Category**: Use category dropdown to recategorize
+4. **Remove Attachments**: Click remove button (with confirmation)
+5. **Bulk Actions**: Select multiple documents for batch operations
+
+### Best Practices
+
+**Document Organization:**
+- **Consistent Categorization**: Use standard categories across all deals
+- **Descriptive Names**: Ensure documents have clear, descriptive names in Google Drive
+- **Folder Structure**: Maintain organized folder structure in shared drives
+- **Regular Cleanup**: Remove outdated or irrelevant attachments
+
+**Team Collaboration:**
+- **Shared Standards**: Establish team conventions for document categorization
+- **Permission Management**: Use Google Workspace permissions to control access
+- **Version Control**: Leverage Google Drive's version control features
+- **Communication**: Use document comments for collaboration
+
+**Security Considerations:**
+- **Access Control**: Attachments respect Google Workspace permissions
+- **Audit Trail**: All attachment actions are logged with user attribution
+- **Data Privacy**: No documents are stored in PipeCD - only references
+- **Permission Sync**: Changes in Google Drive permissions automatically apply
+
+### Troubleshooting Document Issues
+
+**Common Problems:**
+
+**Access Issues:**
+- **No Shared Drives Visible**: Verify Google Integration is connected
+- **Permission Denied**: Check Google Workspace permissions
+- **Files Not Loading**: Refresh browser or check network connection
+
+**Attachment Problems:**
+- **Attachment Failed**: Verify you have permission to access the document
+- **Category Not Saving**: Ensure you selected a valid category
+- **Documents Not Appearing**: Check if document still exists in shared drive
+
+**Search Issues:**
+- **No Search Results**: Verify search terms and drive permissions
+- **Slow Search**: Complex searches may take time to process
+- **Missing Files**: Files may be in folders you don't have access to
+
+**Getting Help:**
+- **Refresh Connection**: Disconnect and reconnect Google Integration
+- **Check Permissions**: Verify shared drive access in Google Workspace
+- **Contact Admin**: Report persistent issues to system administrator
 
 ### Custom Fields System
 
@@ -563,14 +692,15 @@ PipeCD is designed to grow with your business, providing the flexibility and int
 1. Complete initial setup and user training
 2. Import existing customer data
 3. Configure custom fields and workflows
-4. Establish team processes and standards
-5. Begin using AI Assistant and Smart Stickers
-6. Monitor usage and optimize performance
+4. Connect Google Workspace integration for shared drive access
+5. Establish team processes and standards
+6. Begin using AI Assistant, Smart Stickers, and Shared Drive Documents
+7. Monitor usage and optimize performance
 
 ---
 
 *For additional support or advanced configuration assistance, please contact your system administrator or PipeCD support team.*
 
-**Document Version:** 1.0  
-**Last Updated:** June 2025  
-**System Version:** PipeCD v1.0 
+**Document Version:** 1.1  
+**Last Updated:** January 2025  
+**System Version:** PipeCD v1.1 
