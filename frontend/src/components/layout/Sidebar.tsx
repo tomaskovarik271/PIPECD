@@ -102,7 +102,6 @@ function Sidebar() {
   // For logo selection, determine if we need light or dark logo
   const isDarkBackgroundForLogo = ['modern', 'industrialMetal'].includes(currentThemeName);
   const selectedLogo = isDarkBackgroundForLogo ? logoNegative : logoPositive;
-  const selectedIconLogo = isDarkBackgroundForLogo ? '/assets/logos/logo-negative-icon.svg' : '/assets/logos/logo-positive-icon.svg';
 
   // Check if user has any admin permissions
   const hasAdminPermissions = userPermissions?.some(permission => 
@@ -163,16 +162,23 @@ function Sidebar() {
           w="100%"
         >
           {!isSidebarCollapsed && (
-            <Text 
-              color={colors.component.sidebar.textActive} // NEW: Semantic token
-              fontSize="20px" 
-              fontWeight="bold"
-              letterSpacing="tight"
-            >
-              CreativeDock
-            </Text>
+            <Image 
+              src={selectedLogo} 
+              alt="CreativeDock"
+              maxH="40px"
+              maxW="200px"
+              objectFit="contain"
+            />
           )}
-          {isSidebarCollapsed && <Image src={selectedIconLogo} alt="CD" maxH="30px" />}
+          {isSidebarCollapsed && (
+            <Image 
+              src={selectedLogo} 
+              alt="CD"
+              maxH="30px"
+              maxW="50px"
+              objectFit="contain"
+            />
+          )}
         </Box>
       
         {/* Navigation Items */}
