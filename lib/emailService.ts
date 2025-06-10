@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { googleIntegrationService } from './googleIntegrationService';
+import { getAuthenticatedClient } from './serviceUtils';
 
 export interface EmailThread {
   id: string;
@@ -88,13 +89,46 @@ class EmailService {
         refresh_token: tokens.refresh_token,
       });
 
+      // Set up automatic token refresh
+      oauth2Client.on('tokens', async (newTokens) => {
+        if (newTokens.refresh_token) {
+          console.log('New refresh token received, updating database...');
+          // If we get a new refresh token, update our stored tokens
+          await googleIntegrationService.storeExtendedTokens(
+            userId,
+            {
+              access_token: newTokens.access_token!,
+              refresh_token: newTokens.refresh_token,
+              expires_at: newTokens.expiry_date ? new Date(newTokens.expiry_date).toISOString() : undefined,
+              granted_scopes: tokens.granted_scopes // Preserve existing scopes
+            },
+            accessToken
+          );
+        } else if (newTokens.access_token) {
+          console.log('Access token refreshed, updating database...');
+          // Just update the access token and expiry
+          const supabase = getAuthenticatedClient(accessToken);
+          await supabase
+            .from('google_oauth_tokens')
+            .update({
+              access_token: newTokens.access_token,
+              expires_at: newTokens.expiry_date ? new Date(newTokens.expiry_date).toISOString() : null,
+              last_used_at: new Date().toISOString()
+            })
+            .eq('user_id', userId);
+        }
+      });
+
       return google.gmail({ version: 'v1', auth: oauth2Client });
     } catch (error) {
       console.error('Failed to get Gmail client:', error);
-      if (error.message === 'GMAIL_NOT_CONNECTED') {
+      if (error instanceof Error && error.message === 'GMAIL_NOT_CONNECTED') {
         throw new Error('Gmail integration not connected. Please reconnect your Google account.');
       }
-      if (error.message.includes('JWSError') || error.message.includes('Invalid number of parts')) {
+      if (error instanceof Error && (error.message.includes('JWSError') || error.message.includes('Invalid number of parts'))) {
+        throw new Error('Gmail authentication expired. Please reconnect your Google account.');
+      }
+      if (error instanceof Error && error.message.includes('refresh')) {
         throw new Error('Gmail authentication expired. Please reconnect your Google account.');
       }
       throw new Error('Failed to authenticate with Gmail. Please check your Google integration.');

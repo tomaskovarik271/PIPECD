@@ -28,10 +28,12 @@ interface DealOrganizationContactsPanelProps {
     id: string;
     name: string;
   } | null;
+  onContactCountChange?: (count: number) => void;
 }
 
 export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPanelProps> = ({
   organization,
+  onContactCountChange,
 }) => {
   const colors = useThemeColors();
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
@@ -47,8 +49,18 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
     if (people && organization?.id) {
       const contacts = people.filter(person => person.organization_id === organization.id);
       setOrganizationContacts(contacts);
+      // Notify parent component of contact count
+      if (onContactCountChange) {
+        onContactCountChange(contacts.length);
+      }
+    } else {
+      // No organization or people loaded yet
+      setOrganizationContacts([]);
+      if (onContactCountChange) {
+        onContactCountChange(0);
+      }
     }
-  }, [people, organization?.id]);
+  }, [people, organization?.id, onContactCountChange]);
 
   if (!organization) {
     return (

@@ -31,7 +31,7 @@ import ColumnSelector from '../components/common/ColumnSelector';
 import EmptyState from '../components/common/EmptyState';
 import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
 import { usePageLayoutStyles } from '../utils/headerUtils';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { useOrganizationsStore } from '../stores/useOrganizationsStore';
 import { usePeopleStore } from '../stores/usePeopleStore';
@@ -63,6 +63,8 @@ const getActivityTypeColor = (type: string): string => {
 }
 
 function ActivitiesPage() {
+  const navigate = useNavigate();
+  
   // Store state and actions from useActivitiesStore
   const {
     activities,
@@ -160,6 +162,11 @@ function ActivitiesPage() {
     onEditClose();
     setActivityToEdit(null);
   };
+
+  // NEW: Modern UX - Row click handler
+  const handleRowClick = useCallback((activity: Activity) => {
+    navigate(`/activities/${activity.id}`);
+  }, [navigate]);
 
   const TABLE_KEY = 'activities_list';
 
@@ -397,6 +404,8 @@ function ActivitiesPage() {
               columns={visibleColumns}
               initialSortKey="due_date"
               initialSortDirection="ascending"
+              onRowClick={handleRowClick}
+              excludeClickableColumns={['actions', 'is_done']}
             />
           </Box>
         )}

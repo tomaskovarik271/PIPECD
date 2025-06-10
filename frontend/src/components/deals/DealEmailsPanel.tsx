@@ -822,11 +822,58 @@ const CreateTaskModal: React.FC<{
             
             <FormControl>
               <FormLabel>Due Date</FormLabel>
-              <Input
-                type="datetime-local"
-                value={formData.dueDate}
-                onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-              />
+              <Box 
+                borderWidth="1px" 
+                borderRadius="md" 
+                borderColor="inherit"
+                bg="inherit"
+                _hover={{ borderColor: "gray.300" }}
+                _focusWithin={{ borderColor: "blue.500", boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)" }}
+                transition="all 0.2s"
+              >
+                <HStack spacing={0} divider={<Box w="1px" h="6" bg="gray.200" />}>
+                  <Box flex={1}>
+                    <Input
+                      type="date"
+                      border="none"
+                      _focus={{ boxShadow: "none" }}
+                      placeholder="Select date"
+                      value={formData.dueDate ? formData.dueDate.split('T')[0] : ''}
+                      onChange={(e) => {
+                        const timeValue = formData.dueDate && formData.dueDate.includes('T') ? formData.dueDate.split('T')[1] : '09:00';
+                        const newDateTime = e.target.value ? `${e.target.value}T${timeValue}` : '';
+                        setFormData({ ...formData, dueDate: newDateTime });
+                      }}
+                    />
+                  </Box>
+                  <Box flex={0} minW="120px">
+                    <Select
+                      placeholder="Time"
+                      border="none"
+                      _focus={{ boxShadow: "none" }}
+                      value={formData.dueDate && formData.dueDate.includes('T') ? formData.dueDate.split('T')[1]?.substring(0, 5) : ''}
+                      onChange={(e) => {
+                        const dateValue = formData.dueDate && formData.dueDate.includes('T') ? formData.dueDate.split('T')[0] : new Date().toISOString().split('T')[0];
+                        const newDateTime = dateValue && e.target.value ? `${dateValue}T${e.target.value}` : '';
+                        setFormData({ ...formData, dueDate: newDateTime });
+                      }}
+                    >
+                      {/* Generate 15-minute interval options */}
+                      {Array.from({ length: 96 }, (_, i) => {
+                        const hours = Math.floor(i / 4);
+                        const minutes = (i % 4) * 15;
+                        const timeValue = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                        const displayValue = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                        return (
+                          <option key={timeValue} value={timeValue}>
+                            {displayValue}
+                          </option>
+                        );
+                      })}
+                    </Select>
+                  </Box>
+                </HStack>
+              </Box>
             </FormControl>
           </VStack>
         </ModalBody>

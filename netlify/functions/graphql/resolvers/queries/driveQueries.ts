@@ -23,7 +23,8 @@ export const driveQueries = {
       console.log('getDriveFiles: Using Google OAuth token for Drive API');
       console.log('getDriveFiles: Query parameters:', { folderId: input.folderId, query: input.query, limit: input.limit });
       const files = await googleDriveService.listFiles(
-        googleTokens.access_token,
+        userId,
+        accessToken,
         input.folderId,
         input.query
       );
@@ -57,7 +58,8 @@ export const driveQueries = {
       }
       
       const folders = await googleDriveService.browseFolders(
-        googleTokens.access_token,
+        userId,
+        accessToken,
         input.parentFolderId
       );
       
@@ -82,7 +84,7 @@ export const driveQueries = {
         throw new Error('Google Drive access not authorized. Please connect your Google account.');
       }
       
-      return await googleDriveService.getFile(googleTokens.access_token, fileId);
+      return await googleDriveService.getFile(userId, accessToken, fileId);
     } catch (error) {
       console.error('Error in getDriveFile:', error);
       throw new Error(`Failed to load Google Drive file: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -100,7 +102,7 @@ export const driveQueries = {
         throw new Error('Google Drive access not authorized. Please connect your Google account.');
       }
       
-      const files = await googleDriveService.searchFiles(googleTokens.access_token, query);
+      const files = await googleDriveService.searchFiles(userId, accessToken, query);
       
       return {
         files,
@@ -123,7 +125,7 @@ export const driveQueries = {
         throw new Error('Google Drive access not authorized. Please connect your Google account.');
       }
       
-      const files = await googleDriveService.getRecentFiles(googleTokens.access_token, limit);
+      const files = await googleDriveService.getRecentFiles(userId, accessToken, limit);
       
       return {
         files,

@@ -14,6 +14,7 @@ import {
   RadioGroup,
   Radio,
   HStack,
+  Box,
   Spinner,
   Alert,
   AlertIcon,
@@ -206,11 +207,61 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
 
         <FormControl isInvalid={!!errors.due_date}>
           <FormLabel htmlFor='due_date'>Due Date/Time</FormLabel>
-          <Input
-            id='due_date'
-            type='datetime-local' // Use datetime-local for combined date and time
-            {...register('due_date')}
-          />
+          <Box 
+            borderWidth="1px" 
+            borderRadius="md" 
+            borderColor="inherit"
+            bg="inherit"
+            _hover={{ borderColor: "gray.300" }}
+            _focusWithin={{ borderColor: "blue.500", boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)" }}
+            transition="all 0.2s"
+          >
+            <HStack spacing={0} divider={<Box w="1px" h="6" bg="gray.200" />}>
+              <Box flex={1}>
+                <Input
+                  id='due_date_date'
+                  type='date'
+                  border="none"
+                  _focus={{ boxShadow: "none" }}
+                  placeholder='Select date'
+                  onChange={(e) => {
+                    const currentValue = watch('due_date') || '';
+                    const timeValue = currentValue.includes('T') ? currentValue.split('T')[1] : '09:00';
+                    const newDateTime = e.target.value ? `${e.target.value}T${timeValue}` : '';
+                    setValue('due_date', newDateTime);
+                  }}
+                  value={watch('due_date') ? watch('due_date')?.split('T')[0] || '' : ''}
+                />
+              </Box>
+              <Box flex={0} minW="120px">
+                <Select
+                  placeholder='Time'
+                  border="none"
+                  _focus={{ boxShadow: "none" }}
+                  onChange={(e) => {
+                    const currentValue = watch('due_date') || '';
+                    const dateValue = currentValue.includes('T') ? currentValue.split('T')[0] : new Date().toISOString().split('T')[0];
+                    const newDateTime = dateValue && e.target.value ? `${dateValue}T${e.target.value}` : '';
+                    setValue('due_date', newDateTime);
+                  }}
+                  value={watch('due_date') ? watch('due_date')?.split('T')[1]?.substring(0, 5) || '' : ''}
+                >
+                  {/* Generate 15-minute interval options */}
+                  {Array.from({ length: 96 }, (_, i) => {
+                    const hours = Math.floor(i / 4);
+                    const minutes = (i % 4) * 15;
+                    const timeValue = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    const displayValue = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    return (
+                      <option key={timeValue} value={timeValue}>
+                        {displayValue}
+                      </option>
+                    );
+                  })}
+                </Select>
+              </Box>
+            </HStack>
+          </Box>
           <FormErrorMessage>{errors.due_date?.message as string}</FormErrorMessage>
         </FormControl>
         

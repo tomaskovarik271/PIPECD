@@ -26,7 +26,7 @@ import CreateOrganizationModal from '../components/CreateOrganizationModal';
 import EditOrganizationModal from '../components/EditOrganizationModal';
 import EmptyState from '../components/common/EmptyState';
 import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { getLinkDisplayDetails } from '../lib/utils/linkUtils';
 import { CustomFieldDefinition as GQLCustomFieldDefinition } from '../generated/graphql/graphql';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
@@ -34,6 +34,7 @@ import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 
 function OrganizationsPage() {
+  const navigate = useNavigate();
   const { organizations, organizationsLoading, organizationsError, fetchOrganizations, deleteOrganization } = useOrganizationsStore();
   const { userPermissions } = useAppStore();
   const { 
@@ -72,6 +73,11 @@ function OrganizationsPage() {
     setOrganizationIdToDelete(organizationId);
     onConfirmDeleteOpen();
   }, [onConfirmDeleteOpen]);
+
+  // NEW: Modern UX - Row click handler
+  const handleRowClick = useCallback((organization: Organization) => {
+    navigate(`/organizations/${organization.id}`);
+  }, [navigate]);
 
   useEffect(() => {
     fetchOrganizations();
@@ -349,6 +355,8 @@ function OrganizationsPage() {
               columns={visibleColumns}
               initialSortKey="name"
               initialSortDirection="ascending"
+              onRowClick={handleRowClick}
+              excludeClickableColumns={['actions']}
             />
           </Box>
         )}

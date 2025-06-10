@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -16,21 +16,33 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   Center,
-  Icon
+  Icon,
+  Input,
+  useToast,
 } from '@chakra-ui/react';
-import { ArrowBackIcon, WarningIcon } from '@chakra-ui/icons';
+import { ArrowBackIcon, WarningIcon, EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore'; // Assuming Organization type is exported
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors'; // NEW: Use semantic tokens
 import { StickerBoard } from '../components/common/StickerBoard';
 
 const OrganizationDetailPage = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
+  const toast = useToast();
   
   // NEW: Use semantic tokens for automatic theme adaptation
   const colors = useThemeColors();
   const styles = useThemeStyles();
 
+  // Inline editing states
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [isEditingIndustry, setIsEditingIndustry] = useState(false);
+  const [newIndustry, setNewIndustry] = useState('');
+  const [isEditingWebsite, setIsEditingWebsite] = useState(false);
+  const [newWebsite, setNewWebsite] = useState('');
+
   const fetchOrganizationById = useOrganizationsStore((state) => state.fetchOrganizationById); // Assuming this exists or will be added
+  const updateOrganization = useOrganizationsStore((state) => state.updateOrganization);
   const currentOrganization = useOrganizationsStore((state) => state.currentOrganization); // Assuming this exists or will be added
   const isLoadingOrganization = useOrganizationsStore((state) => state.isLoadingSingleOrganization); // Assuming this exists or will be added
   const organizationError = useOrganizationsStore((state) => state.errorSingleOrganization); // Assuming this exists or will be added
@@ -42,6 +54,43 @@ const OrganizationDetailPage = () => {
     // Optional: Clear currentOrganization on unmount
     // return () => useOrganizationsStore.setState({ currentOrganization: null, errorSingleOrganization: null });
   }, [organizationId, fetchOrganizationById]);
+
+  // Update handlers for inline editing
+  const handleNameUpdate = async () => {
+    if (!currentOrganization || !organizationId) return;
+    try {
+      await updateOrganization(organizationId, { name: newName });
+      toast({ title: 'Name Updated', status: 'success', duration: 2000, isClosable: true });
+      setIsEditingName(false);
+      fetchOrganizationById(organizationId);
+    } catch (e) {
+      toast({ title: 'Error Updating Name', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+  const handleIndustryUpdate = async () => {
+    if (!currentOrganization || !organizationId) return;
+    try {
+      await updateOrganization(organizationId, { industry: newIndustry } as any);
+      toast({ title: 'Industry Updated', status: 'success', duration: 2000, isClosable: true });
+      setIsEditingIndustry(false);
+      fetchOrganizationById(organizationId);
+    } catch (e) {
+      toast({ title: 'Error Updating Industry', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+  const handleWebsiteUpdate = async () => {
+    if (!currentOrganization || !organizationId) return;
+    try {
+      await updateOrganization(organizationId, { website: newWebsite } as any);
+      toast({ title: 'Website Updated', status: 'success', duration: 2000, isClosable: true });
+      setIsEditingWebsite(false);
+      fetchOrganizationById(organizationId);
+    } catch (e) {
+      toast({ title: 'Error Updating Website', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
 
   // NEW: Single unified layout that works with all themes
   return (
@@ -158,36 +207,176 @@ const OrganizationDetailPage = () => {
                 Organization Information
               </Heading>
               <VStack spacing={4} align="stretch">
-                <HStack justifyContent="space-between">
-                  <Text fontSize="sm" color={colors.text.muted}>Name</Text> {/* NEW: Semantic token */}
-                  <Text 
-                    fontSize="md" 
-                    fontWeight="medium" 
-                    color={colors.text.secondary} // NEW: Semantic token
-                  >
-                    {currentOrganization.name}
-                  </Text>
+                {/* Name Field */}
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text fontSize="sm" color={colors.text.muted}>Name</Text>
+                  {!isEditingName ? (
+                    <HStack spacing={2}>
+                      <Text 
+                        fontSize="md" 
+                        fontWeight="medium" 
+                        color={colors.text.secondary}
+                      >
+                        {currentOrganization.name}
+                      </Text>
+                      <IconButton 
+                        icon={<EditIcon />} 
+                        size="xs" 
+                        variant="ghost" 
+                        aria-label="Edit Name" 
+                        onClick={() => {
+                          setIsEditingName(true);
+                          setNewName(currentOrganization.name || '');
+                        }}
+                        color={colors.text.muted}
+                        _hover={{color: colors.text.link}}
+                      />
+                    </HStack>
+                  ) : (
+                    <HStack spacing={2} flex={1} justifyContent="flex-end">
+                      <Input 
+                        value={newName} 
+                        onChange={(e) => setNewName(e.target.value)} 
+                        placeholder="Enter organization name" 
+                        size="sm" 
+                        w="300px"
+                        bg={colors.bg.input}
+                        borderColor={colors.border.default}
+                        _hover={{borderColor: colors.border.emphasis}}
+                        _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                      />
+                      <IconButton 
+                        icon={<CheckIcon />} 
+                        size="xs" 
+                        colorScheme="green" 
+                        aria-label="Save Name" 
+                        onClick={handleNameUpdate}
+                      />
+                      <IconButton 
+                        icon={<SmallCloseIcon />} 
+                        size="xs" 
+                        variant="ghost" 
+                        colorScheme="red" 
+                        aria-label="Cancel Edit Name" 
+                        onClick={() => setIsEditingName(false)}
+                      />
+                    </HStack>
+                  )}
                 </HStack>
-                {/* Add more fields like address, website, industry etc. */}
-                 <HStack justifyContent="space-between">
-                  <Text fontSize="sm" color={colors.text.muted}>Industry</Text> {/* NEW: Semantic token */}
-                  <Text 
-                    fontSize="md" 
-                    fontWeight="medium" 
-                    color={colors.text.secondary} // NEW: Semantic token
-                  >
-                    {(currentOrganization as any).industry || '-'}
-                  </Text> {/* Example, cast if not in type */}
+
+                {/* Industry Field */}
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text fontSize="sm" color={colors.text.muted}>Industry</Text>
+                  {!isEditingIndustry ? (
+                    <HStack spacing={2}>
+                      <Text 
+                        fontSize="md" 
+                        fontWeight="medium" 
+                        color={colors.text.secondary}
+                      >
+                        {(currentOrganization as any).industry || '-'}
+                      </Text>
+                      <IconButton 
+                        icon={<EditIcon />} 
+                        size="xs" 
+                        variant="ghost" 
+                        aria-label="Edit Industry" 
+                        onClick={() => {
+                          setIsEditingIndustry(true);
+                          setNewIndustry((currentOrganization as any).industry || '');
+                        }}
+                        color={colors.text.muted}
+                        _hover={{color: colors.text.link}}
+                      />
+                    </HStack>
+                  ) : (
+                    <HStack spacing={2} flex={1} justifyContent="flex-end">
+                      <Input 
+                        value={newIndustry} 
+                        onChange={(e) => setNewIndustry(e.target.value)} 
+                        placeholder="Enter industry" 
+                        size="sm" 
+                        w="250px"
+                        bg={colors.bg.input}
+                        borderColor={colors.border.default}
+                        _hover={{borderColor: colors.border.emphasis}}
+                        _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                      />
+                      <IconButton 
+                        icon={<CheckIcon />} 
+                        size="xs" 
+                        colorScheme="green" 
+                        aria-label="Save Industry" 
+                        onClick={handleIndustryUpdate}
+                      />
+                      <IconButton 
+                        icon={<SmallCloseIcon />} 
+                        size="xs" 
+                        variant="ghost" 
+                        colorScheme="red" 
+                        aria-label="Cancel Edit Industry" 
+                        onClick={() => setIsEditingIndustry(false)}
+                      />
+                    </HStack>
+                  )}
                 </HStack>
-                 <HStack justifyContent="space-between">
-                  <Text fontSize="sm" color={colors.text.muted}>Website</Text> {/* NEW: Semantic token */}
-                  <Text 
-                    fontSize="md" 
-                    fontWeight="medium" 
-                    color={colors.text.link} // NEW: Semantic token
-                  >
-                    {(currentOrganization as any).website || '-'}
-                  </Text> {/* Example */}
+
+                {/* Website Field */}
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text fontSize="sm" color={colors.text.muted}>Website</Text>
+                  {!isEditingWebsite ? (
+                    <HStack spacing={2}>
+                      <Text 
+                        fontSize="md" 
+                        fontWeight="medium" 
+                        color={colors.text.link}
+                      >
+                        {(currentOrganization as any).website || '-'}
+                      </Text>
+                      <IconButton 
+                        icon={<EditIcon />} 
+                        size="xs" 
+                        variant="ghost" 
+                        aria-label="Edit Website" 
+                        onClick={() => {
+                          setIsEditingWebsite(true);
+                          setNewWebsite((currentOrganization as any).website || '');
+                        }}
+                        color={colors.text.muted}
+                        _hover={{color: colors.text.link}}
+                      />
+                    </HStack>
+                  ) : (
+                    <HStack spacing={2} flex={1} justifyContent="flex-end">
+                      <Input 
+                        type="url"
+                        value={newWebsite} 
+                        onChange={(e) => setNewWebsite(e.target.value)} 
+                        placeholder="Enter website URL" 
+                        size="sm" 
+                        w="300px"
+                        bg={colors.bg.input}
+                        borderColor={colors.border.default}
+                        _hover={{borderColor: colors.border.emphasis}}
+                        _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                      />
+                      <IconButton 
+                        icon={<CheckIcon />} 
+                        size="xs" 
+                        colorScheme="green" 
+                        aria-label="Save Website" 
+                        onClick={handleWebsiteUpdate}
+                      />
+                      <IconButton 
+                        icon={<SmallCloseIcon />} 
+                        size="xs" 
+                        variant="ghost" 
+                        colorScheme="red" 
+                        aria-label="Cancel Edit Website" 
+                        onClick={() => setIsEditingWebsite(false)}
+                      />
+                    </HStack>
+                  )}
                 </HStack>
               </VStack>
             </Box>

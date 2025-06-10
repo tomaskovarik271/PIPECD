@@ -36,6 +36,10 @@ interface SortableTableProps<T extends { id: string }> {
   // Include TableContainer props if needed, e.g., borderWidth, borderRadius
   borderWidth?: string | number;
   borderRadius?: string | number;
+  // NEW: Modern UX props
+  onRowClick?: (item: T) => void; // Optional row click handler
+  excludeClickableColumns?: string[]; // Columns that shouldn't trigger row click (like actions)
+  isRowClickable?: (item: T) => boolean; // Optional function to determine if row is clickable
 }
 
 function SortableTable<T extends { id: string }>({ 
@@ -44,7 +48,10 @@ function SortableTable<T extends { id: string }>({
   initialSortKey, 
   initialSortDirection = 'ascending',
   borderWidth: propBorderWidth, // Renamed to avoid conflict, will be conditional
-  borderRadius: propBorderRadius // Renamed to avoid conflict
+  borderRadius: propBorderRadius, // Renamed to avoid conflict
+  onRowClick,
+  excludeClickableColumns,
+  isRowClickable
 }: SortableTableProps<T>) {
   
   const colors = useThemeColors();
@@ -154,30 +161,44 @@ function SortableTable<T extends { id: string }>({
           </Tr>
         </Thead>
         <Tbody>
-          {sortedData.map((item) => (
-            <Tr 
-              key={item.id} 
-              bg={colors.component.table.row}
-              borderBottomWidth="1px"
-              borderColor={colors.component.table.border}
-              _hover={{ 
-                bg: colors.component.table.rowHover
-              }}
-            >
-              {columns.map((column) => (
-                <Td 
-                  key={`${item.id}-${String(column.key)}`}
-                  isNumeric={column.isNumeric}
-                  color={colors.text.primary}
-                  borderColor={colors.component.table.border}
-                  py={3}
-                  px={4}
-                >
-                  {column.renderCell(item)}
-                </Td>
-              ))}
-            </Tr>
-          ))}
+          {sortedData.map((item) => {
+            const isClickable = onRowClick && (!isRowClickable || isRowClickable(item));
+            
+            return (
+              <Tr 
+                key={item.id} 
+                bg={colors.component.table.row}
+                borderBottomWidth="1px"
+                borderColor={colors.component.table.border}
+                cursor={isClickable ? "pointer" : "default"}
+                _hover={{ 
+                  bg: colors.component.table.rowHover,
+                  transform: isClickable ? "translateY(-1px)" : "none",
+                  boxShadow: isClickable ? "sm" : "none",
+                  transition: "all 0.2s ease-in-out"
+                }}
+                onClick={isClickable ? () => onRowClick(item) : undefined}
+              >
+                {columns.map((column) => {
+                  const shouldPreventClick = excludeClickableColumns?.includes(String(column.key));
+                  
+                  return (
+                    <Td 
+                      key={`${item.id}-${String(column.key)}`}
+                      isNumeric={column.isNumeric}
+                      color={colors.text.primary}
+                      borderColor={colors.component.table.border}
+                      py={3}
+                      px={4}
+                      onClick={shouldPreventClick ? (e) => e.stopPropagation() : undefined}
+                    >
+                      {column.renderCell(item)}
+                    </Td>
+                  );
+                })}
+              </Tr>
+            );
+          })}
         </Tbody>
       </Table>
     </TableContainer>

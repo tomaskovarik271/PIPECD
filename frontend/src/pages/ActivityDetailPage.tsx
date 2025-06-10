@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -9,18 +9,26 @@ import {
   AlertIcon,
   AlertTitle,
   AlertDescription,
-  Button,
   VStack,
   HStack,
   Tag,
-  IconButton,
   Flex,
   useToast,
   useColorModeValue,
   Link,
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  Grid,
+  GridItem,
+  Input,
+  IconButton,
+  Select,
 } from '@chakra-ui/react';
-import { ArrowBackIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
+
 import { useActivitiesStore } from '../stores/useActivitiesStore';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 const ActivityDetailPage: React.FC = () => {
   const { activityId } = useParams<{ activityId: string }>();
@@ -29,10 +37,22 @@ const ActivityDetailPage: React.FC = () => {
     currentActivityLoading,
     currentActivityError,
     fetchActivityById,
+    updateActivity,
   } = useActivitiesStore(); 
 
   const toast = useToast();
-  const notesBg = useColorModeValue('gray.50', 'gray.700');
+  const colors = useThemeColors();
+  
+  // Inline editing states
+  const [isEditingSubject, setIsEditingSubject] = useState(false);
+  const [newSubject, setNewSubject] = useState('');
+  const [isEditingType, setIsEditingType] = useState(false);
+  const [newType, setNewType] = useState('');
+  const [isEditingDueDate, setIsEditingDueDate] = useState(false);
+  const [newDueDate, setNewDueDate] = useState('');
+
+  const [isEditingStatus, setIsEditingStatus] = useState(false);
+  const [newStatus, setNewStatus] = useState(false);
   
   useEffect(() => {
     if (activityId) {
@@ -44,6 +64,57 @@ const ActivityDetailPage: React.FC = () => {
       // useActivitiesStore.setState({ currentActivity: null, currentActivityError: null, currentActivityLoading: false });
     };
   }, [activityId, fetchActivityById]);
+
+  // Update handlers for inline editing
+  const handleSubjectUpdate = async () => {
+    if (!currentActivity || !activityId) return;
+    try {
+      await updateActivity(activityId, { subject: newSubject });
+      toast({ title: 'Subject Updated', status: 'success', duration: 2000, isClosable: true });
+      setIsEditingSubject(false);
+      fetchActivityById(activityId);
+    } catch (e) {
+      toast({ title: 'Error Updating Subject', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+  const handleTypeUpdate = async () => {
+    if (!currentActivity || !activityId) return;
+    try {
+      await updateActivity(activityId, { type: newType as any });
+      toast({ title: 'Type Updated', status: 'success', duration: 2000, isClosable: true });
+      setIsEditingType(false);
+      fetchActivityById(activityId);
+    } catch (e) {
+      toast({ title: 'Error Updating Type', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+  const handleDueDateUpdate = async () => {
+    if (!currentActivity || !activityId) return;
+    try {
+      await updateActivity(activityId, { due_date: newDueDate });
+      toast({ title: 'Due Date Updated', status: 'success', duration: 2000, isClosable: true });
+      setIsEditingDueDate(false);
+      fetchActivityById(activityId);
+    } catch (e) {
+      toast({ title: 'Error Updating Due Date', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+
+
+  const handleStatusUpdate = async () => {
+    if (!currentActivity || !activityId) return;
+    try {
+      await updateActivity(activityId, { is_done: newStatus });
+      toast({ title: 'Status Updated', status: 'success', duration: 2000, isClosable: true });
+      setIsEditingStatus(false);
+      fetchActivityById(activityId);
+    } catch (e) {
+      toast({ title: 'Error Updating Status', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
 
   if (currentActivityLoading) {
     return (
@@ -80,7 +151,6 @@ const ActivityDetailPage: React.FC = () => {
     subject, 
     due_date, 
     is_done, 
-    notes, 
     created_at, 
     updated_at, 
     user, 
@@ -93,80 +163,438 @@ const ActivityDetailPage: React.FC = () => {
 
   return (
     <Box p={5}>
-      <Flex justifyContent="space-between" alignItems="center" mb={6}>
-        <HStack spacing={3}>
-          <IconButton
-            as={RouterLink}
-            to={deal?.id ? `/deals/${deal.id}` : '/deals'} // Use destructured deal
-            aria-label="Back"
-            icon={<ArrowBackIcon />}
-            variant="outline"
-          />
-          <Heading size="lg">Activity: {subject || 'Details'}</Heading>
-        </HStack>
-        <HStack spacing={3}>
-          {/* TODO: Implement Edit/Delete Modals and functionality */}
-          <Button leftIcon={<EditIcon />} colorScheme="blue" variant="outline" isDisabled>Edit</Button>
-          <Button leftIcon={<DeleteIcon />} colorScheme="red" variant="outline" isDisabled>Delete</Button>
-        </HStack>
-      </Flex>
+      {/* Header: Breadcrumbs, Title */}
+      <Box 
+        pb={4} 
+        borderBottomWidth="1px" 
+        borderColor={colors.border.default}
+        mb={6}
+      >
+        <Breadcrumb 
+          spacing="8px" 
+          separator={<Text color={colors.text.muted}>/</Text>}
+          color={colors.text.muted}
+          fontSize="sm"
+        >
+          <BreadcrumbItem>
+            <BreadcrumbLink 
+              as={RouterLink} 
+              to="/activities" 
+              color={colors.text.link}
+              _hover={{textDecoration: 'underline'}}
+            >
+              Activities
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrentPage>
+            <BreadcrumbLink 
+              href="#" 
+              color={colors.text.secondary}
+              _hover={{textDecoration: 'none', cursor: 'default'}}
+            >
+              {subject || 'Activity Details'}
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+        </Breadcrumb>
+        <Heading 
+          size="xl" 
+          color={colors.text.primary}
+          mt={2}
+        >
+          Activity: {subject || 'Details'}
+        </Heading>
+      </Box>
 
-      <VStack spacing={4} align="stretch" borderWidth="1px" borderRadius="lg" p={5} shadow="sm">
-        <Heading size="md" mb={2}>Subject: {subject || 'N/A'}</Heading>
-        
-        <HStack>
-          <Text fontWeight="bold">Status:</Text>
-          <Tag colorScheme={is_done ? 'green' : 'orange'}>
-            {is_done ? 'Completed' : 'Open'}
-          </Tag>
-        </HStack>
+      <Grid templateColumns="repeat(auto-fit, minmax(400px, 1fr))" gap={6}>
+        {/* Activity Details Card */}
+        <GridItem>
+          <Box 
+            bg={colors.bg.elevated}
+            p={6} 
+            borderRadius="xl" 
+            borderWidth="1px" 
+            borderColor={colors.border.default}
+            h="fit-content"
+          >
+            <HStack justifyContent="space-between" alignItems="center" mb={5}>
+              <Heading 
+                size="md" 
+                color={colors.text.primary}
+              >
+                Activity Details
+              </Heading>
+            </HStack>
+            <VStack spacing={4} align="stretch">
+              {/* Subject Field */}
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text fontSize="sm" color={colors.text.muted}>Subject</Text>
+                {!isEditingSubject ? (
+                  <HStack spacing={2}>
+                    <Text 
+                      fontSize="md" 
+                      fontWeight="medium" 
+                      color={colors.text.secondary}
+                    >
+                      {subject || '-'}
+                    </Text>
+                    <IconButton 
+                      icon={<EditIcon />} 
+                      size="xs" 
+                      variant="ghost" 
+                      aria-label="Edit Subject" 
+                      onClick={() => {
+                        setIsEditingSubject(true);
+                        setNewSubject(subject || '');
+                      }}
+                      color={colors.text.muted}
+                      _hover={{color: colors.text.link}}
+                    />
+                  </HStack>
+                ) : (
+                  <HStack spacing={2} flex={1} justifyContent="flex-end">
+                    <Input 
+                      value={newSubject} 
+                      onChange={(e) => setNewSubject(e.target.value)} 
+                      placeholder="Enter subject" 
+                      size="sm" 
+                      w="300px"
+                      bg={colors.bg.input}
+                      borderColor={colors.border.default}
+                      _hover={{borderColor: colors.border.emphasis}}
+                      _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                    />
+                    <IconButton 
+                      icon={<CheckIcon />} 
+                      size="xs" 
+                      colorScheme="green" 
+                      aria-label="Save Subject" 
+                      onClick={handleSubjectUpdate}
+                    />
+                    <IconButton 
+                      icon={<SmallCloseIcon />} 
+                      size="xs" 
+                      variant="ghost" 
+                      colorScheme="red" 
+                      aria-label="Cancel Edit Subject" 
+                      onClick={() => setIsEditingSubject(false)}
+                    />
+                  </HStack>
+                )}
+              </HStack>
 
-        <HStack>
-          <Text fontWeight="bold">Type:</Text>
-          <Text>{type || 'N/A'}</Text>
-        </HStack>
+              {/* Status Field */}
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text fontSize="sm" color={colors.text.muted}>Status</Text>
+                {!isEditingStatus ? (
+                  <HStack spacing={2}>
+                    <Tag colorScheme={is_done ? 'green' : 'orange'}>
+                      {is_done ? 'Completed' : 'Open'}
+                    </Tag>
+                    <IconButton 
+                      icon={<EditIcon />} 
+                      size="xs" 
+                      variant="ghost" 
+                      aria-label="Edit Status" 
+                      onClick={() => {
+                        setIsEditingStatus(true);
+                        setNewStatus(is_done);
+                      }}
+                      color={colors.text.muted}
+                      _hover={{color: colors.text.link}}
+                    />
+                  </HStack>
+                ) : (
+                  <HStack spacing={2} flex={1} justifyContent="flex-end">
+                    <Select 
+                      value={newStatus ? 'true' : 'false'} 
+                      onChange={(e) => setNewStatus(e.target.value === 'true')} 
+                      size="sm" 
+                      w="150px"
+                      bg={colors.bg.input}
+                      borderColor={colors.border.default}
+                      _hover={{borderColor: colors.border.emphasis}}
+                      _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                    >
+                      <option value="false">Open</option>
+                      <option value="true">Completed</option>
+                    </Select>
+                    <IconButton 
+                      icon={<CheckIcon />} 
+                      size="xs" 
+                      colorScheme="green" 
+                      aria-label="Save Status" 
+                      onClick={handleStatusUpdate}
+                    />
+                    <IconButton 
+                      icon={<SmallCloseIcon />} 
+                      size="xs" 
+                      variant="ghost" 
+                      colorScheme="red" 
+                      aria-label="Cancel Edit Status" 
+                      onClick={() => setIsEditingStatus(false)}
+                    />
+                  </HStack>
+                )}
+              </HStack>
 
-        <HStack>
-          <Text fontWeight="bold">Due Date:</Text>
-          <Text>{due_date ? new Date(due_date).toLocaleDateString() : 'N/A'}</Text>
-        </HStack>
-        
-        {notes && (
-          <Box>
-            <Text fontWeight="bold" mb={1}>Notes:</Text>
-            <Text whiteSpace="pre-wrap" bg={notesBg} p={3} borderRadius="md">{notes}</Text>
+              {/* Type Field */}
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text fontSize="sm" color={colors.text.muted}>Type</Text>
+                {!isEditingType ? (
+                  <HStack spacing={2}>
+                    <Text 
+                      fontSize="md" 
+                      fontWeight="medium" 
+                      color={colors.text.secondary}
+                    >
+                      {type || '-'}
+                    </Text>
+                    <IconButton 
+                      icon={<EditIcon />} 
+                      size="xs" 
+                      variant="ghost" 
+                      aria-label="Edit Type" 
+                      onClick={() => {
+                        setIsEditingType(true);
+                        setNewType(type || '');
+                      }}
+                      color={colors.text.muted}
+                      _hover={{color: colors.text.link}}
+                    />
+                  </HStack>
+                ) : (
+                  <HStack spacing={2} flex={1} justifyContent="flex-end">
+                    <Select 
+                      value={newType} 
+                      onChange={(e) => setNewType(e.target.value)} 
+                      placeholder="Select type"
+                      size="sm" 
+                      w="200px"
+                      bg={colors.bg.input}
+                      borderColor={colors.border.default}
+                      _hover={{borderColor: colors.border.emphasis}}
+                      _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                    >
+                      <option value="call">Call</option>
+                      <option value="email">Email</option>
+                      <option value="meeting">Meeting</option>
+                      <option value="task">Task</option>
+                      <option value="note">Note</option>
+                      <option value="follow_up">Follow Up</option>
+                      <option value="demo">Demo</option>
+                      <option value="proposal">Proposal</option>
+                      <option value="contract">Contract</option>
+                      <option value="other">Other</option>
+                    </Select>
+                    <IconButton 
+                      icon={<CheckIcon />} 
+                      size="xs" 
+                      colorScheme="green" 
+                      aria-label="Save Type" 
+                      onClick={handleTypeUpdate}
+                    />
+                    <IconButton 
+                      icon={<SmallCloseIcon />} 
+                      size="xs" 
+                      variant="ghost" 
+                      colorScheme="red" 
+                      aria-label="Cancel Edit Type" 
+                      onClick={() => setIsEditingType(false)}
+                    />
+                  </HStack>
+                )}
+              </HStack>
+
+              {/* Due Date Field */}
+              <HStack justifyContent="space-between" alignItems="center">
+                <Text fontSize="sm" color={colors.text.muted}>Due Date</Text>
+                {!isEditingDueDate ? (
+                  <HStack spacing={2}>
+                    <Text 
+                      fontSize="md" 
+                      fontWeight="medium" 
+                      color={colors.text.secondary}
+                    >
+                      {due_date ? new Date(due_date).toLocaleDateString() : '-'}
+                    </Text>
+                    <IconButton 
+                      icon={<EditIcon />} 
+                      size="xs" 
+                      variant="ghost" 
+                      aria-label="Edit Due Date" 
+                      onClick={() => {
+                        setIsEditingDueDate(true);
+                        setNewDueDate(due_date ? new Date(due_date).toISOString().split('T')[0] : '');
+                      }}
+                      color={colors.text.muted}
+                      _hover={{color: colors.text.link}}
+                    />
+                  </HStack>
+                ) : (
+                  <HStack spacing={2} flex={1} justifyContent="flex-end">
+                    <Input 
+                      type="date"
+                      value={newDueDate} 
+                      onChange={(e) => setNewDueDate(e.target.value)} 
+                      size="sm" 
+                      w="180px"
+                      bg={colors.bg.input}
+                      borderColor={colors.border.default}
+                      _hover={{borderColor: colors.border.emphasis}}
+                      _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                    />
+                    <IconButton 
+                      icon={<CheckIcon />} 
+                      size="xs" 
+                      colorScheme="green" 
+                      aria-label="Save Due Date" 
+                      onClick={handleDueDateUpdate}
+                    />
+                    <IconButton 
+                      icon={<SmallCloseIcon />} 
+                      size="xs" 
+                      variant="ghost" 
+                      colorScheme="red" 
+                      aria-label="Cancel Edit Due Date" 
+                      onClick={() => setIsEditingDueDate(false)}
+                    />
+                  </HStack>
+                )}
+              </HStack>
+
+            </VStack>
           </Box>
-        )}
+        </GridItem>
 
-        <Heading size="sm" mt={4} mb={2}>Linked Items</Heading>
-        {deal?.id && deal.name &&(
-          <Text><strong>Deal:</strong> <RouterLink to={`/deals/${deal.id}`}><Link colorScheme="blue">{deal.name}</Link></RouterLink></Text>
-        )}
-        {person?.id && (
-          <Text><strong>Person:</strong> {person.first_name} {person.last_name || ''}
-            {/* <RouterLink to={`/people/${person.id}`}> ... </RouterLink> */}
-          </Text>
-        )}
-        {organization?.id && (
-          <Text><strong>Organization:</strong> {organization.name}
-            {/* <RouterLink to={`/organizations/${organization.id}`}> ... </RouterLink> */}
-          </Text>
-        )}
-        {!deal?.id && !person?.id && !organization?.id && (
-          <Text>No items linked to this activity.</Text>
-        )}
+        {/* Linked Items Card */}
+        <GridItem>
+          <Box 
+            bg={colors.bg.elevated}
+            p={6} 
+            borderRadius="xl" 
+            borderWidth="1px" 
+            borderColor={colors.border.default}
+            h="fit-content"
+          >
+            <Heading 
+              size="md" 
+              mb={5} 
+              color={colors.text.primary}
+            >
+              Linked Items
+            </Heading>
+            
+            <VStack spacing={3} align="stretch">
+              {deal?.id && deal.name && (
+                <HStack justifyContent="space-between">
+                  <Text fontSize="sm" color={colors.text.muted}>Deal</Text>
+                  <RouterLink to={`/deals/${deal.id}`}>
+                    <Link 
+                      fontSize="md" 
+                      fontWeight="medium" 
+                      color={colors.text.link}
+                      _hover={{textDecoration: 'underline'}}
+                    >
+                      {deal.name}
+                    </Link>
+                  </RouterLink>
+                </HStack>
+              )}
+              {person?.id && (
+                <HStack justifyContent="space-between">
+                  <Text fontSize="sm" color={colors.text.muted}>Person</Text>
+                  <Text 
+                    fontSize="md" 
+                    fontWeight="medium" 
+                    color={colors.text.secondary}
+                  >
+                    {person.first_name} {person.last_name || ''}
+                  </Text>
+                </HStack>
+              )}
+              {organization?.id && (
+                <HStack justifyContent="space-between">
+                  <Text fontSize="sm" color={colors.text.muted}>Organization</Text>
+                  <Text 
+                    fontSize="md" 
+                    fontWeight="medium" 
+                    color={colors.text.secondary}
+                  >
+                    {organization.name}
+                  </Text>
+                </HStack>
+              )}
+              {!deal?.id && !person?.id && !organization?.id && (
+                <Text color={colors.text.muted} fontSize="sm" fontStyle="italic">
+                  No items linked to this activity.
+                </Text>
+              )}
+            </VStack>
+          </Box>
+        </GridItem>
+      </Grid>
 
-        <Heading size="sm" mt={4} mb={2}>Other Information</Heading>
-        <Text><strong>Assigned to:</strong> {assignedToUser?.display_name || assignedToUser?.email || 'N/A'}</Text>
-        {is_system_activity && user && (
-          <Text fontSize="sm" color="gray.500">
-            (Created by: {user.display_name || user.email})
-          </Text>
-        )}
-        <Text><strong>Created:</strong> {created_at ? new Date(created_at).toLocaleString() : 'N/A'}</Text>
-        <Text><strong>Last Updated:</strong> {updated_at ? new Date(updated_at).toLocaleString() : 'N/A'}</Text>
-
-      </VStack>
+      {/* Other Information - Full Width Card */}
+      <Box 
+        bg={colors.bg.elevated}
+        p={6} 
+        borderRadius="xl" 
+        borderWidth="1px" 
+        borderColor={colors.border.default}
+        mt={6}
+      >
+        <Heading 
+          size="md" 
+          mb={5} 
+          color={colors.text.primary}
+        >
+          Other Information
+        </Heading>
+        <VStack spacing={4} align="stretch">
+          <HStack justifyContent="space-between">
+            <Text fontSize="sm" color={colors.text.muted}>Assigned to</Text>
+            <Text 
+              fontSize="md" 
+              fontWeight="medium" 
+              color={colors.text.secondary}
+            >
+              {assignedToUser?.display_name || assignedToUser?.email || 'N/A'}
+            </Text>
+          </HStack>
+          {is_system_activity && user && (
+            <HStack justifyContent="space-between">
+              <Text fontSize="sm" color={colors.text.muted}>Created by</Text>
+              <Text 
+                fontSize="sm" 
+                color={colors.text.muted}
+                fontStyle="italic"
+              >
+                {user.display_name || user.email}
+              </Text>
+            </HStack>
+          )}
+          <HStack justifyContent="space-between">
+            <Text fontSize="sm" color={colors.text.muted}>Created</Text>
+            <Text 
+              fontSize="md" 
+              fontWeight="medium" 
+              color={colors.text.secondary}
+            >
+              {created_at ? new Date(created_at).toLocaleString() : 'N/A'}
+            </Text>
+          </HStack>
+          <HStack justifyContent="space-between">
+            <Text fontSize="sm" color={colors.text.muted}>Last Updated</Text>
+            <Text 
+              fontSize="md" 
+              fontWeight="medium" 
+              color={colors.text.secondary}
+            >
+              {updated_at ? new Date(updated_at).toLocaleString() : 'N/A'}
+            </Text>
+          </HStack>
+        </VStack>
+      </Box>
     </Box>
   );
 };

@@ -38,6 +38,7 @@ import {
   Link,
   Heading,
   Tag,
+  Badge,
   IconButton,
   Input,
   Progress,
@@ -149,6 +150,15 @@ const DealDetailPage = () => {
   const { isOpen: isDeleteConfirmOpen, onOpen: onDeleteConfirmOpen, onClose: onDeleteConfirmClose } = useDisclosure();
   const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  
+  // Document count state for tab display
+  const [documentCount, setDocumentCount] = useState(0);
+  
+  // Organization contacts count state for tab display
+  const [contactsCount, setContactsCount] = useState(0);
+  
+  // Sticky notes count state for tab display
+  const [stickyNotesCount, setStickyNotesCount] = useState(0);
 
   const { isOpen: isEditDealModalOpen, onOpen: onEditDealModalOpen, onClose: onEditDealModalClose } = useDisclosure();
 
@@ -396,25 +406,45 @@ const DealDetailPage = () => {
                         Overview
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                        Activities ({dealActivities.length})
+                        <HStack spacing={2}>
+                          <Text>Activities</Text>
+                          <Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
+                            {dealActivities.length}
+                          </Badge>
+                        </HStack>
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         Emails
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                        Documents
+                        <HStack spacing={2}>
+                          <Text>Documents</Text>
+                          <Badge colorScheme="green" variant="solid" borderRadius="full" fontSize="xs">
+                            {documentCount}
+                          </Badge>
+                        </HStack>
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         Custom Fields
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                        Organization Contacts
+                        <HStack spacing={2}>
+                          <Text>Organization Contacts</Text>
+                          <Badge colorScheme="purple" variant="solid" borderRadius="full" fontSize="xs">
+                            {contactsCount}
+                          </Badge>
+                        </HStack>
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         History
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                        Sticky Notes
+                        <HStack spacing={2}>
+                          <Text>Sticky Notes</Text>
+                          <Badge colorScheme="yellow" variant="solid" borderRadius="full" fontSize="xs">
+                            {stickyNotesCount}
+                          </Badge>
+                        </HStack>
                       </Tab>
                                       </TabList>
                     
@@ -451,6 +481,7 @@ const DealDetailPage = () => {
                         <SharedDriveDocumentBrowser
                           dealId={currentDeal.id}
                           dealName={currentDeal.name || undefined}
+                          onDocumentCountChange={setDocumentCount}
                         />
                       </TabPanel>
 
@@ -470,6 +501,7 @@ const DealDetailPage = () => {
                             id: currentDeal.organization.id,
                             name: currentDeal.organization.name
                           } : null}
+                          onContactCountChange={setContactsCount}
                         />
                       </TabPanel>
                       
@@ -478,7 +510,11 @@ const DealDetailPage = () => {
                                           </TabPanel>
 
                       <TabPanel>
-                        <StickerBoard entityType="DEAL" entityId={currentDeal.id} />
+                        <StickerBoard 
+                          entityType="DEAL" 
+                          entityId={currentDeal.id} 
+                          onStickerCountChange={setStickyNotesCount}
+                        />
                       </TabPanel>
                                       </TabPanels>
                                   </Tabs>
@@ -559,21 +595,54 @@ const DealDetailPage = () => {
                                   </Box>
                               )}
                               
-                {/* Recent Activities */}
+                {/* Activity Timeline */}
                               <Box p={5} bg={colors.bg.surface} borderRadius="lg" border="1px solid" borderColor={colors.border.default}>
-                                  <Heading size="sm" mb={3} color={colors.text.primary}>Recent Activities</Heading>
-                  {dealActivities.slice(0, 5).map((activity) => (
-                    <Box key={activity.id} py={2} borderBottomWidth="1px" borderColor={colors.border.default} _last={{borderBottomWidth: 0}}>
-                      <Text fontSize="sm" color={activity.is_done ? colors.text.muted : colors.text.primary} textDecoration={activity.is_done ? 'line-through' : 'none'}>
-                        {activity.subject}
-                      </Text>
-                      {activity.due_date && (
-                        <Text fontSize="xs" color={colors.text.secondary}>
-                          Due: {new Date(activity.due_date).toLocaleDateString()}
-                        </Text>
-                      )}
-                              </Box>
-                  ))}
+                                  <Heading size="sm" mb={3} color={colors.text.primary}>Activity Timeline</Heading>
+                  {dealActivities.slice(0, 5).map((activity) => {
+                    const dueDate = activity.due_date ? new Date(activity.due_date) : null;
+                    const now = new Date();
+                    const isOverdue = dueDate && dueDate < now && !activity.is_done;
+                    const isDueToday = dueDate && dueDate.toDateString() === now.toDateString();
+                    
+                    return (
+                      <Box key={activity.id} py={2} borderBottomWidth="1px" borderColor={colors.border.default} _last={{borderBottomWidth: 0}}>
+                        <HStack justify="space-between" align="start">
+                          <VStack align="start" spacing={1} flex={1}>
+                            <HStack spacing={2}>
+                              <Text 
+                                fontSize="sm" 
+                                color={activity.is_done ? colors.text.muted : colors.text.primary} 
+                                textDecoration={activity.is_done ? 'line-through' : 'none'}
+                              >
+                                {activity.subject}
+                              </Text>
+                              {activity.is_done && (
+                                <Badge colorScheme="green" variant="subtle" fontSize="xs">
+                                  Completed
+                                </Badge>
+                              )}
+                              {isOverdue && (
+                                <Badge colorScheme="red" variant="solid" fontSize="xs">
+                                  Overdue
+                                </Badge>
+                              )}
+                              {isDueToday && !activity.is_done && (
+                                <Badge colorScheme="orange" variant="solid" fontSize="xs">
+                                  Due Today
+                                </Badge>
+                              )}
+                            </HStack>
+                            {activity.due_date && (
+                              <Text fontSize="xs" color={isOverdue ? colors.text.error : colors.text.secondary}>
+                                Due: {dueDate?.toLocaleDateString()}
+                                {isDueToday && ' (Today)'}
+                              </Text>
+                            )}
+                          </VStack>
+                        </HStack>
+                      </Box>
+                    );
+                  })}
                   {dealActivities.length > 5 && (
                     <Button variant="link" color={colors.text.link} size="sm" onClick={() => { /* TODO: Switch to activities tab */ }}>
                       View all ({dealActivities.length})

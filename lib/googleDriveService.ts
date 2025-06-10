@@ -1,5 +1,7 @@
 import { google } from 'googleapis';
 import { requireAuthentication } from '../netlify/functions/graphql/helpers';
+import { googleIntegrationService } from './googleIntegrationService';
+import { getAuthenticatedClient } from './serviceUtils';
 
 // Types
 export interface DriveFile {
@@ -104,21 +106,121 @@ export interface DrivePermission {
   domain?: string;
 }
 
+export interface FileAttachment {
+  id: string;
+  entityType: string;
+  entityId: string;
+  fileId: string;
+  fileName: string;
+  fileUrl: string;
+  category?: string;
+  attachedAt: string;
+  attachedBy: string;
+}
+
+/**
+ * Smart attachment suggestions based on file names and deal context
+ */
+export interface AttachmentSuggestion {
+  fileId: string;
+  fileName: string;
+  confidence: number;
+  reasons: string[];
+  file: DriveFile;
+}
+
+export interface FileSearchFilter {
+  query?: string;
+  mimeTypes?: string[];
+  modifiedAfter?: string;
+  ownedByMe?: boolean;
+  inFolder?: string;
+}
+
+// Common MIME types for filtering
+export const COMMON_MIME_TYPES = {
+  DOCUMENT: 'application/vnd.google-apps.document',
+  SPREADSHEET: 'application/vnd.google-apps.spreadsheet',
+  PRESENTATION: 'application/vnd.google-apps.presentation',
+  PDF: 'application/pdf',
+  WORD: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  EXCEL: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  POWERPOINT: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  IMAGE: 'image/*',
+  FOLDER: 'application/vnd.google-apps.folder'
+};
+
 class GoogleDriveService {
-  private getDriveClient(accessToken: string) {
-    const auth = new google.auth.OAuth2();
-    auth.setCredentials({ access_token: accessToken });
-    return google.drive({ version: 'v3', auth });
+  private async getDriveClient(userId: string, accessToken: string) {
+    try {
+      const tokens = await googleIntegrationService.getStoredTokens(userId, accessToken);
+      if (!tokens) {
+        throw new Error('DRIVE_NOT_CONNECTED');
+      }
+
+      const oauth2Client = new google.auth.OAuth2(
+        process.env.GOOGLE_OAUTH_CLIENT_ID,
+        process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+        process.env.GOOGLE_REDIRECT_URI
+      );
+
+      oauth2Client.setCredentials({
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+      });
+
+      // Set up automatic token refresh
+      oauth2Client.on('tokens', async (newTokens) => {
+        if (newTokens.refresh_token) {
+          console.log('New refresh token received for Drive, updating database...');
+          // If we get a new refresh token, update our stored tokens
+          await googleIntegrationService.storeExtendedTokens(
+            userId,
+            {
+              access_token: newTokens.access_token!,
+              refresh_token: newTokens.refresh_token,
+              expires_at: newTokens.expiry_date ? new Date(newTokens.expiry_date).toISOString() : undefined,
+              granted_scopes: tokens.granted_scopes // Preserve existing scopes
+            },
+            accessToken
+          );
+        } else if (newTokens.access_token) {
+          console.log('Access token refreshed for Drive, updating database...');
+          // Just update the access token and expiry
+          const supabase = getAuthenticatedClient(accessToken);
+          await supabase
+            .from('google_oauth_tokens')
+            .update({
+              access_token: newTokens.access_token,
+              expires_at: newTokens.expiry_date ? new Date(newTokens.expiry_date).toISOString() : null,
+              last_used_at: new Date().toISOString()
+            })
+            .eq('user_id', userId);
+        }
+      });
+
+      return google.drive({ version: 'v3', auth: oauth2Client });
+    } catch (error) {
+      console.error('Failed to get Drive client:', error);
+      if (error instanceof Error && error.message === 'DRIVE_NOT_CONNECTED') {
+        throw new Error('Google Drive integration not connected. Please reconnect your Google account.');
+      }
+      if (error instanceof Error && error.message.includes('refresh')) {
+        throw new Error('Google Drive authentication expired. Please reconnect your Google account.');
+      }
+      throw new Error('Failed to authenticate with Google Drive. Please check your Google integration.');
+    }
   }
 
   /**
    * Create a deal folder structure in Google Drive
    */
   async createDealFolder(
+    userId: string,
     accessToken: string,
     input: CreateDealFolderInput
   ): Promise<DriveFolderStructure> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
     
     // Create main deal folder
     const dealFolderName = `${input.dealName} (ID: ${input.dealId})`;
@@ -183,11 +285,12 @@ class GoogleDriveService {
    * List files in a folder
    */
   async listFiles(
+    userId: string,
     accessToken: string,
     folderId?: string,
     query?: string
   ): Promise<DriveFile[]> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
     
     let q = 'trashed = false';
     
@@ -212,10 +315,11 @@ class GoogleDriveService {
    * Upload a file to Google Drive
    */
   async uploadFile(
+    userId: string,
     accessToken: string,
     input: UploadFileInput
   ): Promise<DriveFile> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
 
     const fileMetadata: any = {
       name: input.name,
@@ -242,8 +346,8 @@ class GoogleDriveService {
   /**
    * Get file details
    */
-  async getFile(accessToken: string, fileId: string): Promise<DriveFile> {
-    const drive = this.getDriveClient(accessToken);
+  async getFile(userId: string, accessToken: string, fileId: string): Promise<DriveFile> {
+    const drive = await this.getDriveClient(userId, accessToken);
     
     const response = await drive.files.get({
       fileId,
@@ -257,10 +361,11 @@ class GoogleDriveService {
    * Search files across Drive
    */
   async searchFiles(
+    userId: string,
     accessToken: string,
     searchQuery: string
   ): Promise<DriveFile[]> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
     
     const response = await drive.files.list({
       q: `name contains '${searchQuery}' and trashed = false`,
@@ -275,10 +380,11 @@ class GoogleDriveService {
    * Browse folders - get folder structure including shared folders
    */
   async browseFolders(
+    userId: string,
     accessToken: string,
     parentFolderId?: string
   ): Promise<DriveFolder[]> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
     
     if (parentFolderId) {
       // When browsing inside a specific folder, just get its children
@@ -324,11 +430,12 @@ class GoogleDriveService {
    * Share folder with specific permissions
    */
   async shareFolder(
+    userId: string,
     accessToken: string,
     folderId: string,
     permissions: DrivePermission[]
   ): Promise<void> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
 
     const permissionPromises = permissions.map(permission => 
       drive.permissions.create({
@@ -344,12 +451,13 @@ class GoogleDriveService {
    * Move file to folder
    */
   async moveFile(
+    userId: string,
     accessToken: string,
     fileId: string,
     newParentId: string,
     oldParentId?: string
   ): Promise<DriveFile> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
 
     // Get current parents if not provided
     if (!oldParentId) {
@@ -374,12 +482,13 @@ class GoogleDriveService {
    * Copy file to folder (creates a new copy)
    */
   async copyFile(
+    userId: string,
     accessToken: string,
     fileId: string,
     newParentId: string,
     newName?: string
   ): Promise<DriveFile> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
 
     const copyMetadata: any = {
       parents: [newParentId],
@@ -401,16 +510,16 @@ class GoogleDriveService {
   /**
    * Delete file or folder
    */
-  async deleteFile(accessToken: string, fileId: string): Promise<void> {
-    const drive = this.getDriveClient(accessToken);
+  async deleteFile(userId: string, accessToken: string, fileId: string): Promise<void> {
+    const drive = await this.getDriveClient(userId, accessToken);
     await drive.files.delete({ fileId });
   }
 
   /**
    * Get recent files for quick access
    */
-  async getRecentFiles(accessToken: string, limit = 10): Promise<DriveFile[]> {
-    const drive = this.getDriveClient(accessToken);
+  async getRecentFiles(userId: string, accessToken: string, limit = 10): Promise<DriveFile[]> {
+    const drive = await this.getDriveClient(userId, accessToken);
     
     const response = await drive.files.list({
       q: "trashed = false and mimeType != 'application/vnd.google-apps.folder'",
@@ -425,8 +534,8 @@ class GoogleDriveService {
   /**
    * List shared drives the user has access to
    */
-  async listSharedDrives(accessToken: string): Promise<SharedDrive[]> {
-    const drive = this.getDriveClient(accessToken);
+  async listSharedDrives(userId: string, accessToken: string): Promise<SharedDrive[]> {
+    const drive = await this.getDriveClient(userId, accessToken);
     
     const response = await drive.drives.list({
       fields: 'drives(id,name,createdTime,capabilities,backgroundImageFile,colorRgb,restrictions)',
@@ -440,12 +549,13 @@ class GoogleDriveService {
    * Browse files within a shared drive
    */
   async listSharedDriveFiles(
+    userId: string,
     accessToken: string,
     sharedDriveId: string,
     folderId?: string,
     query?: string
   ): Promise<DriveFile[]> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
     
     let q = 'trashed = false';
     
@@ -478,11 +588,12 @@ class GoogleDriveService {
    * Search files across all shared drives
    */
   async searchSharedDriveFiles(
+    userId: string,
     accessToken: string,
     searchQuery: string,
     sharedDriveId?: string
   ): Promise<DriveFile[]> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
     
     let q = `name contains '${searchQuery}' and trashed = false`;
     
@@ -513,11 +624,12 @@ class GoogleDriveService {
    * Get shared drive folders for browsing
    */
   async listSharedDriveFolders(
+    userId: string,
     accessToken: string,
     sharedDriveId: string,
     parentFolderId?: string
   ): Promise<DriveFolder[]> {
-    const drive = this.getDriveClient(accessToken);
+    const drive = await this.getDriveClient(userId, accessToken);
     
     let q = "mimeType='application/vnd.google-apps.folder' and trashed = false";
     
@@ -545,8 +657,8 @@ class GoogleDriveService {
   /**
    * Get recent files from shared drives only
    */
-  async getRecentSharedDriveFiles(accessToken: string, limit = 20): Promise<DriveFile[]> {
-    const drive = this.getDriveClient(accessToken);
+  async getRecentSharedDriveFiles(userId: string, accessToken: string, limit = 20): Promise<DriveFile[]> {
+    const drive = await this.getDriveClient(userId, accessToken);
     
     const response = await drive.files.list({
       q: "trashed = false and mimeType != 'application/vnd.google-apps.folder'",

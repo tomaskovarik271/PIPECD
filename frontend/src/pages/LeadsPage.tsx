@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Spinner,
@@ -34,6 +35,7 @@ import { CustomFieldEntityType } from '../generated/graphql/graphql';
 import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
 
 function LeadsPage() {
+  const navigate = useNavigate();
   const { 
     leads, 
     leadsLoading, 
@@ -204,6 +206,11 @@ function LeadsPage() {
     openCreateModal();
   }, [openCreateModal]);
 
+  // NEW: Modern UX - Row click handler
+  const handleRowClick = useCallback((lead: Lead) => {
+    navigate(`/leads/${lead.id}`);
+  }, [navigate]);
+
   // Secondary actions (column selector)
   const secondaryActions = leadsViewMode === 'table' ? (
     <Button 
@@ -356,6 +363,8 @@ function LeadsPage() {
               columns={visibleColumns}
               initialSortKey="created_at"
               initialSortDirection="descending"
+              onRowClick={handleRowClick}
+              excludeClickableColumns={['actions']}
             />
           </Box>
         )}

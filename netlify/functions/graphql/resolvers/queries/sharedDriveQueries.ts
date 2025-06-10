@@ -17,7 +17,7 @@ export const sharedDriveQueries = {
         throw new Error('Google Drive access not authorized. Please connect your Google account.');
       }
       
-      const drives = await googleDriveService.listSharedDrives(googleTokens.access_token);
+      const drives = await googleDriveService.listSharedDrives(userId, accessToken);
       return drives;
     } catch (error) {
       console.error('Error fetching shared drives:', error);
@@ -40,7 +40,8 @@ export const sharedDriveQueries = {
       }
       
       const files = await googleDriveService.listSharedDriveFiles(
-        googleTokens.access_token,
+        userId,
+        accessToken,
         args.sharedDriveId,
         args.folderId,
         args.query
@@ -67,7 +68,8 @@ export const sharedDriveQueries = {
       }
       
       const folders = await googleDriveService.listSharedDriveFolders(
-        googleTokens.access_token,
+        userId,
+        accessToken,
         args.sharedDriveId,
         args.parentFolderId
       );
@@ -93,7 +95,8 @@ export const sharedDriveQueries = {
       }
       
       const files = await googleDriveService.searchSharedDriveFiles(
-        googleTokens.access_token,
+        userId,
+        accessToken,
         args.query,
         args.sharedDriveId
       );
@@ -119,7 +122,8 @@ export const sharedDriveQueries = {
       }
       
       const files = await googleDriveService.getRecentSharedDriveFiles(
-        googleTokens.access_token,
+        userId,
+        accessToken,
         args.limit || 20
       );
       return files;

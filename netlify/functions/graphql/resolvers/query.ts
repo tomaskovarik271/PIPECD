@@ -441,15 +441,20 @@ export const Query: QueryResolvers<GraphQLContext> = {
       const { userId, accessToken } = requireAuthentication(context);
       
       try {
-        return await googleIntegrationService.getIntegrationStatus(userId, accessToken);
+        const status = await googleIntegrationService.getIntegrationStatus(userId, accessToken);
+        // Convert tokenExpiry string to Date if it exists
+        return {
+          ...status,
+          tokenExpiry: status.tokenExpiry ? new Date(status.tokenExpiry) : null
+        };
       } catch (error) {
         console.error('Error getting Google integration status:', error);
         throw new GraphQLError('Failed to get Google integration status');
       }
     },
 
-    getEntityDocuments: async (_parent, { entityType, entityId }, context) => {
-      const { userId, accessToken } = requireAuthentication(context);
+    getEntityDocuments: async (_parent, { entityType: _entityType, entityId: _entityId }, context) => {
+      const { userId: _userId, accessToken: _accessToken } = requireAuthentication(context);
       
       try {
         // TODO: Implement document retrieval service
@@ -460,8 +465,8 @@ export const Query: QueryResolvers<GraphQLContext> = {
       }
     },
 
-    getEntityEmails: async (_parent, { entityType, entityId }, context) => {
-      const { userId, accessToken } = requireAuthentication(context);
+    getEntityEmails: async (_parent, { entityType: _entityType, entityId: _entityId }, context) => {
+      const { userId: _userId, accessToken: _accessToken } = requireAuthentication(context);
       
       try {
         // TODO: Implement email retrieval service
@@ -472,8 +477,8 @@ export const Query: QueryResolvers<GraphQLContext> = {
       }
     },
 
-    searchEmails: async (_parent, { query, entityType, limit }, context) => {
-      const { userId, accessToken } = requireAuthentication(context);
+    searchEmails: async (_parent, { query: _query, entityType: _entityType, limit: _limit }, context) => {
+      const { userId: _userId, accessToken: _accessToken } = requireAuthentication(context);
       
       try {
         // TODO: Implement email search service

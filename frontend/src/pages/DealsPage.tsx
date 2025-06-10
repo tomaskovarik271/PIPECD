@@ -1,4 +1,5 @@
 import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Spinner,
@@ -33,6 +34,7 @@ import { usePageLayoutStyles } from '../utils/headerUtils';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
 
 function DealsPage() {
+  const navigate = useNavigate();
   const { 
     deals, 
     dealsLoading, 
@@ -197,6 +199,11 @@ function DealsPage() {
     openCreateModal();
   }, [openCreateModal]);
 
+  // NEW: Modern UX - Row click handler
+  const handleRowClick = useCallback((deal: Deal) => {
+    navigate(`/deals/${deal.id}`);
+  }, [navigate]);
+
   // Secondary actions (column selector)
   const secondaryActions = dealsViewMode === 'table' ? (
     <Button 
@@ -333,7 +340,9 @@ function DealsPage() {
               data={displayedDeals} 
               columns={visibleColumns} 
               initialSortKey="expected_close_date" 
-              initialSortDirection="ascending" 
+              initialSortDirection="ascending"
+              onRowClick={handleRowClick}
+              excludeClickableColumns={['actions']}
             />
           </Box>
         )}

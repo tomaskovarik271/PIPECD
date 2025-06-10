@@ -77,6 +77,7 @@ interface StickerBoardProps {
   entityId: string;
   className?: string;
   readonly?: boolean;
+  onStickerCountChange?: (count: number) => void;
 }
 
 interface Position {
@@ -145,6 +146,7 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
   entityId,
   className = '',
   readonly = false,
+  onStickerCountChange,
 }) => {
   const { isOpen: isCreateModalOpen, onOpen: openCreateModal, onClose: closeCreateModal } = useDisclosure();
   const { isOpen: isFiltersOpen, onToggle: toggleFilters } = useDisclosure();
@@ -585,6 +587,13 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
   }
 
   const filteredStickers = stickers; // Filters applied in hook
+
+  // Notify parent component of sticker count changes
+  useEffect(() => {
+    if (onStickerCountChange) {
+      onStickerCountChange(filteredStickers.length);
+    }
+  }, [filteredStickers.length, onStickerCountChange]);
 
   return (
     <Box 

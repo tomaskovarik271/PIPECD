@@ -124,6 +124,7 @@ interface DealDocumentAttachment {
 interface SharedDriveDocumentBrowserProps {
   dealId: string;
   dealName?: string;
+  onDocumentCountChange?: (count: number) => void;
 }
 
 const DOCUMENT_CATEGORIES = [
@@ -138,7 +139,8 @@ const DOCUMENT_CATEGORIES = [
 
 export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProps> = ({
   dealId,
-  dealName = 'Deal'
+  dealName = 'Deal',
+  onDocumentCountChange
 }) => {
   const colors = useThemeColors();
   const toast = useToast();
@@ -240,8 +242,13 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
 
   const loadDealAttachments = async () => {
     try {
-      const response = await gqlClient.request(GET_DEAL_DOCUMENT_ATTACHMENTS, { dealId });
-      setAttachments(response.getDealDocumentAttachments);
+      const response: any = await gqlClient.request(GET_DEAL_DOCUMENT_ATTACHMENTS, { dealId });
+      const attachments = response.getDealDocumentAttachments;
+      setAttachments(attachments);
+      // Notify parent component of document count
+      if (onDocumentCountChange) {
+        onDocumentCountChange(attachments.length);
+      }
     } catch (error) {
       console.error('Error loading deal attachments:', error);
     }
@@ -321,7 +328,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
         isClosable: true,
       });
       
-      loadDealAttachments(); // Refresh attachments list
+      loadDealAttachments(); // Refresh attachments list (will trigger count update)
       onAttachModalClose();
     } catch (error: any) {
       console.error('Error attaching document:', error);
@@ -349,7 +356,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
         isClosable: true,
       });
       
-      loadDealAttachments(); // Refresh attachments list
+      loadDealAttachments(); // Refresh attachments list (will trigger count update)
     } catch (error) {
       console.error('Error removing document attachment:', error);
       toast({

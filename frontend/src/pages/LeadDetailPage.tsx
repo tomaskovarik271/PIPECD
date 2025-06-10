@@ -29,6 +29,7 @@ import {
   TabPanels,
   Tab,
   TabPanel,
+  Input,
 } from '@chakra-ui/react';
 import { 
   ArrowBackIcon, 
@@ -39,6 +40,8 @@ import {
   StarIcon,
   EditIcon,
   DeleteIcon,
+  CheckIcon,
+  SmallCloseIcon,
 } from '@chakra-ui/icons';
 import { useLeadsStore, Lead } from '../stores/useLeadsStore';
 import { useThemeColors } from '../hooks/useThemeColors';
@@ -126,7 +129,20 @@ const LeadDetailPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [stickerCategories, setStickerCategories] = useState<any[]>([]);
 
-  const { deleteLead } = useLeadsStore();
+  // Inline editing states
+  const [isEditingContactName, setIsEditingContactName] = useState(false);
+  const [newContactName, setNewContactName] = useState('');
+  const [isEditingContactEmail, setIsEditingContactEmail] = useState(false);
+  const [newContactEmail, setNewContactEmail] = useState('');
+  const [isEditingContactPhone, setIsEditingContactPhone] = useState(false);
+  const [newContactPhone, setNewContactPhone] = useState('');
+
+  const [isEditingEstimatedValue, setIsEditingEstimatedValue] = useState(false);
+  const [newEstimatedValue, setNewEstimatedValue] = useState('');
+  const [isEditingEstimatedCloseDate, setIsEditingEstimatedCloseDate] = useState(false);
+  const [newEstimatedCloseDate, setNewEstimatedCloseDate] = useState('');
+
+  const { deleteLead, updateLead } = useLeadsStore();
   const leadTheme = useLeadTheme();
 
   // Fetch lead details
@@ -168,6 +184,79 @@ const LeadDetailPage = () => {
 
     fetchStickerCategories();
   }, []);
+
+  // Update handlers for inline editing
+  const handleContactNameUpdate = async () => {
+    if (!currentLead || !leadId) return;
+    try {
+      const result = await updateLead(leadId, { contactName: newContactName });
+      if (result.lead) {
+        setCurrentLead(result.lead);
+        toast({ title: 'Contact Name Updated', status: 'success', duration: 2000, isClosable: true });
+        setIsEditingContactName(false);
+      }
+    } catch (e) {
+      toast({ title: 'Error Updating Contact Name', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+  const handleContactEmailUpdate = async () => {
+    if (!currentLead || !leadId) return;
+    try {
+      const result = await updateLead(leadId, { contactEmail: newContactEmail });
+      if (result.lead) {
+        setCurrentLead(result.lead);
+        toast({ title: 'Contact Email Updated', status: 'success', duration: 2000, isClosable: true });
+        setIsEditingContactEmail(false);
+      }
+    } catch (e) {
+      toast({ title: 'Error Updating Contact Email', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+  const handleContactPhoneUpdate = async () => {
+    if (!currentLead || !leadId) return;
+    try {
+      const result = await updateLead(leadId, { contactPhone: newContactPhone });
+      if (result.lead) {
+        setCurrentLead(result.lead);
+        toast({ title: 'Contact Phone Updated', status: 'success', duration: 2000, isClosable: true });
+        setIsEditingContactPhone(false);
+      }
+    } catch (e) {
+      toast({ title: 'Error Updating Contact Phone', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+
+
+  const handleEstimatedValueUpdate = async () => {
+    if (!currentLead || !leadId) return;
+    try {
+      const result = await updateLead(leadId, { estimatedValue: parseFloat(newEstimatedValue) || 0 });
+      if (result.lead) {
+        setCurrentLead(result.lead);
+        toast({ title: 'Estimated Value Updated', status: 'success', duration: 2000, isClosable: true });
+        setIsEditingEstimatedValue(false);
+      }
+    } catch (e) {
+      toast({ title: 'Error Updating Estimated Value', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
+
+  const handleEstimatedCloseDateUpdate = async () => {
+    if (!currentLead || !leadId) return;
+    try {
+      const result = await updateLead(leadId, { estimatedCloseDate: newEstimatedCloseDate });
+      if (result.lead) {
+        setCurrentLead(result.lead);
+        toast({ title: 'Est. Close Date Updated', status: 'success', duration: 2000, isClosable: true });
+        setIsEditingEstimatedCloseDate(false);
+      }
+    } catch (e) {
+      toast({ title: 'Error Updating Est. Close Date', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+    }
+  };
 
   const handleEdit = () => {
     setIsEditModalOpen(true);
@@ -398,12 +487,61 @@ const LeadDetailPage = () => {
           borderColor={colors.border.default}
         >
           <VStack align="start" spacing={2}>
-            <Text fontSize="sm" color={colors.text.secondary}>
-              Estimated Value
-            </Text>
-            <Heading size="md" color={colors.text.success}>
-              {formatCurrency(currentLead.estimated_value)}
-            </Heading>
+            <HStack justifyContent="space-between" alignItems="center" w="full">
+              <Text fontSize="sm" color={colors.text.secondary}>
+                Estimated Value
+              </Text>
+              {!isEditingEstimatedValue && (
+                <IconButton 
+                  icon={<EditIcon />} 
+                  size="xs" 
+                  variant="ghost" 
+                  aria-label="Edit Estimated Value" 
+                  onClick={() => {
+                    setIsEditingEstimatedValue(true);
+                    setNewEstimatedValue(currentLead.estimated_value?.toString() || '');
+                  }}
+                  color={colors.text.muted}
+                  _hover={{color: colors.text.link}}
+                />
+              )}
+            </HStack>
+            {!isEditingEstimatedValue ? (
+              <Heading size="md" color={colors.text.success}>
+                {formatCurrency(currentLead.estimated_value)}
+              </Heading>
+            ) : (
+              <VStack spacing={2} align="stretch" w="full">
+                <Input 
+                  type="number"
+                  value={newEstimatedValue} 
+                  onChange={(e) => setNewEstimatedValue(e.target.value)} 
+                  placeholder="Enter value" 
+                  size="sm"
+                  bg={colors.bg.input}
+                  borderColor={colors.border.default}
+                  _hover={{borderColor: colors.border.emphasis}}
+                  _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                />
+                <HStack spacing={2} justifyContent="flex-end">
+                  <IconButton 
+                    icon={<CheckIcon />} 
+                    size="xs" 
+                    colorScheme="green" 
+                    aria-label="Save Estimated Value" 
+                    onClick={handleEstimatedValueUpdate}
+                  />
+                  <IconButton 
+                    icon={<SmallCloseIcon />} 
+                    size="xs" 
+                    variant="ghost" 
+                    colorScheme="red" 
+                    aria-label="Cancel Edit Estimated Value" 
+                    onClick={() => setIsEditingEstimatedValue(false)}
+                  />
+                </HStack>
+              </VStack>
+            )}
           </VStack>
         </Box>
 
@@ -441,15 +579,63 @@ const LeadDetailPage = () => {
           borderColor={colors.border.default}
         >
           <VStack align="start" spacing={2}>
-            <HStack spacing={2}>
-              <TimeIcon color={colors.text.secondary} />
-              <Text fontSize="sm" color={colors.text.secondary}>
-                Est. Close Date
-              </Text>
+            <HStack spacing={2} justifyContent="space-between" w="full">
+              <HStack spacing={2}>
+                <TimeIcon color={colors.text.secondary} />
+                <Text fontSize="sm" color={colors.text.secondary}>
+                  Est. Close Date
+                </Text>
+              </HStack>
+              {!isEditingEstimatedCloseDate && (
+                <IconButton 
+                  icon={<EditIcon />} 
+                  size="xs" 
+                  variant="ghost" 
+                  aria-label="Edit Est. Close Date" 
+                  onClick={() => {
+                    setIsEditingEstimatedCloseDate(true);
+                    setNewEstimatedCloseDate(currentLead.estimated_close_date ? new Date(currentLead.estimated_close_date).toISOString().split('T')[0] : '');
+                  }}
+                  color={colors.text.muted}
+                  _hover={{color: colors.text.link}}
+                />
+              )}
             </HStack>
-            <Text fontWeight="medium" color={colors.text.primary}>
-              {formatDate(currentLead.estimated_close_date)}
-            </Text>
+            {!isEditingEstimatedCloseDate ? (
+              <Text fontWeight="medium" color={colors.text.primary}>
+                {formatDate(currentLead.estimated_close_date)}
+              </Text>
+            ) : (
+              <VStack spacing={2} align="stretch" w="full">
+                <Input 
+                  type="date"
+                  value={newEstimatedCloseDate} 
+                  onChange={(e) => setNewEstimatedCloseDate(e.target.value)} 
+                  size="sm"
+                  bg={colors.bg.input}
+                  borderColor={colors.border.default}
+                  _hover={{borderColor: colors.border.emphasis}}
+                  _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                />
+                <HStack spacing={2} justifyContent="flex-end">
+                  <IconButton 
+                    icon={<CheckIcon />} 
+                    size="xs" 
+                    colorScheme="green" 
+                    aria-label="Save Est. Close Date" 
+                    onClick={handleEstimatedCloseDateUpdate}
+                  />
+                  <IconButton 
+                    icon={<SmallCloseIcon />} 
+                    size="xs" 
+                    variant="ghost" 
+                    colorScheme="red" 
+                    aria-label="Cancel Edit Est. Close Date" 
+                    onClick={() => setIsEditingEstimatedCloseDate(false)}
+                  />
+                </HStack>
+              </VStack>
+            )}
           </VStack>
         </Box>
       </SimpleGrid>
@@ -477,41 +663,178 @@ const LeadDetailPage = () => {
                   Contact Information
                 </Heading>
                 <VStack align="stretch" spacing={3}>
-                  {currentLead.contact_name && (
-                    <HStack spacing={3}>
-                      <InfoOutlineIcon color={colors.text.secondary} />
-                      <Box>
+                  {/* Contact Name Field */}
+                  <HStack spacing={3} alignItems="flex-start">
+                    <InfoOutlineIcon color={colors.text.secondary} mt={1} />
+                    <Box flex={1}>
+                      <HStack justifyContent="space-between" alignItems="center" mb={1}>
                         <Text fontSize="sm" color={colors.text.muted}>Contact Name</Text>
+                        {!isEditingContactName && (
+                          <IconButton 
+                            icon={<EditIcon />} 
+                            size="xs" 
+                            variant="ghost" 
+                            aria-label="Edit Contact Name" 
+                            onClick={() => {
+                              setIsEditingContactName(true);
+                              setNewContactName(currentLead.contact_name || '');
+                            }}
+                            color={colors.text.muted}
+                            _hover={{color: colors.text.link}}
+                          />
+                        )}
+                      </HStack>
+                      {!isEditingContactName ? (
                         <Text fontWeight="medium" color={colors.text.primary}>
-                          {currentLead.contact_name}
+                          {currentLead.contact_name || 'No name provided'}
                         </Text>
-                      </Box>
-                    </HStack>
-                  )}
+                      ) : (
+                        <HStack spacing={2}>
+                          <Input 
+                            value={newContactName} 
+                            onChange={(e) => setNewContactName(e.target.value)} 
+                            placeholder="Enter contact name" 
+                            size="sm"
+                            bg={colors.bg.input}
+                            borderColor={colors.border.default}
+                            _hover={{borderColor: colors.border.emphasis}}
+                            _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                          />
+                          <IconButton 
+                            icon={<CheckIcon />} 
+                            size="xs" 
+                            colorScheme="green" 
+                            aria-label="Save Contact Name" 
+                            onClick={handleContactNameUpdate}
+                          />
+                          <IconButton 
+                            icon={<SmallCloseIcon />} 
+                            size="xs" 
+                            variant="ghost" 
+                            colorScheme="red" 
+                            aria-label="Cancel Edit Contact Name" 
+                            onClick={() => setIsEditingContactName(false)}
+                          />
+                        </HStack>
+                      )}
+                    </Box>
+                  </HStack>
 
-                  {currentLead.contact_email && (
-                    <HStack spacing={3}>
-                      <EmailIcon color={colors.text.secondary} />
-                      <Box>
+                  {/* Contact Email Field */}
+                  <HStack spacing={3} alignItems="flex-start">
+                    <EmailIcon color={colors.text.secondary} mt={1} />
+                    <Box flex={1}>
+                      <HStack justifyContent="space-between" alignItems="center" mb={1}>
                         <Text fontSize="sm" color={colors.text.muted}>Email</Text>
+                        {!isEditingContactEmail && (
+                          <IconButton 
+                            icon={<EditIcon />} 
+                            size="xs" 
+                            variant="ghost" 
+                            aria-label="Edit Contact Email" 
+                            onClick={() => {
+                              setIsEditingContactEmail(true);
+                              setNewContactEmail(currentLead.contact_email || '');
+                            }}
+                            color={colors.text.muted}
+                            _hover={{color: colors.text.link}}
+                          />
+                        )}
+                      </HStack>
+                      {!isEditingContactEmail ? (
                         <Text fontWeight="medium" color={colors.text.primary}>
-                          {currentLead.contact_email}
+                          {currentLead.contact_email || 'No email provided'}
                         </Text>
-                      </Box>
-                    </HStack>
-                  )}
+                      ) : (
+                        <HStack spacing={2}>
+                          <Input 
+                            type="email"
+                            value={newContactEmail} 
+                            onChange={(e) => setNewContactEmail(e.target.value)} 
+                            placeholder="Enter contact email" 
+                            size="sm"
+                            bg={colors.bg.input}
+                            borderColor={colors.border.default}
+                            _hover={{borderColor: colors.border.emphasis}}
+                            _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                          />
+                          <IconButton 
+                            icon={<CheckIcon />} 
+                            size="xs" 
+                            colorScheme="green" 
+                            aria-label="Save Contact Email" 
+                            onClick={handleContactEmailUpdate}
+                          />
+                          <IconButton 
+                            icon={<SmallCloseIcon />} 
+                            size="xs" 
+                            variant="ghost" 
+                            colorScheme="red" 
+                            aria-label="Cancel Edit Contact Email" 
+                            onClick={() => setIsEditingContactEmail(false)}
+                          />
+                        </HStack>
+                      )}
+                    </Box>
+                  </HStack>
 
-                  {currentLead.contact_phone && (
-                    <HStack spacing={3}>
-                      <PhoneIcon color={colors.text.secondary} />
-                      <Box>
+                  {/* Contact Phone Field */}
+                  <HStack spacing={3} alignItems="flex-start">
+                    <PhoneIcon color={colors.text.secondary} mt={1} />
+                    <Box flex={1}>
+                      <HStack justifyContent="space-between" alignItems="center" mb={1}>
                         <Text fontSize="sm" color={colors.text.muted}>Phone</Text>
+                        {!isEditingContactPhone && (
+                          <IconButton 
+                            icon={<EditIcon />} 
+                            size="xs" 
+                            variant="ghost" 
+                            aria-label="Edit Contact Phone" 
+                            onClick={() => {
+                              setIsEditingContactPhone(true);
+                              setNewContactPhone(currentLead.contact_phone || '');
+                            }}
+                            color={colors.text.muted}
+                            _hover={{color: colors.text.link}}
+                          />
+                        )}
+                      </HStack>
+                      {!isEditingContactPhone ? (
                         <Text fontWeight="medium" color={colors.text.primary}>
-                          {currentLead.contact_phone}
+                          {currentLead.contact_phone || 'No phone provided'}
                         </Text>
-                      </Box>
-                    </HStack>
-                  )}
+                      ) : (
+                        <HStack spacing={2}>
+                          <Input 
+                            type="tel"
+                            value={newContactPhone} 
+                            onChange={(e) => setNewContactPhone(e.target.value)} 
+                            placeholder="Enter contact phone" 
+                            size="sm"
+                            bg={colors.bg.input}
+                            borderColor={colors.border.default}
+                            _hover={{borderColor: colors.border.emphasis}}
+                            _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                          />
+                          <IconButton 
+                            icon={<CheckIcon />} 
+                            size="xs" 
+                            colorScheme="green" 
+                            aria-label="Save Contact Phone" 
+                            onClick={handleContactPhoneUpdate}
+                          />
+                          <IconButton 
+                            icon={<SmallCloseIcon />} 
+                            size="xs" 
+                            variant="ghost" 
+                            colorScheme="red" 
+                            aria-label="Cancel Edit Contact Phone" 
+                            onClick={() => setIsEditingContactPhone(false)}
+                          />
+                        </HStack>
+                      )}
+                    </Box>
+                  </HStack>
                 </VStack>
               </Box>
 
@@ -527,12 +850,7 @@ const LeadDetailPage = () => {
                   Lead Information
                 </Heading>
                 <VStack align="stretch" spacing={3}>
-                  <Box>
-                    <Text fontSize="sm" color={colors.text.muted}>Description</Text>
-                    <Text color={colors.text.primary}>
-                      {currentLead.description || 'No description provided'}
-                    </Text>
-                  </Box>
+
 
                   <Box>
                     <Text fontSize="sm" color={colors.text.muted}>Created</Text>

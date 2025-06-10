@@ -29,7 +29,7 @@ import EditPersonForm from '../components/EditPersonForm';
 import EmptyState from '../components/common/EmptyState';
 import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
 import { usePageLayoutStyles } from '../utils/headerUtils';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import type { CustomFieldDefinition } from '../generated/graphql/graphql';
 import { gqlClient } from '../lib/graphqlClient';
 import { gql } from 'graphql-request';
@@ -49,6 +49,7 @@ const GET_PERSON_CUSTOM_FIELD_DEFS_QUERY = gql`
 `;
 
 function PeoplePage() {
+  const navigate = useNavigate();
   const { people, peopleLoading, peopleError, fetchPeople, deletePerson } = usePeopleStore();
   const { userPermissions } = useAppStore();
   const { 
@@ -104,6 +105,11 @@ function PeoplePage() {
     setPersonIdToDelete(personId);
     onConfirmDeleteOpen();
   }, [onConfirmDeleteOpen]);
+
+  // NEW: Modern UX - Row click handler
+  const handleRowClick = useCallback((person: Person) => {
+    navigate(`/people/${person.id}`);
+  }, [navigate]);
 
   const allAvailableColumns = useMemo((): ColumnDefinition<Person>[] => {
     const standardColumns: ColumnDefinition<Person>[] = [
@@ -337,6 +343,8 @@ function PeoplePage() {
               columns={visibleColumns}
               initialSortKey="name"
               initialSortDirection="ascending"
+              onRowClick={handleRowClick}
+              excludeClickableColumns={['actions']}
             />
           </Box>
         )}
