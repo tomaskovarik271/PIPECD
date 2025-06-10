@@ -176,6 +176,13 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
     categories
   } = useSmartStickers(entityType, entityId);
 
+  // Notify parent component of sticker count changes (MOVED BEFORE EARLY RETURNS)
+  useEffect(() => {
+    if (onStickerCountChange && stickers) {
+      onStickerCountChange(stickers.length);
+    }
+  }, [stickers?.length, onStickerCountChange]);
+
   // Define table columns for stickers
   const stickerTableColumns = useMemo((): ColumnDefinition<StickerData>[] => {
     const getCategoryIcon = (iconName?: string) => {
@@ -587,13 +594,6 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
   }
 
   const filteredStickers = stickers; // Filters applied in hook
-
-  // Notify parent component of sticker count changes
-  useEffect(() => {
-    if (onStickerCountChange) {
-      onStickerCountChange(filteredStickers.length);
-    }
-  }, [filteredStickers.length, onStickerCountChange]);
 
   return (
     <Box 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { 
   Box, 
   Grid, 
@@ -159,6 +159,19 @@ const DealDetailPage = () => {
   
   // Sticky notes count state for tab display
   const [stickyNotesCount, setStickyNotesCount] = useState(0);
+  
+  // Memoize callbacks to prevent infinite re-renders
+  const handleStickyNotesCountChange = useCallback((count: number) => {
+    setStickyNotesCount(count);
+  }, []);
+  
+  const handleDocumentCountChange = useCallback((count: number) => {
+    setDocumentCount(count);
+  }, []);
+  
+  const handleContactsCountChange = useCallback((count: number) => {
+    setContactsCount(count);
+  }, []);
 
   const { isOpen: isEditDealModalOpen, onOpen: onEditDealModalOpen, onClose: onEditDealModalClose } = useDisclosure();
 
@@ -473,6 +486,7 @@ const DealDetailPage = () => {
                       <TabPanel>
                         <DealEmailsPanel
                           dealId={currentDeal.id}
+                          dealName={currentDeal.name || ''}
                           primaryContactEmail={currentDeal.person?.email || undefined}
                         />
                                                                 </TabPanel>
@@ -481,7 +495,7 @@ const DealDetailPage = () => {
                         <SharedDriveDocumentBrowser
                           dealId={currentDeal.id}
                           dealName={currentDeal.name || undefined}
-                          onDocumentCountChange={setDocumentCount}
+                          onDocumentCountChange={handleDocumentCountChange}
                         />
                       </TabPanel>
 
@@ -501,7 +515,7 @@ const DealDetailPage = () => {
                             id: currentDeal.organization.id,
                             name: currentDeal.organization.name
                           } : null}
-                          onContactCountChange={setContactsCount}
+                          onContactCountChange={handleContactsCountChange}
                         />
                       </TabPanel>
                       
@@ -513,7 +527,7 @@ const DealDetailPage = () => {
                         <StickerBoard 
                           entityType="DEAL" 
                           entityId={currentDeal.id} 
-                          onStickerCountChange={setStickyNotesCount}
+                          onStickerCountChange={handleStickyNotesCountChange}
                         />
                       </TabPanel>
                                       </TabPanels>
