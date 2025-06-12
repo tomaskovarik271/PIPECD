@@ -279,7 +279,7 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
 }
 
 export async function updateDeal(userId: string, id: string, input: DealServiceUpdateData, accessToken: string): Promise<DbDeal | null> {
-  console.log('[dealCrud.updateDeal] called for user:', userId, 'id:', id /*, 'input:', JSON.stringify(input, null, 2)*/);
+  // console.log('[dealCrud.updateDeal] called for user:', userId, 'id:', id /*, 'input:', JSON.stringify(input, null, 2)*/);
   const supabase = getAuthenticatedClient(accessToken); 
 
   const oldDealData = await getDealById(userId, id, accessToken);
@@ -383,14 +383,14 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
 
   if (fieldsInDbDataForDirectUpdate.length > 0) {
       dbDataForDirectUpdate.updated_at = new Date().toISOString();
-      console.log('[dealCrud.updateDeal] Step 1: Direct DB update payload (pre-RPC):', JSON.stringify(dbDataForDirectUpdate, null, 2));
+      // console.log('[dealCrud.updateDeal] Step 1: Direct DB update payload (pre-RPC):', JSON.stringify(dbDataForDirectUpdate, null, 2));
       const { error: directUpdateError } = await supabase
         .from('deals')
         .update(dbDataForDirectUpdate)
         .eq('id', id)
         .select('id') // only select id, we refetch later
         .single();
-      console.log('[dealCrud.updateDeal] Step 1: Supabase direct update result - error:', directUpdateError ? directUpdateError.message : null);
+              // console.log('[dealCrud.updateDeal] Step 1: Supabase direct update result - error:', directUpdateError ? directUpdateError.message : null);
       handleSupabaseError(directUpdateError, 'updating deal (direct fields) in DB');
   }
 

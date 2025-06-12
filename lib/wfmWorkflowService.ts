@@ -236,7 +236,7 @@ export const wfmWorkflowService = {
   },
 
   async getTransitionsByWorkflowId(workflowId: string, context: GraphQLContext): Promise<WfmWorkflowTransition[]> {
-    console.log(`wfmWorkflowService.getTransitionsByWorkflowId called for workflowId: ${workflowId}, user: ${context.currentUser?.id}`);
+    // console.log(`wfmWorkflowService.getTransitionsByWorkflowId called for workflowId: ${workflowId}, user: ${context.currentUser?.id}`);
     const { data, error } = await context.supabaseClient
       .from('workflow_transitions')
       .select(WFM_WORKFLOW_TRANSITION_DB_COLUMNS)
@@ -563,7 +563,7 @@ export const wfmWorkflowService = {
    * @throws GraphQLError if referenced entities (workflow, steps) are not found or if there's a DB error.
    */
   async validateTransition(workflowId: string, currentStepId: string, targetStepId: string, context: GraphQLContext): Promise<boolean> {
-    console.log(`wfmWorkflowService.validateTransition called for workflow: ${workflowId}, from: ${currentStepId}, to: ${targetStepId}`);
+    // console.log(`wfmWorkflowService.validateTransition called for workflow: ${workflowId}, from: ${currentStepId}, to: ${targetStepId}`);
     const { supabaseClient } = context;
 
     // 1. Fetch current and target step details, including status_id

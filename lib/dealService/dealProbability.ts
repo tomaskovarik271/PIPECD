@@ -73,7 +73,7 @@ export const calculateDealProbabilityFields = async (
         probability: typeof metadata.deal_probability === 'number' ? metadata.deal_probability : null,
         outcome: metadata.outcome_type as WfmStepProbabilityContext['outcome'] || 'OPEN', // Default to OPEN if not specified
       };
-      console.log(`[dealProbability.calculate] Fetched current WFM context for deal ${oldDealData.id}:`, currentWfmStepContext);
+      // console.log(`[dealProbability.calculate] Fetched current WFM context for deal ${oldDealData.id}:`, currentWfmStepContext);
     }
   }
 
@@ -81,7 +81,7 @@ export const calculateDealProbabilityFields = async (
   // An explicit probability in the input always overrides WFM-derived settings.
   if (typeof dealUpdateInput.deal_specific_probability === 'number' || dealUpdateInput.deal_specific_probability === null) {
     result.deal_specific_probability_to_set = dealUpdateInput.deal_specific_probability;
-    console.log(`[dealProbability.calculate] Using explicit deal_specific_probability from input: ${result.deal_specific_probability_to_set}`);
+          // console.log(`[dealProbability.calculate] Using explicit deal_specific_probability from input: ${result.deal_specific_probability_to_set}`);
   } else if (currentWfmStepContext) {
     if (currentWfmStepContext.outcome === 'WON') {
       result.deal_specific_probability_to_set = 1.0;
@@ -90,7 +90,7 @@ export const calculateDealProbabilityFields = async (
     } else { // OPEN or other/default
       result.deal_specific_probability_to_set = null; // Indicates system should use stage default, not override
     }
-    console.log(`[dealProbability.calculate] Based on WFM context (${currentWfmStepContext.name}, outcome: ${currentWfmStepContext.outcome}), deal_specific_probability_to_set: ${result.deal_specific_probability_to_set}`);
+          // console.log(`[dealProbability.calculate] Based on WFM context (${currentWfmStepContext.name}, outcome: ${currentWfmStepContext.outcome}), deal_specific_probability_to_set: ${result.deal_specific_probability_to_set}`);
   } else {
     // No explicit input probability, no WFM context found (e.g. deal not linked or WFM data missing)
     // Retain old deal_specific_probability if no other information is available
@@ -115,14 +115,14 @@ export const calculateDealProbabilityFields = async (
     console.warn(`[dealProbability.calculate] No WFM context and deal_specific_probability is null. Cannot determine effective probability for weighted amount without legacy stage info.`);
   }
 
-  console.log(`[dealProbability.calculate] Amount for calc: ${currentAmount}, Effective probability for calc: ${effectiveProbability}`);
+      // console.log(`[dealProbability.calculate] Amount for calc: ${currentAmount}, Effective probability for calc: ${effectiveProbability}`);
 
   if (typeof currentAmount === 'number' && effectiveProbability !== null) {
     result.weighted_amount_to_set = currentAmount * effectiveProbability;
   } else {
     result.weighted_amount_to_set = null; // Set to null if amount or effective probability is missing
   }
-  console.log(`[dealProbability.calculate] Final weighted_amount_to_set: ${result.weighted_amount_to_set}, Final deal_specific_probability_to_set: ${result.deal_specific_probability_to_set}`);
+  // console.log(`[dealProbability.calculate] Final weighted_amount_to_set: ${result.weighted_amount_to_set}, Final deal_specific_probability_to_set: ${result.deal_specific_probability_to_set}`);
 
   return result;
 }; 

@@ -63,7 +63,7 @@ export const WFMWorkflowResolvers = {
       return workflows.map(wf => wf as WfmWorkflowWithUserIds);
     },
     wfmWorkflow: async (_parent: unknown, args: { id: string }, context: GraphQLContext): Promise<WfmWorkflow | null> => {
-      console.log('Resolving Query.wfmWorkflow with ID:', args.id, 'user:', context.currentUser?.id);
+      // console.log('Resolving Query.wfmWorkflow with ID:', args.id, 'user:', context.currentUser?.id);
       const workflow = await wfmWorkflowService.getById(args.id, context);
       // Cast to WfmWorkflowWithUserIds to ensure field resolvers have access to necessary IDs.
       return workflow ? workflow as WfmWorkflowWithUserIds : null;
@@ -241,7 +241,7 @@ export const WFMWorkflowResolvers = {
       return stepsFromService.map(step => step as WfmWorkflowStepWithStatusId); 
     },
     transitions: async (parent: WfmWorkflowWithUserIds, _args: unknown, context: GraphQLContext): Promise<WfmWorkflowTransition[]> => {
-      console.log('Resolving WFMWorkflow.transitions for workflow ID:', parent.id, 'user:', context.currentUser?.id);
+      // console.log('Resolving WFMWorkflow.transitions for workflow ID:', parent.id, 'user:', context.currentUser?.id);
       const transitionsFromService = await wfmWorkflowService.getTransitionsByWorkflowId(parent.id, context);
       return transitionsFromService.map(trans => trans as WfmWorkflowTransitionWithStepIds); 
     },
@@ -289,7 +289,7 @@ export const WFMWorkflowResolvers = {
   },
   WFMWorkflowTransition: {
     fromStep: async (parent: WfmWorkflowTransitionWithStepIds, _args: unknown, context: GraphQLContext): Promise<WfmWorkflowStep | null> => {
-        console.log('Resolving WFMWorkflowTransition.fromStep for transition ID:', parent.id, 'using from_step_id:', parent.from_step_id, 'user:', context.currentUser?.id);
+        // console.log('Resolving WFMWorkflowTransition.fromStep for transition ID:', parent.id, 'using from_step_id:', parent.from_step_id, 'user:', context.currentUser?.id);
         if (!parent.from_step_id) {
             console.warn(`WFMWorkflowTransition.fromStep resolver: from_step_id missing on parent transition ID ${parent.id}`);
             return null;
@@ -303,7 +303,7 @@ export const WFMWorkflowResolvers = {
         }
     },
     toStep: async (parent: WfmWorkflowTransitionWithStepIds, _args: unknown, context: GraphQLContext): Promise<WfmWorkflowStep | null> => {
-        console.log('Resolving WFMWorkflowTransition.toStep for transition ID:', parent.id, 'using to_step_id:', parent.to_step_id, 'user:', context.currentUser?.id);
+        // console.log('Resolving WFMWorkflowTransition.toStep for transition ID:', parent.id, 'using to_step_id:', parent.to_step_id, 'user:', context.currentUser?.id);
         if (!parent.to_step_id) {
             console.warn(`WFMWorkflowTransition.toStep resolver: to_step_id missing on parent transition ID ${parent.id}`);
             return null;

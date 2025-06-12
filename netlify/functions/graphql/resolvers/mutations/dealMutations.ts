@@ -256,7 +256,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
           'DEAL_WFM_STATUS_CHANGED',
           historyChanges
         );
-        console.log(`[Mutation.updateDealWFMProgress] Recorded DEAL_WFM_STATUS_CHANGED event for deal ${dealId}`);
+        // console.log(`[Mutation.updateDealWFMProgress] Recorded DEAL_WFM_STATUS_CHANGED event for deal ${dealId}`);
 
         if (typeof targetStepDetails.metadata !== 'object' || targetStepDetails.metadata === null) {
           throw new GraphQLError(`Target WFM step ${targetWfmWorkflowStepId} has invalid/missing metadata.`, { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
