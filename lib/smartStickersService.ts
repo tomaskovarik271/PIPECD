@@ -180,7 +180,7 @@ const buildStickerFilters = (filters: StickerFilters | null | undefined, baseQue
 export const smartStickersService = {
   // Core CRUD operations
   async createSticker(userId: string, input: CreateStickerInput, accessToken: string): Promise<SmartSticker> {
-    console.log('[smartStickersService.createSticker] called for user:', userId, 'input:', input);
+    // console.log('[smartStickersService.createSticker] called for user:', userId, 'input:', input);
     try {
       const supabase = getAuthenticatedClient(accessToken);
       

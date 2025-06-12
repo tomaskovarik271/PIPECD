@@ -307,7 +307,7 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
 }
 
 export async function updateLead(userId: string, id: string, input: LeadServiceUpdateData, accessToken: string): Promise<DbLead | null> {
-  console.log('[leadCrud.updateLead] called for user:', userId, 'id:', id);
+  // console.log('[leadCrud.updateLead] called for user:', userId, 'id:', id);
   const supabase = getAuthenticatedClient(accessToken);
   
   // Get current lead data for change tracking
