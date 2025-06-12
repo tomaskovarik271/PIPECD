@@ -48,7 +48,7 @@ export const personMutations: Pick<MutationResolvers<GraphQLContext>, 'createPer
       }
     },
     updatePerson: async (_parent, args, context) => {
-      console.log('[Mutation.updatePerson] received id:', args.id, 'input:', args.input);
+      // console.log('[Mutation.updatePerson] received id:', args.id, 'input:', args.input);
       const action = 'updating person';
       try {
           requireAuthentication(context);
@@ -56,7 +56,7 @@ export const personMutations: Pick<MutationResolvers<GraphQLContext>, 'createPer
           const accessToken = getAccessToken(context)!;
 
           const validatedInput = PersonUpdateSchema.parse(args.input);
-          console.log('[Mutation.updatePerson] validated input:', validatedInput);
+          // console.log('[Mutation.updatePerson] validated input:', validatedInput);
           
           if (!context.userPermissions?.includes('person:update_any')) {
                throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
@@ -67,7 +67,7 @@ export const personMutations: Pick<MutationResolvers<GraphQLContext>, 'createPer
           }
 
           const updatedPersonRecord = await personService.updatePerson(userId, args.id, validatedInput, accessToken);
-          console.log('[Mutation.updatePerson] successfully updated:', updatedPersonRecord.id);
+          // console.log('[Mutation.updatePerson] successfully updated:', updatedPersonRecord.id);
 
           inngest.send({ 
             name: 'crm/person.updated',

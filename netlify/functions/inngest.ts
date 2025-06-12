@@ -204,7 +204,7 @@ const serveOptions: Parameters<typeof serve>[0] = {
 // Netlify sets CONTEXT='dev' when running `netlify dev`
 if (process.env.CONTEXT === 'dev') {
   serveOptions.serveHost = 'http://localhost:8888'; // Or whatever your netlify dev port is
-  console.log('[Inngest Handler] Netlify CONTEXT=dev: serveHost set to', serveOptions.serveHost);
+      // console.log('[Inngest Handler] Netlify CONTEXT=dev: serveHost set to', serveOptions.serveHost);
 } else if (process.env.NODE_ENV === 'development') {
   // Fallback for other local dev environments if CONTEXT isn't 'dev'
   serveOptions.serveHost = 'http://localhost:8888'; 

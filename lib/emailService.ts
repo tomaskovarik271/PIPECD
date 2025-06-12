@@ -168,7 +168,7 @@ class EmailService {
       }
 
       const query = queryParts.join(' ');
-      console.log('Gmail query:', query);
+      // console.log('Gmail query:', query);
 
       // Get threads list
       const threadsResponse = await gmail.users.threads.list({

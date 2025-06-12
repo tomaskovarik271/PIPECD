@@ -100,7 +100,7 @@ const getValidTokens = async (userId: string, accessToken: string): Promise<Goog
     const isExpiredOrExpiringSoon = expiresAt && expiresAt <= fiveMinutesFromNow;
     
     if (isExpiredOrExpiringSoon && tokenData.refresh_token) {
-      console.log('Google token expired or expiring soon, refreshing...');
+      // console.log('Google token expired or expiring soon, refreshing...');
       
       try {
         // Refresh the token
@@ -123,7 +123,7 @@ const getValidTokens = async (userId: string, accessToken: string): Promise<Goog
           handleSupabaseError(updateError, 'updating refreshed Google tokens');
         }
         
-        console.log('Google token refreshed successfully');
+                  // console.log('Google token refreshed successfully');
         
         return {
           access_token: refreshedTokens.access_token,

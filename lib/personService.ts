@@ -68,7 +68,7 @@ export const personService = {
 
   // Update an existing person - Needs authenticated client for UPDATE RLS policy
   async updatePerson(userId: string, id: string, input: Partial<PersonInput>, accessToken: string): Promise<Person> {
-    console.log('[personService.updatePerson] called for user:', userId, 'id:', id, 'input:', input);
+    // console.log('[personService.updatePerson] called for user:', userId, 'id:', id, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); 
 
     // 1. Fetch current person data to get existing custom_field_values

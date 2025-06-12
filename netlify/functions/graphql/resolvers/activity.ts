@@ -114,7 +114,7 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
                     organization_id: createdActivity.organization_id,
                  },
             });
-            console.log(`[Mutation.createActivity] Sent 'crm/activity.created' event for activity ID: ${createdActivity.id}`);
+            // console.log(`[Mutation.createActivity] Sent 'crm/activity.created' event for activity ID: ${createdActivity.id}`);
         } catch (eventError: any) {
             console.error(`[Mutation.createActivity] Failed to send Inngest event for activity ID ${createdActivity.id}:`, eventError.message);
         }

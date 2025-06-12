@@ -18,7 +18,7 @@ export const activityService = {
    * Creates a new activity for the given user.
    */
   async createActivity(userId: string, input: CreateActivityInput, accessToken: string): Promise<Activity> {
-    console.log('[activityService.createActivity] called for user:', userId, 'input:', input);
+    // console.log('[activityService.createActivity] called for user:', userId, 'input:', input);
     const supabaseClient: SupabaseClient = getAuthenticatedClient(accessToken);
     const { error, data } = await supabaseClient
       .from('activities')
@@ -96,7 +96,7 @@ export const activityService = {
    * Updates an existing activity.
    */
   async updateActivity(userId: string, activityId: string, updates: UpdateActivityInput, accessToken: string): Promise<Activity> {
-    console.log('[activityService.updateActivity] called for user:', userId, 'activityId:', activityId, 'updates:', updates);
+    // console.log('[activityService.updateActivity] called for user:', userId, 'activityId:', activityId, 'updates:', updates);
     const supabaseClient: SupabaseClient = getAuthenticatedClient(accessToken);
     
     // Safe update object logic remains the same
