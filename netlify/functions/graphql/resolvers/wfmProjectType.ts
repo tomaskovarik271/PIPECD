@@ -35,7 +35,7 @@ const mapServiceUserToGraphqlUser = (serviceUser: ServiceLevelUserProfile): User
 export const WFMProjectTypeResolvers = {
   Query: {
     wfmProjectTypes: async (_parent: unknown, args: { isArchived?: boolean }, context: GraphQLContext): Promise<WfmProjectType[]> => {
-      console.log('Resolving Query.wfmProjectTypes with args:', args, 'user:', context.currentUser?.id);
+      // console.log('Resolving Query.wfmProjectTypes with args:', args, 'user:', context.currentUser?.id);
       const projectTypes = await wfmProjectTypeService.getAll(args.isArchived ?? false, context);
       return projectTypes as WfmProjectTypeWithResolvedIds[];
     },
@@ -85,7 +85,7 @@ export const WFMProjectTypeResolvers = {
       }
     },
     createdByUser: async (parent: WfmProjectTypeWithResolvedIds, _args: unknown, context: GraphQLContext): Promise<User | null> => {
-      console.log('Resolving WFMProjectType.createdByUser for project type ID:', parent.id, 'user:', context.currentUser?.id);
+      // console.log('Resolving WFMProjectType.createdByUser for project type ID:', parent.id, 'user:', context.currentUser?.id);
       if (!parent.created_by_user_id) {
         return null;
       }
@@ -98,7 +98,7 @@ export const WFMProjectTypeResolvers = {
       }
     },
     updatedByUser: async (parent: WfmProjectTypeWithResolvedIds, _args: unknown, context: GraphQLContext): Promise<User | null> => {
-      console.log('Resolving WFMProjectType.updatedByUser for project type ID:', parent.id, 'user:', context.currentUser?.id);
+      // console.log('Resolving WFMProjectType.updatedByUser for project type ID:', parent.id, 'user:', context.currentUser?.id);
       if (!parent.updated_by_user_id) {
         return null;
       }

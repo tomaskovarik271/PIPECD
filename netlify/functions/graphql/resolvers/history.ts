@@ -37,7 +37,7 @@ export const DealHistoryEntry = {
     const accessToken = getAccessToken(context); // Get accessToken
 
     if (currentUser && currentUser.id === parent.user_id) {
-      console.log(`[DealHistoryEntry.user resolver] History user ${parent.user_id} is the current authenticated user. Fetching profile...`);
+              // console.log(`[DealHistoryEntry.user resolver] History user ${parent.user_id} is the current authenticated user. Fetching profile...`);
       
       if (!currentUser.email) { // Should not happen if requireAuthentication passed and email is primary id
         console.error(`[DealHistoryEntry.user resolver] Critical: Authenticated user ${currentUser.id} has no email for history entry.`);

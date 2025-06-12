@@ -111,7 +111,7 @@ const mapDbTransitionToGraphqlTransition = (dbTransition: DbWfmWorkflowTransitio
 
 export const wfmWorkflowService = {
   async getAll(isArchived: boolean = false, context: GraphQLContext): Promise<WfmWorkflow[]> {
-    console.log(`wfmWorkflowService.getAll called with isArchived: ${isArchived}, user: ${context.currentUser?.id}`);
+    // console.log(`wfmWorkflowService.getAll called with isArchived: ${isArchived}, user: ${context.currentUser?.id}`);
     const { data, error } = await context.supabaseClient
       .from('workflows')
       .select(WFM_WORKFLOW_DB_COLUMNS)
@@ -206,7 +206,7 @@ export const wfmWorkflowService = {
   },
 
   async getStepsByWorkflowId(workflowId: string, context: GraphQLContext): Promise<ServiceLayerWfmWorkflowStep[]> {
-    console.log(`wfmWorkflowService.getStepsByWorkflowId called for workflowId: ${workflowId}, user: ${context.currentUser?.id}`);
+    // console.log(`wfmWorkflowService.getStepsByWorkflowId called for workflowId: ${workflowId}, user: ${context.currentUser?.id}`);
     const { data, error } = await context.supabaseClient
       .from(WFM_WORKFLOW_STEP_TABLE_NAME)
       .select(WFM_WORKFLOW_STEP_DB_COLUMNS)

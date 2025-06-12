@@ -54,7 +54,7 @@ const mapServiceUserToGraphqlUser = (serviceUser: ServiceLevelUserProfile): User
 export const WFMWorkflowResolvers = {
   Query: {
     wfmWorkflows: async (_parent: unknown, args: { isArchived?: boolean }, context: GraphQLContext): Promise<WfmWorkflow[]> => {
-      console.log('Resolving Query.wfmWorkflows with args:', args, 'user:', context.currentUser?.id);
+      // console.log('Resolving Query.wfmWorkflows with args:', args, 'user:', context.currentUser?.id);
       const workflows = await wfmWorkflowService.getAll(args.isArchived ?? false, context);
       // The service returns WfmWorkflow objects that were mapped from DbWfmWorkflow.
       // These objects will be used as parents for field resolvers (createdByUser, updatedByUser, steps, transitions).
@@ -236,7 +236,7 @@ export const WFMWorkflowResolvers = {
   },
   WFMWorkflow: {
     steps: async (parent: WfmWorkflowWithUserIds, _args: unknown, context: GraphQLContext): Promise<WfmWorkflowStep[]> => {
-      console.log('Resolving WFMWorkflow.steps for workflow ID:', parent.id, 'user:', context.currentUser?.id);
+      // console.log('Resolving WFMWorkflow.steps for workflow ID:', parent.id, 'user:', context.currentUser?.id);
       const stepsFromService = await wfmWorkflowService.getStepsByWorkflowId(parent.id, context);
       return stepsFromService.map(step => step as WfmWorkflowStepWithStatusId); 
     },
@@ -246,7 +246,7 @@ export const WFMWorkflowResolvers = {
       return transitionsFromService.map(trans => trans as WfmWorkflowTransitionWithStepIds); 
     },
     createdByUser: async (parent: WfmWorkflowWithUserIds, _args: unknown, context: GraphQLContext): Promise<User | null> => {
-      console.log('Resolving WFMWorkflow.createdByUser for workflow ID:', parent.id, 'user:', context.currentUser?.id);
+      // console.log('Resolving WFMWorkflow.createdByUser for workflow ID:', parent.id, 'user:', context.currentUser?.id);
       if (!parent.created_by_user_id) {
         return null;
       }
@@ -259,7 +259,7 @@ export const WFMWorkflowResolvers = {
       }
     },
     updatedByUser: async (parent: WfmWorkflowWithUserIds, _args: unknown, context: GraphQLContext): Promise<User | null> => {
-      console.log('Resolving WFMWorkflow.updatedByUser for workflow ID:', parent.id, 'user:', context.currentUser?.id);
+      // console.log('Resolving WFMWorkflow.updatedByUser for workflow ID:', parent.id, 'user:', context.currentUser?.id);
       if (!parent.updated_by_user_id) {
         return null;
       }

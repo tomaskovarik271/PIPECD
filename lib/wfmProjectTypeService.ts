@@ -45,7 +45,7 @@ const mapDbProjectTypeToGraphqlProjectType = (dbProjectType: DbWfmProjectType): 
 
 export const wfmProjectTypeService = {
   async getAll(isArchived: boolean = false, context: GraphQLContext): Promise<WfmProjectType[]> {
-    console.log(`wfmProjectTypeService.getAll called with isArchived: ${isArchived}, user: ${context.currentUser?.id}`);
+    // console.log(`wfmProjectTypeService.getAll called with isArchived: ${isArchived}, user: ${context.currentUser?.id}`);
     const { data, error } = await context.supabaseClient
       .from('project_types')
       .select(WFM_PROJECT_TYPE_DB_COLUMNS)

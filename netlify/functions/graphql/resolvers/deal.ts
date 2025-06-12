@@ -270,7 +270,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
       if (!parent.wfm_project_id) {
         return null;
       }
-      console.log(`[Resolver.Deal.wfmProject] For deal ${parent.id}, fetching WFMProject ID: ${parent.wfm_project_id}`);
+              // console.log(`[Resolver.Deal.wfmProject] For deal ${parent.id}, fetching WFMProject ID: ${parent.wfm_project_id}`);
       try {
         const projectData = await wfmProjectService.getWFMProjectById(parent.wfm_project_id, context);
         if (!projectData) {

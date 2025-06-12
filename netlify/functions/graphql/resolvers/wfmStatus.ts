@@ -32,7 +32,7 @@ const mapServiceUserToGraphqlUser = (serviceUser: ServiceLevelUserProfile): User
 export const WFMStatusResolvers = {
   Query: {
     wfmStatuses: async (_parent: unknown, args: { isArchived?: boolean }, context: GraphQLContext): Promise<WfmStatus[]> => {
-      console.log('Resolving Query.wfmStatuses with args:', args, 'user:', context.currentUser?.id);
+      // console.log('Resolving Query.wfmStatuses with args:', args, 'user:', context.currentUser?.id);
       const statuses = await wfmStatusService.getAll(args.isArchived ?? false, context);
       return statuses.map(status => status as WfmStatusWithUserIds);
     },

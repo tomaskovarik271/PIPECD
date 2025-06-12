@@ -81,7 +81,7 @@ export async function getLeads(userId: string, accessToken: string): Promise<DbL
 }
 
 export async function getLeadById(userId: string, id: string, accessToken: string): Promise<DbLead | null> {
-  console.log('[leadCrud.getLeadById] called for user:', userId, 'id:', id);
+  // console.log('[leadCrud.getLeadById] called for user:', userId, 'id:', id);
   const supabase = getAuthenticatedClient(accessToken);
   const { data, error } = await supabase
     .from('leads')

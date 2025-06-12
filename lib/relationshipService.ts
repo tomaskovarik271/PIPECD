@@ -74,7 +74,7 @@ export const relationshipService = {
   },
 
   async getOrganizationPersonRelationships(userId: string, organizationId: string, accessToken: string): Promise<PersonRelationship[]> {
-    console.log('[relationshipService.getOrganizationPersonRelationships] called for user:', userId, 'orgId:', organizationId);
+    // console.log('[relationshipService.getOrganizationPersonRelationships] called for user:', userId, 'orgId:', organizationId);
     const supabase = getAuthenticatedClient(accessToken);
     
     // First get all people in the organization

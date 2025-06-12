@@ -69,7 +69,7 @@ export const WFMProject: WfmProjectResolvers<GraphQLContext> = {
   },
   workflow: async (parentObj, _args, context): Promise<GraphQLWfmWorkflow> => {
     const parent = parentObj as unknown as RawWfmProjectData;
-    console.log(`[Resolver.WFMProject.workflow] for project ID ${parent.id}, resolving workflow_id: ${parent.workflow_id}`);
+    // console.log(`[Resolver.WFMProject.workflow] for project ID ${parent.id}, resolving workflow_id: ${parent.workflow_id}`);
     if (!parent.workflow_id) {
         const msg = `[Resolver.WFMProject.workflow] workflow_id missing for project ${parent.id}`;
         console.error(msg);

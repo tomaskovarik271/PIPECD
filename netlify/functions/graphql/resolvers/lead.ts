@@ -304,14 +304,14 @@ export const Lead: LeadResolvers<GraphQLContext> = {
       if (!parent.wfm_project_id) {
         return null;
       }
-      console.log(`[Resolver.Lead.currentWfmStep] For lead ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
+              // console.log(`[Resolver.Lead.currentWfmStep] For lead ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
       try {
         const wfmProject = await wfmProjectService.getWFMProjectById(parent.wfm_project_id, context) as RawDbWfmProject | null;
         if (!wfmProject || !wfmProject.current_step_id) {
           console.log(`[Resolver.Lead.currentWfmStep] WFMProject ${parent.wfm_project_id} or its current_step_id not found.`);
           return null;
         }
-        console.log(`[Resolver.Lead.currentWfmStep] Found current_step_id: ${wfmProject.current_step_id}`);
+                  // console.log(`[Resolver.Lead.currentWfmStep] Found current_step_id: ${wfmProject.current_step_id}`);
         const step = await wfmWorkflowService.getStepById(wfmProject.current_step_id, context);
         if (!step) {
           console.warn(`[Resolver.Lead.currentWfmStep] Step object not found for ID: ${wfmProject.current_step_id} (via Lead ${parent.id})`);
@@ -327,20 +327,20 @@ export const Lead: LeadResolvers<GraphQLContext> = {
       if (!parent.wfm_project_id) {
         return null;
       }
-      console.log(`[Resolver.Lead.currentWfmStatus] For lead ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
+              // console.log(`[Resolver.Lead.currentWfmStatus] For lead ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
       try {
         const wfmProject = await wfmProjectService.getWFMProjectById(parent.wfm_project_id, context) as RawDbWfmProject | null;
         if (!wfmProject || !wfmProject.current_step_id) {
           console.log(`[Resolver.Lead.currentWfmStatus] WFMProject ${parent.wfm_project_id} or its current_step_id not found.`);
           return null;
         }
-        console.log(`[Resolver.Lead.currentWfmStatus] Found current_step_id: ${wfmProject.current_step_id}`);
+                  // console.log(`[Resolver.Lead.currentWfmStatus] Found current_step_id: ${wfmProject.current_step_id}`);
         const stepData = await wfmWorkflowService.getStepById(wfmProject.current_step_id, context);
         if (!stepData || !stepData.status_id) {
           console.log(`[Resolver.Lead.currentWfmStatus] Step ${wfmProject.current_step_id} or its status_id not found.`);
           return null;
         }
-        console.log(`[Resolver.Lead.currentWfmStatus] Found status_id: ${stepData.status_id}`);
+                  // console.log(`[Resolver.Lead.currentWfmStatus] Found status_id: ${stepData.status_id}`);
         const status = await wfmStatusService.getById(stepData.status_id, context);
         if (!status) {
           console.warn(`[Resolver.Lead.currentWfmStatus] Status object not found for ID: ${stepData.status_id} (via Lead ${parent.id})`);

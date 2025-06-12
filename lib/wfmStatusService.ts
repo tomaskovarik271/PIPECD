@@ -46,7 +46,7 @@ const mapDbStatusToGraphqlStatus = (dbStatus: DbWfmStatus): WfmStatus => {
 
 export const wfmStatusService = {
   async getAll(isArchived: boolean = false, context: GraphQLContext): Promise<WfmStatus[]> {
-    console.log(`wfmStatusService.getAll called with isArchived: ${isArchived}, user: ${context.currentUser?.id}`);
+    // console.log(`wfmStatusService.getAll called with isArchived: ${isArchived}, user: ${context.currentUser?.id}`);
     // TODO: checkPermission(context, Permission.WFM_STATUS_READ_ALL); 
     const { data, error } = await context.supabaseClient
       .from('statuses')

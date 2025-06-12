@@ -58,7 +58,7 @@ export const Person: PersonResolvers<GraphQLContext> = {
       requireAuthentication(context);
       const accessToken = getAccessToken(context);
       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-       console.warn(`Resolver Person.deals not fully implemented - needs service update`);
+       // console.warn(`Resolver Person.deals not fully implemented - needs service update`);
        return []; // Return empty array for now
     },
     customFieldValues: async (parent: any, _args: any, context: GraphQLContext): Promise<GraphQLCustomFieldValue[]> => {
