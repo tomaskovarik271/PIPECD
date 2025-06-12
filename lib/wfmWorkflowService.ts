@@ -125,7 +125,7 @@ export const wfmWorkflowService = {
   },
 
   async getById(id: string, context: GraphQLContext): Promise<WfmWorkflow | null> {
-    console.log(`wfmWorkflowService.getById called with id: ${id}, user: ${context.currentUser?.id}`);
+    // console.log(`wfmWorkflowService.getById called with id: ${id}, user: ${context.currentUser?.id}`);
     const { data, error } = await context.supabaseClient
       .from('workflows')
       .select(WFM_WORKFLOW_DB_COLUMNS)
@@ -221,7 +221,7 @@ export const wfmWorkflowService = {
   },
 
   async getStepById(stepId: string, context: GraphQLContext): Promise<ServiceLayerWfmWorkflowStep | null> {
-    console.log(`wfmWorkflowService.getStepById called for stepId: ${stepId}, user: ${context.currentUser?.id}`);
+    // console.log(`wfmWorkflowService.getStepById called for stepId: ${stepId}, user: ${context.currentUser?.id}`);
     const { data, error } = await context.supabaseClient
       .from(WFM_WORKFLOW_STEP_TABLE_NAME)
       .select(WFM_WORKFLOW_STEP_DB_COLUMNS)

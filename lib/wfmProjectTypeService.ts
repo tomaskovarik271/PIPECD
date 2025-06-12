@@ -74,7 +74,7 @@ export const wfmProjectTypeService = {
   },
 
   async getWFMProjectTypeByName(name: string, context: GraphQLContext): Promise<WfmProjectType | null> {
-    console.log(`wfmProjectTypeService.getWFMProjectTypeByName called with name: ${name}, user: ${context.currentUser?.id}`);
+    // console.log(`wfmProjectTypeService.getWFMProjectTypeByName called with name: ${name}, user: ${context.currentUser?.id}`);
     const { data, error } = await context.supabaseClient
       .from('project_types')
       .select(WFM_PROJECT_TYPE_DB_COLUMNS)

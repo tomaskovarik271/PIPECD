@@ -89,7 +89,7 @@ export const getCustomFieldDefinitions = async (
   query = query.order('display_order', { ascending: true });
 
   const { data, error } = await query;
-  console.log('[Service DEBUG] getCustomFieldDefinitions raw response:', { data, error });
+      // console.log('[Service DEBUG] getCustomFieldDefinitions raw response:', { data, error });
 
   handleSupabaseError(error, 'fetching custom field definitions');
 

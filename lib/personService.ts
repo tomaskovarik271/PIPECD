@@ -9,7 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export const personService = {
   // Get all people - Uses authenticated client as RLS SELECT policy uses auth.uid()
   async getPeople(userId: string, accessToken: string): Promise<Person[]> {
-    console.log('[personService.getPeople] called for user:', userId);
+    // console.log('[personService.getPeople] called for user:', userId);
     const supabase = getAuthenticatedClient(accessToken); 
     const { data, error } = await supabase
       .from('people') 
@@ -22,7 +22,7 @@ export const personService = {
 
   // Get a single person by ID - Uses authenticated client
   async getPersonById(userId: string, id: string, accessToken: string): Promise<Person | null> {
-    console.log('[personService.getPersonById] called for user:', userId, 'id:', id);
+    // console.log('[personService.getPersonById] called for user:', userId, 'id:', id);
     const supabase = getAuthenticatedClient(accessToken); 
     const { data, error } = await supabase
       .from('people') 

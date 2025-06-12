@@ -40,7 +40,7 @@ export const activityService = {
    * Retrieves a single activity by its ID, ensuring the user has access.
    */
   async getActivityById(userId: string, activityId: string, accessToken: string): Promise<Activity | null> {
-    console.log('[activityService.getActivityById] called for user:', userId, 'activityId:', activityId);
+    // console.log('[activityService.getActivityById] called for user:', userId, 'activityId:', activityId);
     const supabaseClient: SupabaseClient = getAuthenticatedClient(accessToken);
     const { data, error } = await supabaseClient
       .from('activities')
@@ -68,7 +68,7 @@ export const activityService = {
    * or activities related to entities they have access to.
    */
   async getActivities(userId: string, accessToken: string, filter?: ActivityFilter): Promise<Activity[]> {
-    console.log('[activityService.getActivities] called for user:', userId, 'filter:', filter);
+    // console.log('[activityService.getActivities] called for user:', userId, 'filter:', filter);
     const supabaseClient: SupabaseClient = getAuthenticatedClient(accessToken);
     let query = supabaseClient
       .from('activities')

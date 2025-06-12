@@ -274,7 +274,7 @@ const yoga = createYoga<GraphQLContext>({
   plugins: [
     {
       onParams({ params }) {
-        console.log('[Yoga onParams] Received parameters:', JSON.stringify(params, null, 2));
+        // console.log('[Yoga onParams] Received parameters:', JSON.stringify(params, null, 2));
       }
     } as Plugin
   ]

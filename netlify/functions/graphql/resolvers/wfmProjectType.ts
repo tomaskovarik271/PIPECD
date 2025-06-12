@@ -45,7 +45,7 @@ export const WFMProjectTypeResolvers = {
       return projectType as WfmProjectTypeWithResolvedIds | null;
     },
     wfmProjectTypeByName: async (_parent: unknown, args: { name: string }, context: GraphQLContext): Promise<WfmProjectType | null> => {
-      console.log('Resolving Query.wfmProjectTypeByName with name:', args.name, 'user:', context.currentUser?.id);
+      // console.log('Resolving Query.wfmProjectTypeByName with name:', args.name, 'user:', context.currentUser?.id);
       const projectType = await wfmProjectTypeService.getWFMProjectTypeByName(args.name, context);
       return projectType as WfmProjectTypeWithResolvedIds | null;
     },
@@ -71,7 +71,7 @@ export const WFMProjectTypeResolvers = {
   },
   WFMProjectType: {
     defaultWorkflow: async (parent: WfmProjectTypeWithResolvedIds, _args: unknown, context: GraphQLContext): Promise<WfmWorkflow | null> => {
-      console.log('Resolving WFMProjectType.defaultWorkflow for project type ID:', parent.id, 'user:', context.currentUser?.id);
+      // console.log('Resolving WFMProjectType.defaultWorkflow for project type ID:', parent.id, 'user:', context.currentUser?.id);
       if (!parent.default_workflow_id) {
         return null;
       }

@@ -67,13 +67,13 @@ export const Person: PersonResolvers<GraphQLContext> = {
       const supabase = getAuthenticatedClient(accessToken);
 
       const personIdForLog = parent.id || 'unknown_person_id';
-      console.log(`[Person.customFieldValues] Resolver START for person: ${personIdForLog}`);
+      // console.log(`[Person.customFieldValues] Resolver START for person: ${personIdForLog}`);
 
       const personSpecificValues = parent.db_custom_field_values as Record<string, any> || {}; // Ensure using db_custom_field_values alias
-      console.log(`[Person.customFieldValues] person: ${personIdForLog}, received parent.db_custom_field_values:`, JSON.stringify(personSpecificValues));
+              // console.log(`[Person.customFieldValues] person: ${personIdForLog}, received parent.db_custom_field_values:`, JSON.stringify(personSpecificValues));
 
       if (Object.keys(personSpecificValues).length === 0) {
-        console.log(`[Person.customFieldValues] person: ${personIdForLog}, no custom field values found in parent data. Returning [].`);
+                  // console.log(`[Person.customFieldValues] person: ${personIdForLog}, no custom field values found in parent data. Returning [].`);
         return [];
       }
 

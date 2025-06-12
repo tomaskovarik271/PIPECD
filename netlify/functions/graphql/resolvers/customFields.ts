@@ -18,7 +18,7 @@ export const queryResolvers: Pick<QueryResolvers, 'customFieldDefinitions' | 'cu
     args: { entityType: GraphQLCustomFieldEntityType; includeInactive?: boolean | null },
     context: GraphQLContext
   ): Promise<GraphQLCustomFieldDefinition[]> => {
-    console.log('[Resolver Entry] Query.customFieldDefinitions invoked with args:', args);
+    // console.log('[Resolver Entry] Query.customFieldDefinitions invoked with args:', args);
     try {
       const auth = requireAuthentication(context);
       const { entityType, includeInactive = false } = args;

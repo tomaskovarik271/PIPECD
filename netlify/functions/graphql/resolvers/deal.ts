@@ -233,7 +233,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
             }
             return fieldValue;
           });
-        console.log(`[Resolver Deal.customFieldValues] For Deal ${parent.id}, resolvedValues (before any accidental filter):`, JSON.stringify(mappedValues, null, 2)); 
+        // console.log(`[Resolver Deal.customFieldValues] For Deal ${parent.id}, resolvedValues (before any accidental filter):`, JSON.stringify(mappedValues, null, 2)); 
         return mappedValues;
       } catch (error) {
         console.error(`Error resolving customFieldValues for deal ${parent.id}:`, error);
@@ -287,14 +287,14 @@ export const Deal: DealResolvers<GraphQLContext> = {
       if (!parent.wfm_project_id) {
         return null;
       }
-      console.log(`[Resolver.Deal.currentWfmStep] For deal ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
+              // console.log(`[Resolver.Deal.currentWfmStep] For deal ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
       try {
         const projectData = await wfmProjectService.getWFMProjectById(parent.wfm_project_id, context) as RawDbWfmProject | null;
         if (!projectData || !projectData.current_step_id) {
           console.log(`[Resolver.Deal.currentWfmStep] WFMProject ${parent.wfm_project_id} or its current_step_id not found.`);
           return null;
         }
-        console.log(`[Resolver.Deal.currentWfmStep] Found current_step_id: ${projectData.current_step_id}`);
+                  // console.log(`[Resolver.Deal.currentWfmStep] Found current_step_id: ${projectData.current_step_id}`);
         const step = await wfmWorkflowService.getStepById(projectData.current_step_id, context);
         if (!step) {
              console.warn(`[Resolver.Deal.currentWfmStep] Step object not found for ID: ${projectData.current_step_id} (via Deal ${parent.id})`);
@@ -310,20 +310,20 @@ export const Deal: DealResolvers<GraphQLContext> = {
       if (!parent.wfm_project_id) {
         return null;
       }
-      console.log(`[Resolver.Deal.currentWfmStatus] For deal ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
+              // console.log(`[Resolver.Deal.currentWfmStatus] For deal ${parent.id}, WFMProject ID: ${parent.wfm_project_id}`);
       try {
         const projectData = await wfmProjectService.getWFMProjectById(parent.wfm_project_id, context) as RawDbWfmProject | null;
         if (!projectData || !projectData.current_step_id) {
           console.log(`[Resolver.Deal.currentWfmStatus] WFMProject ${parent.wfm_project_id} or its current_step_id not found.`);
           return null;
         }
-        console.log(`[Resolver.Deal.currentWfmStatus] Found current_step_id: ${projectData.current_step_id}`);
+                  // console.log(`[Resolver.Deal.currentWfmStatus] Found current_step_id: ${projectData.current_step_id}`);
         const stepData = await wfmWorkflowService.getStepById(projectData.current_step_id, context);
         if (!stepData || !stepData.status_id) {
           console.log(`[Resolver.Deal.currentWfmStatus] Step ${projectData.current_step_id} or its status_id not found.`);
           return null;
         }
-        console.log(`[Resolver.Deal.currentWfmStatus] Found status_id: ${stepData.status_id}`);
+                  // console.log(`[Resolver.Deal.currentWfmStatus] Found status_id: ${stepData.status_id}`);
         const status = await wfmStatusService.getById(stepData.status_id, context);
         if (!status) {
             console.warn(`[Resolver.Deal.currentWfmStatus] Status object not found for ID: ${stepData.status_id} (via Deal ${parent.id})`);
@@ -372,14 +372,14 @@ export const Deal: DealResolvers<GraphQLContext> = {
     },
     assignedToUser: async (parent: GraphQLDealParent, _args: any, context: GraphQLContext): Promise<GraphQLUser | null> => {
         const assignedToUserId = parent.assigned_to_user_id;
-        console.log(`[DealResolver.assignedToUser] Processing deal ${parent.id}, assigned_to_user_id: ${assignedToUserId}`);
+        // console.log(`[DealResolver.assignedToUser] Processing deal ${parent.id}, assigned_to_user_id: ${assignedToUserId}`);
 
         if (!assignedToUserId) {
             return null;
         }
         try {
             const userProfileData = await getServiceLevelUserProfileData(assignedToUserId);
-            console.log(`[DealResolver.assignedToUser] For deal ${parent.id}, userProfileData from getServiceLevelUserProfileData for user ${assignedToUserId}:`, JSON.stringify(userProfileData, null, 2));
+            // console.log(`[DealResolver.assignedToUser] For deal ${parent.id}, userProfileData from getServiceLevelUserProfileData for user ${assignedToUserId}:`, JSON.stringify(userProfileData, null, 2));
 
             if (!userProfileData) {
                 console.warn(`[DealResolver.assignedToUser] User profile data not found for assigned user ID ${assignedToUserId} on deal ${parent.id}.`);
@@ -398,7 +398,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
                 avatar_url: userProfileData.avatar_url,
             } as GraphQLUser;
 
-            console.log(`[DealResolver.assignedToUser] For deal ${parent.id}, resolving user as:`, JSON.stringify(resolvedUser, null, 2));
+                          // console.log(`[DealResolver.assignedToUser] For deal ${parent.id}, resolving user as:`, JSON.stringify(resolvedUser, null, 2));
             return resolvedUser;
         } catch (error: any) {
             console.error(`[DealResolver.assignedToUser] Error fetching assigned user for deal ${parent.id}, user ID ${assignedToUserId}:`, error.message);

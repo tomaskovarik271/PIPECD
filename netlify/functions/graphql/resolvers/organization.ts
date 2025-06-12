@@ -24,19 +24,19 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
     }
     const supabase = getAuthenticatedClient(accessToken);
     const organizationIdForLog = parent.id || 'unknown_organization_id';
-    console.log(`[Organization.customFieldValues] Resolver START for organization: ${organizationIdForLog}`);
+    // console.log(`[Organization.customFieldValues] Resolver START for organization: ${organizationIdForLog}`);
 
     const organizationSpecificValues = parent.db_custom_field_values || {};
-    console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, received parent.db_custom_field_values:`, JSON.stringify(organizationSpecificValues));
+    // console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, received parent.db_custom_field_values:`, JSON.stringify(organizationSpecificValues));
 
     try {
-      console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, fetching definitions for Organization entity.`);
+      // console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, fetching definitions for Organization entity.`);
       const definitions: CustomFieldDefinition[] = await customFieldDefinitionService.getCustomFieldDefinitions(
         supabase,
         CustomFieldEntityType.Organization, // Use enum value
         false // includeInactive = false
       );
-      console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, loaded ${definitions.length} active Organization definitions:`, JSON.stringify(definitions.map(d => d.fieldName)));
+              // console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, loaded ${definitions.length} active Organization definitions:`, JSON.stringify(definitions.map(d => d.fieldName)));
 
       if (!definitions || definitions.length === 0) {
         console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, no active Organization definitions found. Returning [].`);
@@ -46,7 +46,7 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
       const mappedValues: CustomFieldValue[] = definitions
         .map((definition: CustomFieldDefinition) => {
           const rawValue = organizationSpecificValues[definition.fieldName];
-          console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, Def: ${definition.fieldName} (${definition.fieldType}), RawValue from DB:`, rawValue);
+          // console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, Def: ${definition.fieldName} (${definition.fieldType}), RawValue from DB:`, rawValue);
 
           const fieldValue: CustomFieldValue = {
             definition: definition, 
@@ -95,11 +95,11 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
             default:
               console.warn(`[Organization.customFieldValues] organization: ${organizationIdForLog}, Def: ${definition.fieldName}, Unhandled custom field type: ${definition.fieldType as string}`);
           }
-          console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, Def: ${definition.fieldName}, mapped fieldValue:`, JSON.stringify(fieldValue));
+          // console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, Def: ${definition.fieldName}, mapped fieldValue:`, JSON.stringify(fieldValue));
           return fieldValue;
         });
       
-      console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, mappedValues before filter (${mappedValues.length} items):`, JSON.stringify(mappedValues.map(fv => ({ def: fv.definition.fieldName, sv: fv.stringValue, nv: fv.numberValue, bv: fv.booleanValue, dv: fv.dateValue, sov: fv.selectedOptionValues }))));
+              // console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, mappedValues before filter (${mappedValues.length} items):`, JSON.stringify(mappedValues.map(fv => ({ def: fv.definition.fieldName, sv: fv.stringValue, nv: fv.numberValue, bv: fv.booleanValue, dv: fv.dateValue, sov: fv.selectedOptionValues }))));
 
       // const resolvedValues = mappedValues.filter(fv => 
       //     fv.stringValue !== null || 
@@ -112,7 +112,7 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
       // The following log is now also commented out as it refers to resolvedValues
       // console.log(`[Organization.customFieldValues] organization: ${organizationIdForLog}, resolvedValues after filter (${resolvedValues.length} items):`, JSON.stringify(resolvedValues.map(fv => ({ def: fv.definition.fieldName, val: fv.stringValue || fv.numberValue || fv.booleanValue || fv.dateValue || fv.selectedOptionValues }))));
       
-      console.log(`[Organization.customFieldValues] Resolver END for organization: ${organizationIdForLog}`);
+      // console.log(`[Organization.customFieldValues] Resolver END for organization: ${organizationIdForLog}`);
       return mappedValues; // RETURN mappedValues directly
 
     } catch (error) {

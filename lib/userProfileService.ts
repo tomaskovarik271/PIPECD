@@ -40,7 +40,7 @@ export const getServiceLevelUserProfileData = async (userId: string): Promise<Se
     return null; // Or throw an error if admin client is critical for this function
   }
 
-  console.log(`[userProfileService] getServiceLevelUserProfileData: Fetching data for user_id: ${userId}`);
+      // console.log(`[userProfileService] getServiceLevelUserProfileData: Fetching data for user_id: ${userId}`);
 
   // Fetch email from auth.users table using supabaseAdmin
   let authUserEmail: string;

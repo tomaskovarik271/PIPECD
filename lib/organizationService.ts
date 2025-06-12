@@ -181,7 +181,7 @@ export const organizationService = {
 
   // Get all organizations for the authenticated user (RLS handles filtering)
   async getOrganizations(userId: string, accessToken: string): Promise<Organization[]> { 
-    console.log('[organizationService.getOrganizations] called for user:', userId);
+    // console.log('[organizationService.getOrganizations] called for user:', userId);
     const supabase = getAuthenticatedClient(accessToken); 
     const { data, error } = await supabase
       .from('organizations')
@@ -194,7 +194,7 @@ export const organizationService = {
 
   // Get a single organization by ID (RLS handles filtering)
   async getOrganizationById(userId: string, id: string, accessToken: string): Promise<Organization | null> { 
-    console.log('[organizationService.getOrganizationById] called for user:', userId, 'id:', id);
+    // console.log('[organizationService.getOrganizationById] called for user:', userId, 'id:', id);
     const supabase = getAuthenticatedClient(accessToken); 
     const { data, error } = await supabase
       .from('organizations')

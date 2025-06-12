@@ -44,7 +44,7 @@ export interface DealServiceUpdateData {
 // --- Deal CRUD Operations ---
 
 export async function getDeals(userId: string, accessToken: string): Promise<DbDeal[]> {
-  console.log('[dealCrud.getDeals] called for user:', userId);
+  // console.log('[dealCrud.getDeals] called for user:', userId);
   const supabase = getAuthenticatedClient(accessToken);
   const { data, error } = await supabase
     .from('deals')
@@ -56,7 +56,7 @@ export async function getDeals(userId: string, accessToken: string): Promise<DbD
 }
 
 export async function getDealById(userId: string, id: string, accessToken:string): Promise<DbDeal | null> {
-  console.log('[dealCrud.getDealById] called for user:', userId, 'id:', id);
+  // console.log('[dealCrud.getDealById] called for user:', userId, 'id:', id);
   const supabase = getAuthenticatedClient(accessToken);
   const { data, error } = await supabase
     .from('deals')

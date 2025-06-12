@@ -61,7 +61,7 @@ export const wfmStatusService = {
   },
 
   async getById(id: string, context: GraphQLContext): Promise<WfmStatus | null> {
-    console.log(`wfmStatusService.getById called with id: ${id}, user: ${context.currentUser?.id}`);
+    // console.log(`wfmStatusService.getById called with id: ${id}, user: ${context.currentUser?.id}`);
     // TODO: checkPermission(context, Permission.WFM_STATUS_READ_ONE);
     const { data, error } = await context.supabaseClient
       .from('statuses')

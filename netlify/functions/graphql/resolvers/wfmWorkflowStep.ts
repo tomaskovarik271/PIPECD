@@ -14,7 +14,7 @@ interface ParentWfmWorkflowStep {
 export const WFMWorkflowStep: WfmWorkflowStepResolvers<GraphQLContext> = {
   status: async (parentObj, _args, context): Promise<GraphQLWfmStatus> => {
     const parent = parentObj as unknown as ParentWfmWorkflowStep;
-    console.log(`[Resolver.WFMWorkflowStep.status] for step ID ${parent.id}, resolving status_id: ${parent.status_id}`);
+    // console.log(`[Resolver.WFMWorkflowStep.status] for step ID ${parent.id}, resolving status_id: ${parent.status_id}`);
     if (!parent.status_id) {
       const msg = `[Resolver.WFMWorkflowStep.status] status_id missing for WFMWorkflowStep ${parent.id}`;
       console.error(msg);

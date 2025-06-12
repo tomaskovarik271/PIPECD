@@ -61,7 +61,7 @@ export interface LeadServiceUpdateData {
 // --- Lead CRUD Operations ---
 
 export async function getLeads(userId: string, accessToken: string): Promise<DbLead[]> {
-  console.log('[leadCrud.getLeads] called for user:', userId);
+  // console.log('[leadCrud.getLeads] called for user:', userId);
   const supabase = getAuthenticatedClient(accessToken);
   const { data, error } = await supabase
     .from('leads')
