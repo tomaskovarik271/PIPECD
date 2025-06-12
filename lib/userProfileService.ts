@@ -107,7 +107,7 @@ export const getUserProfile = async (userId: string, accessToken: string): Promi
     throw new Error('Access token is required to fetch a profile.');
   }
 
-  console.log(`[userProfileService] Fetching profile for user_id: ${userId} using token.`);
+  // console.log(`[userProfileService] Fetching profile for user_id: ${userId} using token.`);
   const authenticatedSupabase = getAuthenticatedClient(accessToken);
 
   const { data, error } = await authenticatedSupabase
@@ -121,7 +121,7 @@ export const getUserProfile = async (userId: string, accessToken: string): Promi
     throw new Error(`Failed to fetch user profile: ${error.message}`);
   }
 
-  console.log(`[userProfileService] Fetched profile data for ${userId}:`, data);
+  // console.log(`[userProfileService] Fetched profile data for ${userId}:`, data);
   return data as DbUserProfile | null;
 };
 

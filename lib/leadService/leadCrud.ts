@@ -104,7 +104,7 @@ export async function getLeadById(userId: string, id: string, accessToken: strin
 }
 
 export async function createLead(userId: string, input: LeadInput, accessToken: string): Promise<DbLead> {
-  console.log('[leadCrud.createLead] called for user:', userId);
+  // console.log('[leadCrud.createLead] called for user:', userId);
   const supabase = getAuthenticatedClient(accessToken);
   
   let { customFields, wfmProjectTypeId, assignedToUserId, ...leadCoreData } = input; 

@@ -217,7 +217,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
        }
     },
     deal: async (_parent, args, context) => {
-       console.log('[Plain Resolver Query.deal] Received args:', JSON.stringify(args, null, 2));
+       // console.log('[Plain Resolver Query.deal] Received args:', JSON.stringify(args, null, 2));
        if (!args || args.id === undefined || args.id === null) { 
          console.error('[Plain Resolver Query.deal] args.id is MISSING or null/undefined!', args);
        }
@@ -287,7 +287,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
        }
     },
     lead: async (_parent, args, context) => {
-       console.log('[Plain Resolver Query.lead] Received args:', JSON.stringify(args, null, 2));
+       // console.log('[Plain Resolver Query.lead] Received args:', JSON.stringify(args, null, 2));
        if (!args || args.id === undefined || args.id === null) { 
          console.error('[Plain Resolver Query.lead] args.id is MISSING or null/undefined!', args);
        }

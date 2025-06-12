@@ -263,7 +263,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
         console.error('Error fetching deal history for deal:', parent.id, error);
         throw new GraphQLError('Could not fetch deal history.');
       }
-      console.log('[Deal.history resolver] Raw data for deal_id', parent.id, ':', JSON.stringify(data, null, 2));
+              // console.log('[Deal.history resolver] Raw data for deal_id', parent.id, ':', JSON.stringify(data, null, 2));
       return data || [];
     },
     wfmProject: async (parent: GraphQLDealParent, _args, context: GraphQLContext): Promise<WfmProject | null> => {

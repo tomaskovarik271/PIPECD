@@ -131,7 +131,7 @@ export const relationshipService = {
   // === ORGANIZATIONAL ROLES ===
   
   async getPersonOrganizationalRoles(userId: string, accessToken: string, personId?: string): Promise<PersonOrganizationalRole[]> {
-    console.log('[relationshipService.getPersonOrganizationalRoles] called for user:', userId, 'personId:', personId);
+    // console.log('[relationshipService.getPersonOrganizationalRoles] called for user:', userId, 'personId:', personId);
     const supabase = getAuthenticatedClient(accessToken);
     
     let query = supabase.from('person_organizational_roles').select('*');
@@ -199,7 +199,7 @@ export const relationshipService = {
   // === STAKEHOLDER ANALYSIS ===
   
   async getStakeholderAnalyses(userId: string, accessToken: string, organizationId?: string, dealId?: string, leadId?: string): Promise<StakeholderAnalysis[]> {
-    console.log('[relationshipService.getStakeholderAnalyses] called for user:', userId, 'filters:', { organizationId, dealId, leadId });
+    // console.log('[relationshipService.getStakeholderAnalyses] called for user:', userId, 'filters:', { organizationId, dealId, leadId });
     const supabase = getAuthenticatedClient(accessToken);
     
     let query = supabase.from('stakeholder_analysis').select('*');

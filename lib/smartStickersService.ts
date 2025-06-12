@@ -312,7 +312,7 @@ export const smartStickersService = {
     after?: string,
     accessToken?: string
   ): Promise<StickerSearchResult> {
-    console.log('[smartStickersService.getEntityStickers] called for:', entityType, entityId);
+    // console.log('[smartStickersService.getEntityStickers] called for:', entityType, entityId);
     try {
       const supabase = getAuthenticatedClient(accessToken || '');
       
@@ -576,7 +576,7 @@ export const smartStickersService = {
 
   // Category management
   async getStickerCategories(accessToken?: string): Promise<StickerCategory[]> {
-    console.log('[smartStickersService.getStickerCategories] called');
+    // console.log('[smartStickersService.getStickerCategories] called');
     try {
       const supabase = getAuthenticatedClient(accessToken || '');
       
