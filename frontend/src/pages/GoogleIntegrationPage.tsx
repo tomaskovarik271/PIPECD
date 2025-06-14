@@ -139,7 +139,8 @@ const GoogleIntegrationPage: React.FC = () => {
           'https://www.googleapis.com/auth/userinfo.profile',
           'https://www.googleapis.com/auth/drive',
           'https://www.googleapis.com/auth/gmail.readonly',
-          'https://www.googleapis.com/auth/gmail.send'
+          'https://www.googleapis.com/auth/gmail.send',
+          'https://www.googleapis.com/auth/gmail.modify'
         ].join(' ');
 
         const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -216,7 +217,7 @@ const GoogleIntegrationPage: React.FC = () => {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            scopes: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send',
+            scopes: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify',
             queryParams: {
               access_type: 'offline',
               prompt: 'consent',

@@ -78,9 +78,7 @@ import { User as UserResolver, userMutations } from './graphql/resolvers/user';
 import { activityReminderQueries } from './graphql/resolvers/queries/activityReminderQueries';
 import { activityReminderMutations } from './graphql/resolvers/mutations/activityReminderMutations';
 
-// Import Enhanced Email Filtering Resolvers
-import { enhancedEmailFilteringQueries } from './graphql/resolvers/queries/enhancedEmailFilteringQueries';
-import { enhancedEmailFilteringMutations } from './graphql/resolvers/mutations/enhancedEmailFilteringMutations';
+
 
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
@@ -126,7 +124,6 @@ const loadTypeDefs = (): string => {
     'deal.graphql',
     'dealFolders.graphql',
     'emails.graphql',
-    'enhancedEmailFiltering.graphql',
     'googleDrive.graphql',
     'lead.graphql',
     'enums.graphql', 
@@ -190,7 +187,6 @@ export const resolvers = {
     ...sharedDriveQueries,
     ...appSettingsQueries,
     ...activityReminderQueries,
-    ...enhancedEmailFilteringQueries,
   },
   Mutation: {
     ...BaseMutation,
@@ -208,7 +204,6 @@ export const resolvers = {
     ...appSettingsMutations,
     ...userMutations,
     ...activityReminderMutations,
-    ...enhancedEmailFilteringMutations,
   },
   Person,
   Deal,

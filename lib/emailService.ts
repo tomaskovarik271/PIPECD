@@ -44,6 +44,9 @@ export interface EmailAttachment {
 export interface EmailThreadsFilter {
   dealId?: string;
   contactEmail?: string;
+  selectedContacts?: string[];
+  includeAllParticipants?: boolean;
+  contactScope?: 'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES';
   keywords?: string[];
   dateFrom?: string;
   dateTo?: string;
@@ -142,7 +145,38 @@ class EmailService {
       // Build query string for Gmail API
       const queryParts: string[] = [];
       
-      if (filter.contactEmail) {
+      // Enhanced: Multi-contact filtering using Gmail API native capabilities
+      if (filter.selectedContacts && filter.selectedContacts.length > 0) {
+        // Use Gmail's native OR operators for multiple contacts
+        const contactQueries = filter.selectedContacts.map(email => 
+          `(from:${email} OR to:${email} OR cc:${email} OR bcc:${email})`
+        );
+        queryParts.push(`(${contactQueries.join(' OR ')})`);
+      } else if (filter.includeAllParticipants && filter.dealId) {
+        // Get all deal participants and build query
+        try {
+          const { dealParticipantService } = await import('./dealParticipantService.js');
+          const participantEmails = await dealParticipantService.getDealParticipantEmails(
+            userId, 
+            filter.dealId, 
+            accessToken
+          );
+          
+          if (participantEmails.length > 0) {
+            const contactQueries = participantEmails.map((email: string) => 
+              `(from:${email} OR to:${email} OR cc:${email} OR bcc:${email})`
+            );
+            queryParts.push(`(${contactQueries.join(' OR ')})`);
+          }
+        } catch (error) {
+          console.error('Error fetching deal participants for email filtering:', error);
+          // Fallback to single contact if deal participants fetch fails
+          if (filter.contactEmail) {
+            queryParts.push(`(from:${filter.contactEmail} OR to:${filter.contactEmail})`);
+          }
+        }
+      } else if (filter.contactEmail) {
+        // Legacy single contact filtering (backward compatibility)
         queryParts.push(`(from:${filter.contactEmail} OR to:${filter.contactEmail})`);
       }
       
@@ -168,7 +202,7 @@ class EmailService {
       }
 
       const query = queryParts.join(' ');
-      // console.log('Gmail query:', query);
+      console.log('Enhanced Gmail query:', query);
 
       // Get threads list
       const threadsResponse = await gmail.users.threads.list({

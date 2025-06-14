@@ -1,359 +1,434 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  VStack,
-  FormControl,
-  FormLabel,
-  Select,
-  CheckboxGroup,
-  Checkbox,
-  Text,
   Box,
+  VStack,
   HStack,
+  Text,
+  Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuOptionGroup,
+  MenuItemOption,
+  Tag,
+  TagLabel,
+  TagCloseButton,
   Badge,
-  Tooltip,
-  Icon,
+  Spinner,
+  Alert,
+  AlertIcon,
+  Divider,
+  ButtonGroup,
+  Avatar,
+  Input,
+  InputGroup,
+  InputLeftElement,
 } from '@chakra-ui/react';
-import { FiInfo, FiUsers, FiUser, FiSettings } from 'react-icons/fi';
+import {
+  ChevronDownIcon,
+  SearchIcon,
+  AddIcon,
+  EmailIcon,
+} from '@chakra-ui/icons';
+import { useQuery, gql } from '@apollo/client';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
-// =============================================
+// GraphQL Queries
+const GET_DEAL_PARTICIPANTS = gql`
+  query GetDealParticipants($dealId: ID!) {
+    getDealParticipants(dealId: $dealId) {
+      id
+      role
+      addedFromEmail
+      person {
+        id
+        first_name
+        last_name
+        email
+      }
+    }
+  }
+`;
+
+const SUGGEST_EMAIL_PARTICIPANTS = gql`
+  query SuggestEmailParticipants($dealId: ID!, $threadId: String) {
+    suggestEmailParticipants(dealId: $dealId, threadId: $threadId) {
+      id
+      first_name
+      last_name
+      email
+    }
+  }
+`;
+
 // Types
-// =============================================
-
-export type ContactScopeType = 'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES';
-export type ContactRoleType = 'PRIMARY' | 'DECISION_MAKER' | 'INFLUENCER' | 'TECHNICAL' | 'LEGAL' | 'OTHER';
-
-export interface EmailContactFilterProps {
-  dealId: string;
-  currentScope: ContactScopeType;
-  selectedContacts: string[];
-  selectedRoles: ContactRoleType[];
-  includeNewParticipants: boolean;
-  onScopeChange: (scope: ContactScopeType) => void;
-  onContactsChange: (contactIds: string[]) => void;
-  onRolesChange: (roles: ContactRoleType[]) => void;
-  onNewParticipantsChange: (include: boolean) => void;
-  contactAssociations?: Array<{
+interface DealParticipant {
+  id: string;
+  role: string;
+  addedFromEmail: boolean;
+  person: {
     id: string;
-    personId: string;
-    personFirstName?: string;
-    personLastName?: string;
-    personEmail?: string;
-    role: ContactRoleType;
-    customRoleLabel?: string;
-  }>;
+    first_name: string;
+    last_name: string;
+    email: string;
+  };
+}
+
+interface EmailParticipantSuggestion {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+interface EmailContactFilterProps {
+  dealId: string;
+  primaryContactEmail?: string;
+  selectedContacts: string[];
+  contactScope: 'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES';
+  onContactsChange: (contacts: string[]) => void;
+  onScopeChange: (scope: 'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES') => void;
   isLoading?: boolean;
 }
 
-// =============================================
-// Contact Multi-Select Component
-// =============================================
-
-interface ContactMultiSelectProps {
-  dealId: string;
-  selectedContacts: string[];
-  onSelectionChange: (contactIds: string[]) => void;
-  contactAssociations?: Array<{
-    id: string;
-    personId: string;
-    personFirstName?: string;
-    personLastName?: string;
-    personEmail?: string;
-    role: ContactRoleType;
-    customRoleLabel?: string;
-  }>;
-}
-
-const ContactMultiSelect: React.FC<ContactMultiSelectProps> = ({
+const EmailContactFilter: React.FC<EmailContactFilterProps> = ({
   dealId,
+  primaryContactEmail,
   selectedContacts,
-  onSelectionChange,
-  contactAssociations = [],
+  contactScope,
+  onContactsChange,
+  onScopeChange,
+  isLoading = false,
 }) => {
   const colors = useThemeColors();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  const handleContactToggle = (personId: string) => {
-    const newSelection = selectedContacts.includes(personId)
-      ? selectedContacts.filter(id => id !== personId)
-      : [...selectedContacts, personId];
-    onSelectionChange(newSelection);
+  // GraphQL Hooks
+  const { data: participantsData, loading: participantsLoading } = useQuery(GET_DEAL_PARTICIPANTS, {
+    variables: { dealId },
+    skip: !dealId,
+  });
+
+  const { data: suggestionsData, loading: suggestionsLoading } = useQuery(SUGGEST_EMAIL_PARTICIPANTS, {
+    variables: { dealId },
+    skip: !dealId || !showSuggestions,
+  });
+
+  const participants = participantsData?.getDealParticipants || [];
+  const suggestions = suggestionsData?.suggestEmailParticipants || [];
+
+  // Helper functions
+  const getContactDisplayName = (email: string): string => {
+    const participant = participants.find((p: DealParticipant) => p.person.email === email);
+    if (participant) {
+      const { first_name, last_name } = participant.person;
+      return `${first_name} ${last_name}`.trim() || email;
+    }
+    
+    const suggestion = suggestions.find((s: EmailParticipantSuggestion) => s.email === email);
+    if (suggestion) {
+      return `${suggestion.first_name} ${suggestion.last_name}`.trim() || email;
+    }
+    
+    return email;
   };
 
-  const getRoleBadgeColor = (role: ContactRoleType) => {
-    switch (role) {
-      case 'PRIMARY': return 'blue';
-      case 'DECISION_MAKER': return 'purple';
-      case 'INFLUENCER': return 'green';
-      case 'TECHNICAL': return 'orange';
-      case 'LEGAL': return 'red';
-      default: return 'gray';
+  const getContactRole = (email: string): string => {
+    const participant = participants.find((p: DealParticipant) => p.person.email === email);
+    return participant?.role || 'participant';
+  };
+
+  const getAllAvailableContacts = (): string[] => {
+    const participantEmails = participants.map((p: DealParticipant) => p.person.email);
+    const suggestionEmails = suggestions.map((s: EmailParticipantSuggestion) => s.email);
+    const allEmails = [...new Set([...participantEmails, ...suggestionEmails])];
+    
+    if (primaryContactEmail && !allEmails.includes(primaryContactEmail)) {
+      allEmails.unshift(primaryContactEmail);
+    }
+    
+    return allEmails;
+  };
+
+  const filteredContacts = getAllAvailableContacts().filter(email =>
+    email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    getContactDisplayName(email).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Handlers
+  const handleScopeChange = (newScope: 'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES') => {
+    onScopeChange(newScope);
+    
+    // Auto-set contacts based on scope
+    switch (newScope) {
+      case 'PRIMARY':
+        onContactsChange(primaryContactEmail ? [primaryContactEmail] : []);
+        break;
+      case 'ALL':
+        onContactsChange(getAllAvailableContacts());
+        break;
+      case 'CUSTOM':
+        // Keep current selection
+        break;
+      case 'SELECTED_ROLES':
+        // Filter by primary and participant roles
+        const roleBasedContacts = participants
+          .filter((p: DealParticipant) => ['primary', 'participant'].includes(p.role))
+          .map((p: DealParticipant) => p.person.email);
+        onContactsChange(roleBasedContacts);
+        break;
     }
   };
 
-  const getRoleLabel = (role: ContactRoleType, customLabel?: string) => {
-    if (customLabel) return customLabel;
-    switch (role) {
-      case 'PRIMARY': return 'Primary';
-      case 'DECISION_MAKER': return 'Decision Maker';
-      case 'INFLUENCER': return 'Influencer';
-      case 'TECHNICAL': return 'Technical';
-      case 'LEGAL': return 'Legal';
-      default: return 'Other';
+  const handleRemoveContact = (email: string) => {
+    onContactsChange(selectedContacts.filter(c => c !== email));
+  };
+
+  const getScopeButtonText = () => {
+    switch (contactScope) {
+      case 'PRIMARY':
+        return 'Primary Contact';
+      case 'ALL':
+        return 'All Participants';
+      case 'SELECTED_ROLES':
+        return 'Key Participants';
+      case 'CUSTOM':
+      default:
+        return selectedContacts.length === 0 
+          ? 'Select Contacts' 
+          : `${selectedContacts.length} selected`;
+    }
+  };
+
+  const getScopeDescription = () => {
+    switch (contactScope) {
+      case 'PRIMARY':
+        return 'Show emails from the primary deal contact only';
+      case 'ALL':
+        return 'Show emails from all known participants';
+      case 'SELECTED_ROLES':
+        return 'Show emails from primary and key participants';
+      case 'CUSTOM':
+        return 'Show emails from selected contacts';
+      default:
+        return '';
     }
   };
 
   return (
-    <VStack align="stretch" spacing={2}>
-      <Text fontSize="sm" fontWeight="medium" color={colors.text.secondary}>
-        Select Contacts ({selectedContacts.length} selected)
+    <VStack spacing={3} align="stretch">
+      {/* Contact Scope Toggle */}
+      <HStack spacing={2}>
+        <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
+          Email Scope:
+        </Text>
+        <ButtonGroup size="sm" isAttached variant="outline">
+          <Button
+            isActive={contactScope === 'PRIMARY'}
+            onClick={() => handleScopeChange('PRIMARY')}
+            bg={contactScope === 'PRIMARY' ? colors.interactive.active : colors.bg.input}
+            borderColor={contactScope === 'PRIMARY' ? colors.interactive.active : colors.border.input}
+            color={contactScope === 'PRIMARY' ? colors.text.onAccent : colors.text.primary}
+            _hover={{ 
+              bg: contactScope === 'PRIMARY' ? colors.interactive.active : colors.component.button.secondaryHover,
+            }}
+          >
+            Primary
+          </Button>
+          <Button
+            isActive={contactScope === 'ALL'}
+            onClick={() => handleScopeChange('ALL')}
+            bg={contactScope === 'ALL' ? colors.interactive.active : colors.bg.input}
+            borderColor={contactScope === 'ALL' ? colors.interactive.active : colors.border.input}
+            color={contactScope === 'ALL' ? colors.text.onAccent : colors.text.primary}
+            _hover={{ 
+              bg: contactScope === 'ALL' ? colors.interactive.active : colors.component.button.secondaryHover,
+            }}
+          >
+            All
+          </Button>
+          <Button
+            isActive={contactScope === 'CUSTOM'}
+            onClick={() => handleScopeChange('CUSTOM')}
+            bg={contactScope === 'CUSTOM' ? colors.interactive.active : colors.bg.input}
+            borderColor={contactScope === 'CUSTOM' ? colors.interactive.active : colors.border.input}
+            color={contactScope === 'CUSTOM' ? colors.text.onAccent : colors.text.primary}
+            _hover={{ 
+              bg: contactScope === 'CUSTOM' ? colors.interactive.active : colors.component.button.secondaryHover,
+            }}
+          >
+            Custom
+          </Button>
+        </ButtonGroup>
+      </HStack>
+
+      {/* Scope Description */}
+      <Text fontSize="xs" color={colors.text.secondary}>
+        {getScopeDescription()}
       </Text>
-      <Box maxH="200px" overflowY="auto" border="1px solid" borderColor={colors.border.default} borderRadius="md" p={2}>
-        {contactAssociations.length === 0 ? (
-          <Text fontSize="sm" color={colors.text.muted} textAlign="center" py={4}>
-            No contacts associated with this deal
-          </Text>
-        ) : (
-          <VStack align="stretch" spacing={1}>
-            {contactAssociations.map((contact) => (
-              <Box
-                key={contact.personId}
-                p={2}
-                borderRadius="md"
-                bg={selectedContacts.includes(contact.personId) ? colors.bg.selected : 'transparent'}
-                border="1px solid"
-                borderColor={selectedContacts.includes(contact.personId) ? colors.border.selected : 'transparent'}
-                cursor="pointer"
-                _hover={{ bg: colors.bg.hover }}
-                onClick={() => handleContactToggle(contact.personId)}
+
+      {/* Custom Contact Selection */}
+      {contactScope === 'CUSTOM' && (
+        <VStack spacing={2} align="stretch">
+          <Menu closeOnSelect={false}>
+            <MenuButton
+              as={Button}
+              rightIcon={<ChevronDownIcon />}
+              size="sm"
+              minW="200px"
+              bg={colors.bg.input}
+              color={colors.text.primary}
+              borderColor={colors.border.input}
+              _hover={{
+                bg: colors.component.button.secondaryHover,
+                borderColor: colors.border.focus
+              }}
+              textAlign="left"
+              fontWeight="normal"
+              isLoading={participantsLoading || isLoading}
+            >
+              {getScopeButtonText()}
+            </MenuButton>
+            <MenuList maxH="300px" overflowY="auto">
+              {/* Search Input */}
+              <Box p={2}>
+                <InputGroup size="sm">
+                  <InputLeftElement>
+                    <SearchIcon color={colors.text.secondary} />
+                  </InputLeftElement>
+                  <Input
+                    placeholder="Search contacts..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    bg={colors.bg.input}
+                    borderColor={colors.border.input}
+                  />
+                </InputGroup>
+              </Box>
+              
+              <Divider />
+              
+              {/* Contact Options */}
+              <MenuOptionGroup 
+                type="checkbox" 
+                value={selectedContacts}
+                onChange={(values) => onContactsChange(values as string[])}
               >
-                <HStack justify="space-between">
-                  <VStack align="start" spacing={0} flex={1}>
-                    <HStack>
-                      <Checkbox
-                        isChecked={selectedContacts.includes(contact.personId)}
-                        onChange={() => handleContactToggle(contact.personId)}
-                        size="sm"
-                      />
-                      <Text fontSize="sm" fontWeight="medium">
-                        {contact.personFirstName} {contact.personLastName}
-                      </Text>
-                    </HStack>
-                    <Text fontSize="xs" color={colors.text.muted} ml={6}>
-                      {contact.personEmail}
+                {filteredContacts.length === 0 ? (
+                  <Box p={3} textAlign="center">
+                    <Text fontSize="sm" color={colors.text.secondary}>
+                      No contacts found
                     </Text>
-                  </VStack>
-                  <Badge
-                    size="sm"
-                    colorScheme={getRoleBadgeColor(contact.role)}
+                  </Box>
+                ) : (
+                  filteredContacts.map(email => {
+                    const displayName = getContactDisplayName(email);
+                    const role = getContactRole(email);
+                    const isPrimary = email === primaryContactEmail;
+                    
+                    return (
+                      <MenuItemOption key={email} value={email}>
+                        <HStack spacing={2} w="full">
+                          <Avatar size="xs" name={displayName} />
+                          <VStack spacing={0} align="start" flex={1}>
+                            <Text fontSize="sm" fontWeight={isPrimary ? 'bold' : 'normal'}>
+                              {displayName}
+                            </Text>
+                            <Text fontSize="xs" color={colors.text.secondary}>
+                              {email}
+                            </Text>
+                          </VStack>
+                          <VStack spacing={1}>
+                            {isPrimary && (
+                              <Badge size="sm" colorScheme="blue" variant="subtle">
+                                Primary
+                              </Badge>
+                            )}
+                            <Badge size="sm" colorScheme="gray" variant="outline">
+                              {role}
+                            </Badge>
+                          </VStack>
+                        </HStack>
+                      </MenuItemOption>
+                    );
+                  })
+                )}
+              </MenuOptionGroup>
+              
+              {/* Suggestions Toggle */}
+              {!showSuggestions && suggestions.length === 0 && (
+                <>
+                  <Divider />
+                  <Box p={2}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      leftIcon={<AddIcon />}
+                      onClick={() => setShowSuggestions(true)}
+                      isLoading={suggestionsLoading}
+                      w="full"
+                    >
+                      Find more contacts
+                    </Button>
+                  </Box>
+                </>
+              )}
+            </MenuList>
+          </Menu>
+
+          {/* Selected Contacts Tags */}
+          {selectedContacts.length > 0 && (
+            <HStack spacing={1} wrap="wrap">
+              {selectedContacts.map(email => {
+                const displayName = getContactDisplayName(email);
+                const isPrimary = email === primaryContactEmail;
+                
+                return (
+                  <Tag 
+                    key={email} 
+                    size="sm" 
+                    colorScheme={isPrimary ? "blue" : "gray"}
                     variant="subtle"
                   >
-                    {getRoleLabel(contact.role, contact.customRoleLabel)}
-                  </Badge>
-                </HStack>
-              </Box>
-            ))}
-          </VStack>
+                    <TagLabel>{displayName}</TagLabel>
+                    <TagCloseButton onClick={() => handleRemoveContact(email)} />
+                  </Tag>
+                );
+              })}
+            </HStack>
+          )}
+        </VStack>
+      )}
+
+      {/* Contact Count Summary */}
+      <HStack justify="space-between" align="center">
+        <HStack spacing={2}>
+          <EmailIcon color={colors.text.secondary} boxSize={4} />
+          <Text fontSize="sm" color={colors.text.secondary}>
+            {contactScope === 'PRIMARY' && primaryContactEmail ? '1 contact' :
+             contactScope === 'ALL' ? `${getAllAvailableContacts().length} contacts` :
+             contactScope === 'SELECTED_ROLES' ? `${participants.filter((p: DealParticipant) => ['primary', 'participant'].includes(p.role)).length} contacts` :
+             `${selectedContacts.length} contacts`}
+          </Text>
+        </HStack>
+        
+        {participantsLoading && (
+          <Spinner size="sm" color={colors.interactive.default} />
         )}
-      </Box>
+      </HStack>
+
+      {/* No Primary Contact Warning */}
+      {!primaryContactEmail && contactScope === 'PRIMARY' && (
+        <Alert status="warning" size="sm">
+          <AlertIcon />
+          <Text fontSize="sm">
+            No primary contact email found. Please add a primary contact to the deal.
+          </Text>
+        </Alert>
+      )}
     </VStack>
   );
 };
 
-// =============================================
-// Main Email Contact Filter Component
-// =============================================
-
-export const EmailContactFilter: React.FC<EmailContactFilterProps> = ({
-  dealId,
-  currentScope,
-  selectedContacts,
-  selectedRoles,
-  includeNewParticipants,
-  onScopeChange,
-  onContactsChange,
-  onRolesChange,
-  onNewParticipantsChange,
-  contactAssociations = [],
-  isLoading = false,
-}) => {
-  const colors = useThemeColors();
-
-  const getScopeIcon = (scope: ContactScopeType) => {
-    switch (scope) {
-      case 'PRIMARY': return FiUser;
-      case 'ALL': return FiUsers;
-      case 'SELECTED_ROLES': return FiSettings;
-      case 'CUSTOM': return FiSettings;
-      default: return FiUser;
-    }
-  };
-
-  const getScopeDescription = (scope: ContactScopeType) => {
-    switch (scope) {
-      case 'PRIMARY': return 'Show emails from primary contact only';
-      case 'ALL': return 'Show emails from all deal contacts';
-      case 'SELECTED_ROLES': return 'Show emails from contacts with specific roles';
-      case 'CUSTOM': return 'Show emails from manually selected contacts';
-      default: return '';
-    }
-  };
-
-  const getContactCount = () => {
-    switch (currentScope) {
-      case 'PRIMARY':
-        return contactAssociations.filter(c => c.role === 'PRIMARY').length;
-      case 'ALL':
-        return contactAssociations.length;
-      case 'SELECTED_ROLES':
-        return contactAssociations.filter(c => selectedRoles.includes(c.role)).length;
-      case 'CUSTOM':
-        return selectedContacts.length;
-      default:
-        return 0;
-    }
-  };
-
-  return (
-    <VStack spacing={4} align="stretch">
-      {/* Contact Scope Selection */}
-      <FormControl>
-        <HStack justify="space-between" mb={2}>
-          <FormLabel fontSize="sm" fontWeight="medium" mb={0}>
-            Contact Scope
-          </FormLabel>
-          <Tooltip label={getScopeDescription(currentScope)} placement="top">
-            <Box>
-              <Icon as={FiInfo} color={colors.text.muted} boxSize={3} />
-            </Box>
-          </Tooltip>
-        </HStack>
-        <Select 
-          value={currentScope} 
-          onChange={(e) => onScopeChange(e.target.value as ContactScopeType)}
-          size="sm"
-          isDisabled={isLoading}
-        >
-          <option value="PRIMARY">Primary Contact Only</option>
-          <option value="ALL">All Deal Contacts</option>
-          <option value="SELECTED_ROLES">By Role</option>
-          <option value="CUSTOM">Custom Selection</option>
-        </Select>
-        
-        {/* Contact Count Badge */}
-        <HStack mt={2} spacing={2}>
-          <Icon as={getScopeIcon(currentScope)} color={colors.text.muted} boxSize={3} />
-          <Badge size="sm" colorScheme="blue" variant="subtle">
-            {getContactCount()} contact{getContactCount() !== 1 ? 's' : ''}
-          </Badge>
-        </HStack>
-      </FormControl>
-
-      {/* Role Selection (when SELECTED_ROLES) */}
-      {currentScope === 'SELECTED_ROLES' && (
-        <FormControl>
-          <FormLabel fontSize="sm" fontWeight="medium">
-            Contact Roles
-          </FormLabel>
-          <CheckboxGroup 
-            value={selectedRoles} 
-            onChange={(values) => onRolesChange(values as ContactRoleType[])}
-          >
-            <VStack align="start" spacing={2}>
-              <Checkbox value="PRIMARY" size="sm" isDisabled={isLoading}>
-                <HStack spacing={2}>
-                  <Text fontSize="sm">Primary Contact</Text>
-                  <Badge size="xs" colorScheme="blue" variant="outline">
-                    {contactAssociations.filter(c => c.role === 'PRIMARY').length}
-                  </Badge>
-                </HStack>
-              </Checkbox>
-              <Checkbox value="DECISION_MAKER" size="sm" isDisabled={isLoading}>
-                <HStack spacing={2}>
-                  <Text fontSize="sm">Decision Maker</Text>
-                  <Badge size="xs" colorScheme="purple" variant="outline">
-                    {contactAssociations.filter(c => c.role === 'DECISION_MAKER').length}
-                  </Badge>
-                </HStack>
-              </Checkbox>
-              <Checkbox value="INFLUENCER" size="sm" isDisabled={isLoading}>
-                <HStack spacing={2}>
-                  <Text fontSize="sm">Influencer</Text>
-                  <Badge size="xs" colorScheme="green" variant="outline">
-                    {contactAssociations.filter(c => c.role === 'INFLUENCER').length}
-                  </Badge>
-                </HStack>
-              </Checkbox>
-              <Checkbox value="TECHNICAL" size="sm" isDisabled={isLoading}>
-                <HStack spacing={2}>
-                  <Text fontSize="sm">Technical Contact</Text>
-                  <Badge size="xs" colorScheme="orange" variant="outline">
-                    {contactAssociations.filter(c => c.role === 'TECHNICAL').length}
-                  </Badge>
-                </HStack>
-              </Checkbox>
-              <Checkbox value="LEGAL" size="sm" isDisabled={isLoading}>
-                <HStack spacing={2}>
-                  <Text fontSize="sm">Legal Contact</Text>
-                  <Badge size="xs" colorScheme="red" variant="outline">
-                    {contactAssociations.filter(c => c.role === 'LEGAL').length}
-                  </Badge>
-                </HStack>
-              </Checkbox>
-              <Checkbox value="OTHER" size="sm" isDisabled={isLoading}>
-                <HStack spacing={2}>
-                  <Text fontSize="sm">Other</Text>
-                  <Badge size="xs" colorScheme="gray" variant="outline">
-                    {contactAssociations.filter(c => c.role === 'OTHER').length}
-                  </Badge>
-                </HStack>
-              </Checkbox>
-            </VStack>
-          </CheckboxGroup>
-        </FormControl>
-      )}
-
-      {/* Custom Contact Selection (when CUSTOM) */}
-      {currentScope === 'CUSTOM' && (
-        <ContactMultiSelect
-          dealId={dealId}
-          selectedContacts={selectedContacts}
-          onSelectionChange={onContactsChange}
-          contactAssociations={contactAssociations}
-        />
-      )}
-
-      {/* Auto-discovery Option */}
-      <FormControl>
-        <Checkbox 
-          isChecked={includeNewParticipants}
-          onChange={(e) => onNewParticipantsChange(e.target.checked)}
-          size="sm"
-          isDisabled={isLoading}
-        >
-          <VStack align="start" spacing={0}>
-            <Text fontSize="sm">Include new email participants automatically</Text>
-            <Text fontSize="xs" color={colors.text.muted}>
-              Automatically discover and suggest new contacts from email threads
-            </Text>
-          </VStack>
-        </Checkbox>
-      </FormControl>
-
-      {/* Summary */}
-      {currentScope !== 'PRIMARY' && (
-        <Box 
-          p={3} 
-          bg={colors.bg.subtle} 
-          borderRadius="md" 
-          border="1px solid" 
-          borderColor={colors.border.subtle}
-        >
-          <Text fontSize="xs" color={colors.text.muted}>
-            <strong>Active Filter:</strong> {getScopeDescription(currentScope)}
-            {getContactCount() > 0 && ` (${getContactCount()} contact${getContactCount() !== 1 ? 's' : ''})`}
-          </Text>
-        </Box>
-      )}
-    </VStack>
-  );
-}; 
+export default EmailContactFilter; 

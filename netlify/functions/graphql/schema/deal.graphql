@@ -29,6 +29,9 @@ type Deal {
   createdBy: User! # The user who created the deal
   assigned_to_user_id: ID # ID of the user this deal is assigned to
   assignedToUser: User # The user to whom the deal is currently assigned
+  
+  # Enhanced: Deal participants for email filtering
+  participants: [DealParticipant!]! # All people associated with this deal
 }
 
 input DealInput {

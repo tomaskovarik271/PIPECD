@@ -37,7 +37,7 @@ import { useThemeColors } from '../../hooks/useThemeColors'; // NEW: Use semanti
 const NAV_ITEMS = [
   { path: '/deals', label: 'Deals', icon: <CheckCircleIcon /> },
   { path: '/leads', label: 'Leads', icon: <StarIcon /> },
-  { path: '/people', label: 'People', icon: <InfoOutlineIcon /> },
+  { path: '/people', label: 'Contacts', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
   { path: '/relationships', label: 'Relationship Intelligence', icon: <Network size={16} /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },

@@ -185,29 +185,15 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
 
   if (!hasCustomFields) {
     return (
-      <>
-        <Heading size="sm" mb={3} color={colors.text.primary}>Custom Information</Heading>
-        <Center minH="100px" flexDirection="column" bg={colors.bg.elevated} borderRadius="md" p={4}>
-          <Icon as={InfoIcon} w={6} h={6} color={colors.text.muted} mb={3} />
-          <Text color={colors.text.secondary} fontSize="sm">No custom information available.</Text>
-        </Center>
-      </>
+      <Center minH="100px" flexDirection="column" bg={colors.bg.elevated} borderRadius="md" p={4}>
+        <Icon as={InfoIcon} w={6} h={6} color={colors.text.muted} mb={3} />
+        <Text color={colors.text.secondary} fontSize="sm">No custom information available.</Text>
+      </Center>
     );
   }
 
   return (
     <>
-      <Flex justifyContent="space-between" alignItems="center" mb={4}>
-        <Heading size="sm" color={colors.text.primary}>Custom Information</Heading>
-        <HStack spacing={2}>
-          <Text fontSize="xs" color={colors.text.muted}>
-            {onUpdate ? 'Click values to edit' : 'Read only'}
-          </Text>
-          {onUpdate && (
-            <Icon as={EditIcon} w={3} h={3} color={colors.text.muted} />
-          )}
-        </HStack>
-      </Flex>
       <VStack spacing={0} align="stretch">
         {processedCustomFields.map((field, index) => (
           <Box 

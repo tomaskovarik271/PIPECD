@@ -21,13 +21,8 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
-  Alert,
-  AlertIcon,
   Spinner,
   Center,
-  Flex,
-  Grid,
-  GridItem,
   useDisclosure,
   useToast,
   Breadcrumb,
@@ -51,9 +46,18 @@ import {
   FiHardDrive,
   FiClock,
   FiSearch,
-  FiPlus,
   FiX,
+  FiFileText,
+  FiImage,
+  FiVideo,
+  FiMusic,
+  FiArchive,
+  FiCode,
 } from 'react-icons/fi';
+import {
+  SiAdobeacrobatreader,
+  SiGoogle,
+} from 'react-icons/si';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { gqlClient } from '../../lib/graphqlClient';
 import {
@@ -65,7 +69,6 @@ import {
   GET_DEAL_DOCUMENT_ATTACHMENTS,
   ATTACH_DOCUMENT_TO_DEAL,
   REMOVE_DOCUMENT_ATTACHMENT,
-  UPDATE_DOCUMENT_ATTACHMENT_CATEGORY,
 } from '../../lib/graphql/sharedDriveQueries';
 
 // Types based on our GraphQL schema
@@ -139,7 +142,7 @@ const DOCUMENT_CATEGORIES = [
 
 export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProps> = ({
   dealId,
-  dealName = 'Deal',
+  dealName: _dealName = 'Deal',
   onDocumentCountChange
 }) => {
   const colors = useThemeColors();
@@ -180,7 +183,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
 
   const loadSharedDrives = async () => {
     try {
-      const response = await gqlClient.request(GET_SHARED_DRIVES);
+      const response = await gqlClient.request(GET_SHARED_DRIVES) as any;
       setSharedDrives(response.getSharedDrives);
       
       // Auto-select first drive if available
@@ -215,8 +218,8 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
         }),
       ]);
       
-      setFiles(filesResponse.getSharedDriveFiles);
-      setFolders(foldersResponse.getSharedDriveFolders);
+      setFiles((filesResponse as any).getSharedDriveFiles);
+      setFolders((foldersResponse as any).getSharedDriveFolders);
     } catch (error) {
       console.error('Error loading drive contents:', error);
       toast({
@@ -233,7 +236,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
 
   const loadRecentFiles = async () => {
     try {
-      const response = await gqlClient.request(GET_RECENT_SHARED_DRIVE_FILES, { limit: 20 });
+      const response = await gqlClient.request(GET_RECENT_SHARED_DRIVE_FILES, { limit: 20 }) as any;
       setRecentFiles(response.getRecentSharedDriveFiles);
     } catch (error) {
       console.error('Error loading recent files:', error);
@@ -262,7 +265,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
       const response = await gqlClient.request(SEARCH_SHARED_DRIVE_FILES, {
         query: searchQuery,
         sharedDriveId: selectedDrive?.id,
-      });
+      }) as any;
       setSearchResults(response.searchSharedDriveFiles);
       setActiveTab(1); // Switch to search tab
     } catch (error) {
@@ -385,19 +388,132 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
     return cat?.color || 'gray';
   };
 
+  const getFileTypeLabel = (mimeType: string): string => {
+    // Google Workspace files
+    if (mimeType === 'application/vnd.google-apps.document') return 'Google Doc';
+    if (mimeType === 'application/vnd.google-apps.spreadsheet') return 'Google Sheet';
+    if (mimeType === 'application/vnd.google-apps.presentation') return 'Google Slides';
+    
+    // Microsoft Office files
+    if (mimeType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml') || 
+        mimeType.includes('application/msword')) return 'Word';
+    if (mimeType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml') || 
+        mimeType.includes('application/vnd.ms-excel')) return 'Excel';
+    if (mimeType.includes('application/vnd.openxmlformats-officedocument.presentationml') || 
+        mimeType.includes('application/vnd.ms-powerpoint')) return 'PowerPoint';
+    
+    // Common file types
+    if (mimeType === 'application/pdf') return 'PDF';
+    if (mimeType.startsWith('image/')) return 'Image';
+    if (mimeType.startsWith('video/')) return 'Video';
+    if (mimeType.startsWith('audio/')) return 'Audio';
+    if (mimeType.startsWith('text/')) return 'Text';
+    
+    // Archive files
+    if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar') || 
+        mimeType.includes('7z') || mimeType.includes('compressed')) return 'Archive';
+    
+    // Code files
+    if (mimeType.includes('javascript')) return 'JavaScript';
+    if (mimeType.includes('json')) return 'JSON';
+    if (mimeType.includes('xml')) return 'XML';
+    if (mimeType.includes('html')) return 'HTML';
+    if (mimeType.includes('css')) return 'CSS';
+    
+    return 'File';
+  };
+
   const renderFileIcon = (mimeType: string) => {
-    if (mimeType.includes('folder')) return <FiFolder />;
-    return <FiFile />;
+    const iconSize = 16;
+    const iconProps = { size: iconSize };
+
+    // Folder detection
+    if (mimeType.includes('folder') || mimeType === 'application/vnd.google-apps.folder') {
+      return <FiFolder {...iconProps} color="#4285f4" />; // Google Drive blue for folders
+    }
+
+    // Google Workspace files
+    if (mimeType === 'application/vnd.google-apps.document') {
+      return <SiGoogle {...iconProps} color="#4285f4" />; // Google Docs blue
+    }
+    if (mimeType === 'application/vnd.google-apps.spreadsheet') {
+      return <SiGoogle {...iconProps} color="#34a853" />; // Google Sheets green
+    }
+    if (mimeType === 'application/vnd.google-apps.presentation') {
+      return <SiGoogle {...iconProps} color="#fbbc04" />; // Google Slides yellow
+    }
+
+    // Microsoft Office files
+    if (mimeType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml') || 
+        mimeType.includes('application/msword')) {
+      return <FiFileText {...iconProps} color="#2b579a" />; // Word blue
+    }
+    if (mimeType.includes('application/vnd.openxmlformats-officedocument.spreadsheetml') || 
+        mimeType.includes('application/vnd.ms-excel')) {
+      return <FiFile {...iconProps} color="#217346" />; // Excel green
+    }
+    if (mimeType.includes('application/vnd.openxmlformats-officedocument.presentationml') || 
+        mimeType.includes('application/vnd.ms-powerpoint')) {
+      return <FiFile {...iconProps} color="#d24726" />; // PowerPoint red
+    }
+
+    // PDF files
+    if (mimeType === 'application/pdf') {
+      return <SiAdobeacrobatreader {...iconProps} color="#dc143c" />; // PDF red
+    }
+
+    // Text files
+    if (mimeType.startsWith('text/') || 
+        mimeType === 'application/rtf' ||
+        mimeType === 'application/vnd.google-apps.script') {
+      return <FiFileText {...iconProps} color="#6b7280" />; // Gray for text files
+    }
+
+    // Image files
+    if (mimeType.startsWith('image/')) {
+      return <FiImage {...iconProps} color="#10b981" />; // Green for images
+    }
+
+    // Video files
+    if (mimeType.startsWith('video/')) {
+      return <FiVideo {...iconProps} color="#8b5cf6" />; // Purple for videos
+    }
+
+    // Audio files
+    if (mimeType.startsWith('audio/')) {
+      return <FiMusic {...iconProps} color="#f59e0b" />; // Orange for audio
+    }
+
+    // Archive files
+    if (mimeType.includes('zip') || 
+        mimeType.includes('rar') || 
+        mimeType.includes('tar') || 
+        mimeType.includes('7z') ||
+        mimeType.includes('compressed')) {
+      return <FiArchive {...iconProps} color="#6366f1" />; // Indigo for archives
+    }
+
+    // Code files
+    if (mimeType.includes('javascript') || 
+        mimeType.includes('json') || 
+        mimeType.includes('xml') || 
+        mimeType.includes('html') ||
+        mimeType.includes('css')) {
+      return <FiCode {...iconProps} color="#ef4444" />; // Red for code files
+    }
+
+    // Default file icon
+    return <FiFile {...iconProps} color="#6b7280" />; // Gray for unknown files
   };
 
   const renderFileList = (fileList: DriveFile[], showAttachButton = true) => (
     <VStack spacing={2} align="stretch">
       {fileList.map((file) => (
-        <Card key={file.id} size="sm">
+        <Card key={file.id} size="sm" _hover={{ bg: colors.bg.surface, borderColor: colors.interactive.default }}>
           <CardBody>
             <HStack justify="space-between" align="center">
               <HStack spacing={3} flex={1} minW={0}>
-                <Box color={colors.text.muted}>
+                <Box>
                   {renderFileIcon(file.mimeType)}
                 </Box>
                 <VStack align="start" spacing={0} flex={1} minW={0}>
@@ -405,6 +521,9 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
                     {file.name}
                   </Text>
                   <HStack spacing={4} fontSize="xs" color={colors.text.muted}>
+                    <Badge size="sm" colorScheme="gray" variant="subtle">
+                      {getFileTypeLabel(file.mimeType)}
+                    </Badge>
                     <Text>{formatFileSize(file.size)}</Text>
                     <Text>{formatDate(file.modifiedTime)}</Text>
                     {file.owners?.[0] && (
@@ -445,14 +564,21 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
   const renderFolderList = (folderList: DriveFolder[]) => (
     <VStack spacing={2} align="stretch">
       {folderList.map((folder) => (
-        <Card key={folder.id} size="sm" cursor="pointer" onClick={() => navigateToFolder(folder)}>
+        <Card 
+          key={folder.id} 
+          size="sm" 
+          cursor="pointer" 
+          onClick={() => navigateToFolder(folder)}
+          _hover={{ bg: colors.bg.surface, borderColor: colors.interactive.default, transform: 'translateY(-1px)' }}
+          transition="all 0.2s"
+        >
           <CardBody>
             <HStack spacing={3}>
-              <Box color={colors.text.muted}>
-                <FiFolder />
+              <Box>
+                <FiFolder size={16} color="#4285f4" />
               </Box>
               <VStack align="start" spacing={0} flex={1}>
-                <Text fontSize="sm" fontWeight="medium">
+                <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
                   {folder.name}
                 </Text>
                 <Text fontSize="xs" color={colors.text.muted}>
@@ -484,7 +610,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
                   <HStack spacing={4} fontSize="xs" color={colors.text.muted}>
                     {attachment.category && (
                       <Badge colorScheme={getCategoryColor(attachment.category.toLowerCase())} size="sm">
-                        {DOCUMENT_CATEGORIES.find(c => c.value === attachment.category.toLowerCase())?.label || attachment.category}
+                        {DOCUMENT_CATEGORIES.find(c => c.value === attachment.category?.toLowerCase())?.label || attachment.category}
                       </Badge>
                     )}
                     <Text>{formatDate(attachment.attachedAt)}</Text>
@@ -751,7 +877,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
           <ModalBody>
             <VStack spacing={4} align="stretch">
               {selectedFile && (
-                <Box p={3} bg={colors.bg.muted} borderRadius="md">
+                <Box p={3} bg={colors.bg.surface} borderRadius="md">
                   <HStack spacing={3}>
                     <Box color={colors.text.muted}>
                       {renderFileIcon(selectedFile.mimeType)}

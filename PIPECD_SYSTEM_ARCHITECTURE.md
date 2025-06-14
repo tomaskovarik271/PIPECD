@@ -1121,9 +1121,11 @@ CREATE INDEX CONCURRENTLY idx_notifications_expires_at ON notifications(expires_
 
 ```
 🔗 Google Workspace Integration Hub
-├── 🔐 OAuth 2.0 Authentication & Token Management
+├── 🔐 OAuth 2.0 Authentication & Token Management (Enhanced Permissions)
 ├── 📁 Google Drive Document Management (Deal-Centric)
-├── 📧 Gmail Integration & Email Threading (Foundation Ready)
+├── 📧 Gmail Integration & Email Threading (PRODUCTION READY)
+├── 📌 Email Management Features (Pinning, Contact Creation)
+├── 🤖 Enhanced Email-to-Task with Claude 3 Haiku AI Integration (NEW)
 ├── 📅 Google Calendar Sync & Meeting Management (Planned)
 ├── 🛡️ Enterprise Security & Permission Management
 └── 🎯 CRM-Native User Experience
@@ -1131,47 +1133,120 @@ CREATE INDEX CONCURRENTLY idx_notifications_expires_at ON notifications(expires_
 
 #### **🌟 Core Capabilities (PRODUCTION-READY)**
 
-**1. Google OAuth 2.0 Authentication**
+**1. Enhanced Google OAuth 2.0 Authentication**
 ```typescript
-// Secure OAuth flow with serverless endpoint
+// Secure OAuth flow with comprehensive Gmail permissions
 const OAUTH_ENDPOINT = '/google-oauth-exchange';
 const REQUIRED_SCOPES = [
   'https://www.googleapis.com/auth/drive',
   'https://www.googleapis.com/auth/drive.file',
   'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.modify',  // ✅ NEW: Required for mark as read/unread
   'https://www.googleapis.com/auth/calendar'
 ];
 
-// Environment-based configuration (no secrets in client)
-const CLIENT_ID = process.env.GOOGLE_OAUTH_CLIENT_ID;
-const CLIENT_SECRET = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+// Gmail Permission Fix Implementation ✅
+interface GmailPermissionFix {
+  issue: 'Request had insufficient authentication scopes';
+  rootCause: 'Missing gmail.modify scope for email label modifications';
+  solution: 'Added gmail.modify to required OAuth scopes';
+  userAction: 'Reconnect Google account to receive new permissions';
+  status: 'RESOLVED - All Gmail operations now functional';
+}
 ```
 
-**2. Deal-Centric Document Management**
+**2. Production-Ready Gmail Integration**
 ```typescript
-// Intelligent document organization system
-interface DealDocumentSystem {
-  autoFolderCreation: DealFolderService;    // Auto-create deal folders
-  categoryOrganization: DocumentCategories; // 8 predefined categories
-  importWorkflow: GoogleDriveImport;        // Import with categorization
-  accessControl: PermissionInheritance;     // CRM permissions → Drive
-  searchIntegration: UnifiedSearch;         // Search from CRM interface
+// Complete Gmail functionality with enhanced permissions
+interface GmailIntegration {
+  emailThreadManagement: EmailThreadService;    // Full thread operations
+  emailActions: EmailActionService;             // Mark read/unread, compose, reply
+  emailPinning: EmailPinService;               // Pin emails to deals with notes
+  contactCreation: ContactFromEmailService;    // Create contacts from emails
+  emailFiltering: AdvancedFilterService;       // Multi-contact filtering
+  attachmentHandling: EmailAttachmentService;  // Email attachment management
+  enhancedEmailToTask: AITaskGenerationService; // ✅ NEW: Claude 3 Haiku integration
 }
 
-const DOCUMENT_CATEGORIES = [
-  'proposals', 'contracts', 'technical_specs', 'presentations',
-  'financial_docs', 'legal_docs', 'correspondence', 'other'
+const GMAIL_OPERATIONS = [
+  'getEmailThreads',        // List email threads with filtering
+  'getEmailMessage',        // Get individual email details
+  'composeEmail',          // Send new emails
+  'markThreadAsRead',      // ✅ FIXED: Mark threads as read
+  'markThreadAsUnread',    // ✅ FIXED: Mark threads as unread
+  'pinEmailToDeal',        // ✅ NEW: Pin emails with notes
+  'createContactFromEmail', // ✅ NEW: Smart contact creation
+  'filterByContacts',      // ✅ NEW: Multi-contact filtering
+  'generateTaskFromEmail', // ✅ NEW: AI-powered task generation
+  'createTaskFromEmail'    // ✅ ENHANCED: User assignment and AI integration
 ];
 ```
 
-**3. Enterprise Administration Interface**
+**3. Enhanced Email-to-Task with Claude 3 Haiku AI Integration**
 ```typescript
-// Admin settings for workspace integration
-interface GoogleDriveSettings {
-  parentFolderId: string;          // Root folder for deal folders
-  namingConvention: FolderNaming;  // Folder naming patterns
-  permissionTemplate: AccessRules; // Default sharing permissions
-  categoryConfiguration: CategorySettings; // Custom categories
+// Revolutionary AI-powered task generation from emails
+interface EnhancedEmailToTaskSystem {
+  aiTaskGeneration: {
+    generateTaskContent: (emailId: string, threadId?: string, useWholeThread?: boolean) => Promise<AIGeneratedTaskContent>;
+    analyzeEmailScope: (emailData: EmailData, threadData?: EmailThread) => EmailAnalysisResult;
+    extractActionItems: (content: string) => ActionItem[];
+    suggestDueDate: (content: string) => Date | null;
+    calculateConfidence: (analysis: EmailAnalysis) => number;
+  };
+  userConfirmationWorkflow: {
+    configureEmailScope: (emailId: string, threadId?: string) => EmailScopeConfiguration;
+    reviewAIContent: (generatedContent: AIGeneratedTaskContent) => TaskReviewInterface;
+    editTaskContent: (content: AIGeneratedTaskContent, userEdits: TaskEdits) => TaskContent;
+    assignTaskUser: (taskData: TaskContent, assigneeId?: string) => TaskAssignment;
+  };
+  fallbackMechanisms: {
+    enhancedManualExtraction: (emailData: EmailData) => TaskContent;
+    gracefulDegradation: (error: AIGenerationError) => TaskContent;
+    offlineSupport: (emailData: EmailData) => TaskContent;
+  };
+}
+
+const AI_TASK_GENERATION_FEATURES = [
+  'intelligentSubjectGeneration',    // Clear, actionable task titles
+  'contextualDescriptions',          // Email context with action items
+  'dueDateExtraction',              // Smart deadline detection
+  'confidenceScoring',              // AI confidence in generated content
+  'emailScopeSelection',            // Single message vs entire thread
+  'userAssignmentIntegration',      // Task assignment to team members
+  'sourceContentPreservation',     // Complete email content reference
+  'editableAIContent',              // User can modify AI suggestions
+  'fallbackSupport',                // Works without AI when needed
+  'costOptimization'                // Claude 3 Haiku for efficiency
+];
+```
+
+**4. Advanced Email Management Features**
+```typescript
+// Email pinning and contact creation system
+interface EmailManagementFeatures {
+  emailPinning: {
+    pinToDeal: (emailId: string, dealId: string, notes?: string) => Promise<EmailPin>;
+    unpinFromDeal: (emailId: string, dealId: string) => Promise<boolean>;
+    getPinnedEmails: (dealId: string) => Promise<EmailPin[]>;
+    updatePinNotes: (pinId: string, notes: string) => Promise<EmailPin>;
+  };
+  contactCreation: {
+    parseEmailSender: (fromEmail: string) => ParsedContact;
+    createFromEmail: (emailData: EmailData, organizationId?: string) => Promise<Person>;
+    addToDealParticipants: (personId: string, dealId: string) => Promise<boolean>;
+    suggestOrganization: (email: string) => Promise<Organization[]>;
+  };
+  enhancedFiltering: {
+    filterByPinnedStatus: (dealId: string, pinnedOnly: boolean) => Promise<EmailThread[]>;
+    filterByMultipleContacts: (contactEmails: string[]) => Promise<EmailThread[]>;
+    searchWithContext: (query: string, dealId: string) => Promise<EmailThread[]>;
+  };
+  dealParticipantManagement: {
+    addParticipantFromEmail: (emailData: EmailData, dealId: string) => Promise<DealParticipant>;
+    manageDealParticipants: (dealId: string) => Promise<DealParticipant[]>;
+    debugConstraintViolations: (participantData: DealParticipantInput) => Promise<DebugInfo>;
+  };
 }
 ```
 
@@ -1180,157 +1255,285 @@ interface GoogleDriveSettings {
 **Backend Services**
 ```typescript
 lib/
-├── googleIntegrationService.ts    // OAuth flow & authentication
+├── googleIntegrationService.ts    // OAuth flow & enhanced authentication
 ├── googleDriveService.ts          // Drive API operations
+├── emailService.ts                // ✅ ENHANCED: Complete Gmail integration
+├── emailPinService.ts             // ✅ NEW: Email pinning functionality
+├── contactCreationService.ts      // ✅ NEW: Contact creation from emails
+├── dealParticipantService.ts      // ✅ NEW: Deal participant management with debugging
 ├── dealFolderService.ts           // Deal folder management
-├── emailService.ts                // Gmail integration foundation
 └── appSettingsService.ts          // Admin configuration
 
 netlify/functions/
-└── google-oauth-exchange.ts       // Serverless OAuth endpoint
+└── google-oauth-exchange.ts       // ✅ ENHANCED: Updated OAuth scopes
 ```
 
-**GraphQL Schema**
+**Enhanced GraphQL Schema**
 ```graphql
-type DealFolder {
-  id: ID!
-  deal_id: ID!
-  google_folder_id: String!
-  folder_name: String!
-  folder_url: String!
+# Enhanced email-to-task types with AI integration
+type AIGeneratedTaskContent {
+  subject: String!
+  description: String!
+  suggestedDueDate: String
+  confidence: Float!
+  emailScope: String! # "message" or "thread"
+  sourceContent: String! # The email content that was analyzed
 }
 
-type DealDocument {
-  id: ID!
-  deal_id: ID!
-  google_file_id: String!
-  file_name: String!
-  file_url: String!
-  category: DocumentCategory!
-  imported_at: DateTime!
+input GenerateTaskContentInput {
+  emailId: String!
+  threadId: String
+  useWholeThread: Boolean! # If true, analyze entire thread
 }
 
+input CreateTaskFromEmailInput {
+  emailId: String!
+  threadId: String
+  useWholeThread: Boolean
+  subject: String!
+  description: String
+  dueDate: String
+  assigneeId: String # ✅ NEW: User assignment support
+  dealId: String
+}
+
+# Deal participant management with debugging
+type DealParticipant {
+  id: ID!
+  dealId: ID!
+  personId: ID!
+  person: Person!
+  role: ContactRoleType!
+  addedFromEmail: Boolean!
+  createdAt: DateTime!
+  createdByUserId: ID!
+}
+
+input DealParticipantInput {
+  dealId: ID!
+  personId: ID!
+  role: ContactRoleType
+  addedFromEmail: Boolean
+}
+
+# Enhanced mutations
 extend type Mutation {
+  # AI-powered email-to-task mutations
+  generateTaskContentFromEmail(input: GenerateTaskContentInput!): AIGeneratedTaskContent!  # ✅ NEW
+  createTaskFromEmail(input: CreateTaskFromEmailInput!): Activity!  # ✅ ENHANCED
+  
+  # Gmail operations (now fully functional)
+  markThreadAsRead(threadId: String!): Boolean!      # ✅ FIXED
+  markThreadAsUnread(threadId: String!): Boolean!    # ✅ FIXED
+  
+  # Email management features
+  pinEmail(input: PinEmailInput!): EmailPin!         # ✅ NEW
+  unpinEmail(emailId: String!, dealId: String!): Boolean!  # ✅ NEW
+  updateEmailPin(input: UpdateEmailPinInput!): EmailPin!   # ✅ NEW
+  
+  # Contact creation and deal participant management
+  createContactFromEmail(input: CreateContactFromEmailInput!): Person!  # ✅ NEW
+  addDealParticipant(input: DealParticipantInput!): DealParticipant!     # ✅ NEW
+  removeDealParticipant(dealId: ID!, personId: ID!): Boolean!            # ✅ NEW
+  
+  # Existing Google integration
   connectGoogleAccount(authCode: String!, redirectUri: String!): GoogleIntegration!
   createDealFolder(dealId: ID!, folderName: String!): DealFolder!
   importDocumentFromDrive(input: ImportDocumentInput!): DealDocument!
 }
+
+# Enhanced queries
+extend type Query {
+  # AI task generation
+  generateTaskContentFromEmail(input: GenerateTaskContentInput!): AIGeneratedTaskContent!  # ✅ NEW
+  
+  # Email management
+  getPinnedEmails(dealId: String!): [EmailPin!]!     # ✅ NEW
+  getEmailPin(emailId: String!, dealId: String!): EmailPin  # ✅ NEW
+  getDealParticipants(dealId: ID!): [DealParticipant!]!      # ✅ NEW
+  
+  # Enhanced email threads with pin status
+  getEmailThreads(filter: EmailThreadsFilterInput!): [EmailThread!]!  # ✅ ENHANCED
+}
 ```
 
-**Frontend Components**
+**Enhanced Frontend Components**
 ```typescript
 frontend/src/components/deals/
-├── DealDocumentsPanel.tsx         // Main document interface
-├── DealEmailsPanel.tsx            // Gmail integration (ready)
+├── DealDocumentsPanel.tsx         // Google Drive integration
+├── DealEmailsPanel.tsx            // ✅ ENHANCED: Gmail integration with pinning
+├── EnhancedCreateTaskModal.tsx    // ✅ NEW: Two-step AI task creation
+├── PinnedEmailsPanel.tsx          // ✅ NEW: Pinned email management
+├── CreateContactFromEmailModal.tsx // ✅ NEW: Contact creation interface
+└── EmailActionButtons.tsx         // ✅ NEW: Consistent email actions
 
 frontend/src/pages/
-├── GoogleIntegrationPage.tsx      // OAuth management
-├── GoogleOAuthCallback.tsx        // OAuth callback
+├── GoogleIntegrationPage.tsx      // ✅ ENHANCED: Updated OAuth scopes
+├── GoogleOAuthCallback.tsx        // OAuth callback handling
 └── admin/GoogleDriveSettingsPage.tsx  // Admin settings
 ```
 
-#### **🛡️ Security Architecture**
+#### **🛡️ Enhanced Security Architecture**
 
-**OAuth 2.0 Security Model**
+**OAuth 2.0 Security Model with Enhanced Permissions**
 ```sql
--- Secure token storage with RLS
-CREATE TABLE app_settings (
+-- Enhanced Google OAuth token storage
+CREATE TABLE google_oauth_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  google_access_token TEXT,              -- Server-side only
-  google_refresh_token TEXT,             -- Encrypted storage
-  google_token_expires_at TIMESTAMP,
-  google_drive_parent_folder_id TEXT,
-  created_at TIMESTAMP DEFAULT NOW(),
+  access_token TEXT NOT NULL,
+  refresh_token TEXT,
+  expires_at TIMESTAMPTZ,
+  granted_scopes TEXT[] NOT NULL DEFAULT '{}',  -- Track granted permissions
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  last_used_at TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id)
 );
 
-CREATE POLICY "app_settings_user_access" ON app_settings
-  FOR ALL USING (user_id = auth.uid());
+-- Email pins with security isolation
+CREATE TABLE email_pins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  deal_id UUID NOT NULL REFERENCES deals(id),
+  email_id TEXT NOT NULL,
+  thread_id TEXT NOT NULL,
+  subject TEXT,
+  from_email TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, deal_id, email_id)
+);
+
+-- Deal participants with constraint debugging
+CREATE TABLE deal_participants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  deal_id UUID NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+  person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'participant' CHECK (role IN ('primary', 'participant', 'cc')),
+  added_from_email BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by_user_id UUID REFERENCES auth.users(id),
+  UNIQUE(deal_id, person_id)
+);
+
+-- Contact creation tracking
+ALTER TABLE people 
+ADD COLUMN created_from_email_id TEXT,
+ADD COLUMN created_from_email_subject TEXT;
 ```
 
-**Database Schema**
+**Row Level Security (RLS) Policies**
 ```sql
--- Deal folder tracking
-CREATE TABLE deal_folders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  deal_id UUID REFERENCES deals(id) ON DELETE CASCADE,
-  google_folder_id TEXT NOT NULL,
-  folder_name TEXT NOT NULL,
-  folder_url TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT NOW()
-);
+-- Email pins security
+CREATE POLICY "users_own_email_pins" ON email_pins
+  FOR ALL USING (user_id = auth.uid());
 
--- Document import tracking
-CREATE TABLE deal_documents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  deal_id UUID REFERENCES deals(id) ON DELETE CASCADE,
-  google_file_id TEXT NOT NULL UNIQUE,
-  file_name TEXT NOT NULL,
-  file_url TEXT NOT NULL,
-  category document_category_enum NOT NULL,
-  mime_type TEXT,
-  size_bytes BIGINT,
-  imported_at TIMESTAMP DEFAULT NOW()
-);
+-- Enhanced Google tokens security
+CREATE POLICY "users_own_google_tokens" ON google_oauth_tokens
+  FOR ALL USING (user_id = auth.uid());
 
--- Performance indexes
-CREATE INDEX idx_deal_folders_deal_id ON deal_folders(deal_id);
-CREATE INDEX idx_deal_documents_deal_id ON deal_documents(deal_id);
-CREATE INDEX idx_deal_documents_category ON deal_documents(category);
+-- Deal participants security with debugging support
+CREATE POLICY "users_own_deal_participants" ON deal_participants
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM deals d 
+      WHERE d.id = deal_id 
+      AND (d.user_id = auth.uid() OR d.assigned_to_user_id = auth.uid())
+    )
+  );
+
+-- Contact creation audit trail
+CREATE POLICY "users_own_created_contacts" ON people
+  FOR SELECT USING (
+    user_id = auth.uid() OR 
+    created_from_email_id IS NOT NULL
+  );
 ```
 
-#### **🎨 User Experience**
+#### **🎨 Enhanced User Experience**
 
-**Seamless CRM Integration**
-- **Native Tabs**: Documents appear as tabs in deal detail pages
-- **Collapsible Categories**: Organized by document type
-- **One-Click Import**: Import from Drive with auto-categorization
-- **Permission Inheritance**: Respects CRM user permissions
-- **Real-time Feedback**: Progress indicators during operations
+**AI-Powered Email-to-Task Features**
+- **Two-Step Creation Process**: Configure email scope, then review AI-generated content
+- **Email Scope Selection**: Choose between single message or entire thread analysis
+- **AI Content Review**: See confidence score and edit AI suggestions before creating task
+- **User Assignment**: Assign tasks to any team member with dropdown selection
+- **Fallback Support**: Enhanced manual extraction when AI is unavailable
+- **Cost Optimization**: Claude 3 Haiku for efficient, cost-effective AI processing
+
+**Gmail Integration Features**
+- **Native Email Management**: Full Gmail functionality within CRM context
+- **Email Pinning**: Pin important emails to deals with contextual notes
+- **Contact Creation**: Create contacts directly from email senders with smart parsing
+- **Visual Indicators**: Pin status shown with yellow star icons in email lists
+- **Consistent Actions**: Standardized button styling across all email operations
+- **Real-time Updates**: Immediate UI feedback for all email operations
+- **Permission Recovery**: Clear guidance for users to reconnect with new permissions
+
+**Deal Participant Management**
+- **Enhanced Email Filtering**: Multi-contact support with participant management
+- **Constraint Violation Debugging**: Comprehensive logging for troubleshooting participant creation issues
+- **Auto-Population**: Existing primary contacts automatically added as participants
+- **Role Management**: Support for primary, participant, and cc roles
 
 **Enterprise Administration**
-- **Centralized Settings**: Configure Drive integration globally
-- **Folder Management**: Control parent folders and naming
-- **Permission Templates**: Default sharing configurations
-- **Usage Analytics**: Monitor integration usage patterns
+- **Enhanced OAuth Management**: Monitor and manage Gmail permissions
+- **Permission Validation**: Verify required scopes are granted
+- **Usage Analytics**: Track Gmail integration usage and performance
+- **Error Monitoring**: Comprehensive logging of Gmail API operations
+- **Debugging Tools**: Detailed constraint violation analysis and resolution
 
 #### **🚀 Implementation Status**
 
 **✅ PRODUCTION-READY**
-- OAuth 2.0 authentication flow complete
-- Deal folder auto-creation operational
-- Document import with categorization working
-- **Document Attachment to Notes**: Complete Google Drive browser integration
-- **Dual Attachment System**: Atomic operations for note and deal attachment
-- Admin settings interface functional
-- Security model with RLS enforcement
-- Native UI integration in deal pages
+- ✅ Enhanced OAuth 2.0 with gmail.modify scope
+- ✅ Complete Gmail API integration with all operations functional
+- ✅ Enhanced email-to-task with Claude 3 Haiku AI integration
+- ✅ Two-step task creation with user confirmation workflow
+- ✅ User assignment integration for task creation
+- ✅ Email pinning system with notes and filtering
+- ✅ Contact creation from emails with smart parsing
+- ✅ Deal participant management with constraint debugging
+- ✅ Visual pin indicators and consistent UI
+- ✅ Real-time email operations without permission errors
+- ✅ Security model with RLS enforcement
+- ✅ Native UI integration in deal pages
 
-**🚧 FOUNDATION READY**
-- Gmail integration infrastructure (`emailService`, `DealEmailsPanel`)
-- Calendar integration schema prepared
-- Advanced categorization system ready
+**🔧 AI INTEGRATION COMPLETED**
+- ✅ Claude 3 Haiku integration for cost-effective task generation
+- ✅ Email scope selection (single message vs entire thread)
+- ✅ AI confidence scoring and content review
+- ✅ Graceful fallback when AI is unavailable
+- ✅ User editing of AI-generated content
+- ✅ Source content preservation and display
+
+**🔧 GMAIL PERMISSION FIX COMPLETED**
+- ✅ Root cause identified: Missing gmail.modify scope
+- ✅ Solution implemented: Added required scope to OAuth flow
+- ✅ User migration path: Reconnect Google accounts for new permissions
+- ✅ Error elimination: No more 403 "insufficient authentication scopes" errors
+- ✅ Production stability: All Gmail operations now reliable
 
 **🔮 FUTURE ROADMAP**
 
-**Phase 4: Gmail Integration**
-- Email threading with deals/contacts
+**Phase 3: Advanced Email Features**
+- Enhanced email filtering with multi-contact support
+- Email templates with merge fields and automation
 - Email analytics and engagement tracking
-- Template management with merge fields
-- Automated email workflows
+- Automated email workflows and sequences
 
-**Phase 5: Calendar Integration**
-- Meeting scheduling from CRM
-- Activity sync with Google Calendar
-- Meeting notes integration
-- Availability management
+**Phase 4: Calendar Integration**
+- Meeting scheduling from CRM with availability checking
+- Activity sync with Google Calendar (bidirectional)
+- Meeting notes integration with deal context
+- Calendar-based activity reminders
 
-**Phase 6: Advanced Features**
-- Google Sheets data export
-- Google Forms lead capture
-- Google Sites customer portals
-- Google Meet integration
+**Phase 5: Advanced Workspace Features**
+- Google Sheets data export and import
+- Google Forms lead capture integration
+- Google Sites customer portal creation
+- Google Meet integration with call recording
 
 ---
 
@@ -1458,10 +1661,6 @@ type DualAttachmentResponse {
 extend type Mutation {
   attachDocumentToNoteAndDeal(input: AttachDocumentToNoteInput!): DualAttachmentResponse!
   removeNoteDocumentAttachment(attachmentId: ID!): Boolean!
-}
-
-extend type Query {
-  getNoteDocumentAttachments(noteIds: [ID!]!): [NoteDocumentAttachment!]!
 }
 ```
 

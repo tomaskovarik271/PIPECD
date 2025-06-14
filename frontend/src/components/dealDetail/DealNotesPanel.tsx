@@ -109,7 +109,7 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
           >
             <HStack spacing={2}>
               <Icon as={FiGrid} />
-              <Text>Smart Stickers</Text>
+              <Text>Sticker Board</Text>
               {totalNotesCount > 0 && activeTab === 1 && (
                 <Badge 
                   size="sm" 
@@ -134,25 +134,13 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
         <TabPanels>
           {/* Simple Notes Panel */}
           <TabPanel p={0}>
-            <Box>
-              <Text 
-                fontSize="sm" 
-                color={colors.text.secondary} 
-                mb={4}
-                fontStyle="italic"
-              >
-                💡 <strong>Enhanced Notes:</strong> Rich text formatting, email-to-note conversion, file attachments, and templates! 
-                Perfect for detailed meeting notes, follow-ups, and structured documentation.
-              </Text>
-              
-              <EnhancedSimpleNotes
-                entityType="DEAL"
-                entityId={dealId}
-                dealId={dealId}
-                readonly={readonly}
-                onNoteCountChange={handleNotesCountChange}
-              />
-            </Box>
+            <EnhancedSimpleNotes
+              entityType="DEAL"
+              entityId={dealId}
+              dealId={dealId}
+              readonly={readonly}
+              onNoteCountChange={handleNotesCountChange}
+            />
           </TabPanel>
 
           {/* Smart Stickers Panel */}

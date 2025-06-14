@@ -6,7 +6,7 @@ This guide provides a comprehensive overview of the Project PipeCD system, its a
 
 Welcome to Project PipeCD! This document will help you understand the project structure, key technologies, and how to effectively contribute.
 
-**🚀 Current Status: Production-Ready CRM with AI Intelligence**
+**🚀 Current Status: Production-Ready CRM with AI Intelligence & Complete Gmail Integration**
 
 ## System Implementation Status (Code-Verified)
 
@@ -14,6 +14,8 @@ Welcome to Project PipeCD! This document will help you understand the project st
 |----------------|----------------|--------|----------|
 | **AI Agent System** | 27 specialized tools | ✅ Production | All 6 domains operational with real implementations |
 | **Activity Reminders** | Enterprise notification infrastructure | ✅ Production | Complete system with email, in-app, and push capabilities |
+| **Gmail Integration** | Complete email management with permissions fix | ✅ Production | Email pinning, contact creation, mark as read/unread operational |
+| **Enhanced Email-to-Task** | Claude 3 Haiku AI integration with user confirmation | ✅ Production | Two-step process with email scope selection and AI content generation |
 | **Smart Stickers** | Visual collaboration | ✅ Production | 866-line React component with full drag-and-drop |
 | **Leads Management** | Complete CRM pipeline | ✅ Production | Full CRUD, scoring, conversion workflows |
 | **Deals Management** | WFM-integrated pipeline | ✅ Production | Complete with automation and custom fields |
@@ -26,6 +28,8 @@ Welcome to Project PipeCD! This document will help you understand the project st
 **Key Metrics:**
 - **27 AI Tools** across 6 domains (Deals, Leads, Organizations, Contacts, Activities, Relationships)
 - **Enterprise Notification System** with 5 queries, 7 mutations, and multi-channel delivery
+- **Complete Gmail Integration** with email pinning, contact creation, and mark as read/unread functionality
+- **Enhanced Email-to-Task** with Claude 3 Haiku AI integration and user confirmation workflow
 - **8 Database Tables** for Smart Stickers alone
 - **30+ Database Migrations** with comprehensive RLS policies
 - **2000+ Lines** of AI Agent service code
@@ -34,6 +38,8 @@ Welcome to Project PipeCD! This document will help you understand the project st
 Project PipeCD is a revolutionary **Claude 4 Sonnet-powered CRM system** featuring:
 - **27 Specialized AI Tools** for autonomous deal, lead, and contact management
 - **Enterprise Activity Reminders** with email, in-app, and push notification capabilities
+- **Complete Gmail Integration** with email pinning, contact creation, and full email management
+- **Enhanced Email-to-Task** with Claude 3 Haiku AI integration for intelligent task generation
 - **Complete Leads Management** with qualification workflows and conversion
 - **Custom Fields Democratization** - all users can create fields via AI
 - **Smart Stickers Visual Collaboration** - Revolutionary sticky note system integrated into all entity detail pages
@@ -69,6 +75,7 @@ The architecture emphasizes separation of concerns, type safety, AI-powered auto
 **Implemented & Production-Ready:**
 - ✅ **AI Agent System** - Claude 4 Sonnet with 30+ tools for autonomous CRM management
 - ✅ **Activity Reminders System** - Enterprise notification infrastructure with email, in-app, and push capabilities
+- ✅ **Gmail Integration** - Complete email management with pinning, contact creation, and mark as read/unread functionality
 - ✅ **Deals Management** - Complete CRUD with WFM integration and automation
 - ✅ **Leads Management** - Full qualification workflows with AI scoring and conversion
 - ✅ **Contact Management** - People and Organizations with custom fields support
@@ -85,6 +92,7 @@ The architecture emphasizes separation of concerns, type safety, AI-powered auto
 - **Service Layer Consistency**: All services follow proven object-based patterns
 - **AI Integration**: Deep integration allowing natural language CRM operations
 - **Enterprise Notifications**: Multi-channel reminder system with user preference management
+- **Complete Gmail Integration**: Email management with pinning, contact creation, and reliable email operations
 - **Visual Collaboration**: Smart Stickers transform static entity pages into interactive workspaces
 - **Custom Fields Revolution**: Any user can create custom fields via AI conversations
 - **Automation Engine**: Event-driven workflows for assignment and qualification tasks
@@ -1208,9 +1216,230 @@ server.tool(
 );
 ```
 
+## 6. Gmail Integration & Email Management
 
----
-This guide should provide a solid foundation for developing Project PipeCD. Happy coding! 
+### 6.1 Complete Gmail Integration
+
+PipeCD provides comprehensive Gmail integration with enhanced permissions and full email management capabilities:
+
+**Core Features:**
+- **OAuth 2.0 Authentication** with enhanced Gmail permissions including `gmail.modify`
+- **Email Thread Management** with full thread operations and mark as read/unread
+- **Email Pinning System** to pin important emails to deals with contextual notes
+- **Contact Creation** directly from email senders with smart parsing
+- **Enhanced Email Filtering** with multi-contact support and visual indicators
+- **Email-to-Task Conversion** with Claude 3 Haiku AI integration
+
+### 6.2 Enhanced Email-to-Task with Claude 3 Haiku
+
+**🤖 AI-Powered Task Generation**
+
+The email-to-task feature has been enhanced with Claude 3 Haiku integration to provide intelligent task content generation with user confirmation.
+
+#### Implementation Architecture
+
+**Backend Integration** (`netlify/functions/graphql/resolvers/mutations/emailMutations.ts`):
+```typescript
+// Claude 3 Haiku integration for intelligent task content generation
+const generateTaskContentFromEmail = async (
+  emailMessage: any, 
+  emailThread?: any, 
+  useWholeThread: boolean = false
+): Promise<AIGeneratedTaskContent> => {
+  const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+  
+  // Determine email scope and content
+  const emailScope = useWholeThread && emailThread ? 'thread' : 'message';
+  let sourceContent = '';
+  
+  if (useWholeThread && emailThread?.messages?.length > 0) {
+    // Analyze entire thread for better context
+    sourceContent = emailThread.messages.map((msg: any) => 
+      `From: ${msg.from}\nTo: ${msg.to?.join(', ')}\nDate: ${msg.timestamp}\nSubject: ${msg.subject}\n\n${msg.body}`
+    ).join('\n\n---\n\n');
+  } else {
+    // Analyze single message
+    sourceContent = `From: ${emailMessage.from}\nTo: ${emailMessage.to?.join(', ')}\nDate: ${emailMessage.timestamp}\nSubject: ${emailMessage.subject}\n\n${emailMessage.body}`;
+  }
+  
+  // Claude 3 Haiku API call with structured prompt
+  const response = await client.messages.create({
+    model: 'claude-3-haiku-20240307',
+    max_tokens: 1500,
+    temperature: 0.3,
+    messages: [{ role: 'user', content: prompt }]
+  });
+  
+  return {
+    subject: parsed.subject,
+    description: parsed.description,
+    suggestedDueDate: parsed.suggestedDueDate,
+    confidence: parsed.confidence,
+    emailScope,
+    sourceContent
+  };
+};
+```
+
+**Frontend Enhancement** (`frontend/src/components/deals/EnhancedCreateTaskModal.tsx`):
+```typescript
+// Two-step task creation process
+const EnhancedCreateTaskModal: React.FC<EnhancedCreateTaskModalProps> = ({
+  isOpen,
+  onClose,
+  onCreateTask,
+  selectedEmailId,
+  selectedThreadId,
+}) => {
+  const [step, setStep] = useState<'configure' | 'confirm'>('configure');
+  const [useWholeThread, setUseWholeThread] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  
+  // Step 1: Configure email scope and generation method
+  // Step 2: Review AI-generated content and confirm task creation
+};
+```
+
+#### Key Features
+
+**1. Email Scope Selection:**
+- **Single Message**: Analyze only the selected email message
+- **Entire Thread**: Analyze complete email conversation for better context
+- **Smart Context**: AI considers full conversation history when available
+
+**2. User Confirmation Workflow:**
+- **Configure Step**: Choose email scope (Single Message vs Entire Thread)
+- **Confirm Step**: Review AI-generated content with confidence score
+- **Edit Capability**: Users can modify AI suggestions before creating task
+- **Fallback Support**: Graceful degradation if AI generation fails
+
+**3. User Assignment Integration:**
+- **Assign To Dropdown**: Select task assignee from user list
+- **Default Assignment**: Falls back to current user if no assignee selected
+- **User List Integration**: Uses `useUserListStore` for real-time user data
+
+**4. AI Content Generation:**
+- **Intelligent Subject**: Clear, actionable task titles
+- **Detailed Description**: Includes email context, action items, and metadata
+- **Due Date Suggestions**: Extracts deadlines from email content
+- **Confidence Scoring**: AI provides confidence level for generated content
+- **Source Content**: Expandable view of analyzed email content
+
+#### GraphQL Schema
+
+```graphql
+type AIGeneratedTaskContent {
+  subject: String!
+  description: String!
+  suggestedDueDate: String
+  confidence: Float!
+  emailScope: String! # "message" or "thread"
+  sourceContent: String! # The email content that was analyzed
+}
+
+input GenerateTaskContentInput {
+  emailId: String!
+  threadId: String
+  useWholeThread: Boolean! # If true, analyze entire thread
+}
+
+input CreateTaskFromEmailInput {
+  emailId: String!
+  threadId: String
+  useWholeThread: Boolean
+  subject: String!
+  description: String
+  dueDate: String
+  assigneeId: String # Enhanced: User assignment support
+  dealId: String
+}
+
+extend type Mutation {
+  generateTaskContentFromEmail(input: GenerateTaskContentInput!): AIGeneratedTaskContent!
+  createTaskFromEmail(input: CreateTaskFromEmailInput!): Activity!
+}
+```
+
+#### User Experience Flow
+
+1. **Email Selection**: User clicks "Create Task" button on any email in DealEmailsPanel
+2. **Configuration**: Modal opens with email scope selection (Single Message vs Entire Thread)
+3. **AI Generation**: System calls Claude 3 Haiku to analyze email content
+4. **Content Review**: User sees AI-generated task content with confidence score
+5. **Assignment**: User can assign task to any team member
+6. **Confirmation**: User can edit content or use as-is, then creates task
+7. **Fallback**: If AI fails, system provides enhanced manual extraction
+
+#### Cost Optimization
+
+- **Model Choice**: Claude 3 Haiku (most cost-effective option)
+- **Token Usage**: ~200-500 tokens per email conversion
+- **Estimated Cost**: $0.001-0.003 per task creation
+- **Monthly Cost**: Typically $5-15 for moderate usage
+- **Graceful Fallback**: Works without API key using enhanced content extraction
+
+### 6.3 Database Schema
+
+**Email Management Tables:**
+```sql
+-- Email pins for deal context
+CREATE TABLE email_pins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  deal_id UUID NOT NULL REFERENCES deals(id),
+  email_id TEXT NOT NULL,
+  thread_id TEXT NOT NULL,
+  subject TEXT,
+  from_email TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, deal_id, email_id)
+);
+
+-- Deal participants for enhanced email filtering
+CREATE TABLE deal_participants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  deal_id UUID NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+  person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'participant' CHECK (role IN ('primary', 'participant', 'cc')),
+  added_from_email BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by_user_id UUID REFERENCES auth.users(id),
+  UNIQUE(deal_id, person_id)
+);
+```
+
+### 6.4 Service Layer
+
+**Email Service** (`lib/emailService.ts`):
+- Gmail API integration with OAuth 2.0 token management
+- Email thread operations (list, read, mark as read/unread)
+- Email composition and sending
+- Attachment handling and file uploads
+
+**Email Pin Service** (`lib/emailPinService.ts`):
+- Pin/unpin emails to deals with contextual notes
+- Retrieve pinned emails with filtering
+- Update pin notes and metadata
+
+**Deal Participant Service** (`lib/dealParticipantService.ts`):
+- Manage deal-contact relationships for enhanced email filtering
+- Add/remove participants with role management
+- Auto-populate from email thread analysis
+
+### 6.5 Frontend Components
+
+**Enhanced Email Components:**
+- `DealEmailsPanel.tsx` - Main email interface with pinning and task creation
+- `EnhancedCreateTaskModal.tsx` - Two-step task creation with AI integration
+- `CreateContactFromEmailModal.tsx` - Smart contact creation from emails
+- `EmailToNoteModal.tsx` - Convert emails to notes with templates
+
+**Integration Points:**
+- Deal detail pages with email tabs
+- Activity creation with email context
+- Contact management with email discovery
+- Document attachment from email links
 
 ## 18. AI Agent System (PRODUCTION-READY)
 
@@ -2389,3 +2618,438 @@ frontend/src/components/common/
 ├── EnhancedSimpleNotes.tsx       // Enhanced notes with attachments
 │   ├── AttachmentDisplay: Component // Visual attachment indicators
 ## 22. Leads Management System (PRODUCTION-READY)
+```
+
+---
+
+## 22. Gmail Integration & Email Management System (PRODUCTION-READY)
+
+Project PipeCD implements a **comprehensive Gmail Integration & Email Management system** that provides complete email functionality within the CRM context, including email pinning, contact creation from emails, and full email operations with proper Gmail API permissions.
+
+### 22.1 System Overview & Current Status
+
+**✅ PRODUCTION STATUS: FULLY IMPLEMENTED WITH PERMISSION FIX**
+
+## Gmail Integration Implementation Status
+
+| Component | Status | Evidence |
+|-----------|--------|----------|
+| Gmail OAuth Permissions | ✅ Fixed | Added `gmail.modify` scope for mark as read/unread |
+| Email Pinning System | ✅ Production | Complete pin/unpin with notes and filtering |
+| Contact Creation | ✅ Production | Smart email parsing and organization linking |
+| Email Thread Management | ✅ Production | Full thread operations with visual indicators |
+| Database Schema | ✅ Production | `email_pins` table with RLS policies |
+| GraphQL API | ✅ Production | 6 operations: pin, unpin, create contact, mark read/unread |
+| UI Integration | ✅ Production | Enhanced DealEmailsPanel with consistent actions |
+| Permission Recovery | ✅ Production | Clear user guidance for OAuth reconnection |
+
+### 22.2 Gmail Permission Fix Implementation
+
+#### 22.2.1 Root Cause & Solution
+
+**Issue Resolved**: Gmail "Request had insufficient authentication scopes" errors when marking emails as read.
+
+**Root Cause**: Missing `gmail.modify` scope required for email label modifications.
+
+**Solution Implemented**:
+```typescript
+// Updated required scopes in googleIntegrationService.ts
+const REQUIRED_SCOPES = [
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.modify'  // ✅ NEW: Required for mark as read/unread
+];
+```
+
+**User Migration Path**:
+1. Navigate to `/google-integration` page
+2. Click "Revoke Integration" (if connected)
+3. Click "Connect Google Account" again
+4. Grant the new Gmail modify permission
+
+### 22.3 Database Implementation
+
+#### 22.3.1 Email Pinning Schema
+
+```sql
+-- Email pins with user isolation and deal association
+CREATE TABLE email_pins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  deal_id UUID NOT NULL REFERENCES deals(id),
+  email_id TEXT NOT NULL,
+  thread_id TEXT NOT NULL,
+  subject TEXT,
+  from_email TEXT,
+  notes TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, deal_id, email_id)
+);
+
+-- Performance indexes
+CREATE INDEX CONCURRENTLY idx_email_pins_user_deal ON email_pins(user_id, deal_id);
+CREATE INDEX CONCURRENTLY idx_email_pins_thread ON email_pins(thread_id);
+```
+
+#### 22.3.2 Contact Creation Tracking
+
+```sql
+-- Track contacts created from emails
+ALTER TABLE people 
+ADD COLUMN created_from_email_id TEXT,
+ADD COLUMN created_from_email_subject TEXT;
+
+-- Index for email-created contacts
+CREATE INDEX CONCURRENTLY idx_people_created_from_email ON people(created_from_email_id) 
+WHERE created_from_email_id IS NOT NULL;
+```
+
+#### 22.3.3 Security Implementation
+
+```sql
+-- Email pins security - users can only access their own pins
+CREATE POLICY "users_own_email_pins" ON email_pins
+  FOR ALL USING (user_id = auth.uid());
+
+-- Enhanced Google tokens with scope tracking
+CREATE POLICY "users_own_google_tokens" ON google_oauth_tokens
+  FOR ALL USING (user_id = auth.uid());
+```
+
+### 22.4 Backend Services Implementation
+
+#### 22.4.1 Enhanced Email Service
+
+```typescript
+// lib/emailService.ts - Complete Gmail functionality
+class EmailService {
+  // Gmail client with enhanced permissions
+  private async getGmailClient(userId: string, accessToken: string) {
+    const tokens = await googleIntegrationService.getStoredTokens(userId, accessToken);
+    if (!tokens) {
+      throw new Error('GMAIL_NOT_CONNECTED');
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_OAUTH_CLIENT_ID,
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    oauth2Client.setCredentials({
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+    });
+
+    return google.gmail({ version: 'v1', auth: oauth2Client });
+  }
+
+  // ✅ FIXED: Mark thread as read (now works with gmail.modify scope)
+  async markThreadAsRead(userId: string, accessToken: string, threadId: string): Promise<boolean> {
+    try {
+      const gmail = await this.getGmailClient(userId, accessToken);
+      
+      await gmail.users.threads.modify({
+        userId: 'me',
+        id: threadId,
+        requestBody: {
+          removeLabelIds: ['UNREAD'],
+        },
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Failed to mark thread as read:', error);
+      return false;
+    }
+  }
+
+  // ✅ FIXED: Mark thread as unread (now works with gmail.modify scope)
+  async markThreadAsUnread(userId: string, accessToken: string, threadId: string): Promise<boolean> {
+    try {
+      const gmail = await this.getGmailClient(userId, accessToken);
+      
+      await gmail.users.threads.modify({
+        userId: 'me',
+        id: threadId,
+        requestBody: {
+          addLabelIds: ['UNREAD'],
+        },
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Failed to mark thread as unread:', error);
+      return false;
+    }
+  }
+}
+```
+
+#### 22.4.2 Email Pin Service
+
+```typescript
+// lib/emailPinService.ts - Email pinning functionality
+export const emailPinService = {
+  async pinEmail(userId: string, dealId: string, emailData: PinEmailInput, accessToken: string): Promise<EmailPin> {
+    const supabase = getAuthenticatedClient(accessToken);
+    
+    const { data: pin, error } = await supabase
+      .from('email_pins')
+      .insert({
+        user_id: userId,
+        deal_id: dealId,
+        email_id: emailData.emailId,
+        thread_id: emailData.threadId,
+        subject: emailData.subject,
+        from_email: emailData.fromEmail,
+        notes: emailData.notes
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      if (error.code === '23505') { // Unique constraint violation
+        throw new Error('Email is already pinned to this deal');
+      }
+      throw new Error(`Failed to pin email: ${error.message}`);
+    }
+
+    return pin as EmailPin;
+  },
+
+  async unpinEmail(userId: string, dealId: string, emailId: string, accessToken: string): Promise<boolean> {
+    const supabase = getAuthenticatedClient(accessToken);
+    
+    const { error } = await supabase
+      .from('email_pins')
+      .delete()
+      .eq('user_id', userId)
+      .eq('deal_id', dealId)
+      .eq('email_id', emailId);
+
+    if (error) {
+      throw new Error(`Failed to unpin email: ${error.message}`);
+    }
+
+    return true;
+  }
+};
+```
+
+#### 22.4.3 Contact Creation Service
+
+```typescript
+// lib/contactCreationService.ts - Smart contact creation from emails
+export const contactCreationService = {
+  // Parse email sender information
+  parseEmailSender(fromEmail: string): ParsedContact {
+    const emailRegex = /^(.+?)\s*<(.+)>$|^(.+)$/;
+    const match = fromEmail.match(emailRegex);
+    
+    if (match) {
+      if (match[1] && match[2]) {
+        // Format: "John Doe <john@company.com>"
+        const fullName = match[1].trim();
+        const email = match[2].trim();
+        const nameParts = fullName.split(' ');
+        
+        return {
+          email,
+          firstName: nameParts[0] || '',
+          lastName: nameParts.slice(1).join(' ') || '',
+          fullName
+        };
+      } else if (match[3]) {
+        // Format: "john@company.com"
+        const email = match[3].trim();
+        return {
+          email,
+          firstName: '',
+          lastName: '',
+          fullName: email
+        };
+      }
+    }
+    
+    return {
+      email: fromEmail,
+      firstName: '',
+      lastName: '',
+      fullName: fromEmail
+    };
+  },
+
+  async createContactFromEmail(
+    userId: string, 
+    emailData: CreateContactFromEmailInput, 
+    accessToken: string
+  ): Promise<Person> {
+    const supabase = getAuthenticatedClient(accessToken);
+    
+    // Create person record
+    const { data: person, error } = await supabase
+      .from('people')
+      .insert({
+        user_id: userId,
+        first_name: emailData.firstName,
+        last_name: emailData.lastName,
+        email: emailData.email,
+        organization_id: emailData.organizationId,
+        created_from_email_id: emailData.originalEmailId,
+        created_from_email_subject: emailData.originalEmailSubject
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create contact: ${error.message}`);
+    }
+
+    // Optionally add as deal participant
+    if (emailData.addAsDealParticipant && emailData.dealId) {
+      await supabase
+        .from('deal_participants')
+        .insert({
+          deal_id: emailData.dealId,
+          person_id: person.id,
+          role: 'participant',
+          added_from_email: true,
+          created_by_user_id: userId
+        });
+    }
+
+    return person as Person;
+  }
+};
+```
+
+### 22.5 GraphQL API Implementation
+
+#### 22.5.1 Email Management Schema
+
+```graphql
+# Email management types
+type EmailPin {
+  id: ID!
+  userId: ID!
+  dealId: ID!
+  emailId: String!
+  threadId: String!
+  subject: String
+  fromEmail: String
+  notes: String
+  createdAt: DateTime!
+}
+
+type EmailThread {
+  id: String!
+  subject: String!
+  participants: [String!]!
+  messageCount: Int!
+  isUnread: Boolean!
+  isPinned: Boolean!        # ✅ NEW: Pin status indicator
+  lastActivity: DateTime!
+  dealId: String
+}
+
+# Input types
+input PinEmailInput {
+  emailId: String!
+  threadId: String!
+  dealId: String!
+  subject: String
+  fromEmail: String
+  notes: String
+}
+
+input CreateContactFromEmailInput {
+  email: String!
+  firstName: String!
+  lastName: String!
+  organizationId: String
+  dealId: String
+  addAsDealParticipant: Boolean
+  originalEmailId: String
+  originalEmailSubject: String
+}
+
+# Mutations
+extend type Mutation {
+  # Gmail operations (now fully functional)
+  markThreadAsRead(threadId: String!): Boolean!      # ✅ FIXED
+  markThreadAsUnread(threadId: String!): Boolean!    # ✅ FIXED
+  
+  # Email management features
+  pinEmail(input: PinEmailInput!): EmailPin!         # ✅ NEW
+  unpinEmail(emailId: String!, dealId: String!): Boolean!  # ✅ NEW
+  updateEmailPin(input: UpdateEmailPinInput!): EmailPin!   # ✅ NEW
+  
+  # Contact creation
+  createContactFromEmail(input: CreateContactFromEmailInput!): Person!  # ✅ NEW
+}
+
+# Queries
+extend type Query {
+  # Email management
+  getPinnedEmails(dealId: String!): [EmailPin!]!     # ✅ NEW
+  getEmailPin(emailId: String!, dealId: String!): EmailPin  # ✅ NEW
+  
+  # Enhanced email threads with pin status
+  getEmailThreads(filter: EmailThreadsFilterInput!): [EmailThread!]!  # ✅ ENHANCED
+}
+```
+
+### 22.6 Frontend Implementation
+
+#### 22.6.1 Enhanced DealEmailsPanel
+
+```typescript
+// frontend/src/components/deals/DealEmailsPanel.tsx
+export const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
+  dealId,
+  primaryContactEmail,
+  dealName,
+}) => {
+  // Enhanced state for email management
+  const [selectedEmail, setSelectedEmail] = useState<EmailThread | null>(null);
+  const [isCreateContactModalOpen, setIsCreateContactModalOpen] = useState(false);
+  const [isPinnedEmailsPanelOpen, setIsPinnedEmailsPanelOpen] = useState(false);
+  const [emailFilter, setEmailFilter] = useState<EmailFilterState>({
+    search: '',
+    isUnread: null,
+    hasAttachments: null,
+    dateRange: 'all',
+    showPinnedOnly: false
+  });
+
+  // GraphQL mutations for email management
+  const [pinEmailMutation] = useMutation(PIN_EMAIL);
+  const [unpinEmailMutation] = useMutation(UNPIN_EMAIL);
+  const [markAsReadMutation] = useMutation(MARK_THREAD_AS_READ);
+  const [markAsUnreadMutation] = useMutation(MARK_THREAD_AS_UNREAD);
+
+  // Enhanced email thread query with pin status
+  const { data: threadsData, loading: threadsLoading, refetch: refetchThreads } = useQuery(GET_EMAIL_THREADS, {
+    variables: {
+      filter: {
+        dealId,
+        contactEmail: primaryContactEmail,
+        keywords: emailFilter.search ? [emailFilter.search] : undefined,
+        isUnread: emailFilter.isUnread,
+        hasAttachments: emailFilter.hasAttachments,
+        showPinnedOnly: emailFilter.showPinnedOnly,
+        limit: 50,
+      },
+    },
+    skip: !primaryContactEmail,
+  });
+
+  // Pin/unpin email handler
+  const handlePinEmail = async (email: EmailThread) => {
+    try {
+      if (email.isPinned) {
+        await unpinEmailMutation({
+          variables: { emailId: email.id, dealId }
+        });

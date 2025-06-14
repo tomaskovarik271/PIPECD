@@ -1,8 +1,8 @@
 # PipeCD vs Pipedrive: Complete Feature Analysis & Migration Plan
 
-**Document Version:** 2.0  
+**Document Version:** 2.1  
 **Date:** January 2025  
-**Status:** Strategic Planning Document - Phase 1 Complete
+**Status:** Strategic Planning Document - Phase 1 Complete, Gmail Permissions Fixed
 
 ## Executive Summary
 
@@ -11,6 +11,7 @@ This document provides a comprehensive analysis of feature gaps between PipeCD a
 ### Key Findings:
 - **PipeCD has superior functionality** in many areas (Smart Stickers, AI Agent, Google Drive integration)
 - **Phase 1 critical gaps have been resolved** (activity reminders, deal visibility, simple notes)
+- **Gmail integration permissions fixed** (mark-as-read functionality now operational)
 - **All major user adoption blockers** have been successfully addressed
 
 ## Critical Issues Resolution Status
@@ -81,9 +82,10 @@ This document provides a comprehensive analysis of feature gaps between PipeCD a
 
 #### 1. Complete Gmail API Integration
 - **OAuth 2.0 Authentication**: Secure token management with automatic refresh
+- **Enhanced Permissions**: Fixed Gmail scopes including `gmail.modify` for mark-as-read functionality
 - **Email Thread Management**: Full thread listing, reading, and composition
 - **Advanced Search**: Filter by contact, keywords, date range, attachments
-- **Email Actions**: Mark as read/unread, compose replies, send new emails
+- **Email Actions**: Mark as read/unread, compose replies, send new emails (✅ FIXED)
 - **Attachment Support**: Handle email attachments and file uploads
 
 #### 2. CRM Email Linking
@@ -91,17 +93,155 @@ This document provides a comprehensive analysis of feature gaps between PipeCD a
 - **Contact Matching**: Automatic email-to-contact association
 - **Thread Tracking**: Complete email conversation history
 - **Email Activities**: Track sent, delivered, opened, replied events
+- **Email Pinning**: Pin important emails to deals with notes and filtering
+- **Contact Creation**: Create contacts directly from received emails with smart parsing
 
 #### 3. Email Service Infrastructure
 ```typescript
-// Available Gmail capabilities
+// Available Gmail capabilities (UPDATED WITH PERMISSIONS FIX)
 interface EmailService {
   getEmailThreads(userId, accessToken, filter): Promise<EmailThread[]>
   getEmailMessage(userId, accessToken, messageId): Promise<EmailMessage>
   composeEmail(userId, accessToken, emailData): Promise<EmailMessage>
-  markThreadAsRead/Unread(userId, accessToken, threadId): Promise<boolean>
+  markThreadAsRead/Unread(userId, accessToken, threadId): Promise<boolean> // ✅ FIXED
+  pinEmail(userId, accessToken, emailData): Promise<EmailPin>
+  createContactFromEmail(userId, accessToken, emailData): Promise<Person>
 }
 ```
+
+#### 4. Gmail Permission Fix Implementation ✅
+**Issue Resolved**: Gmail "Request had insufficient authentication scopes" errors when marking emails as read.
+
+**Root Cause**: Missing `gmail.modify` scope required for email label modifications.
+
+**Solution Implemented**:
+- ✅ Added `gmail.modify` to required OAuth scopes in `googleIntegrationService.ts`
+- ✅ Updated both custom OAuth and fallback Supabase OAuth flows
+- ✅ Enhanced permission validation in email operations
+- ✅ Users need to reconnect Google accounts to receive new permissions
+
+**Technical Details**:
+```typescript
+// Updated required scopes
+const REQUIRED_SCOPES = [
+  'https://www.googleapis.com/auth/drive',
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.modify' // ✅ NEW: Required for mark as read/unread
+];
+```
+
+**User Action Required**: Existing users must:
+1. Navigate to `/google-integration` page
+2. Click "Revoke Integration" (if connected)
+3. Click "Connect Google Account" again
+4. Grant the new Gmail modify permission
+
+#### 5. Enhanced Email-to-Task with Claude 3 Haiku AI Integration ✅
+
+**🤖 REVOLUTIONARY AI-POWERED TASK GENERATION**
+
+The email-to-task feature has been transformed with Claude 3 Haiku integration, providing intelligent task content generation with user confirmation and email scope selection.
+
+**✅ IMPLEMENTATION COMPLETED:**
+
+**Backend AI Integration** (`netlify/functions/graphql/resolvers/mutations/emailMutations.ts`):
+- **Claude 3 Haiku Integration**: Cost-effective AI model for task content generation
+- **Email Scope Analysis**: Support for single message or entire thread analysis
+- **Intelligent Content Generation**: AI extracts action items, suggests due dates, and creates contextual descriptions
+- **Graceful Fallback**: Enhanced manual extraction when AI is unavailable
+- **Structured JSON Output**: Consistent response format with confidence scoring
+
+**Frontend Enhancement** (`frontend/src/components/deals/EnhancedCreateTaskModal.tsx`):
+- **Two-Step Process**: Configure email scope, then review AI-generated content
+- **Email Scope Selection**: Radio buttons for "Single Message" vs "Entire Thread"
+- **AI Content Review**: Display confidence score and allow editing of AI suggestions
+- **User Assignment**: Dropdown to assign tasks to team members
+- **Source Content Viewer**: Expandable accordion to view analyzed email content
+- **Modern UI**: 6xl modal with proper visual hierarchy and user feedback
+
+**Key Features Delivered**:
+
+1. **Email Scope Selection**:
+   - **Single Message**: Analyze only the selected email message
+   - **Entire Thread**: Analyze complete email conversation for better context
+   - **Smart Context**: AI considers full conversation history when available
+
+2. **User Confirmation Workflow**:
+   - **Configure Step**: Choose email scope and generation method
+   - **Confirm Step**: Review AI-generated content with confidence score
+   - **Edit Capability**: Users can modify AI suggestions before creating task
+   - **Fallback Support**: Graceful degradation if AI generation fails
+
+3. **User Assignment Integration**:
+   - **Assign To Dropdown**: Select task assignee from user list using `useUserListStore`
+   - **Default Assignment**: Falls back to current user if no assignee selected
+   - **Real-time User Data**: Integration with user management system
+
+4. **AI Content Generation**:
+   - **Intelligent Subject**: Clear, actionable task titles
+   - **Detailed Description**: Includes email context, action items, and metadata
+   - **Due Date Suggestions**: Extracts deadlines from email content
+   - **Confidence Scoring**: AI provides confidence level (0-1) for generated content
+   - **Source Content**: Complete email content preserved for reference
+
+**GraphQL Schema Enhancement**:
+```graphql
+type AIGeneratedTaskContent {
+  subject: String!
+  description: String!
+  suggestedDueDate: String
+  confidence: Float!
+  emailScope: String! # "message" or "thread"
+  sourceContent: String! # The email content that was analyzed
+}
+
+input GenerateTaskContentInput {
+  emailId: String!
+  threadId: String
+  useWholeThread: Boolean! # If true, analyze entire thread
+}
+
+input CreateTaskFromEmailInput {
+  emailId: String!
+  threadId: String
+  useWholeThread: Boolean
+  subject: String!
+  description: String
+  dueDate: String
+  assigneeId: String # ✅ NEW: User assignment support
+  dealId: String
+}
+
+extend type Mutation {
+  generateTaskContentFromEmail(input: GenerateTaskContentInput!): AIGeneratedTaskContent!
+  createTaskFromEmail(input: CreateTaskFromEmailInput!): Activity!
+}
+```
+
+**Cost Optimization**:
+- **Model Choice**: Claude 3 Haiku (most cost-effective Anthropic model)
+- **Token Usage**: ~200-500 tokens per email conversion
+- **Estimated Cost**: $0.001-0.003 per task creation
+- **Monthly Cost**: Typically $5-15 for moderate usage
+- **Graceful Fallback**: Works without API key using enhanced content extraction
+
+**User Experience Flow**:
+1. **Email Selection**: User clicks "Create Task" button on any email in DealEmailsPanel
+2. **Configuration**: Modal opens with email scope selection (Single Message vs Entire Thread)
+3. **AI Generation**: System calls Claude 3 Haiku to analyze email content
+4. **Content Review**: User sees AI-generated task content with confidence score
+5. **Assignment**: User can assign task to any team member
+6. **Confirmation**: User can edit content or use as-is, then creates task
+7. **Fallback**: If AI fails, system provides enhanced manual extraction
+
+**Business Impact**:
+- **Time Saving**: No manual task description writing required
+- **Context Preservation**: Full email content and metadata saved in tasks
+- **Intelligent Extraction**: AI identifies key action items and deadlines
+- **Flexible Workflow**: Can override AI suggestions when needed
+- **Enhanced Productivity**: Focus on execution rather than documentation
+- **Superior to Pipedrive**: AI-powered vs basic manual task creation
 
 ### Google Drive Integration - PRODUCTION READY ✅
 
@@ -333,7 +473,7 @@ Successfully implemented complete document attachment functionality with **full 
 - **Full Google Drive Browser**: Complete 3-tab interface (Browse, Search, Recent Files) with shared drive selection and folder navigation
 - **Dual Attachment System**: Files attached to notes automatically attached to parent deal with atomic operations
 - **Enhanced DocumentAttachmentModal**: 6xl modal with complete Google Drive browser replacing demo file selection
-- **Real-time Search**: Search across Google Drive files with result highlighting and metadata display
+- **Real-time Search**: Search across Google Drive files with result highlighting and metadata
 - **Folder Navigation**: Complete folder browsing with breadcrumb navigation and file metadata
 - **Custom useNoteAttachments Hook**: Apollo Client integration for real-time attachment data fetching
 - **Enterprise Security**: RLS policies and proper permission checking with audit trail
@@ -374,6 +514,68 @@ Successfully implemented complete document attachment functionality with **full 
 **Priority: HIGH - Critical user experience improvement**
 
 Based on research of top-tier CRMs (Salesforce, HubSpot, Pipedrive) and identified user friction points, this phase addresses the basic email filtering limitation where users can only see emails from the deal's primary contact.
+
+#### 🔍 **Infrastructure Review Findings**
+
+**✅ ALREADY IMPLEMENTED:**
+- **Email Infrastructure**: Complete Gmail integration with OAuth2, token refresh, thread management
+- **Database Schema**: `emails`, `google_oauth_tokens`, `documents`, `email_activities` tables production-ready
+- **Basic Email Service**: Full Gmail API integration with filtering capabilities
+- **GraphQL Types**: All enhanced filtering types already generated (`DealContactAssociation`, `EmailContactSuggestion`, `ContactRoleType`, etc.)
+
+**🟡 PARTIALLY IMPLEMENTED:**
+- **Generated Types**: Enhanced filtering types exist in generated GraphQL files but not in source schema
+- **Current Filtering**: Basic `DealEmailsPanel` with single primary contact limitation
+- **Type-Implementation Gap**: Advanced types defined but corresponding resolvers/services missing
+
+**❌ MISSING IMPLEMENTATIONS:**
+- **Database Tables**: `deal_contact_associations`, `user_email_filter_preferences`, `email_contact_suggestions`
+- **GraphQL Schema**: No `.graphql` source files for enhanced filtering types
+- **Backend Services**: `ContactAssociationService`, `EmailContactDiscoveryService` not implemented
+- **Frontend Components**: `EmailContactFilter`, enhanced filtering UI missing
+
+**🎯 CURRENT LIMITATION:**
+```typescript
+// Current DealEmailsPanel filtering (line 230-240)
+const { data: threadsData } = useQuery(GET_EMAIL_THREADS, {
+  variables: {
+    filter: {
+      dealId,
+      contactEmail: primaryContactEmail, // ❌ ONLY PRIMARY CONTACT
+      keywords: filter.search ? [filter.search] : undefined,
+      // ... other basic filters
+    },
+  },
+  skip: !primaryContactEmail, // ❌ SKIPS IF NO PRIMARY CONTACT
+});
+```
+
+**💡 KEY INSIGHT:** The enhanced email filtering system was architecturally planned (evident from generated types) but never fully implemented. However, **Gmail API already provides most of the functionality we were planning to build!**
+
+#### 🚫 **"Don't Reinvent the Wheel" Analysis**
+
+**✅ GMAIL API ALREADY PROVIDES:**
+- **Multi-Contact Filtering**: Native `(from:email1 OR from:email2)` syntax
+- **Participant Discovery**: `participants[]` array in every EmailThread
+- **Advanced Search**: 20+ native operators (cc:, bcc:, has:attachment, etc.)
+- **Complex Queries**: AND, OR, exclusion, date ranges, etc.
+
+**❌ UNNECESSARY TO BUILD:**
+- **Contact Discovery Service**: Gmail API extracts participants automatically
+- **Complex Query Builder**: Gmail's native operators are more powerful
+- **Email Thread Analysis**: Thread metadata already includes all participants
+- **Role-Based Filtering**: Over-engineering for the core use case
+
+#### 📊 **Revised Implementation Status Matrix**
+
+| Component | Gmail API Native | Current PipeCD | Missing | Effort Reduction |
+|-----------|------------------|----------------|---------|------------------|
+| **Multi-Contact Filtering** | ✅ **NATIVE** | 🟡 Single contact only | Simple UI toggle | **75% LESS** |
+| **Participant Discovery** | ✅ **NATIVE** | ✅ Already extracted | Nothing | **100% LESS** |
+| **Advanced Search** | ✅ **NATIVE** | 🟡 Basic keywords | Enhanced query builder | **60% LESS** |
+| **Contact Association** | ❌ Not applicable | ❌ Missing | Simple deal-contact table | **50% LESS** |
+
+**🎯 STRATEGIC ADVANTAGE:** Leveraging Gmail API's native capabilities reduces implementation effort by **70%** while providing superior functionality.
 
 #### 2.5.1 Contact Selection & Association System ⭐ HIGH PRIORITY
 
@@ -823,43 +1025,294 @@ class EmailFilterPreferenceService {
 }
 ```
 
-### Implementation Timeline - Phase 2.5
+### Implementation Timeline - Phase 2.5 (Revised: Leverage Gmail API)
 
-| Week | Focus Area | Deliverables | Effort |
-|------|------------|--------------|--------|
-| **Week 7** | Database & API Foundation | Contact association schema, GraphQL mutations/queries, basic contact selection toggle | 2 developers |
-| **Week 8** | Core UI Components | EmailContactFilter component, enhanced DealEmailsPanel integration, role-based filtering | 2 developers |
-| **Week 9** | Smart Discovery | Email thread analysis, auto-contact discovery, intelligent role suggestions | 1.5 developers |
-| **Week 10** | Advanced Filtering & Polish | Multi-dimensional filters, user preferences, filter presets, testing & optimization | 1.5 developers |
+| Week | Focus Area | Deliverables | Effort | Status |
+|------|------------|--------------|--------|--------|
+| **Week 1** | **Gmail API Enhancement** | Multi-contact query building, simple contact selection UI, enhanced DealEmailsPanel | 1.5 developers | 🔄 **READY TO START** |
+| **Week 2** | **Basic Contact Association** | Simple deal-contact table, auto-population from participants, basic management UI | 1 developer | ⏳ **DEPENDS ON WEEK 1** |
 
-### Technical Requirements - Phase 2.5
+#### **Week 1 Detailed Breakdown (Leverage Gmail API):**
+- **Enhanced EmailService**: Modify query building to support multiple contacts using Gmail's native OR operators
+- **Simple Contact Filter UI**: Checkbox list of participants with "Include All" toggle
+- **Enhanced DealEmailsPanel**: Integration of multi-contact selection with existing component
+- **Participant Extraction**: Use existing `participants[]` from Gmail API (no discovery needed)
 
-#### **Database Migrations**
+#### **Week 2 Detailed Breakdown (Leverage Existing Schema):**
+- **Use Existing Schema**: Deals already have `person_id` (primary contact) and `organization_id` relationships
+- **Extend Current Model**: Add simple many-to-many table for additional deal participants
+- **Auto-Population**: Extract participants from email threads and suggest as additional contacts
+- **Basic Management UI**: Simple interface to add/remove additional deal participants
+
+#### **🔍 Current Deal-Person Relationship Analysis:**
+
+**✅ EXISTING SCHEMA (Already Implemented):**
 ```sql
--- Migration: 20250730000042_create_enhanced_email_filtering.sql
--- Creates contact association and user preference tables
--- Adds indexes for performance optimization
--- Implements RLS policies for data security
+-- deals table (from initial_schema.sql)
+CREATE TABLE deals (
+  id UUID PRIMARY KEY,
+  person_id UUID REFERENCES people(id) ON DELETE SET NULL, -- PRIMARY CONTACT
+  organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
+  -- ... other fields
+);
+
+-- people table (renamed from contacts)
+CREATE TABLE people (
+  id UUID PRIMARY KEY,
+  email TEXT UNIQUE,
+  first_name TEXT,
+  last_name TEXT,
+  organization_id UUID REFERENCES organizations(id),
+  -- ... other fields
+);
 ```
 
-#### **GraphQL Schema Extensions**
-- 8 new types for contact associations and filtering
-- 6 new mutations for association management
-- 4 new queries for preference and suggestion retrieval
-- Enhanced existing email queries with flexible filtering
+**🎯 WHAT WE NEED TO ADD (Following Existing Patterns):**
 
-#### **Frontend Components**
-- `EmailContactFilter`: Primary contact selection interface
-- `ContactMultiSelect`: Multi-contact selection with search
-- `AdvancedEmailFilterPanel`: Comprehensive filtering interface
-- `EmailFilterPresets`: Saved filter management
-- Enhanced `DealEmailsPanel`: Integration of all filtering capabilities
+**📋 EXISTING DUAL ATTACHMENT PATTERN (Document System):**
+```sql
+-- Current: Documents attached to BOTH note AND deal simultaneously
+CREATE TABLE note_document_attachments (
+  note_id UUID NOT NULL, -- References smart_stickers.id
+  google_file_id TEXT NOT NULL,
+  -- ... other fields
+);
 
-#### **Backend Services**
-- `ContactAssociationService`: Manage deal-contact relationships
-- `EmailContactDiscoveryService`: Intelligent contact discovery
-- `EmailFilterPreferenceService`: User preference management
-- Enhanced `EmailService`: Support for flexible contact filtering
+CREATE TABLE deal_document_attachments (
+  deal_id UUID NOT NULL REFERENCES deals(id),
+  google_file_id TEXT NOT NULL,
+  -- ... other fields
+);
+
+-- Dual attachment mutation: attachDocumentToNoteAndDeal
+-- Creates records in BOTH tables atomically
+```
+
+**🎯 PROPOSED: Follow Same Pattern for Email Participants:**
+```sql
+-- Simple many-to-many for additional deal participants
+CREATE TABLE deal_participants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  deal_id UUID NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+  person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'participant', -- 'primary', 'participant', 'cc'
+  added_from_email BOOLEAN DEFAULT false, -- Track if discovered from email
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(deal_id, person_id)
+);
+```
+
+**💡 KEY INSIGHT:** The document attachment system already demonstrates the exact pattern we need:
+- **Dual Context**: Documents attached to both note AND deal
+- **Atomic Operations**: Both records created simultaneously
+- **Unified Management**: Single UI manages both contexts
+- **Consistent Schema**: Similar table structures and patterns
+
+#### **🛠️ EXISTING SERVICES ANALYSIS (20+ Production Services):**
+
+**✅ PRODUCTION-READY SERVICES:**
+
+| Service | Capabilities | Pattern | Lines | Status |
+|---------|-------------|---------|-------|--------|
+| **EmailService** | Gmail API integration, thread management, filtering, composition | OAuth2 + token refresh | 491 | ✅ **COMPLETE** |
+| **GoogleDriveService** | File management, folder creation, shared drives, permissions | OAuth2 + token refresh | 677 | ✅ **COMPLETE** |
+| **PersonService** | CRUD operations, custom fields, RLS policies | Standard service pattern | 130 | ✅ **COMPLETE** |
+| **DealService** | Complex CRUD, WFM integration, probability calculation, history tracking | Modular service pattern | 586+ | ✅ **COMPLETE** |
+| **OrganizationService** | CRUD operations, relationship management | Standard service pattern | 300 | ✅ **COMPLETE** |
+| **RelationshipService** | Complex relationship mapping, intelligence features | Advanced service pattern | 470 | ✅ **COMPLETE** |
+| **SmartStickersService** | Note management, dual attachment system | Advanced service pattern | 605 | ✅ **COMPLETE** |
+| **GoogleIntegrationService** | OAuth token management, automatic refresh | OAuth2 service pattern | 359 | ✅ **COMPLETE** |
+| **ActivityService** | Activity CRUD, reminder system | Standard service pattern | 195 | ✅ **COMPLETE** |
+| **UserProfileService** | User management, profile operations | Standard service pattern | 201 | ✅ **COMPLETE** |
+| **WFMWorkflowService** | Workflow management, step transitions | Complex business logic | 662 | ✅ **COMPLETE** |
+
+**🎯 SERVICE PATTERNS WE SHOULD FOLLOW:**
+
+1. **Standard CRUD Pattern** (PersonService, OrganizationService):
+   ```typescript
+   export const serviceNameService = {
+     async getItems(userId: string, accessToken: string): Promise<Item[]>
+     async getItemById(userId: string, id: string, accessToken: string): Promise<Item | null>
+     async createItem(userId: string, input: ItemInput, accessToken: string): Promise<Item>
+     async updateItem(userId: string, id: string, input: Partial<ItemInput>, accessToken: string): Promise<Item>
+     async deleteItem(userId: string, id: string, accessToken: string): Promise<boolean>
+   };
+   ```
+
+2. **Google Integration Pattern** (EmailService, GoogleDriveService):
+   ```typescript
+   private async getGoogleClient(userId: string, accessToken: string) {
+     // OAuth2 setup with automatic token refresh
+     // Error handling for expired tokens
+     // Consistent error messages across services
+   }
+   ```
+
+3. **Modular Service Pattern** (DealService):
+   ```typescript
+   // Split into multiple files for complex services:
+   dealService/
+   ├── dealCrud.ts      // Basic CRUD operations (586 lines)
+   ├── dealHistory.ts   // Change tracking (79 lines)
+   ├── dealProbability.ts // Business logic (128 lines)
+   └── dealCustomFields.ts // Custom field handling (33 lines)
+   ```
+
+**🔄 WHAT WE DON'T NEED TO BUILD (Already Exists):**
+
+1. **✅ Email Infrastructure**: Complete Gmail integration with OAuth2, token refresh, thread management
+2. **✅ Person Management**: Full CRUD with custom fields, RLS policies, relationship tracking
+3. **✅ Deal Management**: Complex service with WFM integration, history tracking, probability calculation
+4. **✅ Google OAuth**: Automatic token refresh, error handling, consistent authentication patterns
+5. **✅ Service Utilities**: Error handling, authentication, database client management
+6. **✅ Custom Field System**: Complete implementation for all entity types
+7. **✅ Permission System**: RLS policies, user permission checking, role-based access
+
+#### **Advantages of Gmail API + Existing Pattern Approach:**
+- ✅ **70% Effort Reduction**: Leverage native Gmail capabilities instead of rebuilding
+- ✅ **Superior Functionality**: Gmail's search operators more powerful than custom solution
+- ✅ **Zero Discovery Needed**: Participants already extracted by Gmail API
+- ✅ **Proven Reliability**: Gmail API handles edge cases we'd have to build
+- ✅ **Future-Proof**: Gmail API improvements automatically benefit PipeCD
+- ✅ **Consistent Architecture**: Follow proven dual attachment pattern from document system
+- ✅ **Existing UI Patterns**: Reuse modal, selection, and management patterns from documents
+
+#### **🔄 Document Attachment System as Blueprint:**
+
+**✅ PROVEN PATTERNS TO REUSE:**
+1. **Dual Context Management**: Documents attached to both note AND deal contexts
+2. **Atomic Operations**: `attachDocumentToNoteAndDeal` mutation pattern
+3. **Modal UI Pattern**: 6xl modal with tabbed interface (Browse, Search, Recent)
+4. **Selection Interface**: Click-to-select with preview and metadata
+5. **Category Management**: Dropdown selection for document categorization
+6. **Permission Integration**: RLS policies with `get_user_permissions()` function
+7. **Real-time Updates**: Apollo Client hooks for data fetching and updates
+
+**🎯 ADAPTATION FOR EMAIL PARTICIPANTS:**
+```typescript
+// Similar to: attachDocumentToNoteAndDeal
+mutation addParticipantToEmailFilter {
+  addDealParticipant(input: {
+    dealId: "deal-123",
+    personId: "person-456", 
+    role: "participant",
+    addedFromEmail: true
+  }) {
+    id
+    dealId
+    personId
+    role
+    addedFromEmail
+  }
+}
+
+// Similar to: DocumentAttachmentModal
+interface EmailParticipantModal {
+  participantSelection: PersonSelector;  // Like file selection
+  roleAssignment: RoleDropdown;         // Like category selection
+  emailContext: EmailThreadInfo;       // Like file metadata
+  dualUpdate: EmailFilterRefresh;      // Like attachment refresh
+}
+```
+
+### Technical Requirements - Phase 2.5 (Leverage Existing Schema)
+
+#### **Database Migration (MINIMAL - Week 2)**
+```sql
+-- Migration: 20250730000042_create_deal_participants.sql
+-- Simple extension to existing deal-person relationship:
+
+CREATE TABLE deal_participants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  deal_id UUID NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+  person_id UUID NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+  role TEXT DEFAULT 'participant' CHECK (role IN ('primary', 'participant', 'cc')),
+  added_from_email BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  created_by_user_id UUID REFERENCES auth.users(id),
+  UNIQUE(deal_id, person_id)
+);
+
+-- Index for performance
+CREATE INDEX idx_deal_participants_deal_id ON deal_participants(deal_id);
+CREATE INDEX idx_deal_participants_person_id ON deal_participants(person_id);
+
+-- RLS policies
+ALTER TABLE deal_participants ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view deal participants for accessible deals" ON deal_participants
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM deals d 
+      WHERE d.id = deal_id 
+      AND (d.user_id = auth.uid() OR d.assigned_to_user_id = auth.uid())
+    )
+  );
+
+-- Auto-populate primary contact as participant
+INSERT INTO deal_participants (deal_id, person_id, role, created_by_user_id)
+SELECT d.id, d.person_id, 'primary', d.user_id
+FROM deals d 
+WHERE d.person_id IS NOT NULL
+ON CONFLICT (deal_id, person_id) DO NOTHING;
+```
+
+#### **Enhanced EmailService (SIMPLE - Week 1)**
+```typescript
+// Current single contact filtering
+if (filter.contactEmail) {
+  queryParts.push(`(from:${filter.contactEmail} OR to:${filter.contactEmail})`);
+}
+
+// Enhanced multi-contact filtering (leveraging Gmail API)
+if (filter.selectedContacts && filter.selectedContacts.length > 0) {
+  const contactQueries = filter.selectedContacts.map(email => 
+    `(from:${email} OR to:${email} OR cc:${email} OR bcc:${email})`
+  );
+  queryParts.push(`(${contactQueries.join(' OR ')})`);
+} else if (filter.includeAllParticipants && filter.dealId) {
+  // Get all deal participants and build query
+  const participants = await getDealParticipants(filter.dealId);
+  const emails = participants.map(p => p.email).filter(Boolean);
+  if (emails.length > 0) {
+    const contactQueries = emails.map(email => 
+      `(from:${email} OR to:${email} OR cc:${email} OR bcc:${email})`
+    );
+    queryParts.push(`(${contactQueries.join(' OR ')})`);
+  }
+}
+```
+
+#### **GraphQL Schema Files (MISSING - Week 7)**
+**Current Issue**: Types exist in generated files but no source `.graphql` files
+**Required**: Create source schema files for:
+- `enhancedEmailFiltering.graphql`: Contact associations, filtering types
+- Enhanced `emails.graphql`: Add enhanced filtering input types
+- Enhanced `deal.graphql`: Add contactAssociations field
+
+#### **Backend Services (MISSING - Week 8-9)**
+- ✅ **EmailService**: EXISTS - needs enhancement for multi-contact filtering
+- ❌ **ContactAssociationService**: MISSING - manage deal-contact relationships
+- ❌ **EmailContactDiscoveryService**: MISSING - intelligent contact discovery
+- ❌ **EmailFilterPreferenceService**: MISSING - user preference management
+
+#### **Frontend Components (MISSING - Week 8-10)**
+- ✅ **DealEmailsPanel**: EXISTS - needs enhancement for advanced filtering
+- ❌ **EmailContactFilter**: MISSING - primary contact selection interface
+- ❌ **ContactMultiSelect**: MISSING - multi-contact selection with search
+- ❌ **AdvancedEmailFilterPanel**: MISSING - comprehensive filtering interface
+- ❌ **EmailFilterPresets**: MISSING - saved filter management
+
+#### **GraphQL Resolvers (MISSING - Week 7-8)**
+**Current Issue**: Generated types reference resolvers that don't exist
+**Required Resolvers**:
+- `getDealContactAssociations`
+- `createDealContactAssociation`
+- `updateDealContactAssociation`
+- `bulkUpdateDealContactAssociations`
+- `getUserEmailFilterPreferences`
+- `getEmailContactSuggestions`
+- Enhanced `getEmailThreads` with multi-contact filtering
 
 ### Success Metrics - Phase 2.5
 
@@ -933,24 +1386,30 @@ class EmailFilterPreferenceService {
 
 ## Resource Allocation - Updated
 
-### Development Team Requirements
+### Development Team Requirements (Gmail API Approach)
 
 | Phase | Duration | Frontend | Backend | DevOps | Priority | Status |
 |-------|----------|----------|---------|--------|----------|--------|
 | Phase 1 | 4 weeks | 2 developers | 1 developer | 0.5 developer | 🟢 **COMPLETED** | ✅ DONE |
 | Phase 2 | 6 weeks | 2 developers | 1.5 developers | 0.5 developer | 🟡 **HIGH** | 🟢 **COMPLETED** |
-| **Phase 2.5** | **4 weeks** | **2 developers** | **1.5 developers** | **0.5 developer** | **🚀 NEXT PRIORITY** | **🔄 PLANNED** |
+| **Phase 2.5** | **2 weeks** | **1 developer** | **0.5 developer** | **0 developer** | **🚀 NEXT PRIORITY** | **🔄 PLANNED** |
 | Phase 3 | 8 weeks | 1 developer | 2 developers | 0.5 developer | 🟡 **MEDIUM** | ⏳ PLANNED |
 
-### Budget Estimation - Updated
+### Budget Estimation - Updated (Gmail API Approach)
 
 | Phase | Development Cost | Infrastructure | Third-party APIs | Total | Status |
 |-------|------------------|----------------|------------------|-------|--------|
 | Phase 1 | $40,000 | $500 | $200 | $40,700 | ✅ **COMPLETED** |
 | Phase 2 | $55,000 | $800 | $500 | $56,300 | 🟢 **COMPLETED** |
-| **Phase 2.5** | **$45,000** | **$600** | **$300** | **$45,900** | **🚀 NEXT PRIORITY** |
+| **Phase 2.5** | **$15,000** | **$0** | **$0** | **$15,000** | **🚀 NEXT PRIORITY** |
 | Phase 3 | $80,000 | $1,000 | $800 | $81,800 | ⏳ **PLANNED** |
-| **TOTAL** | **$220,000** | **$2,900** | **$1,800** | **$224,700** | **70% COMPLETE** |
+| **TOTAL** | **$190,000** | **$2,300** | **$1,500** | **$193,800** | **75% COMPLETE** |
+
+#### **Cost Savings from Gmail API Approach:**
+- **$30,900 saved** on Phase 2.5 (67% reduction)
+- **2 weeks faster** delivery (50% time reduction)
+- **No additional infrastructure** costs (leveraging existing Gmail API)
+- **No third-party APIs** needed (Gmail API already integrated)
 
 ## Success Metrics - Updated
 
@@ -1026,18 +1485,19 @@ class EmailFilterPreferenceService {
 
 ### Current Status
 
-**🎯 FEATURE PARITY ACHIEVED**: PipeCD now provides **superior functionality** to Pipedrive for core user workflows (Kanban view, deal detail view, activity management with reminders, enhanced note-taking, and document management).
+**🎯 FEATURE PARITY ACHIEVED**: PipeCD now provides **superior functionality** to Pipedrive for core user workflows (Kanban view, deal detail view, activity management with reminders, enhanced note-taking, document management, and email management).
 
-**🚀 COMPETITIVE ADVANTAGES**: PipeCD offers **significant advantages** in AI intelligence, visual collaboration, document management with Google Drive integration, notification infrastructure, note-taking capabilities, and email-to-note conversion.
+**🚀 COMPETITIVE ADVANTAGES**: PipeCD offers **significant advantages** in AI intelligence, visual collaboration, document management with Google Drive integration, notification infrastructure, note-taking capabilities, email-to-note conversion, and advanced email management with pinning and contact creation.
+
+**✅ GMAIL INTEGRATION COMPLETE**: All Gmail permission issues resolved, email management features fully operational.
 
 ### Immediate Actions Required
 
-1. **🚀 BEGIN PHASE 2.5**: Implement enhanced email filtering with contact association and role-based filtering
-2. **📧 ENABLE EMAIL DELIVERY**: Configure SMTP service for email reminders
-3. **📊 MONITOR ADOPTION**: Track user engagement with enhanced notes and document attachment
-4. **🔍 GATHER FEEDBACK**: Collect user feedback on email filtering limitations and multi-contact scenarios
-5. **📈 MEASURE SUCCESS**: Analyze productivity improvements from Phase 2 implementations
-6. **🎯 PREPARE PHASE 3**: Plan calendar integration and meeting scheduling after email filtering completion
+1. **📧 USER NOTIFICATION**: Inform existing users about Gmail reconnection requirement for new permissions
+2. **📊 MONITOR ADOPTION**: Track user engagement with enhanced email management features
+3. **🔍 GATHER FEEDBACK**: Collect user feedback on email pinning and contact creation workflows
+4. **📈 MEASURE SUCCESS**: Analyze productivity improvements from email management enhancements
+5. **🎯 PREPARE PHASE 3**: Plan calendar integration and meeting scheduling features
 
 ### Success Factors Achieved
 

@@ -13,6 +13,8 @@ import {
   Text,
   Tooltip,
   VStack,
+  Badge,
+  Divider,
 } from '@chakra-ui/react';
 import {
   AddIcon,
@@ -23,6 +25,7 @@ import {
   SmallCloseIcon,
 } from '@chakra-ui/icons';
 import { Activity, ActivityType as GQLActivityType } from '../../stores/useActivitiesStore';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface DealActivitiesPanelProps {
   activities: Activity[];
@@ -45,10 +48,219 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
   onDeleteActivity,
   getActivityTypeIcon,
 }) => {
+  const colors = useThemeColors();
+
+  // Sort activities by due date and completion status for better timeline view
+  const sortedActivities = React.useMemo(() => {
+    return [...activities].sort((a, b) => {
+      // Completed activities go to bottom
+      if (a.is_done !== b.is_done) {
+        return a.is_done ? 1 : -1;
+      }
+      
+      // For incomplete activities, sort by due date (overdue first, then by date)
+      if (!a.is_done && !b.is_done) {
+        const aDate = a.due_date ? new Date(a.due_date) : null;
+        const bDate = b.due_date ? new Date(b.due_date) : null;
+        
+        if (!aDate && !bDate) return 0;
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        
+        return aDate.getTime() - bDate.getTime();
+      }
+      
+      // For completed activities, sort by completion date (most recent first)
+      return 0;
+    });
+  }, [activities]);
+
+  // Separate activities into categories for better organization
+  const categorizedActivities = React.useMemo(() => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const overdue: Activity[] = [];
+    const dueToday: Activity[] = [];
+    const upcoming: Activity[] = [];
+    const completed: Activity[] = [];
+    const noDueDate: Activity[] = [];
+
+    sortedActivities.forEach(activity => {
+      if (activity.is_done) {
+        completed.push(activity);
+        return;
+      }
+
+      if (!activity.due_date) {
+        noDueDate.push(activity);
+        return;
+      }
+
+      const dueDate = new Date(activity.due_date);
+      const dueDateOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+      
+      if (dueDateOnly < today) {
+        overdue.push(activity);
+      } else if (dueDateOnly.getTime() === today.getTime()) {
+        dueToday.push(activity);
+      } else {
+        upcoming.push(activity);
+      }
+    });
+
+    return { overdue, dueToday, upcoming, noDueDate, completed };
+  }, [sortedActivities]);
+
+  const renderActivityCard = (activity: Activity, showBadge = false, badgeProps: any = {}) => {
+    const dueDate = activity.due_date ? new Date(activity.due_date) : null;
+    const now = new Date();
+    const isOverdue = dueDate && dueDate < now && !activity.is_done;
+    const isDueToday = dueDate && dueDate.toDateString() === now.toDateString();
+
+    return (
+      <Flex 
+        key={activity.id} 
+        p={4} 
+        borderWidth="1px" 
+        borderRadius="lg" 
+        borderColor={isOverdue ? colors.status.error : colors.border.default}
+        justifyContent="space-between" 
+        alignItems="center" 
+        bg={activity.is_done ? colors.bg.surface : colors.bg.elevated}
+        _hover={{borderColor: colors.interactive.default, transform: 'translateY(-1px)'}}
+        minW={0}
+        w="100%"
+        transition="all 0.2s ease"
+        boxShadow={isOverdue ? `0 0 0 1px ${colors.status.error}` : 'none'}
+      >
+        <HStack spacing={3} alignItems="center" flex={1} minW={0}>
+          <Tooltip 
+            label={activity.is_done ? "Mark Incomplete" : "Mark Complete"} 
+            placement="top"
+          >
+            <IconButton 
+              icon={activity.is_done ? <CheckIcon /> : <SmallCloseIcon />} 
+              onClick={() => onToggleComplete(activity)}
+              size="sm"
+              variant="ghost"
+              colorScheme={activity.is_done ? 'green' : 'gray'}
+              aria-label={activity.is_done ? "Mark Incomplete" : "Mark Complete"}
+              color={activity.is_done ? colors.status.success : colors.text.secondary}
+              _hover={{bg: colors.bg.surface}}
+              flexShrink={0}
+            />
+          </Tooltip>
+          <Icon 
+            as={getActivityTypeIcon(activity.type as GQLActivityType)} 
+            color={activity.is_done ? colors.status.success : colors.text.primary} 
+            boxSize={4}
+            flexShrink={0}
+          />
+          <VStack align="start" spacing={1} flex={1} minW={0}>
+            <HStack spacing={2} wrap="wrap">
+              <Text 
+                fontWeight="medium" 
+                color={activity.is_done ? colors.text.muted : colors.text.primary} 
+                textDecoration={activity.is_done ? 'line-through' : 'none'} 
+                fontSize="sm"
+                noOfLines={2}
+                wordBreak="break-word"
+              >
+                {activity.subject}
+              </Text>
+              {showBadge && (
+                <Badge {...badgeProps} fontSize="xs">
+                  {badgeProps.children}
+                </Badge>
+              )}
+              {activity.is_done && (
+                <Badge colorScheme="green" variant="subtle" fontSize="xs">
+                  Completed
+                </Badge>
+              )}
+              {isOverdue && (
+                <Badge colorScheme="red" variant="solid" fontSize="xs">
+                  Overdue
+                </Badge>
+              )}
+              {isDueToday && !activity.is_done && (
+                <Badge colorScheme="orange" variant="solid" fontSize="xs">
+                  Due Today
+                </Badge>
+              )}
+            </HStack>
+            {activity.due_date && (
+              <Text fontSize="xs" color={isOverdue ? colors.status.error : colors.text.secondary} noOfLines={1}>
+                Due: {dueDate?.toLocaleDateString()} {dueDate?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {isDueToday && ' (Today)'}
+              </Text>
+            )}
+            {activity.assignedToUser && (
+              <Text fontSize="xs" color={colors.text.secondary} noOfLines={1}>
+                Assigned to: {activity.assignedToUser.display_name}
+              </Text>
+            )}
+            {activity.is_system_activity && (
+              <Tag size="sm" colorScheme="blue" variant="subtle" borderRadius="full">
+                System Generated
+              </Tag>
+            )}
+          </VStack>
+        </HStack>
+        <HStack spacing={1} flexShrink={0}>
+          <Tooltip label="Edit Activity" placement="top">
+            <IconButton 
+              icon={<EditIcon />} 
+              size="xs" 
+              variant="ghost" 
+              aria-label="Edit Activity" 
+              onClick={() => onEditActivity(activity)} 
+              color={colors.text.secondary} 
+              _hover={{color: colors.interactive.default, bg: colors.bg.surface}}
+            />
+          </Tooltip>
+          <Tooltip label="Delete Activity" placement="top">
+            <IconButton 
+              icon={<DeleteIcon />} 
+              size="xs" 
+              variant="ghost" 
+              colorScheme="red" 
+              aria-label="Delete Activity" 
+              onClick={() => onDeleteActivity(activity)} 
+              color={colors.status.error} 
+              _hover={{color: colors.status.error, bg: colors.bg.surface}}
+            />
+          </Tooltip>
+        </HStack>
+      </Flex>
+    );
+  };
+
+  const renderActivitySection = (title: string, activities: Activity[], badgeProps: any = {}, emptyMessage = '') => {
+    if (activities.length === 0) return null;
+
+    return (
+      <Box mb={6}>
+        <HStack spacing={2} mb={3}>
+          <Heading size="xs" color={colors.text.secondary} textTransform="uppercase" letterSpacing="wide">
+            {title}
+          </Heading>
+          <Badge {...badgeProps} fontSize="xs">
+            {activities.length}
+          </Badge>
+        </HStack>
+        <VStack spacing={2} align="stretch">
+          {activities.map((activity) => renderActivityCard(activity))}
+        </VStack>
+      </Box>
+    );
+  };
+
   return (
-    <>
-      <Flex justifyContent="space-between" alignItems="center" mb={4}>
-        <Heading size="sm" color="white">Activities</Heading>
+    <Box>
+      <Flex justifyContent="space-between" alignItems="center" mb={6}>
+        <Heading size="md" color={colors.text.primary}>Activities Timeline</Heading>
         <Button 
           leftIcon={<AddIcon />} 
           size="sm" 
@@ -61,113 +273,72 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
       </Flex>
       
       {loading && (
-        <Center>
-          <Spinner color="blue.400"/>
+        <Center py={8}>
+          <Spinner color={colors.interactive.default} size="lg"/>
         </Center>
       )}
       
       {error && (
-        <Text color="red.400">Error: {error}</Text>
+        <Box p={4} bg={colors.bg.surface} borderRadius="md" border="1px solid" borderColor={colors.status.error}>
+          <Text color={colors.status.error}>Error: {error}</Text>
+        </Box>
       )}
       
       {!loading && !error && activities.length === 0 && (
-        <Center minH="100px" flexDirection="column" bg="gray.750" borderRadius="md" p={4}>
-          <Icon as={InfoIcon} w={6} h={6} color="gray.500" mb={3} />
-          <Text color="gray.400" fontSize="sm">No activities for this deal yet.</Text>
+        <Center minH="200px" flexDirection="column" bg={colors.bg.surface} borderRadius="lg" p={8}>
+          <Icon as={InfoIcon} w={8} h={8} color={colors.text.muted} mb={4} />
+          <Text color={colors.text.secondary} fontSize="md" textAlign="center">
+            No activities for this deal yet.
+          </Text>
+          <Text color={colors.text.muted} fontSize="sm" textAlign="center" mt={2}>
+            Create your first activity to start tracking progress.
+          </Text>
         </Center>
       )}
       
       {!loading && !error && activities.length > 0 && (
-        <VStack spacing={3} align="stretch">
-          {activities.map((activity) => (
-            <Flex 
-              key={activity.id} 
-              p={3} 
-              borderWidth="1px" 
-              borderRadius="md" 
-              borderColor="gray.600" 
-              justifyContent="space-between" 
-              alignItems="center" 
-              bg="gray.750" 
-              _hover={{borderColor: "blue.400"}}
-            >
-              <HStack spacing={3} alignItems="center">
-                <Tooltip 
-                  label={activity.is_done ? "Mark Incomplete" : "Mark Complete"} 
-                  bg="gray.600" 
-                  color="white"
-                >
-                  <IconButton 
-                    icon={activity.is_done ? <CheckIcon /> : <SmallCloseIcon />} 
-                    onClick={() => onToggleComplete(activity)}
-                    size="sm"
-                    variant="ghost"
-                    colorScheme={activity.is_done ? 'green' : 'gray'}
-                    aria-label={activity.is_done ? "Mark Incomplete" : "Mark Complete"}
-                    color={activity.is_done ? "green.400" : "gray.300"}
-                    _hover={{bg: "gray.600"}}
-                  />
-                </Tooltip>
-                <Icon 
-                  as={getActivityTypeIcon(activity.type as GQLActivityType)} 
-                  color={activity.is_done ? "green.400" : "gray.300"} 
-                  boxSize={4}
-                />
-                <VStack align="start" spacing={0}>
-                  <Text 
-                    fontWeight="medium" 
-                    color={activity.is_done ? "gray.500" : "gray.100"} 
-                    textDecoration={activity.is_done ? 'line-through' : 'none'} 
-                    fontSize="sm"
-                  >
-                    {activity.subject}
-                  </Text>
-                  {activity.due_date && (
-                    <Text fontSize="xs" color="gray.400">
-                      Due: {new Date(activity.due_date).toLocaleDateString()} {new Date(activity.due_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  )}
-                  {activity.assignedToUser && (
-                    <Text fontSize="xs" color="gray.400">
-                      To: {activity.assignedToUser.display_name}
-                    </Text>
-                  )}
-                  {activity.is_system_activity && (
-                    <Tag size="sm" colorScheme="blue" variant="subtle" borderRadius="full">
-                      System
-                    </Tag>
-                  )}
-                </VStack>
-              </HStack>
-              <HStack spacing={1}>
-                <Tooltip label="Edit Activity" bg="gray.600" color="white">
-                  <IconButton 
-                    icon={<EditIcon />} 
-                    size="xs" 
-                    variant="ghost" 
-                    aria-label="Edit Activity" 
-                    onClick={() => onEditActivity(activity)} 
-                    color="gray.300" 
-                    _hover={{color: "blue.300", bg:"gray.600"}}
-                  />
-                </Tooltip>
-                <Tooltip label="Delete Activity" bg="gray.600" color="white">
-                  <IconButton 
-                    icon={<DeleteIcon />} 
-                    size="xs" 
-                    variant="ghost" 
-                    colorScheme="red" 
-                    aria-label="Delete Activity" 
-                    onClick={() => onDeleteActivity(activity)} 
-                    color="red.500" 
-                    _hover={{color: "red.300", bg:"gray.600"}}
-                  />
-                </Tooltip>
-              </HStack>
-            </Flex>
-          ))}
+        <VStack spacing={0} align="stretch">
+          {/* Overdue Activities */}
+          {renderActivitySection(
+            "Overdue", 
+            categorizedActivities.overdue, 
+            { colorScheme: "red", variant: "solid" }
+          )}
+          
+          {/* Due Today */}
+          {renderActivitySection(
+            "Due Today", 
+            categorizedActivities.dueToday, 
+            { colorScheme: "orange", variant: "solid" }
+          )}
+          
+          {/* Upcoming Activities */}
+          {renderActivitySection(
+            "Upcoming", 
+            categorizedActivities.upcoming, 
+            { colorScheme: "blue", variant: "outline" }
+          )}
+          
+          {/* No Due Date */}
+          {renderActivitySection(
+            "No Due Date", 
+            categorizedActivities.noDueDate, 
+            { colorScheme: "gray", variant: "outline" }
+          )}
+          
+          {/* Completed Activities */}
+          {categorizedActivities.completed.length > 0 && (
+            <>
+              <Divider my={4} />
+              {renderActivitySection(
+                "Completed", 
+                categorizedActivities.completed, 
+                { colorScheme: "green", variant: "subtle" }
+              )}
+            </>
+          )}
         </VStack>
       )}
-    </>
+    </Box>
   );
 }; 

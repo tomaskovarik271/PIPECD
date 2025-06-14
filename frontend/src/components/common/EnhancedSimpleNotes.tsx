@@ -196,7 +196,6 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
   
   const { isOpen: isDeleteModalOpen, onOpen: openDeleteModal, onClose: closeDeleteModal } = useDisclosure();
   const { isOpen: isTemplateModalOpen, onOpen: openTemplateModal, onClose: closeTemplateModal } = useDisclosure();
-  const { isOpen: isEmailModalOpen, onOpen: openEmailModal, onClose: closeEmailModal } = useDisclosure();
   const { isOpen: isAttachModalOpen, onOpen: openAttachModal, onClose: closeAttachModal } = useDisclosure();
   
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
@@ -414,17 +413,12 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
   };
 
   const handleTemplateSelect = () => {
-    const template = NOTE_TEMPLATES.find(t => t.id === selectedTemplate);
-    if (template) {
-      setNewNoteContent(template.content);
+    if (selectedTemplate) {
+      setNewNoteContent(selectedTemplate);
       setSelectedTemplate('');
       closeTemplateModal();
       setIsAddingNote(true);
     }
-  };
-
-  const handleEmailToNote = () => {
-    openEmailModal();
   };
 
   const handleAttachFile = () => {
@@ -524,7 +518,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
                 Add a note...
               </Button>
               
-              <HStack spacing={2} w="full">
+              <HStack spacing={3} mb={4}>
                 <Button
                   leftIcon={<FiFileText />}
                   size="sm"
@@ -533,15 +527,6 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
                   flex={1}
                 >
                   Use Template
-                </Button>
-                <Button
-                  leftIcon={<FiMail />}
-                  size="sm"
-                  variant="ghost"
-                  onClick={handleEmailToNote}
-                  flex={1}
-                >
-                  Email to Note
                 </Button>
               </HStack>
             </VStack>
@@ -559,7 +544,6 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
                 content={newNoteContent}
                 onChange={setNewNoteContent}
                 placeholder="Write your note here... Rich text formatting, links, and lists are supported!"
-                onEmailToNote={handleEmailToNote}
                 onAttachFile={handleAttachFile}
                 onMention={handleMention}
                 minHeight="150px"
@@ -682,7 +666,6 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
                     content={editContent}
                     onChange={setEditContent}
                     placeholder="Edit your note..."
-                    onEmailToNote={handleEmailToNote}
                     onAttachFile={handleAttachFile}
                     onMention={handleMention}
                     minHeight="100px"
@@ -931,45 +914,23 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         </ModalContent>
       </Modal>
 
-      {/* Email to Note Modal */}
-      <Modal isOpen={isEmailModalOpen} onClose={closeEmailModal}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Convert Email to Note</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Text fontSize="sm" color={colors.text.secondary}>
-                This feature will allow you to convert emails from Gmail into notes. 
-                Coming soon with full Gmail integration!
-              </Text>
-              <Box
-                p={4}
-                bg={colors.bg.surface}
-                borderRadius="md"
-                border="1px solid"
-                borderColor={colors.border.default}
-              >
-                <Text fontSize="sm" fontWeight="medium" mb={2}>
-                  🚀 Upcoming Features:
-                </Text>
-                <VStack spacing={1} align="start" fontSize="xs" color={colors.text.secondary}>
-                  <Text>• Select emails from Gmail threads</Text>
-                  <Text>• Automatically extract email content</Text>
-                  <Text>• Preserve formatting and attachments</Text>
-                  <Text>• Link back to original email</Text>
-                  <Text>• Include email metadata (sender, date, etc.)</Text>
-                </VStack>
-              </Box>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="blue" onClick={closeEmailModal}>
-              Got it
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      {/* Document Attachment Modal */}
+      {dealId && attachingToNoteId && (
+        <DocumentAttachmentModal
+          isOpen={isAttachModalOpen}
+          onClose={() => {
+            closeAttachModal();
+            setAttachingToNoteId(null);
+          }}
+          noteId={attachingToNoteId}
+          dealId={dealId}
+          onAttachmentAdded={() => {
+            // Refresh notes and attachments to show new attachments
+            refetch();
+            refetchAttachments();
+          }}
+        />
+      )}
 
       {/* Delete confirmation modal */}
       <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
@@ -990,24 +951,6 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
           </ModalFooter>
         </ModalContent>
       </Modal>
-
-      {/* Document Attachment Modal */}
-      {dealId && attachingToNoteId && (
-        <DocumentAttachmentModal
-          isOpen={isAttachModalOpen}
-          onClose={() => {
-            closeAttachModal();
-            setAttachingToNoteId(null);
-          }}
-          noteId={attachingToNoteId}
-          dealId={dealId}
-          onAttachmentAdded={() => {
-            // Refresh notes and attachments to show new attachments
-            refetch();
-            refetchAttachments();
-          }}
-        />
-      )}
     </Box>
   );
 }; 

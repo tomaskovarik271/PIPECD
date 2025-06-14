@@ -17,6 +17,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { CheckIcon, TimeIcon, WarningIcon, CalendarIcon } from '@chakra-ui/icons';
 import { Deal } from '../../stores/useDealsStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { NotificationCenter } from '../common/NotificationCenter';
 import { gql } from 'graphql-request';
 import { gqlClient } from '../../lib/graphqlClient';
 
@@ -290,16 +291,19 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing, setIsEd
               Next: {nextSteps[0].subject}
             </Text>
           )}
-          {onCreateActivity && (
-            <Button 
-              size="sm" 
-              colorScheme="blue" 
-              leftIcon={<CalendarIcon />}
-              onClick={onCreateActivity}
-            >
-              Add Activity
-            </Button>
-          )}
+          <HStack spacing={2}>
+            <NotificationCenter />
+            {onCreateActivity && (
+              <Button 
+                size="sm" 
+                colorScheme="blue" 
+                leftIcon={<CalendarIcon />}
+                onClick={onCreateActivity}
+              >
+                Add Activity
+              </Button>
+            )}
+          </HStack>
         </VStack>
       </Flex>
 

@@ -53,6 +53,9 @@ type EmailThreadConnection {
 input EmailThreadsFilterInput {
   dealId: String
   contactEmail: String
+  selectedContacts: [String!] # Enhanced: Multiple contact emails for filtering
+  includeAllParticipants: Boolean # Enhanced: Include all deal participants
+  contactScope: ContactScopeType # Enhanced: PRIMARY, ALL, CUSTOM, SELECTED_ROLES
   keywords: [String!]
   dateFrom: String
   dateTo: String
@@ -60,6 +63,39 @@ input EmailThreadsFilterInput {
   hasAttachments: Boolean
   limit: Int
   pageToken: String
+}
+
+# Enhanced email filtering enums and types
+enum ContactScopeType {
+  PRIMARY      # Only primary contact (current behavior)
+  ALL          # All deal participants
+  CUSTOM       # User-selected contacts
+  SELECTED_ROLES # Filter by participant roles
+}
+
+enum ContactRoleType {
+  PRIMARY
+  PARTICIPANT
+  CC
+}
+
+# Deal participant types
+type DealParticipant {
+  id: ID!
+  dealId: ID!
+  personId: ID!
+  person: Person!
+  role: ContactRoleType!
+  addedFromEmail: Boolean!
+  createdAt: DateTime!
+  createdByUserId: ID!
+}
+
+input DealParticipantInput {
+  dealId: ID!
+  personId: ID!
+  role: ContactRoleType
+  addedFromEmail: Boolean
 }
 
 input ComposeEmailInput {
@@ -83,11 +119,53 @@ input EmailAttachmentInput {
 
 input CreateTaskFromEmailInput {
   emailId: String!
+  threadId: String
+  useWholeThread: Boolean # If true, use entire thread; if false, use just the message
   subject: String!
   description: String
   dueDate: String
   assigneeId: String
   dealId: String
+}
+
+# Email pinning types
+type EmailPin {
+  id: ID!
+  userId: ID!
+  dealId: ID!
+  emailId: String!
+  threadId: String!
+  subject: String
+  fromEmail: String
+  pinnedAt: DateTime!
+  notes: String
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input PinEmailInput {
+  dealId: ID!
+  emailId: String!
+  threadId: String!
+  subject: String
+  fromEmail: String
+  notes: String
+}
+
+input UpdateEmailPinInput {
+  notes: String
+}
+
+# Contact creation from email types
+input CreateContactFromEmailInput {
+  emailId: String!
+  emailAddress: String!
+  firstName: String
+  lastName: String
+  dealId: String
+  organizationId: ID
+  addAsDealParticipant: Boolean
+  notes: String
 }
 
 type EmailAnalytics {
@@ -99,11 +177,35 @@ type EmailAnalytics {
   responseRate: Float
 }
 
+# AI Task Generation types
+type AIGeneratedTaskContent {
+  subject: String!
+  description: String!
+  suggestedDueDate: String
+  confidence: Float!
+  emailScope: String! # "message" or "thread"
+  sourceContent: String! # The email content that was analyzed
+}
+
+input GenerateTaskContentInput {
+  emailId: String!
+  threadId: String
+  useWholeThread: Boolean! # If true, analyze entire thread; if false, analyze just the message
+}
+
 extend type Query {
   getEmailThreads(filter: EmailThreadsFilterInput!): EmailThreadConnection!
   getEmailThread(threadId: String!): EmailThread
   getEmailMessage(messageId: String!): EmailMessage
   getEmailAnalytics(dealId: String!): EmailAnalytics
+  
+  # Enhanced: Deal participant queries
+  getDealParticipants(dealId: ID!): [DealParticipant!]!
+  suggestEmailParticipants(dealId: ID!, threadId: String): [Person!]!
+  
+  # Email pinning queries
+  getPinnedEmails(dealId: ID!): [EmailPin!]!
+  getEmailPin(id: ID!): EmailPin
 }
 
 extend type Mutation {
@@ -112,5 +214,19 @@ extend type Mutation {
   markThreadAsUnread(threadId: String!): Boolean!
   archiveThread(threadId: String!): Boolean!
   createTaskFromEmail(input: CreateTaskFromEmailInput!): Activity!
+  generateTaskContentFromEmail(input: GenerateTaskContentInput!): AIGeneratedTaskContent!
   linkEmailToDeal(emailId: String!, dealId: String!): Boolean!
+  
+  # Enhanced: Deal participant mutations
+  addDealParticipant(input: DealParticipantInput!): DealParticipant!
+  removeDealParticipant(dealId: ID!, personId: ID!): Boolean!
+  updateDealParticipantRole(dealId: ID!, personId: ID!, role: ContactRoleType!): DealParticipant!
+  
+  # Email pinning mutations
+  pinEmail(input: PinEmailInput!): EmailPin!
+  unpinEmail(id: ID!): Boolean!
+  updateEmailPin(id: ID!, input: UpdateEmailPinInput!): EmailPin!
+  
+  # Contact creation from email mutations
+  createContactFromEmail(input: CreateContactFromEmailInput!): Person!
 } 

@@ -40,23 +40,43 @@ import {
   TagLabel,
   TagCloseButton,
   Tooltip,
+  Collapse,
+  RadioGroup,
+  Radio,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
+  Icon,
 } from '@chakra-ui/react';
-import {
-  SearchIcon,
-  EmailIcon,
-  AttachmentIcon,
-  StarIcon,
-  ChevronDownIcon,
-  AddIcon,
-  ExternalLinkIcon,
-  CalendarIcon,
-  CheckIcon,
-} from '@chakra-ui/icons';
-import { FaReply, FaForward, FaArchive, FaTasks } from 'react-icons/fa';
-import { FiFileText } from 'react-icons/fi';
+import { 
+  FiSearch, 
+  FiFilter, 
+  FiMail, 
+  FiMoreVertical, 
+  FiArchive, 
+  FiStar, 
+  FiPaperclip, 
+  FiClock, 
+  FiUser, 
+  FiPhone, 
+  FiCalendar, 
+  FiFileText, 
+  FiPlus, 
+  FiX, 
+  FiChevronDown, 
+  FiChevronUp,
+  FiZap,
+  FiEdit,
+  FiExternalLink
+} from 'react-icons/fi';
+import { FaTasks, FaUserPlus, FaMapPin } from 'react-icons/fa';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { EmailContactFilter } from './EmailContactFilter';
+import EmailContactFilter from './EmailContactFilter';
+import CreateContactFromEmailModal from './CreateContactFromEmailModal';
+import EnhancedCreateTaskModal from './EnhancedCreateTaskModal';
 
 // GraphQL Queries and Mutations
 const GET_EMAIL_THREADS = gql`
@@ -149,7 +169,22 @@ const CREATE_TASK_FROM_EMAIL = gql`
       id
       subject
       notes
+      type
       due_date
+      is_done
+    }
+  }
+`;
+
+const GENERATE_TASK_CONTENT = gql`
+  mutation GenerateTaskContentFromEmail($input: GenerateTaskContentInput!) {
+    generateTaskContentFromEmail(input: $input) {
+      subject
+      description
+      suggestedDueDate
+      confidence
+      emailScope
+      sourceContent
     }
   }
 `;
@@ -191,6 +226,34 @@ const CREATE_STICKER = gql`
   }
 `;
 
+const PIN_EMAIL = gql`
+  mutation PinEmail($input: PinEmailInput!) {
+    pinEmail(input: $input) {
+      id
+      emailId
+      threadId
+      subject
+      fromEmail
+      pinnedAt
+      notes
+    }
+  }
+`;
+
+const GET_PINNED_EMAILS = gql`
+  query GetPinnedEmailsForDeal($dealId: ID!) {
+    getPinnedEmails(dealId: $dealId) {
+      id
+      emailId
+      threadId
+      subject
+      fromEmail
+      pinnedAt
+      notes
+    }
+  }
+`;
+
 interface DealEmailsPanelProps {
   dealId: string;
   primaryContactEmail?: string;
@@ -202,6 +265,10 @@ interface EmailFilter {
   isUnread: boolean | null;
   hasAttachments: boolean | null;
   dateRange: string;
+  selectedContacts: string[];
+  contactScope: 'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES';
+  includeAllParticipants: boolean;
+  showPinnedOnly: boolean;
 }
 
 const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
@@ -214,46 +281,92 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
 
   // State
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [filter, setFilter] = useState<EmailFilter>({
     search: '',
     isUnread: null,
     hasAttachments: null,
     dateRange: 'all',
+    selectedContacts: primaryContactEmail ? [primaryContactEmail] : [],
+    contactScope: 'PRIMARY',
+    includeAllParticipants: false,
+    showPinnedOnly: false,
   });
   const [isComposeModalOpen, setIsComposeModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [selectedEmailForTask, setSelectedEmailForTask] = useState<string | null>(null);
   const [isConvertToNoteModalOpen, setIsConvertToNoteModalOpen] = useState(false);
   const [selectedEmailForNote, setSelectedEmailForNote] = useState<any>(null);
+  const [isCreateContactModalOpen, setIsCreateContactModalOpen] = useState(false);
+  const [selectedEmailForContact, setSelectedEmailForContact] = useState<any>(null);
 
-  // Enhanced Email Filter State
-  const [emailFilterScope, setEmailFilterScope] = useState<'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES'>('PRIMARY');
-  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
-  const [selectedRoles, setSelectedRoles] = useState<('PRIMARY' | 'DECISION_MAKER' | 'INFLUENCER' | 'TECHNICAL' | 'LEGAL' | 'OTHER')[]>([]);
-  const [includeNewParticipants, setIncludeNewParticipants] = useState(true);
+  // Update filter when primaryContactEmail changes
+  useEffect(() => {
+    if (primaryContactEmail && filter.contactScope === 'PRIMARY') {
+      setFilter(prev => ({
+        ...prev,
+        selectedContacts: [primaryContactEmail],
+      }));
+    }
+  }, [primaryContactEmail, filter.contactScope]);
+
+  // Build enhanced filter for GraphQL query
+  const buildEmailThreadsFilter = () => {
+    const baseFilter = {
+      dealId,
+      keywords: filter.search ? [filter.search] : undefined,
+      isUnread: filter.isUnread,
+      hasAttachments: filter.hasAttachments,
+      limit: 50,
+    };
+
+    // Enhanced multi-contact filtering
+    switch (filter.contactScope) {
+      case 'PRIMARY':
+        return {
+          ...baseFilter,
+          contactEmail: primaryContactEmail,
+        };
+      case 'ALL':
+        return {
+          ...baseFilter,
+          includeAllParticipants: true,
+        };
+      case 'CUSTOM':
+      case 'SELECTED_ROLES':
+        return {
+          ...baseFilter,
+          selectedContacts: filter.selectedContacts,
+        };
+      default:
+        return {
+          ...baseFilter,
+          contactEmail: primaryContactEmail,
+        };
+    }
+  };
 
   // GraphQL Hooks
   const { data: threadsData, loading: threadsLoading, error: threadsError, refetch: refetchThreads } = useQuery(GET_EMAIL_THREADS, {
-    variables: {
-      filter: {
-        dealId,
-        contactEmail: primaryContactEmail,
-        keywords: filter.search ? [filter.search] : undefined,
-        isUnread: filter.isUnread,
-        hasAttachments: filter.hasAttachments,
-        limit: 50,
-      },
-    },
+    variables: { filter: buildEmailThreadsFilter() },
     skip: !primaryContactEmail,
+    fetchPolicy: 'cache-and-network',
   });
 
   const { data: threadData, loading: threadLoading } = useQuery(GET_EMAIL_THREAD, {
     variables: { threadId: selectedThreadId },
     skip: !selectedThreadId,
+    fetchPolicy: 'cache-and-network',
   });
 
   const { data: analyticsData } = useQuery(GET_EMAIL_ANALYTICS, {
     variables: { dealId },
+    fetchPolicy: 'cache-and-network',
+  });
+
+  const { data: pinnedEmailsData, refetch: refetchPinnedEmails } = useQuery(GET_PINNED_EMAILS, {
+    variables: { dealId },
+    fetchPolicy: 'cache-and-network',
   });
 
   const [composeEmail] = useMutation(COMPOSE_EMAIL, {
@@ -296,13 +409,57 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
     },
   });
 
-  const [markAsRead] = useMutation(MARK_THREAD_AS_READ);
+  const [markThreadAsRead] = useMutation(MARK_THREAD_AS_READ);
+
+  const [pinEmail] = useMutation(PIN_EMAIL, {
+    onCompleted: () => {
+      toast({
+        title: 'Email Pinned',
+        description: 'Email has been pinned to this deal.',
+        status: 'success',
+        duration: 3000,
+      });
+      refetchPinnedEmails(); // Refresh pinned emails to update UI
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to Pin Email',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+      });
+    },
+  });
+
+  const [unpinEmail] = useMutation(gql`
+    mutation UnpinEmail($id: ID!) {
+      unpinEmail(id: $id)
+    }
+  `, {
+    onCompleted: () => {
+      toast({
+        title: 'Email Unpinned',
+        description: 'Email has been removed from pinned emails.',
+        status: 'success',
+        duration: 3000,
+      });
+      refetchPinnedEmails(); // Refresh pinned emails to update UI
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to Unpin Email',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+      });
+    },
+  });
 
   // Handlers
   const handleThreadSelect = (threadId: string) => {
     setSelectedThreadId(threadId);
     // Mark as read when opened
-    markAsRead({ variables: { threadId } });
+    markThreadAsRead({ variables: { threadId } });
   };
 
   const handleComposeEmail = (emailData: any) => {
@@ -326,9 +483,12 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
       variables: {
         input: {
           emailId: selectedEmailForTask,
+          threadId: taskData.threadId,
+          useWholeThread: taskData.useWholeThread,
           subject: taskData.subject,
           description: taskData.description,
           dueDate: taskData.dueDate,
+          assigneeId: taskData.assigneeId,
           dealId,
         },
       },
@@ -338,6 +498,71 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   const handleConvertToNote = (emailMessage: any) => {
     setSelectedEmailForNote(emailMessage);
     setIsConvertToNoteModalOpen(true);
+  };
+
+  const handleCreateContact = (emailMessage: any) => {
+    setSelectedEmailForContact(emailMessage);
+    setIsCreateContactModalOpen(true);
+  };
+
+  const handlePinEmail = (emailMessage: any) => {
+    pinEmail({
+      variables: {
+        input: {
+          dealId: dealId,
+          emailId: emailMessage.id,
+          threadId: emailMessage.threadId,
+          subject: emailMessage.subject,
+          fromEmail: emailMessage.from,
+          notes: `Pinned from deal: ${dealName}`,
+        },
+      },
+    });
+  };
+
+  const handleUnpinEmail = (emailId: string) => {
+    unpinEmail({
+      variables: {
+        id: emailId,
+      },
+    });
+  };
+
+  // Helper function to get pin ID for unpinning
+  const getPinId = (emailId: string, threadId: string) => {
+    if (!pinnedEmailsData?.getPinnedEmails) return null;
+    const pin = pinnedEmailsData.getPinnedEmails.find((pin: any) => 
+      pin.emailId === emailId || pin.threadId === threadId
+    );
+    return pin?.id || null;
+  };
+
+  const handlePinToggle = (emailMessage: any) => {
+    const isPinned = isEmailPinned(emailMessage.id, emailMessage.threadId);
+    
+    if (isPinned) {
+      // Unpin the email
+      const pinId = getPinId(emailMessage.id, emailMessage.threadId);
+      if (pinId) {
+        unpinEmail({
+          variables: { id: pinId },
+        });
+      }
+    } else {
+      // Pin the email
+      pinEmail({
+        variables: {
+          input: {
+            dealId: dealId,
+            emailId: emailMessage.id,
+            threadId: emailMessage.threadId,
+            subject: emailMessage.subject,
+            fromEmail: emailMessage.from,
+            notes: `Pinned from deal: ${dealName}`,
+          },
+        },
+      });
+    }
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -353,6 +578,29 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
       return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     }
   };
+
+  // Enhanced handlers for contact filtering
+  const handleContactsChange = (contacts: string[]) => {
+    setFilter(prev => ({
+      ...prev,
+      selectedContacts: contacts,
+    }));
+  };
+
+  const handleScopeChange = (scope: 'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES') => {
+    setFilter(prev => ({ ...prev, contactScope: scope }));
+  };
+
+  // Helper function to check if an email/thread is pinned
+  const isEmailPinned = (emailId: string, threadId: string) => {
+    if (!pinnedEmailsData?.getPinnedEmails) return false;
+    return pinnedEmailsData.getPinnedEmails.some((pin: any) => 
+      pin.emailId === emailId || pin.threadId === threadId
+    );
+  };
+
+  // Show enhanced filtering UI if not using primary contact only
+  const shouldShowContactFilter = filter.contactScope !== 'PRIMARY' || !primaryContactEmail;
 
   if (!primaryContactEmail) {
     return (
@@ -377,7 +625,8 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
           sx={{
             display: 'flex',
             flexDirection: 'column',
-            height: '100%'
+            height: '100%',
+            minHeight: 0 // Important for flex children to shrink
           }}
         >
           {/* Header with Analytics */}
@@ -387,204 +636,271 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
             borderColor={colors.border.default} 
             w="full"
             sx={{ flexShrink: 0 }}
+            maxH="400px" // Prevent header from taking too much space
+            overflowY="auto" // Allow header to scroll if needed
           >
             <VStack spacing={3} align="stretch">
               <HStack justify="space-between">
                 <Text fontWeight="bold" color={colors.text.primary}>
                   Email Conversations
                 </Text>
-                <Button
-                  size="sm"
-                  leftIcon={<AddIcon />}
-                  colorScheme="blue"
-                  onClick={() => setIsComposeModalOpen(true)}
-                >
-                  Compose
-                </Button>
+                <HStack spacing={2}>
+                  <IconButton
+                    size="sm"
+                    icon={<FiFilter />}
+                    aria-label="Advanced filters"
+                    variant="ghost"
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    bg={showAdvancedFilters ? colors.interactive.active : 'transparent'}
+                    color={showAdvancedFilters ? colors.text.onAccent : colors.text.secondary}
+                  />
+                  <Button
+                    size="sm"
+                    leftIcon={<FiPlus />}
+                    colorScheme="blue"
+                    onClick={() => setIsComposeModalOpen(true)}
+                  >
+                    Compose
+                  </Button>
+                </HStack>
               </HStack>
               
+              {/* Enhanced Contact Filter */}
+              <Collapse in={showAdvancedFilters || shouldShowContactFilter}>
+                <Box 
+                  p={3} 
+                  bg={colors.bg.elevated} 
+                  borderRadius="md" 
+                  borderWidth="1px" 
+                  borderColor={colors.border.default}
+                >
+                  <EmailContactFilter
+                    dealId={dealId}
+                    primaryContactEmail={primaryContactEmail}
+                    selectedContacts={filter.selectedContacts}
+                    contactScope={filter.contactScope}
+                    onContactsChange={handleContactsChange}
+                    onScopeChange={handleScopeChange}
+                    isLoading={threadsLoading}
+                  />
+                </Box>
+              </Collapse>
+
+              {/* Analytics Summary */}
               {analyticsData && (
-                <HStack spacing={4}>
-                  <Badge colorScheme="blue">
-                    {analyticsData.getEmailAnalytics.totalThreads} threads
-                  </Badge>
-                  <Badge colorScheme="orange">
-                    {analyticsData.getEmailAnalytics.unreadCount} unread
-                  </Badge>
-                  <Badge colorScheme="green">
-                    {analyticsData.getEmailAnalytics.avgResponseTime} avg response
-                  </Badge>
+                <HStack spacing={4} fontSize="sm">
+                  <VStack spacing={0}>
+                    <Text fontWeight="bold" color={colors.text.primary}>
+                      {analyticsData.getEmailAnalytics.totalThreads}
+                    </Text>
+                    <Text color={colors.text.secondary}>Threads</Text>
+                  </VStack>
+                  <VStack spacing={0}>
+                    <Text fontWeight="bold" color={colors.text.primary}>
+                      {analyticsData.getEmailAnalytics.unreadCount}
+                    </Text>
+                    <Text color={colors.text.secondary}>Unread</Text>
+                  </VStack>
+                  <VStack spacing={0}>
+                    <Text fontWeight="bold" color={colors.text.primary}>
+                      {analyticsData.getEmailAnalytics.responseRate}%
+                    </Text>
+                    <Text color={colors.text.secondary}>Response</Text>
+                  </VStack>
                 </HStack>
               )}
-            </VStack>
-          </Box>
 
-          {/* Search and Filters */}
-          <Box 
-            p={3} 
-            borderBottomWidth="1px" 
-            borderColor={colors.border.default} 
-            w="full"
-            sx={{ flexShrink: 0 }}
-          >
-            <VStack spacing={2}>
-              <InputGroup size="sm">
-                <InputLeftElement>
-                  <SearchIcon color={colors.text.secondary} />
-                </InputLeftElement>
-                <Input
-                  placeholder="Search emails..."
-                  value={filter.search}
-                  onChange={(e) => setFilter({ ...filter, search: e.target.value })}
-                />
-              </InputGroup>
-              
-              <HStack spacing={2} w="full">
-                <Select
-                  size="sm"
-                  value={filter.isUnread === null ? 'all' : filter.isUnread ? 'unread' : 'read'}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFilter({
-                      ...filter,
-                      isUnread: value === 'all' ? null : value === 'unread',
-                    });
-                  }}
-                >
-                  <option value="all">All</option>
-                  <option value="unread">Unread</option>
-                  <option value="read">Read</option>
-                </Select>
-                
-                <Select
-                  size="sm"
-                  value={filter.hasAttachments === null ? 'all' : filter.hasAttachments ? 'with' : 'without'}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFilter({
-                      ...filter,
-                      hasAttachments: value === 'all' ? null : value === 'with',
-                    });
-                  }}
-                >
-                  <option value="all">All</option>
-                  <option value="with">With attachments</option>
-                  <option value="without">No attachments</option>
-                </Select>
-              </HStack>
+              {/* Search and Basic Filters */}
+              <VStack spacing={2} align="stretch">
+                <InputGroup size="sm">
+                  <InputLeftElement>
+                    <FiSearch color={colors.text.secondary} />
+                  </InputLeftElement>
+                  <Input
+                    placeholder="Search emails..."
+                    value={filter.search}
+                    onChange={(e) => setFilter(prev => ({ ...prev, search: e.target.value }))}
+                    bg={colors.bg.input}
+                    borderColor={colors.border.input}
+                  />
+                </InputGroup>
 
-              {/* Enhanced Email Contact Filter */}
-              <Box w="full" pt={2}>
-                <EmailContactFilter
-                  dealId={dealId}
-                  currentScope={emailFilterScope}
-                  selectedContacts={selectedContacts}
-                  selectedRoles={selectedRoles}
-                  includeNewParticipants={includeNewParticipants}
-                  onScopeChange={setEmailFilterScope}
-                  onContactsChange={setSelectedContacts}
-                  onRolesChange={setSelectedRoles}
-                  onNewParticipantsChange={setIncludeNewParticipants}
-                />
-              </Box>
+                <HStack spacing={2}>
+                  <Select
+                    size="sm"
+                    value={filter.isUnread === null ? 'all' : filter.isUnread ? 'unread' : 'read'}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFilter(prev => ({
+                        ...prev,
+                        isUnread: value === 'all' ? null : value === 'unread'
+                      }));
+                    }}
+                    bg={colors.bg.input}
+                    borderColor={colors.border.input}
+                  >
+                    <option value="all">All emails</option>
+                    <option value="unread">Unread only</option>
+                    <option value="read">Read only</option>
+                  </Select>
+
+                  <Select
+                    size="sm"
+                    value={filter.hasAttachments === null ? 'all' : filter.hasAttachments ? 'with' : 'without'}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFilter(prev => ({
+                        ...prev,
+                        hasAttachments: value === 'all' ? null : value === 'with'
+                      }));
+                    }}
+                    bg={colors.bg.input}
+                    borderColor={colors.border.input}
+                  >
+                    <option value="all">All</option>
+                    <option value="with">With attachments</option>
+                    <option value="without">No attachments</option>
+                  </Select>
+
+                  <Select
+                    size="sm"
+                    value={filter.showPinnedOnly ? 'pinned' : 'all'}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFilter(prev => ({
+                        ...prev,
+                        showPinnedOnly: value === 'pinned'
+                      }));
+                    }}
+                    bg={colors.bg.input}
+                    borderColor={colors.border.input}
+                  >
+                    <option value="all">All emails</option>
+                    <option value="pinned">⭐ Pinned only</option>
+                  </Select>
+                </HStack>
+              </VStack>
             </VStack>
           </Box>
 
           {/* Thread List */}
-          <div 
-            style={{
-              width: '100%',
-              height: '400px',
-              overflowY: 'auto',
-              flex: '1 1 0',
-              minHeight: 0
+          <Box 
+            flex={1} 
+            overflowY="auto"
+            minH={0} // Important for flex children to shrink
+            sx={{
+              '&::-webkit-scrollbar': {
+                width: '6px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: colors.bg.surface,
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: colors.border.default,
+                borderRadius: '3px',
+              },
+              '&::-webkit-scrollbar-thumb:hover': {
+                background: colors.border.emphasis,
+              },
             }}
           >
-              {threadsLoading ? (
-                <Box p={4} textAlign="center">
-                  <Spinner size="md" color={colors.interactive.default} />
-                </Box>
-              ) : threadsError ? (
-                <Alert status="warning" m={4}>
-                  <AlertIcon />
-                  <VStack spacing={2} align="start">
-                    <Text fontWeight="bold">Gmail Connection Required</Text>
-                    <Text fontSize="sm">
-                      {threadsError.message.includes('authentication') || threadsError.message.includes('integration') 
-                        ? 'Your Gmail connection has expired or is invalid. Please reconnect your Google account to view emails.'
-                        : 'Failed to load emails. Please try again or check your Gmail integration.'}
-                    </Text>
-                    <Button
-                      size="sm"
-                      colorScheme="blue"
-                      leftIcon={<ExternalLinkIcon />}
-                      onClick={() => {
-                        // Navigate to Google integration settings
-                        window.open('/google-integration', '_blank');
-                      }}
-                    >
-                      Reconnect Gmail
-                    </Button>
-                  </VStack>
-                </Alert>
-              ) : threadsData?.getEmailThreads.threads.length === 0 ? (
-                <Box p={4} textAlign="center">
-                  <Text color={colors.text.secondary}>No email conversations found</Text>
-                </Box>
-              ) : (
-threadsData?.getEmailThreads.threads.map((thread: any) => (
-                    <Box
-                      key={thread.id}
-                      p={3}
-                      borderBottomWidth="1px"
-                      borderColor={colors.border.default}
-                      cursor="pointer"
-                      bg={selectedThreadId === thread.id ? colors.bg.elevated : 'transparent'}
-                      _hover={{ bg: colors.bg.elevated }}
-                      onClick={() => handleThreadSelect(thread.id)}
-                    >
-                      <VStack spacing={2} align="stretch">
-                        <HStack justify="space-between">
-                          <Text
-                            fontSize="sm"
-                            fontWeight={thread.isUnread ? 'bold' : 'normal'}
-                            color={colors.text.primary}
-                            noOfLines={1}
-                          >
-                            {thread.subject}
-                          </Text>
-                          <Text fontSize="xs" color={colors.text.secondary}>
-                            {formatTimestamp(thread.lastActivity)}
-                          </Text>
-                        </HStack>
-                        
-                        <HStack justify="space-between">
-                          <Text fontSize="xs" color={colors.text.secondary} noOfLines={1}>
-                            {thread.latestMessage?.from}
-                          </Text>
-                          <HStack spacing={1}>
-                            {thread.isUnread && (
-                              <Badge size="sm" colorScheme="blue">
-                                New
-                              </Badge>
-                            )}
-                            {thread.latestMessage?.hasAttachments && (
-                              <AttachmentIcon w={3} h={3} color={colors.text.secondary} />
-                            )}
-                            <Badge size="sm" variant="outline">
-                              {thread.messageCount}
-                            </Badge>
-                          </HStack>
-                        </HStack>
-                        
-                        <Text fontSize="xs" color={colors.text.muted} noOfLines={2}>
-                          {thread.latestMessage?.body}
+            {threadsLoading ? (
+              <VStack spacing={4} align="center" pt={20}>
+                <Spinner size="lg" color={colors.interactive.default} />
+                <Text color={colors.text.secondary}>Loading email conversations...</Text>
+              </VStack>
+            ) : threadsError ? (
+              <Alert status="error" m={4}>
+                <AlertIcon />
+                <VStack align="start" spacing={2}>
+                  <Text fontWeight="bold">Failed to load emails</Text>
+                  <Text fontSize="sm">
+                    {threadsError.message.includes('authentication') || threadsError.message.includes('integration') 
+                      ? 'Your Gmail connection has expired or is invalid. Please reconnect your Google account to view emails.'
+                      : 'Failed to load emails. Please try again or check your Gmail integration.'}
+                  </Text>
+                  <Button
+                    size="sm"
+                    colorScheme="blue"
+                    leftIcon={<FiExternalLink />}
+                    onClick={() => {
+                      window.open('/google-integration', '_blank');
+                    }}
+                  >
+                    Reconnect Gmail
+                  </Button>
+                </VStack>
+              </Alert>
+            ) : threadsData?.getEmailThreads.threads.length === 0 ? (
+              <Box p={4} textAlign="center">
+                <Text color={colors.text.secondary}>No email conversations found</Text>
+                {filter.contactScope !== 'PRIMARY' && (
+                  <Text fontSize="sm" color={colors.text.muted} mt={2}>
+                    Try adjusting your contact filter or search terms
+                  </Text>
+                )}
+              </Box>
+            ) : (
+              threadsData?.getEmailThreads.threads
+                .filter((thread: any) => {
+                  // Apply pinned filter if active
+                  if (filter.showPinnedOnly) {
+                    return isEmailPinned(thread.latestMessage?.id, thread.id);
+                  }
+                  return true;
+                })
+                .map((thread: any) => (
+                  <Box
+                    key={thread.id}
+                    p={3}
+                    borderBottomWidth="1px"
+                    borderColor={colors.border.default}
+                    cursor="pointer"
+                    bg={selectedThreadId === thread.id ? colors.bg.elevated : 'transparent'}
+                    _hover={{ bg: colors.bg.elevated }}
+                    onClick={() => handleThreadSelect(thread.id)}
+                  >
+                    <VStack spacing={2} align="stretch">
+                      <HStack justify="space-between">
+                        <Text
+                          fontSize="sm"
+                          fontWeight={thread.isUnread ? 'bold' : 'normal'}
+                          color={colors.text.primary}
+                          noOfLines={1}
+                        >
+                          {thread.subject}
                         </Text>
-                      </VStack>
-                    </Box>
+                        <Text fontSize="xs" color={colors.text.secondary}>
+                          {formatTimestamp(thread.lastActivity)}
+                        </Text>
+                      </HStack>
+                      
+                      <HStack justify="space-between">
+                        <Text fontSize="xs" color={colors.text.secondary} noOfLines={1}>
+                          {thread.participants.join(', ')}
+                        </Text>
+                        <HStack spacing={1}>
+                          {isEmailPinned(thread.latestMessage?.id, thread.id) && (
+                            <Icon as={FiStar} boxSize={3} color="yellow.500" />
+                          )}
+                          {thread.isUnread && (
+                            <Badge size="sm" colorScheme="blue" variant="solid">
+                              New
+                            </Badge>
+                          )}
+                          {thread.latestMessage?.hasAttachments && (
+                            <Icon as={FiPaperclip} boxSize={3} color={colors.text.secondary} />
+                          )}
+                          <Badge size="sm" variant="outline">
+                            {thread.messageCount}
+                          </Badge>
+                        </HStack>
+                      </HStack>
+                    </VStack>
+                  </Box>
                 ))
-              )}
-            </div>
+            )}
+          </Box>
         </GridItem>
 
         {/* Right Panel - Message View */}
@@ -617,7 +933,7 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
                         <Tooltip label="Reply to email">
                           <IconButton
                             aria-label="Reply"
-                            icon={<FaReply />}
+                            icon={<FiEdit />}
                             size="sm"
                             variant="ghost"
                             colorScheme="blue"
@@ -627,54 +943,75 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
                         <Tooltip label="Forward email">
                           <IconButton
                             aria-label="Forward"
-                            icon={<FaForward />}
+                            icon={<FiExternalLink />}
                             size="sm"
                             variant="ghost"
                             colorScheme="blue"
                           />
                         </Tooltip>
                         <Tooltip label="Create task from email">
-                          <IconButton
-                            aria-label="Create Task"
-                            icon={<FaTasks />}
-                            size="sm"
-                            variant="ghost"
-                            colorScheme="green"
-                            onClick={() => {
-                              setSelectedEmailForTask(threadData.getEmailThread.latestMessage?.id);
-                              setIsTaskModalOpen(true);
-                            }}
-                          />
+                          <Box position="relative">
+                            <IconButton
+                              aria-label="Create Task"
+                              icon={<FiZap />}
+                              size="sm"
+                              variant="ghost"
+                              colorScheme="green"
+                              onClick={() => {
+                                setSelectedEmailForTask(threadData.getEmailThread.latestMessage?.id);
+                                setIsTaskModalOpen(true);
+                              }}
+                            />
+                          </Box>
                         </Tooltip>
                         <Tooltip label="Convert email to note" placement="bottom">
                           <Box position="relative">
                             <IconButton
                               aria-label="Convert to Note"
                               icon={<FiFileText />}
-                              size="md"
-                              variant="solid"
+                              size="sm"
+                              variant="ghost"
                               colorScheme="purple"
                               onClick={() => handleConvertToNote(threadData.getEmailThread.latestMessage)}
-                              _hover={{ transform: 'scale(1.05)' }}
                             />
-                            <Badge
-                              position="absolute"
-                              top="-2px"
-                              right="-2px"
-                              colorScheme="purple"
-                              variant="solid"
-                              fontSize="xs"
-                              borderRadius="full"
-                              px={1}
-                            >
-                              NEW
-                            </Badge>
+                          </Box>
+                        </Tooltip>
+                        <Tooltip label={
+                          isEmailPinned(threadData.getEmailThread.latestMessage?.id, selectedThreadId) 
+                            ? "Unpin email from deal" 
+                            : "Pin email to deal"
+                        } placement="bottom">
+                          <Box position="relative">
+                            <IconButton
+                              aria-label="Pin Email"
+                              icon={<FiStar />}
+                              size="sm"
+                              variant={
+                                isEmailPinned(threadData.getEmailThread.latestMessage?.id, selectedThreadId)
+                                  ? "solid"
+                                  : "ghost"
+                              }
+                              colorScheme="yellow"
+                              onClick={() => handlePinToggle(threadData.getEmailThread.latestMessage)}
+                            />
+                          </Box>
+                        </Tooltip>
+                        <Tooltip label="Create contact from email" placement="bottom">
+                          <Box position="relative">
+                            <IconButton
+                              aria-label="Create Contact"
+                              icon={<FiUser />}
+                              size="sm"
+                              variant="ghost"
+                              colorScheme="teal"
+                              onClick={() => handleCreateContact(threadData.getEmailThread.latestMessage)}
+                            />
                           </Box>
                         </Tooltip>
                         <Tooltip label="Archive email">
                           <IconButton
                             aria-label="Archive"
-                            icon={<FaArchive />}
+                            icon={<FiArchive />}
                             size="sm"
                             variant="ghost"
                             colorScheme="gray"
@@ -746,7 +1083,7 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
                             </Text>
                             {threadData.getEmailThread.latestMessage.attachments.map((attachment: any) => (
                               <HStack key={attachment.id} spacing={2}>
-                                <AttachmentIcon w={4} h={4} color={colors.text.secondary} />
+                                <Icon as={FiPaperclip} w={4} h={4} color={colors.text.secondary} />
                                 <Text fontSize="sm" color={colors.text.secondary}>
                                   {attachment.filename}
                                 </Text>
@@ -769,7 +1106,7 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
             )
           ) : (
             <Box p={6} textAlign="center">
-              <EmailIcon w={12} h={12} color={colors.text.muted} mb={4} />
+              <Icon as={FiMail} w={12} h={12} color={colors.text.muted} mb={4} />
               <Text color={colors.text.secondary} fontSize="lg" mb={2}>
                 Select an email conversation
               </Text>
@@ -791,13 +1128,15 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
       />
 
       {/* Create Task Modal */}
-      <CreateTaskModal
+      <EnhancedCreateTaskModal
         isOpen={isTaskModalOpen}
         onClose={() => {
           setIsTaskModalOpen(false);
           setSelectedEmailForTask(null);
         }}
         onCreateTask={handleCreateTask}
+        selectedEmailId={selectedEmailForTask}
+        selectedThreadId={selectedThreadId}
       />
 
       {/* Convert to Note Modal */}
@@ -808,6 +1147,17 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
           setSelectedEmailForNote(null);
         }}
         emailMessage={selectedEmailForNote}
+        dealId={dealId}
+      />
+
+      {/* Create Contact Modal */}
+      <CreateContactFromEmailModal
+        isOpen={isCreateContactModalOpen}
+        onClose={() => {
+          setIsCreateContactModalOpen(false);
+          setSelectedEmailForContact(null);
+        }}
+        emailMessage={selectedEmailForContact}
         dealId={dealId}
       />
     </Box>
@@ -897,103 +1247,37 @@ const ComposeEmailModal: React.FC<{
   );
 };
 
-// Create Task Modal Component
-const CreateTaskModal: React.FC<{
+// Convert to Note Modal Component
+const EmailToNoteModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onCreateTask: (data: any) => void;
-}> = ({ isOpen, onClose, onCreateTask }) => {
-  const [formData, setFormData] = useState({
-    subject: '',
-    description: '',
-    dueDate: '',
-  });
+  emailMessage: any;
+  dealId: string;
+}> = ({ isOpen, onClose, emailMessage, dealId }) => {
+  const [noteContent, setNoteContent] = useState('');
 
-  const handleCreate = () => {
-    onCreateTask(formData);
+  const handleConvert = () => {
+    // Logic to convert email to note
+    setNoteContent(emailMessage.body);
+    onClose();
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Create Task from Email</ModalHeader>
+        <ModalHeader>Convert Email to Note</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack spacing={4}>
             <FormControl>
-              <FormLabel>Task Subject</FormLabel>
-              <Input
-                value={formData.subject}
-                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                placeholder="Follow up on email discussion"
-              />
-            </FormControl>
-            
-            <FormControl>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>Note Content</FormLabel>
               <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Task description..."
-                rows={4}
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                placeholder="Type your note content here..."
+                rows={8}
               />
-            </FormControl>
-            
-            <FormControl>
-              <FormLabel>Due Date</FormLabel>
-              <Box 
-                borderWidth="1px" 
-                borderRadius="md" 
-                borderColor="inherit"
-                bg="inherit"
-                _hover={{ borderColor: "gray.300" }}
-                _focusWithin={{ borderColor: "blue.500", boxShadow: "0 0 0 1px var(--chakra-colors-blue-500)" }}
-                transition="all 0.2s"
-              >
-                <HStack spacing={0} divider={<Box w="1px" h="6" bg="gray.200" />}>
-                  <Box flex={1}>
-                    <Input
-                      type="date"
-                      border="none"
-                      _focus={{ boxShadow: "none" }}
-                      placeholder="Select date"
-                      value={formData.dueDate ? formData.dueDate.split('T')[0] : ''}
-                      onChange={(e) => {
-                        const timeValue = formData.dueDate && formData.dueDate.includes('T') ? formData.dueDate.split('T')[1] : '09:00';
-                        const newDateTime = e.target.value ? `${e.target.value}T${timeValue}` : '';
-                        setFormData({ ...formData, dueDate: newDateTime });
-                      }}
-                    />
-                  </Box>
-                  <Box flex={0} minW="120px">
-                    <Select
-                      placeholder="Time"
-                      border="none"
-                      _focus={{ boxShadow: "none" }}
-                      value={formData.dueDate && formData.dueDate.includes('T') ? formData.dueDate.split('T')[1]?.substring(0, 5) : ''}
-                      onChange={(e) => {
-                        const dateValue = formData.dueDate && formData.dueDate.includes('T') ? formData.dueDate.split('T')[0] : new Date().toISOString().split('T')[0];
-                        const newDateTime = dateValue && e.target.value ? `${dateValue}T${e.target.value}` : '';
-                        setFormData({ ...formData, dueDate: newDateTime });
-                      }}
-                    >
-                      {/* Generate 15-minute interval options */}
-                      {Array.from({ length: 96 }, (_, i) => {
-                        const hours = Math.floor(i / 4);
-                        const minutes = (i % 4) * 15;
-                        const timeValue = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-                        const displayValue = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-                        return (
-                          <option key={timeValue} value={timeValue}>
-                            {displayValue}
-                          </option>
-                        );
-                      })}
-                    </Select>
-                  </Box>
-                </HStack>
-              </Box>
             </FormControl>
           </VStack>
         </ModalBody>
@@ -1001,402 +1285,7 @@ const CreateTaskModal: React.FC<{
           <Button variant="ghost" mr={3} onClick={onClose}>
             Cancel
           </Button>
-          <Button colorScheme="blue" onClick={handleCreate}>
-            Create Task
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-};
-
-// Email to Note Modal Component
-const EmailToNoteModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  emailMessage: any;
-  dealId: string;
-}> = ({ isOpen, onClose, emailMessage, dealId }) => {
-  const colors = useThemeColors();
-  const toast = useToast();
-  const [selectedTemplate, setSelectedTemplate] = useState('');
-  const [noteContent, setNoteContent] = useState('');
-  const [isConverting, setIsConverting] = useState(false);
-
-  // GraphQL mutation for creating notes
-  const [createSticker] = useMutation(CREATE_STICKER, {
-    onCompleted: () => {
-      toast({
-        title: 'Email Converted to Note',
-        description: 'The email has been successfully converted to a note.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      });
-      onClose();
-    },
-    onError: (error) => {
-      console.error('Error converting email to note:', error);
-      toast({
-        title: 'Conversion Failed',
-        description: 'Failed to convert email to note. Please try again.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    },
-  });
-
-  // Note templates
-  const templates = [
-    {
-      id: 'email_summary',
-      name: 'Email Summary',
-      description: 'Structured summary of email content',
-      content: `# 📧 Email Summary: {subject}
-
-**From:** {from}
-**To:** {to}
-**Date:** {date}
-**Thread:** [View in Gmail]({emailLink})
-
----
-
-## Email Content
-{body}
-
-{attachments}
-
-## Context
-- **Deal:** {dealName}
-- **Original Email:** [Gmail Link]({emailLink})
-
----
-*Converted from Gmail on {conversionDate}*`
-    },
-    {
-      id: 'meeting_notes',
-      name: 'Meeting Notes',
-      description: 'Convert email to meeting notes format',
-      content: `# 📅 Meeting Notes: {subject}
-
-**Date:** {date}
-**Attendees:** {participants}
-**Email Reference:** [View Original]({emailLink})
-
-## Discussion Points
-{body}
-
-## Action Items
-- [ ] Follow up on email discussion
-- [ ] 
-
-## Next Steps
-- 
-
-{attachments}
-
----
-*Based on email from {from} on {date}*`
-    },
-    {
-      id: 'follow_up',
-      name: 'Follow-up Notes',
-      description: 'Track follow-up actions from email',
-      content: `# 🔄 Follow-up Notes: {subject}
-
-**Original Email:** {date} from {from}
-**Email Link:** [View in Gmail]({emailLink})
-
-## Previous Contact
-{body}
-
-## Client Response/Status
-- 
-
-## Follow-up Actions Required
-- [ ] 
-- [ ] 
-
-## Next Contact Date
-- 
-
-{attachments}
-
----
-*Email converted on {conversionDate}*`
-    }
-  ];
-
-  useEffect(() => {
-    if (emailMessage && isOpen) {
-      // Auto-select email summary template
-      setSelectedTemplate('email_summary');
-      generateNoteContent('email_summary');
-    }
-  }, [emailMessage, isOpen]);
-
-  const generateNoteContent = (templateId: string) => {
-    if (!emailMessage || !templateId) return;
-
-    const template = templates.find(t => t.id === templateId);
-    if (!template) return;
-
-    const formatDate = (timestamp: string) => {
-      return new Date(timestamp).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    };
-
-    const attachmentsSection = emailMessage.attachments?.length > 0 
-      ? `\n## Attachments\n${emailMessage.attachments.map((att: any) => 
-          `- 📎 ${att.filename} (${Math.round(att.size / 1024)} KB)`
-        ).join('\n')}\n`
-      : '';
-
-    const participants = [emailMessage.from, ...(emailMessage.to || []), ...(emailMessage.cc || [])]
-      .filter(Boolean)
-      .join(', ');
-
-    let content = template.content
-      .replace(/{subject}/g, emailMessage.subject || 'Email')
-      .replace(/{from}/g, emailMessage.from || 'Unknown')
-      .replace(/{to}/g, (emailMessage.to || []).join(', '))
-      .replace(/{date}/g, formatDate(emailMessage.timestamp))
-      .replace(/{body}/g, emailMessage.body || '')
-      .replace(/{attachments}/g, attachmentsSection)
-      .replace(/{emailLink}/g, '#') // Would be actual Gmail link
-      .replace(/{dealName}/g, 'Current Deal') // Would be actual deal name
-      .replace(/{conversionDate}/g, new Date().toLocaleDateString())
-      .replace(/{participants}/g, participants);
-
-    setNoteContent(content);
-  };
-
-  const handleTemplateChange = (templateId: string) => {
-    setSelectedTemplate(templateId);
-    generateNoteContent(templateId);
-  };
-
-  const generateTitle = (content: string): string => {
-    // Extract title from content - look for first heading or use subject
-    const lines = content.split('\n');
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('# ')) {
-        return trimmed.substring(2).trim();
-      }
-    }
-    
-    // Fallback to email subject
-    return `Email: ${emailMessage.subject || 'Converted Email'}`;
-  };
-
-  const handleConvertToNote = async () => {
-    if (!noteContent.trim()) {
-      toast({
-        title: 'Content Required',
-        description: 'Please add content to the note before converting.',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    setIsConverting(true);
-    try {
-      const title = generateTitle(noteContent);
-      
-      await createSticker({
-        variables: {
-          input: {
-            entityType: 'DEAL',
-            entityId: dealId,
-            title: title,
-            content: noteContent,
-            positionX: Math.floor(Math.random() * 300), // Random position
-            positionY: Math.floor(Math.random() * 300),
-            width: 300,
-            height: 200,
-            color: '#E3F2FD', // Light blue for email notes
-            isPinned: false,
-            isPrivate: false,
-            priority: 'NORMAL',
-            mentions: [],
-            tags: ['email-converted', selectedTemplate],
-          }
-        }
-      });
-    } catch (error) {
-      // Error handling is done in the mutation's onError callback
-    } finally {
-      setIsConverting(false);
-    }
-  };
-
-  if (!emailMessage) return null;
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="6xl">
-      <ModalOverlay />
-      <ModalContent maxH="90vh">
-        <ModalHeader>
-          <HStack spacing={3}>
-            <FiFileText />
-            <Text>Convert Email to Note</Text>
-          </HStack>
-        </ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <Grid templateColumns="1fr 2fr" gap={6} h="70vh">
-            {/* Left Panel - Email Preview */}
-            <GridItem>
-              <VStack spacing={4} align="stretch" h="full">
-                <Box>
-                  <Text fontSize="lg" fontWeight="bold" mb={2}>
-                    Email Preview
-                  </Text>
-                  <Card>
-                    <CardBody>
-                      <VStack spacing={3} align="stretch">
-                        <Box>
-                          <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
-                            Subject:
-                          </Text>
-                          <Text fontSize="sm" color={colors.text.secondary}>
-                            {emailMessage.subject}
-                          </Text>
-                        </Box>
-                        
-                        <Box>
-                          <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
-                            From:
-                          </Text>
-                          <Text fontSize="sm" color={colors.text.secondary}>
-                            {emailMessage.from}
-                          </Text>
-                        </Box>
-                        
-                        <Box>
-                          <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
-                            Date:
-                          </Text>
-                          <Text fontSize="sm" color={colors.text.secondary}>
-                            {new Date(emailMessage.timestamp).toLocaleString()}
-                          </Text>
-                        </Box>
-                        
-                        <Divider />
-                        
-                        <Box>
-                          <Text fontSize="sm" fontWeight="medium" color={colors.text.primary} mb={2}>
-                            Content:
-                          </Text>
-                          <Box 
-                            maxH="200px" 
-                            overflowY="auto" 
-                            p={3} 
-                            bg={colors.bg.surface} 
-                            borderRadius="md"
-                          >
-                            <Text fontSize="sm" whiteSpace="pre-wrap">
-                              {emailMessage.body}
-                            </Text>
-                          </Box>
-                        </Box>
-                        
-                        {emailMessage.attachments?.length > 0 && (
-                          <Box>
-                            <Text fontSize="sm" fontWeight="medium" color={colors.text.primary} mb={2}>
-                              Attachments:
-                            </Text>
-                            <VStack spacing={1} align="stretch">
-                              {emailMessage.attachments.map((attachment: any) => (
-                                <HStack key={attachment.id} spacing={2}>
-                                  <AttachmentIcon w={3} h={3} />
-                                  <Text fontSize="xs">{attachment.filename}</Text>
-                                </HStack>
-                              ))}
-                            </VStack>
-                          </Box>
-                        )}
-                      </VStack>
-                    </CardBody>
-                  </Card>
-                </Box>
-
-                {/* Template Selection */}
-                <Box>
-                  <Text fontSize="lg" fontWeight="bold" mb={3}>
-                    Note Template
-                  </Text>
-                  <VStack spacing={2} align="stretch">
-                    {templates.map((template) => (
-                      <Card
-                        key={template.id}
-                        cursor="pointer"
-                        onClick={() => handleTemplateChange(template.id)}
-                        bg={selectedTemplate === template.id ? colors.bg.elevated : colors.bg.surface}
-                        borderColor={selectedTemplate === template.id ? colors.interactive.default : colors.border.default}
-                        borderWidth="2px"
-                        _hover={{ borderColor: colors.interactive.default }}
-                      >
-                        <CardBody p={3}>
-                          <VStack spacing={1} align="start">
-                            <Text fontSize="sm" fontWeight="medium">
-                              {template.name}
-                            </Text>
-                            <Text fontSize="xs" color={colors.text.muted}>
-                              {template.description}
-                            </Text>
-                          </VStack>
-                        </CardBody>
-                      </Card>
-                    ))}
-                  </VStack>
-                </Box>
-              </VStack>
-            </GridItem>
-
-            {/* Right Panel - Note Editor */}
-            <GridItem>
-              <VStack spacing={4} align="stretch" h="full">
-                <Text fontSize="lg" fontWeight="bold">
-                  Note Content
-                </Text>
-                <Box flex="1">
-                  <Textarea
-                    value={noteContent}
-                    onChange={(e) => setNoteContent(e.target.value)}
-                    placeholder="Note content will appear here..."
-                    h="full"
-                    resize="none"
-                    fontFamily="mono"
-                    fontSize="sm"
-                  />
-                </Box>
-              </VStack>
-            </GridItem>
-          </Grid>
-        </ModalBody>
-
-        <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            colorScheme="blue"
-            onClick={handleConvertToNote}
-            isLoading={isConverting}
-            loadingText="Converting..."
-            leftIcon={<FiFileText />}
-          >
+          <Button colorScheme="blue" onClick={handleConvert}>
             Convert to Note
           </Button>
         </ModalFooter>
@@ -1405,4 +1294,4 @@ const EmailToNoteModal: React.FC<{
   );
 };
 
-export default DealEmailsPanel; 
+export default DealEmailsPanel;

@@ -4,6 +4,7 @@ import { GraphQLContext, requireAuthentication, getAccessToken } from '../helper
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 import { activityService } from '../../../../lib/activityService';
+import { dealParticipantService } from '../../../../lib/dealParticipantService';
 import type {
     DealResolvers,
     Person,
@@ -406,6 +407,24 @@ export const Deal: DealResolvers<GraphQLContext> = {
             // Log the error and return null, indicating the assigned user could not be resolved.
             // Consider if specific errors should be re-thrown if they are critical.
         return null;
+      }
+    },
+    
+    // Enhanced: Deal participants for email filtering
+    participants: async (parent: GraphQLDealParent, _args: any, context: GraphQLContext) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context)!;
+      const currentUserId = context.currentUser!.id;
+      
+      try {
+        return await dealParticipantService.getDealParticipants(
+          currentUserId,
+          parent.id,
+          accessToken
+        );
+      } catch (error) {
+        console.error(`Error fetching participants for deal ${parent.id}:`, error);
+        return [];
       }
     },
 }; 

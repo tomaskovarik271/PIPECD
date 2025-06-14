@@ -6,9 +6,9 @@
 
 This document outlines the architectural decisions for building a custom Customer Relationship Management (CRM) system intended to replace Pipedrive. The system aims to be scalable, maintainable, secure, and ready for future expansion into adjacent business domains (e.g., Accounting, Logistics), aligning with Domain-Driven Design (DDD) principles. 
 
-**🚀 CURRENT STATUS: PRODUCTION-READY CRM WITH AI INTELLIGENCE**
+**🚀 CURRENT STATUS: PRODUCTION-READY CRM WITH AI INTELLIGENCE & COMPLETE GMAIL INTEGRATION**
 
-The system has achieved **full production readiness** with revolutionary AI capabilities, comprehensive lead management, enterprise notification infrastructure, and event-driven automation. This ADR reflects the current implemented state and proven architectural decisions.
+The system has achieved **full production readiness** with revolutionary AI capabilities, comprehensive lead management, enterprise notification infrastructure, complete Gmail integration with email management features, and event-driven automation. This ADR reflects the current implemented state and proven architectural decisions.
 
 ## 2. Goal
 
@@ -18,6 +18,7 @@ The system has achieved **full production readiness** with revolutionary AI capa
 - **Revolutionary AI Agent** - Claude 4 Sonnet with 30+ tools for autonomous CRM management
 - **Enterprise Activity Reminders** - Multi-channel notification infrastructure with email, in-app, and push capabilities
 - **Complete Leads Management** - Full qualification workflows with AI scoring and conversion
+- **Enhanced Email-to-Task** - Claude 3 Haiku AI integration with user confirmation and email scope selection
 - **Custom Fields Democratization** - All users can create custom fields via AI conversation
 - **Event-Driven Automation** - Inngest-powered assignment and workflow automation
 - **Production-Ready Security** - JWT authentication with Row-Level Security enforcement
@@ -160,13 +161,14 @@ sequenceDiagram
 |  11 | **Workflow Automation**                 | Rule-based triggers/actions across modules.          | ✅ **PRODUCTION** (Deal + Lead assignment)  | ✅ **OPERATIONAL** - Inngest-powered deal assignment, lead assignment, system activity creation |
 |  12 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ **PRODUCTION** (Profiles + Auth)         | ✅ **COMPLETE** - Supabase Auth + user profiles with display names and avatars |
 |  13 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ **PRODUCTION** (RLS enforcement)         | ✅ **SECURE** - RLS via `auth.uid()`, custom fields permissions democratized |
-|  14 | **Google Workspace Integration**        | OAuth 2.0, Google Drive document management, Gmail & Calendar sync | ✅ **PRODUCTION** (Drive integration complete) | ✅ **IMPLEMENTED** - OAuth flow, deal folders, document import, admin settings. Gmail/Calendar foundation ready for expansion.
-|  15 | **Project (Post-Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ **FUTURE** (Post-production expansion)    | ⬜ **PLANNED** - Next phase after current capabilities are optimized |
-|  16 | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ **FUTURE** (Post-production expansion)    | ⬜ **PLANNED** - Removed outdated pricing services, clean slate for future |
-|  17 | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | 🚧 **FOUNDATION READY** (Gmail integration) | 🚧 **PLANNED** - `emailService` and `DealEmailsPanel` components ready for Gmail API |
-|  18 | **Document Management**                 | Files, proposals, e-signature, attachment storage.   | ✅ **PRODUCTION** (Google Drive + Note Attachments) | ✅ **IMPLEMENTED** - Google Drive document management with categorization, deal-centric folders, and complete note attachment system with dual attachment capabilities |
-|  19 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ **FUTURE** (Analytics expansion)          | ⬜ **PLANNED** - AI Agent provides foundation for intelligent reporting |
-|  20 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ **FUTURE** (Integration expansion)        | ⬜ **PLANNED** - GraphQL API ready for external integrations |
+|  14 | **Google Workspace Integration**        | OAuth 2.0, Google Drive document management, Gmail & Calendar sync | ✅ **PRODUCTION** (Complete Gmail integration) | ✅ **IMPLEMENTED** - OAuth flow with enhanced permissions, deal folders, document import, Gmail email management with pinning and contact creation, admin settings. Calendar integration foundation ready.
+|  15 | **Gmail Email Management**              | **🆕 COMPLETE** Email pinning, contact creation, mark as read/unread, enhanced filtering, AI-powered email-to-task | ✅ **PRODUCTION** (Full email functionality + AI integration) | ✅ **BREAKTHROUGH** - Gmail permission fix, email pinning system, smart contact creation, Claude 3 Haiku email-to-task with user confirmation, visual indicators, consistent UI actions |
+|  16 | **Project (Post-Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ **FUTURE** (Post-production expansion)    | ⬜ **PLANNED** - Next phase after current capabilities are optimized |
+|  17 | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ **FUTURE** (Post-production expansion)    | ⬜ **PLANNED** - Removed outdated pricing services, clean slate for future |
+|  18 | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | 🚧 **FOUNDATION READY** (Gmail integration) | 🚧 **PLANNED** - `emailService` and `DealEmailsPanel` components ready for Gmail API |
+|  19 | **Document Management**                 | Files, proposals, e-signature, attachment storage.   | ✅ **PRODUCTION** (Google Drive + Note Attachments) | ✅ **IMPLEMENTED** - Google Drive document management with categorization, deal-centric folders, and complete note attachment system with dual attachment capabilities |
+|  20 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ **FUTURE** (Analytics expansion)          | ⬜ **PLANNED** - AI Agent provides foundation for intelligent reporting |
+|  21 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ **FUTURE** (Integration expansion)        | ⬜ **PLANNED** - GraphQL API ready for external integrations |
 
 *Legend: ✅ Production Ready & Operational · 🟡 In Development · ⬜ Future Planned*
 
@@ -207,8 +209,11 @@ sequenceDiagram
     *   **Revolutionary Achievement:** All users can create custom fields via AI conversation. JSONB storage with GIN indexing provides excellent performance. AI-driven field type selection works reliably.
 *   **Event-Driven Automation: Inngest Workflows** ✅ **PRODUCTION OPERATIONAL**
     *   **Current Implementations:** Deal assignment automation, lead assignment automation, system activity creation. Ready for expansion to additional workflow patterns.
-*   **Google Workspace Integration: OAuth 2.0 + Drive API** ✅ **PRODUCTION PROVEN**
-    *   **Production Success:** OAuth 2.0 authentication flow, automatic deal folder creation, document import with categorization. Gmail/Calendar foundation ready for expansion.
+*   **Google Workspace Integration: OAuth 2.0 + Drive API + Gmail API** ✅ **PRODUCTION PROVEN**
+    *   **Production Experience:** OAuth 2.0 flow successfully handles token refresh and permission management. Google Drive integration provides seamless document management with deal-centric folders.
+    *   **Gmail Integration Success:** Complete email management with pinning, contact creation, and mark as read/unread functionality. Gmail permission fix resolved all authentication scope issues.
+    *   **Email Management Features:** Email pinning system with notes, smart contact creation from emails, visual pin indicators, consistent action buttons, real-time UI updates.
+    *   **Permission Fix Implementation:** Added `gmail.modify` scope to OAuth flow, enabling full email operations. User migration path established for existing users to reconnect accounts.
 
 ## 6. Key Architectural Risks & Mitigation Status (PRODUCTION VALIDATED)
 

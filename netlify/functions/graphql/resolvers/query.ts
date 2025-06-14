@@ -4,7 +4,7 @@ import { supabase, supabaseAdmin } from '../../../../lib/supabaseClient';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 import { dealService } from '../../../../lib/dealService';
-import type { DbDeal } from '../../../../lib/dealService/dealCrud';
+
 import * as userProfileService from '../../../../lib/userProfileService';
 import {
   GraphQLContext, 
@@ -17,15 +17,11 @@ import { wfmWorkflowService } from '../../../../lib/wfmWorkflowService';
 import { wfmProjectTypeService } from '../../../../lib/wfmProjectTypeService';
 import * as leadService from '../../../../lib/leadService';
 import { googleIntegrationService } from '../../../../lib/googleIntegrationService';
-import { activityReminderService } from '../../../../lib/activityReminderService';
-import { activityReminderQueries } from './queries/activityReminderQueries';
+import { dealParticipantQueries } from './queries/dealParticipantQueries';
 
 // Import generated types from backend codegen
 import type {
     QueryResolvers,
-    Person as GraphQLPerson,
-    Organization as GraphQLOrganization,
-    Deal as GraphQLDeal,
     User as GraphQLUser,
     PersonListItem as GraphQLPersonListItem,
     WfmWorkflowTransition as GraphQLWfmWorkflowTransition,
@@ -35,7 +31,6 @@ import type {
 
 
 export const Query: QueryResolvers<GraphQLContext> = {
-    ...activityReminderQueries,
     health: () => 'OK',
     supabaseConnectionTest: async () => {
       try {
@@ -253,7 +248,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
     },
 
     // --- Lead Resolvers ---
-    leads: async (_parent, args, context) => {
+    leads: async (_parent, _args, context) => {
        requireAuthentication(context);
        const accessToken = getAccessToken(context)!;
        try {
@@ -382,9 +377,9 @@ export const Query: QueryResolvers<GraphQLContext> = {
       return wfmWorkflowService.getAllowedTransitions(workflowId, fromStepId, context);
     },
     // --- WFM Status Resolvers ---
-    wfmStatuses: async (_parent, args, context: GraphQLContext) => {
+    wfmStatuses: async (_parent, _args, context: GraphQLContext) => {
       requireAuthentication(context);
-      return wfmStatusService.getAll(args.isArchived || false, context);
+      return wfmStatusService.getAll(_args.isArchived || false, context);
     },
     wfmStatus: async (_parent, args, context: GraphQLContext) => {
       requireAuthentication(context);
@@ -522,7 +517,10 @@ export const Query: QueryResolvers<GraphQLContext> = {
         console.error('Error searching emails:', error);
         throw new GraphQLError('Failed to search emails');
       }
-    }
+    },
+
+    // Enhanced: Deal participant queries
+    ...dealParticipantQueries,
 
     // Note: Activity reminder queries will be added after GraphQL schema is updated and types are regenerated
 }; 
