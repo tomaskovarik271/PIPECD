@@ -84,10 +84,7 @@ CREATE POLICY "Users can view deal contact associations for accessible deals" ON
       AND (
         d.user_id = auth.uid()
         OR d.assigned_to_user_id = auth.uid()
-        OR (
-          (
-          WHERE get_user_permissions(auth.uid())::jsonb ? 'deal:read_any'
-        )
+        OR get_user_permissions(auth.uid())::jsonb ? 'deal:read_any'
       )
     )
   );
@@ -100,14 +97,8 @@ CREATE POLICY "Users can create deal contact associations for updatable deals" O
       WHERE d.id = deal_contact_associations.deal_id
       AND (
         (d.user_id = auth.uid() OR d.assigned_to_user_id = auth.uid())
-        AND EXISTS (
-          (
-          WHERE get_user_permissions(auth.uid())::jsonb ? 'deal:update_own'
-        )
-        OR (
-          (
-          WHERE get_user_permissions(auth.uid())::jsonb ? 'deal:update_any'
-        )
+        AND get_user_permissions(auth.uid())::jsonb ? 'deal:update_own'
+        OR get_user_permissions(auth.uid())::jsonb ? 'deal:update_any'
       )
     )
     AND created_by_user_id = auth.uid()
@@ -117,13 +108,10 @@ CREATE POLICY "Users can create deal contact associations for updatable deals" O
 CREATE POLICY "Users can update deal contact associations" ON public.deal_contact_associations
   FOR UPDATE USING (
     created_by_user_id = auth.uid()
-    OR (
+    OR EXISTS (
       SELECT 1 FROM public.deals d
       WHERE d.id = deal_contact_associations.deal_id
-      AND EXISTS (
-        (
-        WHERE get_user_permissions(auth.uid())::jsonb ? 'deal:update_any'
-      )
+      AND get_user_permissions(auth.uid())::jsonb ? 'deal:update_any'
     )
   );
 
@@ -131,13 +119,10 @@ CREATE POLICY "Users can update deal contact associations" ON public.deal_contac
 CREATE POLICY "Users can delete deal contact associations" ON public.deal_contact_associations
   FOR DELETE USING (
     created_by_user_id = auth.uid()
-    OR (
+    OR EXISTS (
       SELECT 1 FROM public.deals d
       WHERE d.id = deal_contact_associations.deal_id
-      AND EXISTS (
-        (
-        WHERE get_user_permissions(auth.uid())::jsonb ? 'deal:update_any'
-      )
+      AND get_user_permissions(auth.uid())::jsonb ? 'deal:update_any'
     )
   );
 
@@ -161,10 +146,7 @@ CREATE POLICY "Users can view email contact discovery for accessible deals" ON p
       AND (
         d.user_id = auth.uid()
         OR d.assigned_to_user_id = auth.uid()
-        OR (
-          (
-          WHERE get_user_permissions(auth.uid())::jsonb ? 'deal:read_any'
-        )
+        OR get_user_permissions(auth.uid())::jsonb ? 'deal:read_any'
       )
     )
   );
@@ -181,14 +163,8 @@ CREATE POLICY "Users can update email contact discovery logs" ON public.email_co
       WHERE d.id = email_contact_discovery_log.deal_id
       AND (
         (d.user_id = auth.uid() OR d.assigned_to_user_id = auth.uid())
-        AND EXISTS (
-          (
-          WHERE get_user_permissions(auth.uid())::jsonb ? 'deal:update_own'
-        )
-        OR (
-          (
-          WHERE get_user_permissions(auth.uid())::jsonb ? 'deal:update_any'
-        )
+        AND get_user_permissions(auth.uid())::jsonb ? 'deal:update_own'
+        OR get_user_permissions(auth.uid())::jsonb ? 'deal:update_any'
       )
     )
   );
@@ -206,6 +182,7 @@ RETURNS TABLE (
   person_first_name TEXT,
   person_last_name TEXT,
   person_email TEXT,
+  person_phone TEXT,
   role TEXT,
   custom_role_label TEXT,
   include_in_email_filter BOOLEAN,
@@ -224,6 +201,7 @@ BEGIN
     p.first_name,
     p.last_name,
     p.email,
+    p.phone,
     dca.role,
     dca.custom_role_label,
     dca.include_in_email_filter,
@@ -246,7 +224,7 @@ BEGIN
 END;
 $$;
 
--- Function to get or create user email filter preferences with defaults
+-- Function to get or create user email filter preferences
 CREATE OR REPLACE FUNCTION public.get_or_create_user_email_filter_preferences(p_user_id UUID)
 RETURNS public.user_email_filter_preferences
 LANGUAGE plpgsql
@@ -260,19 +238,11 @@ BEGIN
   FROM public.user_email_filter_preferences
   WHERE user_id = p_user_id;
   
-  -- If not found, create with defaults
+  -- If not found, create default preferences
   IF NOT FOUND THEN
-    INSERT INTO public.user_email_filter_preferences (
-      user_id,
-      default_contact_scope,
-      include_new_participants,
-      auto_discover_contacts
-    ) VALUES (
-      p_user_id,
-      'primary',
-      true,
-      true
-    ) RETURNING * INTO result;
+    INSERT INTO public.user_email_filter_preferences (user_id)
+    VALUES (p_user_id)
+    RETURNING * INTO result;
   END IF;
   
   RETURN result;
@@ -280,10 +250,10 @@ END;
 $$;
 
 -- =============================================
--- Update Triggers
+-- Triggers for Updated At Timestamps
 -- =============================================
 
--- Trigger to update updated_at timestamp on deal_contact_associations
+-- Function to update updated_at timestamp for deal_contact_associations
 CREATE OR REPLACE FUNCTION public.update_deal_contact_associations_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -297,7 +267,7 @@ CREATE TRIGGER trigger_update_deal_contact_associations_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.update_deal_contact_associations_updated_at();
 
--- Trigger to update updated_at timestamp on user_email_filter_preferences
+-- Function to update updated_at timestamp for user_email_filter_preferences
 CREATE OR REPLACE FUNCTION public.update_user_email_filter_preferences_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -312,24 +282,25 @@ CREATE TRIGGER trigger_update_user_email_filter_preferences_updated_at
   EXECUTE FUNCTION public.update_user_email_filter_preferences_updated_at();
 
 -- =============================================
--- Initial Data Setup
+-- Seed Primary Contact Associations
 -- =============================================
 
--- Create primary contact associations for existing deals with primary contacts
--- This ensures backward compatibility with current email filtering
-INSERT INTO public.deal_contact_associations (deal_id, person_id, role, include_in_email_filter, created_by_user_id)
-SELECT DISTINCT
-  d.id as deal_id,
-  d.primary_contact_id as person_id,
+-- Create associations for existing deals with primary contacts
+INSERT INTO public.deal_contact_associations (
+  deal_id,
+  person_id,
+  role,
+  include_in_email_filter,
+  created_by_user_id
+)
+SELECT 
+  d.id,
+  d.person_id,
   'primary' as role,
   true as include_in_email_filter,
   d.user_id
 FROM public.deals d
-WHERE d.primary_contact_id IS NOT NULL
-AND NOT EXISTS (
-  SELECT 1 FROM public.deal_contact_associations dca 
-  WHERE dca.deal_id = d.id AND dca.person_id = d.primary_contact_id
-)
+WHERE d.person_id IS NOT NULL
 ON CONFLICT (deal_id, person_id) DO NOTHING;
 
 COMMIT; 
