@@ -1,0 +1,236 @@
+# Enhanced Email Filtering Schema
+# Contact association and filtering types for flexible email management
+
+# =============================================
+# Enums
+# =============================================
+
+enum ContactScopeType {
+  PRIMARY
+  ALL
+  CUSTOM
+  SELECTED_ROLES
+}
+
+enum ContactRoleType {
+  PRIMARY
+  DECISION_MAKER
+  INFLUENCER
+  TECHNICAL
+  LEGAL
+  OTHER
+}
+
+enum EmailContactDiscoveryStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  AUTO_ASSOCIATED
+}
+
+# =============================================
+# Types
+# =============================================
+
+type DealContactAssociation {
+  id: String!
+  dealId: String!
+  personId: String!
+  person: Person
+  role: ContactRoleType!
+  customRoleLabel: String
+  includeInEmailFilter: Boolean!
+  createdAt: String!
+  updatedAt: String!
+  createdByUserId: String!
+}
+
+type UserEmailFilterPreferences {
+  id: String!
+  userId: String!
+  defaultContactScope: ContactScopeType!
+  includeNewParticipants: Boolean!
+  autoDiscoverContacts: Boolean!
+  savedFilterPresets: [EmailFilterPreset!]!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type EmailFilterPreset {
+  id: String!
+  name: String!
+  description: String
+  contactScope: ContactScopeType!
+  selectedContactIds: [String!]!
+  selectedRoles: [ContactRoleType!]!
+  includeNewParticipants: Boolean!
+  keywords: [String!]!
+  dateFrom: String
+  dateTo: String
+  isUnread: Boolean
+  hasAttachments: Boolean
+  isDefault: Boolean!
+  createdAt: String!
+}
+
+type EmailContactSuggestion {
+  id: String!
+  dealId: String!
+  emailAddress: String!
+  discoveredName: String
+  suggestedRole: ContactRoleType!
+  confidenceScore: Float
+  firstSeenThreadId: String
+  emailCount: Int!
+  isExistingContact: Boolean!
+  existingPersonId: String
+  existingPerson: Person
+  status: EmailContactDiscoveryStatus!
+  createdAt: String!
+  processedAt: String
+  processedByUserId: String
+}
+
+type DealContactAssociationWithDetails {
+  id: String!
+  dealId: String!
+  personId: String!
+  personFirstName: String
+  personLastName: String
+  personEmail: String
+  role: ContactRoleType!
+  customRoleLabel: String
+  includeInEmailFilter: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+# =============================================
+# Input Types
+# =============================================
+
+input EmailThreadsFilterInput {
+  dealId: String
+  contactScope: ContactScopeType!
+  selectedContactIds: [String!]
+  selectedRoles: [ContactRoleType!]
+  includeNewParticipants: Boolean
+  contactEmail: String # Backward compatibility
+  keywords: [String!]
+  dateFrom: String
+  dateTo: String
+  isUnread: Boolean
+  hasAttachments: Boolean
+  emailDirection: String # 'inbound', 'outbound', 'all'
+  hasReplies: Boolean
+  limit: Int
+  pageToken: String
+}
+
+input CreateDealContactAssociationInput {
+  dealId: String!
+  personId: String!
+  role: ContactRoleType!
+  customRoleLabel: String
+  includeInEmailFilter: Boolean
+}
+
+input UpdateDealContactAssociationInput {
+  id: String!
+  role: ContactRoleType
+  customRoleLabel: String
+  includeInEmailFilter: Boolean
+}
+
+input BulkUpdateDealContactAssociationsInput {
+  dealId: String!
+  associations: [UpdateDealContactAssociationInput!]!
+}
+
+input UpdateUserEmailFilterPreferencesInput {
+  defaultContactScope: ContactScopeType
+  includeNewParticipants: Boolean
+  autoDiscoverContacts: Boolean
+}
+
+input CreateEmailFilterPresetInput {
+  name: String!
+  description: String
+  contactScope: ContactScopeType!
+  selectedContactIds: [String!]
+  selectedRoles: [ContactRoleType!]
+  includeNewParticipants: Boolean
+  keywords: [String!]
+  dateFrom: String
+  dateTo: String
+  isUnread: Boolean
+  hasAttachments: Boolean
+  isDefault: Boolean
+}
+
+input ProcessEmailContactSuggestionInput {
+  id: String!
+  action: String! # 'accept', 'reject', 'associate'
+  associationRole: ContactRoleType
+  customRoleLabel: String
+}
+
+# =============================================
+# Extended Query Type
+# =============================================
+
+extend type Query {
+  # Contact Associations
+  getDealContactAssociations(dealId: String!): [DealContactAssociation!]!
+  getDealContactAssociationsWithDetails(dealId: String!): [DealContactAssociationWithDetails!]!
+  
+  # User Preferences
+  getUserEmailFilterPreferences: UserEmailFilterPreferences!
+  
+  # Contact Discovery
+  getEmailContactSuggestions(dealId: String!): [EmailContactSuggestion!]!
+  getPendingEmailContactSuggestions(dealId: String!): [EmailContactSuggestion!]!
+  
+  # Enhanced Email Threads (extends existing)
+  getEmailThreadsEnhanced(filter: EmailThreadsFilterInput!): EmailThreadsResponse!
+}
+
+# =============================================
+# Extended Mutation Type
+# =============================================
+
+extend type Mutation {
+  # Contact Association Management
+  createDealContactAssociation(input: CreateDealContactAssociationInput!): DealContactAssociation!
+  updateDealContactAssociation(input: UpdateDealContactAssociationInput!): DealContactAssociation!
+  deleteDealContactAssociation(id: String!): Boolean!
+  bulkUpdateDealContactAssociations(input: BulkUpdateDealContactAssociationsInput!): [DealContactAssociation!]!
+  
+  # User Preference Management
+  updateUserEmailFilterPreferences(input: UpdateUserEmailFilterPreferencesInput!): UserEmailFilterPreferences!
+  
+  # Filter Preset Management
+  createEmailFilterPreset(input: CreateEmailFilterPresetInput!): EmailFilterPreset!
+  updateEmailFilterPreset(id: String!, input: CreateEmailFilterPresetInput!): EmailFilterPreset!
+  deleteEmailFilterPreset(id: String!): Boolean!
+  
+  # Contact Discovery Management
+  discoverEmailContacts(dealId: String!): [EmailContactSuggestion!]!
+  processEmailContactSuggestion(input: ProcessEmailContactSuggestionInput!): EmailContactSuggestion!
+  bulkProcessEmailContactSuggestions(inputs: [ProcessEmailContactSuggestionInput!]!): [EmailContactSuggestion!]!
+}
+
+# =============================================
+# Extended Types (if needed)
+# =============================================
+
+# Extend Deal type to include contact associations
+extend type Deal {
+  contactAssociations: [DealContactAssociation!]!
+  emailContactSuggestions: [EmailContactSuggestion!]!
+}
+
+# Extend Person type to include deal associations
+extend type Person {
+  dealAssociations: [DealContactAssociation!]!
+} 
