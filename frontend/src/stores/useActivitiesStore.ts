@@ -59,6 +59,13 @@ const GET_ACTIVITIES_QUERY = gql`
       due_date
       is_done
       notes
+      assigned_to_user_id
+      assignedToUser {
+        id
+        email
+        display_name
+        avatar_url
+      }
       deal_id
       person_id
       organization_id
@@ -81,6 +88,13 @@ const CREATE_ACTIVITY_MUTATION = gql`
       due_date
       is_done
       notes
+      assigned_to_user_id
+      assignedToUser {
+        id
+        email
+        display_name
+        avatar_url
+      }
       deal_id
       person_id
       organization_id
@@ -103,6 +117,13 @@ const UPDATE_ACTIVITY_MUTATION = gql`
       due_date
       is_done
       notes
+      assigned_to_user_id
+      assignedToUser {
+        id
+        email
+        display_name
+        avatar_url
+      }
       deal_id
       person_id
       organization_id

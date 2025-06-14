@@ -26,6 +26,7 @@ import {
 } from '@chakra-ui/icons';
 import { Activity, ActivityType as GQLActivityType } from '../../stores/useActivitiesStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useAppStore } from '../../stores/useAppStore';
 
 interface DealActivitiesPanelProps {
   activities: Activity[];
@@ -49,6 +50,12 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
   getActivityTypeIcon,
 }) => {
   const colors = useThemeColors();
+  const appStore = useAppStore();
+  
+  // Get user permissions and current user ID for RBAC checks
+  const userPermissions = appStore.userPermissions;
+  const session = appStore.session;
+  const currentUserId = session?.user.id;
 
   // Sort activities by due date and completion status for better timeline view
   const sortedActivities = React.useMemo(() => {
@@ -218,6 +225,12 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
               onClick={() => onEditActivity(activity)} 
               color={colors.text.secondary} 
               _hover={{color: colors.interactive.default, bg: colors.bg.surface}}
+              isDisabled={
+                !(
+                  userPermissions?.includes('activity:update_any') ||
+                  (userPermissions?.includes('activity:update_own') && activity.user_id === currentUserId)
+                )
+              }
             />
           </Tooltip>
           <Tooltip label="Delete Activity" placement="top">
@@ -230,6 +243,12 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
               onClick={() => onDeleteActivity(activity)} 
               color={colors.status.error} 
               _hover={{color: colors.status.error, bg: colors.bg.surface}}
+              isDisabled={
+                !(
+                  userPermissions?.includes('activity:delete_any') ||
+                  (userPermissions?.includes('activity:delete_own') && activity.user_id === currentUserId)
+                )
+              }
             />
           </Tooltip>
         </HStack>

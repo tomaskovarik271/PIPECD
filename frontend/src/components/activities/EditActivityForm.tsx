@@ -57,11 +57,19 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
   const { updateActivity, activitiesError, activitiesLoading } = useActivitiesStore();
   const toast = useToast();
   
+  // Debug logging
+  console.log('EditActivityForm - activity:', activity);
+  console.log('EditActivityForm - activity.assigned_to_user_id:', activity.assigned_to_user_id);
+  
   // Fetching data for linked entities
   const { deals, fetchDeals, dealsLoading } = useDealsStore();
   const { people, fetchPeople, peopleLoading } = usePeopleStore();
   const { organizations, fetchOrganizations, organizationsLoading } = useOrganizationsStore();
   const { users: userList, loading: usersLoading, fetchUsers, hasFetched: hasFetchedUsers } = useUserListStore();
+
+  // Debug logging for users
+  console.log('EditActivityForm - userList:', userList);
+  console.log('EditActivityForm - usersLoading:', usersLoading);
 
   const getInitialLinkType = (): LinkType => {
     if (activity.deal_id) return 'deal';
@@ -245,7 +253,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
               id='assigned_to_user_id' 
               placeholder='Unassigned'
               {...register('assigned_to_user_id')}
-              defaultValue={activity.assigned_to_user_id || undefined}
+              value={watch('assigned_to_user_id') || ''}
             >
               {userList.map(user => (
                 <option key={user.id} value={user.id}>
