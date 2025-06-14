@@ -247,20 +247,34 @@ interface DealsState {
   deleteDeal: (id: string) => Promise<boolean>;
   updateDealWFMProgress: (dealId: string, targetWfmWorkflowStepId: string) => Promise<Deal | null>;
 
-  // Kanban View State and Actions
-  dealsViewMode: 'table' | 'kanban';
-  setDealsViewMode: (mode: 'table' | 'kanban') => void;
+  // View State and Actions
+  dealsViewMode: 'table' | 'kanban' | 'kanban-compact';
+  setDealsViewMode: (mode: 'table' | 'kanban' | 'kanban-compact') => void;
+  kanbanCompactMode: boolean;
+  setKanbanCompactMode: (isCompact: boolean) => void;
 }
 
-// Helper to safely get from localStorage
-const getDealsViewModeFromLocalStorage = (): 'table' | 'kanban' => {
+// Helper to safely get view mode from localStorage
+const getDealsViewModeFromLocalStorage = (): 'table' | 'kanban' | 'kanban-compact' => {
   try {
     const mode = localStorage.getItem('dealsViewMode');
-    return mode === 'kanban' ? 'kanban' : 'table'; // Default to 'table' if not 'kanban'
+    if (mode === 'kanban' || mode === 'kanban-compact') return mode;
+    return 'table'; // Default to 'table' if not a valid mode
   } catch (error) {
     // In case localStorage is not available (e.g. SSR or privacy settings)
     console.warn('Could not access localStorage to get dealsViewMode.', error);
     return 'table';
+  }
+};
+
+// Helper to safely get compact mode from localStorage
+const getKanbanCompactModeFromLocalStorage = (): boolean => {
+  try {
+    const isCompact = localStorage.getItem('kanbanCompactMode');
+    return isCompact === 'true';
+  } catch (error) {
+    console.warn('Could not access localStorage to get kanbanCompactMode.', error);
+    return false;
   }
 };
 
@@ -270,6 +284,7 @@ export const useDealsStore = create<DealsState>((set, get) => ({
   dealsError: null,
   hasInitiallyFetchedDeals: false,
   dealsViewMode: getDealsViewModeFromLocalStorage(),
+  kanbanCompactMode: getKanbanCompactModeFromLocalStorage(),
 
   fetchDeals: async () => {
     set({ dealsLoading: true, dealsError: null, hasInitiallyFetchedDeals: true });
@@ -406,12 +421,21 @@ export const useDealsStore = create<DealsState>((set, get) => ({
     }
   },
 
-  setDealsViewMode: (mode: 'table' | 'kanban') => {
+  setDealsViewMode: (mode: 'table' | 'kanban' | 'kanban-compact') => {
     set({ dealsViewMode: mode });
     try {
       localStorage.setItem('dealsViewMode', mode);
     } catch (error) {
       console.warn('Could not access localStorage to set dealsViewMode.', error);
+    }
+  },
+
+  setKanbanCompactMode: (isCompact: boolean) => {
+    set({ kanbanCompactMode: isCompact });
+    try {
+      localStorage.setItem('kanbanCompactMode', isCompact.toString());
+    } catch (error) {
+      console.warn('Could not access localStorage to set kanbanCompactMode.', error);
     }
   },
 

@@ -12,6 +12,7 @@ import {
   Tag,
   TagLabel,
   TagCloseButton,
+
 } from '@chakra-ui/react';
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import DealsKanbanPageView from './DealsKanbanPageView';
@@ -34,10 +35,12 @@ interface DealsKanbanPageLayoutProps {
   userList: UserListItem[];
   usersLoading: boolean;
   userPermissions: string[] | null | undefined;
-  dealsViewMode: 'table' | 'kanban';
-  setDealsViewMode: (mode: 'table' | 'kanban') => void;
+  dealsViewMode: 'table' | 'kanban' | 'kanban-compact';
+  setDealsViewMode: (mode: 'table' | 'kanban' | 'kanban-compact') => void;
   searchTerm: string;
   onSearchChange: (value: string) => void;
+  kanbanCompactMode: boolean;
+  setKanbanCompactMode: (isCompact: boolean) => void;
 }
 
 const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
@@ -54,6 +57,8 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
   setDealsViewMode,
   searchTerm,
   onSearchChange,
+  kanbanCompactMode,
+  setKanbanCompactMode,
 }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
@@ -77,12 +82,12 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
     {
       label: 'Total Value',
       value: totalValue,
-      formatter: (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+      formatter: (value: number | string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value))
     },
     {
       label: 'Avg. Deal Size',
       value: averageDealSize,
-      formatter: (value: number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value)
+      formatter: (value: number | string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value))
     },
     {
       label: 'Win Rate',
@@ -186,7 +191,12 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
         userPermissions={userPermissions || []}
         showViewModeSwitch={true}
         viewMode={dealsViewMode}
-        onViewModeChange={setDealsViewMode}
+        onViewModeChange={(mode) => {
+          if (mode === 'table' || mode === 'kanban' || mode === 'kanban-compact') {
+            setDealsViewMode(mode);
+          }
+        }}
+        supportedViewModes={['table', 'kanban', 'kanban-compact']}
         secondaryActions={secondaryActions}
         statistics={statistics}
       />
@@ -198,6 +208,7 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
           error={dealsError}
           onNewButtonClick={handleCreateDealClick}
           userPermissions={userPermissions}
+          isCompact={kanbanCompactMode}
         />
       </Box>
     </>

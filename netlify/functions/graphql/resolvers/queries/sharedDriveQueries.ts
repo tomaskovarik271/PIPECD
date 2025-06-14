@@ -134,20 +134,24 @@ export const sharedDriveQueries = {
   },
 
   /**
-   * Get document attachments for a deal
+   * Get document attachments for a specific deal
    */
   async getDealDocumentAttachments(_: any, args: { dealId: string }, context: any) {
     requireAuthentication(context);
     
     try {
-      const { data } = await context.supabaseClient
+      const { data, error } = await context.supabaseClient
         .from('deal_document_attachments')
         .select('*')
         .eq('deal_id', args.dealId)
         .order('attached_at', { ascending: false });
 
-      // Transform the response to match GraphQL schema (snake_case to camelCase)
-      return (data || []).map((attachment: any) => ({
+      if (error) {
+        console.error('Error fetching deal document attachments:', error);
+        throw new Error('Failed to fetch deal document attachments');
+      }
+
+      return data.map((attachment: any) => ({
         id: attachment.id,
         dealId: attachment.deal_id,
         googleFileId: attachment.google_file_id,
@@ -161,8 +165,43 @@ export const sharedDriveQueries = {
         fileSize: attachment.file_size,
       }));
     } catch (error) {
-      console.error('Error fetching deal document attachments:', error);
-      throw new Error('Failed to fetch deal document attachments');
+      console.error('Error in getDealDocumentAttachments:', error);
+      throw error instanceof Error ? error : new Error('Failed to fetch deal document attachments');
+    }
+  },
+
+  /**
+   * Get document attachments for a specific note
+   */
+  async getNoteDocumentAttachments(_: any, args: { noteId: string }, context: any) {
+    requireAuthentication(context);
+    
+    try {
+      const { data, error } = await context.supabaseClient
+        .from('note_document_attachments')
+        .select('*')
+        .eq('note_id', args.noteId)
+        .order('attached_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching note document attachments:', error);
+        throw new Error('Failed to fetch note document attachments');
+      }
+
+      return data.map((attachment: any) => ({
+        id: attachment.id,
+        noteId: attachment.note_id,
+        googleFileId: attachment.google_file_id,
+        fileName: attachment.file_name,
+        fileUrl: attachment.file_url,
+        attachedAt: attachment.attached_at,
+        attachedBy: attachment.attached_by,
+        mimeType: attachment.mime_type,
+        fileSize: attachment.file_size,
+      }));
+    } catch (error) {
+      console.error('Error in getNoteDocumentAttachments:', error);
+      throw error instanceof Error ? error : new Error('Failed to fetch note document attachments');
     }
   },
 }; 

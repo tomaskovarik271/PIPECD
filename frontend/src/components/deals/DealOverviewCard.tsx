@@ -14,6 +14,7 @@ import {
 } from '@chakra-ui/react';
 import { EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
 import { Deal } from '../../stores/useDealsStore';
+import { useAppStore } from '../../stores/useAppStore';
 
 interface DealOverviewCardProps {
   deal: Deal;
@@ -42,6 +43,16 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
   const [newOwnerId, setNewOwnerId] = useState<string | null>(null);
   
   const toast = useToast();
+  
+  // Get user permissions and current user ID for permission checks
+  const userPermissions = useAppStore((state) => state.userPermissions);
+  const session = useAppStore((state) => state.session);
+  const currentUserId = session?.user.id;
+  
+  // Check if user can edit this deal (same logic as in useDealsTableColumns)
+  const canEditDeal = userPermissions?.includes('deal:update_any') || 
+    (userPermissions?.includes('deal:update_own') && 
+     (deal.user_id === currentUserId || deal.assigned_to_user_id === currentUserId));
 
   const handleAmountUpdate = async () => {
     const numericAmount = parseFloat(newAmount);
@@ -61,13 +72,25 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
       setIsEditingAmount(false);
       onRefresh();
     } catch (e) {
-      toast({ 
-        title: 'Error Updating Amount', 
-        description: (e as Error).message, 
-        status: 'error', 
-        duration: 3000, 
-        isClosable: true 
-      });
+      const errorMessage = (e as Error).message;
+      if (errorMessage.includes('Forbidden') || errorMessage.includes('permission')) {
+        toast({ 
+          title: 'Permission Denied', 
+          description: 'You do not have permission to update this deal.', 
+          status: 'error', 
+          duration: 4000, 
+          isClosable: true 
+        });
+      } else {
+        toast({ 
+          title: 'Error Updating Amount', 
+          description: errorMessage, 
+          status: 'error', 
+          duration: 3000, 
+          isClosable: true 
+        });
+      }
+      setIsEditingAmount(false);
     }
   };
 
@@ -84,13 +107,25 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
       setIsEditingCloseDate(false);
       onRefresh();
     } catch (e) {
-      toast({ 
-        title: 'Error Updating Date', 
-        description: (e as Error).message, 
-        status: 'error', 
-        duration: 3000, 
-        isClosable: true 
-      });
+      const errorMessage = (e as Error).message;
+      if (errorMessage.includes('Forbidden') || errorMessage.includes('permission')) {
+        toast({ 
+          title: 'Permission Denied', 
+          description: 'You do not have permission to update this deal.', 
+          status: 'error', 
+          duration: 4000, 
+          isClosable: true 
+        });
+      } else {
+        toast({ 
+          title: 'Error Updating Date', 
+          description: errorMessage, 
+          status: 'error', 
+          duration: 3000, 
+          isClosable: true 
+        });
+      }
+      setIsEditingCloseDate(false);
     }
   };
 
@@ -123,6 +158,14 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
           description: 'The selected user no longer exists. Please refresh the page to update the user list.', 
           status: 'error', 
           duration: 5000, 
+          isClosable: true 
+        });
+      } else if (errorMessage.includes('Forbidden') || errorMessage.includes('permission')) {
+        toast({ 
+          title: 'Permission Denied', 
+          description: 'You do not have permission to update this deal.', 
+          status: 'error', 
+          duration: 4000, 
           isClosable: true 
         });
       } else {
@@ -172,6 +215,7 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
                 }}
                 color="gray.400"
                 _hover={{color: "blue.300"}}
+                isDisabled={!canEditDeal}
               />
             </HStack>
           ) : (
@@ -251,6 +295,7 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
                 }}
                 color="gray.400"
                 _hover={{color: "blue.300"}}
+                isDisabled={!canEditDeal}
               />
             </HStack>
           ) : (
@@ -310,6 +355,7 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
                 }}
                 color="gray.400"
                 _hover={{color: "blue.300"}}
+                isDisabled={!canEditDeal}
               />
             </HStack>
           ) : (

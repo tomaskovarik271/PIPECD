@@ -32,10 +32,12 @@ interface LeadsKanbanPageLayoutProps {
   userList: UserListItem[];
   usersLoading: boolean;
   userPermissions: string[] | null | undefined;
-  leadsViewMode: 'table' | 'kanban';
-  setLeadsViewMode: (mode: 'table' | 'kanban') => void;
+  leadsViewMode: 'table' | 'kanban' | 'kanban-compact';
+  setLeadsViewMode: (mode: 'table' | 'kanban' | 'kanban-compact') => void;
   searchTerm: string;
   onSearchChange: (value: string) => void;
+  kanbanCompactMode: boolean;
+  setKanbanCompactMode: (isCompact: boolean) => void;
 }
 
 const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
@@ -52,6 +54,8 @@ const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
   setLeadsViewMode,
   searchTerm,
   onSearchChange,
+  kanbanCompactMode,
+  setKanbanCompactMode,
 }) => {
   const colors = useThemeColors();
   const leadTheme = useLeadTheme();
@@ -188,7 +192,12 @@ const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
         userPermissions={userPermissions || []}
         showViewModeSwitch={true}
         viewMode={leadsViewMode}
-        onViewModeChange={setLeadsViewMode}
+        onViewModeChange={(mode) => {
+          if (mode === 'table' || mode === 'kanban' || mode === 'kanban-compact') {
+            setLeadsViewMode(mode);
+          }
+        }}
+        supportedViewModes={['table', 'kanban', 'kanban-compact']}
         secondaryActions={secondaryActions}
         statistics={statistics}
       />
@@ -205,6 +214,7 @@ const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
           error={leadsError}
           onNewButtonClick={handleCreateLeadClick}
           userPermissions={userPermissions}
+          isCompact={kanbanCompactMode}
         />
       </Box>
     </>

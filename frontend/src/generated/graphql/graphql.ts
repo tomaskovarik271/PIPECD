@@ -71,6 +71,24 @@ export type ActivityFilterInput = {
   personId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+export type ActivityReminder = {
+  __typename?: "ActivityReminder";
+  activity?: Maybe<Activity>;
+  activityId: Scalars["ID"]["output"];
+  createdAt: Scalars["DateTime"]["output"];
+  failedAttempts: Scalars["Int"]["output"];
+  id: Scalars["ID"]["output"];
+  isSent: Scalars["Boolean"]["output"];
+  lastError?: Maybe<Scalars["String"]["output"]>;
+  reminderContent?: Maybe<Scalars["JSON"]["output"]>;
+  reminderType: ReminderType;
+  scheduledFor: Scalars["DateTime"]["output"];
+  sentAt?: Maybe<Scalars["DateTime"]["output"]>;
+  updatedAt: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
+  userId: Scalars["ID"]["output"];
+};
+
 /** Defines the GraphQL schema for Activities. */
 export enum ActivityType {
   Call = "CALL",
@@ -252,6 +270,7 @@ export type ConvertedEntities = {
 };
 
 export type CreateActivityInput = {
+  assigned_to_user_id?: InputMaybe<Scalars["ID"]["input"]>;
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   is_done?: InputMaybe<Scalars["Boolean"]["input"]>;
@@ -296,6 +315,19 @@ export type CreateEmailInput = {
   sentAt: Scalars["DateTime"]["input"];
   subject: Scalars["String"]["input"];
   toEmails: Array<Scalars["String"]["input"]>;
+};
+
+export type CreateNotificationInput = {
+  actionUrl?: InputMaybe<Scalars["String"]["input"]>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  expiresAt?: InputMaybe<Scalars["DateTime"]["input"]>;
+  message: Scalars["String"]["input"];
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  notificationType: NotificationType;
+  priority?: InputMaybe<NotificationPriority>;
+  title: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
 };
 
 export type CreateOrganizationRelationshipInput = {
@@ -1090,8 +1122,10 @@ export type Mutation = {
   addAgentThoughts: Array<AgentThought>;
   archiveThread: Scalars["Boolean"]["output"];
   assignAccountToTerritory: AccountTerritory;
+  assignUserRole: User;
   attachDocumentToDeal: DealDocumentAttachment;
   attachFileToDeal: DealDocumentAttachment;
+  cancelActivityReminder: Scalars["Boolean"]["output"];
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
   convertLead: LeadConversionResult;
@@ -1104,6 +1138,7 @@ export type Mutation = {
   createDocument: Document;
   createEmail: Email;
   createLead: Lead;
+  createNotification: Notification;
   createOrganization: Organization;
   createOrganizationRelationship: OrganizationRelationship;
   createPerson: Person;
@@ -1124,6 +1159,7 @@ export type Mutation = {
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteDriveFile: Scalars["Boolean"]["output"];
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteNotification: Scalars["Boolean"]["output"];
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganizationRelationship: Scalars["Boolean"]["output"];
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
@@ -1139,6 +1175,8 @@ export type Mutation = {
   dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
   linkEmailToDeal: Scalars["Boolean"]["output"];
+  markAllNotificationsAsRead: Scalars["Int"]["output"];
+  markNotificationAsRead: Notification;
   markThreadAsRead: Scalars["Boolean"]["output"];
   markThreadAsUnread: Scalars["Boolean"]["output"];
   moveDriveFile: DriveFile;
@@ -1147,7 +1185,9 @@ export type Mutation = {
   recalculateLeadScore: Lead;
   removeAccountFromTerritory: Scalars["Boolean"]["output"];
   removeDocumentAttachment: Scalars["Boolean"]["output"];
+  removeUserRole: User;
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
+  scheduleActivityReminder: ActivityReminder;
   sendAgentMessage: AgentResponse;
   shareDriveFolder: Scalars["Boolean"]["output"];
   syncGmailEmails: Array<Email>;
@@ -1162,6 +1202,7 @@ export type Mutation = {
   updateDocumentAttachmentCategory: DealDocumentAttachment;
   updateLead?: Maybe<Lead>;
   updateLeadWFMProgress: Lead;
+  updateMyReminderPreferences: UserReminderPreferences;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
   updatePersonOrganizationalRole: PersonOrganizationalRole;
@@ -1198,12 +1239,21 @@ export type MutationAssignAccountToTerritoryArgs = {
   territoryId: Scalars["ID"]["input"];
 };
 
+export type MutationAssignUserRoleArgs = {
+  roleName: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
 export type MutationAttachDocumentToDealArgs = {
   input: AttachDocumentInput;
 };
 
 export type MutationAttachFileToDealArgs = {
   input: AttachFileInput;
+};
+
+export type MutationCancelActivityReminderArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationComposeEmailArgs = {
@@ -1255,6 +1305,10 @@ export type MutationCreateEmailArgs = {
 
 export type MutationCreateLeadArgs = {
   input: LeadInput;
+};
+
+export type MutationCreateNotificationArgs = {
+  input: CreateNotificationInput;
 };
 
 export type MutationCreateOrganizationArgs = {
@@ -1337,6 +1391,10 @@ export type MutationDeleteLeadArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteNotificationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1399,6 +1457,10 @@ export type MutationLinkEmailToDealArgs = {
   emailId: Scalars["String"]["input"];
 };
 
+export type MutationMarkNotificationAsReadArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationMarkThreadAsReadArgs = {
   threadId: Scalars["String"]["input"];
 };
@@ -1432,6 +1494,17 @@ export type MutationRemoveAccountFromTerritoryArgs = {
 
 export type MutationRemoveDocumentAttachmentArgs = {
   attachmentId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveUserRoleArgs = {
+  roleName: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
+export type MutationScheduleActivityReminderArgs = {
+  activityId: Scalars["ID"]["input"];
+  reminderType: ReminderType;
+  scheduledFor: Scalars["DateTime"]["input"];
 };
 
 export type MutationSendAgentMessageArgs = {
@@ -1493,6 +1566,10 @@ export type MutationUpdateLeadArgs = {
 export type MutationUpdateLeadWfmProgressArgs = {
   leadId: Scalars["ID"]["input"];
   targetWfmWorkflowStepId: Scalars["ID"]["input"];
+};
+
+export type MutationUpdateMyReminderPreferencesArgs = {
+  input: UpdateUserReminderPreferencesInput;
 };
 
 export type MutationUpdateOrganizationArgs = {
@@ -1580,6 +1657,57 @@ export type MutationUploadToGoogleDriveArgs = {
   fileName: Scalars["String"]["input"];
   mimeType: Scalars["String"]["input"];
 };
+
+export type Notification = {
+  __typename?: "Notification";
+  actionUrl?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  entityId?: Maybe<Scalars["ID"]["output"]>;
+  entityType?: Maybe<Scalars["String"]["output"]>;
+  expiresAt?: Maybe<Scalars["DateTime"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isRead: Scalars["Boolean"]["output"];
+  message: Scalars["String"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notificationType: NotificationType;
+  priority: NotificationPriority;
+  readAt?: Maybe<Scalars["DateTime"]["output"]>;
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
+  userId: Scalars["ID"]["output"];
+};
+
+export type NotificationFilterInput = {
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  isRead?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notificationType?: InputMaybe<NotificationType>;
+  priority?: InputMaybe<NotificationPriority>;
+};
+
+export enum NotificationPriority {
+  High = "HIGH",
+  Low = "LOW",
+  Normal = "NORMAL",
+  Urgent = "URGENT",
+}
+
+export type NotificationSummary = {
+  __typename?: "NotificationSummary";
+  notifications: Array<Notification>;
+  totalCount: Scalars["Int"]["output"];
+  unreadCount: Scalars["Int"]["output"];
+};
+
+export enum NotificationType {
+  ActivityOverdue = "ACTIVITY_OVERDUE",
+  ActivityReminder = "ACTIVITY_REMINDER",
+  Custom = "CUSTOM",
+  DealAssigned = "DEAL_ASSIGNED",
+  LeadAssigned = "LEAD_ASSIGNED",
+  SystemAnnouncement = "SYSTEM_ANNOUNCEMENT",
+}
 
 /** Defines the Organization type and related queries/mutations. */
 export type Organization = {
@@ -1745,6 +1873,7 @@ export type Query = {
   accountTerritories: Array<AccountTerritory>;
   activities: Array<Activity>;
   activity?: Maybe<Activity>;
+  activityReminders: Array<ActivityReminder>;
   agentConversation?: Maybe<AgentConversation>;
   agentConversations: Array<AgentConversation>;
   agentThoughts: Array<AgentThought>;
@@ -1793,7 +1922,10 @@ export type Query = {
   leads: Array<Lead>;
   leadsStats: LeadsStats;
   me?: Maybe<User>;
+  myNotifications: NotificationSummary;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
+  myReminderPreferences?: Maybe<UserReminderPreferences>;
+  notification?: Maybe<Notification>;
   organization?: Maybe<Organization>;
   organizationPersonRelationships: Array<PersonRelationship>;
   organizationRelationships: Array<OrganizationRelationship>;
@@ -1806,6 +1938,7 @@ export type Query = {
   personRelationships: Array<PersonRelationship>;
   relationshipInsight?: Maybe<RelationshipInsight>;
   relationshipInsights: Array<RelationshipInsight>;
+  roles: Array<Role>;
   searchDriveFiles: DriveFileConnection;
   searchEmails: Array<Email>;
   searchSharedDriveFiles: Array<DriveFile>;
@@ -1815,6 +1948,7 @@ export type Query = {
   supabaseConnectionTest: Scalars["String"]["output"];
   territories: Array<Territory>;
   territory?: Maybe<Territory>;
+  unreadNotificationCount: Scalars["Int"]["output"];
   users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
@@ -1835,6 +1969,10 @@ export type QueryActivitiesArgs = {
 
 export type QueryActivityArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryActivityRemindersArgs = {
+  activityId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type QueryAgentConversationArgs = {
@@ -1992,6 +2130,16 @@ export type QueryLeadsArgs = {
   filters?: InputMaybe<LeadFilters>;
 };
 
+export type QueryMyNotificationsArgs = {
+  filter?: InputMaybe<NotificationFilterInput>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryNotificationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type QueryOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2118,6 +2266,20 @@ export type RelationshipInsight = {
   status: InsightStatus;
   supportingData?: Maybe<Scalars["JSON"]["output"]>;
   updatedAt: Scalars["String"]["output"];
+};
+
+/** Activity Reminders and Notifications GraphQL Schema */
+export enum ReminderType {
+  Email = "EMAIL",
+  InApp = "IN_APP",
+  Push = "PUSH",
+}
+
+export type Role = {
+  __typename?: "Role";
+  description: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
 };
 
 export type SendMessageInput = {
@@ -2325,6 +2487,8 @@ export type Subscription = {
   agentConversationUpdated: AgentConversation;
   agentPlanUpdated: AgentPlan;
   agentThoughtsAdded: Array<AgentThought>;
+  notificationAdded: Notification;
+  notificationUpdated: Notification;
 };
 
 export type SubscriptionAgentConversationUpdatedArgs = {
@@ -2337,6 +2501,14 @@ export type SubscriptionAgentPlanUpdatedArgs = {
 
 export type SubscriptionAgentThoughtsAddedArgs = {
   conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionNotificationAddedArgs = {
+  userId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionNotificationUpdatedArgs = {
+  userId: Scalars["ID"]["input"];
 };
 
 export type Territory = {
@@ -2383,6 +2555,7 @@ export type ToolDiscoveryResponse = {
 };
 
 export type UpdateActivityInput = {
+  assigned_to_user_id?: InputMaybe<Scalars["ID"]["input"]>;
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   is_done?: InputMaybe<Scalars["Boolean"]["input"]>;
@@ -2458,6 +2631,19 @@ export type UpdateUserProfileInput = {
   display_name?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type UpdateUserReminderPreferencesInput = {
+  emailDailyDigestEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+  emailDailyDigestTime?: InputMaybe<Scalars["String"]["input"]>;
+  emailReminderMinutesBefore?: InputMaybe<Scalars["Int"]["input"]>;
+  emailRemindersEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+  inAppReminderMinutesBefore?: InputMaybe<Scalars["Int"]["input"]>;
+  inAppRemindersEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+  overdueNotificationFrequencyHours?: InputMaybe<Scalars["Int"]["input"]>;
+  overdueNotificationsEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+  pushReminderMinutesBefore?: InputMaybe<Scalars["Int"]["input"]>;
+  pushRemindersEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+};
+
 export type UpdateWfmProjectTypeInput = {
   defaultWorkflowId?: InputMaybe<Scalars["ID"]["input"]>;
   description?: InputMaybe<Scalars["String"]["input"]>;
@@ -2506,6 +2692,25 @@ export type User = {
   display_name?: Maybe<Scalars["String"]["output"]>;
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+  roles: Array<Role>;
+};
+
+export type UserReminderPreferences = {
+  __typename?: "UserReminderPreferences";
+  createdAt: Scalars["DateTime"]["output"];
+  emailDailyDigestEnabled: Scalars["Boolean"]["output"];
+  emailDailyDigestTime: Scalars["String"]["output"];
+  emailReminderMinutesBefore: Scalars["Int"]["output"];
+  emailRemindersEnabled: Scalars["Boolean"]["output"];
+  id: Scalars["ID"]["output"];
+  inAppReminderMinutesBefore: Scalars["Int"]["output"];
+  inAppRemindersEnabled: Scalars["Boolean"]["output"];
+  overdueNotificationFrequencyHours: Scalars["Int"]["output"];
+  overdueNotificationsEnabled: Scalars["Boolean"]["output"];
+  pushReminderMinutesBefore: Scalars["Int"]["output"];
+  pushRemindersEnabled: Scalars["Boolean"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  userId: Scalars["ID"]["output"];
 };
 
 /** Represents a specific instance of a workflow being executed for a particular entity (e.g., a deal, a task). */
@@ -2743,6 +2948,79 @@ export type GetAgentThoughtsQuery = {
   }>;
 };
 
+export type GetMyNotificationsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type GetMyNotificationsQuery = {
+  __typename?: "Query";
+  myNotifications: {
+    __typename?: "NotificationSummary";
+    totalCount: number;
+    unreadCount: number;
+    notifications: Array<{
+      __typename?: "Notification";
+      id: string;
+      userId: string;
+      title: string;
+      message: string;
+      notificationType: NotificationType;
+      isRead: boolean;
+      readAt?: string | null;
+      entityType?: string | null;
+      entityId?: string | null;
+      actionUrl?: string | null;
+      metadata?: Record<string, any> | null;
+      priority: NotificationPriority;
+      expiresAt?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  };
+};
+
+export type GetUnreadNotificationCountQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetUnreadNotificationCountQuery = {
+  __typename?: "Query";
+  unreadNotificationCount: number;
+};
+
+export type MarkNotificationAsReadMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type MarkNotificationAsReadMutation = {
+  __typename?: "Mutation";
+  markNotificationAsRead: {
+    __typename?: "Notification";
+    id: string;
+    isRead: boolean;
+    readAt?: string | null;
+  };
+};
+
+export type MarkAllNotificationsAsReadMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type MarkAllNotificationsAsReadMutation = {
+  __typename?: "Mutation";
+  markAllNotificationsAsRead: number;
+};
+
+export type DeleteNotificationMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteNotificationMutation = {
+  __typename?: "Mutation";
+  deleteNotification: boolean;
+};
+
 export type GetEmailThreadsQueryVariables = Exact<{
   filter: EmailThreadsFilterInput;
 }>;
@@ -2903,6 +3181,55 @@ export type GetDealWorkflowStepsQuery = {
       };
     } | null;
   } | null;
+};
+
+export type GetMyReminderPreferencesQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetMyReminderPreferencesQuery = {
+  __typename?: "Query";
+  myReminderPreferences?: {
+    __typename?: "UserReminderPreferences";
+    id: string;
+    userId: string;
+    emailRemindersEnabled: boolean;
+    emailReminderMinutesBefore: number;
+    emailDailyDigestEnabled: boolean;
+    emailDailyDigestTime: string;
+    inAppRemindersEnabled: boolean;
+    inAppReminderMinutesBefore: number;
+    pushRemindersEnabled: boolean;
+    pushReminderMinutesBefore: number;
+    overdueNotificationsEnabled: boolean;
+    overdueNotificationFrequencyHours: number;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+};
+
+export type UpdateMyReminderPreferencesMutationVariables = Exact<{
+  input: UpdateUserReminderPreferencesInput;
+}>;
+
+export type UpdateMyReminderPreferencesMutation = {
+  __typename?: "Mutation";
+  updateMyReminderPreferences: {
+    __typename?: "UserReminderPreferences";
+    id: string;
+    userId: string;
+    emailRemindersEnabled: boolean;
+    emailReminderMinutesBefore: number;
+    emailDailyDigestEnabled: boolean;
+    emailDailyDigestTime: string;
+    inAppRemindersEnabled: boolean;
+    inAppReminderMinutesBefore: number;
+    pushRemindersEnabled: boolean;
+    pushReminderMinutesBefore: number;
+    overdueNotificationsEnabled: boolean;
+    overdueNotificationFrequencyHours: number;
+    updatedAt: string;
+  };
 };
 
 export type UpdateUserProfileMutationVariables = Exact<{
@@ -4714,6 +5041,58 @@ export type GetStakeholderAnalysesQuery = {
   }>;
 };
 
+export type GetRolesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetRolesQuery = {
+  __typename?: "Query";
+  roles: Array<{
+    __typename?: "Role";
+    id: string;
+    name: string;
+    description: string;
+  }>;
+};
+
+export type AssignUserRoleMutationVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+  roleName: Scalars["String"]["input"];
+}>;
+
+export type AssignUserRoleMutation = {
+  __typename?: "Mutation";
+  assignUserRole: {
+    __typename?: "User";
+    id: string;
+    email: string;
+    roles: Array<{
+      __typename?: "Role";
+      id: string;
+      name: string;
+      description: string;
+    }>;
+  };
+};
+
+export type RemoveUserRoleMutationVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+  roleName: Scalars["String"]["input"];
+}>;
+
+export type RemoveUserRoleMutation = {
+  __typename?: "Mutation";
+  removeUserRole: {
+    __typename?: "User";
+    id: string;
+    email: string;
+    roles: Array<{
+      __typename?: "Role";
+      id: string;
+      name: string;
+      description: string;
+    }>;
+  };
+};
+
 export type GetActivitiesQueryVariables = Exact<{
   filter?: InputMaybe<ActivityFilterInput>;
 }>;
@@ -6237,6 +6616,12 @@ export type GetUserListQuery = {
     display_name?: string | null;
     email: string;
     avatar_url?: string | null;
+    roles: Array<{
+      __typename?: "Role";
+      id: string;
+      name: string;
+      description: string;
+    }>;
   }>;
 };
 

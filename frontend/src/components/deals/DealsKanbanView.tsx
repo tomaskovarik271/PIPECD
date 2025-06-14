@@ -12,9 +12,10 @@ import { useThemeStore } from '../../stores/useThemeStore';
 
 interface DealsKanbanViewProps {
   deals: Deal[]; // Receive filtered deals as prop
+  isCompact?: boolean; // Whether to show compact view
 }
 
-const DealsKanbanView: React.FC<DealsKanbanViewProps> = ({ deals }) => {
+const DealsKanbanView: React.FC<DealsKanbanViewProps> = ({ deals, isCompact = false }) => {
   const {
     dealsLoading,
     dealsError,
@@ -197,10 +198,6 @@ const DealsKanbanView: React.FC<DealsKanbanViewProps> = ({ deals }) => {
   
   return (
     <VStack spacing={4} align="stretch" p={4}>
-      <Heading size="md" mt={6} mb={2} textAlign="center">
-        {currentWorkflowWithDetails?.name || 'Sales Kanban'}
-      </Heading>
-
       <DragDropContext onDragEnd={onDragEnd}>
           <Box 
               p={2} 
@@ -235,6 +232,7 @@ const DealsKanbanView: React.FC<DealsKanbanViewProps> = ({ deals }) => {
                       deals={dealsByWfmStep[step.id] || []} 
                       weightedAmountSum={weightedAmountByStepId[step.id] || 0}
                       index={index}
+                      isCompact={isCompact}
                     />
                   ))}
               </Flex>

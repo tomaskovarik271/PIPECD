@@ -17,6 +17,7 @@ interface DealsKanbanPageViewProps {
   error: string | null;
   onNewButtonClick: () => void; // For EmptyState action
   userPermissions: string[] | null | undefined; // For EmptyState action
+  isCompact?: boolean; // Whether to show compact view
 }
 
 const DealsKanbanPageView: React.FC<DealsKanbanPageViewProps> = ({
@@ -25,6 +26,7 @@ const DealsKanbanPageView: React.FC<DealsKanbanPageViewProps> = ({
   error,
   onNewButtonClick, // Keep for EmptyState
   userPermissions, // Keep for EmptyState
+  isCompact = false,
 }) => {
   if (isLoading) {
     return <Flex justify="center" align="center" minH="300px" w="100%"><Spinner size="xl" /></Flex>;
@@ -56,7 +58,7 @@ const DealsKanbanPageView: React.FC<DealsKanbanPageViewProps> = ({
       // Styling for the scrollbar can be inherited or applied here if specific
       // sx={{ ... }} // For custom scrollbar like in DealsKanbanView if needed at this level
     >
-      <DealsKanbanView deals={deals} />
+      <DealsKanbanView deals={deals} isCompact={isCompact} />
     </Box>
   );
 };

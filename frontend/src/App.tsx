@@ -23,6 +23,7 @@ import WFMStatusesPage from './pages/admin/WFMStatusesPage';
 import WFMWorkflowsPage from './pages/admin/WFMWorkflowsPage';
 import WFMProjectTypesPage from './pages/admin/WFMProjectTypesPage';
 import GoogleDriveSettingsPage from './pages/admin/GoogleDriveSettingsPage';
+import { UserRoleManagementPage } from './pages/admin/UserRoleManagementPage';
 import { RelationshipIntelligencePage } from './pages/RelationshipIntelligencePage';
 import CrossEntityNetworkPage from './pages/CrossEntityNetworkPage';
 import { 
@@ -86,6 +87,7 @@ function AppContent() {
             <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
             <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/admin/google-drive" element={<GoogleDriveSettingsPage />} />
+            <Route path="/admin/user-roles" element={<UserRoleManagementPage />} />
             <Route path="/admin/wfm" element={<WfmAdminPage />}>
               <Route index element={<WFMStatusesPage />} />
               <Route path="statuses" element={<WFMStatusesPage />} />

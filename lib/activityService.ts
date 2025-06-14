@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { GraphQLError } from 'graphql';
 import { getAuthenticatedClient, handleSupabaseError } from './serviceUtils';
+import { activityReminderService } from './activityReminderService';
 import type { Activity, CreateActivityInput, UpdateActivityInput } from './generated/graphql';
 
 // Define a simple filter type for getActivities
@@ -31,6 +32,16 @@ export const activityService = {
       throw new GraphQLError('Failed to create activity: No data returned', { 
         extensions: { code: 'INTERNAL_SERVER_ERROR' } 
       });
+    }
+
+    // Schedule reminders for the new activity if it has a due date
+    if (data.due_date && !data.is_done) {
+      try {
+        await activityReminderService.scheduleActivityReminders(data.id);
+      } catch (reminderError) {
+        console.error('[activityService.createActivity] Failed to schedule reminders:', reminderError);
+        // Don't fail the activity creation if reminder scheduling fails
+      }
     }
 
     return data as Activity;
@@ -106,6 +117,7 @@ export const activityService = {
     if (updates.due_date !== undefined) safeUpdates.due_date = updates.due_date;
     if (updates.notes !== undefined) safeUpdates.notes = updates.notes;
     if (updates.is_done !== undefined) safeUpdates.is_done = updates.is_done;
+    if (updates.assigned_to_user_id !== undefined) safeUpdates.assigned_to_user_id = updates.assigned_to_user_id;
     if (updates.deal_id !== undefined) safeUpdates.deal_id = updates.deal_id;
     if (updates.person_id !== undefined) safeUpdates.person_id = updates.person_id;
     if (updates.organization_id !== undefined) safeUpdates.organization_id = updates.organization_id;
@@ -130,6 +142,27 @@ export const activityService = {
          throw new GraphQLError('Activity update failed, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
       }
 
+    // Handle reminder scheduling based on updates
+    try {
+      // If activity is marked as done, cancel all reminders
+      if (updates.is_done === true) {
+        await activityReminderService.cancelActivityReminders(activityId);
+      }
+      // If due date changed or activity was unmarked as done, reschedule reminders
+      else if (updates.due_date !== undefined || updates.is_done === false) {
+        // Cancel existing reminders first
+        await activityReminderService.cancelActivityReminders(activityId);
+        
+        // Schedule new reminders if activity has a due date and is not done
+        if (data.due_date && !data.is_done) {
+          await activityReminderService.scheduleActivityReminders(activityId);
+        }
+      }
+    } catch (reminderError) {
+      console.error('[activityService.updateActivity] Failed to manage reminders:', reminderError);
+      // Don't fail the activity update if reminder management fails
+    }
+
     return data as Activity;
   },
 
@@ -137,7 +170,7 @@ export const activityService = {
    * Deletes an activity.
    */
   async deleteActivity(userId: string, activityId: string, accessToken: string): Promise<{ id: string }> {
-    console.log('[activityService.deleteActivity] called for user:', userId, 'activityId:', activityId);
+    // console.log('[activityService.deleteActivity] called for user:', userId, 'activityId:', activityId);
     const supabaseClient: SupabaseClient = getAuthenticatedClient(accessToken);
     const { error, count } = await supabaseClient 
       .from('activities')
@@ -147,6 +180,14 @@ export const activityService = {
     handleSupabaseError(error, 'deleting activity');
     if (count === 0 && !error) {
         throw new GraphQLError(`Activity with ID ${activityId} not found or user not authorized.`, { extensions: { code: 'NOT_FOUND' }});
+    }
+
+    // Cancel all reminders for the deleted activity
+    try {
+      await activityReminderService.cancelActivityReminders(activityId);
+    } catch (reminderError) {
+      console.error('[activityService.deleteActivity] Failed to cancel reminders:', reminderError);
+      // Don't fail the activity deletion if reminder cancellation fails
     }
 
     return { id: activityId };

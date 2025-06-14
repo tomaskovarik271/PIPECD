@@ -141,6 +141,59 @@ export const REMOVE_DOCUMENT_ATTACHMENT = gql`
   }
 `;
 
+// Mutation to attach document to both note and deal
+export const ATTACH_DOCUMENT_TO_NOTE_AND_DEAL = gql`
+  mutation AttachDocumentToNoteAndDeal($input: AttachDocumentToNoteInput!) {
+    attachDocumentToNoteAndDeal(input: $input) {
+      noteAttachment {
+        id
+        noteId
+        googleFileId
+        fileName
+        fileUrl
+        attachedAt
+      }
+      dealAttachment {
+        id
+        dealId
+        googleFileId
+        fileName
+        fileUrl
+        sharedDriveId
+        category
+        attachedAt
+        attachedBy
+        mimeType
+        fileSize
+      }
+    }
+  }
+`;
+
+// Query to get note document attachments
+export const GET_NOTE_DOCUMENT_ATTACHMENTS = gql`
+  query GetNoteDocumentAttachments($noteId: ID!) {
+    getNoteDocumentAttachments(noteId: $noteId) {
+      id
+      noteId
+      googleFileId
+      fileName
+      fileUrl
+      attachedAt
+      attachedBy
+      mimeType
+      fileSize
+    }
+  }
+`;
+
+// Mutation to remove document attachment from note
+export const REMOVE_NOTE_DOCUMENT_ATTACHMENT = gql`
+  mutation RemoveNoteDocumentAttachment($attachmentId: ID!) {
+    removeNoteDocumentAttachment(attachmentId: $attachmentId)
+  }
+`;
+
 // Mutation to update document attachment category
 export const UPDATE_DOCUMENT_ATTACHMENT_CATEGORY = gql`
   mutation UpdateDocumentAttachmentCategory($attachmentId: ID!, $category: DocumentCategory!) {

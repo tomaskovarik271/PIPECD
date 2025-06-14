@@ -42,7 +42,9 @@ function DealsPage() {
     fetchDeals, 
     deleteDeal: deleteDealActionFromStore,
     dealsViewMode,
-    setDealsViewMode
+    setDealsViewMode,
+    kanbanCompactMode,
+    setKanbanCompactMode
   } = useDealsStore();
   
   const userPermissions = useAppStore((state) => state.userPermissions);
@@ -218,7 +220,10 @@ function DealsPage() {
     </Button>
   ) : null;
 
-  if (dealsViewMode === 'kanban') {
+  if (dealsViewMode === 'kanban' || dealsViewMode === 'kanban-compact') {
+    // Map the new 3-state view mode to the existing compact mode for backward compatibility
+    const isCompactMode = dealsViewMode === 'kanban-compact';
+    
     return (
       <>
       <DealsKanbanPageLayout
@@ -234,10 +239,15 @@ function DealsPage() {
         userList={userList}
         usersLoading={usersLoading}
           userPermissions={userPermissions || []}
-        dealsViewMode={dealsViewMode}
+        dealsViewMode="kanban" // Always pass kanban for the layout component
         setDealsViewMode={setDealsViewMode}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
+        kanbanCompactMode={isCompactMode}
+        setKanbanCompactMode={(isCompact: boolean) => {
+          // Map compact state back to the 3-state view mode
+          setDealsViewMode(isCompact ? 'kanban-compact' : 'kanban');
+        }}
         />
 
         {/* Modals - moved here so they work in kanban view too */}
@@ -296,7 +306,12 @@ function DealsPage() {
         userPermissions={userPermissions || []}
         showViewModeSwitch={true}
         viewMode={dealsViewMode}
-        onViewModeChange={setDealsViewMode}
+        onViewModeChange={(mode) => {
+          if (mode === 'table' || mode === 'kanban' || mode === 'kanban-compact') {
+            setDealsViewMode(mode);
+          }
+        }}
+        supportedViewModes={['table', 'kanban', 'kanban-compact']}
         secondaryActions={secondaryActions}
         statistics={statistics}
       />

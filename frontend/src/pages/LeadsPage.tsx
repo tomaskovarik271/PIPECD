@@ -43,7 +43,9 @@ function LeadsPage() {
     fetchLeads, 
     deleteLead: deleteLeadActionFromStore,
     leadsViewMode,
-    setLeadsViewMode
+    setLeadsViewMode,
+    kanbanCompactMode,
+    setKanbanCompactMode
   } = useLeadsStore();
   
   const userPermissions = useAppStore((state) => state.userPermissions);
@@ -249,7 +251,10 @@ function LeadsPage() {
   }, [resetTableToDefaults, defaultVisibleColumnKeys]);
 
   // Early return for kanban mode (matches DealsPage structure)
-  if (leadsViewMode === 'kanban') {
+  if (leadsViewMode === 'kanban' || leadsViewMode === 'kanban-compact') {
+    // Map the new 3-state view mode to the existing compact mode for backward compatibility
+    const isCompactMode = leadsViewMode === 'kanban-compact';
+    
     return (
       <>
         <LeadsKanbanPageLayout
@@ -262,10 +267,15 @@ function LeadsPage() {
           userList={userList}
           usersLoading={usersLoading}
           userPermissions={userPermissions || []}
-          leadsViewMode={leadsViewMode}
+          leadsViewMode="kanban" // Always pass kanban for the layout component
           setLeadsViewMode={setLeadsViewMode}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
+          kanbanCompactMode={isCompactMode}
+          setKanbanCompactMode={(isCompact: boolean) => {
+            // Map compact state back to the 3-state view mode
+            setLeadsViewMode(isCompact ? 'kanban-compact' : 'kanban');
+          }}
         />
 
         {/* Modals - moved here so they work in kanban view too */}
@@ -315,7 +325,12 @@ function LeadsPage() {
         onPrimaryButtonClick={handleCreateLeadClick}
         showViewModeSwitch={true}
         viewMode={leadsViewMode}
-        onViewModeChange={setLeadsViewMode}
+        onViewModeChange={(mode) => {
+          if (mode === 'table' || mode === 'kanban' || mode === 'kanban-compact') {
+            setLeadsViewMode(mode);
+          }
+        }}
+        supportedViewModes={['table', 'kanban', 'kanban-compact']}
         secondaryActions={secondaryActions}
         statistics={statistics}
       />

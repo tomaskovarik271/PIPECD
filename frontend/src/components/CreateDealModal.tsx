@@ -225,7 +225,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
               {!!error && error.includes('Deal name') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
-            <FormControl isRequired isInvalid={!!error && error.includes('WFM Project Type')}>
+            <FormControl isRequired isInvalid={!!error && error.includes('WFM Project Type')} style={{ display: 'none' }}>
               <FormLabel>WFM Project Type</FormLabel>
               <Select 
                 placeholder="Select WFM Project Type..."

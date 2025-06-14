@@ -15,9 +15,11 @@ import {
   StatNumber,
   StatGroup,
 } from '@chakra-ui/react';
-import { SearchIcon, ViewIcon, HamburgerIcon } from '@chakra-ui/icons';
+import { SearchIcon, ViewIcon, HamburgerIcon, CalendarIcon } from '@chakra-ui/icons';
+import { TbLayoutGrid, TbLayoutColumns } from 'react-icons/tb';
 import { useAppStore } from '../../stores/useAppStore';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { NotificationCenter } from '../common/NotificationCenter';
 
 interface PageStatistic {
   label: string;
@@ -35,8 +37,9 @@ interface UnifiedPageHeaderProps {
   onPrimaryButtonClick?: () => void;
   isPrimaryButtonDisabled?: boolean;
   secondaryActions?: React.ReactNode;
-  viewMode?: 'table' | 'kanban';
-  onViewModeChange?: (mode: 'table' | 'kanban') => void;
+  viewMode?: 'table' | 'kanban' | 'kanban-compact' | 'calendar';
+  onViewModeChange?: (mode: 'table' | 'kanban' | 'kanban-compact' | 'calendar') => void;
+  supportedViewModes?: Array<'table' | 'kanban' | 'kanban-compact' | 'calendar'>;
   showViewModeSwitch?: boolean;
   statistics?: PageStatistic[];
   userPermissions?: string[];
@@ -56,6 +59,7 @@ const UnifiedPageHeader: React.FC<UnifiedPageHeaderProps> = ({
   viewMode,
   onViewModeChange,
   showViewModeSwitch = false,
+  supportedViewModes = ['table', 'kanban', 'kanban-compact'],
   statistics,
   userPermissions,
   requiredPermission,
@@ -115,36 +119,75 @@ const UnifiedPageHeader: React.FC<UnifiedPageHeaderProps> = ({
           {/* View mode switcher */}
           {showViewModeSwitch && onViewModeChange && viewMode && (
             <HStack spacing={1}>
-              <IconButton
-                aria-label="Table view"
-                icon={<HamburgerIcon />}
-                size="md"
-                variant={viewMode === 'table' ? 'solid' : 'outline'}
-                colorScheme={viewMode === 'table' ? 'blue' : undefined}
-                bg={viewMode === 'table' ? colors.interactive.default : colors.component.button.secondary}
-                borderColor={colors.border.input}
-                color={viewMode === 'table' ? colors.text.onAccent : colors.text.primary}
-                _hover={{
-                  bg: viewMode === 'table' ? colors.interactive.hover : colors.component.button.secondaryHover
-                }}
-                onClick={() => onViewModeChange('table')}
-              />
-              <IconButton
-                aria-label="Kanban view"
-                icon={<ViewIcon />}
-                size="md"
-                variant={viewMode === 'kanban' ? 'solid' : 'outline'}
-                colorScheme={viewMode === 'kanban' ? 'blue' : undefined}
-                bg={viewMode === 'kanban' ? colors.interactive.default : colors.component.button.secondary}
-                borderColor={colors.border.input}
-                color={viewMode === 'kanban' ? colors.text.onAccent : colors.text.primary}
-                _hover={{
-                  bg: viewMode === 'kanban' ? colors.interactive.hover : colors.component.button.secondaryHover
-                }}
-                onClick={() => onViewModeChange('kanban')}
-              />
+              {supportedViewModes.includes('table') && (
+                <IconButton
+                  aria-label="Table view - List format with rows and columns"
+                  icon={<HamburgerIcon />}
+                  size="md"
+                  variant={viewMode === 'table' ? 'solid' : 'outline'}
+                  colorScheme={viewMode === 'table' ? 'blue' : undefined}
+                  bg={viewMode === 'table' ? colors.interactive.default : colors.component.button.secondary}
+                  borderColor={colors.border.input}
+                  color={viewMode === 'table' ? colors.text.onAccent : colors.text.primary}
+                  _hover={{
+                    bg: viewMode === 'table' ? colors.interactive.hover : colors.component.button.secondaryHover
+                  }}
+                  onClick={() => onViewModeChange('table')}
+                />
+              )}
+              {supportedViewModes.includes('kanban') && (
+                <IconButton
+                  aria-label="Kanban view - Visual cards with full details"
+                  icon={<TbLayoutColumns size={18} />}
+                  size="md"
+                  variant={viewMode === 'kanban' ? 'solid' : 'outline'}
+                  colorScheme={viewMode === 'kanban' ? 'blue' : undefined}
+                  bg={viewMode === 'kanban' ? colors.interactive.default : colors.component.button.secondary}
+                  borderColor={colors.border.input}
+                  color={viewMode === 'kanban' ? colors.text.onAccent : colors.text.primary}
+                  _hover={{
+                    bg: viewMode === 'kanban' ? colors.interactive.hover : colors.component.button.secondaryHover
+                  }}
+                  onClick={() => onViewModeChange('kanban')}
+                />
+              )}
+              {supportedViewModes.includes('kanban-compact') && (
+                <IconButton
+                  aria-label="Compact kanban - Dense view with more deals visible"
+                  icon={<TbLayoutGrid size={18} />}
+                  size="md"
+                  variant={viewMode === 'kanban-compact' ? 'solid' : 'outline'}
+                  colorScheme={viewMode === 'kanban-compact' ? 'blue' : undefined}
+                  bg={viewMode === 'kanban-compact' ? colors.interactive.default : colors.component.button.secondary}
+                  borderColor={colors.border.input}
+                  color={viewMode === 'kanban-compact' ? colors.text.onAccent : colors.text.primary}
+                  _hover={{
+                    bg: viewMode === 'kanban-compact' ? colors.interactive.hover : colors.component.button.secondaryHover
+                  }}
+                  onClick={() => onViewModeChange('kanban-compact')}
+                />
+              )}
+              {supportedViewModes.includes('calendar') && (
+                <IconButton
+                  aria-label="Calendar view - Monthly calendar with activities on due dates"
+                  icon={<CalendarIcon />}
+                  size="md"
+                  variant={viewMode === 'calendar' ? 'solid' : 'outline'}
+                  colorScheme={viewMode === 'calendar' ? 'blue' : undefined}
+                  bg={viewMode === 'calendar' ? colors.interactive.default : colors.component.button.secondary}
+                  borderColor={colors.border.input}
+                  color={viewMode === 'calendar' ? colors.text.onAccent : colors.text.primary}
+                  _hover={{
+                    bg: viewMode === 'calendar' ? colors.interactive.hover : colors.component.button.secondaryHover
+                  }}
+                  onClick={() => onViewModeChange('calendar')}
+                />
+              )}
             </HStack>
           )}
+          
+          {/* Notification Center */}
+          <NotificationCenter />
           
           {/* Secondary actions */}
           {secondaryActions}

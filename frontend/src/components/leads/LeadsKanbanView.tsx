@@ -10,9 +10,10 @@ import LeadsKanbanStepColumn from './LeadsKanbanStepColumn';
 
 interface LeadsKanbanViewProps {
   leads: Lead[]; // Receive filtered leads as prop
+  isCompact?: boolean; // For compact view mode (optional for now)
 }
 
-const LeadsKanbanView: React.FC<LeadsKanbanViewProps> = ({ leads }) => {
+const LeadsKanbanView: React.FC<LeadsKanbanViewProps> = ({ leads, isCompact = false }) => {
   const leadTheme = useLeadTheme();
   const {
     leadsLoading,
@@ -198,16 +199,6 @@ const LeadsKanbanView: React.FC<LeadsKanbanViewProps> = ({ leads }) => {
       bg={leadTheme.colors.bg.primary}
       minH="100vh"
     >
-      <Heading 
-        size="md" 
-        mt={6} 
-        mb={2} 
-        textAlign="center"
-        color={leadTheme.colors.text.primary}
-      >
-        {currentWorkflowWithDetails?.name || 'Lead Qualification Kanban'}
-      </Heading>
-
       <DragDropContext onDragEnd={onDragEnd}>
           <Box 
               p={2} 

@@ -43,9 +43,9 @@ export const processCustomFieldsForCreate = async (
         
         if (valueToStore !== undefined) {
           dbCustomFieldValues[fieldName] = valueToStore;
-          console.log(`[customFieldUtils.processCustomFieldsForCreate] Storing for ${fieldName}:`, valueToStore);
+          // console.log(`[customFieldUtils.processCustomFieldsForCreate] Storing for ${fieldName}:`, valueToStore);
         } else {
-          console.log(`[customFieldUtils.processCustomFieldsForCreate] No value provided for custom field ${fieldName}, skipping.`);
+                      // console.log(`[customFieldUtils.processCustomFieldsForCreate] No value provided for custom field ${fieldName}, skipping.`);
         }
       } else if (definition && (definition.entityType !== entityType || !definition.isActive)) {
         console.warn(`[customFieldUtils.processCustomFieldsForCreate] Custom field definition ${cfInput.definitionId} (${definition.fieldName}) is not for ${entityType} or not active. Skipping.`);
@@ -123,7 +123,7 @@ export const processCustomFieldsForUpdate = async (
         const valueToStore = extractCustomFieldValueForUpdate(cfInput);
         
         customFieldsToUpdate[fieldName] = valueToStore;
-        console.log(`[customFieldUtils.processCustomFieldsForUpdate] Queuing update for custom field ${fieldName}:`, valueToStore);
+                  // console.log(`[customFieldUtils.processCustomFieldsForUpdate] Queuing update for custom field ${fieldName}:`, valueToStore);
       } else if (definition && (definition.entityType !== entityType || !definition.isActive)) {
         console.warn(`[customFieldUtils.processCustomFieldsForUpdate] Custom field definition ${cfInput.definitionId} (${definition.fieldName}) is not for ${entityType} or not active. Skipping.`);
       } else {

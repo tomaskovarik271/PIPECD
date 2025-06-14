@@ -45,7 +45,10 @@ input CreateActivityInput {
   notes: String
   is_done: Boolean # Default: false
 
-  # Links (Validation requires at least one)
+  # User Assignment
+  assigned_to_user_id: ID
+
+  # Links (Can be linked to multiple entities simultaneously)
   deal_id: ID
   person_id: ID
   organization_id: ID
@@ -58,7 +61,10 @@ input UpdateActivityInput {
   notes: String # Use null to clear notes if desired
   is_done: Boolean
 
-  # Links (Allow changing/setting to null)
+  # User Assignment
+  assigned_to_user_id: ID
+
+  # Links (Allow changing/setting to null, can link to multiple entities)
   deal_id: ID
   person_id: ID
   organization_id: ID

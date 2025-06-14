@@ -80,6 +80,24 @@ export type ActivityFilterInput = {
   personId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+export type ActivityReminder = {
+  __typename?: "ActivityReminder";
+  activity?: Maybe<Activity>;
+  activityId: Scalars["ID"]["output"];
+  createdAt: Scalars["DateTime"]["output"];
+  failedAttempts: Scalars["Int"]["output"];
+  id: Scalars["ID"]["output"];
+  isSent: Scalars["Boolean"]["output"];
+  lastError?: Maybe<Scalars["String"]["output"]>;
+  reminderContent?: Maybe<Scalars["JSON"]["output"]>;
+  reminderType: ReminderType;
+  scheduledFor: Scalars["DateTime"]["output"];
+  sentAt?: Maybe<Scalars["DateTime"]["output"]>;
+  updatedAt: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
+  userId: Scalars["ID"]["output"];
+};
+
 /** Defines the GraphQL schema for Activities. */
 export enum ActivityType {
   Call = "CALL",
@@ -261,6 +279,7 @@ export type ConvertedEntities = {
 };
 
 export type CreateActivityInput = {
+  assigned_to_user_id?: InputMaybe<Scalars["ID"]["input"]>;
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   is_done?: InputMaybe<Scalars["Boolean"]["input"]>;
@@ -305,6 +324,19 @@ export type CreateEmailInput = {
   sentAt: Scalars["DateTime"]["input"];
   subject: Scalars["String"]["input"];
   toEmails: Array<Scalars["String"]["input"]>;
+};
+
+export type CreateNotificationInput = {
+  actionUrl?: InputMaybe<Scalars["String"]["input"]>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  expiresAt?: InputMaybe<Scalars["DateTime"]["input"]>;
+  message: Scalars["String"]["input"];
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  notificationType: NotificationType;
+  priority?: InputMaybe<NotificationPriority>;
+  title: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
 };
 
 export type CreateOrganizationRelationshipInput = {
@@ -1099,8 +1131,10 @@ export type Mutation = {
   addAgentThoughts: Array<AgentThought>;
   archiveThread: Scalars["Boolean"]["output"];
   assignAccountToTerritory: AccountTerritory;
+  assignUserRole: User;
   attachDocumentToDeal: DealDocumentAttachment;
   attachFileToDeal: DealDocumentAttachment;
+  cancelActivityReminder: Scalars["Boolean"]["output"];
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
   convertLead: LeadConversionResult;
@@ -1113,6 +1147,7 @@ export type Mutation = {
   createDocument: Document;
   createEmail: Email;
   createLead: Lead;
+  createNotification: Notification;
   createOrganization: Organization;
   createOrganizationRelationship: OrganizationRelationship;
   createPerson: Person;
@@ -1133,6 +1168,7 @@ export type Mutation = {
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteDriveFile: Scalars["Boolean"]["output"];
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteNotification: Scalars["Boolean"]["output"];
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganizationRelationship: Scalars["Boolean"]["output"];
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
@@ -1148,6 +1184,8 @@ export type Mutation = {
   dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
   linkEmailToDeal: Scalars["Boolean"]["output"];
+  markAllNotificationsAsRead: Scalars["Int"]["output"];
+  markNotificationAsRead: Notification;
   markThreadAsRead: Scalars["Boolean"]["output"];
   markThreadAsUnread: Scalars["Boolean"]["output"];
   moveDriveFile: DriveFile;
@@ -1156,7 +1194,9 @@ export type Mutation = {
   recalculateLeadScore: Lead;
   removeAccountFromTerritory: Scalars["Boolean"]["output"];
   removeDocumentAttachment: Scalars["Boolean"]["output"];
+  removeUserRole: User;
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
+  scheduleActivityReminder: ActivityReminder;
   sendAgentMessage: AgentResponse;
   shareDriveFolder: Scalars["Boolean"]["output"];
   syncGmailEmails: Array<Email>;
@@ -1171,6 +1211,7 @@ export type Mutation = {
   updateDocumentAttachmentCategory: DealDocumentAttachment;
   updateLead?: Maybe<Lead>;
   updateLeadWFMProgress: Lead;
+  updateMyReminderPreferences: UserReminderPreferences;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
   updatePersonOrganizationalRole: PersonOrganizationalRole;
@@ -1207,12 +1248,21 @@ export type MutationAssignAccountToTerritoryArgs = {
   territoryId: Scalars["ID"]["input"];
 };
 
+export type MutationAssignUserRoleArgs = {
+  roleName: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
 export type MutationAttachDocumentToDealArgs = {
   input: AttachDocumentInput;
 };
 
 export type MutationAttachFileToDealArgs = {
   input: AttachFileInput;
+};
+
+export type MutationCancelActivityReminderArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationComposeEmailArgs = {
@@ -1264,6 +1314,10 @@ export type MutationCreateEmailArgs = {
 
 export type MutationCreateLeadArgs = {
   input: LeadInput;
+};
+
+export type MutationCreateNotificationArgs = {
+  input: CreateNotificationInput;
 };
 
 export type MutationCreateOrganizationArgs = {
@@ -1346,6 +1400,10 @@ export type MutationDeleteLeadArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteNotificationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1408,6 +1466,10 @@ export type MutationLinkEmailToDealArgs = {
   emailId: Scalars["String"]["input"];
 };
 
+export type MutationMarkNotificationAsReadArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationMarkThreadAsReadArgs = {
   threadId: Scalars["String"]["input"];
 };
@@ -1441,6 +1503,17 @@ export type MutationRemoveAccountFromTerritoryArgs = {
 
 export type MutationRemoveDocumentAttachmentArgs = {
   attachmentId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveUserRoleArgs = {
+  roleName: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
+export type MutationScheduleActivityReminderArgs = {
+  activityId: Scalars["ID"]["input"];
+  reminderType: ReminderType;
+  scheduledFor: Scalars["DateTime"]["input"];
 };
 
 export type MutationSendAgentMessageArgs = {
@@ -1502,6 +1575,10 @@ export type MutationUpdateLeadArgs = {
 export type MutationUpdateLeadWfmProgressArgs = {
   leadId: Scalars["ID"]["input"];
   targetWfmWorkflowStepId: Scalars["ID"]["input"];
+};
+
+export type MutationUpdateMyReminderPreferencesArgs = {
+  input: UpdateUserReminderPreferencesInput;
 };
 
 export type MutationUpdateOrganizationArgs = {
@@ -1589,6 +1666,57 @@ export type MutationUploadToGoogleDriveArgs = {
   fileName: Scalars["String"]["input"];
   mimeType: Scalars["String"]["input"];
 };
+
+export type Notification = {
+  __typename?: "Notification";
+  actionUrl?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  entityId?: Maybe<Scalars["ID"]["output"]>;
+  entityType?: Maybe<Scalars["String"]["output"]>;
+  expiresAt?: Maybe<Scalars["DateTime"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isRead: Scalars["Boolean"]["output"];
+  message: Scalars["String"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notificationType: NotificationType;
+  priority: NotificationPriority;
+  readAt?: Maybe<Scalars["DateTime"]["output"]>;
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
+  userId: Scalars["ID"]["output"];
+};
+
+export type NotificationFilterInput = {
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  isRead?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notificationType?: InputMaybe<NotificationType>;
+  priority?: InputMaybe<NotificationPriority>;
+};
+
+export enum NotificationPriority {
+  High = "HIGH",
+  Low = "LOW",
+  Normal = "NORMAL",
+  Urgent = "URGENT",
+}
+
+export type NotificationSummary = {
+  __typename?: "NotificationSummary";
+  notifications: Array<Notification>;
+  totalCount: Scalars["Int"]["output"];
+  unreadCount: Scalars["Int"]["output"];
+};
+
+export enum NotificationType {
+  ActivityOverdue = "ACTIVITY_OVERDUE",
+  ActivityReminder = "ACTIVITY_REMINDER",
+  Custom = "CUSTOM",
+  DealAssigned = "DEAL_ASSIGNED",
+  LeadAssigned = "LEAD_ASSIGNED",
+  SystemAnnouncement = "SYSTEM_ANNOUNCEMENT",
+}
 
 /** Defines the Organization type and related queries/mutations. */
 export type Organization = {
@@ -1754,6 +1882,7 @@ export type Query = {
   accountTerritories: Array<AccountTerritory>;
   activities: Array<Activity>;
   activity?: Maybe<Activity>;
+  activityReminders: Array<ActivityReminder>;
   agentConversation?: Maybe<AgentConversation>;
   agentConversations: Array<AgentConversation>;
   agentThoughts: Array<AgentThought>;
@@ -1802,7 +1931,10 @@ export type Query = {
   leads: Array<Lead>;
   leadsStats: LeadsStats;
   me?: Maybe<User>;
+  myNotifications: NotificationSummary;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
+  myReminderPreferences?: Maybe<UserReminderPreferences>;
+  notification?: Maybe<Notification>;
   organization?: Maybe<Organization>;
   organizationPersonRelationships: Array<PersonRelationship>;
   organizationRelationships: Array<OrganizationRelationship>;
@@ -1815,6 +1947,7 @@ export type Query = {
   personRelationships: Array<PersonRelationship>;
   relationshipInsight?: Maybe<RelationshipInsight>;
   relationshipInsights: Array<RelationshipInsight>;
+  roles: Array<Role>;
   searchDriveFiles: DriveFileConnection;
   searchEmails: Array<Email>;
   searchSharedDriveFiles: Array<DriveFile>;
@@ -1824,6 +1957,7 @@ export type Query = {
   supabaseConnectionTest: Scalars["String"]["output"];
   territories: Array<Territory>;
   territory?: Maybe<Territory>;
+  unreadNotificationCount: Scalars["Int"]["output"];
   users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
@@ -1844,6 +1978,10 @@ export type QueryActivitiesArgs = {
 
 export type QueryActivityArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryActivityRemindersArgs = {
+  activityId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type QueryAgentConversationArgs = {
@@ -2001,6 +2139,16 @@ export type QueryLeadsArgs = {
   filters?: InputMaybe<LeadFilters>;
 };
 
+export type QueryMyNotificationsArgs = {
+  filter?: InputMaybe<NotificationFilterInput>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryNotificationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type QueryOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2127,6 +2275,20 @@ export type RelationshipInsight = {
   status: InsightStatus;
   supportingData?: Maybe<Scalars["JSON"]["output"]>;
   updatedAt: Scalars["String"]["output"];
+};
+
+/** Activity Reminders and Notifications GraphQL Schema */
+export enum ReminderType {
+  Email = "EMAIL",
+  InApp = "IN_APP",
+  Push = "PUSH",
+}
+
+export type Role = {
+  __typename?: "Role";
+  description: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  name: Scalars["String"]["output"];
 };
 
 export type SendMessageInput = {
@@ -2334,6 +2496,8 @@ export type Subscription = {
   agentConversationUpdated: AgentConversation;
   agentPlanUpdated: AgentPlan;
   agentThoughtsAdded: Array<AgentThought>;
+  notificationAdded: Notification;
+  notificationUpdated: Notification;
 };
 
 export type SubscriptionAgentConversationUpdatedArgs = {
@@ -2346,6 +2510,14 @@ export type SubscriptionAgentPlanUpdatedArgs = {
 
 export type SubscriptionAgentThoughtsAddedArgs = {
   conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionNotificationAddedArgs = {
+  userId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionNotificationUpdatedArgs = {
+  userId: Scalars["ID"]["input"];
 };
 
 export type Territory = {
@@ -2392,6 +2564,7 @@ export type ToolDiscoveryResponse = {
 };
 
 export type UpdateActivityInput = {
+  assigned_to_user_id?: InputMaybe<Scalars["ID"]["input"]>;
   deal_id?: InputMaybe<Scalars["ID"]["input"]>;
   due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   is_done?: InputMaybe<Scalars["Boolean"]["input"]>;
@@ -2467,6 +2640,19 @@ export type UpdateUserProfileInput = {
   display_name?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type UpdateUserReminderPreferencesInput = {
+  emailDailyDigestEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+  emailDailyDigestTime?: InputMaybe<Scalars["String"]["input"]>;
+  emailReminderMinutesBefore?: InputMaybe<Scalars["Int"]["input"]>;
+  emailRemindersEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+  inAppReminderMinutesBefore?: InputMaybe<Scalars["Int"]["input"]>;
+  inAppRemindersEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+  overdueNotificationFrequencyHours?: InputMaybe<Scalars["Int"]["input"]>;
+  overdueNotificationsEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+  pushReminderMinutesBefore?: InputMaybe<Scalars["Int"]["input"]>;
+  pushRemindersEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+};
+
 export type UpdateWfmProjectTypeInput = {
   defaultWorkflowId?: InputMaybe<Scalars["ID"]["input"]>;
   description?: InputMaybe<Scalars["String"]["input"]>;
@@ -2515,6 +2701,25 @@ export type User = {
   display_name?: Maybe<Scalars["String"]["output"]>;
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
+  roles: Array<Role>;
+};
+
+export type UserReminderPreferences = {
+  __typename?: "UserReminderPreferences";
+  createdAt: Scalars["DateTime"]["output"];
+  emailDailyDigestEnabled: Scalars["Boolean"]["output"];
+  emailDailyDigestTime: Scalars["String"]["output"];
+  emailReminderMinutesBefore: Scalars["Int"]["output"];
+  emailRemindersEnabled: Scalars["Boolean"]["output"];
+  id: Scalars["ID"]["output"];
+  inAppReminderMinutesBefore: Scalars["Int"]["output"];
+  inAppRemindersEnabled: Scalars["Boolean"]["output"];
+  overdueNotificationFrequencyHours: Scalars["Int"]["output"];
+  overdueNotificationsEnabled: Scalars["Boolean"]["output"];
+  pushReminderMinutesBefore: Scalars["Int"]["output"];
+  pushRemindersEnabled: Scalars["Boolean"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  userId: Scalars["ID"]["output"];
 };
 
 /** Represents a specific instance of a workflow being executed for a particular entity (e.g., a deal, a task). */
@@ -2730,6 +2935,7 @@ export type ResolversTypes = {
   AccountTerritory: ResolverTypeWrapper<AccountTerritory>;
   Activity: ResolverTypeWrapper<Activity>;
   ActivityFilterInput: ActivityFilterInput;
+  ActivityReminder: ResolverTypeWrapper<ActivityReminder>;
   ActivityType: ActivityType;
   AgentConfig: ResolverTypeWrapper<AgentConfig>;
   AgentConfigInput: AgentConfigInput;
@@ -2756,6 +2962,7 @@ export type ResolversTypes = {
   CreateDealFolderInput: CreateDealFolderInput;
   CreateDocumentInput: CreateDocumentInput;
   CreateEmailInput: CreateEmailInput;
+  CreateNotificationInput: CreateNotificationInput;
   CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
   CreatePersonOrganizationalRoleInput: CreatePersonOrganizationalRoleInput;
   CreatePersonRelationshipInput: CreatePersonRelationshipInput;
@@ -2834,6 +3041,11 @@ export type ResolversTypes = {
   LeadsStats: ResolverTypeWrapper<LeadsStats>;
   MissingStakeholderRecommendations: ResolverTypeWrapper<MissingStakeholderRecommendations>;
   Mutation: ResolverTypeWrapper<{}>;
+  Notification: ResolverTypeWrapper<Notification>;
+  NotificationFilterInput: NotificationFilterInput;
+  NotificationPriority: NotificationPriority;
+  NotificationSummary: ResolverTypeWrapper<NotificationSummary>;
+  NotificationType: NotificationType;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationInput: OrganizationInput;
   OrganizationRelationship: ResolverTypeWrapper<OrganizationRelationship>;
@@ -2849,6 +3061,8 @@ export type ResolversTypes = {
   PriorityLevel: PriorityLevel;
   Query: ResolverTypeWrapper<{}>;
   RelationshipInsight: ResolverTypeWrapper<RelationshipInsight>;
+  ReminderType: ReminderType;
+  Role: ResolverTypeWrapper<Role>;
   SendMessageInput: SendMessageInput;
   SeniorityLevel: SeniorityLevel;
   SharedDrive: ResolverTypeWrapper<SharedDrive>;
@@ -2880,6 +3094,7 @@ export type ResolversTypes = {
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
   UpdateStickerInput: UpdateStickerInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
+  UpdateUserReminderPreferencesInput: UpdateUserReminderPreferencesInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
   UpdateWFMWorkflowInput: UpdateWfmWorkflowInput;
@@ -2887,6 +3102,7 @@ export type ResolversTypes = {
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
   UploadFileInput: UploadFileInput;
   User: ResolverTypeWrapper<User>;
+  UserReminderPreferences: ResolverTypeWrapper<UserReminderPreferences>;
   WFMProject: ResolverTypeWrapper<WfmProject>;
   WFMProjectType: ResolverTypeWrapper<WfmProjectType>;
   WFMStatus: ResolverTypeWrapper<WfmStatus>;
@@ -2903,6 +3119,7 @@ export type ResolversParentTypes = {
   AccountTerritory: AccountTerritory;
   Activity: Activity;
   ActivityFilterInput: ActivityFilterInput;
+  ActivityReminder: ActivityReminder;
   AgentConfig: AgentConfig;
   AgentConfigInput: AgentConfigInput;
   AgentConversation: AgentConversation;
@@ -2924,6 +3141,7 @@ export type ResolversParentTypes = {
   CreateDealFolderInput: CreateDealFolderInput;
   CreateDocumentInput: CreateDocumentInput;
   CreateEmailInput: CreateEmailInput;
+  CreateNotificationInput: CreateNotificationInput;
   CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
   CreatePersonOrganizationalRoleInput: CreatePersonOrganizationalRoleInput;
   CreatePersonRelationshipInput: CreatePersonRelationshipInput;
@@ -2988,6 +3206,9 @@ export type ResolversParentTypes = {
   LeadsStats: LeadsStats;
   MissingStakeholderRecommendations: MissingStakeholderRecommendations;
   Mutation: {};
+  Notification: Notification;
+  NotificationFilterInput: NotificationFilterInput;
+  NotificationSummary: NotificationSummary;
   Organization: Organization;
   OrganizationInput: OrganizationInput;
   OrganizationRelationship: OrganizationRelationship;
@@ -3000,6 +3221,7 @@ export type ResolversParentTypes = {
   PersonUpdateInput: PersonUpdateInput;
   Query: {};
   RelationshipInsight: RelationshipInsight;
+  Role: Role;
   SendMessageInput: SendMessageInput;
   SharedDrive: SharedDrive;
   SharedDriveCapabilities: SharedDriveCapabilities;
@@ -3024,6 +3246,7 @@ export type ResolversParentTypes = {
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
   UpdateStickerInput: UpdateStickerInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
+  UpdateUserReminderPreferencesInput: UpdateUserReminderPreferencesInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
   UpdateWFMStatusInput: UpdateWfmStatusInput;
   UpdateWFMWorkflowInput: UpdateWfmWorkflowInput;
@@ -3031,6 +3254,7 @@ export type ResolversParentTypes = {
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
   UploadFileInput: UploadFileInput;
   User: User;
+  UserReminderPreferences: UserReminderPreferences;
   WFMProject: WfmProject;
   WFMProjectType: WfmProjectType;
   WFMStatus: WfmStatus;
@@ -3113,6 +3337,44 @@ export type ActivityResolvers<
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ActivityReminderResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["ActivityReminder"] = ResolversParentTypes["ActivityReminder"],
+> = {
+  activity?: Resolver<
+    Maybe<ResolversTypes["Activity"]>,
+    ParentType,
+    ContextType
+  >;
+  activityId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  failedAttempts?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isSent?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  lastError?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  reminderContent?: Resolver<
+    Maybe<ResolversTypes["JSON"]>,
+    ParentType,
+    ContextType
+  >;
+  reminderType?: Resolver<
+    ResolversTypes["ReminderType"],
+    ParentType,
+    ContextType
+  >;
+  scheduledFor?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  sentAt?: Resolver<Maybe<ResolversTypes["DateTime"]>, ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4311,6 +4573,12 @@ export type MutationResolvers<
       "isPrimary" | "organizationId" | "territoryId"
     >
   >;
+  assignUserRole?: Resolver<
+    ResolversTypes["User"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAssignUserRoleArgs, "roleName" | "userId">
+  >;
   attachDocumentToDeal?: Resolver<
     ResolversTypes["DealDocumentAttachment"],
     ParentType,
@@ -4322,6 +4590,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationAttachFileToDealArgs, "input">
+  >;
+  cancelActivityReminder?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCancelActivityReminderArgs, "id">
   >;
   composeEmail?: Resolver<
     ResolversTypes["EmailMessage"],
@@ -4394,6 +4668,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateLeadArgs, "input">
+  >;
+  createNotification?: Resolver<
+    ResolversTypes["Notification"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateNotificationArgs, "input">
   >;
   createOrganization?: Resolver<
     ResolversTypes["Organization"],
@@ -4515,6 +4795,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteLeadArgs, "id">
   >;
+  deleteNotification?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteNotificationArgs, "id">
+  >;
   deleteOrganization?: Resolver<
     Maybe<ResolversTypes["Boolean"]>,
     ParentType,
@@ -4605,6 +4891,17 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationLinkEmailToDealArgs, "dealId" | "emailId">
   >;
+  markAllNotificationsAsRead?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  markNotificationAsRead?: Resolver<
+    ResolversTypes["Notification"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkNotificationAsReadArgs, "id">
+  >;
   markThreadAsRead?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -4656,10 +4953,25 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationRemoveDocumentAttachmentArgs, "attachmentId">
   >;
+  removeUserRole?: Resolver<
+    ResolversTypes["User"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRemoveUserRoleArgs, "roleName" | "userId">
+  >;
   revokeGoogleIntegration?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
     ContextType
+  >;
+  scheduleActivityReminder?: Resolver<
+    ResolversTypes["ActivityReminder"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationScheduleActivityReminderArgs,
+      "activityId" | "reminderType" | "scheduledFor"
+    >
   >;
   sendAgentMessage?: Resolver<
     ResolversTypes["AgentResponse"],
@@ -4747,6 +5059,12 @@ export type MutationResolvers<
       MutationUpdateLeadWfmProgressArgs,
       "leadId" | "targetWfmWorkflowStepId"
     >
+  >;
+  updateMyReminderPreferences?: Resolver<
+    ResolversTypes["UserReminderPreferences"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateMyReminderPreferencesArgs, "input">
   >;
   updateOrganization?: Resolver<
     Maybe<ResolversTypes["Organization"]>,
@@ -4859,6 +5177,65 @@ export type MutationResolvers<
       "entityId" | "entityType" | "fileContent" | "fileName" | "mimeType"
     >
   >;
+};
+
+export type NotificationResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["Notification"] = ResolversParentTypes["Notification"],
+> = {
+  actionUrl?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  entityId?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
+  entityType?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  expiresAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isRead?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  message?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  notificationType?: Resolver<
+    ResolversTypes["NotificationType"],
+    ParentType,
+    ContextType
+  >;
+  priority?: Resolver<
+    ResolversTypes["NotificationPriority"],
+    ParentType,
+    ContextType
+  >;
+  readAt?: Resolver<Maybe<ResolversTypes["DateTime"]>, ParentType, ContextType>;
+  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NotificationSummaryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["NotificationSummary"] = ResolversParentTypes["NotificationSummary"],
+> = {
+  notifications?: Resolver<
+    Array<ResolversTypes["Notification"]>,
+    ParentType,
+    ContextType
+  >;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  unreadCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type OrganizationResolvers<
@@ -5118,6 +5495,12 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryActivityArgs, "id">
   >;
+  activityReminders?: Resolver<
+    Array<ResolversTypes["ActivityReminder"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryActivityRemindersArgs>
+  >;
   agentConversation?: Resolver<
     Maybe<ResolversTypes["AgentConversation"]>,
     ParentType,
@@ -5362,10 +5745,27 @@ export type QueryResolvers<
   >;
   leadsStats?: Resolver<ResolversTypes["LeadsStats"], ParentType, ContextType>;
   me?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  myNotifications?: Resolver<
+    ResolversTypes["NotificationSummary"],
+    ParentType,
+    ContextType,
+    Partial<QueryMyNotificationsArgs>
+  >;
   myPermissions?: Resolver<
     Maybe<Array<ResolversTypes["String"]>>,
     ParentType,
     ContextType
+  >;
+  myReminderPreferences?: Resolver<
+    Maybe<ResolversTypes["UserReminderPreferences"]>,
+    ParentType,
+    ContextType
+  >;
+  notification?: Resolver<
+    Maybe<ResolversTypes["Notification"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryNotificationArgs, "id">
   >;
   organization?: Resolver<
     Maybe<ResolversTypes["Organization"]>,
@@ -5435,6 +5835,7 @@ export type QueryResolvers<
     ContextType,
     Partial<QueryRelationshipInsightsArgs>
   >;
+  roles?: Resolver<Array<ResolversTypes["Role"]>, ParentType, ContextType>;
   searchDriveFiles?: Resolver<
     ResolversTypes["DriveFileConnection"],
     ParentType,
@@ -5487,6 +5888,11 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryTerritoryArgs, "id">
+  >;
+  unreadNotificationCount?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
   >;
   users?: Resolver<Array<ResolversTypes["User"]>, ParentType, ContextType>;
   wfmProjectType?: Resolver<
@@ -5591,6 +5997,17 @@ export type RelationshipInsightResolvers<
     ContextType
   >;
   updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type RoleResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["Role"] = ResolversParentTypes["Role"],
+> = {
+  description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -5977,6 +6394,20 @@ export type SubscriptionResolvers<
     ContextType,
     RequireFields<SubscriptionAgentThoughtsAddedArgs, "conversationId">
   >;
+  notificationAdded?: SubscriptionResolver<
+    ResolversTypes["Notification"],
+    "notificationAdded",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionNotificationAddedArgs, "userId">
+  >;
+  notificationUpdated?: SubscriptionResolver<
+    ResolversTypes["Notification"],
+    "notificationUpdated",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionNotificationUpdatedArgs, "userId">
+  >;
 };
 
 export type TerritoryResolvers<
@@ -6063,6 +6494,69 @@ export type UserResolvers<
   >;
   email?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  roles?: Resolver<Array<ResolversTypes["Role"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type UserReminderPreferencesResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["UserReminderPreferences"] = ResolversParentTypes["UserReminderPreferences"],
+> = {
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  emailDailyDigestEnabled?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  emailDailyDigestTime?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  emailReminderMinutesBefore?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  emailRemindersEnabled?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  inAppReminderMinutesBefore?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  inAppRemindersEnabled?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  overdueNotificationFrequencyHours?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  overdueNotificationsEnabled?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  pushReminderMinutesBefore?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  pushRemindersEnabled?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -6283,6 +6777,7 @@ export type WfmWorkflowTransitionMutationResponseResolvers<
 export type Resolvers<ContextType = GraphQLContext> = {
   AccountTerritory?: AccountTerritoryResolvers<ContextType>;
   Activity?: ActivityResolvers<ContextType>;
+  ActivityReminder?: ActivityReminderResolvers<ContextType>;
   AgentConfig?: AgentConfigResolvers<ContextType>;
   AgentConversation?: AgentConversationResolvers<ContextType>;
   AgentMessage?: AgentMessageResolvers<ContextType>;
@@ -6326,6 +6821,8 @@ export type Resolvers<ContextType = GraphQLContext> = {
   LeadsStats?: LeadsStatsResolvers<ContextType>;
   MissingStakeholderRecommendations?: MissingStakeholderRecommendationsResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  Notification?: NotificationResolvers<ContextType>;
+  NotificationSummary?: NotificationSummaryResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   OrganizationRelationship?: OrganizationRelationshipResolvers<ContextType>;
   Person?: PersonResolvers<ContextType>;
@@ -6334,6 +6831,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   PersonRelationship?: PersonRelationshipResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   RelationshipInsight?: RelationshipInsightResolvers<ContextType>;
+  Role?: RoleResolvers<ContextType>;
   SharedDrive?: SharedDriveResolvers<ContextType>;
   SharedDriveCapabilities?: SharedDriveCapabilitiesResolvers<ContextType>;
   SharedDriveImage?: SharedDriveImageResolvers<ContextType>;
@@ -6347,6 +6845,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Territory?: TerritoryResolvers<ContextType>;
   ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
+  UserReminderPreferences?: UserReminderPreferencesResolvers<ContextType>;
   WFMProject?: WfmProjectResolvers<ContextType>;
   WFMProjectType?: WfmProjectTypeResolvers<ContextType>;
   WFMStatus?: WfmStatusResolvers<ContextType>;

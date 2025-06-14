@@ -216,7 +216,7 @@ export const smartStickersService = {
   },
 
   async getStickerById(id: string, accessToken: string): Promise<SmartSticker | null> {
-    console.log('[smartStickersService.getStickerById] called for id:', id);
+    // console.log('[smartStickersService.getStickerById] called for id:', id);
     try {
       const supabase = getAuthenticatedClient(accessToken);
       
@@ -238,7 +238,7 @@ export const smartStickersService = {
   },
 
   async updateSticker(id: string, userId: string, input: UpdateStickerInput, accessToken: string): Promise<SmartSticker> {
-    console.log('[smartStickersService.updateSticker] called for user:', userId, 'id:', id, 'input:', input);
+    // console.log('[smartStickersService.updateSticker] called for user:', userId, 'id:', id, 'input:', input);
     try {
       const supabase = getAuthenticatedClient(accessToken);
       
@@ -281,7 +281,7 @@ export const smartStickersService = {
   },
 
   async deleteSticker(id: string, accessToken: string): Promise<boolean> {
-    console.log('[smartStickersService.deleteSticker] called for id:', id);
+    // console.log('[smartStickersService.deleteSticker] called for id:', id);
     try {
       const supabase = getAuthenticatedClient(accessToken);
       
@@ -368,7 +368,7 @@ export const smartStickersService = {
     after?: string,
     accessToken?: string
   ): Promise<StickerSearchResult> {
-    console.log('[smartStickersService.searchStickers] called');
+    // console.log('[smartStickersService.searchStickers] called');
     try {
       const supabase = getAuthenticatedClient(accessToken || '');
       
@@ -412,7 +412,7 @@ export const smartStickersService = {
   },
 
   async getPinnedStickers(entityType?: string, first?: number, accessToken?: string): Promise<StickerSearchResult> {
-    console.log('[smartStickersService.getPinnedStickers] called');
+    // console.log('[smartStickersService.getPinnedStickers] called');
     try {
       const supabase = getAuthenticatedClient(accessToken || '');
       
@@ -449,7 +449,7 @@ export const smartStickersService = {
 
   // Specialized operations
   async toggleStickerPin(id: string, userId: string, accessToken: string): Promise<SmartSticker> {
-    console.log('[smartStickersService.toggleStickerPin] called for:', id, userId);
+    // console.log('[smartStickersService.toggleStickerPin] called for:', id, userId);
     try {
       const supabase = getAuthenticatedClient(accessToken);
       
@@ -487,7 +487,7 @@ export const smartStickersService = {
   },
 
   async moveStickersBulk(moves: StickerMoveInput[], userId: string, accessToken: string): Promise<SmartSticker[]> {
-    console.log('[smartStickersService.moveStickersBulk] called for user:', userId, 'moves:', moves.length);
+    // console.log('[smartStickersService.moveStickersBulk] called for user:', userId, 'moves:', moves.length);
     try {
       const supabase = getAuthenticatedClient(accessToken);
       const updatedStickers: SmartSticker[] = [];
@@ -524,7 +524,7 @@ export const smartStickersService = {
     tagsToRemove?: string[], 
     accessToken?: string
   ): Promise<SmartSticker> {
-    console.log('[smartStickersService.updateStickerTags] called for:', id, userId);
+    // console.log('[smartStickersService.updateStickerTags] called for:', id, userId);
     try {
       const supabase = getAuthenticatedClient(accessToken || '');
       

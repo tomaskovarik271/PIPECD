@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Box, Heading, Button, VStack, useToast, Spinner, Text, Flex, IconButton } from '@chakra-ui/react';
+import { Box, Heading, Button, VStack, useToast, Spinner, Text, Flex, IconButton, HStack } from '@chakra-ui/react';
 import { EditIcon, CloseIcon } from '@chakra-ui/icons';
+import { NotificationCenter } from '../components/common/NotificationCenter';
 import { gql } from 'graphql-request';
 import { gqlClient } from '../lib/graphqlClient';
 import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
 import type { User } from '../generated/graphql/graphql';
 import ProfileView from '../components/profile/ProfileView';
 import ProfileEditForm from '../components/profile/ProfileEditForm';
+import { NotificationPreferences } from '../components/profile/NotificationPreferences';
 
 // Define the query string directly for graphql-request
 const GET_ME_QUERY = gql`
@@ -108,22 +110,28 @@ const ProfilePage: React.FC = () => {
           <Heading as="h1" size="xl">
             My Profile
           </Heading>
-          {user && !isEditing && (
-            <IconButton
-              aria-label="Edit Profile"
-              icon={<EditIcon />}
-              onClick={() => setIsEditing(true)}
-              variant="ghost"
-            />
-          )}
-          {isEditing && (
-             <IconButton
-              aria-label="Cancel Edit"
-              icon={<CloseIcon />}
-              onClick={() => setIsEditing(false)}
-              variant="ghost"
-            />
-          )}
+          
+          <HStack spacing={3}>
+            {/* Notification Center */}
+            <NotificationCenter />
+            
+            {user && !isEditing && (
+              <IconButton
+                aria-label="Edit Profile"
+                icon={<EditIcon />}
+                onClick={() => setIsEditing(true)}
+                variant="ghost"
+              />
+            )}
+            {isEditing && (
+               <IconButton
+                aria-label="Cancel Edit"
+                icon={<CloseIcon />}
+                onClick={() => setIsEditing(false)}
+                variant="ghost"
+              />
+            )}
+          </HStack>
         </Flex>
 
         {isEditing && user ? (
@@ -133,7 +141,14 @@ const ProfilePage: React.FC = () => {
             onCancel={() => setIsEditing(false)}
           />
         ) : (
-          <ProfileView user={user} isLoading={loading} />
+          <>
+            <ProfileView user={user} isLoading={loading} />
+            
+            {/* Activity Reminder Preferences */}
+            <Box mt={8}>
+              <NotificationPreferences />
+            </Box>
+          </>
         )}
       </VStack>
     </Box>

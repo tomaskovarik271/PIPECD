@@ -4,6 +4,7 @@ import type { WfmWorkflowStep } from '../../generated/graphql/graphql';
 import { Deal } from '../../stores/useDealsStore';
 import { Droppable, DroppableProvided, DroppableStateSnapshot } from '@hello-pangea/dnd';
 import DealCardKanban from './DealCardKanban';
+import DealCardKanbanCompact from './DealCardKanbanCompact';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 
 const formatCurrency = (value: number, currencyCode = 'USD') => {
@@ -15,9 +16,10 @@ interface KanbanStepColumnProps {
   deals: Deal[];
   weightedAmountSum: number;
   index: number;
+  isCompact?: boolean;
 }
 
-const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, deals, weightedAmountSum, index }) => {
+const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, deals, weightedAmountSum, index, isCompact = false }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
 
@@ -40,16 +42,16 @@ const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, de
           <VStack 
             ref={provided.innerRef}
             {...provided.droppableProps}
-            spacing={6} 
+            spacing={isCompact ? 4 : 6} 
             align="stretch" 
             bg={columnBg}
-            p={6} 
+            p={isCompact ? 4 : 6} 
             borderRadius="xl" 
             borderWidth="1px"
             borderColor={colors.border.default}
-            minH="600px"
-            w="320px"
-            m={2}
+            minH={isCompact ? "500px" : "600px"}
+            w={isCompact ? "260px" : "320px"}
+            m={isCompact ? 1.5 : 2}
             boxShadow={snapshot.isDraggingOver ? `0 0 0 2px ${colors.interactive.default}` : 'sm'}
             flexShrink={0}
             maxHeight="calc(100vh - 250px)"
@@ -72,24 +74,33 @@ const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, de
               <Flex alignItems="center" justifyContent="space-between" mb={2}>
                 <Box flexGrow={1}>
                   <Heading 
-                    size="md" 
+                    size={isCompact ? "sm" : "md"} 
                     color={colors.text.primary}
                     mb={1}
                     lineHeight="1.3"
                   >
                     {stepDisplayName}
                   </Heading>
-                  <Text fontSize="sm" color={colors.text.muted}>{deals.length} Deals</Text>
+                  <Text fontSize={isCompact ? "xs" : "sm"} color={colors.text.muted}>{deals.length} Deals</Text>
                 </Box>
                 <Box textAlign="right">
                   <Text 
-                    fontSize="lg" 
+                    fontSize={isCompact ? "md" : "lg"} 
                     fontWeight="semibold" 
                     color={colors.text.success}
                     noOfLines={1} 
                     title={formatCurrency(weightedAmountSum)}
                   >
-                    {formatCurrency(weightedAmountSum)}
+                    {isCompact && weightedAmountSum >= 1000000 
+                      ? new Intl.NumberFormat('en-US', { 
+                          style: 'currency', 
+                          currency: 'USD', 
+                          notation: 'compact', 
+                          minimumFractionDigits: 0, 
+                          maximumFractionDigits: 1 
+                        }).format(weightedAmountSum)
+                      : formatCurrency(weightedAmountSum)
+                    }
                   </Text>
                 </Box>
               </Flex>
@@ -101,14 +112,22 @@ const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, de
             </Box>
             
             {/* Deal Cards */}
-            <VStack spacing={4} align="stretch" flexGrow={1}>
-              {deals.map((deal, idx) => (
-                <DealCardKanban 
-                  key={deal.id} 
-                  deal={deal} 
-                  index={idx}
-                />
-              ))}
+            <VStack spacing={isCompact ? 2 : 4} align="stretch" flexGrow={1}>
+              {deals.map((deal, idx) => 
+                isCompact ? (
+                  <DealCardKanbanCompact 
+                    key={deal.id} 
+                    deal={deal} 
+                    index={idx}
+                  />
+                ) : (
+                  <DealCardKanban 
+                    key={deal.id} 
+                    deal={deal} 
+                    index={idx}
+                  />
+                )
+              )}
               {/* @ts-ignore */}
               {provided.placeholder as any}
               {deals.length === 0 && !snapshot.isDraggingOver && (

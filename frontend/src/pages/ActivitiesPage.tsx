@@ -25,6 +25,7 @@ import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
 import CreateActivityForm from '../components/activities/CreateActivityForm';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
 import EditActivityModal from '../components/activities/EditActivityModal';
+import ActivitiesCalendarView from '../components/activities/ActivitiesCalendarView';
 import { TimeIcon, EditIcon, DeleteIcon, SettingsIcon, ViewIcon } from '@chakra-ui/icons';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import ColumnSelector from '../components/common/ColumnSelector';
@@ -70,6 +71,8 @@ function ActivitiesPage() {
     activities,
     activitiesLoading,
     activitiesError,
+    activitiesViewMode,
+    setActivitiesViewMode,
     fetchActivities,
     updateActivity,
     deleteActivity,
@@ -362,6 +365,15 @@ function ActivitiesPage() {
         requiredPermission="activity:create"
         userPermissions={userPermissions || []} // Fix: handle null userPermissions
         secondaryActions={secondaryActions}
+        // View mode switcher
+        showViewModeSwitch={true}
+        viewMode={activitiesViewMode}
+        onViewModeChange={(mode) => {
+          if (mode === 'table' || mode === 'calendar') {
+            setActivitiesViewMode(mode);
+          }
+        }}
+        supportedViewModes={['table', 'calendar']}
       />
 
       <Box sx={pageLayoutStyles.container}>
@@ -399,14 +411,21 @@ function ActivitiesPage() {
         
         {!pageIsLoading && !activitiesError && displayedActivities.length > 0 && (
           <Box sx={pageLayoutStyles.content}>
-            <SortableTable<Activity>
-              data={displayedActivities}
-              columns={visibleColumns}
-              initialSortKey="due_date"
-              initialSortDirection="ascending"
-              onRowClick={handleRowClick}
-              excludeClickableColumns={['actions', 'is_done']}
-            />
+            {activitiesViewMode === 'calendar' ? (
+              <ActivitiesCalendarView
+                activities={displayedActivities}
+                onActivityClick={handleEditClick}
+              />
+            ) : (
+              <SortableTable<Activity>
+                data={displayedActivities}
+                columns={visibleColumns}
+                initialSortKey="due_date"
+                initialSortDirection="ascending"
+                onRowClick={handleRowClick}
+                excludeClickableColumns={['actions', 'is_done']}
+              />
+            )}
           </Box>
         )}
       </Box>

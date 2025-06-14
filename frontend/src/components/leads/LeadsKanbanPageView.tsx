@@ -17,6 +17,7 @@ interface LeadsKanbanPageViewProps {
   error: string | null;
   onNewButtonClick: () => void; // For EmptyState action
   userPermissions: string[] | null | undefined; // For EmptyState action
+  isCompact?: boolean; // For compact view mode
 }
 
 const LeadsKanbanPageView: React.FC<LeadsKanbanPageViewProps> = ({
@@ -25,6 +26,7 @@ const LeadsKanbanPageView: React.FC<LeadsKanbanPageViewProps> = ({
   error,
   onNewButtonClick,
   userPermissions,
+  isCompact = false,
 }) => {
   if (isLoading) {
     return <Flex justify="center" align="center" minH="300px" w="100%"><Spinner size="xl" /></Flex>;
@@ -54,7 +56,7 @@ const LeadsKanbanPageView: React.FC<LeadsKanbanPageViewProps> = ({
       h="100%" // Ensure it tries to take full height of its container in LeadsPage
       overflowX="auto" // Enable horizontal scrolling for the LeadsKanbanView
     >
-      <LeadsKanbanView leads={leads} />
+      <LeadsKanbanView leads={leads} isCompact={isCompact} />
     </Box>
   );
 };

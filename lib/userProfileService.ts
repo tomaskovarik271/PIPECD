@@ -163,7 +163,7 @@ export const updateUserProfile = async (
   if (Object.keys(updateData).length === 0 && 
       input.display_name === undefined && 
       input.avatar_url === undefined) {
-    console.log(`[userProfileService] No recognized fields in input for user_id: ${userId}. Fetching current profile.`);
+              // console.log(`[userProfileService] No recognized fields in input for user_id: ${userId}. Fetching current profile.`);
     const currentProfile = await getUserProfile(userId, accessToken);
     if (currentProfile) {
       return currentProfile;
@@ -174,7 +174,7 @@ export const updateUserProfile = async (
     // Supabase upsert with { onConflict: 'user_id' } will attempt an INSERT if no row matches user_id.
   }
 
-  console.log(`[userProfileService] Updating profile for user_id: ${userId} with data:`, updateData);
+          // console.log(`[userProfileService] Updating profile for user_id: ${userId} with data:`, updateData);
 
   const authenticatedSupabase = getAuthenticatedClient(accessToken); // ADDED: Get authenticated client
 
@@ -196,6 +196,6 @@ export const updateUserProfile = async (
     throw new Error('Failed to update user profile: no data returned.');
   }
 
-  console.log(`[userProfileService] Successfully updated profile for ${userId}:`, data);
+          // console.log(`[userProfileService] Successfully updated profile for ${userId}:`, data);
   return data as DbUserProfile;
 }; 

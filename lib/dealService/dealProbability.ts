@@ -95,7 +95,7 @@ export const calculateDealProbabilityFields = async (
     // No explicit input probability, no WFM context found (e.g. deal not linked or WFM data missing)
     // Retain old deal_specific_probability if no other information is available
     result.deal_specific_probability_to_set = oldDealData.deal_specific_probability;
-    console.log(`[dealProbability.calculate] No explicit probability input and no WFM context. Retaining old deal_specific_probability: ${result.deal_specific_probability_to_set}`);
+          // console.log(`[dealProbability.calculate] No explicit probability input and no WFM context. Retaining old deal_specific_probability: ${result.deal_specific_probability_to_set}`);
   }
 
   // 3. Calculate weighted_amount_to_set

@@ -1,6 +1,6 @@
 # Architecture Decision Record (ADR): Custom CRM System
 
-**Status:** PRODUCTION | **Date:** 2025-05-01 (Updated: 2025-12-31)
+**Status:** PRODUCTION | **Date:** 2025-05-01 (Updated: 2025-01-15)
 
 ## 1. Context
 
@@ -8,7 +8,7 @@ This document outlines the architectural decisions for building a custom Custome
 
 **🚀 CURRENT STATUS: PRODUCTION-READY CRM WITH AI INTELLIGENCE**
 
-The system has achieved **full production readiness** with revolutionary AI capabilities, comprehensive lead management, and event-driven automation. This ADR reflects the current implemented state and proven architectural decisions.
+The system has achieved **full production readiness** with revolutionary AI capabilities, comprehensive lead management, enterprise notification infrastructure, and event-driven automation. This ADR reflects the current implemented state and proven architectural decisions.
 
 ## 2. Goal
 
@@ -16,6 +16,7 @@ The system has achieved **full production readiness** with revolutionary AI capa
 
 **🎯 DELIVERED CAPABILITIES:**
 - **Revolutionary AI Agent** - Claude 4 Sonnet with 30+ tools for autonomous CRM management
+- **Enterprise Activity Reminders** - Multi-channel notification infrastructure with email, in-app, and push capabilities
 - **Complete Leads Management** - Full qualification workflows with AI scoring and conversion
 - **Custom Fields Democratization** - All users can create custom fields via AI conversation
 - **Event-Driven Automation** - Inngest-powered assignment and workflow automation
@@ -150,33 +151,35 @@ sequenceDiagram
 |  2  | **Deal Management**                     | Lifecycle of active deals, stage transitions, value. | ✅ **PRODUCTION** (Full CRUD with WFM)      | ✅ **FULLY IMPLEMENTED** - Core CRUD, WFM-driven pipeline, assignment automation, 6 AI tools |
 |  3  | **WFM Configuration**                   | Define & manage WFM entities (Statuses, Workflows, Steps, Transitions, Project Types) that constitute processes. | ✅ **PRODUCTION** (Complete WFM system)     | ✅ **FULLY IMPLEMENTED** - Replaces legacy Pipeline/Stage system. Powers both deals and leads workflows |
 |  4  | **Contact Management**                  | People & Organizations, dedupe, search.              | ✅ **PRODUCTION** (Full CRUD + AI)          | ✅ **FULLY IMPLEMENTED** - Person/Organization CRUD with AI tools and custom fields |
-|  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ **PRODUCTION** (CRUD + Assignment automation) | ✅ **FULLY IMPLEMENTED** - Full CRUD, assignable tasks, system tasks, 5 AI tools, automation triggers |
-|  6  | **AI Agent System**                     | **🆕 REVOLUTIONARY** Claude 4 Sonnet autonomous CRM management | ✅ **PRODUCTION** (30+ tools operational)   | ✅ **BREAKTHROUGH** - 30+ AI tools, custom fields creation, sequential workflows, natural language CRM |
-|  7  | **Custom Fields Management**            | **🆕 DEMOCRATIZED** Dynamic field creation for all entities | ✅ **PRODUCTION** (All users can create)    | ✅ **REVOLUTIONARY** - AI-driven field creation, supports all entity types (DEAL, PERSON, ORGANIZATION, LEAD) |
-|  8  | **Smart Stickers Visual Collaboration** | **🆕 REVOLUTIONARY** Drag-and-drop sticky note system with dual-mode interface for visual collaboration on entities | ✅ **PRODUCTION** (Native CRM integration) | ✅ **BREAKTHROUGH** - Visual canvas + professional table views, advanced filtering, seamless entity integration, 8 categories + custom |
-|  9  | **Relationship Intelligence Platform**  | **🆕 REVOLUTIONARY** Visual network analysis, stakeholder intelligence, influence mapping | ✅ **PRODUCTION** (D3.js network visualization) | ✅ **BREAKTHROUGH** - Interactive network graphs, stakeholder analysis, AI-powered gap detection, multi-modal visualization |
-|  10 | **Workflow Automation**                 | Rule-based triggers/actions across modules.          | ✅ **PRODUCTION** (Deal + Lead assignment)  | ✅ **OPERATIONAL** - Inngest-powered deal assignment, lead assignment, system activity creation |
-|  11 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ **PRODUCTION** (Profiles + Auth)         | ✅ **COMPLETE** - Supabase Auth + user profiles with display names and avatars |
-|  12 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ **PRODUCTION** (RLS enforcement)         | ✅ **SECURE** - RLS via `auth.uid()`, custom fields permissions democratized |
-|  13 | **Google Workspace Integration**        | OAuth 2.0, Google Drive document management, Gmail & Calendar sync | ✅ **PRODUCTION** (Drive integration complete) | ✅ **IMPLEMENTED** - OAuth flow, deal folders, document import, admin settings. Gmail/Calendar foundation ready |
-|  14 | **Project (Post-Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ **FUTURE** (Post-production expansion)    | ⬜ **PLANNED** - Next phase after current capabilities are optimized |
-|  14 | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ **FUTURE** (Post-production expansion)    | ⬜ **PLANNED** - Removed outdated pricing services, clean slate for future |
-|  15 | **Google Workspace Integration**        | OAuth 2.0, Google Drive document management, Gmail & Calendar sync | ✅ **PRODUCTION** (Drive integration complete) | ✅ **IMPLEMENTED** - OAuth flow, deal folders, document import, admin settings. Gmail/Calendar foundation ready |
-|  16 | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | 🚧 **FOUNDATION READY** (Gmail integration) | 🚧 **PLANNED** - `emailService` and `DealEmailsPanel` components ready for Gmail API |
-|  17 | **Document Management**                 | Files, proposals, e-signature, attachment storage.   | ✅ **PRODUCTION** (Google Drive integration) | ✅ **IMPLEMENTED** - Google Drive document management with categorization and deal-centric folders |
-|  18 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ **FUTURE** (Analytics expansion)          | ⬜ **PLANNED** - AI Agent provides foundation for intelligent reporting |
-|  19 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ **FUTURE** (Integration expansion)        | ⬜ **PLANNED** - GraphQL API ready for external integrations |
+|  5  | **Activity Management**                 | Tasks, calls, meetings, reminders, calendar sync.    | ✅ **PRODUCTION** (CRUD + Assignment automation + Reminders) | ✅ **FULLY IMPLEMENTED** - Full CRUD, assignable tasks, system tasks, 5 AI tools, automation triggers, enterprise reminder system |
+|  6  | **Activity Reminders System**           | **🆕 ENTERPRISE** Multi-channel notification infrastructure with email, in-app, and push capabilities | ✅ **PRODUCTION** (Complete notification system) | ✅ **BREAKTHROUGH** - User preferences, scheduled reminders, in-app notifications, background processing, activity lifecycle integration |
+|  7  | **AI Agent System**                     | **🆕 REVOLUTIONARY** Claude 4 Sonnet autonomous CRM management | ✅ **PRODUCTION** (30+ tools operational)   | ✅ **BREAKTHROUGH** - 30+ AI tools, custom fields creation, sequential workflows, natural language CRM |
+|  8  | **Custom Fields Management**            | **🆕 DEMOCRATIZED** Dynamic field creation for all entities | ✅ **PRODUCTION** (All users can create)    | ✅ **REVOLUTIONARY** - AI-driven field creation, supports all entity types (DEAL, PERSON, ORGANIZATION, LEAD) |
+|  9  | **Smart Stickers Visual Collaboration** | **🆕 REVOLUTIONARY** Drag-and-drop sticky note system with dual-mode interface for visual collaboration on entities | ✅ **PRODUCTION** (Native CRM integration) | ✅ **BREAKTHROUGH** - Visual canvas + professional table views, advanced filtering, seamless entity integration, 8 categories + custom |
+|  10 | **Relationship Intelligence Platform**  | **🆕 REVOLUTIONARY** Visual network analysis, stakeholder intelligence, influence mapping | ✅ **PRODUCTION** (D3.js network visualization) | ✅ **BREAKTHROUGH** - Interactive network graphs, stakeholder analysis, AI-powered gap detection, multi-modal visualization |
+|  11 | **Workflow Automation**                 | Rule-based triggers/actions across modules.          | ✅ **PRODUCTION** (Deal + Lead assignment)  | ✅ **OPERATIONAL** - Inngest-powered deal assignment, lead assignment, system activity creation |
+|  12 | **User Management**                     | Create/disable users, profile, team membership.      | ✅ **PRODUCTION** (Profiles + Auth)         | ✅ **COMPLETE** - Supabase Auth + user profiles with display names and avatars |
+|  13 | **Role & Permission**                   | RBAC, record visibility, RLS policies.               | ✅ **PRODUCTION** (RLS enforcement)         | ✅ **SECURE** - RLS via `auth.uid()`, custom fields permissions democratized |
+|  14 | **Google Workspace Integration**        | OAuth 2.0, Google Drive document management, Gmail & Calendar sync | ✅ **PRODUCTION** (Drive integration complete) | ✅ **IMPLEMENTED** - OAuth flow, deal folders, document import, admin settings. Gmail/Calendar foundation ready for expansion.
+|  15 | **Project (Post-Sale) Management**      | Group deals into delivery projects & milestones.     | ⬜ **FUTURE** (Post-production expansion)    | ⬜ **PLANNED** - Next phase after current capabilities are optimized |
+|  16 | **Product Catalog & Pricing**           | Products, price books, line items on deals.          | ⬜ **FUTURE** (Post-production expansion)    | ⬜ **PLANNED** - Removed outdated pricing services, clean slate for future |
+|  17 | **Email Communication**                 | Email sync/BCC, link threads to deals & contacts.    | 🚧 **FOUNDATION READY** (Gmail integration) | 🚧 **PLANNED** - `emailService` and `DealEmailsPanel` components ready for Gmail API |
+|  18 | **Document Management**                 | Files, proposals, e-signature, attachment storage.   | ✅ **PRODUCTION** (Google Drive + Note Attachments) | ✅ **IMPLEMENTED** - Google Drive document management with categorization, deal-centric folders, and complete note attachment system with dual attachment capabilities |
+|  19 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ **FUTURE** (Analytics expansion)          | ⬜ **PLANNED** - AI Agent provides foundation for intelligent reporting |
+|  20 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ **FUTURE** (Integration expansion)        | ⬜ **PLANNED** - GraphQL API ready for external integrations |
 
 *Legend: ✅ Production Ready & Operational · 🟡 In Development · ⬜ Future Planned*
 
 **🎯 PRODUCTION ACHIEVEMENT SUMMARY:**
-- **11 of 19 modules** fully implemented and operational in production
+- **12 of 20 modules** fully implemented and operational in production
 - **Core CRM functionality** complete with AI-powered enhancements
+- **Enterprise Notification Infrastructure** with multi-channel delivery and user preference management
 - **Revolutionary Visual Collaboration** with Smart Stickers dual-mode interface
 - **Revolutionary Relationship Intelligence** with D3.js network visualization
+- **Document Attachment to Notes** with full Google Drive browser integration and dual attachment system
 - **Event-driven automation** successfully handling background workflows
 - **Security and performance** validated in production environment
-- **Extensible architecture** proven through successful AI Agent, Leads, Smart Stickers, and Relationship Intelligence additions
+- **Extensible architecture** proven through successful AI Agent, Leads, Smart Stickers, Relationship Intelligence, Activity Reminders, and Document Attachment additions
 
 ## 5. Key Technology Choices & Rationale (PRODUCTION VALIDATED)
 
@@ -235,6 +238,7 @@ sequenceDiagram
 - **Contact Management**: People and organizations with AI integration
 - **Activity Management**: Tasks and meetings with assignment automation
 - **Smart Stickers Visual Collaboration**: Drag-and-drop sticky note system with professional table views
+- **Document Attachment to Notes**: Full Google Drive browser integration with dual attachment system
 - **Custom Fields**: Democratized field creation for all entity types
 - **User Management**: Profiles with display names and avatars
 - **Relationship Intelligence**: Interactive network visualization and stakeholder analysis

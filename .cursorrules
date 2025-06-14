@@ -1,0 +1,29 @@
+# Cursor Rules for PipeCD Development
+
+## Supabase Migration File Naming Convention
+
+When creating new Supabase migration files, always follow this naming pattern:
+- Format: `YYYYMMDDHHMMSS_descriptive_migration_name.sql`
+- Use the current timestamp in UTC
+- Use snake_case for the descriptive name
+- Keep names concise but descriptive
+- Example: `20250115143022_add_activity_reminders_table.sql`
+
+### Migration Numbering Sequence
+- Always check the latest migration file timestamp in `supabase/migrations/` directory
+- Increment timestamp by at least 1 second from the latest migration
+- Never reuse timestamps or create conflicts
+- Use `ls -la supabase/migrations/ | tail -5` to check latest migrations
+
+### Migration Content Standards
+- Always wrap DDL statements in BEGIN/COMMIT transaction
+- Include descriptive comments explaining the purpose
+- Add rollback instructions in comments when applicable
+- Test migrations on local Supabase before committing
+
+## Development Environment Rules
+- Never push database migrations to remote Supabase
+- Always use local Supabase environment for migrations
+- Database records/UUIDs are regenerated on reset - avoid hard-coding IDs
+- Use `netlify dev` for local development
+- Never run bulk code changes without approval 

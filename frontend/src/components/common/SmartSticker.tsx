@@ -378,30 +378,42 @@ export const SmartSticker: React.FC<SmartStickerProps> = ({
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               onKeyDown={handleKeyDown}
-              bg="whiteAlpha.900"
+              bg={colors.bg.surface}
+              color={colors.text.primary}
               backdropFilter="blur(4px)"
               border="2px solid"
-              borderColor="blue.300"
+              borderColor={colors.interactive.default}
               borderRadius="lg"
               fontSize="sm"
               fontWeight="semibold"
               placeholder="Sticker title..."
+              _placeholder={{ color: colors.text.muted }}
+              _focus={{
+                borderColor: colors.interactive.default,
+                boxShadow: `0 0 0 1px ${colors.interactive.default}`,
+              }}
             />
             <Textarea
               ref={editRef}
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
               onKeyDown={handleKeyDown}
-              bg="whiteAlpha.900"
+              bg={colors.bg.surface}
+              color={colors.text.primary}
               backdropFilter="blur(4px)"
               border="2px solid"
-              borderColor="blue.300"
+              borderColor={colors.interactive.default}
               borderRadius="lg"
               fontSize="sm"
               resize="none"
               placeholder="Add content..."
               rows={3}
               flex={1}
+              _placeholder={{ color: colors.text.muted }}
+              _focus={{
+                borderColor: colors.interactive.default,
+                boxShadow: `0 0 0 1px ${colors.interactive.default}`,
+              }}
             />
             <HStack spacing={2}>
               <Button

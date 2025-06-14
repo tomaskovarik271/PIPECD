@@ -181,6 +181,38 @@ enum DrivePermissionRole {
   READER
 }
 
+# New input for dual attachment (note + deal)
+input AttachDocumentToNoteInput {
+  noteId: ID!
+  dealId: ID!
+  googleFileId: String!
+  fileName: String!
+  fileUrl: String!
+  sharedDriveId: String
+  category: DocumentCategory
+  mimeType: String
+  fileSize: Int
+}
+
+# Note document attachment type
+type NoteDocumentAttachment {
+  id: ID!
+  noteId: ID!
+  googleFileId: String!
+  fileName: String!
+  fileUrl: String!
+  attachedAt: String!
+  attachedBy: ID!
+  mimeType: String
+  fileSize: Int
+}
+
+# Dual attachment response
+type DualAttachmentResponse {
+  noteAttachment: NoteDocumentAttachment!
+  dealAttachment: DealDocumentAttachment!
+}
+
 extend type Query {
   # Shared Drive queries
   getSharedDrives: [SharedDrive!]!
@@ -191,6 +223,7 @@ extend type Query {
   
   # Document attachment queries
   getDealDocumentAttachments(dealId: ID!): [DealDocumentAttachment!]!
+  getNoteDocumentAttachments(noteId: ID!): [NoteDocumentAttachment!]!
   
   # Legacy Drive queries (keeping for backward compatibility)
   getDriveFiles(input: DriveSearchInput!): DriveFileConnection!
@@ -207,6 +240,10 @@ extend type Mutation {
   attachDocumentToDeal(input: AttachDocumentInput!): DealDocumentAttachment!
   removeDocumentAttachment(attachmentId: ID!): Boolean!
   updateDocumentAttachmentCategory(attachmentId: ID!, category: DocumentCategory!): DealDocumentAttachment!
+  
+  # Dual attachment mutations
+  attachDocumentToNoteAndDeal(input: AttachDocumentToNoteInput!): DualAttachmentResponse!
+  removeNoteDocumentAttachment(attachmentId: ID!): Boolean!
   
   # Legacy mutations (keeping for backward compatibility)
   createDealFolder(input: CreateDealFolderInput!): DriveFolderStructure!

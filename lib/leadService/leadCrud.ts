@@ -111,7 +111,7 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
 
   // Handle auto-default project type resolution for AI-created leads
   if (wfmProjectTypeId === 'AUTO_DEFAULT_LEAD_QUALIFICATION') {
-    console.log('[leadCrud.createLead] Resolving AUTO_DEFAULT_LEAD_QUALIFICATION to actual project type...');
+    // console.log('[leadCrud.createLead] Resolving AUTO_DEFAULT_LEAD_QUALIFICATION to actual project type...');
     const { data: leadProjectType, error: projectTypeLookupError } = await supabase
       .from('project_types')
       .select('id')
@@ -124,7 +124,7 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
     }
     
     wfmProjectTypeId = leadProjectType.id;
-    console.log(`[leadCrud.createLead] Resolved AUTO_DEFAULT_LEAD_QUALIFICATION to: ${wfmProjectTypeId}`);
+          // console.log(`[leadCrud.createLead] Resolved AUTO_DEFAULT_LEAD_QUALIFICATION to: ${wfmProjectTypeId}`);
   }
 
   if (!wfmProjectTypeId) {
@@ -246,7 +246,7 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
         throw new Error('WFM Project creation did not return an ID.');
     }
     wfmProjectIdToLink = newWfmProject.id;
-    console.log(`[leadCrud.createLead] WFMProject created with ID: ${wfmProjectIdToLink} for lead ${newLeadRecord.id}. Attempting to link.`);
+              // console.log(`[leadCrud.createLead] WFMProject created with ID: ${wfmProjectIdToLink} for lead ${newLeadRecord.id}. Attempting to link.`);
 
     // 4. Update the lead with the WFM project ID
     const { data: updatedLeadWithWfmLink, error: linkError } = await supabase
@@ -272,7 +272,7 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
         throw new GraphQLError('Failed to update lead with WFM project link, no data returned.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
     }
 
-    console.log(`[leadCrud.createLead] Successfully linked WFM project ${wfmProjectIdToLink} to lead ${newLeadRecord.id}`);
+              // console.log(`[leadCrud.createLead] Successfully linked WFM project ${wfmProjectIdToLink} to lead ${newLeadRecord.id}`);
 
     // Record lead creation in history (using the FINAL updated lead record)
     try {
@@ -352,7 +352,7 @@ export async function updateLead(userId: string, id: string, input: LeadServiceU
   );
 
   if (Object.keys(finalUpdatePayload).length === 0) {
-    console.log('[leadCrud.updateLead] No fields to update, returning current lead');
+          // console.log('[leadCrud.updateLead] No fields to update, returning current lead');
     return currentLead;
   }
 
@@ -434,7 +434,7 @@ export async function updateLead(userId: string, id: string, input: LeadServiceU
           authToken: accessToken
         }
       });
-      console.log(`[leadCrud.updateLead] Sent lead assignment event for lead ${updatedLeadRecord.id} assigned to ${leadUpdateData.assigned_to_user_id}`);
+              // console.log(`[leadCrud.updateLead] Sent lead assignment event for lead ${updatedLeadRecord.id} assigned to ${leadUpdateData.assigned_to_user_id}`);
     } catch (inngestError) {
       console.error('[leadCrud.updateLead] Failed to send lead assignment event:', inngestError);
       // Continue - event failure shouldn't block lead update
@@ -445,7 +445,7 @@ export async function updateLead(userId: string, id: string, input: LeadServiceU
 }
 
 export async function deleteLead(userId: string, id: string, accessToken: string): Promise<boolean> {
-  console.log('[leadCrud.deleteLead] called for user:', userId, 'id:', id);
+  // console.log('[leadCrud.deleteLead] called for user:', userId, 'id:', id);
   const supabase = getAuthenticatedClient(accessToken);
   
   // Get lead data before deletion for history

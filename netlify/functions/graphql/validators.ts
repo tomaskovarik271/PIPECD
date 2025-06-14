@@ -92,6 +92,7 @@ export const CreateActivityInputSchema = z.object({
   due_date: z.coerce.date().optional().nullable(),
   notes: z.string().trim().optional().nullable(), // Trim notes
   is_done: z.boolean().optional(), // Defaults false in DB
+  assigned_to_user_id: z.string().uuid({ message: 'Invalid UUID for assigned user ID' }).optional().nullable(),
   deal_id: z.string().uuid({ message: 'Invalid UUID for deal ID' }).optional().nullable(),
   person_id: z.string().uuid({ message: 'Invalid UUID for person ID' }).optional().nullable(),
   organization_id: z.string().uuid({ message: 'Invalid UUID for organization ID' }).optional().nullable(),
@@ -107,6 +108,7 @@ export const UpdateActivityInputSchema = z.object({
   due_date: z.coerce.date().optional().nullable(),
   notes: z.string().trim().nullable().optional(), // Allow explicitly setting notes to null or empty string after trim
   is_done: z.boolean().optional(),
+  assigned_to_user_id: z.string().uuid({ message: 'Invalid UUID for assigned user ID' }).optional().nullable(),
   deal_id: z.string().uuid({ message: 'Invalid UUID for deal ID' }).optional().nullable(),
   person_id: z.string().uuid({ message: 'Invalid UUID for person ID' }).optional().nullable(),
   organization_id: z.string().uuid({ message: 'Invalid UUID for organization ID' }).optional().nullable(),

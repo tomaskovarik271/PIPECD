@@ -7,7 +7,7 @@ import type { MutationResolvers } from '../../../../../lib/generated/graphql';
 
 export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'createOrganization' | 'updateOrganization' | 'deleteOrganization'> = {
     createOrganization: async (_parent, args, context) => {
-      console.log('[Mutation.createOrganization] received input:', args.input);
+      // console.log('[Mutation.createOrganization] received input:', args.input);
       const action = 'creating organization';
       try {
           requireAuthentication(context);
@@ -15,14 +15,14 @@ export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'cre
           const accessToken = getAccessToken(context)!;
 
           const validatedInput = OrganizationInputSchema.parse(args.input);
-          console.log('[Mutation.createOrganization] validated input:', validatedInput);
+          // console.log('[Mutation.createOrganization] validated input:', validatedInput);
 
           if (!context.userPermissions?.includes('organization:create')) {
                throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
           }
 
           const newOrgRecord = await organizationService.createOrganization(userId, validatedInput, accessToken);
-          console.log('[Mutation.createOrganization] successfully created:', newOrgRecord.id);
+          // console.log('[Mutation.createOrganization] successfully created:', newOrgRecord.id);
 
           inngest.send({ 
             name: 'crm/organization.created',
@@ -45,7 +45,7 @@ export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'cre
       }
     },
     updateOrganization: async (_parent, args, context) => {
-      console.log('[Mutation.updateOrganization] received id:', args.id, 'input:', args.input);
+      // console.log('[Mutation.updateOrganization] received id:', args.id, 'input:', args.input);
       const action = 'updating organization';
       try {
           requireAuthentication(context);
@@ -53,14 +53,14 @@ export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'cre
           const accessToken = getAccessToken(context)!;
           
           const validatedInput = OrganizationInputSchema.partial().parse(args.input);
-          console.log('[Mutation.updateOrganization] validated input:', validatedInput);
+          // console.log('[Mutation.updateOrganization] validated input:', validatedInput);
           
           if (!context.userPermissions?.includes('organization:update_any')) {
                throw new GraphQLError('Forbidden', { extensions: { code: 'FORBIDDEN' } });
           }
           
           const updatedOrgRecord = await organizationService.updateOrganization(userId, args.id, validatedInput, accessToken);
-          console.log('[Mutation.updateOrganization] successfully updated:', updatedOrgRecord.id);
+          // console.log('[Mutation.updateOrganization] successfully updated:', updatedOrgRecord.id);
 
           inngest.send({ 
             name: 'crm/organization.updated',
@@ -83,7 +83,7 @@ export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'cre
       }
     },
     deleteOrganization: async (_parent, args, context) => {
-      console.log('[Mutation.deleteOrganization] received id:', args.id);
+      // console.log('[Mutation.deleteOrganization] received id:', args.id);
       const action = 'deleting organization';
       try {
           requireAuthentication(context);
@@ -95,7 +95,7 @@ export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'cre
           }
           
           const success = await organizationService.deleteOrganization(userId, args.id, accessToken);
-          console.log('[Mutation.deleteOrganization] success status:', success);
+          // console.log('[Mutation.deleteOrganization] success status:', success);
 
           if (success) {
             inngest.send({ 

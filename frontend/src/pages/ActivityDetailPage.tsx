@@ -29,6 +29,7 @@ import { EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
 
 import { useActivitiesStore } from '../stores/useActivitiesStore';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { useAppStore } from '../stores/useAppStore';
 
 const ActivityDetailPage: React.FC = () => {
   const { activityId } = useParams<{ activityId: string }>();
@@ -42,6 +43,18 @@ const ActivityDetailPage: React.FC = () => {
 
   const toast = useToast();
   const colors = useThemeColors();
+  
+  // Get user permissions for edit checks
+  const userPermissions = useAppStore((state) => state.userPermissions);
+  const session = useAppStore((state) => state.session);
+  const currentUserId = session?.user.id;
+  
+  // Check if user can edit activities (update_any OR update_own for activities they own)
+  const canEditActivity = currentActivity && (
+    userPermissions?.includes('activity:update_any') || 
+    (userPermissions?.includes('activity:update_own') && 
+     (currentActivity.user_id === currentUserId || currentActivity.assigned_to_user_id === currentUserId))
+  );
   
   // Inline editing states
   const [isEditingSubject, setIsEditingSubject] = useState(false);
@@ -74,7 +87,13 @@ const ActivityDetailPage: React.FC = () => {
       setIsEditingSubject(false);
       fetchActivityById(activityId);
     } catch (e) {
-      toast({ title: 'Error Updating Subject', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+      const errorMessage = (e as Error).message;
+      if (errorMessage.includes('Forbidden') || errorMessage.includes('permission')) {
+        toast({ title: 'Permission Denied', description: 'You do not have permission to update this activity.', status: 'error', duration: 4000, isClosable: true });
+      } else {
+        toast({ title: 'Error Updating Subject', description: errorMessage, status: 'error', duration: 3000, isClosable: true });
+      }
+      setIsEditingSubject(false);
     }
   };
 
@@ -86,7 +105,13 @@ const ActivityDetailPage: React.FC = () => {
       setIsEditingType(false);
       fetchActivityById(activityId);
     } catch (e) {
-      toast({ title: 'Error Updating Type', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+      const errorMessage = (e as Error).message;
+      if (errorMessage.includes('Forbidden') || errorMessage.includes('permission')) {
+        toast({ title: 'Permission Denied', description: 'You do not have permission to update this activity.', status: 'error', duration: 4000, isClosable: true });
+      } else {
+        toast({ title: 'Error Updating Type', description: errorMessage, status: 'error', duration: 3000, isClosable: true });
+      }
+      setIsEditingType(false);
     }
   };
 
@@ -248,6 +273,7 @@ const ActivityDetailPage: React.FC = () => {
                       }}
                       color={colors.text.muted}
                       _hover={{color: colors.text.link}}
+                      isDisabled={!canEditActivity}
                     />
                   </HStack>
                 ) : (
@@ -301,6 +327,7 @@ const ActivityDetailPage: React.FC = () => {
                       }}
                       color={colors.text.muted}
                       _hover={{color: colors.text.link}}
+                      isDisabled={!canEditActivity}
                     />
                   </HStack>
                 ) : (
@@ -360,6 +387,7 @@ const ActivityDetailPage: React.FC = () => {
                       }}
                       color={colors.text.muted}
                       _hover={{color: colors.text.link}}
+                      isDisabled={!canEditActivity}
                     />
                   </HStack>
                 ) : (
@@ -428,6 +456,7 @@ const ActivityDetailPage: React.FC = () => {
                       }}
                       color={colors.text.muted}
                       _hover={{color: colors.text.link}}
+                      isDisabled={!canEditActivity}
                     />
                   </HStack>
                 ) : (

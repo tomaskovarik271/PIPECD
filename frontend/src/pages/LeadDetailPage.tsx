@@ -45,6 +45,7 @@ import {
 } from '@chakra-ui/icons';
 import { useLeadsStore, Lead } from '../stores/useLeadsStore';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { useAppStore } from '../stores/useAppStore';
 import { useLeadTheme } from '../hooks/useLeadTheme';
 import { StickerBoard } from '../components/common/StickerBoard';
 import { gqlClient } from '../lib/graphqlClient';
@@ -144,6 +145,18 @@ const LeadDetailPage = () => {
 
   const { deleteLead, updateLead } = useLeadsStore();
   const leadTheme = useLeadTheme();
+  
+  // Get user permissions for edit checks
+  const userPermissions = useAppStore((state) => state.userPermissions);
+  const session = useAppStore((state) => state.session);
+  const currentUserId = session?.user.id;
+  
+  // Check if user can edit leads (update_any OR update_own for leads they own/are assigned to)
+  const canEditLead = currentLead && (
+    userPermissions?.includes('lead:update_any') || 
+    (userPermissions?.includes('lead:update_own') && 
+     (currentLead.user_id === currentUserId || currentLead.assigned_to_user_id === currentUserId))
+  );
 
   // Fetch lead details
   useEffect(() => {
@@ -196,7 +209,13 @@ const LeadDetailPage = () => {
         setIsEditingContactName(false);
       }
     } catch (e) {
-      toast({ title: 'Error Updating Contact Name', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+      const errorMessage = (e as Error).message;
+      if (errorMessage.includes('Forbidden') || errorMessage.includes('permission')) {
+        toast({ title: 'Permission Denied', description: 'You do not have permission to update this lead.', status: 'error', duration: 4000, isClosable: true });
+      } else {
+        toast({ title: 'Error Updating Contact Name', description: errorMessage, status: 'error', duration: 3000, isClosable: true });
+      }
+      setIsEditingContactName(false);
     }
   };
 
@@ -503,6 +522,7 @@ const LeadDetailPage = () => {
                   }}
                   color={colors.text.muted}
                   _hover={{color: colors.text.link}}
+                  isDisabled={!canEditLead}
                 />
               )}
             </HStack>
@@ -598,6 +618,7 @@ const LeadDetailPage = () => {
                   }}
                   color={colors.text.muted}
                   _hover={{color: colors.text.link}}
+                  isDisabled={!canEditLead}
                 />
               )}
             </HStack>
@@ -681,6 +702,7 @@ const LeadDetailPage = () => {
                             }}
                             color={colors.text.muted}
                             _hover={{color: colors.text.link}}
+                            isDisabled={!canEditLead}
                           />
                         )}
                       </HStack>
@@ -738,6 +760,7 @@ const LeadDetailPage = () => {
                             }}
                             color={colors.text.muted}
                             _hover={{color: colors.text.link}}
+                            isDisabled={!canEditLead}
                           />
                         )}
                       </HStack>
@@ -796,6 +819,7 @@ const LeadDetailPage = () => {
                             }}
                             color={colors.text.muted}
                             _hover={{color: colors.text.link}}
+                            isDisabled={!canEditLead}
                           />
                         )}
                       </HStack>

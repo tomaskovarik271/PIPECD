@@ -38,7 +38,7 @@ export const personService = {
 
   // Create a new person - Needs authenticated client for INSERT RLS policy
   async createPerson(userId: string, input: PersonInput, accessToken: string): Promise<Person> {
-    console.log('[personService.createPerson] called for user:', userId, 'input:', input);
+    // console.log('[personService.createPerson] called for user:', userId, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); 
     
     const { customFields, ...personData } = input;
@@ -114,7 +114,7 @@ export const personService = {
 
   // Delete a person - Needs authenticated client for DELETE RLS policy
   async deletePerson(userId: string, id: string, accessToken: string): Promise<boolean> {
-    console.log('[personService.deletePerson] called for user:', userId, 'id:', id);
+    // console.log('[personService.deletePerson] called for user:', userId, 'id:', id);
     const supabase = getAuthenticatedClient(accessToken); 
     const { error } = await supabase
       .from('people') 

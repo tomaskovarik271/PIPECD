@@ -71,6 +71,13 @@ import { sharedDriveMutations } from './graphql/resolvers/mutations/sharedDriveM
 import { appSettingsQueries } from './graphql/resolvers/queries/appSettingsQueries';
 import { appSettingsMutations } from './graphql/resolvers/mutations/appSettingsMutations';
 
+// Import User Resolvers
+import { User as UserResolver, userMutations } from './graphql/resolvers/user';
+
+// Import Activity Reminder Resolvers
+import { activityReminderQueries } from './graphql/resolvers/queries/activityReminderQueries';
+import { activityReminderMutations } from './graphql/resolvers/mutations/activityReminderMutations';
+
 
 
 const loadTypeDefs = (): string => {
@@ -109,6 +116,7 @@ const loadTypeDefs = (): string => {
   // Example: load only a few critical files to see if the base schema works.
   const filesToLoad = [
     'activity.graphql', 
+    'activityReminders.graphql',
     'agent.graphql',
     'appSettings.graphql',
     'base.graphql', 
@@ -147,7 +155,7 @@ const loadTypeDefs = (): string => {
         typeDefs += fs.readFileSync(path.join(schemaDir, file), 'utf-8') + '\n';
       // }
     });
-    console.log('Concatenated GraphQL Schema (potentially partial if filesToLoad is modified):\n', typeDefs);
+    // console.log('Concatenated GraphQL Schema (potentially partial if filesToLoad is modified):\n', typeDefs);
     return typeDefs;
   } catch (error: unknown) {
       console.error("Failed to load GraphQL schema files:", error);
@@ -178,6 +186,7 @@ export const resolvers = {
     ...driveQueries,
     ...sharedDriveQueries,
     ...appSettingsQueries,
+    ...activityReminderQueries,
   },
   Mutation: {
     ...BaseMutation,
@@ -193,6 +202,8 @@ export const resolvers = {
     ...driveMutations,
     ...sharedDriveMutations,
     ...appSettingsMutations,
+    ...userMutations,
+    ...activityReminderMutations,
   },
   Person,
   Deal,
@@ -200,6 +211,7 @@ export const resolvers = {
   Organization,
   Activity,
   DealHistoryEntry,
+  User: UserResolver,
   WFMStatus: WFMStatusResolvers.WFMStatus,
   WFMWorkflow: WFMWorkflowResolvers.WFMWorkflow,
   WFMWorkflowStep: WFMWorkflowStepResolver,

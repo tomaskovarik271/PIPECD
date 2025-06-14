@@ -18,7 +18,7 @@ export const relationshipService = {
   // === ORGANIZATION RELATIONSHIPS ===
   
   async getOrganizationRelationships(userId: string, organizationId: string, accessToken: string): Promise<OrganizationRelationship[]> {
-    console.log('[relationshipService.getOrganizationRelationships] called for user:', userId, 'orgId:', organizationId);
+    // console.log('[relationshipService.getOrganizationRelationships] called for user:', userId, 'orgId:', organizationId);
     const supabase = getAuthenticatedClient(accessToken);
     
     const { data, error } = await supabase
@@ -31,7 +31,7 @@ export const relationshipService = {
   },
 
   async createOrganizationRelationship(userId: string, input: CreateOrganizationRelationshipInput, accessToken: string): Promise<OrganizationRelationship> {
-    console.log('[relationshipService.createOrganizationRelationship] called for user:', userId, 'input:', input);
+    // console.log('[relationshipService.createOrganizationRelationship] called for user:', userId, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken);
     
     const { data, error } = await supabase
@@ -61,7 +61,7 @@ export const relationshipService = {
   // === PERSON RELATIONSHIPS ===
   
   async getPersonRelationships(userId: string, personId: string, accessToken: string): Promise<PersonRelationship[]> {
-    console.log('[relationshipService.getPersonRelationships] called for user:', userId, 'personId:', personId);
+    // console.log('[relationshipService.getPersonRelationships] called for user:', userId, 'personId:', personId);
     const supabase = getAuthenticatedClient(accessToken);
     
     const { data, error } = await supabase
@@ -100,7 +100,7 @@ export const relationshipService = {
   },
 
   async createPersonRelationship(userId: string, input: CreatePersonRelationshipInput, accessToken: string): Promise<PersonRelationship> {
-    console.log('[relationshipService.createPersonRelationship] called for user:', userId, 'input:', input);
+    // console.log('[relationshipService.createPersonRelationship] called for user:', userId, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken);
     
     const { data, error } = await supabase

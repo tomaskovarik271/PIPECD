@@ -24,6 +24,7 @@ import { useActivitiesStore, GeneratedCreateActivityInput as CreateActivityInput
 import { usePeopleStore, Person } from '../../stores/usePeopleStore';
 import { useDealsStore, Deal } from '../../stores/useDealsStore';
 import { useOrganizationsStore, Organization } from '../../stores/useOrganizationsStore';
+import { useUserListStore } from '../../stores/useUserListStore';
 
 // Define Activity Types matching GraphQL Enum
 const activityTypes = [
@@ -44,7 +45,7 @@ interface CreateActivityFormProps {
 // Use the store's CreateActivityInput for form values
 type FormValues = CreateActivityInput;
 
-// Define type for link selection
+// Define type for link selection (keeping for backwards compatibility with existing logic)
 type LinkType = 'deal' | 'person' | 'organization' | 'none';
 
 function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName }: CreateActivityFormProps) {
@@ -59,6 +60,9 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
 
   // Organizations state & actions from useOrganizationsStore
   const { organizations, fetchOrganizations, organizationsLoading, organizationsError: _organizationsError } = useOrganizationsStore();
+
+  // Users state & actions from useUserListStore
+  const { users: userList, loading: usersLoading, fetchUsers, hasFetched: hasFetchedUsers } = useUserListStore();
 
   const toast = useToast();
   const { 
@@ -75,6 +79,7 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
           due_date: null,
           notes: '',
           is_done: false,
+          assigned_to_user_id: null,
           deal_id: initialDealId || null, 
           person_id: null,
           organization_id: null,
@@ -82,7 +87,10 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
   });
 
   // State for the selected link type
-  const [selectedLinkType, setSelectedLinkType] = useState<LinkType>(initialDealId ? 'deal' : 'none'); 
+  const [selectedLinkType, setSelectedLinkType] = useState<LinkType>(initialDealId ? 'deal' : 'none');
+  const [showDealDropdown, setShowDealDropdown] = useState(!!initialDealId);
+  const [showPersonDropdown, setShowPersonDropdown] = useState(false);
+  const [showOrganizationDropdown, setShowOrganizationDropdown] = useState(false); 
 
   // Fetch related entities (only if not pre-linking via initialDealId)
   useEffect(() => {
@@ -91,7 +99,11 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
       fetchPeople();
       fetchOrganizations();
     } 
-  }, [fetchDeals, fetchPeople, fetchOrganizations, initialDealId]);
+    // Always fetch users for assignment
+    if (!hasFetchedUsers) {
+      fetchUsers();
+    }
+  }, [fetchDeals, fetchPeople, fetchOrganizations, initialDealId, fetchUsers, hasFetchedUsers]);
   
   // If initialDealId is provided, ensure the form value for deal_id is set.
   useEffect(() => {
@@ -205,6 +217,25 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
             <FormErrorMessage>{errors.type?.message}</FormErrorMessage>
         </FormControl>
 
+        <FormControl isInvalid={!!errors.assigned_to_user_id}>
+          <FormLabel htmlFor='assigned_to_user_id'>Assign To</FormLabel>
+          {usersLoading && <Spinner size="sm" />}
+          {!usersLoading && (
+            <Select 
+              id='assigned_to_user_id' 
+              placeholder='Unassigned'
+              {...register('assigned_to_user_id')}
+            >
+              {userList.map(user => (
+                <option key={user.id} value={user.id}>
+                  {user.display_name || user.email}
+                </option>
+              ))}
+            </Select>
+          )}
+          <FormErrorMessage>{errors.assigned_to_user_id?.message}</FormErrorMessage>
+        </FormControl>
+
         <FormControl isInvalid={!!errors.due_date}>
           <FormLabel htmlFor='due_date'>Due Date/Time</FormLabel>
           <Box 
@@ -275,57 +306,91 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
 
         {!initialDealId && (
           <FormControl isInvalid={!!errors.deal_id || !!errors.person_id || !!errors.organization_id}>
-            <FormLabel>Link To (Select One)</FormLabel>
+            <FormLabel>Link To (Select One or More)</FormLabel>
             {isLoadingLinks && <Spinner size="sm" />}
+            
             {!isLoadingLinks && (
-              <RadioGroup onChange={handleLinkTypeChange} value={selectedLinkType}>
-                <HStack spacing={4}>
-                  <Radio value='deal'>Deal</Radio>
-                  <Radio value='person'>Person</Radio>
-                  <Radio value='organization'>Organization</Radio>
-                  <Radio value='none'>None</Radio> {/* "None" might be removed if a link is always required */}
-                </HStack>
-              </RadioGroup>
-            )}
+              <VStack align="stretch" spacing={3}>
+                {/* Deal Selection */}
+                <Box>
+                  <Checkbox 
+                    onChange={(e) => {
+                      setShowDealDropdown(e.target.checked);
+                      if (!e.target.checked) setValue('deal_id', null);
+                    }}
+                    isChecked={showDealDropdown}
+                    isDisabled={!!initialDealId}
+                  >
+                    Link to Deal
+                  </Checkbox>
+                  {showDealDropdown && (
+                    <Select 
+                      id='deal_id' 
+                      placeholder='Select Deal' 
+                      {...register('deal_id')} 
+                      mt={2}
+                    >
+                      {deals.filter(d => d && d.id && d.name).map((deal: Deal) => (
+                        <option key={deal.id} value={deal.id}>{deal.name}</option>
+                      ))}
+                    </Select>
+                  )}
+                </Box>
 
-            {!isLoadingLinks && selectedLinkType === 'deal' && (
-              <Select 
-                id='deal_id' 
-                placeholder='Select Deal' 
-                {...register('deal_id')} 
-                mt={2}
-              >
-                {deals.filter(d => d && d.id && d.name).map((deal: Deal) => (
-                  <option key={deal.id} value={deal.id}>{deal.name}</option>
-                ))}
-              </Select>
-            )}
-            {!isLoadingLinks && selectedLinkType === 'person' && (
-                 <Select 
-                    id='person_id' 
-                    placeholder='Select Person' 
-                    {...register('person_id')} 
-                    mt={2}
-                 >
-                     {people.map((person: Person) => (
+                {/* Person Selection */}
+                <Box>
+                  <Checkbox 
+                    onChange={(e) => {
+                      setShowPersonDropdown(e.target.checked);
+                      if (!e.target.checked) setValue('person_id', null);
+                    }}
+                    isChecked={showPersonDropdown}
+                  >
+                    Link to Person
+                  </Checkbox>
+                  {showPersonDropdown && (
+                    <Select 
+                      id='person_id' 
+                      placeholder='Select Person' 
+                      {...register('person_id')} 
+                      mt={2}
+                    >
+                      {people.map((person: Person) => (
                         <option key={person.id} value={person.id}>{person.first_name} {person.last_name}</option>
-                     ))}
-                 </Select>
-             )}
-             {!isLoadingLinks && selectedLinkType === 'organization' && (
-                 <Select 
-                    id='organization_id' 
-                    placeholder='Select Organization' 
-                    {...register('organization_id')} 
-                    mt={2}
-                 >
-                     {organizations.map((org: Organization) => (
+                      ))}
+                    </Select>
+                  )}
+                </Box>
+
+                {/* Organization Selection */}
+                <Box>
+                  <Checkbox 
+                    onChange={(e) => {
+                      setShowOrganizationDropdown(e.target.checked);
+                      if (!e.target.checked) setValue('organization_id', null);
+                    }}
+                    isChecked={showOrganizationDropdown}
+                  >
+                    Link to Organization
+                  </Checkbox>
+                  {showOrganizationDropdown && (
+                    <Select 
+                      id='organization_id' 
+                      placeholder='Select Organization' 
+                      {...register('organization_id')} 
+                      mt={2}
+                    >
+                      {organizations.map((org: Organization) => (
                         <option key={org.id} value={org.id}>{org.name}</option>
-                     ))}
-                 </Select>
-             )}
-             {(errors.deal_id || errors.person_id || errors.organization_id) && 
-                <FormErrorMessage>Please select a linked entity if a type is chosen.</FormErrorMessage> }
+                      ))}
+                    </Select>
+                  )}
+                </Box>
+              </VStack>
+            )}
+            
+            {(errors.deal_id || errors.person_id || errors.organization_id) && 
+              <FormErrorMessage>Please select at least one entity to link to.</FormErrorMessage> }
           </FormControl>
         )}
         {/* --- End Linked Entity Selection --- */}

@@ -23,6 +23,7 @@ import {
 import { ArrowBackIcon, WarningIcon, EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore'; // Assuming Organization type is exported
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors'; // NEW: Use semantic tokens
+import { useAppStore } from '../stores/useAppStore';
 import { StickerBoard } from '../components/common/StickerBoard';
 
 const OrganizationDetailPage = () => {
@@ -46,6 +47,12 @@ const OrganizationDetailPage = () => {
   const currentOrganization = useOrganizationsStore((state) => state.currentOrganization); // Assuming this exists or will be added
   const isLoadingOrganization = useOrganizationsStore((state) => state.isLoadingSingleOrganization); // Assuming this exists or will be added
   const organizationError = useOrganizationsStore((state) => state.errorSingleOrganization); // Assuming this exists or will be added
+  
+  // Get user permissions for edit checks
+  const userPermissions = useAppStore((state) => state.userPermissions);
+  
+  // Check if user can edit organizations
+  const canEditOrganization = userPermissions?.includes('organization:update_any');
 
   useEffect(() => {
     if (organizationId && fetchOrganizationById) {
@@ -64,7 +71,13 @@ const OrganizationDetailPage = () => {
       setIsEditingName(false);
       fetchOrganizationById(organizationId);
     } catch (e) {
-      toast({ title: 'Error Updating Name', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+      const errorMessage = (e as Error).message;
+      if (errorMessage.includes('Forbidden') || errorMessage.includes('permission')) {
+        toast({ title: 'Permission Denied', description: 'You do not have permission to update this organization.', status: 'error', duration: 4000, isClosable: true });
+      } else {
+        toast({ title: 'Error Updating Name', description: errorMessage, status: 'error', duration: 3000, isClosable: true });
+      }
+      setIsEditingName(false);
     }
   };
 
@@ -230,6 +243,7 @@ const OrganizationDetailPage = () => {
                         }}
                         color={colors.text.muted}
                         _hover={{color: colors.text.link}}
+                        isDisabled={!canEditOrganization}
                       />
                     </HStack>
                   ) : (
@@ -287,6 +301,7 @@ const OrganizationDetailPage = () => {
                         }}
                         color={colors.text.muted}
                         _hover={{color: colors.text.link}}
+                        isDisabled={!canEditOrganization}
                       />
                     </HStack>
                   ) : (
@@ -344,6 +359,7 @@ const OrganizationDetailPage = () => {
                         }}
                         color={colors.text.muted}
                         _hover={{color: colors.text.link}}
+                        isDisabled={!canEditOrganization}
                       />
                     </HStack>
                   ) : (

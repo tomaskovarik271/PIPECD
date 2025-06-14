@@ -17,6 +17,8 @@ import { wfmWorkflowService } from '../../../../lib/wfmWorkflowService';
 import { wfmProjectTypeService } from '../../../../lib/wfmProjectTypeService';
 import * as leadService from '../../../../lib/leadService';
 import { googleIntegrationService } from '../../../../lib/googleIntegrationService';
+import { activityReminderService } from '../../../../lib/activityReminderService';
+import { activityReminderQueries } from './queries/activityReminderQueries';
 
 // Import generated types from backend codegen
 import type {
@@ -33,6 +35,7 @@ import type {
 
 
 export const Query: QueryResolvers<GraphQLContext> = {
+    ...activityReminderQueries,
     health: () => 'OK',
     supabaseConnectionTest: async () => {
       try {
@@ -73,7 +76,8 @@ export const Query: QueryResolvers<GraphQLContext> = {
           id: currentUser.id,
           email: currentUser.email, // Now checked for null/undefined
           display_name: profile?.display_name || null,
-          avatar_url: profile?.avatar_url || null,    
+          avatar_url: profile?.avatar_url || null,
+          roles: [] // Roles will be resolved by the User.roles resolver    
         };
       } catch (error) {
         console.error(`[Query.me] Error fetching profile for user ${currentUser.id}:`, error);
@@ -83,6 +87,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
             email: currentUser.email, // currentUser.email is guaranteed here
             display_name: null,
             avatar_url: null,
+            roles: [] // Roles will be resolved by the User.roles resolver
         }; 
       }
     },
@@ -409,8 +414,11 @@ export const Query: QueryResolvers<GraphQLContext> = {
     // Resolver for fetching all users
     users: async (_parent, _args, context: GraphQLContext): Promise<GraphQLUser[]> => {
       requireAuthentication(context); // Ensure user is logged in
-      // Potentially add permission check here if not all users should access the list
-      // e.g., if (!check_permission(context.currentUser!.id, 'read', 'userlist')) throw new GraphQLError('Forbidden');
+      
+          // Check if user has admin permissions to view user list (check for app_settings:manage which only admins have)
+    if (!context.userPermissions?.includes('app_settings:manage')) {
+      throw new GraphQLError('Forbidden: Only admins can view user list', { extensions: { code: 'FORBIDDEN' } });
+    }
       
       if (!supabaseAdmin) {
         console.error('Error fetching users: supabaseAdmin client is not available. Check SUPABASE_SERVICE_ROLE_KEY.');
@@ -433,7 +441,34 @@ export const Query: QueryResolvers<GraphQLContext> = {
           email: profile.email!, // Now safe due to the filter
           display_name: profile.display_name,
           avatar_url: profile.avatar_url,
+          roles: [] // Roles will be resolved by the User.roles resolver
         })) as GraphQLUser[]; // Cast to GraphQLUser[] as User type in resolver can be more generic
+    },
+
+    // Resolver for fetching all roles
+    roles: async (_parent, _args, context: GraphQLContext) => {
+      requireAuthentication(context);
+      
+      // Check if user has admin permissions to view roles (check for app_settings:manage which only admins have)
+      if (!context.userPermissions?.includes('app_settings:manage')) {
+        throw new GraphQLError('Forbidden: Only admins can view roles', { extensions: { code: 'FORBIDDEN' } });
+      }
+
+      if (!supabaseAdmin) {
+        throw new GraphQLError('Could not fetch roles due to server configuration error.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from('roles')
+        .select('id, name, description')
+        .order('name');
+
+      if (error) {
+        console.error('Error fetching roles:', error);
+        throw new GraphQLError('Could not fetch roles', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+
+      return data;
     },
 
     // --- Google Integration Resolvers ---
@@ -488,4 +523,6 @@ export const Query: QueryResolvers<GraphQLContext> = {
         throw new GraphQLError('Failed to search emails');
       }
     }
+
+    // Note: Activity reminder queries will be added after GraphQL schema is updated and types are regenerated
 }; 

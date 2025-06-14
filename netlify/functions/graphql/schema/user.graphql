@@ -5,8 +5,21 @@ type User {
   email: String!
   display_name: String # Renamed from 'name', represents combined or preferred display name
   avatar_url: String # Added avatar URL
+  roles: [Role!]! # User's assigned roles
 } 
+
+type Role {
+  id: ID!
+  name: String!
+  description: String!
+}
 
 extend type Query {
   users: [User!]!
+  roles: [Role!]!
+}
+
+extend type Mutation {
+  assignUserRole(userId: ID!, roleName: String!): User!
+  removeUserRole(userId: ID!, roleName: String!): User!
 } 

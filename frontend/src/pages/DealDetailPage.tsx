@@ -49,7 +49,7 @@ import { FaClipboardList, FaPhone } from 'react-icons/fa';
 
 // Store imports
 import { useAppStore } from '../stores/useAppStore';
-import { useDealsStore } from '../stores/useDealsStore';
+import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { useActivitiesStore, Activity, ActivityType as GQLActivityType, GeneratedActivityFilterInput, GeneratedUpdateActivityInput } from '../stores/useActivitiesStore';
 import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
 import { useUserListStore } from '../stores/useUserListStore';
@@ -69,7 +69,7 @@ import { DealOrganizationContactsPanel } from '../components/deals/DealOrganizat
 import DealEmailsPanel from '../components/deals/DealEmailsPanel';
 import DealDocumentsPanel from '../components/deals/DealDocumentsPanel';
 import { SharedDriveDocumentBrowser } from '../components/deals/SharedDriveDocumentBrowser';
-import { StickerBoard } from '../components/common/StickerBoard';
+import { DealNotesPanel } from '../components/dealDetail/DealNotesPanel';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 
 // Type imports
@@ -127,6 +127,9 @@ const DealDetailPage = () => {
   const currentDeal = useAppStore((state) => state.currentDeal);
   const isLoadingDeal = useAppStore((state) => state.currentDealLoading);
   const dealError = useAppStore((state) => state.currentDealError);
+  const userPermissions = useAppStore((state) => state.userPermissions);
+  const session = useAppStore((state) => state.session);
+  const currentUserId = session?.user.id;
   const updateDealStoreAction = useDealsStore((state) => state.updateDeal);
   const toast = useToast();
 
@@ -306,6 +309,13 @@ const DealDetailPage = () => {
     avatar_url: user.avatar_url || undefined
   }));
 
+  // Check if user can edit this deal (same logic as in useDealsTableColumns)
+  const canEditDeal = currentDeal && (
+    userPermissions?.includes('deal:update_any') || 
+    (userPermissions?.includes('deal:update_own') && 
+     (currentDeal.user_id === currentUserId || currentDeal.assigned_to_user_id === currentUserId))
+  );
+
   // Handle custom field updates
   const handleCustomFieldUpdate = async (fieldId: string, value: any) => {
     if (!currentDeal?.id) return;
@@ -340,6 +350,10 @@ const DealDetailPage = () => {
       
     } catch (error) {
       console.error('Failed to update custom field:', error);
+      const errorMessage = (error as Error).message;
+      if (errorMessage.includes('Forbidden') || errorMessage.includes('permission')) {
+        throw new Error('You do not have permission to update this deal.');
+      }
       throw error; // Re-throw to be handled by the component
     }
   };
@@ -395,7 +409,7 @@ const DealDetailPage = () => {
                           <VStack spacing={6} align="stretch">
                 {/* Header Section */}
                 <DealHeader 
-                  deal={currentDeal}
+                  deal={currentDeal as Deal}
                   isEditing={false}
                   setIsEditing={() => {}}
                   onCreateActivity={onCreateActivityModalOpen}
@@ -404,7 +418,7 @@ const DealDetailPage = () => {
 
                 {/* Deal Overview Card */}
                 <DealOverviewCard 
-                  deal={currentDeal}
+                  deal={currentDeal as Deal}
                   onUpdate={handleDealUpdate}
                   onRefresh={() => dealId && fetchDealById(dealId)}
                   userList={formattedUserList}
@@ -504,7 +518,7 @@ const DealDetailPage = () => {
                           customFieldDefinitions={customFieldDefinitions || []}
                           customFieldValues={currentDeal.customFieldValues || []}
                           dealId={currentDeal.id}
-                          onUpdate={handleCustomFieldUpdate}
+                          onUpdate={canEditDeal ? handleCustomFieldUpdate : undefined}
                           getLinkDisplayDetails={getLinkDisplayDetails}
                         />
                                           </TabPanel>
@@ -524,10 +538,9 @@ const DealDetailPage = () => {
                                           </TabPanel>
 
                       <TabPanel>
-                        <StickerBoard 
-                          entityType="DEAL" 
-                          entityId={currentDeal.id} 
-                          onStickerCountChange={handleStickyNotesCountChange}
+                        <DealNotesPanel 
+                          dealId={currentDeal.id}
+                          onNoteCountChange={handleStickyNotesCountChange}
                         />
                       </TabPanel>
                                       </TabPanels>
@@ -734,7 +747,7 @@ const DealDetailPage = () => {
          <EditDealModal 
             isOpen={isEditDealModalOpen} 
             onClose={onEditDealModalClose} 
-            deal={currentDeal} 
+            deal={currentDeal as Deal} 
             onDealUpdated={handleDealUpdated} 
         />
       )}

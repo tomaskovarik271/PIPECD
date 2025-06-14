@@ -168,6 +168,25 @@ export interface ActivityWithDetails extends Omit<Activity, 'user' | 'deal' | 'p
   organization?: Maybe<Pick<Organization, 'id' | 'name'> >;
 }
 
+// Local storage helpers for view mode
+const getActivitiesViewModeFromLocalStorage = (): 'table' | 'calendar' => {
+  try {
+    const mode = localStorage.getItem('activitiesViewMode');
+    return mode === 'calendar' ? 'calendar' : 'table';
+  } catch (error) {
+    console.warn('Could not access localStorage to get activitiesViewMode.', error);
+    return 'table';
+  }
+};
+
+const setActivitiesViewModeInLocalStorage = (mode: 'table' | 'calendar') => {
+  try {
+    localStorage.setItem('activitiesViewMode', mode);
+  } catch (error) {
+    console.warn('Could not access localStorage to set activitiesViewMode.', error);
+  }
+};
+
 // State Interface
 export interface ActivitiesState {
   activities: Activity[];
@@ -176,6 +195,11 @@ export interface ActivitiesState {
   currentActivity: ActivityWithDetails | null;
   currentActivityLoading: boolean;
   currentActivityError: string | null;
+  
+  // View State
+  activitiesViewMode: 'table' | 'calendar';
+  setActivitiesViewMode: (mode: 'table' | 'calendar') => void;
+  
   fetchActivityById: (activityId: string) => Promise<void>;
   fetchActivities: (filter?: GeneratedActivityFilterInput) => Promise<void>;
   createActivity: (input: GeneratedCreateActivityInput) => Promise<Activity | null>;
@@ -191,6 +215,13 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
   currentActivity: null,
   currentActivityLoading: false,
   currentActivityError: null,
+  
+  // View Mode State
+  activitiesViewMode: getActivitiesViewModeFromLocalStorage(),
+  setActivitiesViewMode: (mode: 'table' | 'calendar') => {
+    set({ activitiesViewMode: mode });
+    setActivitiesViewModeInLocalStorage(mode);
+  },
 
   fetchActivities: async (filter?: GeneratedActivityFilterInput) => {
     set({ activitiesLoading: true, activitiesError: null });

@@ -71,14 +71,14 @@ export async function getDealById(userId: string, id: string, accessToken:string
 }
 
 export async function createDeal(userId: string, input: DealInput, accessToken: string): Promise<DbDeal> {
-  console.log('[dealCrud.createDeal] called for user:', userId /*, 'input:', JSON.stringify(input, null, 2)*/);
+  // console.log('[dealCrud.createDeal] called for user:', userId /*, 'input:', JSON.stringify(input, null, 2)*/);
   const supabase = getAuthenticatedClient(accessToken);
   
   let { customFields, wfmProjectTypeId, assignedToUserId, ...dealCoreData } = input; 
 
   // Handle auto-default project type resolution for AI-created deals
   if (wfmProjectTypeId === 'AUTO_DEFAULT_SALES_DEAL') {
-    console.log('[dealCrud.createDeal] Resolving AUTO_DEFAULT_SALES_DEAL to actual project type...');
+    // console.log('[dealCrud.createDeal] Resolving AUTO_DEFAULT_SALES_DEAL to actual project type...');
     const { data: salesDealProjectType, error: projectTypeLookupError } = await supabase
       .from('project_types')
       .select('id')
@@ -91,7 +91,7 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
     }
     
     wfmProjectTypeId = salesDealProjectType.id;
-    console.log(`[dealCrud.createDeal] Resolved AUTO_DEFAULT_SALES_DEAL to: ${wfmProjectTypeId}`);
+          // console.log(`[dealCrud.createDeal] Resolved AUTO_DEFAULT_SALES_DEAL to: ${wfmProjectTypeId}`);
   }
 
   if (!wfmProjectTypeId) {
@@ -198,7 +198,7 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
         throw new Error('WFM Project creation did not return an ID.');
     }
     wfmProjectIdToLink = newWfmProject.id;
-    console.log(`[dealCrud.createDeal] WFMProject created with ID: ${wfmProjectIdToLink} for deal ${newDealRecord.id}. Attempting to link.`);
+            // console.log(`[dealCrud.createDeal] WFMProject created with ID: ${wfmProjectIdToLink} for deal ${newDealRecord.id}. Attempting to link.`);
 
     // 4. Update the deal record with the new wfm_project_id
     const { data: updatedDealWithWfmLink, error: linkError } = await supabase
@@ -238,7 +238,7 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
             user: { id: userId }, 
             data: { dealId: updatedDealWithWfmLink.id, /* other relevant data */ },
         });
-        console.log(`[dealCrud.createDeal] Sent 'crm/deal.created' event for deal ID: ${updatedDealWithWfmLink.id}`);
+        // console.log(`[dealCrud.createDeal] Sent 'crm/deal.created' event for deal ID: ${updatedDealWithWfmLink.id}`);
 
         // ---- Send 'crm/deal.assigned' event if assigned_to_user_id is present ----
         if (updatedDealWithWfmLink.assigned_to_user_id) {
@@ -253,7 +253,7 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
                         assignedByUserId: userId,
                     },
                 });
-                console.log(`[dealCrud.createDeal] Sent 'crm/deal.assigned' event for deal ID: ${updatedDealWithWfmLink.id} assigned to ${updatedDealWithWfmLink.assigned_to_user_id}`);
+                // console.log(`[dealCrud.createDeal] Sent 'crm/deal.assigned' event for deal ID: ${updatedDealWithWfmLink.id} assigned to ${updatedDealWithWfmLink.assigned_to_user_id}`);
             } catch (assignEventError: any) {
                 console.error(`[dealCrud.createDeal] Failed to send 'crm/deal.assigned' event for deal ID: ${updatedDealWithWfmLink.id}:`, assignEventError.message);
                 // Do not let Inngest failure roll back the deal creation
@@ -396,7 +396,7 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
 
   // Now, handle assignment via RPC if needed for non-admins
   if (assignmentWillBeChangedViaRpc) {
-    console.log(`[dealCrud.updateDeal] Step 2: User ${userId} (non-admin) changing assignment for deal ${id}. Using RPC.`);
+          // console.log(`[dealCrud.updateDeal] Step 2: User ${userId} (non-admin) changing assignment for deal ${id}. Using RPC.`);
     const { error: rpcError } = await supabase.rpc('reassign_deal', {
       p_deal_id: id,
       p_new_assignee_id: newAssigneeIdInput,
@@ -475,7 +475,7 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
                 previousAssignedToUserId: oldDealData.assigned_to_user_id || null, // Ensure it's null if undefined
             },
         });
-        console.log(`[dealCrud.updateDeal] Sent 'crm/deal.assigned' event for deal ID: ${updatedDealRecord.id} reassigned to ${updatedDealRecord.assigned_to_user_id}`);
+        // console.log(`[dealCrud.updateDeal] Sent 'crm/deal.assigned' event for deal ID: ${updatedDealRecord.id} reassigned to ${updatedDealRecord.assigned_to_user_id}`);
     } catch (assignEventError: any) {
         console.error(`[dealCrud.updateDeal] Failed to send 'crm/deal.assigned' event for deal ID: ${updatedDealRecord.id}:`, assignEventError.message);
         // Do not let Inngest failure roll back the deal update
@@ -530,7 +530,7 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
 }
 
 export async function deleteDeal(userId: string, id: string, accessToken: string): Promise<boolean> {
-  console.log('[dealCrud.deleteDeal] called for user:', userId, 'id:', id);
+  // console.log('[dealCrud.deleteDeal] called for user:', userId, 'id:', id);
   const supabase = getAuthenticatedClient(accessToken);
   
   const { error, count } = await supabase
@@ -552,7 +552,7 @@ export async function deleteDeal(userId: string, id: string, accessToken: string
     );
   }
   
-  console.log('[dealCrud.deleteDeal] Deleted count (informational):', count);
+      // console.log('[dealCrud.deleteDeal] Deleted count (informational):', count);
   return !error;
 }
 

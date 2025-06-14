@@ -10,6 +10,7 @@ import { personMutations } from './mutations/personMutations';
 // import { stageMutations } from './mutations/stageMutations'; // REMOVED
 import { userProfileMutations } from './mutations/userProfileMutations';
 import { googleIntegrationMutations } from './mutations/googleIntegration';
+import { activityReminderMutations } from './mutations/activityReminderMutations';
 
 // This file primarily aggregates mutations from the ./mutations subdirectory.
 // Other mutations (like Activity or CustomFields) seem to be aggregated directly in graphql.ts
@@ -22,4 +23,5 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
     // ...stageMutations, // REMOVED
   ...userProfileMutations,
   ...googleIntegrationMutations,
+  ...activityReminderMutations,
 }; 

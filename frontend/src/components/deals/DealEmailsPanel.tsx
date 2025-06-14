@@ -53,6 +53,7 @@ import {
   CheckIcon,
 } from '@chakra-ui/icons';
 import { FaReply, FaForward, FaArchive, FaTasks } from 'react-icons/fa';
+import { FiFileText } from 'react-icons/fi';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
@@ -158,6 +159,37 @@ const MARK_THREAD_AS_READ = gql`
   }
 `;
 
+const CREATE_STICKER = gql`
+  mutation CreateSticker($input: CreateStickerInput!) {
+    createSticker(input: $input) {
+      id
+      title
+      content
+      entityType
+      entityId
+      positionX
+      positionY
+      width
+      height
+      color
+      isPinned
+      isPrivate
+      priority
+      mentions
+      tags
+      createdAt
+      updatedAt
+      createdByUserId
+      category {
+        id
+        name
+        color
+        icon
+      }
+    }
+  }
+`;
+
 interface DealEmailsPanelProps {
   dealId: string;
   primaryContactEmail?: string;
@@ -190,6 +222,8 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   const [isComposeModalOpen, setIsComposeModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [selectedEmailForTask, setSelectedEmailForTask] = useState<string | null>(null);
+  const [isConvertToNoteModalOpen, setIsConvertToNoteModalOpen] = useState(false);
+  const [selectedEmailForNote, setSelectedEmailForNote] = useState<any>(null);
 
   // GraphQL Hooks
   const { data: threadsData, loading: threadsLoading, error: threadsError, refetch: refetchThreads } = useQuery(GET_EMAIL_THREADS, {
@@ -292,6 +326,11 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
         },
       },
     });
+  };
+
+  const handleConvertToNote = (emailMessage: any) => {
+    setSelectedEmailForNote(emailMessage);
+    setIsConvertToNoteModalOpen(true);
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -534,48 +573,95 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
                 <Spinner size="lg" color={colors.interactive.default} />
               </Box>
             ) : threadData?.getEmailThread ? (
-              <VStack spacing={0} h="full">
-                {/* Message Header */}
-                <Box p={4} borderBottomWidth="1px" borderColor={colors.border.default} w="full">
+              <VStack spacing={0} h="full" maxH="100vh">
+                {/* Message Header - Fixed at top */}
+                <Box 
+                  p={4} 
+                  borderBottomWidth="1px" 
+                  borderColor={colors.border.default} 
+                  w="full" 
+                  bg={colors.bg.surface}
+                  position="sticky"
+                  top={0}
+                  zIndex={10}
+                  flexShrink={0}
+                >
                   <VStack spacing={3} align="stretch">
-                    <HStack justify="space-between">
-                      <Text fontWeight="bold" color={colors.text.primary} noOfLines={1}>
+                    <HStack justify="space-between" align="center">
+                      <Text fontWeight="bold" color={colors.text.primary} noOfLines={2} flex="1" fontSize="md">
                         {threadData.getEmailThread.subject}
                       </Text>
-                      <HStack spacing={1}>
-                        <IconButton
-                          aria-label="Reply"
-                          icon={<FaReply />}
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setIsComposeModalOpen(true)}
-                        />
-                        <IconButton
-                          aria-label="Forward"
-                          icon={<FaForward />}
-                          size="sm"
-                          variant="ghost"
-                        />
-                        <IconButton
-                          aria-label="Create Task"
-                          icon={<FaTasks />}
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setSelectedEmailForTask(threadData.getEmailThread.latestMessage?.id);
-                            setIsTaskModalOpen(true);
-                          }}
-                        />
-                        <IconButton
-                          aria-label="Archive"
-                          icon={<FaArchive />}
-                          size="sm"
-                          variant="ghost"
-                        />
+                      <HStack spacing={2} flexShrink={0}>
+                        <Tooltip label="Reply to email">
+                          <IconButton
+                            aria-label="Reply"
+                            icon={<FaReply />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="blue"
+                            onClick={() => setIsComposeModalOpen(true)}
+                          />
+                        </Tooltip>
+                        <Tooltip label="Forward email">
+                          <IconButton
+                            aria-label="Forward"
+                            icon={<FaForward />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="blue"
+                          />
+                        </Tooltip>
+                        <Tooltip label="Create task from email">
+                          <IconButton
+                            aria-label="Create Task"
+                            icon={<FaTasks />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="green"
+                            onClick={() => {
+                              setSelectedEmailForTask(threadData.getEmailThread.latestMessage?.id);
+                              setIsTaskModalOpen(true);
+                            }}
+                          />
+                        </Tooltip>
+                        <Tooltip label="Convert email to note" placement="bottom">
+                          <Box position="relative">
+                            <IconButton
+                              aria-label="Convert to Note"
+                              icon={<FiFileText />}
+                              size="md"
+                              variant="solid"
+                              colorScheme="purple"
+                              onClick={() => handleConvertToNote(threadData.getEmailThread.latestMessage)}
+                              _hover={{ transform: 'scale(1.05)' }}
+                            />
+                            <Badge
+                              position="absolute"
+                              top="-2px"
+                              right="-2px"
+                              colorScheme="purple"
+                              variant="solid"
+                              fontSize="xs"
+                              borderRadius="full"
+                              px={1}
+                            >
+                              NEW
+                            </Badge>
+                          </Box>
+                        </Tooltip>
+                        <Tooltip label="Archive email">
+                          <IconButton
+                            aria-label="Archive"
+                            icon={<FaArchive />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="gray"
+                          />
+                        </Tooltip>
                       </HStack>
                     </HStack>
                     
-                    <HStack spacing={2}>
+                    <HStack spacing={2} flexWrap="wrap">
                       <Text fontSize="sm" color={colors.text.secondary}>
                         From: {threadData.getEmailThread.latestMessage?.from}
                       </Text>
@@ -586,28 +672,28 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
                   </VStack>
                 </Box>
 
-                {/* Message Content */}
-                <Box flex={1} p={4} overflowY="auto" w="full">
+                {/* Message Content - Scrollable */}
+                <Box flex={1} overflowY="auto" w="full" p={4}>
                   <Card>
                     <CardBody>
                       <VStack spacing={4} align="stretch">
                         {/* Message Details */}
                         <VStack spacing={2} align="stretch">
-                          <HStack>
+                          <HStack flexWrap="wrap">
                             <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
                               To:
                             </Text>
-                            <Text fontSize="sm" color={colors.text.secondary}>
+                            <Text fontSize="sm" color={colors.text.secondary} wordBreak="break-word">
                               {threadData.getEmailThread.latestMessage?.to.join(', ')}
                             </Text>
                           </HStack>
                           
                           {threadData.getEmailThread.latestMessage?.cc?.length > 0 && (
-                            <HStack>
+                            <HStack flexWrap="wrap">
                               <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
                                 CC:
                               </Text>
-                              <Text fontSize="sm" color={colors.text.secondary}>
+                              <Text fontSize="sm" color={colors.text.secondary} wordBreak="break-word">
                                 {threadData.getEmailThread.latestMessage.cc.join(', ')}
                               </Text>
                             </HStack>
@@ -623,6 +709,7 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
                             color={colors.text.primary}
                             whiteSpace="pre-wrap"
                             lineHeight="1.6"
+                            wordBreak="break-word"
                           >
                             {threadData.getEmailThread.latestMessage?.body}
                           </Text>
@@ -689,6 +776,17 @@ threadsData?.getEmailThreads.threads.map((thread: any) => (
           setSelectedEmailForTask(null);
         }}
         onCreateTask={handleCreateTask}
+      />
+
+      {/* Convert to Note Modal */}
+      <EmailToNoteModal
+        isOpen={isConvertToNoteModalOpen}
+        onClose={() => {
+          setIsConvertToNoteModalOpen(false);
+          setSelectedEmailForNote(null);
+        }}
+        emailMessage={selectedEmailForNote}
+        dealId={dealId}
       />
     </Box>
   );
@@ -883,6 +981,401 @@ const CreateTaskModal: React.FC<{
           </Button>
           <Button colorScheme="blue" onClick={handleCreate}>
             Create Task
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
+// Email to Note Modal Component
+const EmailToNoteModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  emailMessage: any;
+  dealId: string;
+}> = ({ isOpen, onClose, emailMessage, dealId }) => {
+  const colors = useThemeColors();
+  const toast = useToast();
+  const [selectedTemplate, setSelectedTemplate] = useState('');
+  const [noteContent, setNoteContent] = useState('');
+  const [isConverting, setIsConverting] = useState(false);
+
+  // GraphQL mutation for creating notes
+  const [createSticker] = useMutation(CREATE_STICKER, {
+    onCompleted: () => {
+      toast({
+        title: 'Email Converted to Note',
+        description: 'The email has been successfully converted to a note.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      onClose();
+    },
+    onError: (error) => {
+      console.error('Error converting email to note:', error);
+      toast({
+        title: 'Conversion Failed',
+        description: 'Failed to convert email to note. Please try again.',
+        status: 'error',
+        duration: 5000,
+        isClosable: true,
+      });
+    },
+  });
+
+  // Note templates
+  const templates = [
+    {
+      id: 'email_summary',
+      name: 'Email Summary',
+      description: 'Structured summary of email content',
+      content: `# 📧 Email Summary: {subject}
+
+**From:** {from}
+**To:** {to}
+**Date:** {date}
+**Thread:** [View in Gmail]({emailLink})
+
+---
+
+## Email Content
+{body}
+
+{attachments}
+
+## Context
+- **Deal:** {dealName}
+- **Original Email:** [Gmail Link]({emailLink})
+
+---
+*Converted from Gmail on {conversionDate}*`
+    },
+    {
+      id: 'meeting_notes',
+      name: 'Meeting Notes',
+      description: 'Convert email to meeting notes format',
+      content: `# 📅 Meeting Notes: {subject}
+
+**Date:** {date}
+**Attendees:** {participants}
+**Email Reference:** [View Original]({emailLink})
+
+## Discussion Points
+{body}
+
+## Action Items
+- [ ] Follow up on email discussion
+- [ ] 
+
+## Next Steps
+- 
+
+{attachments}
+
+---
+*Based on email from {from} on {date}*`
+    },
+    {
+      id: 'follow_up',
+      name: 'Follow-up Notes',
+      description: 'Track follow-up actions from email',
+      content: `# 🔄 Follow-up Notes: {subject}
+
+**Original Email:** {date} from {from}
+**Email Link:** [View in Gmail]({emailLink})
+
+## Previous Contact
+{body}
+
+## Client Response/Status
+- 
+
+## Follow-up Actions Required
+- [ ] 
+- [ ] 
+
+## Next Contact Date
+- 
+
+{attachments}
+
+---
+*Email converted on {conversionDate}*`
+    }
+  ];
+
+  useEffect(() => {
+    if (emailMessage && isOpen) {
+      // Auto-select email summary template
+      setSelectedTemplate('email_summary');
+      generateNoteContent('email_summary');
+    }
+  }, [emailMessage, isOpen]);
+
+  const generateNoteContent = (templateId: string) => {
+    if (!emailMessage || !templateId) return;
+
+    const template = templates.find(t => t.id === templateId);
+    if (!template) return;
+
+    const formatDate = (timestamp: string) => {
+      return new Date(timestamp).toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    };
+
+    const attachmentsSection = emailMessage.attachments?.length > 0 
+      ? `\n## Attachments\n${emailMessage.attachments.map((att: any) => 
+          `- 📎 ${att.filename} (${Math.round(att.size / 1024)} KB)`
+        ).join('\n')}\n`
+      : '';
+
+    const participants = [emailMessage.from, ...(emailMessage.to || []), ...(emailMessage.cc || [])]
+      .filter(Boolean)
+      .join(', ');
+
+    let content = template.content
+      .replace(/{subject}/g, emailMessage.subject || 'Email')
+      .replace(/{from}/g, emailMessage.from || 'Unknown')
+      .replace(/{to}/g, (emailMessage.to || []).join(', '))
+      .replace(/{date}/g, formatDate(emailMessage.timestamp))
+      .replace(/{body}/g, emailMessage.body || '')
+      .replace(/{attachments}/g, attachmentsSection)
+      .replace(/{emailLink}/g, '#') // Would be actual Gmail link
+      .replace(/{dealName}/g, 'Current Deal') // Would be actual deal name
+      .replace(/{conversionDate}/g, new Date().toLocaleDateString())
+      .replace(/{participants}/g, participants);
+
+    setNoteContent(content);
+  };
+
+  const handleTemplateChange = (templateId: string) => {
+    setSelectedTemplate(templateId);
+    generateNoteContent(templateId);
+  };
+
+  const generateTitle = (content: string): string => {
+    // Extract title from content - look for first heading or use subject
+    const lines = content.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('# ')) {
+        return trimmed.substring(2).trim();
+      }
+    }
+    
+    // Fallback to email subject
+    return `Email: ${emailMessage.subject || 'Converted Email'}`;
+  };
+
+  const handleConvertToNote = async () => {
+    if (!noteContent.trim()) {
+      toast({
+        title: 'Content Required',
+        description: 'Please add content to the note before converting.',
+        status: 'warning',
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsConverting(true);
+    try {
+      const title = generateTitle(noteContent);
+      
+      await createSticker({
+        variables: {
+          input: {
+            entityType: 'DEAL',
+            entityId: dealId,
+            title: title,
+            content: noteContent,
+            positionX: Math.floor(Math.random() * 300), // Random position
+            positionY: Math.floor(Math.random() * 300),
+            width: 300,
+            height: 200,
+            color: '#E3F2FD', // Light blue for email notes
+            isPinned: false,
+            isPrivate: false,
+            priority: 'NORMAL',
+            mentions: [],
+            tags: ['email-converted', selectedTemplate],
+          }
+        }
+      });
+    } catch (error) {
+      // Error handling is done in the mutation's onError callback
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
+  if (!emailMessage) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+      <ModalOverlay />
+      <ModalContent maxH="90vh">
+        <ModalHeader>
+          <HStack spacing={3}>
+            <FiFileText />
+            <Text>Convert Email to Note</Text>
+          </HStack>
+        </ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <Grid templateColumns="1fr 2fr" gap={6} h="70vh">
+            {/* Left Panel - Email Preview */}
+            <GridItem>
+              <VStack spacing={4} align="stretch" h="full">
+                <Box>
+                  <Text fontSize="lg" fontWeight="bold" mb={2}>
+                    Email Preview
+                  </Text>
+                  <Card>
+                    <CardBody>
+                      <VStack spacing={3} align="stretch">
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
+                            Subject:
+                          </Text>
+                          <Text fontSize="sm" color={colors.text.secondary}>
+                            {emailMessage.subject}
+                          </Text>
+                        </Box>
+                        
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
+                            From:
+                          </Text>
+                          <Text fontSize="sm" color={colors.text.secondary}>
+                            {emailMessage.from}
+                          </Text>
+                        </Box>
+                        
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
+                            Date:
+                          </Text>
+                          <Text fontSize="sm" color={colors.text.secondary}>
+                            {new Date(emailMessage.timestamp).toLocaleString()}
+                          </Text>
+                        </Box>
+                        
+                        <Divider />
+                        
+                        <Box>
+                          <Text fontSize="sm" fontWeight="medium" color={colors.text.primary} mb={2}>
+                            Content:
+                          </Text>
+                          <Box 
+                            maxH="200px" 
+                            overflowY="auto" 
+                            p={3} 
+                            bg={colors.bg.surface} 
+                            borderRadius="md"
+                          >
+                            <Text fontSize="sm" whiteSpace="pre-wrap">
+                              {emailMessage.body}
+                            </Text>
+                          </Box>
+                        </Box>
+                        
+                        {emailMessage.attachments?.length > 0 && (
+                          <Box>
+                            <Text fontSize="sm" fontWeight="medium" color={colors.text.primary} mb={2}>
+                              Attachments:
+                            </Text>
+                            <VStack spacing={1} align="stretch">
+                              {emailMessage.attachments.map((attachment: any) => (
+                                <HStack key={attachment.id} spacing={2}>
+                                  <AttachmentIcon w={3} h={3} />
+                                  <Text fontSize="xs">{attachment.filename}</Text>
+                                </HStack>
+                              ))}
+                            </VStack>
+                          </Box>
+                        )}
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                </Box>
+
+                {/* Template Selection */}
+                <Box>
+                  <Text fontSize="lg" fontWeight="bold" mb={3}>
+                    Note Template
+                  </Text>
+                  <VStack spacing={2} align="stretch">
+                    {templates.map((template) => (
+                      <Card
+                        key={template.id}
+                        cursor="pointer"
+                        onClick={() => handleTemplateChange(template.id)}
+                        bg={selectedTemplate === template.id ? colors.bg.elevated : colors.bg.surface}
+                        borderColor={selectedTemplate === template.id ? colors.interactive.default : colors.border.default}
+                        borderWidth="2px"
+                        _hover={{ borderColor: colors.interactive.default }}
+                      >
+                        <CardBody p={3}>
+                          <VStack spacing={1} align="start">
+                            <Text fontSize="sm" fontWeight="medium">
+                              {template.name}
+                            </Text>
+                            <Text fontSize="xs" color={colors.text.muted}>
+                              {template.description}
+                            </Text>
+                          </VStack>
+                        </CardBody>
+                      </Card>
+                    ))}
+                  </VStack>
+                </Box>
+              </VStack>
+            </GridItem>
+
+            {/* Right Panel - Note Editor */}
+            <GridItem>
+              <VStack spacing={4} align="stretch" h="full">
+                <Text fontSize="lg" fontWeight="bold">
+                  Note Content
+                </Text>
+                <Box flex="1">
+                  <Textarea
+                    value={noteContent}
+                    onChange={(e) => setNoteContent(e.target.value)}
+                    placeholder="Note content will appear here..."
+                    h="full"
+                    resize="none"
+                    fontFamily="mono"
+                    fontSize="sm"
+                  />
+                </Box>
+              </VStack>
+            </GridItem>
+          </Grid>
+        </ModalBody>
+
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            colorScheme="blue"
+            onClick={handleConvertToNote}
+            isLoading={isConverting}
+            loadingText="Converting..."
+            leftIcon={<FiFileText />}
+          >
+            Convert to Note
           </Button>
         </ModalFooter>
       </ModalContent>

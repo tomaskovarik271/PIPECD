@@ -210,7 +210,7 @@ export const organizationService = {
 
   // Create a new organization (RLS requires authenticated client)
   async createOrganization(userId: string, input: OrganizationInput, accessToken: string): Promise<Organization> { 
-    console.log('[organizationService.createOrganization] called for user:', userId, 'input:', input);
+    // console.log('[organizationService.createOrganization] called for user:', userId, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken);
     
     const customFieldValues = await processCustomFieldsForOrganizationCreate(
@@ -244,7 +244,7 @@ export const organizationService = {
 
   // Update an existing organization (RLS requires authenticated client)
   async updateOrganization(userId: string, id: string, input: Partial<OrganizationInput>, accessToken: string): Promise<Organization> { 
-    console.log('[organizationService.updateOrganization] called for user:', userId, 'id:', id, 'input:', input);
+    // console.log('[organizationService.updateOrganization] called for user:', userId, 'id:', id, 'input:', input);
     const supabase = getAuthenticatedClient(accessToken); 
 
     // Fetch existing organization to get current custom_field_values if needed
@@ -285,7 +285,7 @@ export const organizationService = {
 
   // Delete an organization (RLS requires authenticated client)
   async deleteOrganization(userId: string, id: string, accessToken: string): Promise<boolean> {
-    console.log('[organizationService.deleteOrganization] called for user:', userId, 'id:', id);
+    // console.log('[organizationService.deleteOrganization] called for user:', userId, 'id:', id);
     const supabase = getAuthenticatedClient(accessToken); 
     const { error, count } = await supabase
       .from('organizations')
@@ -294,7 +294,7 @@ export const organizationService = {
 
     handleSupabaseError(error, 'deleting organization'); 
 
-    console.log('[organizationService.deleteOrganization] Deleted count (informational):', count);
+    // console.log('[organizationService.deleteOrganization] Deleted count (informational):', count);
     return !error; 
   },
 }; 

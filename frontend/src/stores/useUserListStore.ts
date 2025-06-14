@@ -10,6 +10,11 @@ export interface UserListItem {
   display_name?: Maybe<string>;
   email: string;
   avatar_url?: Maybe<string>;
+  roles: Array<{
+    id: string;
+    name: string;
+    description: string;
+  }>;
 }
 
 const GET_USER_LIST_QUERY = gql`
@@ -19,6 +24,11 @@ const GET_USER_LIST_QUERY = gql`
       display_name
       email
       avatar_url
+      roles {
+        id
+        name
+        description
+      }
     }
   }
 `;
@@ -55,6 +65,7 @@ export const useUserListStore = create<UserListState>((set, get) => ({
         display_name: user.display_name, // This is already Maybe<String>
         email: user.email,
         avatar_url: user.avatar_url,
+        roles: user.roles || [],
       }));
 
       set({ users: userListItems, loading: false, error: null, hasFetched: true });

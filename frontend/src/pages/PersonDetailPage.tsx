@@ -29,6 +29,7 @@ import {
 } from '@chakra-ui/react';
 import { ArrowBackIcon, WarningIcon, EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
+import { useAppStore } from '../stores/useAppStore';
 import {
   EmailIcon,
   PhoneIcon,
@@ -144,6 +145,12 @@ const PersonDetailPage = () => {
   const currentPerson = usePeopleStore((state) => state.currentPerson);
   const isLoadingPerson = usePeopleStore((state) => state.isLoadingSinglePerson);
   const personError = usePeopleStore((state) => state.errorSinglePerson);
+  
+  // Get user permissions for edit checks
+  const userPermissions = useAppStore((state) => state.userPermissions);
+  
+  // Check if user can edit persons
+  const canEditPerson = userPermissions?.includes('person:update_any');
 
   // GraphQL queries for additional data
   const { data: rolesData, loading: rolesLoading } = useQuery(
@@ -191,7 +198,13 @@ const PersonDetailPage = () => {
       setIsEditingFirstName(false);
       fetchPersonById(personId); // Refresh data
     } catch (e) {
-      toast({ title: 'Error Updating First Name', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
+      const errorMessage = (e as Error).message;
+      if (errorMessage.includes('Forbidden') || errorMessage.includes('permission')) {
+        toast({ title: 'Permission Denied', description: 'You do not have permission to update this person.', status: 'error', duration: 4000, isClosable: true });
+      } else {
+        toast({ title: 'Error Updating First Name', description: errorMessage, status: 'error', duration: 3000, isClosable: true });
+      }
+      setIsEditingFirstName(false);
     }
   };
 
@@ -496,6 +509,7 @@ const PersonDetailPage = () => {
                             }}
                             color={colors.text.muted}
                             _hover={{color: colors.text.link}}
+                            isDisabled={!canEditPerson}
                           />
                         </HStack>
                       ) : (
@@ -553,6 +567,7 @@ const PersonDetailPage = () => {
                             }}
                             color={colors.text.muted}
                             _hover={{color: colors.text.link}}
+                            isDisabled={!canEditPerson}
                           />
                         </HStack>
                       ) : (
@@ -610,6 +625,7 @@ const PersonDetailPage = () => {
                             }}
                             color={colors.text.muted}
                             _hover={{color: colors.text.link}}
+                            isDisabled={!canEditPerson}
                           />
                         </HStack>
                       ) : (
@@ -668,6 +684,7 @@ const PersonDetailPage = () => {
                             }}
                             color={colors.text.muted}
                             _hover={{color: colors.text.link}}
+                            isDisabled={!canEditPerson}
                           />
                         </HStack>
                       ) : (
