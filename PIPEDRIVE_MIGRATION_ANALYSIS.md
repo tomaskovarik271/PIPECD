@@ -370,7 +370,544 @@ Successfully implemented complete document attachment functionality with **full 
 - **Modern UX**: Responsive design with theme integration and loading states
 - **Scalable Architecture**: Handles large shared drives and concurrent users efficiently
 
-### Phase 3: Calendar Integration & Advanced Features (Weeks 7-12) 🔄 NEXT PHASE
+### Phase 2.5: Enhanced Email Filtering & Contact Association (Weeks 7-10) 🚀 NEXT PRIORITY
+**Priority: HIGH - Critical user experience improvement**
+
+Based on research of top-tier CRMs (Salesforce, HubSpot, Pipedrive) and identified user friction points, this phase addresses the basic email filtering limitation where users can only see emails from the deal's primary contact.
+
+#### 2.5.1 Contact Selection & Association System ⭐ HIGH PRIORITY
+
+**🎯 BUSINESS PROBLEM:**
+Current email filtering is too restrictive - users can only see emails from the deal's primary contact, causing friction when deals involve multiple stakeholders. Top CRMs provide flexible contact association with role-based filtering.
+
+**✅ SOLUTION ARCHITECTURE:**
+
+##### **Database Schema Enhancements**
+```sql
+-- Enhanced contact association with roles
+CREATE TABLE deal_contact_associations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  deal_id UUID NOT NULL REFERENCES deals(id) ON DELETE CASCADE,
+  person_id UUID NOT NULL REFERENCES persons(id) ON DELETE CASCADE,
+  role TEXT NOT NULL DEFAULT 'other', -- 'primary', 'decision_maker', 'influencer', 'technical', 'legal', 'other'
+  custom_role_label TEXT, -- For custom role names
+  include_in_email_filter BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_by_user_id UUID NOT NULL REFERENCES auth.users(id),
+  UNIQUE(deal_id, person_id)
+);
+
+-- Email filtering preferences per user
+CREATE TABLE user_email_filter_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id),
+  default_contact_scope TEXT NOT NULL DEFAULT 'primary', -- 'primary', 'all', 'custom'
+  include_new_participants BOOLEAN NOT NULL DEFAULT true,
+  auto_discover_contacts BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(user_id)
+);
+```
+
+##### **GraphQL API Extensions**
+```typescript
+// Enhanced email filtering input
+input EmailThreadsFilterInput {
+  dealId: String
+  contactScope: ContactScopeType! # PRIMARY, ALL, CUSTOM, SELECTED_ROLES
+  selectedContactIds: [String!] # For custom selection
+  selectedRoles: [ContactRoleType!] # For role-based filtering
+  includeNewParticipants: Boolean
+  contactEmail: String # Backward compatibility
+  keywords: [String!]
+  dateFrom: String
+  dateTo: String
+  isUnread: Boolean
+  hasAttachments: Boolean
+  limit: Int
+  pageToken: String
+}
+
+enum ContactScopeType {
+  PRIMARY
+  ALL
+  CUSTOM
+  SELECTED_ROLES
+}
+
+enum ContactRoleType {
+  PRIMARY
+  DECISION_MAKER
+  INFLUENCER
+  TECHNICAL
+  LEGAL
+  OTHER
+}
+
+# New mutations for contact association management
+type Mutation {
+  updateDealContactAssociation(input: UpdateDealContactAssociationInput!): DealContactAssociation!
+  bulkUpdateDealContactAssociations(input: BulkUpdateDealContactAssociationsInput!): [DealContactAssociation!]!
+  updateUserEmailFilterPreferences(input: UpdateUserEmailFilterPreferencesInput!): UserEmailFilterPreferences!
+  discoverEmailContacts(dealId: String!): [EmailContactSuggestion!]!
+}
+
+# New queries for association management
+type Query {
+  getDealContactAssociations(dealId: String!): [DealContactAssociation!]!
+  getUserEmailFilterPreferences: UserEmailFilterPreferences!
+  getEmailContactSuggestions(dealId: String!): [EmailContactSuggestion!]!
+}
+```
+
+#### 2.5.2 Enhanced Email Filtering UI Components 🎨 HIGH PRIORITY
+
+##### **Contact Selection Toggle Component**
+```typescript
+interface EmailContactFilterProps {
+  dealId: string;
+  currentScope: ContactScopeType;
+  selectedContacts: string[];
+  selectedRoles: ContactRoleType[];
+  includeNewParticipants: boolean;
+  onScopeChange: (scope: ContactScopeType) => void;
+  onContactsChange: (contactIds: string[]) => void;
+  onRolesChange: (roles: ContactRoleType[]) => void;
+  onNewParticipantsChange: (include: boolean) => void;
+}
+
+const EmailContactFilter: React.FC<EmailContactFilterProps> = ({...}) => {
+  return (
+    <VStack spacing={3} align="stretch">
+      {/* Primary Filter Toggle */}
+      <FormControl>
+        <FormLabel fontSize="sm" fontWeight="medium">Contact Scope</FormLabel>
+        <Select value={currentScope} onChange={(e) => onScopeChange(e.target.value as ContactScopeType)}>
+          <option value="PRIMARY">Primary Contact Only</option>
+          <option value="ALL">All Deal Contacts</option>
+          <option value="SELECTED_ROLES">By Role</option>
+          <option value="CUSTOM">Custom Selection</option>
+        </Select>
+      </FormControl>
+
+      {/* Role Selection (when SELECTED_ROLES) */}
+      {currentScope === 'SELECTED_ROLES' && (
+        <FormControl>
+          <FormLabel fontSize="sm">Contact Roles</FormLabel>
+          <CheckboxGroup value={selectedRoles} onChange={onRolesChange}>
+            <VStack align="start" spacing={1}>
+              <Checkbox value="PRIMARY">Primary Contact</Checkbox>
+              <Checkbox value="DECISION_MAKER">Decision Maker</Checkbox>
+              <Checkbox value="INFLUENCER">Influencer</Checkbox>
+              <Checkbox value="TECHNICAL">Technical Contact</Checkbox>
+              <Checkbox value="LEGAL">Legal Contact</Checkbox>
+              <Checkbox value="OTHER">Other</Checkbox>
+            </VStack>
+          </CheckboxGroup>
+        </FormControl>
+      )}
+
+      {/* Custom Contact Selection (when CUSTOM) */}
+      {currentScope === 'CUSTOM' && (
+        <ContactMultiSelect
+          dealId={dealId}
+          selectedContacts={selectedContacts}
+          onSelectionChange={onContactsChange}
+        />
+      )}
+
+      {/* Auto-discovery Option */}
+      <FormControl>
+        <Checkbox 
+          isChecked={includeNewParticipants}
+          onChange={(e) => onNewParticipantsChange(e.target.checked)}
+        >
+          <Text fontSize="sm">Include new email participants automatically</Text>
+        </Checkbox>
+      </FormControl>
+    </VStack>
+  );
+};
+```
+
+##### **Enhanced DealEmailsPanel Integration**
+```typescript
+// Enhanced email panel with flexible filtering
+const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
+  dealId,
+  primaryContactEmail,
+  dealName,
+}) => {
+  // Enhanced state management
+  const [emailFilter, setEmailFilter] = useState<EmailFilterState>({
+    contactScope: 'PRIMARY',
+    selectedContacts: [],
+    selectedRoles: [],
+    includeNewParticipants: true,
+    search: '',
+    isUnread: null,
+    hasAttachments: null,
+    dateRange: 'all',
+  });
+
+  // Smart contact discovery
+  const { data: contactAssociations } = useQuery(GET_DEAL_CONTACT_ASSOCIATIONS, {
+    variables: { dealId }
+  });
+
+  const { data: userPreferences } = useQuery(GET_USER_EMAIL_FILTER_PREFERENCES);
+
+  // Enhanced email threads query with flexible filtering
+  const { data: threadsData, loading: threadsLoading, error: threadsError } = useQuery(GET_EMAIL_THREADS, {
+    variables: {
+      filter: {
+        dealId,
+        contactScope: emailFilter.contactScope,
+        selectedContactIds: emailFilter.selectedContacts,
+        selectedRoles: emailFilter.selectedRoles,
+        includeNewParticipants: emailFilter.includeNewParticipants,
+        keywords: emailFilter.search ? [emailFilter.search] : undefined,
+        isUnread: emailFilter.isUnread,
+        hasAttachments: emailFilter.hasAttachments,
+        limit: 50,
+      },
+    },
+  });
+
+  return (
+    <Box h="600px" bg={colors.bg.surface} borderRadius="lg" overflow="hidden">
+      <Grid templateColumns="1fr 2fr" h="full">
+        {/* Left Panel - Enhanced with Contact Filtering */}
+        <GridItem borderRightWidth="1px" borderColor={colors.border.default}>
+          {/* Header with Analytics */}
+          <Box p={4} borderBottomWidth="1px" borderColor={colors.border.default}>
+            <VStack spacing={3} align="stretch">
+              <HStack justify="space-between">
+                <Text fontWeight="bold" color={colors.text.primary}>
+                  Email Conversations
+                </Text>
+                <Button size="sm" leftIcon={<AddIcon />} colorScheme="blue" onClick={() => setIsComposeModalOpen(true)}>
+                  Compose
+                </Button>
+              </HStack>
+              
+              {/* Enhanced Contact Filter */}
+              <EmailContactFilter
+                dealId={dealId}
+                currentScope={emailFilter.contactScope}
+                selectedContacts={emailFilter.selectedContacts}
+                selectedRoles={emailFilter.selectedRoles}
+                includeNewParticipants={emailFilter.includeNewParticipants}
+                onScopeChange={(scope) => setEmailFilter(prev => ({ ...prev, contactScope: scope }))}
+                onContactsChange={(contacts) => setEmailFilter(prev => ({ ...prev, selectedContacts: contacts }))}
+                onRolesChange={(roles) => setEmailFilter(prev => ({ ...prev, selectedRoles: roles }))}
+                onNewParticipantsChange={(include) => setEmailFilter(prev => ({ ...prev, includeNewParticipants: include }))}
+              />
+            </VStack>
+          </Box>
+
+          {/* Existing search and thread list */}
+          {/* ... rest of component */}
+        </GridItem>
+        {/* ... rest of component */}
+      </Grid>
+    </Box>
+  );
+};
+```
+
+#### 2.5.3 Smart Contact Discovery & Auto-Association 🤖 MEDIUM PRIORITY
+
+##### **Email Thread Analysis Service**
+```typescript
+interface EmailContactDiscoveryService {
+  // Analyze email threads to discover new participants
+  analyzeEmailThread(threadId: string, dealId: string): Promise<EmailContactSuggestion[]>;
+  
+  // Auto-associate discovered contacts with deals
+  autoAssociateContacts(dealId: string, suggestions: EmailContactSuggestion[]): Promise<void>;
+  
+  // Suggest contact roles based on email content analysis
+  suggestContactRoles(emailContent: string, existingContacts: DealContact[]): Promise<RoleSuggestion[]>;
+}
+
+interface EmailContactSuggestion {
+  email: string;
+  name?: string;
+  suggestedRole: ContactRoleType;
+  confidence: number; // 0-1 confidence score
+  firstSeenInThread: string; // Thread ID where first discovered
+  emailCount: number; // Number of emails from this contact
+  isExistingContact: boolean;
+  existingContactId?: string;
+}
+```
+
+##### **Intelligent Role Assignment**
+```typescript
+// AI-powered role detection based on email content patterns
+const detectContactRole = (emailContent: string, senderEmail: string): ContactRoleType => {
+  const decisionMakerPatterns = [
+    /\b(approve|decision|budget|authorize|sign off)\b/i,
+    /\b(ceo|cto|director|manager|head of)\b/i,
+  ];
+  
+  const technicalPatterns = [
+    /\b(technical|integration|api|development|engineer)\b/i,
+    /\b(specs|requirements|architecture|implementation)\b/i,
+  ];
+  
+  const legalPatterns = [
+    /\b(legal|contract|terms|compliance|attorney|lawyer)\b/i,
+    /\b(review|approval|legal team|counsel)\b/i,
+  ];
+
+  // Pattern matching logic with confidence scoring
+  if (decisionMakerPatterns.some(pattern => pattern.test(emailContent))) {
+    return 'DECISION_MAKER';
+  }
+  if (technicalPatterns.some(pattern => pattern.test(emailContent))) {
+    return 'TECHNICAL';
+  }
+  if (legalPatterns.some(pattern => pattern.test(emailContent))) {
+    return 'LEGAL';
+  }
+  
+  return 'OTHER';
+};
+```
+
+#### 2.5.4 Advanced Filter UI & User Experience 🎨 MEDIUM PRIORITY
+
+##### **Multi-Dimensional Filter Interface**
+```typescript
+interface AdvancedEmailFilters {
+  // Contact-based filters
+  contactScope: ContactScopeType;
+  selectedContacts: string[];
+  selectedRoles: ContactRoleType[];
+  includeNewParticipants: boolean;
+  
+  // Content-based filters
+  keywords: string[];
+  hasAttachments: boolean | null;
+  emailDirection: 'inbound' | 'outbound' | 'all';
+  
+  // Temporal filters
+  dateRange: 'today' | 'week' | 'month' | 'quarter' | 'custom';
+  customDateFrom?: Date;
+  customDateTo?: Date;
+  
+  // Engagement filters
+  isUnread: boolean | null;
+  hasReplies: boolean | null;
+  responseTime: 'fast' | 'slow' | 'all'; // Based on response time analysis
+}
+
+const AdvancedEmailFilterPanel: React.FC<AdvancedEmailFilterPanelProps> = ({...}) => {
+  return (
+    <Accordion allowToggle>
+      <AccordionItem>
+        <AccordionButton>
+          <Box flex="1" textAlign="left">
+            <HStack>
+              <Icon as={FiFilter} />
+              <Text fontWeight="medium">Advanced Filters</Text>
+              {hasActiveFilters && <Badge colorScheme="blue" size="sm">Active</Badge>}
+            </HStack>
+          </Box>
+          <AccordionIcon />
+        </AccordionButton>
+        <AccordionPanel pb={4}>
+          <VStack spacing={4} align="stretch">
+            {/* Contact Filters */}
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" mb={2}>Contacts</Text>
+              <EmailContactFilter {...contactFilterProps} />
+            </Box>
+
+            {/* Content Filters */}
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" mb={2}>Content</Text>
+              <HStack spacing={2}>
+                <Select size="sm" placeholder="Direction">
+                  <option value="all">All Emails</option>
+                  <option value="inbound">Inbound Only</option>
+                  <option value="outbound">Outbound Only</option>
+                </Select>
+                <Checkbox size="sm">Has Attachments</Checkbox>
+                <Checkbox size="sm">Has Replies</Checkbox>
+              </HStack>
+            </Box>
+
+            {/* Temporal Filters */}
+            <Box>
+              <Text fontSize="sm" fontWeight="medium" mb={2}>Time Range</Text>
+              <HStack spacing={2}>
+                <Select size="sm" value={filters.dateRange} onChange={handleDateRangeChange}>
+                  <option value="today">Today</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="quarter">This Quarter</option>
+                  <option value="custom">Custom Range</option>
+                </Select>
+                {filters.dateRange === 'custom' && (
+                  <>
+                    <Input type="date" size="sm" />
+                    <Text fontSize="sm">to</Text>
+                    <Input type="date" size="sm" />
+                  </>
+                )}
+              </HStack>
+            </Box>
+
+            {/* Quick Actions */}
+            <HStack spacing={2}>
+              <Button size="sm" variant="outline" onClick={clearAllFilters}>
+                Clear All
+              </Button>
+              <Button size="sm" colorScheme="blue" onClick={saveFilterPreset}>
+                Save Preset
+              </Button>
+            </HStack>
+          </VStack>
+        </AccordionPanel>
+      </AccordionItem>
+    </Accordion>
+  );
+};
+```
+
+#### 2.5.5 User Preference Management & Persistence 💾 LOW PRIORITY
+
+##### **Filter Preference Storage**
+```typescript
+interface UserEmailFilterPreferences {
+  userId: string;
+  defaultContactScope: ContactScopeType;
+  includeNewParticipants: boolean;
+  autoDiscoverContacts: boolean;
+  savedFilterPresets: EmailFilterPreset[];
+  lastUsedFilters: AdvancedEmailFilters;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface EmailFilterPreset {
+  id: string;
+  name: string;
+  description?: string;
+  filters: AdvancedEmailFilters;
+  isDefault: boolean;
+  createdAt: Date;
+}
+
+// Preference management service
+class EmailFilterPreferenceService {
+  async getUserPreferences(userId: string): Promise<UserEmailFilterPreferences> {
+    // Fetch from database with intelligent defaults
+  }
+
+  async updatePreferences(userId: string, preferences: Partial<UserEmailFilterPreferences>): Promise<void> {
+    // Update preferences with optimistic UI updates
+  }
+
+  async saveFilterPreset(userId: string, preset: Omit<EmailFilterPreset, 'id' | 'createdAt'>): Promise<EmailFilterPreset> {
+    // Save custom filter combinations for reuse
+  }
+
+  async applyFilterPreset(presetId: string): Promise<AdvancedEmailFilters> {
+    // Load and apply saved filter combinations
+  }
+}
+```
+
+### Implementation Timeline - Phase 2.5
+
+| Week | Focus Area | Deliverables | Effort |
+|------|------------|--------------|--------|
+| **Week 7** | Database & API Foundation | Contact association schema, GraphQL mutations/queries, basic contact selection toggle | 2 developers |
+| **Week 8** | Core UI Components | EmailContactFilter component, enhanced DealEmailsPanel integration, role-based filtering | 2 developers |
+| **Week 9** | Smart Discovery | Email thread analysis, auto-contact discovery, intelligent role suggestions | 1.5 developers |
+| **Week 10** | Advanced Filtering & Polish | Multi-dimensional filters, user preferences, filter presets, testing & optimization | 1.5 developers |
+
+### Technical Requirements - Phase 2.5
+
+#### **Database Migrations**
+```sql
+-- Migration: 20250730000042_create_enhanced_email_filtering.sql
+-- Creates contact association and user preference tables
+-- Adds indexes for performance optimization
+-- Implements RLS policies for data security
+```
+
+#### **GraphQL Schema Extensions**
+- 8 new types for contact associations and filtering
+- 6 new mutations for association management
+- 4 new queries for preference and suggestion retrieval
+- Enhanced existing email queries with flexible filtering
+
+#### **Frontend Components**
+- `EmailContactFilter`: Primary contact selection interface
+- `ContactMultiSelect`: Multi-contact selection with search
+- `AdvancedEmailFilterPanel`: Comprehensive filtering interface
+- `EmailFilterPresets`: Saved filter management
+- Enhanced `DealEmailsPanel`: Integration of all filtering capabilities
+
+#### **Backend Services**
+- `ContactAssociationService`: Manage deal-contact relationships
+- `EmailContactDiscoveryService`: Intelligent contact discovery
+- `EmailFilterPreferenceService`: User preference management
+- Enhanced `EmailService`: Support for flexible contact filtering
+
+### Success Metrics - Phase 2.5
+
+#### **User Experience Metrics**
+- **Email Filtering Flexibility**: 95% of users can find relevant emails within 30 seconds
+- **Contact Discovery**: 80% of new email participants automatically discovered and suggested
+- **Filter Adoption**: 70% of users utilize advanced filtering options beyond primary contact
+- **Preference Persistence**: 90% of users have their filter preferences properly saved and restored
+
+#### **Technical Performance Metrics**
+- **Query Performance**: Email filtering queries execute in <500ms for deals with 100+ contacts
+- **Auto-Discovery Accuracy**: 85% accuracy in role suggestion for discovered contacts
+- **Filter Responsiveness**: UI filter changes reflect in results within 200ms
+- **Data Consistency**: 100% consistency between contact associations and email filtering
+
+### Competitive Advantages - Phase 2.5
+
+#### **Superior to Current CRM Solutions**
+
+| Feature | PipeCD (Enhanced) | Salesforce | HubSpot | Pipedrive | Monday.com |
+|---------|-------------------|------------|---------|-----------|------------|
+| **Flexible Contact Filtering** | ✅ Primary/All/Custom/Role-based | ✅ Advanced | ✅ Association labels | 🟡 Basic multi-contact | ❌ Poor association |
+| **Auto Contact Discovery** | ✅ AI-powered thread analysis | ✅ Einstein AI | ✅ Smart suggestions | ❌ Manual only | ❌ Manual only |
+| **Role-Based Filtering** | ✅ 6 predefined + custom roles | ✅ Custom roles | ✅ Association labels | ❌ No roles | ❌ No roles |
+| **Filter Persistence** | ✅ User preferences + presets | ✅ Saved views | ✅ Saved filters | 🟡 Basic persistence | ❌ No persistence |
+| **Smart Role Assignment** | ✅ Content analysis + patterns | ✅ Einstein AI | 🟡 Manual suggestions | ❌ Manual only | ❌ Manual only |
+| **Multi-Dimensional Filtering** | ✅ Contact + Content + Time + Engagement | ✅ Advanced | ✅ Comprehensive | 🟡 Basic filters | 🟡 Basic filters |
+
+#### **Business Impact**
+- **Reduced Email Noise**: 70% reduction in irrelevant emails shown to users
+- **Improved Context**: 85% better email-to-deal relevance through smart filtering
+- **Enhanced Productivity**: 40% faster email review and response times
+- **Better Collaboration**: 60% improvement in multi-stakeholder deal communication tracking
+- **User Satisfaction**: Addresses #1 user complaint about email filtering limitations
+
+### Risk Mitigation - Phase 2.5
+
+#### **Technical Risks**
+- **Performance Impact**: Implement efficient database indexes and query optimization
+- **Complex UI**: Provide progressive disclosure with simple defaults and advanced options
+- **Data Migration**: Ensure backward compatibility with existing email associations
+
+#### **User Adoption Risks**
+- **Feature Complexity**: Start with simple toggle, gradually introduce advanced features
+- **Change Management**: Provide clear migration path and user training materials
+- **Default Behavior**: Maintain current behavior as default to avoid disruption
+
+### Phase 3: Calendar Integration & Advanced Features (Weeks 11-18) 🔄 NEXT PHASE
 **Priority: MEDIUM - Enhanced productivity**
 
 #### 3.1 Activity Automation Enhancement
@@ -402,6 +939,7 @@ Successfully implemented complete document attachment functionality with **full 
 |-------|----------|----------|---------|--------|----------|--------|
 | Phase 1 | 4 weeks | 2 developers | 1 developer | 0.5 developer | 🟢 **COMPLETED** | ✅ DONE |
 | Phase 2 | 6 weeks | 2 developers | 1.5 developers | 0.5 developer | 🟡 **HIGH** | 🟢 **COMPLETED** |
+| **Phase 2.5** | **4 weeks** | **2 developers** | **1.5 developers** | **0.5 developer** | **🚀 NEXT PRIORITY** | **🔄 PLANNED** |
 | Phase 3 | 8 weeks | 1 developer | 2 developers | 0.5 developer | 🟡 **MEDIUM** | ⏳ PLANNED |
 
 ### Budget Estimation - Updated
@@ -410,8 +948,9 @@ Successfully implemented complete document attachment functionality with **full 
 |-------|------------------|----------------|------------------|-------|--------|
 | Phase 1 | $40,000 | $500 | $200 | $40,700 | ✅ **COMPLETED** |
 | Phase 2 | $55,000 | $800 | $500 | $56,300 | 🟢 **COMPLETED** |
+| **Phase 2.5** | **$45,000** | **$600** | **$300** | **$45,900** | **🚀 NEXT PRIORITY** |
 | Phase 3 | $80,000 | $1,000 | $800 | $81,800 | ⏳ **PLANNED** |
-| **TOTAL** | **$175,000** | **$2,300** | **$1,500** | **$178,800** | **80% COMPLETE** |
+| **TOTAL** | **$220,000** | **$2,900** | **$1,800** | **$224,700** | **70% COMPLETE** |
 
 ## Success Metrics - Updated
 
@@ -430,6 +969,15 @@ Successfully implemented complete document attachment functionality with **full 
 - ✅ Note-taking workflow enhanced with rich text and templates
 - ✅ Document search and organization capabilities exceed Pipedrive
 
+### Phase 2.5 Success Criteria 🚀 NEXT PRIORITY
+- [ ] **Email Filtering Flexibility**: 95% of users can find relevant emails within 30 seconds
+- [ ] **Contact Discovery**: 80% of new email participants automatically discovered and suggested
+- [ ] **Filter Adoption**: 70% of users utilize advanced filtering options beyond primary contact
+- [ ] **Role-Based Organization**: 85% of deals have properly categorized contact roles
+- [ ] **User Satisfaction**: Eliminate #1 user complaint about email filtering limitations
+- [ ] **Performance**: Email filtering queries execute in <500ms for deals with 100+ contacts
+- [ ] **Smart Discovery**: 85% accuracy in role suggestion for discovered contacts
+
 ### Phase 3 Success Criteria (PLANNED)
 - [ ] 90% of users connect Google Calendar
 - [ ] Meeting scheduling time reduces by 60%
@@ -447,6 +995,7 @@ Successfully implemented complete document attachment functionality with **full 
 | **Note-Taking** | **Dual approach: Rich text editor + Visual stickers with direct edit access** | **50% faster note creation, superior organization** | ✅ **COMPLETE** |
 | **Document Management** | **Full Google Drive browser with dual attachment and advanced search** | **80% faster document access, unified management** | ✅ **COMPLETE** |
 | **Email-to-Note** | **Template-based conversion with structured note creation** | **60% faster note creation from emails** | ✅ **COMPLETE** |
+| **Enhanced Email Filtering** | **Multi-dimensional filtering with role-based contact association and smart discovery** | **70% reduction in email noise, 40% faster email review** | 🚀 **PHASE 2.5** |
 | Visual Collaboration | Smart Stickers with real-time collaboration | 40% better team coordination | ✅ **COMPLETE** |
 | AI Intelligence | AI Agent with semantic search and insights | 50% faster information discovery | ✅ **COMPLETE** |
 | Relationship Mapping | D3.js network visualization | 30% better relationship understanding | ✅ **COMPLETE** |
@@ -457,6 +1006,7 @@ Successfully implemented complete document attachment functionality with **full 
 
 | Area | Gap Level | Impact | Timeline |
 |------|-----------|--------|----------|
+| **Enhanced Email Filtering** | **🚀 NEXT PRIORITY** | **Email noise and multi-contact friction** | **Phase 2.5 (4 weeks)** |
 | Calendar Sync | 🔴 **HIGH** | Productivity workflow disruption | Phase 3 (4 weeks) |
 | Meeting Scheduling | 🔴 **HIGH** | External meeting coordination | Phase 3 (4 weeks) |
 | Activity Analytics | 🟡 **MEDIUM** | Performance insights | Phase 3 (8 weeks) |
@@ -482,11 +1032,12 @@ Successfully implemented complete document attachment functionality with **full 
 
 ### Immediate Actions Required
 
-1. **🚀 BEGIN PHASE 3**: Focus on calendar integration and meeting scheduling
+1. **🚀 BEGIN PHASE 2.5**: Implement enhanced email filtering with contact association and role-based filtering
 2. **📧 ENABLE EMAIL DELIVERY**: Configure SMTP service for email reminders
 3. **📊 MONITOR ADOPTION**: Track user engagement with enhanced notes and document attachment
-4. **🔍 GATHER FEEDBACK**: Collect user feedback on document attachment workflow and Google Drive integration
+4. **🔍 GATHER FEEDBACK**: Collect user feedback on email filtering limitations and multi-contact scenarios
 5. **📈 MEASURE SUCCESS**: Analyze productivity improvements from Phase 2 implementations
+6. **🎯 PREPARE PHASE 3**: Plan calendar integration and meeting scheduling after email filtering completion
 
 ### Success Factors Achieved
 
@@ -496,5 +1047,5 @@ Successfully implemented complete document attachment functionality with **full 
 - ✅ **Competitive positioning**: Leveraged unique strengths while achieving parity
 - ✅ **Superior implementation**: Exceeded Pipedrive capabilities in key areas
 
-**The path to successful Pipedrive migration is 80% complete: Phase 1 & 2 critical gaps resolved, enhanced notes and document management systems superior to Pipedrive, with clear roadmap to full feature parity plus significant competitive advantages.**
+**The path to successful Pipedrive migration is 70% complete: Phase 1 & 2 critical gaps resolved, enhanced notes and document management systems superior to Pipedrive. Phase 2.5 enhanced email filtering addresses the #1 user friction point, with clear roadmap to full feature parity plus significant competitive advantages.**
  
