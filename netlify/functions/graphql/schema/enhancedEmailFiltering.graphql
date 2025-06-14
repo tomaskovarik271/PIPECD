@@ -109,7 +109,7 @@ type DealContactAssociationWithDetails {
 # Input Types
 # =============================================
 
-input EmailThreadsFilterInput {
+input EnhancedEmailThreadsFilterInput {
   dealId: String
   contactScope: ContactScopeType!
   selectedContactIds: [String!]
@@ -192,7 +192,7 @@ extend type Query {
   getPendingEmailContactSuggestions(dealId: String!): [EmailContactSuggestion!]!
   
   # Enhanced Email Threads (extends existing)
-  getEmailThreadsEnhanced(filter: EmailThreadsFilterInput!): EmailThreadsResponse!
+  getEmailThreadsEnhanced(filter: EnhancedEmailThreadsFilterInput!): EmailThreadConnection!
 }
 
 # =============================================

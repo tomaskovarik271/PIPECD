@@ -56,6 +56,7 @@ import { FaReply, FaForward, FaArchive, FaTasks } from 'react-icons/fa';
 import { FiFileText } from 'react-icons/fi';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { EmailContactFilter } from './EmailContactFilter';
 
 // GraphQL Queries and Mutations
 const GET_EMAIL_THREADS = gql`
@@ -224,6 +225,12 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   const [selectedEmailForTask, setSelectedEmailForTask] = useState<string | null>(null);
   const [isConvertToNoteModalOpen, setIsConvertToNoteModalOpen] = useState(false);
   const [selectedEmailForNote, setSelectedEmailForNote] = useState<any>(null);
+
+  // Enhanced Email Filter State
+  const [emailFilterScope, setEmailFilterScope] = useState<'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES'>('PRIMARY');
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<('PRIMARY' | 'DECISION_MAKER' | 'INFLUENCER' | 'TECHNICAL' | 'LEGAL' | 'OTHER')[]>([]);
+  const [includeNewParticipants, setIncludeNewParticipants] = useState(true);
 
   // GraphQL Hooks
   const { data: threadsData, loading: threadsLoading, error: threadsError, refetch: refetchThreads } = useQuery(GET_EMAIL_THREADS, {
@@ -465,6 +472,21 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                   <option value="without">No attachments</option>
                 </Select>
               </HStack>
+
+              {/* Enhanced Email Contact Filter */}
+              <Box w="full" pt={2}>
+                <EmailContactFilter
+                  dealId={dealId}
+                  currentScope={emailFilterScope}
+                  selectedContacts={selectedContacts}
+                  selectedRoles={selectedRoles}
+                  includeNewParticipants={includeNewParticipants}
+                  onScopeChange={setEmailFilterScope}
+                  onContactsChange={setSelectedContacts}
+                  onRolesChange={setSelectedRoles}
+                  onNewParticipantsChange={setIncludeNewParticipants}
+                />
+              </Box>
             </VStack>
           </Box>
 

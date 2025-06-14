@@ -231,6 +231,18 @@ export type AttachDocumentInput = {
   sharedDriveId?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type AttachDocumentToNoteInput = {
+  category?: InputMaybe<DocumentCategory>;
+  dealId: Scalars["ID"]["input"];
+  fileName: Scalars["String"]["input"];
+  fileSize?: InputMaybe<Scalars["Int"]["input"]>;
+  fileUrl: Scalars["String"]["input"];
+  googleFileId: Scalars["String"]["input"];
+  mimeType?: InputMaybe<Scalars["String"]["input"]>;
+  noteId: Scalars["ID"]["input"];
+  sharedDriveId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type AttachFileInput = {
   category?: InputMaybe<DocumentCategory>;
   dealId: Scalars["ID"]["input"];
@@ -244,6 +256,11 @@ export enum BudgetAuthorityLevel {
   None = "NONE",
   Unlimited = "UNLIMITED",
 }
+
+export type BulkUpdateDealContactAssociationsInput = {
+  associations: Array<UpdateDealContactAssociationInput>;
+  dealId: Scalars["String"]["input"];
+};
 
 export enum CommunicationPreference {
   Email = "EMAIL",
@@ -271,6 +288,22 @@ export type ConnectGoogleIntegrationInput = {
   tokenData: GoogleTokenInput;
 };
 
+export enum ContactRoleType {
+  DecisionMaker = "DECISION_MAKER",
+  Influencer = "INFLUENCER",
+  Legal = "LEGAL",
+  Other = "OTHER",
+  Primary = "PRIMARY",
+  Technical = "TECHNICAL",
+}
+
+export enum ContactScopeType {
+  All = "ALL",
+  Custom = "CUSTOM",
+  Primary = "PRIMARY",
+  SelectedRoles = "SELECTED_ROLES",
+}
+
 export type ConvertedEntities = {
   __typename?: "ConvertedEntities";
   deal?: Maybe<Deal>;
@@ -291,6 +324,14 @@ export type CreateActivityInput = {
   type: ActivityType;
 };
 
+export type CreateDealContactAssociationInput = {
+  customRoleLabel?: InputMaybe<Scalars["String"]["input"]>;
+  dealId: Scalars["String"]["input"];
+  includeInEmailFilter?: InputMaybe<Scalars["Boolean"]["input"]>;
+  personId: Scalars["String"]["input"];
+  role: ContactRoleType;
+};
+
 export type CreateDealFolderInput = {
   dealId: Scalars["ID"]["input"];
   dealName: Scalars["String"]["input"];
@@ -305,6 +346,21 @@ export type CreateDocumentInput = {
   fileSizeBytes?: InputMaybe<Scalars["Int"]["input"]>;
   googleDriveFileId?: InputMaybe<Scalars["String"]["input"]>;
   mimeType?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type CreateEmailFilterPresetInput = {
+  contactScope: ContactScopeType;
+  dateFrom?: InputMaybe<Scalars["String"]["input"]>;
+  dateTo?: InputMaybe<Scalars["String"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  hasAttachments?: InputMaybe<Scalars["Boolean"]["input"]>;
+  includeNewParticipants?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isDefault?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isUnread?: InputMaybe<Scalars["Boolean"]["input"]>;
+  keywords?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  name: Scalars["String"]["input"];
+  selectedContactIds?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  selectedRoles?: InputMaybe<Array<ContactRoleType>>;
 };
 
 export type CreateEmailInput = {
@@ -550,12 +606,14 @@ export type Deal = {
   amount?: Maybe<Scalars["Float"]["output"]>;
   assignedToUser?: Maybe<User>;
   assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
+  contactAssociations: Array<DealContactAssociation>;
   createdBy: User;
   created_at: Scalars["DateTime"]["output"];
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
+  emailContactSuggestions: Array<EmailContactSuggestion>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
   history?: Maybe<Array<DealHistoryEntry>>;
   id: Scalars["ID"]["output"];
@@ -575,6 +633,35 @@ export type Deal = {
 export type DealHistoryArgs = {
   limit?: InputMaybe<Scalars["Int"]["input"]>;
   offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type DealContactAssociation = {
+  __typename?: "DealContactAssociation";
+  createdAt: Scalars["String"]["output"];
+  createdByUserId: Scalars["String"]["output"];
+  customRoleLabel?: Maybe<Scalars["String"]["output"]>;
+  dealId: Scalars["String"]["output"];
+  id: Scalars["String"]["output"];
+  includeInEmailFilter: Scalars["Boolean"]["output"];
+  person?: Maybe<Person>;
+  personId: Scalars["String"]["output"];
+  role: ContactRoleType;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type DealContactAssociationWithDetails = {
+  __typename?: "DealContactAssociationWithDetails";
+  createdAt: Scalars["String"]["output"];
+  customRoleLabel?: Maybe<Scalars["String"]["output"]>;
+  dealId: Scalars["String"]["output"];
+  id: Scalars["String"]["output"];
+  includeInEmailFilter: Scalars["Boolean"]["output"];
+  personEmail?: Maybe<Scalars["String"]["output"]>;
+  personFirstName?: Maybe<Scalars["String"]["output"]>;
+  personId: Scalars["String"]["output"];
+  personLastName?: Maybe<Scalars["String"]["output"]>;
+  role: ContactRoleType;
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type DealDocumentAttachment = {
@@ -776,6 +863,12 @@ export type DriveSearchInput = {
   query?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type DualAttachmentResponse = {
+  __typename?: "DualAttachmentResponse";
+  dealAttachment: DealDocumentAttachment;
+  noteAttachment: NoteDocumentAttachment;
+};
+
 export type Email = {
   __typename?: "Email";
   bccEmails: Array<Scalars["String"]["output"]>;
@@ -844,6 +937,50 @@ export type EmailAttachmentInput = {
   mimeType: Scalars["String"]["input"];
 };
 
+export enum EmailContactDiscoveryStatus {
+  Accepted = "ACCEPTED",
+  AutoAssociated = "AUTO_ASSOCIATED",
+  Pending = "PENDING",
+  Rejected = "REJECTED",
+}
+
+export type EmailContactSuggestion = {
+  __typename?: "EmailContactSuggestion";
+  confidenceScore?: Maybe<Scalars["Float"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  dealId: Scalars["String"]["output"];
+  discoveredName?: Maybe<Scalars["String"]["output"]>;
+  emailAddress: Scalars["String"]["output"];
+  emailCount: Scalars["Int"]["output"];
+  existingPerson?: Maybe<Person>;
+  existingPersonId?: Maybe<Scalars["String"]["output"]>;
+  firstSeenThreadId?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["String"]["output"];
+  isExistingContact: Scalars["Boolean"]["output"];
+  processedAt?: Maybe<Scalars["String"]["output"]>;
+  processedByUserId?: Maybe<Scalars["String"]["output"]>;
+  status: EmailContactDiscoveryStatus;
+  suggestedRole: ContactRoleType;
+};
+
+export type EmailFilterPreset = {
+  __typename?: "EmailFilterPreset";
+  contactScope: ContactScopeType;
+  createdAt: Scalars["String"]["output"];
+  dateFrom?: Maybe<Scalars["String"]["output"]>;
+  dateTo?: Maybe<Scalars["String"]["output"]>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  hasAttachments?: Maybe<Scalars["Boolean"]["output"]>;
+  id: Scalars["String"]["output"];
+  includeNewParticipants: Scalars["Boolean"]["output"];
+  isDefault: Scalars["Boolean"]["output"];
+  isUnread?: Maybe<Scalars["Boolean"]["output"]>;
+  keywords: Array<Scalars["String"]["output"]>;
+  name: Scalars["String"]["output"];
+  selectedContactIds: Array<Scalars["String"]["output"]>;
+  selectedRoles: Array<ContactRoleType>;
+};
+
 export enum EmailImportance {
   High = "HIGH",
   Low = "LOW",
@@ -910,6 +1047,24 @@ export enum EngagementLevel {
   Skeptic = "SKEPTIC",
   Supporter = "SUPPORTER",
 }
+
+export type EnhancedEmailThreadsFilterInput = {
+  contactEmail?: InputMaybe<Scalars["String"]["input"]>;
+  contactScope: ContactScopeType;
+  dateFrom?: InputMaybe<Scalars["String"]["input"]>;
+  dateTo?: InputMaybe<Scalars["String"]["input"]>;
+  dealId?: InputMaybe<Scalars["String"]["input"]>;
+  emailDirection?: InputMaybe<Scalars["String"]["input"]>;
+  hasAttachments?: InputMaybe<Scalars["Boolean"]["input"]>;
+  hasReplies?: InputMaybe<Scalars["Boolean"]["input"]>;
+  includeNewParticipants?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isUnread?: InputMaybe<Scalars["Boolean"]["input"]>;
+  keywords?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  pageToken?: InputMaybe<Scalars["String"]["input"]>;
+  selectedContactIds?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  selectedRoles?: InputMaybe<Array<ContactRoleType>>;
+};
 
 export enum EntityType {
   Deal = "DEAL",
@@ -1133,7 +1288,10 @@ export type Mutation = {
   assignAccountToTerritory: AccountTerritory;
   assignUserRole: User;
   attachDocumentToDeal: DealDocumentAttachment;
+  attachDocumentToNoteAndDeal: DualAttachmentResponse;
   attachFileToDeal: DealDocumentAttachment;
+  bulkProcessEmailContactSuggestions: Array<EmailContactSuggestion>;
+  bulkUpdateDealContactAssociations: Array<DealContactAssociation>;
   cancelActivityReminder: Scalars["Boolean"]["output"];
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
@@ -1143,9 +1301,11 @@ export type Mutation = {
   createAgentConversation: AgentConversation;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
+  createDealContactAssociation: DealContactAssociation;
   createDealFolder: DriveFolderStructure;
   createDocument: Document;
   createEmail: Email;
+  createEmailFilterPreset: EmailFilterPreset;
   createLead: Lead;
   createNotification: Notification;
   createOrganization: Organization;
@@ -1166,7 +1326,9 @@ export type Mutation = {
   deleteActivity: Scalars["ID"]["output"];
   deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteDealContactAssociation: Scalars["Boolean"]["output"];
   deleteDriveFile: Scalars["Boolean"]["output"];
+  deleteEmailFilterPreset: Scalars["Boolean"]["output"];
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteNotification: Scalars["Boolean"]["output"];
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
@@ -1181,6 +1343,7 @@ export type Mutation = {
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
   detachFileFromDeal: Scalars["Boolean"]["output"];
+  discoverEmailContacts: Array<EmailContactSuggestion>;
   dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
   linkEmailToDeal: Scalars["Boolean"]["output"];
@@ -1190,10 +1353,12 @@ export type Mutation = {
   markThreadAsUnread: Scalars["Boolean"]["output"];
   moveDriveFile: DriveFile;
   moveStickersBulk: Array<SmartSticker>;
+  processEmailContactSuggestion: EmailContactSuggestion;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
   removeAccountFromTerritory: Scalars["Boolean"]["output"];
   removeDocumentAttachment: Scalars["Boolean"]["output"];
+  removeNoteDocumentAttachment: Scalars["Boolean"]["output"];
   removeUserRole: User;
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
   scheduleActivityReminder: ActivityReminder;
@@ -1207,8 +1372,10 @@ export type Mutation = {
   updateAppSetting: AppSetting;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
+  updateDealContactAssociation: DealContactAssociation;
   updateDealWFMProgress: Deal;
   updateDocumentAttachmentCategory: DealDocumentAttachment;
+  updateEmailFilterPreset: EmailFilterPreset;
   updateLead?: Maybe<Lead>;
   updateLeadWFMProgress: Lead;
   updateMyReminderPreferences: UserReminderPreferences;
@@ -1220,6 +1387,7 @@ export type Mutation = {
   updateSticker: SmartSticker;
   updateStickerTags: SmartSticker;
   updateTerritory: Territory;
+  updateUserEmailFilterPreferences: UserEmailFilterPreferences;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -1257,8 +1425,20 @@ export type MutationAttachDocumentToDealArgs = {
   input: AttachDocumentInput;
 };
 
+export type MutationAttachDocumentToNoteAndDealArgs = {
+  input: AttachDocumentToNoteInput;
+};
+
 export type MutationAttachFileToDealArgs = {
   input: AttachFileInput;
+};
+
+export type MutationBulkProcessEmailContactSuggestionsArgs = {
+  inputs: Array<ProcessEmailContactSuggestionInput>;
+};
+
+export type MutationBulkUpdateDealContactAssociationsArgs = {
+  input: BulkUpdateDealContactAssociationsInput;
 };
 
 export type MutationCancelActivityReminderArgs = {
@@ -1300,6 +1480,10 @@ export type MutationCreateDealArgs = {
   input: DealInput;
 };
 
+export type MutationCreateDealContactAssociationArgs = {
+  input: CreateDealContactAssociationInput;
+};
+
 export type MutationCreateDealFolderArgs = {
   input: CreateDealFolderInput;
 };
@@ -1310,6 +1494,10 @@ export type MutationCreateDocumentArgs = {
 
 export type MutationCreateEmailArgs = {
   input: CreateEmailInput;
+};
+
+export type MutationCreateEmailFilterPresetArgs = {
+  input: CreateEmailFilterPresetInput;
 };
 
 export type MutationCreateLeadArgs = {
@@ -1392,8 +1580,16 @@ export type MutationDeleteDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteDealContactAssociationArgs = {
+  id: Scalars["String"]["input"];
+};
+
 export type MutationDeleteDriveFileArgs = {
   fileId: Scalars["String"]["input"];
+};
+
+export type MutationDeleteEmailFilterPresetArgs = {
+  id: Scalars["String"]["input"];
 };
 
 export type MutationDeleteLeadArgs = {
@@ -1452,6 +1648,10 @@ export type MutationDetachFileFromDealArgs = {
   attachmentId: Scalars["ID"]["input"];
 };
 
+export type MutationDiscoverEmailContactsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
 export type MutationDismissRelationshipInsightArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1488,6 +1688,10 @@ export type MutationMoveStickersBulkArgs = {
   moves: Array<StickerMoveInput>;
 };
 
+export type MutationProcessEmailContactSuggestionArgs = {
+  input: ProcessEmailContactSuggestionInput;
+};
+
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1502,6 +1706,10 @@ export type MutationRemoveAccountFromTerritoryArgs = {
 };
 
 export type MutationRemoveDocumentAttachmentArgs = {
+  attachmentId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveNoteDocumentAttachmentArgs = {
   attachmentId: Scalars["ID"]["input"];
 };
 
@@ -1557,6 +1765,10 @@ export type MutationUpdateDealArgs = {
   input: DealUpdateInput;
 };
 
+export type MutationUpdateDealContactAssociationArgs = {
+  input: UpdateDealContactAssociationInput;
+};
+
 export type MutationUpdateDealWfmProgressArgs = {
   dealId: Scalars["ID"]["input"];
   targetWfmWorkflowStepId: Scalars["ID"]["input"];
@@ -1565,6 +1777,11 @@ export type MutationUpdateDealWfmProgressArgs = {
 export type MutationUpdateDocumentAttachmentCategoryArgs = {
   attachmentId: Scalars["ID"]["input"];
   category: DocumentCategory;
+};
+
+export type MutationUpdateEmailFilterPresetArgs = {
+  id: Scalars["String"]["input"];
+  input: CreateEmailFilterPresetInput;
 };
 
 export type MutationUpdateLeadArgs = {
@@ -1621,6 +1838,10 @@ export type MutationUpdateTerritoryArgs = {
   input: CreateTerritoryInput;
 };
 
+export type MutationUpdateUserEmailFilterPreferencesArgs = {
+  input: UpdateUserEmailFilterPreferencesInput;
+};
+
 export type MutationUpdateUserProfileArgs = {
   input: UpdateUserProfileInput;
 };
@@ -1665,6 +1886,19 @@ export type MutationUploadToGoogleDriveArgs = {
   fileContent: Scalars["String"]["input"];
   fileName: Scalars["String"]["input"];
   mimeType: Scalars["String"]["input"];
+};
+
+export type NoteDocumentAttachment = {
+  __typename?: "NoteDocumentAttachment";
+  attachedAt: Scalars["String"]["output"];
+  attachedBy: Scalars["ID"]["output"];
+  fileName: Scalars["String"]["output"];
+  fileSize?: Maybe<Scalars["Int"]["output"]>;
+  fileUrl: Scalars["String"]["output"];
+  googleFileId: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  mimeType?: Maybe<Scalars["String"]["output"]>;
+  noteId: Scalars["ID"]["output"];
 };
 
 export type Notification = {
@@ -1782,6 +2016,7 @@ export type Person = {
   activities: Array<Activity>;
   created_at: Scalars["DateTime"]["output"];
   customFieldValues: Array<CustomFieldValue>;
+  dealAssociations: Array<DealContactAssociation>;
   deals?: Maybe<Array<Deal>>;
   email?: Maybe<Scalars["String"]["output"]>;
   first_name?: Maybe<Scalars["String"]["output"]>;
@@ -1877,6 +2112,13 @@ export enum PriorityLevel {
   Medium = "MEDIUM",
 }
 
+export type ProcessEmailContactSuggestionInput = {
+  action: Scalars["String"]["input"];
+  associationRole?: InputMaybe<ContactRoleType>;
+  customRoleLabel?: InputMaybe<Scalars["String"]["input"]>;
+  id: Scalars["String"]["input"];
+};
+
 export type Query = {
   __typename?: "Query";
   accountTerritories: Array<AccountTerritory>;
@@ -1901,6 +2143,8 @@ export type Query = {
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   findMissingStakeholders: MissingStakeholderRecommendations;
+  getDealContactAssociations: Array<DealContactAssociation>;
+  getDealContactAssociationsWithDetails: Array<DealContactAssociationWithDetails>;
   getDealDocumentAttachments: Array<DealDocumentAttachment>;
   getDealDocuments: Array<DealDocumentAttachment>;
   getDealFolder?: Maybe<DriveFolder>;
@@ -1908,12 +2152,16 @@ export type Query = {
   getDriveFiles: DriveFileConnection;
   getDriveFolders: DriveFolderConnection;
   getEmailAnalytics?: Maybe<EmailAnalytics>;
+  getEmailContactSuggestions: Array<EmailContactSuggestion>;
   getEmailMessage?: Maybe<EmailMessage>;
   getEmailThread?: Maybe<EmailThread>;
   getEmailThreads: EmailThreadConnection;
+  getEmailThreadsEnhanced: EmailThreadConnection;
   getEntityDocuments: Array<Document>;
   getEntityEmails: Array<Email>;
   getEntityStickers: StickerConnection;
+  getNoteDocumentAttachments: Array<NoteDocumentAttachment>;
+  getPendingEmailContactSuggestions: Array<EmailContactSuggestion>;
   getPinnedStickers: StickerConnection;
   getRecentDriveFiles: DriveFileConnection;
   getRecentSharedDriveFiles: Array<DriveFile>;
@@ -1922,6 +2170,7 @@ export type Query = {
   getSharedDrives: Array<SharedDrive>;
   getSticker?: Maybe<SmartSticker>;
   getStickerCategories: Array<StickerCategory>;
+  getUserEmailFilterPreferences: UserEmailFilterPreferences;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   /** Get Google Drive configuration settings */
   googleDriveSettings: GoogleDriveConfig;
@@ -2039,6 +2288,14 @@ export type QueryFindMissingStakeholdersArgs = {
   organizationId: Scalars["ID"]["input"];
 };
 
+export type QueryGetDealContactAssociationsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
+export type QueryGetDealContactAssociationsWithDetailsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
 export type QueryGetDealDocumentAttachmentsArgs = {
   dealId: Scalars["ID"]["input"];
 };
@@ -2067,6 +2324,10 @@ export type QueryGetEmailAnalyticsArgs = {
   dealId: Scalars["String"]["input"];
 };
 
+export type QueryGetEmailContactSuggestionsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
 export type QueryGetEmailMessageArgs = {
   messageId: Scalars["String"]["input"];
 };
@@ -2077,6 +2338,10 @@ export type QueryGetEmailThreadArgs = {
 
 export type QueryGetEmailThreadsArgs = {
   filter: EmailThreadsFilterInput;
+};
+
+export type QueryGetEmailThreadsEnhancedArgs = {
+  filter: EnhancedEmailThreadsFilterInput;
 };
 
 export type QueryGetEntityDocumentsArgs = {
@@ -2096,6 +2361,14 @@ export type QueryGetEntityStickersArgs = {
   filters?: InputMaybe<StickerFilters>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   sortBy?: InputMaybe<StickerSortBy>;
+};
+
+export type QueryGetNoteDocumentAttachmentsArgs = {
+  noteId: Scalars["ID"]["input"];
+};
+
+export type QueryGetPendingEmailContactSuggestionsArgs = {
+  dealId: Scalars["String"]["input"];
 };
 
 export type QueryGetPinnedStickersArgs = {
@@ -2586,6 +2859,13 @@ export type UpdateConversationInput = {
   plan?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
+export type UpdateDealContactAssociationInput = {
+  customRoleLabel?: InputMaybe<Scalars["String"]["input"]>;
+  id: Scalars["String"]["input"];
+  includeInEmailFilter?: InputMaybe<Scalars["Boolean"]["input"]>;
+  role?: InputMaybe<ContactRoleType>;
+};
+
 export type UpdateRelationshipInsightInput = {
   reviewedAt?: InputMaybe<Scalars["String"]["input"]>;
   status: InsightStatus;
@@ -2627,6 +2907,12 @@ export type UpdateStickerInput = {
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   title?: InputMaybe<Scalars["String"]["input"]>;
   width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type UpdateUserEmailFilterPreferencesInput = {
+  autoDiscoverContacts?: InputMaybe<Scalars["Boolean"]["input"]>;
+  defaultContactScope?: InputMaybe<ContactScopeType>;
+  includeNewParticipants?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 /**
@@ -2702,6 +2988,18 @@ export type User = {
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
   roles: Array<Role>;
+};
+
+export type UserEmailFilterPreferences = {
+  __typename?: "UserEmailFilterPreferences";
+  autoDiscoverContacts: Scalars["Boolean"]["output"];
+  createdAt: Scalars["String"]["output"];
+  defaultContactScope: ContactScopeType;
+  id: Scalars["String"]["output"];
+  includeNewParticipants: Scalars["Boolean"]["output"];
+  savedFilterPresets: Array<EmailFilterPreset>;
+  updatedAt: Scalars["String"]["output"];
+  userId: Scalars["String"]["output"];
 };
 
 export type UserReminderPreferences = {
@@ -2951,16 +3249,22 @@ export type ResolversTypes = {
   AgentThoughtType: AgentThoughtType;
   AppSetting: ResolverTypeWrapper<AppSetting>;
   AttachDocumentInput: AttachDocumentInput;
+  AttachDocumentToNoteInput: AttachDocumentToNoteInput;
   AttachFileInput: AttachFileInput;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
   BudgetAuthorityLevel: BudgetAuthorityLevel;
+  BulkUpdateDealContactAssociationsInput: BulkUpdateDealContactAssociationsInput;
   CommunicationPreference: CommunicationPreference;
   ComposeEmailInput: ComposeEmailInput;
   ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
+  ContactRoleType: ContactRoleType;
+  ContactScopeType: ContactScopeType;
   ConvertedEntities: ResolverTypeWrapper<ConvertedEntities>;
   CreateActivityInput: CreateActivityInput;
+  CreateDealContactAssociationInput: CreateDealContactAssociationInput;
   CreateDealFolderInput: CreateDealFolderInput;
   CreateDocumentInput: CreateDocumentInput;
+  CreateEmailFilterPresetInput: CreateEmailFilterPresetInput;
   CreateEmailInput: CreateEmailInput;
   CreateNotificationInput: CreateNotificationInput;
   CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
@@ -2985,6 +3289,8 @@ export type ResolversTypes = {
   CustomFieldValueInput: CustomFieldValueInput;
   DateTime: ResolverTypeWrapper<Scalars["DateTime"]["output"]>;
   Deal: ResolverTypeWrapper<Deal>;
+  DealContactAssociation: ResolverTypeWrapper<DealContactAssociation>;
+  DealContactAssociationWithDetails: ResolverTypeWrapper<DealContactAssociationWithDetails>;
   DealDocumentAttachment: ResolverTypeWrapper<DealDocumentAttachment>;
   DealFolderInfo: ResolverTypeWrapper<DealFolderInfo>;
   DealHistoryEntry: ResolverTypeWrapper<DealHistoryEntry>;
@@ -3006,18 +3312,23 @@ export type ResolversTypes = {
   DrivePermissionRole: DrivePermissionRole;
   DrivePermissionType: DrivePermissionType;
   DriveSearchInput: DriveSearchInput;
+  DualAttachmentResponse: ResolverTypeWrapper<DualAttachmentResponse>;
   Email: ResolverTypeWrapper<Email>;
   EmailActivity: ResolverTypeWrapper<EmailActivity>;
   EmailActivityType: EmailActivityType;
   EmailAnalytics: ResolverTypeWrapper<EmailAnalytics>;
   EmailAttachment: ResolverTypeWrapper<EmailAttachment>;
   EmailAttachmentInput: EmailAttachmentInput;
+  EmailContactDiscoveryStatus: EmailContactDiscoveryStatus;
+  EmailContactSuggestion: ResolverTypeWrapper<EmailContactSuggestion>;
+  EmailFilterPreset: ResolverTypeWrapper<EmailFilterPreset>;
   EmailImportance: EmailImportance;
   EmailMessage: ResolverTypeWrapper<EmailMessage>;
   EmailThread: ResolverTypeWrapper<EmailThread>;
   EmailThreadConnection: ResolverTypeWrapper<EmailThreadConnection>;
   EmailThreadsFilterInput: EmailThreadsFilterInput;
   EngagementLevel: EngagementLevel;
+  EnhancedEmailThreadsFilterInput: EnhancedEmailThreadsFilterInput;
   EntityType: EntityType;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
   GoogleDriveConfig: ResolverTypeWrapper<GoogleDriveConfig>;
@@ -3041,6 +3352,7 @@ export type ResolversTypes = {
   LeadsStats: ResolverTypeWrapper<LeadsStats>;
   MissingStakeholderRecommendations: ResolverTypeWrapper<MissingStakeholderRecommendations>;
   Mutation: ResolverTypeWrapper<{}>;
+  NoteDocumentAttachment: ResolverTypeWrapper<NoteDocumentAttachment>;
   Notification: ResolverTypeWrapper<Notification>;
   NotificationFilterInput: NotificationFilterInput;
   NotificationPriority: NotificationPriority;
@@ -3059,6 +3371,7 @@ export type ResolversTypes = {
   PersonRelationshipType: PersonRelationshipType;
   PersonUpdateInput: PersonUpdateInput;
   PriorityLevel: PriorityLevel;
+  ProcessEmailContactSuggestionInput: ProcessEmailContactSuggestionInput;
   Query: ResolverTypeWrapper<{}>;
   RelationshipInsight: ResolverTypeWrapper<RelationshipInsight>;
   ReminderType: ReminderType;
@@ -3090,9 +3403,11 @@ export type ResolversTypes = {
   UpdateActivityInput: UpdateActivityInput;
   UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateConversationInput: UpdateConversationInput;
+  UpdateDealContactAssociationInput: UpdateDealContactAssociationInput;
   UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
   UpdateStickerInput: UpdateStickerInput;
+  UpdateUserEmailFilterPreferencesInput: UpdateUserEmailFilterPreferencesInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateUserReminderPreferencesInput: UpdateUserReminderPreferencesInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
@@ -3102,6 +3417,7 @@ export type ResolversTypes = {
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
   UploadFileInput: UploadFileInput;
   User: ResolverTypeWrapper<User>;
+  UserEmailFilterPreferences: ResolverTypeWrapper<UserEmailFilterPreferences>;
   UserReminderPreferences: ResolverTypeWrapper<UserReminderPreferences>;
   WFMProject: ResolverTypeWrapper<WfmProject>;
   WFMProjectType: ResolverTypeWrapper<WfmProjectType>;
@@ -3132,14 +3448,18 @@ export type ResolversParentTypes = {
   AgentThoughtInput: AgentThoughtInput;
   AppSetting: AppSetting;
   AttachDocumentInput: AttachDocumentInput;
+  AttachDocumentToNoteInput: AttachDocumentToNoteInput;
   AttachFileInput: AttachFileInput;
   Boolean: Scalars["Boolean"]["output"];
+  BulkUpdateDealContactAssociationsInput: BulkUpdateDealContactAssociationsInput;
   ComposeEmailInput: ComposeEmailInput;
   ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
   ConvertedEntities: ConvertedEntities;
   CreateActivityInput: CreateActivityInput;
+  CreateDealContactAssociationInput: CreateDealContactAssociationInput;
   CreateDealFolderInput: CreateDealFolderInput;
   CreateDocumentInput: CreateDocumentInput;
+  CreateEmailFilterPresetInput: CreateEmailFilterPresetInput;
   CreateEmailInput: CreateEmailInput;
   CreateNotificationInput: CreateNotificationInput;
   CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
@@ -3162,6 +3482,8 @@ export type ResolversParentTypes = {
   CustomFieldValueInput: CustomFieldValueInput;
   DateTime: Scalars["DateTime"]["output"];
   Deal: Deal;
+  DealContactAssociation: DealContactAssociation;
+  DealContactAssociationWithDetails: DealContactAssociationWithDetails;
   DealDocumentAttachment: DealDocumentAttachment;
   DealFolderInfo: DealFolderInfo;
   DealHistoryEntry: DealHistoryEntry;
@@ -3179,15 +3501,19 @@ export type ResolversParentTypes = {
   DriveFolderSubfolders: DriveFolderSubfolders;
   DrivePermissionInput: DrivePermissionInput;
   DriveSearchInput: DriveSearchInput;
+  DualAttachmentResponse: DualAttachmentResponse;
   Email: Email;
   EmailActivity: EmailActivity;
   EmailAnalytics: EmailAnalytics;
   EmailAttachment: EmailAttachment;
   EmailAttachmentInput: EmailAttachmentInput;
+  EmailContactSuggestion: EmailContactSuggestion;
+  EmailFilterPreset: EmailFilterPreset;
   EmailMessage: EmailMessage;
   EmailThread: EmailThread;
   EmailThreadConnection: EmailThreadConnection;
   EmailThreadsFilterInput: EmailThreadsFilterInput;
+  EnhancedEmailThreadsFilterInput: EnhancedEmailThreadsFilterInput;
   Float: Scalars["Float"]["output"];
   GoogleDriveConfig: GoogleDriveConfig;
   GoogleIntegrationStatus: GoogleIntegrationStatus;
@@ -3206,6 +3532,7 @@ export type ResolversParentTypes = {
   LeadsStats: LeadsStats;
   MissingStakeholderRecommendations: MissingStakeholderRecommendations;
   Mutation: {};
+  NoteDocumentAttachment: NoteDocumentAttachment;
   Notification: Notification;
   NotificationFilterInput: NotificationFilterInput;
   NotificationSummary: NotificationSummary;
@@ -3219,6 +3546,7 @@ export type ResolversParentTypes = {
   PersonOrganizationalRole: PersonOrganizationalRole;
   PersonRelationship: PersonRelationship;
   PersonUpdateInput: PersonUpdateInput;
+  ProcessEmailContactSuggestionInput: ProcessEmailContactSuggestionInput;
   Query: {};
   RelationshipInsight: RelationshipInsight;
   Role: Role;
@@ -3242,9 +3570,11 @@ export type ResolversParentTypes = {
   UpdateActivityInput: UpdateActivityInput;
   UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateConversationInput: UpdateConversationInput;
+  UpdateDealContactAssociationInput: UpdateDealContactAssociationInput;
   UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
   UpdateStickerInput: UpdateStickerInput;
+  UpdateUserEmailFilterPreferencesInput: UpdateUserEmailFilterPreferencesInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateUserReminderPreferencesInput: UpdateUserReminderPreferencesInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
@@ -3254,6 +3584,7 @@ export type ResolversParentTypes = {
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
   UploadFileInput: UploadFileInput;
   User: User;
+  UserEmailFilterPreferences: UserEmailFilterPreferences;
   UserReminderPreferences: UserReminderPreferences;
   WFMProject: WfmProject;
   WFMProjectType: WfmProjectType;
@@ -3650,6 +3981,11 @@ export type DealResolvers<
     ParentType,
     ContextType
   >;
+  contactAssociations?: Resolver<
+    Array<ResolversTypes["DealContactAssociation"]>,
+    ParentType,
+    ContextType
+  >;
   createdBy?: Resolver<ResolversTypes["User"], ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   currentWfmStatus?: Resolver<
@@ -3669,6 +4005,11 @@ export type DealResolvers<
   >;
   deal_specific_probability?: Resolver<
     Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  emailContactSuggestions?: Resolver<
+    Array<ResolversTypes["EmailContactSuggestion"]>,
     ParentType,
     ContextType
   >;
@@ -3715,6 +4056,71 @@ export type DealResolvers<
     ParentType,
     ContextType
   >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DealContactAssociationResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DealContactAssociation"] = ResolversParentTypes["DealContactAssociation"],
+> = {
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdByUserId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  customRoleLabel?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  dealId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  includeInEmailFilter?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
+  personId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  role?: Resolver<ResolversTypes["ContactRoleType"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DealContactAssociationWithDetailsResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DealContactAssociationWithDetails"] = ResolversParentTypes["DealContactAssociationWithDetails"],
+> = {
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  customRoleLabel?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  dealId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  includeInEmailFilter?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  personEmail?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  personFirstName?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  personId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  personLastName?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  role?: Resolver<ResolversTypes["ContactRoleType"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4016,6 +4422,24 @@ export type DriveFolderSubfoldersResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type DualAttachmentResponseResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DualAttachmentResponse"] = ResolversParentTypes["DualAttachmentResponse"],
+> = {
+  dealAttachment?: Resolver<
+    ResolversTypes["DealDocumentAttachment"],
+    ParentType,
+    ContextType
+  >;
+  noteAttachment?: Resolver<
+    ResolversTypes["NoteDocumentAttachment"],
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type EmailResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -4130,6 +4554,119 @@ export type EmailAttachmentResolvers<
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   mimeType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   size?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EmailContactSuggestionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["EmailContactSuggestion"] = ResolversParentTypes["EmailContactSuggestion"],
+> = {
+  confidenceScore?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  dealId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  discoveredName?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  emailAddress?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  emailCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  existingPerson?: Resolver<
+    Maybe<ResolversTypes["Person"]>,
+    ParentType,
+    ContextType
+  >;
+  existingPersonId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  firstSeenThreadId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  isExistingContact?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  processedAt?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  processedByUserId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  status?: Resolver<
+    ResolversTypes["EmailContactDiscoveryStatus"],
+    ParentType,
+    ContextType
+  >;
+  suggestedRole?: Resolver<
+    ResolversTypes["ContactRoleType"],
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type EmailFilterPresetResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["EmailFilterPreset"] = ResolversParentTypes["EmailFilterPreset"],
+> = {
+  contactScope?: Resolver<
+    ResolversTypes["ContactScopeType"],
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  dateFrom?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  dateTo?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  hasAttachments?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  includeNewParticipants?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  isDefault?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  isUnread?: Resolver<
+    Maybe<ResolversTypes["Boolean"]>,
+    ParentType,
+    ContextType
+  >;
+  keywords?: Resolver<Array<ResolversTypes["String"]>, ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  selectedContactIds?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  selectedRoles?: Resolver<
+    Array<ResolversTypes["ContactRoleType"]>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4585,11 +5122,29 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationAttachDocumentToDealArgs, "input">
   >;
+  attachDocumentToNoteAndDeal?: Resolver<
+    ResolversTypes["DualAttachmentResponse"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAttachDocumentToNoteAndDealArgs, "input">
+  >;
   attachFileToDeal?: Resolver<
     ResolversTypes["DealDocumentAttachment"],
     ParentType,
     ContextType,
     RequireFields<MutationAttachFileToDealArgs, "input">
+  >;
+  bulkProcessEmailContactSuggestions?: Resolver<
+    Array<ResolversTypes["EmailContactSuggestion"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationBulkProcessEmailContactSuggestionsArgs, "inputs">
+  >;
+  bulkUpdateDealContactAssociations?: Resolver<
+    Array<ResolversTypes["DealContactAssociation"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationBulkUpdateDealContactAssociationsArgs, "input">
   >;
   cancelActivityReminder?: Resolver<
     ResolversTypes["Boolean"],
@@ -4645,6 +5200,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateDealArgs, "input">
   >;
+  createDealContactAssociation?: Resolver<
+    ResolversTypes["DealContactAssociation"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateDealContactAssociationArgs, "input">
+  >;
   createDealFolder?: Resolver<
     ResolversTypes["DriveFolderStructure"],
     ParentType,
@@ -4662,6 +5223,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateEmailArgs, "input">
+  >;
+  createEmailFilterPreset?: Resolver<
+    ResolversTypes["EmailFilterPreset"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateEmailFilterPresetArgs, "input">
   >;
   createLead?: Resolver<
     ResolversTypes["Lead"],
@@ -4783,11 +5350,23 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteDealArgs, "id">
   >;
+  deleteDealContactAssociation?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteDealContactAssociationArgs, "id">
+  >;
   deleteDriveFile?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
     ContextType,
     RequireFields<MutationDeleteDriveFileArgs, "fileId">
+  >;
+  deleteEmailFilterPreset?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteEmailFilterPresetArgs, "id">
   >;
   deleteLead?: Resolver<
     Maybe<ResolversTypes["Boolean"]>,
@@ -4873,6 +5452,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDetachFileFromDealArgs, "attachmentId">
   >;
+  discoverEmailContacts?: Resolver<
+    Array<ResolversTypes["EmailContactSuggestion"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationDiscoverEmailContactsArgs, "dealId">
+  >;
   dismissRelationshipInsight?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -4926,6 +5511,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationMoveStickersBulkArgs, "moves">
   >;
+  processEmailContactSuggestion?: Resolver<
+    ResolversTypes["EmailContactSuggestion"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationProcessEmailContactSuggestionArgs, "input">
+  >;
   reactivateCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
     ParentType,
@@ -4952,6 +5543,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationRemoveDocumentAttachmentArgs, "attachmentId">
+  >;
+  removeNoteDocumentAttachment?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRemoveNoteDocumentAttachmentArgs, "attachmentId">
   >;
   removeUserRole?: Resolver<
     ResolversTypes["User"],
@@ -5027,6 +5624,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateDealArgs, "id" | "input">
   >;
+  updateDealContactAssociation?: Resolver<
+    ResolversTypes["DealContactAssociation"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateDealContactAssociationArgs, "input">
+  >;
   updateDealWFMProgress?: Resolver<
     ResolversTypes["Deal"],
     ParentType,
@@ -5044,6 +5647,12 @@ export type MutationResolvers<
       MutationUpdateDocumentAttachmentCategoryArgs,
       "attachmentId" | "category"
     >
+  >;
+  updateEmailFilterPreset?: Resolver<
+    ResolversTypes["EmailFilterPreset"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateEmailFilterPresetArgs, "id" | "input">
   >;
   updateLead?: Resolver<
     Maybe<ResolversTypes["Lead"]>,
@@ -5117,6 +5726,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateTerritoryArgs, "id" | "input">
   >;
+  updateUserEmailFilterPreferences?: Resolver<
+    ResolversTypes["UserEmailFilterPreferences"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateUserEmailFilterPreferencesArgs, "input">
+  >;
   updateUserProfile?: Resolver<
     Maybe<ResolversTypes["User"]>,
     ParentType,
@@ -5177,6 +5792,23 @@ export type MutationResolvers<
       "entityId" | "entityType" | "fileContent" | "fileName" | "mimeType"
     >
   >;
+};
+
+export type NoteDocumentAttachmentResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["NoteDocumentAttachment"] = ResolversParentTypes["NoteDocumentAttachment"],
+> = {
+  attachedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  attachedBy?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  fileName?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fileSize?: Resolver<Maybe<ResolversTypes["Int"]>, ParentType, ContextType>;
+  fileUrl?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  googleFileId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  mimeType?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  noteId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type NotificationResolvers<
@@ -5323,6 +5955,11 @@ export type PersonResolvers<
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   customFieldValues?: Resolver<
     Array<ResolversTypes["CustomFieldValue"]>,
+    ParentType,
+    ContextType
+  >;
+  dealAssociations?: Resolver<
+    Array<ResolversTypes["DealContactAssociation"]>,
     ParentType,
     ContextType
   >;
@@ -5584,6 +6221,18 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryFindMissingStakeholdersArgs, "organizationId">
   >;
+  getDealContactAssociations?: Resolver<
+    Array<ResolversTypes["DealContactAssociation"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetDealContactAssociationsArgs, "dealId">
+  >;
+  getDealContactAssociationsWithDetails?: Resolver<
+    Array<ResolversTypes["DealContactAssociationWithDetails"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetDealContactAssociationsWithDetailsArgs, "dealId">
+  >;
   getDealDocumentAttachments?: Resolver<
     Array<ResolversTypes["DealDocumentAttachment"]>,
     ParentType,
@@ -5626,6 +6275,12 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryGetEmailAnalyticsArgs, "dealId">
   >;
+  getEmailContactSuggestions?: Resolver<
+    Array<ResolversTypes["EmailContactSuggestion"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetEmailContactSuggestionsArgs, "dealId">
+  >;
   getEmailMessage?: Resolver<
     Maybe<ResolversTypes["EmailMessage"]>,
     ParentType,
@@ -5643,6 +6298,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryGetEmailThreadsArgs, "filter">
+  >;
+  getEmailThreadsEnhanced?: Resolver<
+    ResolversTypes["EmailThreadConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetEmailThreadsEnhancedArgs, "filter">
   >;
   getEntityDocuments?: Resolver<
     Array<ResolversTypes["Document"]>,
@@ -5664,6 +6325,18 @@ export type QueryResolvers<
       QueryGetEntityStickersArgs,
       "entityId" | "entityType" | "first"
     >
+  >;
+  getNoteDocumentAttachments?: Resolver<
+    Array<ResolversTypes["NoteDocumentAttachment"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetNoteDocumentAttachmentsArgs, "noteId">
+  >;
+  getPendingEmailContactSuggestions?: Resolver<
+    Array<ResolversTypes["EmailContactSuggestion"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryGetPendingEmailContactSuggestionsArgs, "dealId">
   >;
   getPinnedStickers?: Resolver<
     ResolversTypes["StickerConnection"],
@@ -5708,6 +6381,11 @@ export type QueryResolvers<
   >;
   getStickerCategories?: Resolver<
     Array<ResolversTypes["StickerCategory"]>,
+    ParentType,
+    ContextType
+  >;
+  getUserEmailFilterPreferences?: Resolver<
+    ResolversTypes["UserEmailFilterPreferences"],
     ParentType,
     ContextType
   >;
@@ -6498,6 +7176,38 @@ export type UserResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type UserEmailFilterPreferencesResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["UserEmailFilterPreferences"] = ResolversParentTypes["UserEmailFilterPreferences"],
+> = {
+  autoDiscoverContacts?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  defaultContactScope?: Resolver<
+    ResolversTypes["ContactScopeType"],
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  includeNewParticipants?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  savedFilterPresets?: Resolver<
+    Array<ResolversTypes["EmailFilterPreset"]>,
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type UserReminderPreferencesResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -6792,6 +7502,8 @@ export type Resolvers<ContextType = GraphQLContext> = {
   CustomFieldValue?: CustomFieldValueResolvers<ContextType>;
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
+  DealContactAssociation?: DealContactAssociationResolvers<ContextType>;
+  DealContactAssociationWithDetails?: DealContactAssociationWithDetailsResolvers<ContextType>;
   DealDocumentAttachment?: DealDocumentAttachmentResolvers<ContextType>;
   DealFolderInfo?: DealFolderInfoResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
@@ -6804,10 +7516,13 @@ export type Resolvers<ContextType = GraphQLContext> = {
   DriveFolderConnection?: DriveFolderConnectionResolvers<ContextType>;
   DriveFolderStructure?: DriveFolderStructureResolvers<ContextType>;
   DriveFolderSubfolders?: DriveFolderSubfoldersResolvers<ContextType>;
+  DualAttachmentResponse?: DualAttachmentResponseResolvers<ContextType>;
   Email?: EmailResolvers<ContextType>;
   EmailActivity?: EmailActivityResolvers<ContextType>;
   EmailAnalytics?: EmailAnalyticsResolvers<ContextType>;
   EmailAttachment?: EmailAttachmentResolvers<ContextType>;
+  EmailContactSuggestion?: EmailContactSuggestionResolvers<ContextType>;
+  EmailFilterPreset?: EmailFilterPresetResolvers<ContextType>;
   EmailMessage?: EmailMessageResolvers<ContextType>;
   EmailThread?: EmailThreadResolvers<ContextType>;
   EmailThreadConnection?: EmailThreadConnectionResolvers<ContextType>;
@@ -6821,6 +7536,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   LeadsStats?: LeadsStatsResolvers<ContextType>;
   MissingStakeholderRecommendations?: MissingStakeholderRecommendationsResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
+  NoteDocumentAttachment?: NoteDocumentAttachmentResolvers<ContextType>;
   Notification?: NotificationResolvers<ContextType>;
   NotificationSummary?: NotificationSummaryResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
@@ -6845,6 +7561,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Territory?: TerritoryResolvers<ContextType>;
   ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
+  UserEmailFilterPreferences?: UserEmailFilterPreferencesResolvers<ContextType>;
   UserReminderPreferences?: UserReminderPreferencesResolvers<ContextType>;
   WFMProject?: WfmProjectResolvers<ContextType>;
   WFMProjectType?: WfmProjectTypeResolvers<ContextType>;

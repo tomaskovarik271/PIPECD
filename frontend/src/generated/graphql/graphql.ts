@@ -222,6 +222,18 @@ export type AttachDocumentInput = {
   sharedDriveId?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type AttachDocumentToNoteInput = {
+  category?: InputMaybe<DocumentCategory>;
+  dealId: Scalars["ID"]["input"];
+  fileName: Scalars["String"]["input"];
+  fileSize?: InputMaybe<Scalars["Int"]["input"]>;
+  fileUrl: Scalars["String"]["input"];
+  googleFileId: Scalars["String"]["input"];
+  mimeType?: InputMaybe<Scalars["String"]["input"]>;
+  noteId: Scalars["ID"]["input"];
+  sharedDriveId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type AttachFileInput = {
   category?: InputMaybe<DocumentCategory>;
   dealId: Scalars["ID"]["input"];
@@ -235,6 +247,11 @@ export enum BudgetAuthorityLevel {
   None = "NONE",
   Unlimited = "UNLIMITED",
 }
+
+export type BulkUpdateDealContactAssociationsInput = {
+  associations: Array<UpdateDealContactAssociationInput>;
+  dealId: Scalars["String"]["input"];
+};
 
 export enum CommunicationPreference {
   Email = "EMAIL",
@@ -262,6 +279,22 @@ export type ConnectGoogleIntegrationInput = {
   tokenData: GoogleTokenInput;
 };
 
+export enum ContactRoleType {
+  DecisionMaker = "DECISION_MAKER",
+  Influencer = "INFLUENCER",
+  Legal = "LEGAL",
+  Other = "OTHER",
+  Primary = "PRIMARY",
+  Technical = "TECHNICAL",
+}
+
+export enum ContactScopeType {
+  All = "ALL",
+  Custom = "CUSTOM",
+  Primary = "PRIMARY",
+  SelectedRoles = "SELECTED_ROLES",
+}
+
 export type ConvertedEntities = {
   __typename?: "ConvertedEntities";
   deal?: Maybe<Deal>;
@@ -282,6 +315,14 @@ export type CreateActivityInput = {
   type: ActivityType;
 };
 
+export type CreateDealContactAssociationInput = {
+  customRoleLabel?: InputMaybe<Scalars["String"]["input"]>;
+  dealId: Scalars["String"]["input"];
+  includeInEmailFilter?: InputMaybe<Scalars["Boolean"]["input"]>;
+  personId: Scalars["String"]["input"];
+  role: ContactRoleType;
+};
+
 export type CreateDealFolderInput = {
   dealId: Scalars["ID"]["input"];
   dealName: Scalars["String"]["input"];
@@ -296,6 +337,21 @@ export type CreateDocumentInput = {
   fileSizeBytes?: InputMaybe<Scalars["Int"]["input"]>;
   googleDriveFileId?: InputMaybe<Scalars["String"]["input"]>;
   mimeType?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type CreateEmailFilterPresetInput = {
+  contactScope: ContactScopeType;
+  dateFrom?: InputMaybe<Scalars["String"]["input"]>;
+  dateTo?: InputMaybe<Scalars["String"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  hasAttachments?: InputMaybe<Scalars["Boolean"]["input"]>;
+  includeNewParticipants?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isDefault?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isUnread?: InputMaybe<Scalars["Boolean"]["input"]>;
+  keywords?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  name: Scalars["String"]["input"];
+  selectedContactIds?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  selectedRoles?: InputMaybe<Array<ContactRoleType>>;
 };
 
 export type CreateEmailInput = {
@@ -541,12 +597,14 @@ export type Deal = {
   amount?: Maybe<Scalars["Float"]["output"]>;
   assignedToUser?: Maybe<User>;
   assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
+  contactAssociations: Array<DealContactAssociation>;
   createdBy: User;
   created_at: Scalars["DateTime"]["output"];
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
+  emailContactSuggestions: Array<EmailContactSuggestion>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
   history?: Maybe<Array<DealHistoryEntry>>;
   id: Scalars["ID"]["output"];
@@ -566,6 +624,35 @@ export type Deal = {
 export type DealHistoryArgs = {
   limit?: InputMaybe<Scalars["Int"]["input"]>;
   offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type DealContactAssociation = {
+  __typename?: "DealContactAssociation";
+  createdAt: Scalars["String"]["output"];
+  createdByUserId: Scalars["String"]["output"];
+  customRoleLabel?: Maybe<Scalars["String"]["output"]>;
+  dealId: Scalars["String"]["output"];
+  id: Scalars["String"]["output"];
+  includeInEmailFilter: Scalars["Boolean"]["output"];
+  person?: Maybe<Person>;
+  personId: Scalars["String"]["output"];
+  role: ContactRoleType;
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type DealContactAssociationWithDetails = {
+  __typename?: "DealContactAssociationWithDetails";
+  createdAt: Scalars["String"]["output"];
+  customRoleLabel?: Maybe<Scalars["String"]["output"]>;
+  dealId: Scalars["String"]["output"];
+  id: Scalars["String"]["output"];
+  includeInEmailFilter: Scalars["Boolean"]["output"];
+  personEmail?: Maybe<Scalars["String"]["output"]>;
+  personFirstName?: Maybe<Scalars["String"]["output"]>;
+  personId: Scalars["String"]["output"];
+  personLastName?: Maybe<Scalars["String"]["output"]>;
+  role: ContactRoleType;
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type DealDocumentAttachment = {
@@ -767,6 +854,12 @@ export type DriveSearchInput = {
   query?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type DualAttachmentResponse = {
+  __typename?: "DualAttachmentResponse";
+  dealAttachment: DealDocumentAttachment;
+  noteAttachment: NoteDocumentAttachment;
+};
+
 export type Email = {
   __typename?: "Email";
   bccEmails: Array<Scalars["String"]["output"]>;
@@ -835,6 +928,50 @@ export type EmailAttachmentInput = {
   mimeType: Scalars["String"]["input"];
 };
 
+export enum EmailContactDiscoveryStatus {
+  Accepted = "ACCEPTED",
+  AutoAssociated = "AUTO_ASSOCIATED",
+  Pending = "PENDING",
+  Rejected = "REJECTED",
+}
+
+export type EmailContactSuggestion = {
+  __typename?: "EmailContactSuggestion";
+  confidenceScore?: Maybe<Scalars["Float"]["output"]>;
+  createdAt: Scalars["String"]["output"];
+  dealId: Scalars["String"]["output"];
+  discoveredName?: Maybe<Scalars["String"]["output"]>;
+  emailAddress: Scalars["String"]["output"];
+  emailCount: Scalars["Int"]["output"];
+  existingPerson?: Maybe<Person>;
+  existingPersonId?: Maybe<Scalars["String"]["output"]>;
+  firstSeenThreadId?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["String"]["output"];
+  isExistingContact: Scalars["Boolean"]["output"];
+  processedAt?: Maybe<Scalars["String"]["output"]>;
+  processedByUserId?: Maybe<Scalars["String"]["output"]>;
+  status: EmailContactDiscoveryStatus;
+  suggestedRole: ContactRoleType;
+};
+
+export type EmailFilterPreset = {
+  __typename?: "EmailFilterPreset";
+  contactScope: ContactScopeType;
+  createdAt: Scalars["String"]["output"];
+  dateFrom?: Maybe<Scalars["String"]["output"]>;
+  dateTo?: Maybe<Scalars["String"]["output"]>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  hasAttachments?: Maybe<Scalars["Boolean"]["output"]>;
+  id: Scalars["String"]["output"];
+  includeNewParticipants: Scalars["Boolean"]["output"];
+  isDefault: Scalars["Boolean"]["output"];
+  isUnread?: Maybe<Scalars["Boolean"]["output"]>;
+  keywords: Array<Scalars["String"]["output"]>;
+  name: Scalars["String"]["output"];
+  selectedContactIds: Array<Scalars["String"]["output"]>;
+  selectedRoles: Array<ContactRoleType>;
+};
+
 export enum EmailImportance {
   High = "HIGH",
   Low = "LOW",
@@ -901,6 +1038,24 @@ export enum EngagementLevel {
   Skeptic = "SKEPTIC",
   Supporter = "SUPPORTER",
 }
+
+export type EnhancedEmailThreadsFilterInput = {
+  contactEmail?: InputMaybe<Scalars["String"]["input"]>;
+  contactScope: ContactScopeType;
+  dateFrom?: InputMaybe<Scalars["String"]["input"]>;
+  dateTo?: InputMaybe<Scalars["String"]["input"]>;
+  dealId?: InputMaybe<Scalars["String"]["input"]>;
+  emailDirection?: InputMaybe<Scalars["String"]["input"]>;
+  hasAttachments?: InputMaybe<Scalars["Boolean"]["input"]>;
+  hasReplies?: InputMaybe<Scalars["Boolean"]["input"]>;
+  includeNewParticipants?: InputMaybe<Scalars["Boolean"]["input"]>;
+  isUnread?: InputMaybe<Scalars["Boolean"]["input"]>;
+  keywords?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  pageToken?: InputMaybe<Scalars["String"]["input"]>;
+  selectedContactIds?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  selectedRoles?: InputMaybe<Array<ContactRoleType>>;
+};
 
 export enum EntityType {
   Deal = "DEAL",
@@ -1124,7 +1279,10 @@ export type Mutation = {
   assignAccountToTerritory: AccountTerritory;
   assignUserRole: User;
   attachDocumentToDeal: DealDocumentAttachment;
+  attachDocumentToNoteAndDeal: DualAttachmentResponse;
   attachFileToDeal: DealDocumentAttachment;
+  bulkProcessEmailContactSuggestions: Array<EmailContactSuggestion>;
+  bulkUpdateDealContactAssociations: Array<DealContactAssociation>;
   cancelActivityReminder: Scalars["Boolean"]["output"];
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
@@ -1134,9 +1292,11 @@ export type Mutation = {
   createAgentConversation: AgentConversation;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
+  createDealContactAssociation: DealContactAssociation;
   createDealFolder: DriveFolderStructure;
   createDocument: Document;
   createEmail: Email;
+  createEmailFilterPreset: EmailFilterPreset;
   createLead: Lead;
   createNotification: Notification;
   createOrganization: Organization;
@@ -1157,7 +1317,9 @@ export type Mutation = {
   deleteActivity: Scalars["ID"]["output"];
   deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteDealContactAssociation: Scalars["Boolean"]["output"];
   deleteDriveFile: Scalars["Boolean"]["output"];
+  deleteEmailFilterPreset: Scalars["Boolean"]["output"];
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteNotification: Scalars["Boolean"]["output"];
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
@@ -1172,6 +1334,7 @@ export type Mutation = {
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
   detachFileFromDeal: Scalars["Boolean"]["output"];
+  discoverEmailContacts: Array<EmailContactSuggestion>;
   dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
   linkEmailToDeal: Scalars["Boolean"]["output"];
@@ -1181,10 +1344,12 @@ export type Mutation = {
   markThreadAsUnread: Scalars["Boolean"]["output"];
   moveDriveFile: DriveFile;
   moveStickersBulk: Array<SmartSticker>;
+  processEmailContactSuggestion: EmailContactSuggestion;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
   removeAccountFromTerritory: Scalars["Boolean"]["output"];
   removeDocumentAttachment: Scalars["Boolean"]["output"];
+  removeNoteDocumentAttachment: Scalars["Boolean"]["output"];
   removeUserRole: User;
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
   scheduleActivityReminder: ActivityReminder;
@@ -1198,8 +1363,10 @@ export type Mutation = {
   updateAppSetting: AppSetting;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
+  updateDealContactAssociation: DealContactAssociation;
   updateDealWFMProgress: Deal;
   updateDocumentAttachmentCategory: DealDocumentAttachment;
+  updateEmailFilterPreset: EmailFilterPreset;
   updateLead?: Maybe<Lead>;
   updateLeadWFMProgress: Lead;
   updateMyReminderPreferences: UserReminderPreferences;
@@ -1211,6 +1378,7 @@ export type Mutation = {
   updateSticker: SmartSticker;
   updateStickerTags: SmartSticker;
   updateTerritory: Territory;
+  updateUserEmailFilterPreferences: UserEmailFilterPreferences;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -1248,8 +1416,20 @@ export type MutationAttachDocumentToDealArgs = {
   input: AttachDocumentInput;
 };
 
+export type MutationAttachDocumentToNoteAndDealArgs = {
+  input: AttachDocumentToNoteInput;
+};
+
 export type MutationAttachFileToDealArgs = {
   input: AttachFileInput;
+};
+
+export type MutationBulkProcessEmailContactSuggestionsArgs = {
+  inputs: Array<ProcessEmailContactSuggestionInput>;
+};
+
+export type MutationBulkUpdateDealContactAssociationsArgs = {
+  input: BulkUpdateDealContactAssociationsInput;
 };
 
 export type MutationCancelActivityReminderArgs = {
@@ -1291,6 +1471,10 @@ export type MutationCreateDealArgs = {
   input: DealInput;
 };
 
+export type MutationCreateDealContactAssociationArgs = {
+  input: CreateDealContactAssociationInput;
+};
+
 export type MutationCreateDealFolderArgs = {
   input: CreateDealFolderInput;
 };
@@ -1301,6 +1485,10 @@ export type MutationCreateDocumentArgs = {
 
 export type MutationCreateEmailArgs = {
   input: CreateEmailInput;
+};
+
+export type MutationCreateEmailFilterPresetArgs = {
+  input: CreateEmailFilterPresetInput;
 };
 
 export type MutationCreateLeadArgs = {
@@ -1383,8 +1571,16 @@ export type MutationDeleteDealArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteDealContactAssociationArgs = {
+  id: Scalars["String"]["input"];
+};
+
 export type MutationDeleteDriveFileArgs = {
   fileId: Scalars["String"]["input"];
+};
+
+export type MutationDeleteEmailFilterPresetArgs = {
+  id: Scalars["String"]["input"];
 };
 
 export type MutationDeleteLeadArgs = {
@@ -1443,6 +1639,10 @@ export type MutationDetachFileFromDealArgs = {
   attachmentId: Scalars["ID"]["input"];
 };
 
+export type MutationDiscoverEmailContactsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
 export type MutationDismissRelationshipInsightArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1479,6 +1679,10 @@ export type MutationMoveStickersBulkArgs = {
   moves: Array<StickerMoveInput>;
 };
 
+export type MutationProcessEmailContactSuggestionArgs = {
+  input: ProcessEmailContactSuggestionInput;
+};
+
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1493,6 +1697,10 @@ export type MutationRemoveAccountFromTerritoryArgs = {
 };
 
 export type MutationRemoveDocumentAttachmentArgs = {
+  attachmentId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveNoteDocumentAttachmentArgs = {
   attachmentId: Scalars["ID"]["input"];
 };
 
@@ -1548,6 +1756,10 @@ export type MutationUpdateDealArgs = {
   input: DealUpdateInput;
 };
 
+export type MutationUpdateDealContactAssociationArgs = {
+  input: UpdateDealContactAssociationInput;
+};
+
 export type MutationUpdateDealWfmProgressArgs = {
   dealId: Scalars["ID"]["input"];
   targetWfmWorkflowStepId: Scalars["ID"]["input"];
@@ -1556,6 +1768,11 @@ export type MutationUpdateDealWfmProgressArgs = {
 export type MutationUpdateDocumentAttachmentCategoryArgs = {
   attachmentId: Scalars["ID"]["input"];
   category: DocumentCategory;
+};
+
+export type MutationUpdateEmailFilterPresetArgs = {
+  id: Scalars["String"]["input"];
+  input: CreateEmailFilterPresetInput;
 };
 
 export type MutationUpdateLeadArgs = {
@@ -1612,6 +1829,10 @@ export type MutationUpdateTerritoryArgs = {
   input: CreateTerritoryInput;
 };
 
+export type MutationUpdateUserEmailFilterPreferencesArgs = {
+  input: UpdateUserEmailFilterPreferencesInput;
+};
+
 export type MutationUpdateUserProfileArgs = {
   input: UpdateUserProfileInput;
 };
@@ -1656,6 +1877,19 @@ export type MutationUploadToGoogleDriveArgs = {
   fileContent: Scalars["String"]["input"];
   fileName: Scalars["String"]["input"];
   mimeType: Scalars["String"]["input"];
+};
+
+export type NoteDocumentAttachment = {
+  __typename?: "NoteDocumentAttachment";
+  attachedAt: Scalars["String"]["output"];
+  attachedBy: Scalars["ID"]["output"];
+  fileName: Scalars["String"]["output"];
+  fileSize?: Maybe<Scalars["Int"]["output"]>;
+  fileUrl: Scalars["String"]["output"];
+  googleFileId: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  mimeType?: Maybe<Scalars["String"]["output"]>;
+  noteId: Scalars["ID"]["output"];
 };
 
 export type Notification = {
@@ -1773,6 +2007,7 @@ export type Person = {
   activities: Array<Activity>;
   created_at: Scalars["DateTime"]["output"];
   customFieldValues: Array<CustomFieldValue>;
+  dealAssociations: Array<DealContactAssociation>;
   deals?: Maybe<Array<Deal>>;
   email?: Maybe<Scalars["String"]["output"]>;
   first_name?: Maybe<Scalars["String"]["output"]>;
@@ -1868,6 +2103,13 @@ export enum PriorityLevel {
   Medium = "MEDIUM",
 }
 
+export type ProcessEmailContactSuggestionInput = {
+  action: Scalars["String"]["input"];
+  associationRole?: InputMaybe<ContactRoleType>;
+  customRoleLabel?: InputMaybe<Scalars["String"]["input"]>;
+  id: Scalars["String"]["input"];
+};
+
 export type Query = {
   __typename?: "Query";
   accountTerritories: Array<AccountTerritory>;
@@ -1892,6 +2134,8 @@ export type Query = {
   deals: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   findMissingStakeholders: MissingStakeholderRecommendations;
+  getDealContactAssociations: Array<DealContactAssociation>;
+  getDealContactAssociationsWithDetails: Array<DealContactAssociationWithDetails>;
   getDealDocumentAttachments: Array<DealDocumentAttachment>;
   getDealDocuments: Array<DealDocumentAttachment>;
   getDealFolder?: Maybe<DriveFolder>;
@@ -1899,12 +2143,16 @@ export type Query = {
   getDriveFiles: DriveFileConnection;
   getDriveFolders: DriveFolderConnection;
   getEmailAnalytics?: Maybe<EmailAnalytics>;
+  getEmailContactSuggestions: Array<EmailContactSuggestion>;
   getEmailMessage?: Maybe<EmailMessage>;
   getEmailThread?: Maybe<EmailThread>;
   getEmailThreads: EmailThreadConnection;
+  getEmailThreadsEnhanced: EmailThreadConnection;
   getEntityDocuments: Array<Document>;
   getEntityEmails: Array<Email>;
   getEntityStickers: StickerConnection;
+  getNoteDocumentAttachments: Array<NoteDocumentAttachment>;
+  getPendingEmailContactSuggestions: Array<EmailContactSuggestion>;
   getPinnedStickers: StickerConnection;
   getRecentDriveFiles: DriveFileConnection;
   getRecentSharedDriveFiles: Array<DriveFile>;
@@ -1913,6 +2161,7 @@ export type Query = {
   getSharedDrives: Array<SharedDrive>;
   getSticker?: Maybe<SmartSticker>;
   getStickerCategories: Array<StickerCategory>;
+  getUserEmailFilterPreferences: UserEmailFilterPreferences;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
   /** Get Google Drive configuration settings */
   googleDriveSettings: GoogleDriveConfig;
@@ -2030,6 +2279,14 @@ export type QueryFindMissingStakeholdersArgs = {
   organizationId: Scalars["ID"]["input"];
 };
 
+export type QueryGetDealContactAssociationsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
+export type QueryGetDealContactAssociationsWithDetailsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
 export type QueryGetDealDocumentAttachmentsArgs = {
   dealId: Scalars["ID"]["input"];
 };
@@ -2058,6 +2315,10 @@ export type QueryGetEmailAnalyticsArgs = {
   dealId: Scalars["String"]["input"];
 };
 
+export type QueryGetEmailContactSuggestionsArgs = {
+  dealId: Scalars["String"]["input"];
+};
+
 export type QueryGetEmailMessageArgs = {
   messageId: Scalars["String"]["input"];
 };
@@ -2068,6 +2329,10 @@ export type QueryGetEmailThreadArgs = {
 
 export type QueryGetEmailThreadsArgs = {
   filter: EmailThreadsFilterInput;
+};
+
+export type QueryGetEmailThreadsEnhancedArgs = {
+  filter: EnhancedEmailThreadsFilterInput;
 };
 
 export type QueryGetEntityDocumentsArgs = {
@@ -2087,6 +2352,14 @@ export type QueryGetEntityStickersArgs = {
   filters?: InputMaybe<StickerFilters>;
   first?: InputMaybe<Scalars["Int"]["input"]>;
   sortBy?: InputMaybe<StickerSortBy>;
+};
+
+export type QueryGetNoteDocumentAttachmentsArgs = {
+  noteId: Scalars["ID"]["input"];
+};
+
+export type QueryGetPendingEmailContactSuggestionsArgs = {
+  dealId: Scalars["String"]["input"];
 };
 
 export type QueryGetPinnedStickersArgs = {
@@ -2577,6 +2850,13 @@ export type UpdateConversationInput = {
   plan?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
+export type UpdateDealContactAssociationInput = {
+  customRoleLabel?: InputMaybe<Scalars["String"]["input"]>;
+  id: Scalars["String"]["input"];
+  includeInEmailFilter?: InputMaybe<Scalars["Boolean"]["input"]>;
+  role?: InputMaybe<ContactRoleType>;
+};
+
 export type UpdateRelationshipInsightInput = {
   reviewedAt?: InputMaybe<Scalars["String"]["input"]>;
   status: InsightStatus;
@@ -2618,6 +2898,12 @@ export type UpdateStickerInput = {
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   title?: InputMaybe<Scalars["String"]["input"]>;
   width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type UpdateUserEmailFilterPreferencesInput = {
+  autoDiscoverContacts?: InputMaybe<Scalars["Boolean"]["input"]>;
+  defaultContactScope?: InputMaybe<ContactScopeType>;
+  includeNewParticipants?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 /**
@@ -2693,6 +2979,18 @@ export type User = {
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
   roles: Array<Role>;
+};
+
+export type UserEmailFilterPreferences = {
+  __typename?: "UserEmailFilterPreferences";
+  autoDiscoverContacts: Scalars["Boolean"]["output"];
+  createdAt: Scalars["String"]["output"];
+  defaultContactScope: ContactScopeType;
+  id: Scalars["String"]["output"];
+  includeNewParticipants: Scalars["Boolean"]["output"];
+  savedFilterPresets: Array<EmailFilterPreset>;
+  updatedAt: Scalars["String"]["output"];
+  userId: Scalars["String"]["output"];
 };
 
 export type UserReminderPreferences = {
@@ -3149,6 +3447,42 @@ export type MarkThreadAsReadMutation = {
   markThreadAsRead: boolean;
 };
 
+export type CreateStickerMutationVariables = Exact<{
+  input: CreateStickerInput;
+}>;
+
+export type CreateStickerMutation = {
+  __typename?: "Mutation";
+  createSticker: {
+    __typename?: "SmartSticker";
+    id: string;
+    title: string;
+    content?: string | null;
+    entityType: EntityType;
+    entityId: string;
+    positionX: number;
+    positionY: number;
+    width: number;
+    height: number;
+    color: string;
+    isPinned: boolean;
+    isPrivate: boolean;
+    priority: StickerPriority;
+    mentions: Array<string>;
+    tags: Array<string>;
+    createdAt: string;
+    updatedAt: string;
+    createdByUserId: string;
+    category?: {
+      __typename?: "StickerCategory";
+      id: string;
+      name: string;
+      color: string;
+      icon?: string | null;
+    } | null;
+  };
+};
+
 export type GetDealWorkflowStepsQueryVariables = Exact<{
   dealId: Scalars["ID"]["input"];
 }>;
@@ -3508,42 +3842,6 @@ export type GetStickerCategoriesQuery = {
     isSystem: boolean;
     displayOrder: number;
   }>;
-};
-
-export type CreateStickerMutationVariables = Exact<{
-  input: CreateStickerInput;
-}>;
-
-export type CreateStickerMutation = {
-  __typename?: "Mutation";
-  createSticker: {
-    __typename?: "SmartSticker";
-    id: string;
-    title: string;
-    content?: string | null;
-    entityType: EntityType;
-    entityId: string;
-    positionX: number;
-    positionY: number;
-    width: number;
-    height: number;
-    color: string;
-    isPinned: boolean;
-    isPrivate: boolean;
-    priority: StickerPriority;
-    mentions: Array<string>;
-    tags: Array<string>;
-    createdAt: string;
-    updatedAt: string;
-    createdByUserId: string;
-    category?: {
-      __typename?: "StickerCategory";
-      id: string;
-      name: string;
-      color: string;
-      icon?: string | null;
-    } | null;
-  };
 };
 
 export type UpdateStickerMutationVariables = Exact<{
@@ -4309,6 +4607,69 @@ export type RemoveDocumentAttachmentMutationVariables = Exact<{
 export type RemoveDocumentAttachmentMutation = {
   __typename?: "Mutation";
   removeDocumentAttachment: boolean;
+};
+
+export type AttachDocumentToNoteAndDealMutationVariables = Exact<{
+  input: AttachDocumentToNoteInput;
+}>;
+
+export type AttachDocumentToNoteAndDealMutation = {
+  __typename?: "Mutation";
+  attachDocumentToNoteAndDeal: {
+    __typename?: "DualAttachmentResponse";
+    noteAttachment: {
+      __typename?: "NoteDocumentAttachment";
+      id: string;
+      noteId: string;
+      googleFileId: string;
+      fileName: string;
+      fileUrl: string;
+      attachedAt: string;
+    };
+    dealAttachment: {
+      __typename?: "DealDocumentAttachment";
+      id: string;
+      dealId: string;
+      googleFileId: string;
+      fileName: string;
+      fileUrl: string;
+      sharedDriveId?: string | null;
+      category?: DocumentCategory | null;
+      attachedAt: string;
+      attachedBy: string;
+      mimeType?: string | null;
+      fileSize?: number | null;
+    };
+  };
+};
+
+export type GetNoteDocumentAttachmentsQueryVariables = Exact<{
+  noteId: Scalars["ID"]["input"];
+}>;
+
+export type GetNoteDocumentAttachmentsQuery = {
+  __typename?: "Query";
+  getNoteDocumentAttachments: Array<{
+    __typename?: "NoteDocumentAttachment";
+    id: string;
+    noteId: string;
+    googleFileId: string;
+    fileName: string;
+    fileUrl: string;
+    attachedAt: string;
+    attachedBy: string;
+    mimeType?: string | null;
+    fileSize?: number | null;
+  }>;
+};
+
+export type RemoveNoteDocumentAttachmentMutationVariables = Exact<{
+  attachmentId: Scalars["ID"]["input"];
+}>;
+
+export type RemoveNoteDocumentAttachmentMutation = {
+  __typename?: "Mutation";
+  removeNoteDocumentAttachment: boolean;
 };
 
 export type UpdateDocumentAttachmentCategoryMutationVariables = Exact<{
