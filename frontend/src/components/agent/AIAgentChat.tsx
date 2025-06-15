@@ -923,7 +923,7 @@ export const AIAgentChat: React.FC = () => {
                 <Spinner size="lg" color="blue.500" />
                 <Text color="gray.500" fontSize="sm">Loading conversations...</Text>
               </VStack>
-            ) : conversations.length === 0 ? (
+            ) : conversations.filter(conv => conv.messages.length > 0).length === 0 ? (
               <VStack spacing={4} py={8} textAlign="center">
                 <FiMessageSquare size={32} color="gray" />
                 <Text color="gray.500" fontSize="sm">No conversations yet</Text>
@@ -933,7 +933,9 @@ export const AIAgentChat: React.FC = () => {
               </VStack>
             ) : (
               <VStack spacing={3} align="stretch">
-                {conversations.map((conversation) => {
+                {conversations
+                  .filter(conversation => conversation.messages.length > 0) // Only show conversations with messages
+                  .map((conversation) => {
                   const lastMessage = conversation.messages[conversation.messages.length - 1];
                   const messageCount = conversation.messages.length;
                   const isCurrentConversation = localCurrentConversation?.id === conversation.id;

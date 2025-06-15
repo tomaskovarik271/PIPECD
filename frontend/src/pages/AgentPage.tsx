@@ -6,6 +6,7 @@ import React from 'react';
 import { Box, Alert, AlertIcon, AlertTitle, AlertDescription, Button, VStack, Text, Spinner } from '@chakra-ui/react';
 import { AIAgentChat } from '../components/agent/AIAgentChat';
 import { useAppStore } from '../stores/useAppStore';
+import { useAgentStore } from '../stores/useAgentStore';
 
 // Error Boundary Component
 class AgentErrorBoundary extends React.Component<
