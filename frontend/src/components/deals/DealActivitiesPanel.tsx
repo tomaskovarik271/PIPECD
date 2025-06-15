@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -15,6 +15,7 @@ import {
   VStack,
   Badge,
   Divider,
+  ButtonGroup,
 } from '@chakra-ui/react';
 import {
   AddIcon,
@@ -23,10 +24,13 @@ import {
   EditIcon,
   InfoIcon,
   SmallCloseIcon,
+  CalendarIcon,
+  ViewIcon,
 } from '@chakra-ui/icons';
 import { Activity, ActivityType as GQLActivityType } from '../../stores/useActivitiesStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../stores/useAppStore';
+import ActivitiesCalendarView from '../activities/ActivitiesCalendarView';
 
 interface DealActivitiesPanelProps {
   activities: Activity[];
@@ -51,6 +55,9 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
 }) => {
   const colors = useThemeColors();
   const appStore = useAppStore();
+  
+  // View mode state (local to this component)
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   
   // Get user permissions and current user ID for RBAC checks
   const userPermissions = appStore.userPermissions;
@@ -280,15 +287,45 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
     <Box>
       <Flex justifyContent="space-between" alignItems="center" mb={6}>
         <Heading size="md" color={colors.text.primary}>Activities Timeline</Heading>
-        <Button 
-          leftIcon={<AddIcon />} 
-          size="sm" 
-          colorScheme="blue" 
-          onClick={onCreateActivity} 
-          variant="solid"
-        >
-          Add Activity
-        </Button>
+        <HStack spacing={3}>
+          {/* View Mode Toggle */}
+          <ButtonGroup size="sm" isAttached variant="outline">
+            <IconButton
+              aria-label="List view"
+              icon={<ViewIcon />}
+              isActive={viewMode === 'list'}
+              onClick={() => setViewMode('list')}
+              bg={viewMode === 'list' ? colors.interactive.default : colors.component.button.secondary}
+              borderColor={colors.border.input}
+              color={viewMode === 'list' ? colors.text.onAccent : colors.text.primary}
+              _hover={{
+                bg: viewMode === 'list' ? colors.interactive.hover : colors.component.button.secondaryHover
+              }}
+            />
+            <IconButton
+              aria-label="Calendar view"
+              icon={<CalendarIcon />}
+              isActive={viewMode === 'calendar'}
+              onClick={() => setViewMode('calendar')}
+              bg={viewMode === 'calendar' ? colors.interactive.default : colors.component.button.secondary}
+              borderColor={colors.border.input}
+              color={viewMode === 'calendar' ? colors.text.onAccent : colors.text.primary}
+              _hover={{
+                bg: viewMode === 'calendar' ? colors.interactive.hover : colors.component.button.secondaryHover
+              }}
+            />
+          </ButtonGroup>
+          
+          <Button 
+            leftIcon={<AddIcon />} 
+            size="sm" 
+            colorScheme="blue" 
+            onClick={onCreateActivity} 
+            variant="solid"
+          >
+            Add Activity
+          </Button>
+        </HStack>
       </Flex>
       
       {loading && (
@@ -316,47 +353,56 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
       )}
       
       {!loading && !error && activities.length > 0 && (
-        <VStack spacing={0} align="stretch">
-          {/* Overdue Activities */}
-          {renderActivitySection(
-            "Overdue", 
-            categorizedActivities.overdue, 
-            { colorScheme: "red", variant: "solid" }
-          )}
-          
-          {/* Due Today */}
-          {renderActivitySection(
-            "Due Today", 
-            categorizedActivities.dueToday, 
-            { colorScheme: "orange", variant: "solid" }
-          )}
-          
-          {/* Upcoming Activities */}
-          {renderActivitySection(
-            "Upcoming", 
-            categorizedActivities.upcoming, 
-            { colorScheme: "blue", variant: "outline" }
-          )}
-          
-          {/* No Due Date */}
-          {renderActivitySection(
-            "No Due Date", 
-            categorizedActivities.noDueDate, 
-            { colorScheme: "gray", variant: "outline" }
-          )}
-          
-          {/* Completed Activities */}
-          {categorizedActivities.completed.length > 0 && (
-            <>
-              <Divider my={4} />
+        <>
+          {viewMode === 'calendar' ? (
+            <ActivitiesCalendarView
+              activities={activities}
+              onActivityClick={onEditActivity}
+            />
+          ) : (
+            <VStack spacing={0} align="stretch">
+              {/* Overdue Activities */}
               {renderActivitySection(
-                "Completed", 
-                categorizedActivities.completed, 
-                { colorScheme: "green", variant: "subtle" }
+                "Overdue", 
+                categorizedActivities.overdue, 
+                { colorScheme: "red", variant: "solid" }
               )}
-            </>
+              
+              {/* Due Today */}
+              {renderActivitySection(
+                "Due Today", 
+                categorizedActivities.dueToday, 
+                { colorScheme: "orange", variant: "solid" }
+              )}
+              
+              {/* Upcoming Activities */}
+              {renderActivitySection(
+                "Upcoming", 
+                categorizedActivities.upcoming, 
+                { colorScheme: "blue", variant: "outline" }
+              )}
+              
+              {/* No Due Date */}
+              {renderActivitySection(
+                "No Due Date", 
+                categorizedActivities.noDueDate, 
+                { colorScheme: "gray", variant: "outline" }
+              )}
+              
+              {/* Completed Activities */}
+              {categorizedActivities.completed.length > 0 && (
+                <>
+                  <Divider my={4} />
+                  {renderActivitySection(
+                    "Completed", 
+                    categorizedActivities.completed, 
+                    { colorScheme: "green", variant: "subtle" }
+                  )}
+                </>
+              )}
+            </VStack>
           )}
-        </VStack>
+        </>
       )}
     </Box>
   );
