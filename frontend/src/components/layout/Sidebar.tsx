@@ -43,8 +43,8 @@ const NAV_ITEMS = [
 ];
 
 const ADMIN_NAV_ITEMS = [
-  { path: '/agent', label: 'AI Assistant', icon: <FiCpu size={16} />, permission: null }, // Allow any admin user to see AI Assistant
-  { path: '/relationships', label: 'Relationship Intelligence', icon: <Network size={16} />, permission: null }, // Allow any admin user to see Relationship Intelligence
+  { path: '/agent', label: 'AI Assistant', icon: <FiCpu size={16} />, permission: 'app_settings:manage' }, // Require admin role for AI Assistant
+  { path: '/relationships', label: 'Relationship Intelligence', icon: <Network size={16} />, permission: 'app_settings:manage' }, // Require admin role for Relationship Intelligence
   { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon />, permission: 'custom_fields:manage_definitions' },
   { path: '/admin/user-roles', label: 'User Roles', icon: <SettingsIcon />, permission: 'app_settings:manage' },
   // { path: '/admin/google-drive', label: 'Google Drive Settings', icon: <SettingsIcon />, permission: null }, // HIDDEN: Not using Google Drive yet
