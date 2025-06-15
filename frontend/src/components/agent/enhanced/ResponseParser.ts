@@ -162,8 +162,9 @@ export class ResponseParser {
                 }
               }
               
-              // Check for duplicates before adding
-              if (!entityMap.has(data.id)) {
+              // Check for duplicates before adding - for updates, we want to REPLACE the existing entity
+              const isUpdateTool = thought.metadata?.toolName === 'update_deal';
+              if (!entityMap.has(data.id) || isUpdateTool) {
                 const dealEntity = {
                   type: 'deal' as const,
                   id: data.id,
@@ -175,10 +176,24 @@ export class ResponseParser {
                     stage: data.stage,
                     createdAt: data.created_at,
                     organizationId: data.organization_id,
+                    updatedAt: data.updated_at, // Include updated timestamp for update operations
                   },
                 };
+                
+                // For updates, replace the existing entity
+                if (isUpdateTool && entityMap.has(data.id)) {
+                  // Find and replace in entities array
+                  const entityIndex = entities.findIndex(e => e.id === data.id);
+                  if (entityIndex !== -1) {
+                    entities[entityIndex] = dealEntity;
+                  }
+                } else if (!entityMap.has(data.id)) {
+                  // For new entities, add to array
+                  entities.push(dealEntity);
+                }
+                
+                // Always update the map
                 entityMap.set(data.id, dealEntity);
-                entities.push(dealEntity);
               }
             }
 
@@ -360,4 +375,4 @@ export class ResponseParser {
 
     return actions;
   }
-} 
+}
