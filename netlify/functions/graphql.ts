@@ -42,14 +42,7 @@ import { WFMWorkflowStep as WFMWorkflowStepResolver } from './graphql/resolvers/
 import { agentQueries, agentMutations } from './graphql/resolvers/agentResolvers';
 
 // Import Relationship Resolvers
-import {
-  OrganizationRelationship,
-  PersonRelationship,
-  PersonOrganizationalRole,
-  StakeholderAnalysis,
-  relationshipQueries,
-  relationshipMutations
-} from './graphql/resolvers/relationships';
+
 
 // Import Smart Sticker Resolvers
 import {
@@ -103,7 +96,6 @@ const loadTypeDefs = (): string => {
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
-    'relationships.graphql',
     'scalars.graphql', 
     'schema.graphql', 
     'smartStickers.graphql',
@@ -135,7 +127,6 @@ const loadTypeDefs = (): string => {
     'history.graphql', 
     'organization.graphql', 
     'person.graphql', 
-    'relationships.graphql',
     'scalars.graphql', 
     'schema.graphql', 
     'smartStickers.graphql',
@@ -184,7 +175,7 @@ export const resolvers = {
     ...WFMWorkflowResolvers.Query,
     ...WFMProjectTypeResolvers.Query,
     ...agentQueries,
-    ...relationshipQueries,
+
     ...smartStickerQueries,
     ...emailQueries,
     ...driveQueries,
@@ -201,7 +192,7 @@ export const resolvers = {
     ...WFMWorkflowResolvers.Mutation,
     ...WFMProjectTypeResolvers.Mutation,
     ...agentMutations,
-    ...relationshipMutations,
+
     ...smartStickerMutations,
     ...emailMutations,
     ...driveMutations,
@@ -231,10 +222,7 @@ export const resolvers = {
   WFMWorkflowTransition: WFMWorkflowResolvers.WFMWorkflowTransition,
   WFMProjectType: WFMProjectTypeResolvers.WFMProjectType,
   WFMProject,
-  OrganizationRelationship,
-  PersonRelationship,
-  PersonOrganizationalRole,
-  StakeholderAnalysis,
+
 }; 
 
 const yoga = createYoga<GraphQLContext>({
