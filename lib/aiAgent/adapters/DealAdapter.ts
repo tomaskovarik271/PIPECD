@@ -272,6 +272,8 @@ export class DealAdapter extends BaseAdapter {
     
     return `✅ Deal created successfully!
 
+**🆔 IMPORTANT: Deal ID for future updates: ${deal.id}**
+
 **Deal Details:**
 - **Name:** ${deal.name}
 - **Amount:** ${amount}
@@ -279,7 +281,8 @@ export class DealAdapter extends BaseAdapter {
 - **Primary Contact:** ${contactDisplay}
 - **Expected Close Date:** ${deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : 'Not set'}
 - **Created:** ${new Date(deal.created_at).toLocaleDateString()}
-- **Deal ID:** ${deal.id}`;
+
+**📝 Remember: To update this deal, use deal_id: "${deal.id}"**`;
   }
 
   /**

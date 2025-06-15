@@ -599,6 +599,19 @@ export class AgentService {
             timestamp: new Date(),
           });
 
+          // ✅ SPECIAL HANDLING FOR DEAL CREATION - Extract deal ID for future reference
+          if (currentTool.toolName === 'create_deal' && toolResultText.includes('Deal ID for future updates:')) {
+            const dealIdMatch = toolResultText.match(/Deal ID for future updates: ([a-f0-9-]+)/);
+            if (dealIdMatch) {
+              const dealId = dealIdMatch[1];
+              updatedConversationHistory.push({
+                role: 'assistant',
+                content: `📝 **IMPORTANT CONTEXT**: The deal just created has ID: ${dealId}. Use this exact ID for any future updates to this deal.`,
+                timestamp: new Date(),
+              });
+            }
+          }
+
         } else {
           toolResultText = `❌ **${currentTool.toolName}** failed: ${toolResponse.error}`;
           // Don't add error results to main response - errors are shown in technical details
@@ -687,6 +700,8 @@ DECISION RULES:
 2. If the user's request has been fulfilled completely, respond with "TASK_COMPLETE"
 3. Only suggest additional tools if they are NECESSARY and DIFFERENT from what you've already done
 4. NEVER repeat the same search tool with the same parameters
+5. If you need to UPDATE a deal, use the EXACT deal_id from the conversation history - NEVER make up fake UUIDs
+6. If you don't have the deal_id for an update, search for the deal first to get the correct ID
 
 Based on this result and the execution history above, what is the NEXT logical step to complete the user's request? If the request is complete, respond with "TASK_COMPLETE". If you need to create something with the data you found, make the appropriate create_* tool call.`;
 
