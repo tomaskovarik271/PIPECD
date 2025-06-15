@@ -329,6 +329,72 @@ export class ToolExecutor {
   ): Promise<ToolResult> {
     // Handle remaining tools that will be implemented in future domain modules
     switch (toolName) {
+      // Think Tool - for complex reasoning
+      case 'think':
+        try {
+          const { thought, reasoning_type, confidence, next_actions } = parameters;
+          
+          // Validate required parameters
+          if (!thought || !reasoning_type) {
+            return {
+              success: false,
+              message: 'Missing required parameters: thought and reasoning_type are required',
+              metadata: {
+                toolName,
+                parameters,
+                timestamp: new Date().toISOString(),
+                executionTime: 0,
+              },
+            };
+          }
+
+          // Log the thinking step (this is the main purpose of the think tool)
+          const thinkingStep = {
+            id: `think-${Date.now()}`,
+            type: reasoning_type,
+            content: thought,
+            confidence: confidence || 0.8,
+            reasoning: `AI reasoning: ${thought}`,
+            nextActions: next_actions || [],
+            timestamp: new Date().toISOString(),
+          };
+
+          // Store the thinking step in context for later retrieval
+          if (context.conversationId) {
+            // In a real implementation, this would be stored in the database
+            // For now, we'll just return it as part of the result
+          }
+
+          return {
+            success: true,
+            data: { 
+              thinkingStep,
+              reasoning_type,
+              confidence: confidence || 0.8,
+              next_actions: next_actions || []
+            },
+            message: `💭 Thinking: ${thought.substring(0, 100)}${thought.length > 100 ? '...' : ''}`,
+            metadata: {
+              toolName,
+              parameters,
+              timestamp: new Date().toISOString(),
+              executionTime: 0,
+              reasoning_type,
+              confidence: confidence || 0.8,
+            },
+          };
+        } catch (error) {
+          return {
+            success: false,
+            message: `Failed to process thinking: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            metadata: {
+              toolName,
+              parameters,
+              timestamp: new Date().toISOString(),
+              executionTime: 0,
+            },
+          };
+        }
       // Custom Field Tools - get_custom_field_definitions is now properly implemented
       case 'get_custom_field_definitions':
         try {
@@ -520,6 +586,8 @@ export class ToolExecutor {
   private isFallbackTool(toolName: string): boolean {
     // Check if a tool is implemented as a fallback tool
     const fallbackTools = [
+      // Thinking Tools
+      'think',
       // Custom Field Tools
       'get_custom_field_definitions',
       'create_custom_field_definition',
@@ -538,6 +606,8 @@ export class ToolExecutor {
   private getFallbackToolNames(): string[] {
     // Return list of all fallback tool names
     return [
+      // Thinking Tools
+      'think',
       // Custom Field Tools
       'get_custom_field_definitions',
       'create_custom_field_definition',

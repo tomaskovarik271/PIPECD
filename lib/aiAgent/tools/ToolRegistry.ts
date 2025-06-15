@@ -43,6 +43,7 @@ export class ToolRegistry {
     this.registerEnhancedCustomFieldTools();
     this.registerEnhancedUserTools();
     this.registerEnhancedWorkflowTools();
+    this.registerThinkingTools();
   }
 
   /**
@@ -766,6 +767,63 @@ export class ToolRegistry {
   }
 
   /**
+   * Register thinking tools for complex reasoning
+   */
+  private registerThinkingTools(): void {
+    const thinkTool: MCPTool = {
+      name: "think",
+      description: "Use this tool for complex reasoning about CRM operations, policy compliance, or multi-step planning. This tool helps you think through problems step by step before taking action.",
+      parameters: {
+        type: "object",
+        properties: {
+          thought: {
+            type: "string",
+            description: "Detailed reasoning about the current CRM task, decision, or analysis. Be specific about what you're thinking through."
+          },
+          reasoning_type: {
+            type: "string",
+            enum: ["analysis", "planning", "decision", "problem_solving", "workflow_design"],
+            description: "Type of reasoning being performed"
+          },
+          confidence: {
+            type: "number",
+            minimum: 0,
+            maximum: 1,
+            description: "Confidence level in this reasoning (0.0 to 1.0)"
+          },
+          next_actions: {
+            type: "array",
+            items: { type: "string" },
+            description: "List of potential next actions based on this thinking"
+          }
+        },
+        required: ["thought", "reasoning_type"]
+      },
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        workflowStage: "analysis",
+        examples: [
+          "Analyzing a complex deal creation request: I need to search for existing deal first, then extract organization details, then create new deal with real IDs",
+          "Problem-solving a failed tool execution: The create_deal failed with invalid UUID error, I need to search for organization to get real UUID first"
+        ],
+        usagePatterns: [
+          "Use before complex multi-step operations",
+          "Use when you need to analyze user requirements",
+          "Use when planning tool execution sequences",
+          "Use when debugging failed operations",
+          "Use when making decisions about which tools to use"
+        ],
+        relatedTools: ["search_deals", "search_organizations", "create_deal", "get_deal_details"],
+        prerequisites: []
+      }
+    };
+
+    // Add thinking to the deals category since it's most commonly used with deal operations
+    this.registerToolsForCategory('deals', [thinkTool]);
+  }
+
+  /**
    * Register tools for a specific category
    */
   private registerToolsForCategory(category: ToolCategory, tools: MCPTool[]): void {
@@ -1119,5 +1177,40 @@ export class ToolRegistry {
         tool,
         prerequisites: tool.annotations!.prerequisites!
       }));
+  }
+
+  /**
+   * Get contextual guidance based on recent tool usage and current workflow stage
+   */
+  getContextualGuidance(recentTools: string[], currentStage?: string): string {
+    const guidance: string[] = [];
+    
+    // Check if user should be thinking first
+    const hasRecentThinking = recentTools.includes('think');
+    const hasActionTools = recentTools.some(tool => 
+      !['think', 'search_deals', 'search_organizations', 'search_people'].includes(tool)
+    );
+    
+    if (!hasRecentThinking && hasActionTools) {
+      guidance.push("💡 Consider using the 'think' tool to plan your approach before taking actions");
+    }
+    
+    // Check for common workflow patterns
+    if (recentTools.includes('search_deals') && !recentTools.includes('get_deal_details')) {
+      guidance.push("📋 After finding deals, use 'get_deal_details' to get complete information");
+    }
+    
+    if (recentTools.includes('create_deal') && recentTools.some(t => t.includes('search'))) {
+      guidance.push("✅ Good workflow: searching first, then creating with real IDs");
+    }
+    
+    // Stage-specific guidance
+    if (currentStage === 'planning') {
+      guidance.push("🎯 Planning stage: Use 'think' tool to analyze requirements and plan your approach");
+    } else if (currentStage === 'execution') {
+      guidance.push("⚡ Execution stage: Use action tools based on your planning");
+    }
+    
+    return guidance.length > 0 ? guidance.join('\n') : '';
   }
 } 
