@@ -2,11 +2,10 @@
  * Agent Page - Main page for AI agent interactions
  */
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Box, Alert, AlertIcon, AlertTitle, AlertDescription, Button, VStack, Text, Spinner } from '@chakra-ui/react';
 import { AIAgentChat } from '../components/agent/AIAgentChat';
 import { useAppStore } from '../stores/useAppStore';
-import { useAgentStore } from '../stores/useAgentStore';
 
 // Error Boundary Component
 class AgentErrorBoundary extends React.Component<
@@ -57,7 +56,6 @@ class AgentErrorBoundary extends React.Component<
 
 const AgentPage: React.FC = () => {
   const { userPermissions, permissionsLoading } = useAppStore();
-  const { createConversation } = useAgentStore();
 
   // Check if user has admin permissions
   const hasAdminPermissions = userPermissions?.some(permission => 
@@ -69,14 +67,6 @@ const AgentPage: React.FC = () => {
     permission.endsWith(':delete_any') ||
     permission.endsWith(':create_any')
   ) || false;
-
-  // Auto-start conversation when page loads (for admin users)
-  useEffect(() => {
-    if (hasAdminPermissions && !permissionsLoading) {
-      // Auto-start a new conversation when the page loads
-      createConversation();
-    }
-  }, [hasAdminPermissions, permissionsLoading, createConversation]);
 
   // Show loading while checking permissions
   if (permissionsLoading) {
