@@ -16,9 +16,7 @@ export const processCustomFieldsForCreate = async (
   entityType: CustomFieldEntityType,
   useBulkFetch: boolean = true
 ): Promise<Record<string, any> | null> => {
-  console.log('[customFieldUtils.processCustomFieldsForCreate] Starting with input:', customFieldsInput?.length || 0, 'fields, useBulkFetch:', useBulkFetch);
   if (!customFieldsInput || customFieldsInput.length === 0) {
-    console.log('[customFieldUtils.processCustomFieldsForCreate] No custom fields to process');
     return null;
   }
 
@@ -27,12 +25,9 @@ export const processCustomFieldsForCreate = async (
   if (useBulkFetch) {
     // Use bulk fetching for better performance (deals pattern)
     const definitionIds = customFieldsInput.map(cf => cf.definitionId);
-    console.log('[customFieldUtils.processCustomFieldsForCreate] Bulk fetching definitions for IDs:', definitionIds);
     let definitions = [];
-    const bulkFetchStartTime = Date.now();
     try {
       definitions = await getCustomFieldDefinitionsByIds(supabaseClient, definitionIds);
-      console.log('[customFieldUtils.processCustomFieldsForCreate] Bulk fetch completed in:', Date.now() - bulkFetchStartTime, 'ms, found:', definitions.length, 'definitions');
     } catch (defError: any) {
       console.error(`[customFieldUtils.processCustomFieldsForCreate] Error fetching definitions in bulk:`, defError.message);
       return null; // Return null if bulk fetch fails
@@ -81,9 +76,7 @@ export const processCustomFieldsForCreate = async (
     }
   }
 
-  const result = Object.keys(dbCustomFieldValues).length > 0 ? dbCustomFieldValues : null;
-  console.log('[customFieldUtils.processCustomFieldsForCreate] Completed processing, result:', result);
-  return result;
+  return Object.keys(dbCustomFieldValues).length > 0 ? dbCustomFieldValues : null;
 };
 
 /**
