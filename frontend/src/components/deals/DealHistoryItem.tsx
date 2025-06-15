@@ -10,17 +10,17 @@ interface DealHistoryItemProps {
   entry: DealHistoryEntryDisplayItem;
 }
 
-// Keep fieldDisplayNames for core fields, custom fields will be handled separately
+// Mapping for core field display names
 const coreFieldDisplayNames: Record<string, string> = {
-  name: 'Name',
-  stage_id: 'Stage',
-  amount: 'Amount',
-  expected_close_date: 'Expected Close Date',
-  person_id: 'Person',
-  organization_id: 'Organization',
-  assigned_to_user_id: 'Assigned To', // ADDED for clarity
-  deal_specific_probability: 'Deal Specific Probability',
-  // We will handle custom_field_values explicitly in renderChanges
+  'name': 'Deal Name',
+  'amount': 'Amount',
+  'expected_close_date': 'Expected Close Date',
+  'person_id': 'Contact',
+  'organization_id': 'Organization',
+  'deal_specific_probability': 'Deal Probability',
+  'assigned_to_user_id': 'Assigned To',
+  'stage_id': 'Stage',
+  'user_id': 'Created By'
 };
 
 
@@ -56,49 +56,78 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
   const availableCustomFieldDefinitions = getCustomFieldDefinitionsFromCurrentDeal();
 
   const formatSingleCustomFieldValue = (definitionId: string, value: any): string => {
+    if (value === null || value === undefined) return 'Not set';
+    
     const definition = availableCustomFieldDefinitions.find(def => def.id === definitionId);
-    if (value === null || value === undefined) return 'N/A';
-    if (!definition) return String(value); // Fallback if no definition found
+    
+    if (!definition) {
+      // Fallback if definition not found
+      if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+      return String(value);
+    }
 
     switch (definition.fieldType) {
-      case 'TEXT':
-        return String(value);
-      case 'NUMBER':
-        return Number(value).toLocaleString();
       case 'BOOLEAN':
+        if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+        if (typeof value === 'string') {
+          const lowerValue = value.toLowerCase();
+          if (lowerValue === 'true' || lowerValue === 'yes' || lowerValue === '1') return 'Yes';
+          if (lowerValue === 'false' || lowerValue === 'no' || lowerValue === '0') return 'No';
+          return value;
+        }
         return value ? 'Yes' : 'No';
+      case 'NUMBER': {
+        const num = Number(value);
+        return isNaN(num) ? 'Not set' : num.toLocaleString();
+      }
       case 'DATE':
+        if (!value) return 'Not set';
         try {
           return format(parseISO(String(value)), 'MMM d, yyyy');
         } catch (e) {
           return String(value);
         }
-      case 'DROPDOWN': {
-        const option = definition.dropdownOptions?.find(opt => opt.value === String(value));
-        return option?.label || String(value);
-      }
-      case 'MULTI_SELECT': {
+      case 'DROPDOWN':
         if (Array.isArray(value)) {
-          return value.map((v: string) => {
-            const option = definition.dropdownOptions?.find(opt => opt.value === v);
-            return option?.label || v;
+          // Multi-select dropdown
+          if (value.length === 0) return 'None selected';
+          return value.map(val => {
+            const option = definition.dropdownOptions?.find(opt => opt.value === val);
+            return option ? option.label : val;
           }).join(', ');
+        } else {
+          // Single-select dropdown
+          const option = definition.dropdownOptions?.find(opt => opt.value === value);
+          return option ? option.label : String(value);
         }
-        return String(value);
-      }
+      case 'TEXT':
+      case 'TEXT_AREA':
       default:
         return String(value);
     }
   };
   
   const formatHistoryFieldValue = (field: string, value: any): string => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return 'Not set';
+    
+    // Handle object values that shouldn't be displayed as [object Object]
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    
     switch (field) {
-      case 'amount':
-        return `$${Number(value).toLocaleString()}`;
-      case 'deal_specific_probability':
-        return `${Number(value) * 100}%`;
+      case 'amount': {
+        const numAmount = Number(value);
+        if (isNaN(numAmount)) return 'Not set';
+        return `$${numAmount.toLocaleString()}`;
+      }
+      case 'deal_specific_probability': {
+        const numProb = Number(value);
+        if (isNaN(numProb)) return 'Not set';
+        return `${(numProb * 100).toFixed(0)}%`;
+      }
       case 'expected_close_date':
+        if (!value) return 'Not set';
         try {
           return format(parseISO(String(value)), 'MMM d, yyyy');
         } catch (e) {
@@ -112,15 +141,20 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
         return (wfmStatus && wfmStatus.id === value) ? wfmStatus.name : String(value);
       }
       case 'assigned_to_user_id': // ADDED: case for assigned_to_user_id
+        if (!value) return 'Unassigned';
         return getUserDisplayNameById(String(value));
       case 'person_id': {
+        if (!value) return 'No contact';
         const person = currentDeal?.person;
         return (person && person.id === value) ? `${person.first_name || ''} ${person.last_name || ''}`.trim() || String(value) : String(value);
       }
       case 'organization_id': {
+        if (!value) return 'No organization';
         const org = currentDeal?.organization;
         return (org && org.id === value) ? org.name : String(value);
       }
+      case 'name':
+        return value || 'Untitled Deal';
       // custom_field_values are handled by renderCustomFieldChanges
       default:
         return String(value);
@@ -170,7 +204,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
                 // For DEAL_CREATED, cfVal is the direct value.
                 // For DEAL_UPDATED, cfVal is an object { oldValue: ..., newValue: ... }
                 const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
-                const fieldLabel = definition?.fieldLabel || cfId;
+                const fieldLabel = definition?.fieldLabel || cfId.replace(/^custom_field_values\./, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 
                 let changeText;
                 if (eventType === 'DEAL_CREATED') {
@@ -178,7 +212,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
                 } else if (eventType === 'DEAL_UPDATED' && typeof cfVal === 'object' && cfVal !== null && 'oldValue' in cfVal && 'newValue' in cfVal) {
                   const oldF = formatSingleCustomFieldValue(cfId, (cfVal as any).oldValue);
                   const newF = formatSingleCustomFieldValue(cfId, (cfVal as any).newValue);
-                  changeText = <>changed from "{oldF}" to "{newF}"</>;
+                  changeText = <>changed from &quot;{oldF}&quot; to &quot;{newF}&quot;</>;
                 } else {
                   changeText = formatSingleCustomFieldValue(cfId, cfVal); // Fallback for other cases
                 }
@@ -202,7 +236,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
         <ListItem key={key}>
           <Text as="span" fontWeight="medium">{displayKey}:</Text> 
           {eventType === 'DEAL_CREATED' && ` ${formatHistoryFieldValue(key, value)}`}
-          {eventType === 'DEAL_UPDATED' && ` changed from "${formatHistoryFieldValue(key, oldValue)}" to "${formatHistoryFieldValue(key, value)}"`}
+          {eventType === 'DEAL_UPDATED' && ` changed from &quot;${formatHistoryFieldValue(key, oldValue)}&quot; to &quot;${formatHistoryFieldValue(key, value)}&quot;`}
         </ListItem>
       );
     }
@@ -210,12 +244,14 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
     if (eventType === 'DEAL_CREATED') {
       return (
         <UnorderedList spacing={1} styleType="none" ml={0}>
-          {Object.entries(changes).map(([key, value]) => {
+          {Object.entries(changes)
+            .filter(([key]) => !['newValue', 'oldValue'].includes(key)) // Filter out these problematic keys
+            .map(([key, value]) => {
             // Special handling for custom_field_values during creation
             if (key === 'custom_field_values' && typeof value === 'object' && value !== null) {
               return Object.entries(value).map(([cfId, cfVal]) => {
                 const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
-                const fieldLabel = definition?.fieldLabel || cfId;
+                const fieldLabel = definition?.fieldLabel || cfId.replace(/^custom_field_values\./, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 return (
                   <ListItem key={cfId}>
                     <Text as="span" fontWeight="medium">{fieldLabel}:</Text> {formatSingleCustomFieldValue(cfId, cfVal)}
@@ -223,9 +259,25 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
                 );
               });
             }
+            
+            // Handle JSON objects with newValue/oldValue structure
+            if (typeof value === 'object' && value !== null && 'newValue' in value) {
+              const displayName = coreFieldDisplayNames[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+              const formattedValue = formatHistoryFieldValue(key, (value as any).newValue);
+              return (
+                <ListItem key={key}>
+                  <Text as="span" fontWeight="medium">{displayName}:</Text> {formattedValue}
+                </ListItem>
+              );
+            }
+            
             // For other core fields during creation
-            const displayName = coreFieldDisplayNames[key] || key;
-            return renderListItem(key, displayName, value);
+            const displayName = coreFieldDisplayNames[key] || key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            return (
+              <ListItem key={key}>
+                <Text as="span" fontWeight="medium">{displayName}:</Text> {formatHistoryFieldValue(key, value)}
+              </ListItem>
+            );
           })}
         </UnorderedList>
       );
@@ -239,7 +291,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
           if (typeof valueObj === 'object' && valueObj !== null) {
             Object.entries(valueObj).forEach(([cfId, cfChange]) => {
               const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
-              const fieldLabel = definition?.fieldLabel || cfId;
+              const fieldLabel = definition?.fieldLabel || cfId.replace(/^custom_field_values\./, '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
               if (typeof cfChange === 'object' && cfChange !== null && 'oldValue' in cfChange && 'newValue' in cfChange) {
                 const oldF = formatSingleCustomFieldValue(cfId, (cfChange as any).oldValue);
                 const newF = formatSingleCustomFieldValue(cfId, (cfChange as any).newValue);
@@ -247,12 +299,29 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
                 if (oldF !== newF) {
                     changeItems.push(
                         <ListItem key={cfId}>
-                        <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from "{oldF}" to "{newF}"
+                        <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from &quot;{oldF}&quot; to &quot;{newF}&quot;
                         </ListItem>
                     );
                 }
               }
             });
+          }
+        } else if (key.startsWith('custom_field_values.')) {
+          // Handle individual custom field changes (when they're stored as separate keys)
+          const cfId = key.replace('custom_field_values.', '');
+          const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
+          const fieldLabel = definition?.fieldLabel || cfId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          
+          if (typeof valueObj === 'object' && valueObj !== null && 'oldValue' in valueObj && 'newValue' in valueObj) {
+            const oldF = formatSingleCustomFieldValue(cfId, valueObj.oldValue);
+            const newF = formatSingleCustomFieldValue(cfId, valueObj.newValue);
+            if (oldF !== newF) {
+              changeItems.push(
+                <ListItem key={cfId}>
+                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from &quot;{oldF}&quot; to &quot;{newF}&quot;
+                </ListItem>
+              );
+            }
           }
         } else {
           // Handle other core field updates
