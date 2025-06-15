@@ -38,11 +38,15 @@ export const personService = {
 
   // Create a new person - Needs authenticated client for INSERT RLS policy
   async createPerson(userId: string, input: PersonInput, accessToken: string): Promise<Person> {
-    // console.log('[personService.createPerson] called for user:', userId, 'input:', input);
+    console.log('[personService.createPerson] called for user:', userId, 'input:', input);
+    const startTime = Date.now();
     const supabase = getAuthenticatedClient(accessToken); 
     
     const { customFields, ...personData } = input;
+    console.log('[personService.createPerson] Processing custom fields, count:', customFields?.length || 0);
+    const customFieldStartTime = Date.now();
     const processedCustomFieldValues = await processCustomFieldsForCreate(customFields, supabase, CustomFieldEntityType.Person, true);
+    console.log('[personService.createPerson] Custom fields processed in:', Date.now() - customFieldStartTime, 'ms');
 
     const dbInput: any = { 
       ...personData, 
@@ -53,16 +57,20 @@ export const personService = {
       dbInput.custom_field_values = processedCustomFieldValues;
     }
     
+    console.log('[personService.createPerson] Inserting into database...');
+    const dbStartTime = Date.now();
     const { data, error } = await supabase
       .from('people') 
       .insert(dbInput) 
       .select('*')
       .single(); 
+    console.log('[personService.createPerson] Database insert completed in:', Date.now() - dbStartTime, 'ms');
 
     handleSupabaseError(error, 'creating person'); 
     if (!data) {
         throw new GraphQLError('Failed to create person, no data returned', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
     }
+    console.log('[personService.createPerson] Total execution time:', Date.now() - startTime, 'ms');
     return data as Person;
   },
 
