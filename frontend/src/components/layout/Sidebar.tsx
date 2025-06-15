@@ -20,7 +20,7 @@ import {
   ArrowForwardIcon // For toggle
 } from '@chakra-ui/icons'; // Use appropriate icons
 import { FiCpu } from 'react-icons/fi'; // Import AI/robot icon
-import { Network } from 'lucide-react'; // Import Network icon for Relationship Intelligence
+
 
 // Comment out direct imports if moving logos to public directory
 // import logoPositiveRoot from '../../assets/logos/logo-positive.svg'; 
@@ -44,7 +44,7 @@ const NAV_ITEMS = [
 
 const ADMIN_NAV_ITEMS = [
   { path: '/agent', label: 'AI Assistant', icon: <FiCpu size={16} />, permission: 'app_settings:manage' }, // Require admin role for AI Assistant
-  { path: '/relationships', label: 'Relationship Intelligence', icon: <Network size={16} />, permission: 'app_settings:manage' }, // Require admin role for Relationship Intelligence
+  
   { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon />, permission: 'custom_fields:manage_definitions' },
   { path: '/admin/user-roles', label: 'User Roles', icon: <SettingsIcon />, permission: 'app_settings:manage' },
   // { path: '/admin/google-drive', label: 'Google Drive Settings', icon: <SettingsIcon />, permission: null }, // HIDDEN: Not using Google Drive yet

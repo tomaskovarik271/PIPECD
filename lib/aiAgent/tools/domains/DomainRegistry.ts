@@ -16,7 +16,7 @@ import { LeadsModule } from './LeadsModule';
 import { OrganizationsModule } from './OrganizationsModule';
 import { ContactsModule } from './ContactsModule';
 import { ActivitiesModule } from './ActivitiesModule';
-import { RelationshipModule } from './RelationshipModule';
+
 
 export interface DomainModule {
   [key: string]: (params: any, context: ToolExecutionContext) => Promise<ToolResult>;
@@ -32,7 +32,6 @@ export class DomainRegistry {
   private organizationsModule: OrganizationsModule;
   private contactsModule: ContactsModule;
   private activitiesModule: ActivitiesModule;
-  private relationshipModule: RelationshipModule;
 
   constructor(graphqlClient: GraphQLClient) {
     this.graphqlClient = graphqlClient;
@@ -43,7 +42,6 @@ export class DomainRegistry {
     this.organizationsModule = new OrganizationsModule();
     this.contactsModule = new ContactsModule();
     this.activitiesModule = new ActivitiesModule();
-    this.relationshipModule = new RelationshipModule();
     
     // Register domain mappings
     this.registerDomains();
@@ -97,14 +95,7 @@ export class DomainRegistry {
       complete_activity: this.activitiesModule.completeActivity.bind(this.activitiesModule),
     });
 
-    // Relationships domain
-    this.domains.set('relationships', {
-      create_organization_relationship: this.relationshipModule.createOrganizationRelationship.bind(this.relationshipModule),
-      create_person_relationship: this.relationshipModule.createPersonRelationship.bind(this.relationshipModule),
-      create_stakeholder_analysis: this.relationshipModule.createStakeholderAnalysis.bind(this.relationshipModule),
-      analyze_stakeholder_network: this.relationshipModule.analyzeStakeholderNetwork.bind(this.relationshipModule),
-      find_missing_stakeholders: this.relationshipModule.findMissingStakeholders.bind(this.relationshipModule),
-    });
+
   }
 
   /**
@@ -136,10 +127,7 @@ export class DomainRegistry {
       return 'activities';
     }
 
-    // Relationship tools
-    if (['create_organization_relationship', 'create_person_relationship', 'create_stakeholder_analysis', 'analyze_stakeholder_network', 'find_missing_stakeholders'].includes(toolName)) {
-      return 'relationships';
-    }
+
 
     return null;
   }

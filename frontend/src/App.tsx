@@ -24,8 +24,8 @@ import WFMWorkflowsPage from './pages/admin/WFMWorkflowsPage';
 import WFMProjectTypesPage from './pages/admin/WFMProjectTypesPage';
 import GoogleDriveSettingsPage from './pages/admin/GoogleDriveSettingsPage';
 import { UserRoleManagementPage } from './pages/admin/UserRoleManagementPage';
-import { RelationshipIntelligencePage } from './pages/RelationshipIntelligencePage';
-import CrossEntityNetworkPage from './pages/CrossEntityNetworkPage';
+
+
 import { 
   Box, 
   Heading, 
@@ -77,8 +77,7 @@ function AppContent() {
             <Route path="/leads/:leadId" element={<LeadDetailPage />} />
             <Route path="/organizations" element={<OrganizationsPage />} />
             <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
-            <Route path="/relationships" element={<RelationshipIntelligencePage />} />
-            <Route path="/cross-entity-network" element={<CrossEntityNetworkPage />} />
+            
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
             <Route path="/agent" element={<AgentPage />} />
