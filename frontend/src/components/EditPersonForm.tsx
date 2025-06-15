@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Button,
   FormControl,
@@ -70,7 +70,10 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
     refetch: refetchCustomFields
   } = useOptimizedCustomFields({ entityTypes: ['PERSON' as CustomFieldEntityType] });
   
-  const customFieldDefinitions = getDefinitionsForEntity('PERSON' as CustomFieldEntityType);
+  const customFieldDefinitions = useMemo(() => 
+    getDefinitionsForEntity('PERSON' as CustomFieldEntityType), 
+    [getDefinitionsForEntity]
+  );
 
   useEffect(() => {
     if (!orgLoading && (!organizations || organizations.length === 0)) {
@@ -87,7 +90,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
       );
       setCustomFieldData(initializedData);
     }
-  }, [person, customFieldDefinitions]);
+  }, [person.customFieldValues, customFieldDefinitions]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
