@@ -39,12 +39,12 @@ const NAV_ITEMS = [
   { path: '/leads', label: 'Leads', icon: <StarIcon /> },
   { path: '/people', label: 'Contacts', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
-  { path: '/relationships', label: 'Relationship Intelligence', icon: <Network size={16} /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
 ];
 
 const ADMIN_NAV_ITEMS = [
   { path: '/agent', label: 'AI Assistant', icon: <FiCpu size={16} />, permission: null }, // Allow any admin user to see AI Assistant
+  { path: '/relationships', label: 'Relationship Intelligence', icon: <Network size={16} />, permission: null }, // Allow any admin user to see Relationship Intelligence
   { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon />, permission: 'custom_fields:manage_definitions' },
   { path: '/admin/user-roles', label: 'User Roles', icon: <SettingsIcon />, permission: 'app_settings:manage' },
   // { path: '/admin/google-drive', label: 'Google Drive Settings', icon: <SettingsIcon />, permission: null }, // HIDDEN: Not using Google Drive yet
