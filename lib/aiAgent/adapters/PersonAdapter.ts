@@ -79,6 +79,8 @@ export class PersonAdapter extends BaseAdapter {
 
   /**
    * Convert AI create contact parameters to PersonInput for personService
+   * NOTE: Excluding organization_id to avoid triggering complex organizational role processing
+   * that causes 30+ second timeouts. AI agent creates simple contacts only.
    */
   static toPersonInput(params: AICreateContactParams): PersonInput {
     return this.cleanInput({
@@ -86,7 +88,7 @@ export class PersonAdapter extends BaseAdapter {
       last_name: params.last_name,
       email: params.email,
       phone: params.phone,
-      organization_id: params.organization_id,
+      // organization_id: params.organization_id, // DISABLED: Causes timeout due to org role processing
       customFields: params.custom_fields?.map(cf => ({
         definitionId: cf.definitionId,
         stringValue: cf.stringValue,
@@ -100,6 +102,7 @@ export class PersonAdapter extends BaseAdapter {
 
   /**
    * Convert AI update contact parameters to PersonInput for personService
+   * NOTE: Excluding organization_id to avoid triggering complex organizational role processing
    */
   static toPersonUpdateInput(params: AIUpdateContactParams): Partial<PersonInput> {
     return this.cleanInput({
@@ -107,7 +110,7 @@ export class PersonAdapter extends BaseAdapter {
       last_name: params.last_name,
       email: params.email,
       phone: params.phone,
-      organization_id: params.organization_id,
+      // organization_id: params.organization_id, // DISABLED: Causes timeout due to org role processing
     });
   }
 
@@ -165,23 +168,17 @@ export class PersonAdapter extends BaseAdapter {
   static formatContactCreated(person: Person): string {
     const name = `${person.first_name || ''} ${person.last_name || ''}`.trim();
     
-    // Try to get organization name from populated relationship, fallback to organization_id
-    let orgDisplay = 'None';
-    if ((person as any).organization?.name) {
-      orgDisplay = (person as any).organization.name;
-    } else if (person.organization_id) {
-      orgDisplay = `Linked (ID: ${person.organization_id})`;
-    }
-    
     return `✅ Contact created successfully!
 
 **Contact Details:**
 - **Name:** ${name}
 - **Email:** ${person.email || 'Not provided'}
 - **Phone:** ${person.phone || 'Not provided'}
-- **Organization:** ${orgDisplay}
+- **Organization:** Not linked (AI agent creates simple contacts only)
 - **Created:** ${new Date(person.created_at).toLocaleDateString()}
-- **Contact ID:** ${person.id}`;
+- **Contact ID:** ${person.id}
+
+💡 **Note:** To link this contact to an organization, use the frontend interface which supports organizational roles.`;
   }
 
   /**

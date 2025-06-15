@@ -520,7 +520,7 @@ export class ToolRegistry {
       },
       {
         name: 'create_contact',
-        description: 'Create new contact/person record',
+        description: 'Create new contact/person record (simple contacts only, no organizational roles)',
         parameters: {
           type: 'object',
           properties: {
@@ -528,7 +528,6 @@ export class ToolRegistry {
             last_name: { type: 'string', description: 'Last name' },
             email: { type: 'string', description: 'Email address' },
             phone: { type: 'string', description: 'Phone number' },
-            organization_id: { type: 'string', description: 'Organization ID to associate with' },
             notes: { type: 'string', description: 'Additional notes about the contact' },
           },
           required: ['first_name'],
@@ -536,7 +535,7 @@ export class ToolRegistry {
       },
       {
         name: 'update_contact',
-        description: 'Update existing contact information',
+        description: 'Update existing contact information (basic fields only, no organizational roles)',
         parameters: {
           type: 'object',
           properties: {
@@ -545,7 +544,6 @@ export class ToolRegistry {
             last_name: { type: 'string', description: 'New last name' },
             email: { type: 'string', description: 'New email address' },
             phone: { type: 'string', description: 'New phone number' },
-            organization_id: { type: 'string', description: 'New organization ID' },
             notes: { type: 'string', description: 'New notes about the contact' },
           },
           required: ['person_id'],
