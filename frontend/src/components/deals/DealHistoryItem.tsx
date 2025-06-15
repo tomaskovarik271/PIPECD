@@ -285,9 +285,27 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
 
     if (eventType === 'DEAL_UPDATED') {
       const changeItems: JSX.Element[] = [];
+      
       Object.entries(changes).forEach(([key, valueObj]: [string, any]) => {
-        if (key === 'custom_field_values') {
-          // Iterate through changed custom fields
+        if (key.startsWith('custom_field_values.')) {
+          // Handle individual custom field changes (this is the actual format used)
+          const cfId = key.replace('custom_field_values.', '');
+          const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
+          const fieldLabel = definition?.fieldLabel || cfId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          
+          if (typeof valueObj === 'object' && valueObj !== null && 'oldValue' in valueObj && 'newValue' in valueObj) {
+            const oldF = formatSingleCustomFieldValue(cfId, valueObj.oldValue);
+            const newF = formatSingleCustomFieldValue(cfId, valueObj.newValue);
+            if (oldF !== newF) {
+              changeItems.push(
+                <ListItem key={cfId}>
+                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from &quot;{oldF}&quot; to &quot;{newF}&quot;
+                </ListItem>
+              );
+            }
+          }
+        } else if (key === 'custom_field_values') {
+          // Handle nested custom field changes (fallback, might not be used in current implementation)
           if (typeof valueObj === 'object' && valueObj !== null) {
             Object.entries(valueObj).forEach(([cfId, cfChange]) => {
               const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
@@ -306,35 +324,23 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
               }
             });
           }
-        } else if (key.startsWith('custom_field_values.')) {
-          // Handle individual custom field changes (when they're stored as separate keys)
-          const cfId = key.replace('custom_field_values.', '');
-          const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
-          const fieldLabel = definition?.fieldLabel || cfId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          
-          if (typeof valueObj === 'object' && valueObj !== null && 'oldValue' in valueObj && 'newValue' in valueObj) {
-            const oldF = formatSingleCustomFieldValue(cfId, valueObj.oldValue);
-            const newF = formatSingleCustomFieldValue(cfId, valueObj.newValue);
-            if (oldF !== newF) {
-              changeItems.push(
-                <ListItem key={cfId}>
-                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from &quot;{oldF}&quot; to &quot;{newF}&quot;
-                </ListItem>
-              );
-            }
-          }
         } else {
           // Handle other core field updates
           const displayName = coreFieldDisplayNames[key] || key;
           // Only add if old and new values are different
-          const oldF = formatHistoryFieldValue(key, valueObj.oldValue);
-          const newF = formatHistoryFieldValue(key, valueObj.newValue);
-          if (oldF !== newF) {
-            changeItems.push(renderListItem(key, displayName, valueObj.newValue, valueObj.oldValue));
+          if (typeof valueObj === 'object' && valueObj !== null && 'oldValue' in valueObj && 'newValue' in valueObj) {
+            const oldF = formatHistoryFieldValue(key, valueObj.oldValue);
+            const newF = formatHistoryFieldValue(key, valueObj.newValue);
+            if (oldF !== newF) {
+              changeItems.push(renderListItem(key, displayName, valueObj.newValue, valueObj.oldValue));
+            }
           }
         }
       });
-      if (changeItems.length === 0) return <Text>No visible field changes.</Text>; // Or specific message
+      
+      if (changeItems.length === 0) {
+        return <Text>No visible field changes.</Text>;
+      }
       return <UnorderedList spacing={1} styleType="none" ml={0}>{changeItems}</UnorderedList>;
     }
     // Fallback for other event types or if structure is unexpected
