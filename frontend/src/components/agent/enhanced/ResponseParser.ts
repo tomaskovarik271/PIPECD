@@ -33,6 +33,7 @@ export class ResponseParser {
   private static detectEntities(content: string, thoughts?: any[]): DetectedEntity[] {
     const entities: DetectedEntity[] = [];
     const organizationMap = new Map<string, any>(); // Map organization IDs to their data
+    const entityMap = new Map<string, DetectedEntity>(); // Map to prevent duplicate entities
 
     // Parse deal entities from tool results in thoughts
     if (thoughts) {
@@ -51,31 +52,43 @@ export class ResponseParser {
             if (Array.isArray(data) && data.length > 0 && data[0].name && data[0].amount === undefined) {
               for (const item of data) {
                 organizationMap.set(item.id, item);
-                entities.push({
-                  type: 'organization',
-                  id: item.id,
-                  name: item.name,
-                  metadata: {
-                    industry: item.industry || item.custom_field_values?.organization_industry,
-                    size: item.size,
-                    createdAt: item.created_at,
-                  },
-                });
+                
+                // Check for duplicates before adding
+                if (!entityMap.has(item.id)) {
+                  const orgEntity = {
+                    type: 'organization' as const,
+                    id: item.id,
+                    name: item.name,
+                    metadata: {
+                      industry: item.industry || item.custom_field_values?.organization_industry,
+                      size: item.size,
+                      createdAt: item.created_at,
+                    },
+                  };
+                  entityMap.set(item.id, orgEntity);
+                  entities.push(orgEntity);
+                }
               }
             }
 
             // Single organization (from organization search)
             if (data.id && data.name && data.amount === undefined && !data.deal_specific_probability) {
               organizationMap.set(data.id, data);
-              entities.push({
-                type: 'organization',
-                id: data.id,
-                name: data.name,
-                metadata: {
-                  industry: data.industry || data.custom_field_values?.organization_industry,
-                  size: data.size,
-                },
-              });
+              
+              // Check for duplicates before adding
+              if (!entityMap.has(data.id)) {
+                const orgEntity = {
+                  type: 'organization' as const,
+                  id: data.id,
+                  name: data.name,
+                  metadata: {
+                    industry: data.industry || data.custom_field_values?.organization_industry,
+                    size: data.size,
+                  },
+                };
+                entityMap.set(data.id, orgEntity);
+                entities.push(orgEntity);
+              }
             }
 
           } catch (error) {
@@ -112,20 +125,25 @@ export class ResponseParser {
                     }
                   }
                   
-                  entities.push({
-                    type: 'deal',
-                    id: item.id,
-                    name: dealName,
-                    amount: item.amount,
-                    organizationName: organization?.name,
-                    metadata: {
-                      status: item.currentWfmStatus?.name || item.status, // Use WFM status first, fallback to direct status
-                      stage: item.stage,
-                      createdAt: item.created_at,
-                      updatedAt: item.updated_at,
-                      organizationId: item.organization_id,
-                    },
-                  });
+                  // Check for duplicates before adding
+                  if (!entityMap.has(item.id)) {
+                    const dealEntity = {
+                      type: 'deal' as const,
+                      id: item.id,
+                      name: dealName,
+                      amount: item.amount,
+                      organizationName: organization?.name,
+                      metadata: {
+                        status: item.currentWfmStatus?.name || item.status, // Use WFM status first, fallback to direct status
+                        stage: item.stage,
+                        createdAt: item.created_at,
+                        updatedAt: item.updated_at,
+                        organizationId: item.organization_id,
+                      },
+                    };
+                    entityMap.set(item.id, dealEntity);
+                    entities.push(dealEntity);
+                  }
                 }
               }
             }
@@ -144,19 +162,24 @@ export class ResponseParser {
                 }
               }
               
-              entities.push({
-                type: 'deal',
-                id: data.id,
-                name: dealName,
-                amount: data.amount,
-                organizationName: organization?.name,
-                metadata: {
-                  status: data.currentWfmStatus?.name || data.status, // Use WFM status first, fallback to direct status
-                  stage: data.stage,
-                  createdAt: data.created_at,
-                  organizationId: data.organization_id,
-                },
-              });
+              // Check for duplicates before adding
+              if (!entityMap.has(data.id)) {
+                const dealEntity = {
+                  type: 'deal' as const,
+                  id: data.id,
+                  name: dealName,
+                  amount: data.amount,
+                  organizationName: organization?.name,
+                  metadata: {
+                    status: data.currentWfmStatus?.name || data.status, // Use WFM status first, fallback to direct status
+                    stage: data.stage,
+                    createdAt: data.created_at,
+                    organizationId: data.organization_id,
+                  },
+                };
+                entityMap.set(data.id, dealEntity);
+                entities.push(dealEntity);
+              }
             }
 
           } catch (error) {
@@ -181,23 +204,29 @@ export class ResponseParser {
     // Extract deal IDs from text
     let match: RegExpExecArray | null;
     while ((match = patterns.dealId.exec(content)) !== null) {
-      if (!entities.find(e => e.id === match![1])) {
-        entities.push({
-          type: 'deal',
+      // Check for duplicates before adding
+      if (!entityMap.has(match[1])) {
+        const dealEntity = {
+          type: 'deal' as const,
           id: match[1],
           name: `Deal ${match[1].substring(0, 8)}`,
-        });
+        };
+        entityMap.set(match[1], dealEntity);
+        entities.push(dealEntity);
       }
     }
 
     // Extract organization IDs from text
     while ((match = patterns.orgId.exec(content)) !== null) {
-      if (!entities.find(e => e.id === match![1])) {
-        entities.push({
-          type: 'organization',
+      // Check for duplicates before adding
+      if (!entityMap.has(match[1])) {
+        const orgEntity = {
+          type: 'organization' as const,
           id: match[1],
           name: `Organization ${match[1].substring(0, 8)}`,
-        });
+        };
+        entityMap.set(match[1], orgEntity);
+        entities.push(orgEntity);
       }
     }
 
