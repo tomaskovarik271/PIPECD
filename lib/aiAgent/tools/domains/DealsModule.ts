@@ -23,7 +23,8 @@ export class DealsModule {
   }
 
   /**
-   * Search and filter deals using existing dealService (FIXED: now follows service reuse principle)
+   * Search and filter deals using GraphQL query with populated relationships
+   * This provides Claude with full context (organization names, contact names) instead of just IDs
    */
   async searchDeals(
     params: AIDealSearchParams,
@@ -34,14 +35,50 @@ export class DealsModule {
         return DealAdapter.createErrorResult('search_deals', new Error('Authentication required'), params);
       }
 
-      // ✅ CORRECT: Use existing dealService to get deals
-      // This ensures we use the same business logic, validation, and security as the frontend
-      const allDeals = await dealService.getDeals(context.userId, context.authToken);
+      // Use GraphQL query to get deals with populated relationships
+      // This gives Claude the full context it needs (organization names, contact names)
+      const query = `
+        query GetDealsForAI {
+          deals {
+            id
+            name
+            amount
+            currency
+            expected_close_date
+            created_at
+            updated_at
+            person_id
+            organization_id
+            assigned_to_user_id
+            person {
+              id
+              first_name
+              last_name
+              email
+            }
+            organization {
+              id
+              name
+            }
+            assignedToUser {
+              id
+              display_name
+              email
+            }
+          }
+        }
+      `;
 
-      // Apply AI-specific filters using existing adapter method
-      const filteredDeals = DealAdapter.applySearchFilters(allDeals, params);
+      const result = await this.graphqlClient.execute(query, {}, context.authToken);
+      
+      if (!result.deals) {
+        return DealAdapter.createErrorResult('search_deals', new Error('No deals found'), params);
+      }
 
-      return DealAdapter.createSearchResult(filteredDeals, params);
+      // Apply AI-specific filters to the full Deal objects
+      const filteredDeals = DealAdapter.applySearchFiltersToFullDeals(result.deals, params);
+
+      return DealAdapter.createSearchResultWithFullContext(filteredDeals, params);
     } catch (error) {
       console.error('Error in searchDeals:', error);
       return DealAdapter.createErrorResult('search_deals', error as Error, params);

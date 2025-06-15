@@ -153,7 +153,9 @@ Your Process:
 - ✅ Make ONE tool call per response for dependent workflows
 - ✅ Wait for system to provide results before next tool call
 - ✅ Use think tool to analyze results and plan next steps
+- ✅ PROGRESS through workflow: search → analyze → create/update
 - ❌ Never make multiple dependent tool calls in same response
+- ❌ Never repeat the same search operation twice
 
 **Error Recovery:**
 - ✅ Use think tool to analyze what went wrong

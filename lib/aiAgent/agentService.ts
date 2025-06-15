@@ -650,17 +650,24 @@ Please provide a clear, user-friendly summary of what was accomplished. Do not i
           
           console.log('Asking Claude for follow-up actions...');
           
-          const followUpPrompt = `The tool ${currentTool.toolName} has been executed with the following result:
+          const followUpPrompt = `You just executed the tool "${currentTool.toolName}" with the following result:
 
 ${toolResultText}
 
 Original user request: "${originalUserMessage}"
 
-IMPORTANT: Only suggest additional tools if they are NECESSARY to complete the original user request.
+IMPORTANT CONTEXT:
+- You have already executed: ${currentTool.toolName}
+- This tool result contains the information you need to proceed
+- Do NOT repeat the same search operations
+- If you found the data you need, proceed to the next logical action
 
-If the user's request has been fulfilled (e.g., deal created, information provided), respond with "TASK_COMPLETE" and do not suggest any more tools.
+DECISION RULES:
+1. If the user requested to CREATE something and you found the required information (like organization IDs), proceed to CREATE the entity
+2. If the user's request has been fulfilled completely, respond with "TASK_COMPLETE"
+3. Only suggest additional tools if they are NECESSARY and DIFFERENT from what you've already done
 
-Based on this result, do you need to execute any additional tools to complete the user's request? If not, respond with "TASK_COMPLETE". If yes, make the appropriate tool call.`;
+Based on this result, what is the NEXT logical step to complete the user's request? If the request is complete, respond with "TASK_COMPLETE". If you need to create something with the data you found, make the appropriate create_* tool call.`;
 
           const followUpResponse = await this.aiService.generateResponse(
             followUpPrompt,
@@ -859,7 +866,8 @@ Based on this result, do you need to execute any additional tools to complete th
       if (toolName === 'create_deal' && toolResultText.includes('✅ Deal created successfully')) {
         return true; // Deal creation task is complete
       }
-      // search_organizations is just a step, not completion for deal creation requests
+      // Allow intermediate steps (think, search_deals, search_organizations) to continue
+      // Only complete when create_deal is actually executed successfully
       return false;
     }
     

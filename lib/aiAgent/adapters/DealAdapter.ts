@@ -75,6 +75,74 @@ export class DealAdapter extends BaseAdapter {
   }
 
   /**
+   * Apply search filters to full Deal objects with populated relationships
+   * This provides better search capabilities including organization and contact names
+   */
+  static applySearchFiltersToFullDeals(deals: any[], params: AIDealSearchParams): any[] {
+    const { limit = 20 } = params;
+
+    const filterMappings = {
+      search_term: (deal: any, term: string) => {
+        const searchTerm = term.toLowerCase();
+        return deal.name?.toLowerCase().includes(searchTerm) ||
+               deal.organization?.name?.toLowerCase().includes(searchTerm) ||
+               `${deal.person?.first_name || ''} ${deal.person?.last_name || ''}`.toLowerCase().includes(searchTerm);
+      },
+      assigned_to: (deal: any, userId: string) =>
+        deal.assigned_to_user_id === userId,
+      min_amount: (deal: any, minAmount: number) =>
+        deal.amount !== null && deal.amount !== undefined && deal.amount >= minAmount,
+      max_amount: (deal: any, maxAmount: number) =>
+        deal.amount !== null && deal.amount !== undefined && deal.amount <= maxAmount,
+    };
+
+    const filtered = this.applyFilters(deals, params, filterMappings);
+    return this.sortAndLimit(filtered, 'updated_at', limit, false);
+  }
+
+  /**
+   * Format a list of full Deal objects with populated relationships for AI response
+   * This provides Claude with complete context including organization and contact names
+   */
+  static formatDealsListWithFullContext(deals: any[], searchTerm?: string): string {
+    const dealList = deals.map((deal: any) => {
+      const amount = deal.amount ? `$${deal.amount.toLocaleString()}` : 'No amount';
+      
+      // Show full organization and contact names instead of truncated IDs
+      const orgInfo = deal.organization?.name 
+        ? ` (Organization: ${deal.organization.name})` 
+        : deal.organization_id 
+        ? ` (Org ID: ${deal.organization_id})`
+        : '';
+      
+      const contactInfo = deal.person?.first_name || deal.person?.last_name
+        ? ` (Contact: ${deal.person.first_name || ''} ${deal.person.last_name || ''}`.trim() + ')'
+        : deal.person_id 
+        ? ` (Contact ID: ${deal.person_id})`
+        : '';
+      
+      return `• **${deal.name}** - ${amount}${orgInfo}${contactInfo}\n  Deal ID: ${deal.id}\n  Organization ID: ${deal.organization_id || 'None'}\n  Contact ID: ${deal.person_id || 'None'}`;
+    }).join('\n\n');
+
+    return `✅ Found ${deals.length} deal${deals.length === 1 ? '' : 's'}${searchTerm ? ` matching "${searchTerm}"` : ''}\n\n${dealList}`;
+  }
+
+  /**
+   * Create a successful search result with full context
+   */
+  static createSearchResultWithFullContext(
+    deals: any[],
+    params: AIDealSearchParams
+  ): ToolResult {
+    return this.createSuccessResult(
+      'search_deals',
+      this.formatDealsListWithFullContext(deals, params.search_term),
+      deals,
+      params
+    );
+  }
+
+  /**
    * Convert AI create deal parameters to DealInput for dealService
    */
   static toDealInput(params: AICreateDealParams): DealInput {
