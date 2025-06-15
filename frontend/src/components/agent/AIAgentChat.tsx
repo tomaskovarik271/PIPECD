@@ -34,8 +34,8 @@ import {
   SimpleGrid,
   Code,
 } from '@chakra-ui/react';
-import { SettingsIcon, TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { FiSend, FiUser, FiCpu, FiActivity, FiMessageSquare, FiClock, FiTool, FiEye, FiZap, FiTarget } from 'react-icons/fi';
+import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 
 import { useNavigate } from 'react-router-dom';
 import { useAgentStore } from '../../stores/useAgentStore';
@@ -59,31 +59,6 @@ const GET_AGENT_THOUGHTS = gql`
     }
   }
 `;
-
-// CSS for pulse animation
-const pulseKeyframes = `
-  @keyframes pulse {
-    0% {
-      opacity: 0.6;
-      transform: scale(1);
-    }
-    50% {
-      opacity: 0.8;
-      transform: scale(1.02);
-    }
-    100% {
-      opacity: 0.6;
-      transform: scale(1);
-    }
-  }
-`;
-
-// Inject CSS into document head
-if (typeof document !== 'undefined') {
-  const style = document.createElement('style');
-  style.textContent = pulseKeyframes;
-  document.head.appendChild(style);
-}
 
 // Thought Details Component for showing complete autonomous behavior
 const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> = React.memo(({ thoughts }) => {
@@ -306,8 +281,6 @@ export const AIAgentChat: React.FC = () => {
   const [localIsSendingMessage, setLocalIsSendingMessage] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [localSendError, setLocalSendError] = useState<string | null>(null);
-  const [conversations, setConversations] = useState<AgentConversation[]>([]);
-  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [realTimeThoughts, setRealTimeThoughts] = useState<AgentThought[]>([]);
   const [isPollingThoughts, setIsPollingThoughts] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -315,9 +288,6 @@ export const AIAgentChat: React.FC = () => {
   
   // Navigation hook
   const navigate = useNavigate();
-  
-  // Modal for conversation history
-  const { isOpen: isHistoryOpen, onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
   
   // UI theme
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -327,6 +297,13 @@ export const AIAgentChat: React.FC = () => {
   const reasoningBg = useColorModeValue('gray.50', 'gray.700');
   const reasoningColor = useColorModeValue('gray.800', 'gray.200');
   
+  // Auto-start conversation when component mounts (when user enters AI assistant page)
+  useEffect(() => {
+    if (!localCurrentConversation && !localIsLoading) {
+      handleStartConversation();
+    }
+  }, []); // Run only on mount
+
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -482,29 +459,6 @@ export const AIAgentChat: React.FC = () => {
     }
   }, []);
   
-  // Load conversation history
-  const loadConversationHistory = useCallback(async () => {
-    setIsLoadingHistory(true);
-    try {
-      const store = useAgentStore.getState();
-      await store.loadConversations();
-      const updatedState = useAgentStore.getState();
-      setConversations(updatedState.conversations);
-    } catch (error) {
-      console.error('Failed to load conversation history:', error);
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  }, []);
-
-  // Handle conversation selection from history
-  const handleSelectConversation = useCallback(async (conversation: AgentConversation) => {
-    setLocalCurrentConversation(conversation);
-    const store = useAgentStore.getState();
-    store.setCurrentConversation(conversation);
-    onHistoryClose();
-  }, [onHistoryClose]);
-
   // Handle enhanced response actions
   const handleEnhancedAction = useCallback((action: SuggestedAction) => {
     switch (action.action) {
@@ -528,29 +482,6 @@ export const AIAgentChat: React.FC = () => {
         console.log('Unknown action:', action);
     }
   }, [navigate]);
-
-  // Handle conversation deletion
-  const handleDeleteConversation = useCallback(async (conversationId: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent conversation selection
-    try {
-      const store = useAgentStore.getState();
-      await store.deleteConversation(conversationId);
-      // Reload conversations after deletion
-      await loadConversationHistory();
-      // If we deleted the current conversation, clear it
-      if (localCurrentConversation?.id === conversationId) {
-        setLocalCurrentConversation(null);
-      }
-    } catch (error) {
-      console.error('Failed to delete conversation:', error);
-    }
-  }, [loadConversationHistory, localCurrentConversation?.id]);
-
-  // Open history modal and load conversations
-  const handleOpenHistory = useCallback(() => {
-    onHistoryOpen();
-    loadConversationHistory();
-  }, [onHistoryOpen, loadConversationHistory]);
   
   const MessageComponent: React.FC<{ message: AgentMessage }> = React.memo(({ message }) => {
     const isUser = message.role === 'user';
@@ -693,15 +624,17 @@ export const AIAgentChat: React.FC = () => {
           </HStack>
           
           <HStack spacing={2}>
-            <Tooltip label="Conversation History">
-              <IconButton
-                icon={<TimeIcon />}
-                variant="ghost"
-                size="sm"
-                aria-label="History"
-                onClick={handleOpenHistory}
-              />
-            </Tooltip>
+            <Button
+              size="sm"
+              colorScheme="blue"
+              variant="outline"
+              onClick={handleStartConversation}
+              isLoading={localIsLoading}
+              loadingText="Starting..."
+              leftIcon={<FiMessageSquare size={14} />}
+            >
+              Start New Chat
+            </Button>
             <Tooltip label="Toggle Thinking Process">
               <IconButton
                 icon={<FiActivity size={16} />}
@@ -709,14 +642,6 @@ export const AIAgentChat: React.FC = () => {
                 size="sm"
                 aria-label="Thinking"
                 onClick={toggleThinkingProcess}
-              />
-            </Tooltip>
-            <Tooltip label="Agent Settings">
-              <IconButton
-                icon={<SettingsIcon />}
-                variant="ghost"
-                size="sm"
-                aria-label="Settings"
               />
             </Tooltip>
           </HStack>
@@ -796,180 +721,59 @@ export const AIAgentChat: React.FC = () => {
                     <HStack spacing={2}>
                       <Spinner size="sm" color="blue.500" />
                       <Text fontWeight="semibold" color="blue.600">
-                        AI Assistant is thinking...
+                        AI Assistant is working...
                       </Text>
                       <Badge colorScheme="blue" size="sm">
                         {realTimeThoughts.length} step{realTimeThoughts.length > 1 ? 's' : ''}
                       </Badge>
                     </HStack>
                     
-                    {/* Enhanced thinking steps display */}
-                    <VStack align="stretch" spacing={3} pl={4} borderLeft="3px" borderColor="blue.300">
-                      {realTimeThoughts.slice(-5).map((thought, idx) => {
-                        const isLatest = idx === realTimeThoughts.slice(-5).length - 1;
-                        const isThinking = thought.type === 'REASONING';
-                        
-                        return (
-                          <Box 
-                            key={thought.id || idx}
-                            p={3}
-                            bg={isLatest ? 'blue.50' : 'gray.50'}
-                            _dark={{ 
-                              bg: isLatest ? 'blue.900' : 'gray.700',
-                              borderColor: isLatest ? "blue.500" : "gray.600"
-                            }}
-                            borderRadius="md"
-                            borderWidth={isLatest ? "2px" : "1px"}
-                            borderColor={isLatest ? "blue.300" : "gray.200"}
-                            position="relative"
-                            transition="all 0.3s ease"
-                          >
-                            {/* Step indicator */}
-                            <HStack spacing={3} align="start">
-                              <Box 
-                                minW="24px" 
-                                h="24px" 
-                                borderRadius="full" 
-                                bg={
-                                  thought.type === 'TOOL_CALL' ? 'blue.500' :
-                                  isThinking ? 'purple.500' :
-                                  thought.type === 'OBSERVATION' ? 'green.500' : 'gray.500'
-                                }
-                                color="white"
-                                display="flex"
-                                alignItems="center"
-                                justifyContent="center"
-                                fontSize="xs"
-                                fontWeight="bold"
-                              >
-                                {thought.type === 'TOOL_CALL' ? (
-                                  <FiTool size={12} />
-                                ) : isThinking ? (
-                                  <FiZap size={12} />
-                                ) : thought.type === 'OBSERVATION' ? (
-                                  <FiEye size={12} />
-                                ) : (
-                                  <FiActivity size={12} />
-                                )}
-                              </Box>
-                              
-                              <VStack align="start" spacing={2} flex={1}>
-                                {/* Step header */}
-                                <HStack spacing={2} wrap="wrap">
-                                  <Badge 
-                                    colorScheme={
-                                      thought.type === 'TOOL_CALL' ? 'blue' :
-                                      isThinking ? 'purple' :
-                                      thought.type === 'OBSERVATION' ? 'green' : 'gray'
-                                    }
-                                    size="sm"
-                                    fontWeight="medium"
-                                  >
-                                    {isThinking ? '🧠 Thinking' : 
-                                     thought.type === 'TOOL_CALL' ? '🔧 Action' :
-                                     thought.type === 'OBSERVATION' ? '👁️ Result' : 
-                                     thought.type.toLowerCase()}
-                                  </Badge>
-                                  <Text fontSize="xs" color="gray.500">
-                                    {new Date(thought.timestamp).toLocaleTimeString()}
-                                  </Text>
-                                  {isLatest && (
-                                    <Badge colorScheme="green" size="xs" variant="solid">
-                                      Current
-                                    </Badge>
-                                  )}
-                                </HStack>
-                                
-                                {/* Enhanced thought content */}
-                                <Box>
-                                  {isThinking ? (
-                                    <VStack align="start" spacing={2}>
-                                      <Text 
-                                        fontSize="sm" 
-                                        color="gray.700" 
-                                        _dark={{ color: 'gray.200' }}
-                                        fontWeight="medium"
-                                        lineHeight="tall"
-                                      >
-                                        💭 {thought.content}
-                                      </Text>
-                                      {/* Show next actions if available */}
-                                      {thought.metadata?.nextActions && thought.metadata.nextActions.length > 0 && (
-                                        <VStack align="start" spacing={1} pl={3}>
-                                          <Text fontSize="xs" color="purple.600" fontWeight="medium">
-                                            Next steps:
-                                          </Text>
-                                          {thought.metadata.nextActions.slice(0, 2).map((action: string, actionIdx: number) => (
-                                            <HStack key={actionIdx} spacing={2} fontSize="xs">
-                                              <Text color="purple.500">→</Text>
-                                              <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-                                                {action}
-                                              </Text>
-                                            </HStack>
-                                          ))}
-                                        </VStack>
-                                      )}
-                                    </VStack>
-                                  ) : (
-                                    <VStack align="start" spacing={1}>
-                                      <Text 
-                                        fontSize="sm" 
-                                        color="gray.700" 
-                                        _dark={{ color: 'gray.200' }}
-                                        lineHeight="tall"
-                                      >
-                                        {thought.content}
-                                      </Text>
-                                      {thought.metadata?.toolName && (
-                                        <HStack spacing={2}>
-                                          <Text fontSize="xs" color="blue.600" fontWeight="medium">
-                                            🔧 {thought.metadata.toolName}
-                                          </Text>
-                                          {thought.metadata?.confidence && (
-                                            <Badge 
-                                              colorScheme={
-                                                thought.metadata.confidence > 0.8 ? 'green' : 
-                                                thought.metadata.confidence > 0.6 ? 'yellow' : 'red'
-                                              }
-                                              size="xs"
-                                            >
-                                              {Math.round(thought.metadata.confidence * 100)}%
-                                            </Badge>
-                                          )}
-                                        </HStack>
-                                      )}
-                                    </VStack>
-                                  )}
-                                </Box>
-                              </VStack>
-                            </HStack>
-                            
-                            {/* Pulse animation for current step */}
-                            {isLatest && (
-                              <Box
-                                position="absolute"
-                                top="-2px"
-                                left="-2px"
-                                right="-2px"
-                                bottom="-2px"
-                                borderRadius="md"
-                                border="2px solid"
-                                borderColor="blue.400"
-                                opacity={0.6}
-                                animation="pulse 2s infinite"
-                                pointerEvents="none"
-                              />
+                    <VStack align="stretch" spacing={2} pl={4} borderLeft="2px" borderColor="blue.200">
+                      {realTimeThoughts.slice(-5).map((thought, idx) => (
+                        <HStack key={thought.id || idx} spacing={3}>
+                          <Box>
+                            {thought.type === 'TOOL_CALL' ? (
+                              <FiTool size={14} color="blue" />
+                            ) : thought.type === 'REASONING' ? (
+                              <FiZap size={14} color="purple" />
+                            ) : thought.type === 'OBSERVATION' ? (
+                              <FiEye size={14} color="green" />
+                            ) : (
+                              <FiActivity size={14} color="gray" />
                             )}
                           </Box>
-                        );
-                      })}
+                          <VStack align="start" spacing={1} flex={1}>
+                            <HStack spacing={2}>
+                              <Badge 
+                                colorScheme={
+                                  thought.type === 'TOOL_CALL' ? 'blue' :
+                                  thought.type === 'REASONING' ? 'purple' :
+                                  thought.type === 'OBSERVATION' ? 'green' : 'gray'
+                                }
+                                size="xs"
+                              >
+                                {thought.type.toLowerCase()}
+                              </Badge>
+                              <Text fontSize="xs" color="gray.500">
+                                {new Date(thought.timestamp).toLocaleTimeString()}
+                              </Text>
+                            </HStack>
+                            <Text fontSize="sm" color="gray.700" _dark={{ color: 'gray.300' }}>
+                              {thought.content}
+                            </Text>
+                            {thought.metadata?.toolName && (
+                              <Text fontSize="xs" color="blue.600">
+                                🔧 {thought.metadata.toolName}
+                              </Text>
+                            )}
+                          </VStack>
+                        </HStack>
+                      ))}
                       
                       {realTimeThoughts.length > 5 && (
-                        <Box textAlign="center" py={2}>
-                          <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                            ... and {realTimeThoughts.length - 5} more steps
-                          </Text>
-                        </Box>
+                        <Text fontSize="xs" color="gray.500" fontStyle="italic" textAlign="center">
+                          ... and {realTimeThoughts.length - 5} more steps
+                        </Text>
                       )}
                     </VStack>
                   </VStack>
@@ -1017,109 +821,6 @@ export const AIAgentChat: React.FC = () => {
           </Button>
         </HStack>
       </Box>
-      
-      {/* Conversation History Modal */}
-      <Modal isOpen={isHistoryOpen} onClose={onHistoryClose} size="xl" scrollBehavior="inside">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            <HStack spacing={3}>
-              <FiClock size={20} />
-              <Text>Conversation History</Text>
-            </HStack>
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {isLoadingHistory ? (
-              <VStack spacing={4} py={8}>
-                <Spinner size="lg" color="blue.500" />
-                <Text color="gray.500">Loading conversations...</Text>
-              </VStack>
-            ) : conversations.length === 0 ? (
-              <VStack spacing={4} py={8} textAlign="center">
-                <FiMessageSquare size={48} color="gray" />
-                <Text color="gray.500" fontSize="lg">No conversations yet</Text>
-                <Text color="gray.400" fontSize="sm">
-                  Start a new conversation to see it appear here
-                </Text>
-              </VStack>
-            ) : (
-              <VStack spacing={3} align="stretch">
-                {conversations.map((conversation) => {
-                  const lastMessage = conversation.messages[conversation.messages.length - 1];
-                  const messageCount = conversation.messages.length;
-                  const isCurrentConversation = localCurrentConversation?.id === conversation.id;
-                  
-                  return (
-                    <Card
-                      key={conversation.id}
-                      cursor="pointer"
-                      _hover={{ shadow: 'md' }}
-                      onClick={() => handleSelectConversation(conversation)}
-                      borderColor={isCurrentConversation ? 'blue.500' : 'gray.200'}
-                      borderWidth={isCurrentConversation ? '2px' : '1px'}
-                      bg={isCurrentConversation ? 'blue.50' : cardBg}
-                      _dark={{ 
-                        bg: isCurrentConversation ? 'blue.900' : 'gray.700',
-                        borderColor: isCurrentConversation ? 'blue.400' : 'gray.600'
-                      }}
-                    >
-                      <CardBody py={3}>
-                        <HStack justify="space-between" align="start">
-                          <VStack align="start" spacing={2} flex={1}>
-                            <HStack spacing={2} wrap="wrap">
-                              {isCurrentConversation && (
-                                <Badge colorScheme="blue" size="sm">Current</Badge>
-                              )}
-                              <Badge variant="outline" size="sm">
-                                {messageCount} message{messageCount !== 1 ? 's' : ''}
-                              </Badge>
-                            </HStack>
-                            
-                            {lastMessage && (
-                              <Text
-                                fontSize="sm"
-                                color="gray.600"
-                                _dark={{ color: 'gray.300' }}
-                                noOfLines={2}
-                              >
-                                {lastMessage.role === 'user' ? '👤 ' : '🤖 '}
-                                {lastMessage.content}
-                              </Text>
-                            )}
-                            
-                            <Text fontSize="xs" color="gray.500">
-                              {new Date(conversation.updatedAt).toLocaleDateString()} at{' '}
-                              {new Date(conversation.updatedAt).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </Text>
-                          </VStack>
-                          
-                          <IconButton
-                            icon={<DeleteIcon />}
-                            size="sm"
-                            variant="ghost"
-                            colorScheme="red"
-                            aria-label="Delete conversation"
-                            onClick={(e) => handleDeleteConversation(conversation.id, e)}
-                            _hover={{ bg: 'red.100' }}
-                            _dark={{ _hover: { bg: 'red.900' } }}
-                          />
-                        </HStack>
-                      </CardBody>
-                    </Card>
-                  );
-                })}
-              </VStack>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onHistoryClose}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Box>
   );
 }; 
