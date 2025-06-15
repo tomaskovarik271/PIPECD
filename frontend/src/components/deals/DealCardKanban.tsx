@@ -20,15 +20,54 @@ import { Link as RouterLink } from 'react-router-dom';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { TimeIcon, ExternalLinkIcon, EditIcon, ViewIcon as EyeIcon } from '@chakra-ui/icons';
 import { differenceInDays, formatDistanceToNowStrict, isPast, format } from 'date-fns';
+import { useAppStore } from '../../stores/useAppStore';
 
 interface DealCardKanbanProps {
   deal: Deal;
   index: number;
 }
 
+// Simple exchange rates for demo (in production, this would come from the database)
+const EXCHANGE_RATES: Record<string, Record<string, number>> = {
+  'USD': { 'EUR': 0.85, 'GBP': 0.75, 'CHF': 0.92, 'USD': 1.0 },
+  'EUR': { 'USD': 1.18, 'GBP': 0.88, 'CHF': 1.08, 'EUR': 1.0 },
+  'GBP': { 'USD': 1.33, 'EUR': 1.14, 'CHF': 1.23, 'GBP': 1.0 },
+  'CHF': { 'USD': 1.09, 'EUR': 0.93, 'GBP': 0.81, 'CHF': 1.0 },
+};
+
+const convertAmount = (amount: number, fromCurrency: string, toCurrency: string): number => {
+  if (fromCurrency === toCurrency) return amount;
+  const rate = EXCHANGE_RATES[fromCurrency]?.[toCurrency] || 1;
+  return amount * rate;
+};
+
+const formatDealAmount = (deal: Deal, displayMode: 'mixed' | 'converted', baseCurrency: string) => {
+  if (!deal.amount) return '-';
+  
+  const originalCurrency = deal.currency || 'USD';
+  
+  if (displayMode === 'converted' && originalCurrency !== baseCurrency) {
+    const convertedAmount = convertAmount(deal.amount, originalCurrency, baseCurrency);
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: baseCurrency, 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0 
+    }).format(convertedAmount);
+  } else {
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: originalCurrency, 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0 
+    }).format(deal.amount);
+  }
+};
+
 const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
+  const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
 
   const placeholderTags = [deal.currentWfmStep?.status?.name].filter(Boolean) as string[];
   if (deal.amount && deal.amount > 50000) placeholderTags.push('High Value');
@@ -136,7 +175,7 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
                 )}
               </VStack>
               <Text fontSize="lg" fontWeight="bold" color={colors.text.success}>
-                {deal.amount ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits:0, maximumFractionDigits:0 }).format(deal.amount) : '-'}
+                {formatDealAmount(deal, currencyDisplayMode, baseCurrencyForConversion)}
               </Text>
             </HStack>
 

@@ -16,6 +16,9 @@ export interface DbDeal {
   user_id: string;
   name: string;
   amount?: number | null;
+  currency?: string | null;
+  amount_usd?: number | null;
+  exchange_rate_used?: number | null;
   expected_close_date?: string | null;
   created_at: string;
   updated_at: string;
@@ -33,6 +36,7 @@ export interface DbDeal {
 export interface DealServiceUpdateData {
   name?: string;
   amount?: number | null;
+  currency?: string | null;
   expected_close_date?: string | null; // Keep as string | null from input
   person_id?: string | null;
   organization_id?: string | null;
@@ -48,7 +52,7 @@ export async function getDeals(userId: string, accessToken: string): Promise<DbD
   const supabase = getAuthenticatedClient(accessToken);
   const { data, error } = await supabase
     .from('deals')
-    .select('id, user_id, name, amount, expected_close_date, created_at, updated_at, person_id, organization_id, project_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, custom_field_values')
+    .select('id, user_id, name, amount, currency, amount_usd, exchange_rate_used, expected_close_date, created_at, updated_at, person_id, organization_id, project_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, custom_field_values')
     .order('created_at', { ascending: false });
 
   handleSupabaseError(error, 'fetching deals');
@@ -60,7 +64,7 @@ export async function getDealById(userId: string, id: string, accessToken:string
   const supabase = getAuthenticatedClient(accessToken);
   const { data, error } = await supabase
     .from('deals')
-    .select('id, user_id, name, amount, expected_close_date, created_at, updated_at, person_id, organization_id, project_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, custom_field_values')
+    .select('id, user_id, name, amount, currency, amount_usd, exchange_rate_used, expected_close_date, created_at, updated_at, person_id, organization_id, project_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, custom_field_values')
     .eq('id', id)
     .single();
 
@@ -103,6 +107,7 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
   const explicitDealCoreData: any = {
     name: dealCoreData.name,
     amount: dealCoreData.amount,
+    currency: dealCoreData.currency,
     expected_close_date: dealCoreData.expected_close_date,
     person_id: dealCoreData.person_id,
     organization_id: dealCoreData.organization_id,

@@ -29,16 +29,6 @@ export type Scalars = {
   JSON: { input: Record<string, any>; output: Record<string, any> };
 };
 
-export type AiGeneratedNoteContent = {
-  __typename?: "AIGeneratedNoteContent";
-  confidence: Scalars["Float"]["output"];
-  content: Scalars["String"]["output"];
-  emailScope: Scalars["String"]["output"];
-  sourceContent: Scalars["String"]["output"];
-  suggestedTags: Array<Scalars["String"]["output"]>;
-  title: Scalars["String"]["output"];
-};
-
 export type AiGeneratedTaskContent = {
   __typename?: "AIGeneratedTaskContent";
   confidence: Scalars["Float"]["output"];
@@ -307,6 +297,18 @@ export enum ContactScopeType {
   SelectedRoles = "SELECTED_ROLES",
 }
 
+export type ConversionResult = {
+  __typename?: "ConversionResult";
+  convertedAmount: Scalars["Float"]["output"];
+  convertedCurrency: Scalars["String"]["output"];
+  effectiveDate: Scalars["String"]["output"];
+  exchangeRate: Scalars["Float"]["output"];
+  formattedConverted: Scalars["String"]["output"];
+  formattedOriginal: Scalars["String"]["output"];
+  originalAmount: Scalars["Float"]["output"];
+  originalCurrency: Scalars["String"]["output"];
+};
+
 export type ConvertedEntities = {
   __typename?: "ConvertedEntities";
   deal?: Maybe<Deal>;
@@ -336,6 +338,14 @@ export type CreateContactFromEmailInput = {
   lastName?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
   organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type CreateCurrencyInput = {
+  code: Scalars["String"]["input"];
+  decimalPlaces?: InputMaybe<Scalars["Int"]["input"]>;
+  isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  name: Scalars["String"]["input"];
+  symbol: Scalars["String"]["input"];
 };
 
 export type CreateDealFolderInput = {
@@ -371,16 +381,6 @@ export type CreateEmailInput = {
   sentAt: Scalars["DateTime"]["input"];
   subject: Scalars["String"]["input"];
   toEmails: Array<Scalars["String"]["input"]>;
-};
-
-export type CreateNoteFromEmailInput = {
-  content?: InputMaybe<Scalars["String"]["input"]>;
-  dealId?: InputMaybe<Scalars["String"]["input"]>;
-  emailId: Scalars["String"]["input"];
-  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
-  threadId?: InputMaybe<Scalars["String"]["input"]>;
-  title: Scalars["String"]["input"];
-  useWholeThread?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type CreateNotificationInput = {
@@ -531,6 +531,30 @@ export type CreateWfmWorkflowTransitionInput = {
   workflowId: Scalars["ID"]["input"];
 };
 
+export type Currency = {
+  __typename?: "Currency";
+  code: Scalars["String"]["output"];
+  createdAt: Scalars["String"]["output"];
+  decimalPlaces: Scalars["Int"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  name: Scalars["String"]["output"];
+  symbol: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type CurrencyAmount = {
+  __typename?: "CurrencyAmount";
+  amount: Scalars["Float"]["output"];
+  currency: Scalars["String"]["output"];
+  formattedAmount: Scalars["String"]["output"];
+};
+
+export type CurrencyOperationResult = {
+  __typename?: "CurrencyOperationResult";
+  message: Scalars["String"]["output"];
+  success: Scalars["Boolean"]["output"];
+};
+
 export type CustomFieldDefinition = {
   __typename?: "CustomFieldDefinition";
   createdAt: Scalars["DateTime"]["output"];
@@ -607,15 +631,21 @@ export type Deal = {
   __typename?: "Deal";
   activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
+  amountUsd?: Maybe<Scalars["Float"]["output"]>;
+  amount_usd?: Maybe<Scalars["Float"]["output"]>;
   assignedToUser?: Maybe<User>;
   assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
   createdBy: User;
   created_at: Scalars["DateTime"]["output"];
+  currency?: Maybe<Scalars["String"]["output"]>;
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
+  exchangeRateUsed?: Maybe<Scalars["Float"]["output"]>;
+  exchange_rate_used?: Maybe<Scalars["Float"]["output"]>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
+  formattedAmount?: Maybe<Scalars["String"]["output"]>;
   history?: Maybe<Array<DealHistoryEntry>>;
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
@@ -671,6 +701,7 @@ export type DealHistoryEntry = {
 export type DealInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
   assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  currency?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -714,12 +745,22 @@ export type DealSubfolders = {
 export type DealUpdateInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
   assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  currency?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type DealsByCurrencyResult = {
+  __typename?: "DealsByCurrencyResult";
+  count: Scalars["Int"]["output"];
+  currency: Scalars["String"]["output"];
+  formattedTotal: Scalars["String"]["output"];
+  totalAmount: Scalars["Float"]["output"];
+  totalAmountUsd: Scalars["Float"]["output"];
 };
 
 export enum DecisionAuthority {
@@ -1021,10 +1062,16 @@ export enum EntityType {
   Person = "PERSON",
 }
 
-export type GenerateNoteContentInput = {
-  emailId: Scalars["String"]["input"];
-  threadId?: InputMaybe<Scalars["String"]["input"]>;
-  useWholeThread: Scalars["Boolean"]["input"];
+export type ExchangeRate = {
+  __typename?: "ExchangeRate";
+  createdAt: Scalars["String"]["output"];
+  effectiveDate: Scalars["String"]["output"];
+  fromCurrency: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  rate: Scalars["Float"]["output"];
+  source: Scalars["String"]["output"];
+  toCurrency: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type GenerateTaskContentInput = {
@@ -1116,12 +1163,16 @@ export type Lead = {
   converted_to_person_id?: Maybe<Scalars["ID"]["output"]>;
   createdBy: User;
   created_at: Scalars["DateTime"]["output"];
+  currency?: Maybe<Scalars["String"]["output"]>;
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
   description?: Maybe<Scalars["String"]["output"]>;
+  estimatedValueUsd?: Maybe<Scalars["Float"]["output"]>;
   estimated_close_date?: Maybe<Scalars["DateTime"]["output"]>;
   estimated_value?: Maybe<Scalars["Float"]["output"]>;
+  exchangeRateUsed?: Maybe<Scalars["Float"]["output"]>;
+  formattedEstimatedValue?: Maybe<Scalars["String"]["output"]>;
   history?: Maybe<Array<Maybe<LeadHistoryEntry>>>;
   id: Scalars["ID"]["output"];
   isQualified: Scalars["Boolean"]["output"];
@@ -1254,18 +1305,19 @@ export type Mutation = {
   cancelActivityReminder: Scalars["Boolean"]["output"];
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
+  convertCurrency: ConversionResult;
   convertLead: LeadConversionResult;
   copyDriveFile: DriveFile;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
   createContactFromEmail: Person;
+  createCurrency: Currency;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
   createDealFolder: DriveFolderStructure;
   createDocument: Document;
   createEmail: Email;
   createLead: Lead;
-  createNoteFromEmail: SmartSticker;
   createNotification: Notification;
   createOrganization: Organization;
   createOrganizationRelationship: OrganizationRelationship;
@@ -1302,7 +1354,6 @@ export type Mutation = {
   detachFileFromDeal: Scalars["Boolean"]["output"];
   dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
-  generateNoteContentFromEmail: AiGeneratedNoteContent;
   generateTaskContentFromEmail: AiGeneratedTaskContent;
   linkEmailToDeal: Scalars["Boolean"]["output"];
   markAllNotificationsAsRead: Scalars["Int"]["output"];
@@ -1322,6 +1373,7 @@ export type Mutation = {
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
   scheduleActivityReminder: ActivityReminder;
   sendAgentMessage: AgentResponse;
+  setExchangeRate: ExchangeRate;
   shareDriveFolder: Scalars["Boolean"]["output"];
   syncGmailEmails: Array<Email>;
   toggleStickerPin: SmartSticker;
@@ -1330,13 +1382,16 @@ export type Mutation = {
   updateAgentConversation: AgentConversation;
   /** Update an app setting (admin only) */
   updateAppSetting: AppSetting;
+  updateCurrency: Currency;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
+  updateDealCurrency: CurrencyOperationResult;
   updateDealParticipantRole: DealParticipant;
   updateDealWFMProgress: Deal;
   updateDocumentAttachmentCategory: DealDocumentAttachment;
   updateEmailPin: EmailPin;
   updateLead?: Maybe<Lead>;
+  updateLeadCurrency: CurrencyOperationResult;
   updateLeadWFMProgress: Lead;
   updateMyReminderPreferences: UserReminderPreferences;
   updateOrganization?: Maybe<Organization>;
@@ -1347,6 +1402,7 @@ export type Mutation = {
   updateSticker: SmartSticker;
   updateStickerTags: SmartSticker;
   updateTerritory: Territory;
+  updateUserCurrencyPreferences: UserCurrencyPreferences;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -1408,6 +1464,13 @@ export type MutationConnectGoogleIntegrationArgs = {
   input: ConnectGoogleIntegrationInput;
 };
 
+export type MutationConvertCurrencyArgs = {
+  amount: Scalars["Float"]["input"];
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+  fromCurrency: Scalars["String"]["input"];
+  toCurrency: Scalars["String"]["input"];
+};
+
 export type MutationConvertLeadArgs = {
   id: Scalars["ID"]["input"];
   input: LeadConversionInput;
@@ -1429,6 +1492,10 @@ export type MutationCreateAgentConversationArgs = {
 
 export type MutationCreateContactFromEmailArgs = {
   input: CreateContactFromEmailInput;
+};
+
+export type MutationCreateCurrencyArgs = {
+  input: CreateCurrencyInput;
 };
 
 export type MutationCreateCustomFieldDefinitionArgs = {
@@ -1453,10 +1520,6 @@ export type MutationCreateEmailArgs = {
 
 export type MutationCreateLeadArgs = {
   input: LeadInput;
-};
-
-export type MutationCreateNoteFromEmailArgs = {
-  input: CreateNoteFromEmailInput;
 };
 
 export type MutationCreateNotificationArgs = {
@@ -1604,10 +1667,6 @@ export type MutationExecuteAgentStepArgs = {
   stepId: Scalars["String"]["input"];
 };
 
-export type MutationGenerateNoteContentFromEmailArgs = {
-  input: GenerateNoteContentInput;
-};
-
 export type MutationGenerateTaskContentFromEmailArgs = {
   input: GenerateTaskContentInput;
 };
@@ -1684,6 +1743,10 @@ export type MutationSendAgentMessageArgs = {
   input: SendMessageInput;
 };
 
+export type MutationSetExchangeRateArgs = {
+  input: SetExchangeRateInput;
+};
+
 export type MutationShareDriveFolderArgs = {
   folderId: Scalars["String"]["input"];
   permissions: Array<DrivePermissionInput>;
@@ -1715,6 +1778,11 @@ export type MutationUpdateAppSettingArgs = {
   input: UpdateAppSettingInput;
 };
 
+export type MutationUpdateCurrencyArgs = {
+  code: Scalars["String"]["input"];
+  input: UpdateCurrencyInput;
+};
+
 export type MutationUpdateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
   input: CustomFieldDefinitionInput;
@@ -1723,6 +1791,12 @@ export type MutationUpdateCustomFieldDefinitionArgs = {
 export type MutationUpdateDealArgs = {
   id: Scalars["ID"]["input"];
   input: DealUpdateInput;
+};
+
+export type MutationUpdateDealCurrencyArgs = {
+  currency: Scalars["String"]["input"];
+  dealId: Scalars["ID"]["input"];
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type MutationUpdateDealParticipantRoleArgs = {
@@ -1749,6 +1823,12 @@ export type MutationUpdateEmailPinArgs = {
 export type MutationUpdateLeadArgs = {
   id: Scalars["ID"]["input"];
   input: LeadUpdateInput;
+};
+
+export type MutationUpdateLeadCurrencyArgs = {
+  currency: Scalars["String"]["input"];
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+  leadId: Scalars["ID"]["input"];
 };
 
 export type MutationUpdateLeadWfmProgressArgs = {
@@ -1798,6 +1878,11 @@ export type MutationUpdateStickerTagsArgs = {
 export type MutationUpdateTerritoryArgs = {
   id: Scalars["ID"]["input"];
   input: CreateTerritoryInput;
+};
+
+export type MutationUpdateUserCurrencyPreferencesArgs = {
+  input: UpdateUserCurrencyPreferencesInput;
+  userId: Scalars["ID"]["input"];
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -2092,6 +2177,8 @@ export type Query = {
   appSetting?: Maybe<AppSetting>;
   /** Get all app settings (admin only for private settings) */
   appSettings: Array<AppSetting>;
+  currencies: Array<Currency>;
+  currency?: Maybe<Currency>;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
@@ -2100,7 +2187,9 @@ export type Query = {
   /** Get deal folder information, auto-creating if needed */
   dealFolderInfo: DealFolderInfo;
   deals: Array<Deal>;
+  dealsByCurrency: Array<DealsByCurrencyResult>;
   discoverAgentTools: ToolDiscoveryResponse;
+  exchangeRate?: Maybe<ExchangeRate>;
   findMissingStakeholders: MissingStakeholderRecommendations;
   getDealDocumentAttachments: Array<DealDocumentAttachment>;
   getDealDocuments: Array<DealDocumentAttachment>;
@@ -2164,6 +2253,7 @@ export type Query = {
   territories: Array<Territory>;
   territory?: Maybe<Territory>;
   unreadNotificationCount: Scalars["Int"]["output"];
+  userCurrencyPreferences?: Maybe<UserCurrencyPreferences>;
   users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
@@ -2215,6 +2305,10 @@ export type QueryAppSettingArgs = {
   settingKey: Scalars["String"]["input"];
 };
 
+export type QueryCurrencyArgs = {
+  code: Scalars["String"]["input"];
+};
+
 export type QueryCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2235,6 +2329,12 @@ export type QueryDealFolderFilesArgs = {
 
 export type QueryDealFolderInfoArgs = {
   dealId: Scalars["ID"]["input"];
+};
+
+export type QueryExchangeRateArgs = {
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+  fromCurrency: Scalars["String"]["input"];
+  toCurrency: Scalars["String"]["input"];
 };
 
 export type QueryFindMissingStakeholdersArgs = {
@@ -2455,6 +2555,10 @@ export type QueryTerritoryArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type QueryUserCurrencyPreferencesArgs = {
+  userId: Scalars["ID"]["input"];
+};
+
 export type QueryWfmProjectTypeArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2535,6 +2639,14 @@ export enum SeniorityLevel {
   Senior = "SENIOR",
   Vp = "VP",
 }
+
+export type SetExchangeRateInput = {
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+  fromCurrency: Scalars["String"]["input"];
+  rate: Scalars["Float"]["input"];
+  source?: InputMaybe<Scalars["String"]["input"]>;
+  toCurrency: Scalars["String"]["input"];
+};
 
 export type SharedDrive = {
   __typename?: "SharedDrive";
@@ -2813,6 +2925,13 @@ export type UpdateConversationInput = {
   plan?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
+export type UpdateCurrencyInput = {
+  decimalPlaces?: InputMaybe<Scalars["Int"]["input"]>;
+  isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  symbol?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type UpdateEmailPinInput = {
   notes?: InputMaybe<Scalars["String"]["input"]>;
 };
@@ -2858,6 +2977,11 @@ export type UpdateStickerInput = {
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   title?: InputMaybe<Scalars["String"]["input"]>;
   width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type UpdateUserCurrencyPreferencesInput = {
+  defaultCurrency?: InputMaybe<Scalars["String"]["input"]>;
+  displayCurrency?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 /**
@@ -2933,6 +3057,15 @@ export type User = {
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
   roles: Array<Role>;
+};
+
+export type UserCurrencyPreferences = {
+  __typename?: "UserCurrencyPreferences";
+  createdAt: Scalars["String"]["output"];
+  defaultCurrency: Scalars["String"]["output"];
+  displayCurrency: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
+  userId: Scalars["ID"]["output"];
 };
 
 export type UserReminderPreferences = {
@@ -3806,6 +3939,116 @@ export type GetPersonRelationshipsForNetworkQuery = {
       last_name?: string | null;
     };
   }>;
+};
+
+export type GetCurrenciesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetCurrenciesQuery = {
+  __typename?: "Query";
+  currencies: Array<{
+    __typename?: "Currency";
+    code: string;
+    name: string;
+    symbol: string;
+    decimalPlaces: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+};
+
+export type GetCurrencyQueryVariables = Exact<{
+  code: Scalars["String"]["input"];
+}>;
+
+export type GetCurrencyQuery = {
+  __typename?: "Query";
+  currency?: {
+    __typename?: "Currency";
+    code: string;
+    name: string;
+    symbol: string;
+    decimalPlaces: number;
+    isActive: boolean;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+};
+
+export type GetExchangeRateQueryVariables = Exact<{
+  fromCurrency: Scalars["String"]["input"];
+  toCurrency: Scalars["String"]["input"];
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+}>;
+
+export type GetExchangeRateQuery = {
+  __typename?: "Query";
+  exchangeRate?: {
+    __typename?: "ExchangeRate";
+    id: string;
+    fromCurrency: string;
+    toCurrency: string;
+    rate: number;
+    effectiveDate: string;
+    source: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+};
+
+export type ConvertCurrencyMutationVariables = Exact<{
+  amount: Scalars["Float"]["input"];
+  fromCurrency: Scalars["String"]["input"];
+  toCurrency: Scalars["String"]["input"];
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+}>;
+
+export type ConvertCurrencyMutation = {
+  __typename?: "Mutation";
+  convertCurrency: {
+    __typename?: "ConversionResult";
+    originalAmount: number;
+    originalCurrency: string;
+    convertedAmount: number;
+    convertedCurrency: string;
+    exchangeRate: number;
+    effectiveDate: string;
+    formattedOriginal: string;
+    formattedConverted: string;
+  };
+};
+
+export type GetUserCurrencyPreferencesQueryVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+}>;
+
+export type GetUserCurrencyPreferencesQuery = {
+  __typename?: "Query";
+  userCurrencyPreferences?: {
+    __typename?: "UserCurrencyPreferences";
+    userId: string;
+    defaultCurrency: string;
+    displayCurrency: string;
+    createdAt: string;
+    updatedAt: string;
+  } | null;
+};
+
+export type UpdateUserCurrencyPreferencesMutationVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+  input: UpdateUserCurrencyPreferencesInput;
+}>;
+
+export type UpdateUserCurrencyPreferencesMutation = {
+  __typename?: "Mutation";
+  updateUserCurrencyPreferences: {
+    __typename?: "UserCurrencyPreferences";
+    userId: string;
+    defaultCurrency: string;
+    displayCurrency: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 };
 
 export type GetDealCustomFieldDefinitionsQueryVariables = Exact<{
@@ -5578,9 +5821,17 @@ export type GetActivitiesQuery = {
     due_date?: string | null;
     is_done: boolean;
     notes?: string | null;
+    assigned_to_user_id?: string | null;
     deal_id?: string | null;
     person_id?: string | null;
     organization_id?: string | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      email: string;
+      display_name?: string | null;
+      avatar_url?: string | null;
+    } | null;
     deal?: { __typename?: "Deal"; id: string; name: string } | null;
     person?: {
       __typename?: "Person";
@@ -5613,9 +5864,17 @@ export type CreateActivityMutation = {
     due_date?: string | null;
     is_done: boolean;
     notes?: string | null;
+    assigned_to_user_id?: string | null;
     deal_id?: string | null;
     person_id?: string | null;
     organization_id?: string | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      email: string;
+      display_name?: string | null;
+      avatar_url?: string | null;
+    } | null;
     deal?: { __typename?: "Deal"; id: string; name: string } | null;
     person?: {
       __typename?: "Person";
@@ -5649,9 +5908,17 @@ export type UpdateActivityMutation = {
     due_date?: string | null;
     is_done: boolean;
     notes?: string | null;
+    assigned_to_user_id?: string | null;
     deal_id?: string | null;
     person_id?: string | null;
     organization_id?: string | null;
+    assignedToUser?: {
+      __typename?: "User";
+      id: string;
+      email: string;
+      display_name?: string | null;
+      avatar_url?: string | null;
+    } | null;
     deal?: { __typename?: "Deal"; id: string; name: string } | null;
     person?: {
       __typename?: "Person";
@@ -5905,6 +6172,7 @@ export type GetDealWithHistoryQuery = {
     id: string;
     name: string;
     amount?: number | null;
+    currency?: string | null;
     expected_close_date?: string | null;
     created_at: string;
     updated_at: string;
@@ -6060,6 +6328,7 @@ export type DealCoreFieldsFragment = {
   id: string;
   name: string;
   amount?: number | null;
+  currency?: string | null;
   expected_close_date?: string | null;
   created_at: string;
   updated_at: string;
@@ -6082,6 +6351,7 @@ export type GetDealsQuery = {
     id: string;
     name: string;
     amount?: number | null;
+    currency?: string | null;
     expected_close_date?: string | null;
     created_at: string;
     updated_at: string;
@@ -6168,6 +6438,7 @@ export type CreateDealMutation = {
     id: string;
     name: string;
     amount?: number | null;
+    currency?: string | null;
     expected_close_date?: string | null;
     created_at: string;
     updated_at: string;
@@ -6233,6 +6504,7 @@ export type UpdateDealMutation = {
     id: string;
     name: string;
     amount?: number | null;
+    currency?: string | null;
     expected_close_date?: string | null;
     created_at: string;
     updated_at: string;
@@ -6283,6 +6555,7 @@ export type UpdateDealWfmProgressMutation = {
     id: string;
     name: string;
     amount?: number | null;
+    currency?: string | null;
     expected_close_date?: string | null;
     created_at: string;
     updated_at: string;

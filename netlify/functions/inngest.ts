@@ -195,6 +195,7 @@ export const createLeadAssignmentTask = inngest.createFunction(
 // Import activity reminder service
 import { activityReminderService } from '../../lib/activityReminderService';
 import { emailService } from '../../lib/emailService';
+import { ECBService } from '../../lib/services/ecbService';
 
 // Activity reminder processing function
 export const processActivityReminder = inngest.createFunction(
@@ -503,6 +504,62 @@ export const cleanupExpiredNotifications = inngest.createFunction(
   }
 );
 
+// Function to update exchange rates from ECB API
+export const updateExchangeRatesFromECB = inngest.createFunction(
+  { id: 'update-exchange-rates-ecb', name: 'Update Exchange Rates from ECB' },
+  { cron: '0 6 * * 1-5' }, // Run weekdays at 6 AM (ECB updates rates around 4 PM CET)
+  async ({ event, step }) => {
+    console.log('[Inngest Fn: updateExchangeRatesFromECB] Starting scheduled ECB exchange rate update');
+
+    try {
+      // Step 1: Test ECB API connectivity
+      const connectionStatus = await step.run('test-ecb-connection', async () => {
+        return await ECBService.testECBConnection();
+      });
+
+      if (!connectionStatus.success) {
+        throw new Error(`ECB API connection failed: ${connectionStatus.message}`);
+      }
+
+      console.log('[Inngest Fn: updateExchangeRatesFromECB] ECB API connection successful');
+
+      // Step 2: Update exchange rates
+      const updateResult = await step.run('update-rates-from-ecb', async () => {
+        return await ECBService.updateRatesFromECB();
+      });
+
+      if (!updateResult.success) {
+        throw new Error(`ECB rate update failed: ${updateResult.message}`);
+      }
+
+      console.log(`[Inngest Fn: updateExchangeRatesFromECB] Successfully updated ${updateResult.updatedCount} exchange rates from ECB`);
+
+      // Step 3: Get update status for logging
+      const statusResult = await step.run('get-update-status', async () => {
+        return await ECBService.getECBUpdateStatus();
+      });
+
+      return { 
+        success: true, 
+        updatedCount: updateResult.updatedCount,
+        totalRates: statusResult.totalECBRates || 0,
+        lastUpdate: statusResult.lastUpdate,
+        message: `Updated ${updateResult.updatedCount} exchange rates from ECB API`
+      };
+    } catch (error) {
+      console.error('[Inngest Fn: updateExchangeRatesFromECB] Error:', error);
+      
+      // Log the error but don't throw to prevent infinite retries
+      // ECB API failures are expected on weekends/holidays
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        message: 'ECB exchange rate update failed - will retry on next schedule'
+      };
+    }
+  }
+);
+
 export const functions = [
   helloWorld, 
   logContactCreation, 
@@ -511,7 +568,8 @@ export const functions = [
   createLeadAssignmentTask,
   processActivityReminder,
   checkOverdueActivities,
-  cleanupExpiredNotifications
+  cleanupExpiredNotifications,
+  updateExchangeRatesFromECB
 ];
 
 // Determine serve options based on environment

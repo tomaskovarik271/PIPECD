@@ -1,0 +1,182 @@
+# Currency System Schema
+# Comprehensive multi-currency support for PipeCD
+
+# ================================
+# Core Currency Types
+# ================================
+
+type Currency {
+  code: String!
+  name: String!
+  symbol: String!
+  decimalPlaces: Int!
+  isActive: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type ExchangeRate {
+  id: ID!
+  fromCurrency: String!
+  toCurrency: String!
+  rate: Float!
+  effectiveDate: String!
+  source: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type CurrencyAmount {
+  amount: Float!
+  currency: String!
+  formattedAmount: String!
+}
+
+type UserCurrencyPreferences {
+  userId: ID!
+  defaultCurrency: String!
+  displayCurrency: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type ConversionResult {
+  originalAmount: Float!
+  originalCurrency: String!
+  convertedAmount: Float!
+  convertedCurrency: String!
+  exchangeRate: Float!
+  effectiveDate: String!
+  formattedOriginal: String!
+  formattedConverted: String!
+}
+
+type DealsByCurrencyResult {
+  currency: String!
+  count: Int!
+  totalAmount: Float!
+  totalAmountUsd: Float!
+  formattedTotal: String!
+}
+
+type CurrencyOperationResult {
+  success: Boolean!
+  message: String!
+}
+
+# ================================
+# Input Types
+# ================================
+
+input CreateCurrencyInput {
+  code: String!
+  name: String!
+  symbol: String!
+  decimalPlaces: Int = 2
+  isActive: Boolean = true
+}
+
+input UpdateCurrencyInput {
+  name: String
+  symbol: String
+  decimalPlaces: Int
+  isActive: Boolean
+}
+
+input SetExchangeRateInput {
+  fromCurrency: String!
+  toCurrency: String!
+  rate: Float!
+  effectiveDate: String
+  source: String = "manual"
+}
+
+input UpdateUserCurrencyPreferencesInput {
+  defaultCurrency: String
+  displayCurrency: String
+}
+
+# ================================
+# Query Extensions
+# ================================
+
+extend type Query {
+  # Currency queries
+  currencies: [Currency!]!
+  currency(code: String!): Currency
+  
+  # Exchange rate queries
+  exchangeRates: [ExchangeRate!]!
+  exchangeRate(fromCurrency: String!, toCurrency: String!, effectiveDate: String): ExchangeRate
+  
+  # Analytics queries
+  dealsByCurrency: [DealsByCurrencyResult!]!
+  
+  # User preference queries
+  userCurrencyPreferences(userId: ID!): UserCurrencyPreferences
+}
+
+# ================================
+# Mutation Extensions
+# ================================
+
+extend type Mutation {
+  # Currency management
+  createCurrency(input: CreateCurrencyInput!): Currency!
+  updateCurrency(code: String!, input: UpdateCurrencyInput!): Currency!
+  
+  # Exchange rate management
+  setExchangeRate(input: SetExchangeRateInput!): ExchangeRate!
+  
+  # ECB API integration
+  updateRatesFromECB: CurrencyOperationResult!
+  
+  # Currency conversion
+  convertCurrency(
+    amount: Float!
+    fromCurrency: String!
+    toCurrency: String!
+    effectiveDate: String
+  ): ConversionResult!
+  
+  # User preferences
+  updateUserCurrencyPreferences(
+    userId: ID!
+    input: UpdateUserCurrencyPreferencesInput!
+  ): UserCurrencyPreferences!
+  
+  # Entity currency updates
+  updateDealCurrency(
+    dealId: ID!
+    currency: String!
+    effectiveDate: String
+  ): CurrencyOperationResult!
+  
+  updateLeadCurrency(
+    leadId: ID!
+    currency: String!
+    effectiveDate: String
+  ): CurrencyOperationResult!
+}
+
+# ================================
+# Enhanced Deal Type
+# ================================
+
+extend type Deal {
+  currency: String
+  amountUsd: Float
+  exchangeRateUsed: Float
+  formattedAmount: String
+}
+
+# ================================
+# Enhanced Lead Type
+# ================================
+
+extend type Lead {
+  currency: String
+  estimatedValueUsd: Float
+  exchangeRateUsed: Float
+  formattedEstimatedValue: String
+} 

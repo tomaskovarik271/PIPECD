@@ -39,6 +39,7 @@ import type {
   DealUpdateInput,
   CustomFieldEntityType
 } from '../generated/graphql/graphql';
+import { DealAmountInput } from './currency/CurrencyInput';
 
 interface EditDealModalProps {
   isOpen: boolean;
@@ -52,7 +53,8 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   
   // Form state
   const [name, setName] = useState('');
-  const [amount, setAmount] = useState<string>('');
+  const [amount, setAmount] = useState<number>(0);
+  const [currency, setCurrency] = useState<string>('EUR');
   const [personId, setPersonId] = useState<string>('');
   const [organizationId, setOrganizationId] = useState<string>('');
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
@@ -106,7 +108,8 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   useEffect(() => {
     if (deal) {
       setName(deal.name || '');
-      setAmount(deal.amount != null ? String(deal.amount) : '');
+      setAmount(deal.amount || 0);
+      setCurrency(deal.currency || 'EUR');
       setPersonId(deal.person_id || ''); 
       setOrganizationId(deal.organization_id || deal.organization?.id || '');
       setDealSpecificProbability(
@@ -132,7 +135,8 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     } else {
       // Reset form if no deal
       setName('');
-      setAmount('');
+      setAmount(0);
+      setCurrency('EUR');
       setPersonId('');
       setOrganizationId('');
       setDealSpecificProbability('');
@@ -166,7 +170,8 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
       // Construct basic deal update data
       const dealUpdateData: Partial<DealUpdateInput> = {
         name: name.trim(),
-        amount: amount ? parseFloat(amount) : undefined,
+        amount: amount || undefined,
+        currency: currency,
         person_id: personId || undefined,
         organization_id: organizationId || undefined,
         expected_close_date: expectedCloseDate || undefined,
@@ -284,9 +289,12 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
 
               <FormControl>
                 <FormLabel>Amount</FormLabel>
-                <NumberInput value={amount} onChange={(valueString) => setAmount(valueString)} precision={2}>
-                  <NumberInputField />
-                </NumberInput>
+                <DealAmountInput
+                  amount={amount}
+                  currency={currency}
+                  onAmountChange={setAmount}
+                  onCurrencyChange={setCurrency}
+                />
               </FormControl>
 
               <FormControl isInvalid={!!error && error.includes('Probability')}>

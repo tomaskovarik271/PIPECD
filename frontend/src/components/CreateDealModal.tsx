@@ -35,6 +35,7 @@ import {
   processCustomFieldsForSubmission 
 } from '../lib/utils/customFieldProcessing';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
+import { DealAmountInput } from './currency/CurrencyInput';
 
 interface CreateDealModalProps {
   isOpen: boolean;
@@ -49,7 +50,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   // Form state
   const [name, setName] = useState('');
   const [selectedWFMProjectTypeId, setSelectedWFMProjectTypeId] = useState<string>('');
-  const [amount, setAmount] = useState<string>('');
+  const [amount, setAmount] = useState<number>(0);
+  const [currency, setCurrency] = useState<string>('EUR');
   const [personId, setPersonId] = useState<string>('');
   const [organizationId, setOrganizationId] = useState<string>('');
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
@@ -102,7 +104,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       // Reset form
       setName('');
       setSelectedWFMProjectTypeId('');
-      setAmount('');
+      setAmount(0);
+      setCurrency('EUR');
       setPersonId('');
       setOrganizationId('');
       setError(null);
@@ -159,7 +162,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       const dealInput: DealInput = {
         name: name.trim(),
         wfmProjectTypeId: selectedWFMProjectTypeId,
-        amount: amount ? parseFloat(amount) : null,
+        amount: amount || null,
+        currency: currency,
         person_id: personId || null,
         organization_id: organizationId || null,
         expected_close_date: expectedCloseDate ? new Date(expectedCloseDate).toISOString() : null,
@@ -244,9 +248,12 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
 
             <FormControl>
               <FormLabel>Amount</FormLabel>
-              <NumberInput value={amount} onChange={(valueString) => setAmount(valueString)} precision={2}>
-                <NumberInputField placeholder="Enter deal amount (optional)" />
-              </NumberInput>
+              <DealAmountInput
+                amount={amount}
+                currency={currency}
+                onAmountChange={setAmount}
+                onCurrencyChange={setCurrency}
+              />
             </FormControl>
 
             <FormControl>

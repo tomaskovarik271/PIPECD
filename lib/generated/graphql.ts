@@ -38,16 +38,6 @@ export type Scalars = {
   JSON: { input: { [key: string]: any }; output: { [key: string]: any } };
 };
 
-export type AiGeneratedNoteContent = {
-  __typename?: "AIGeneratedNoteContent";
-  confidence: Scalars["Float"]["output"];
-  content: Scalars["String"]["output"];
-  emailScope: Scalars["String"]["output"];
-  sourceContent: Scalars["String"]["output"];
-  suggestedTags: Array<Scalars["String"]["output"]>;
-  title: Scalars["String"]["output"];
-};
-
 export type AiGeneratedTaskContent = {
   __typename?: "AIGeneratedTaskContent";
   confidence: Scalars["Float"]["output"];
@@ -316,6 +306,18 @@ export enum ContactScopeType {
   SelectedRoles = "SELECTED_ROLES",
 }
 
+export type ConversionResult = {
+  __typename?: "ConversionResult";
+  convertedAmount: Scalars["Float"]["output"];
+  convertedCurrency: Scalars["String"]["output"];
+  effectiveDate: Scalars["String"]["output"];
+  exchangeRate: Scalars["Float"]["output"];
+  formattedConverted: Scalars["String"]["output"];
+  formattedOriginal: Scalars["String"]["output"];
+  originalAmount: Scalars["Float"]["output"];
+  originalCurrency: Scalars["String"]["output"];
+};
+
 export type ConvertedEntities = {
   __typename?: "ConvertedEntities";
   deal?: Maybe<Deal>;
@@ -345,6 +347,14 @@ export type CreateContactFromEmailInput = {
   lastName?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
   organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type CreateCurrencyInput = {
+  code: Scalars["String"]["input"];
+  decimalPlaces?: InputMaybe<Scalars["Int"]["input"]>;
+  isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  name: Scalars["String"]["input"];
+  symbol: Scalars["String"]["input"];
 };
 
 export type CreateDealFolderInput = {
@@ -380,16 +390,6 @@ export type CreateEmailInput = {
   sentAt: Scalars["DateTime"]["input"];
   subject: Scalars["String"]["input"];
   toEmails: Array<Scalars["String"]["input"]>;
-};
-
-export type CreateNoteFromEmailInput = {
-  content?: InputMaybe<Scalars["String"]["input"]>;
-  dealId?: InputMaybe<Scalars["String"]["input"]>;
-  emailId: Scalars["String"]["input"];
-  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
-  threadId?: InputMaybe<Scalars["String"]["input"]>;
-  title: Scalars["String"]["input"];
-  useWholeThread?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type CreateNotificationInput = {
@@ -540,6 +540,30 @@ export type CreateWfmWorkflowTransitionInput = {
   workflowId: Scalars["ID"]["input"];
 };
 
+export type Currency = {
+  __typename?: "Currency";
+  code: Scalars["String"]["output"];
+  createdAt: Scalars["String"]["output"];
+  decimalPlaces: Scalars["Int"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  name: Scalars["String"]["output"];
+  symbol: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
+};
+
+export type CurrencyAmount = {
+  __typename?: "CurrencyAmount";
+  amount: Scalars["Float"]["output"];
+  currency: Scalars["String"]["output"];
+  formattedAmount: Scalars["String"]["output"];
+};
+
+export type CurrencyOperationResult = {
+  __typename?: "CurrencyOperationResult";
+  message: Scalars["String"]["output"];
+  success: Scalars["Boolean"]["output"];
+};
+
 export type CustomFieldDefinition = {
   __typename?: "CustomFieldDefinition";
   createdAt: Scalars["DateTime"]["output"];
@@ -616,15 +640,21 @@ export type Deal = {
   __typename?: "Deal";
   activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
+  amountUsd?: Maybe<Scalars["Float"]["output"]>;
+  amount_usd?: Maybe<Scalars["Float"]["output"]>;
   assignedToUser?: Maybe<User>;
   assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
   createdBy: User;
   created_at: Scalars["DateTime"]["output"];
+  currency?: Maybe<Scalars["String"]["output"]>;
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
   deal_specific_probability?: Maybe<Scalars["Float"]["output"]>;
+  exchangeRateUsed?: Maybe<Scalars["Float"]["output"]>;
+  exchange_rate_used?: Maybe<Scalars["Float"]["output"]>;
   expected_close_date?: Maybe<Scalars["DateTime"]["output"]>;
+  formattedAmount?: Maybe<Scalars["String"]["output"]>;
   history?: Maybe<Array<DealHistoryEntry>>;
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
@@ -680,6 +710,7 @@ export type DealHistoryEntry = {
 export type DealInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
   assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  currency?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -723,12 +754,22 @@ export type DealSubfolders = {
 export type DealUpdateInput = {
   amount?: InputMaybe<Scalars["Float"]["input"]>;
   assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  currency?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   deal_specific_probability?: InputMaybe<Scalars["Float"]["input"]>;
   expected_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type DealsByCurrencyResult = {
+  __typename?: "DealsByCurrencyResult";
+  count: Scalars["Int"]["output"];
+  currency: Scalars["String"]["output"];
+  formattedTotal: Scalars["String"]["output"];
+  totalAmount: Scalars["Float"]["output"];
+  totalAmountUsd: Scalars["Float"]["output"];
 };
 
 export enum DecisionAuthority {
@@ -1030,10 +1071,16 @@ export enum EntityType {
   Person = "PERSON",
 }
 
-export type GenerateNoteContentInput = {
-  emailId: Scalars["String"]["input"];
-  threadId?: InputMaybe<Scalars["String"]["input"]>;
-  useWholeThread: Scalars["Boolean"]["input"];
+export type ExchangeRate = {
+  __typename?: "ExchangeRate";
+  createdAt: Scalars["String"]["output"];
+  effectiveDate: Scalars["String"]["output"];
+  fromCurrency: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  rate: Scalars["Float"]["output"];
+  source: Scalars["String"]["output"];
+  toCurrency: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type GenerateTaskContentInput = {
@@ -1125,12 +1172,16 @@ export type Lead = {
   converted_to_person_id?: Maybe<Scalars["ID"]["output"]>;
   createdBy: User;
   created_at: Scalars["DateTime"]["output"];
+  currency?: Maybe<Scalars["String"]["output"]>;
   currentWfmStatus?: Maybe<WfmStatus>;
   currentWfmStep?: Maybe<WfmWorkflowStep>;
   customFieldValues: Array<CustomFieldValue>;
   description?: Maybe<Scalars["String"]["output"]>;
+  estimatedValueUsd?: Maybe<Scalars["Float"]["output"]>;
   estimated_close_date?: Maybe<Scalars["DateTime"]["output"]>;
   estimated_value?: Maybe<Scalars["Float"]["output"]>;
+  exchangeRateUsed?: Maybe<Scalars["Float"]["output"]>;
+  formattedEstimatedValue?: Maybe<Scalars["String"]["output"]>;
   history?: Maybe<Array<Maybe<LeadHistoryEntry>>>;
   id: Scalars["ID"]["output"];
   isQualified: Scalars["Boolean"]["output"];
@@ -1263,18 +1314,19 @@ export type Mutation = {
   cancelActivityReminder: Scalars["Boolean"]["output"];
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
+  convertCurrency: ConversionResult;
   convertLead: LeadConversionResult;
   copyDriveFile: DriveFile;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
   createContactFromEmail: Person;
+  createCurrency: Currency;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
   createDealFolder: DriveFolderStructure;
   createDocument: Document;
   createEmail: Email;
   createLead: Lead;
-  createNoteFromEmail: SmartSticker;
   createNotification: Notification;
   createOrganization: Organization;
   createOrganizationRelationship: OrganizationRelationship;
@@ -1311,7 +1363,6 @@ export type Mutation = {
   detachFileFromDeal: Scalars["Boolean"]["output"];
   dismissRelationshipInsight: Scalars["Boolean"]["output"];
   executeAgentStep: AgentResponse;
-  generateNoteContentFromEmail: AiGeneratedNoteContent;
   generateTaskContentFromEmail: AiGeneratedTaskContent;
   linkEmailToDeal: Scalars["Boolean"]["output"];
   markAllNotificationsAsRead: Scalars["Int"]["output"];
@@ -1331,6 +1382,7 @@ export type Mutation = {
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
   scheduleActivityReminder: ActivityReminder;
   sendAgentMessage: AgentResponse;
+  setExchangeRate: ExchangeRate;
   shareDriveFolder: Scalars["Boolean"]["output"];
   syncGmailEmails: Array<Email>;
   toggleStickerPin: SmartSticker;
@@ -1339,13 +1391,16 @@ export type Mutation = {
   updateAgentConversation: AgentConversation;
   /** Update an app setting (admin only) */
   updateAppSetting: AppSetting;
+  updateCurrency: Currency;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
+  updateDealCurrency: CurrencyOperationResult;
   updateDealParticipantRole: DealParticipant;
   updateDealWFMProgress: Deal;
   updateDocumentAttachmentCategory: DealDocumentAttachment;
   updateEmailPin: EmailPin;
   updateLead?: Maybe<Lead>;
+  updateLeadCurrency: CurrencyOperationResult;
   updateLeadWFMProgress: Lead;
   updateMyReminderPreferences: UserReminderPreferences;
   updateOrganization?: Maybe<Organization>;
@@ -1356,6 +1411,7 @@ export type Mutation = {
   updateSticker: SmartSticker;
   updateStickerTags: SmartSticker;
   updateTerritory: Territory;
+  updateUserCurrencyPreferences: UserCurrencyPreferences;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
   updateWFMProjectType: WfmProjectType;
@@ -1417,6 +1473,13 @@ export type MutationConnectGoogleIntegrationArgs = {
   input: ConnectGoogleIntegrationInput;
 };
 
+export type MutationConvertCurrencyArgs = {
+  amount: Scalars["Float"]["input"];
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+  fromCurrency: Scalars["String"]["input"];
+  toCurrency: Scalars["String"]["input"];
+};
+
 export type MutationConvertLeadArgs = {
   id: Scalars["ID"]["input"];
   input: LeadConversionInput;
@@ -1438,6 +1501,10 @@ export type MutationCreateAgentConversationArgs = {
 
 export type MutationCreateContactFromEmailArgs = {
   input: CreateContactFromEmailInput;
+};
+
+export type MutationCreateCurrencyArgs = {
+  input: CreateCurrencyInput;
 };
 
 export type MutationCreateCustomFieldDefinitionArgs = {
@@ -1462,10 +1529,6 @@ export type MutationCreateEmailArgs = {
 
 export type MutationCreateLeadArgs = {
   input: LeadInput;
-};
-
-export type MutationCreateNoteFromEmailArgs = {
-  input: CreateNoteFromEmailInput;
 };
 
 export type MutationCreateNotificationArgs = {
@@ -1613,10 +1676,6 @@ export type MutationExecuteAgentStepArgs = {
   stepId: Scalars["String"]["input"];
 };
 
-export type MutationGenerateNoteContentFromEmailArgs = {
-  input: GenerateNoteContentInput;
-};
-
 export type MutationGenerateTaskContentFromEmailArgs = {
   input: GenerateTaskContentInput;
 };
@@ -1693,6 +1752,10 @@ export type MutationSendAgentMessageArgs = {
   input: SendMessageInput;
 };
 
+export type MutationSetExchangeRateArgs = {
+  input: SetExchangeRateInput;
+};
+
 export type MutationShareDriveFolderArgs = {
   folderId: Scalars["String"]["input"];
   permissions: Array<DrivePermissionInput>;
@@ -1724,6 +1787,11 @@ export type MutationUpdateAppSettingArgs = {
   input: UpdateAppSettingInput;
 };
 
+export type MutationUpdateCurrencyArgs = {
+  code: Scalars["String"]["input"];
+  input: UpdateCurrencyInput;
+};
+
 export type MutationUpdateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
   input: CustomFieldDefinitionInput;
@@ -1732,6 +1800,12 @@ export type MutationUpdateCustomFieldDefinitionArgs = {
 export type MutationUpdateDealArgs = {
   id: Scalars["ID"]["input"];
   input: DealUpdateInput;
+};
+
+export type MutationUpdateDealCurrencyArgs = {
+  currency: Scalars["String"]["input"];
+  dealId: Scalars["ID"]["input"];
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type MutationUpdateDealParticipantRoleArgs = {
@@ -1758,6 +1832,12 @@ export type MutationUpdateEmailPinArgs = {
 export type MutationUpdateLeadArgs = {
   id: Scalars["ID"]["input"];
   input: LeadUpdateInput;
+};
+
+export type MutationUpdateLeadCurrencyArgs = {
+  currency: Scalars["String"]["input"];
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+  leadId: Scalars["ID"]["input"];
 };
 
 export type MutationUpdateLeadWfmProgressArgs = {
@@ -1807,6 +1887,11 @@ export type MutationUpdateStickerTagsArgs = {
 export type MutationUpdateTerritoryArgs = {
   id: Scalars["ID"]["input"];
   input: CreateTerritoryInput;
+};
+
+export type MutationUpdateUserCurrencyPreferencesArgs = {
+  input: UpdateUserCurrencyPreferencesInput;
+  userId: Scalars["ID"]["input"];
 };
 
 export type MutationUpdateUserProfileArgs = {
@@ -2101,6 +2186,8 @@ export type Query = {
   appSetting?: Maybe<AppSetting>;
   /** Get all app settings (admin only for private settings) */
   appSettings: Array<AppSetting>;
+  currencies: Array<Currency>;
+  currency?: Maybe<Currency>;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
@@ -2109,7 +2196,9 @@ export type Query = {
   /** Get deal folder information, auto-creating if needed */
   dealFolderInfo: DealFolderInfo;
   deals: Array<Deal>;
+  dealsByCurrency: Array<DealsByCurrencyResult>;
   discoverAgentTools: ToolDiscoveryResponse;
+  exchangeRate?: Maybe<ExchangeRate>;
   findMissingStakeholders: MissingStakeholderRecommendations;
   getDealDocumentAttachments: Array<DealDocumentAttachment>;
   getDealDocuments: Array<DealDocumentAttachment>;
@@ -2173,6 +2262,7 @@ export type Query = {
   territories: Array<Territory>;
   territory?: Maybe<Territory>;
   unreadNotificationCount: Scalars["Int"]["output"];
+  userCurrencyPreferences?: Maybe<UserCurrencyPreferences>;
   users: Array<User>;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
@@ -2224,6 +2314,10 @@ export type QueryAppSettingArgs = {
   settingKey: Scalars["String"]["input"];
 };
 
+export type QueryCurrencyArgs = {
+  code: Scalars["String"]["input"];
+};
+
 export type QueryCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2244,6 +2338,12 @@ export type QueryDealFolderFilesArgs = {
 
 export type QueryDealFolderInfoArgs = {
   dealId: Scalars["ID"]["input"];
+};
+
+export type QueryExchangeRateArgs = {
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+  fromCurrency: Scalars["String"]["input"];
+  toCurrency: Scalars["String"]["input"];
 };
 
 export type QueryFindMissingStakeholdersArgs = {
@@ -2464,6 +2564,10 @@ export type QueryTerritoryArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type QueryUserCurrencyPreferencesArgs = {
+  userId: Scalars["ID"]["input"];
+};
+
 export type QueryWfmProjectTypeArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2544,6 +2648,14 @@ export enum SeniorityLevel {
   Senior = "SENIOR",
   Vp = "VP",
 }
+
+export type SetExchangeRateInput = {
+  effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
+  fromCurrency: Scalars["String"]["input"];
+  rate: Scalars["Float"]["input"];
+  source?: InputMaybe<Scalars["String"]["input"]>;
+  toCurrency: Scalars["String"]["input"];
+};
 
 export type SharedDrive = {
   __typename?: "SharedDrive";
@@ -2822,6 +2934,13 @@ export type UpdateConversationInput = {
   plan?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
+export type UpdateCurrencyInput = {
+  decimalPlaces?: InputMaybe<Scalars["Int"]["input"]>;
+  isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  symbol?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type UpdateEmailPinInput = {
   notes?: InputMaybe<Scalars["String"]["input"]>;
 };
@@ -2867,6 +2986,11 @@ export type UpdateStickerInput = {
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   title?: InputMaybe<Scalars["String"]["input"]>;
   width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type UpdateUserCurrencyPreferencesInput = {
+  defaultCurrency?: InputMaybe<Scalars["String"]["input"]>;
+  displayCurrency?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 /**
@@ -2942,6 +3066,15 @@ export type User = {
   email: Scalars["String"]["output"];
   id: Scalars["ID"]["output"];
   roles: Array<Role>;
+};
+
+export type UserCurrencyPreferences = {
+  __typename?: "UserCurrencyPreferences";
+  createdAt: Scalars["String"]["output"];
+  defaultCurrency: Scalars["String"]["output"];
+  displayCurrency: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
+  userId: Scalars["ID"]["output"];
 };
 
 export type UserReminderPreferences = {
@@ -3172,7 +3305,6 @@ export type DirectiveResolverFn<
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
-  AIGeneratedNoteContent: ResolverTypeWrapper<AiGeneratedNoteContent>;
   AIGeneratedTaskContent: ResolverTypeWrapper<AiGeneratedTaskContent>;
   AccountTerritory: ResolverTypeWrapper<AccountTerritory>;
   Activity: ResolverTypeWrapper<Activity>;
@@ -3202,13 +3334,14 @@ export type ResolversTypes = {
   ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
   ContactRoleType: ContactRoleType;
   ContactScopeType: ContactScopeType;
+  ConversionResult: ResolverTypeWrapper<ConversionResult>;
   ConvertedEntities: ResolverTypeWrapper<ConvertedEntities>;
   CreateActivityInput: CreateActivityInput;
   CreateContactFromEmailInput: CreateContactFromEmailInput;
+  CreateCurrencyInput: CreateCurrencyInput;
   CreateDealFolderInput: CreateDealFolderInput;
   CreateDocumentInput: CreateDocumentInput;
   CreateEmailInput: CreateEmailInput;
-  CreateNoteFromEmailInput: CreateNoteFromEmailInput;
   CreateNotificationInput: CreateNotificationInput;
   CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
   CreatePersonOrganizationalRoleInput: CreatePersonOrganizationalRoleInput;
@@ -3222,6 +3355,9 @@ export type ResolversTypes = {
   CreateWFMWorkflowInput: CreateWfmWorkflowInput;
   CreateWFMWorkflowStepInput: CreateWfmWorkflowStepInput;
   CreateWFMWorkflowTransitionInput: CreateWfmWorkflowTransitionInput;
+  Currency: ResolverTypeWrapper<Currency>;
+  CurrencyAmount: ResolverTypeWrapper<CurrencyAmount>;
+  CurrencyOperationResult: ResolverTypeWrapper<CurrencyOperationResult>;
   CustomFieldDefinition: ResolverTypeWrapper<CustomFieldDefinition>;
   CustomFieldDefinitionInput: CustomFieldDefinitionInput;
   CustomFieldEntityType: CustomFieldEntityType;
@@ -3240,6 +3376,7 @@ export type ResolversTypes = {
   DealParticipantInput: DealParticipantInput;
   DealSubfolders: ResolverTypeWrapper<DealSubfolders>;
   DealUpdateInput: DealUpdateInput;
+  DealsByCurrencyResult: ResolverTypeWrapper<DealsByCurrencyResult>;
   DecisionAuthority: DecisionAuthority;
   Document: ResolverTypeWrapper<Document>;
   DocumentCategory: DocumentCategory;
@@ -3270,8 +3407,8 @@ export type ResolversTypes = {
   EmailThreadsFilterInput: EmailThreadsFilterInput;
   EngagementLevel: EngagementLevel;
   EntityType: EntityType;
+  ExchangeRate: ResolverTypeWrapper<ExchangeRate>;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
-  GenerateNoteContentInput: GenerateNoteContentInput;
   GenerateTaskContentInput: GenerateTaskContentInput;
   GoogleDriveConfig: ResolverTypeWrapper<GoogleDriveConfig>;
   GoogleIntegrationStatus: ResolverTypeWrapper<GoogleIntegrationStatus>;
@@ -3320,6 +3457,7 @@ export type ResolversTypes = {
   Role: ResolverTypeWrapper<Role>;
   SendMessageInput: SendMessageInput;
   SeniorityLevel: SeniorityLevel;
+  SetExchangeRateInput: SetExchangeRateInput;
   SharedDrive: ResolverTypeWrapper<SharedDrive>;
   SharedDriveCapabilities: ResolverTypeWrapper<SharedDriveCapabilities>;
   SharedDriveImage: ResolverTypeWrapper<SharedDriveImage>;
@@ -3345,10 +3483,12 @@ export type ResolversTypes = {
   UpdateActivityInput: UpdateActivityInput;
   UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateConversationInput: UpdateConversationInput;
+  UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
   UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
   UpdateStickerInput: UpdateStickerInput;
+  UpdateUserCurrencyPreferencesInput: UpdateUserCurrencyPreferencesInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateUserReminderPreferencesInput: UpdateUserReminderPreferencesInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
@@ -3358,6 +3498,7 @@ export type ResolversTypes = {
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
   UploadFileInput: UploadFileInput;
   User: ResolverTypeWrapper<User>;
+  UserCurrencyPreferences: ResolverTypeWrapper<UserCurrencyPreferences>;
   UserReminderPreferences: ResolverTypeWrapper<UserReminderPreferences>;
   WFMProject: ResolverTypeWrapper<WfmProject>;
   WFMProjectType: ResolverTypeWrapper<WfmProjectType>;
@@ -3372,7 +3513,6 @@ export type ResolversTypes = {
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
-  AIGeneratedNoteContent: AiGeneratedNoteContent;
   AIGeneratedTaskContent: AiGeneratedTaskContent;
   AccountTerritory: AccountTerritory;
   Activity: Activity;
@@ -3395,13 +3535,14 @@ export type ResolversParentTypes = {
   Boolean: Scalars["Boolean"]["output"];
   ComposeEmailInput: ComposeEmailInput;
   ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
+  ConversionResult: ConversionResult;
   ConvertedEntities: ConvertedEntities;
   CreateActivityInput: CreateActivityInput;
   CreateContactFromEmailInput: CreateContactFromEmailInput;
+  CreateCurrencyInput: CreateCurrencyInput;
   CreateDealFolderInput: CreateDealFolderInput;
   CreateDocumentInput: CreateDocumentInput;
   CreateEmailInput: CreateEmailInput;
-  CreateNoteFromEmailInput: CreateNoteFromEmailInput;
   CreateNotificationInput: CreateNotificationInput;
   CreateOrganizationRelationshipInput: CreateOrganizationRelationshipInput;
   CreatePersonOrganizationalRoleInput: CreatePersonOrganizationalRoleInput;
@@ -3415,6 +3556,9 @@ export type ResolversParentTypes = {
   CreateWFMWorkflowInput: CreateWfmWorkflowInput;
   CreateWFMWorkflowStepInput: CreateWfmWorkflowStepInput;
   CreateWFMWorkflowTransitionInput: CreateWfmWorkflowTransitionInput;
+  Currency: Currency;
+  CurrencyAmount: CurrencyAmount;
+  CurrencyOperationResult: CurrencyOperationResult;
   CustomFieldDefinition: CustomFieldDefinition;
   CustomFieldDefinitionInput: CustomFieldDefinitionInput;
   CustomFieldOption: CustomFieldOption;
@@ -3431,6 +3575,7 @@ export type ResolversParentTypes = {
   DealParticipantInput: DealParticipantInput;
   DealSubfolders: DealSubfolders;
   DealUpdateInput: DealUpdateInput;
+  DealsByCurrencyResult: DealsByCurrencyResult;
   Document: Document;
   DriveFile: DriveFile;
   DriveFileConnection: DriveFileConnection;
@@ -3453,8 +3598,8 @@ export type ResolversParentTypes = {
   EmailThread: EmailThread;
   EmailThreadConnection: EmailThreadConnection;
   EmailThreadsFilterInput: EmailThreadsFilterInput;
+  ExchangeRate: ExchangeRate;
   Float: Scalars["Float"]["output"];
-  GenerateNoteContentInput: GenerateNoteContentInput;
   GenerateTaskContentInput: GenerateTaskContentInput;
   GoogleDriveConfig: GoogleDriveConfig;
   GoogleIntegrationStatus: GoogleIntegrationStatus;
@@ -3492,6 +3637,7 @@ export type ResolversParentTypes = {
   RelationshipInsight: RelationshipInsight;
   Role: Role;
   SendMessageInput: SendMessageInput;
+  SetExchangeRateInput: SetExchangeRateInput;
   SharedDrive: SharedDrive;
   SharedDriveCapabilities: SharedDriveCapabilities;
   SharedDriveImage: SharedDriveImage;
@@ -3511,10 +3657,12 @@ export type ResolversParentTypes = {
   UpdateActivityInput: UpdateActivityInput;
   UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateConversationInput: UpdateConversationInput;
+  UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
   UpdateRelationshipInsightInput: UpdateRelationshipInsightInput;
   UpdateStakeholderAnalysisInput: UpdateStakeholderAnalysisInput;
   UpdateStickerInput: UpdateStickerInput;
+  UpdateUserCurrencyPreferencesInput: UpdateUserCurrencyPreferencesInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateUserReminderPreferencesInput: UpdateUserReminderPreferencesInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
@@ -3524,6 +3672,7 @@ export type ResolversParentTypes = {
   UpdateWfmWorkflowTransitionInput: UpdateWfmWorkflowTransitionInput;
   UploadFileInput: UploadFileInput;
   User: User;
+  UserCurrencyPreferences: UserCurrencyPreferences;
   UserReminderPreferences: UserReminderPreferences;
   WFMProject: WfmProject;
   WFMProjectType: WfmProjectType;
@@ -3534,24 +3683,6 @@ export type ResolversParentTypes = {
   WFMWorkflowStepMutationResponse: WfmWorkflowStepMutationResponse;
   WFMWorkflowTransition: WfmWorkflowTransition;
   WFMWorkflowTransitionMutationResponse: WfmWorkflowTransitionMutationResponse;
-};
-
-export type AiGeneratedNoteContentResolvers<
-  ContextType = GraphQLContext,
-  ParentType extends
-    ResolversParentTypes["AIGeneratedNoteContent"] = ResolversParentTypes["AIGeneratedNoteContent"],
-> = {
-  confidence?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
-  content?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  emailScope?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  sourceContent?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  suggestedTags?: Resolver<
-    Array<ResolversTypes["String"]>,
-    ParentType,
-    ContextType
-  >;
-  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type AiGeneratedTaskContentResolvers<
@@ -3836,6 +3967,38 @@ export type AppSettingResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type ConversionResultResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["ConversionResult"] = ResolversParentTypes["ConversionResult"],
+> = {
+  convertedAmount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  convertedCurrency?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  effectiveDate?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  exchangeRate?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  formattedConverted?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  formattedOriginal?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  originalAmount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  originalCurrency?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type ConvertedEntitiesResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -3848,6 +4011,42 @@ export type ConvertedEntitiesResolvers<
     ContextType
   >;
   person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CurrencyResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["Currency"] = ResolversParentTypes["Currency"],
+> = {
+  code?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  decimalPlaces?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  isActive?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  symbol?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CurrencyAmountResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["CurrencyAmount"] = ResolversParentTypes["CurrencyAmount"],
+> = {
+  amount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  currency?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  formattedAmount?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CurrencyOperationResultResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["CurrencyOperationResult"] = ResolversParentTypes["CurrencyOperationResult"],
+> = {
+  message?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  success?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -3946,6 +4145,12 @@ export type DealResolvers<
     ContextType
   >;
   amount?: Resolver<Maybe<ResolversTypes["Float"]>, ParentType, ContextType>;
+  amountUsd?: Resolver<Maybe<ResolversTypes["Float"]>, ParentType, ContextType>;
+  amount_usd?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
   assignedToUser?: Resolver<
     Maybe<ResolversTypes["User"]>,
     ParentType,
@@ -3958,6 +4163,7 @@ export type DealResolvers<
   >;
   createdBy?: Resolver<ResolversTypes["User"], ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  currency?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   currentWfmStatus?: Resolver<
     Maybe<ResolversTypes["WFMStatus"]>,
     ParentType,
@@ -3978,8 +4184,23 @@ export type DealResolvers<
     ParentType,
     ContextType
   >;
+  exchangeRateUsed?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  exchange_rate_used?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
   expected_close_date?: Resolver<
     Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  formattedAmount?: Resolver<
+    Maybe<ResolversTypes["String"]>,
     ParentType,
     ContextType
   >;
@@ -4149,6 +4370,19 @@ export type DealSubfoldersResolvers<
     ParentType,
     ContextType
   >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DealsByCurrencyResultResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DealsByCurrencyResult"] = ResolversParentTypes["DealsByCurrencyResult"],
+> = {
+  count?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  currency?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  formattedTotal?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  totalAmount?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  totalAmountUsd?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4594,6 +4828,22 @@ export type EmailThreadConnectionResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type ExchangeRateResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["ExchangeRate"] = ResolversParentTypes["ExchangeRate"],
+> = {
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  effectiveDate?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  fromCurrency?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  rate?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  source?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  toCurrency?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type GoogleDriveConfigResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -4770,6 +5020,7 @@ export type LeadResolvers<
   >;
   createdBy?: Resolver<ResolversTypes["User"], ParentType, ContextType>;
   created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  currency?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   currentWfmStatus?: Resolver<
     Maybe<ResolversTypes["WFMStatus"]>,
     ParentType,
@@ -4790,6 +5041,11 @@ export type LeadResolvers<
     ParentType,
     ContextType
   >;
+  estimatedValueUsd?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
   estimated_close_date?: Resolver<
     Maybe<ResolversTypes["DateTime"]>,
     ParentType,
@@ -4797,6 +5053,16 @@ export type LeadResolvers<
   >;
   estimated_value?: Resolver<
     Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  exchangeRateUsed?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  formattedEstimatedValue?: Resolver<
+    Maybe<ResolversTypes["String"]>,
     ParentType,
     ContextType
   >;
@@ -4989,6 +5255,15 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationConnectGoogleIntegrationArgs, "input">
   >;
+  convertCurrency?: Resolver<
+    ResolversTypes["ConversionResult"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationConvertCurrencyArgs,
+      "amount" | "fromCurrency" | "toCurrency"
+    >
+  >;
   convertLead?: Resolver<
     ResolversTypes["LeadConversionResult"],
     ParentType,
@@ -5018,6 +5293,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateContactFromEmailArgs, "input">
+  >;
+  createCurrency?: Resolver<
+    ResolversTypes["Currency"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateCurrencyArgs, "input">
   >;
   createCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
@@ -5054,12 +5335,6 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateLeadArgs, "input">
-  >;
-  createNoteFromEmail?: Resolver<
-    ResolversTypes["SmartSticker"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationCreateNoteFromEmailArgs, "input">
   >;
   createNotification?: Resolver<
     ResolversTypes["Notification"],
@@ -5277,12 +5552,6 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationExecuteAgentStepArgs, "conversationId" | "stepId">
   >;
-  generateNoteContentFromEmail?: Resolver<
-    ResolversTypes["AIGeneratedNoteContent"],
-    ParentType,
-    ContextType,
-    RequireFields<MutationGenerateNoteContentFromEmailArgs, "input">
-  >;
   generateTaskContentFromEmail?: Resolver<
     ResolversTypes["AIGeneratedTaskContent"],
     ParentType,
@@ -5401,6 +5670,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationSendAgentMessageArgs, "input">
   >;
+  setExchangeRate?: Resolver<
+    ResolversTypes["ExchangeRate"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationSetExchangeRateArgs, "input">
+  >;
   shareDriveFolder?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -5443,6 +5718,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationUpdateAppSettingArgs, "input">
   >;
+  updateCurrency?: Resolver<
+    ResolversTypes["Currency"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateCurrencyArgs, "code" | "input">
+  >;
   updateCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
     ParentType,
@@ -5454,6 +5735,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateDealArgs, "id" | "input">
+  >;
+  updateDealCurrency?: Resolver<
+    ResolversTypes["CurrencyOperationResult"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateDealCurrencyArgs, "currency" | "dealId">
   >;
   updateDealParticipantRole?: Resolver<
     ResolversTypes["DealParticipant"],
@@ -5493,6 +5780,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateLeadArgs, "id" | "input">
+  >;
+  updateLeadCurrency?: Resolver<
+    ResolversTypes["CurrencyOperationResult"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateLeadCurrencyArgs, "currency" | "leadId">
   >;
   updateLeadWFMProgress?: Resolver<
     ResolversTypes["Lead"],
@@ -5559,6 +5852,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateTerritoryArgs, "id" | "input">
+  >;
+  updateUserCurrencyPreferences?: Resolver<
+    ResolversTypes["UserCurrencyPreferences"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateUserCurrencyPreferencesArgs, "input" | "userId">
   >;
   updateUserProfile?: Resolver<
     Maybe<ResolversTypes["User"]>,
@@ -5999,6 +6298,17 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  currencies?: Resolver<
+    Array<ResolversTypes["Currency"]>,
+    ParentType,
+    ContextType
+  >;
+  currency?: Resolver<
+    Maybe<ResolversTypes["Currency"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryCurrencyArgs, "code">
+  >;
   customFieldDefinition?: Resolver<
     Maybe<ResolversTypes["CustomFieldDefinition"]>,
     ParentType,
@@ -6033,10 +6343,21 @@ export type QueryResolvers<
     RequireFields<QueryDealFolderInfoArgs, "dealId">
   >;
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
+  dealsByCurrency?: Resolver<
+    Array<ResolversTypes["DealsByCurrencyResult"]>,
+    ParentType,
+    ContextType
+  >;
   discoverAgentTools?: Resolver<
     ResolversTypes["ToolDiscoveryResponse"],
     ParentType,
     ContextType
+  >;
+  exchangeRate?: Resolver<
+    Maybe<ResolversTypes["ExchangeRate"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryExchangeRateArgs, "fromCurrency" | "toCurrency">
   >;
   findMissingStakeholders?: Resolver<
     ResolversTypes["MissingStakeholderRecommendations"],
@@ -6383,6 +6704,12 @@ export type QueryResolvers<
     ResolversTypes["Int"],
     ParentType,
     ContextType
+  >;
+  userCurrencyPreferences?: Resolver<
+    Maybe<ResolversTypes["UserCurrencyPreferences"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryUserCurrencyPreferencesArgs, "userId">
   >;
   users?: Resolver<Array<ResolversTypes["User"]>, ParentType, ContextType>;
   wfmProjectType?: Resolver<
@@ -6988,6 +7315,19 @@ export type UserResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type UserCurrencyPreferencesResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["UserCurrencyPreferences"] = ResolversParentTypes["UserCurrencyPreferences"],
+> = {
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  defaultCurrency?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  displayCurrency?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type UserReminderPreferencesResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -7265,7 +7605,6 @@ export type WfmWorkflowTransitionMutationResponseResolvers<
 };
 
 export type Resolvers<ContextType = GraphQLContext> = {
-  AIGeneratedNoteContent?: AiGeneratedNoteContentResolvers<ContextType>;
   AIGeneratedTaskContent?: AiGeneratedTaskContentResolvers<ContextType>;
   AccountTerritory?: AccountTerritoryResolvers<ContextType>;
   Activity?: ActivityResolvers<ContextType>;
@@ -7278,7 +7617,11 @@ export type Resolvers<ContextType = GraphQLContext> = {
   AgentResponse?: AgentResponseResolvers<ContextType>;
   AgentThought?: AgentThoughtResolvers<ContextType>;
   AppSetting?: AppSettingResolvers<ContextType>;
+  ConversionResult?: ConversionResultResolvers<ContextType>;
   ConvertedEntities?: ConvertedEntitiesResolvers<ContextType>;
+  Currency?: CurrencyResolvers<ContextType>;
+  CurrencyAmount?: CurrencyAmountResolvers<ContextType>;
+  CurrencyOperationResult?: CurrencyOperationResultResolvers<ContextType>;
   CustomFieldDefinition?: CustomFieldDefinitionResolvers<ContextType>;
   CustomFieldOption?: CustomFieldOptionResolvers<ContextType>;
   CustomFieldValue?: CustomFieldValueResolvers<ContextType>;
@@ -7289,6 +7632,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
   DealParticipant?: DealParticipantResolvers<ContextType>;
   DealSubfolders?: DealSubfoldersResolvers<ContextType>;
+  DealsByCurrencyResult?: DealsByCurrencyResultResolvers<ContextType>;
   Document?: DocumentResolvers<ContextType>;
   DriveFile?: DriveFileResolvers<ContextType>;
   DriveFileConnection?: DriveFileConnectionResolvers<ContextType>;
@@ -7306,6 +7650,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   EmailPin?: EmailPinResolvers<ContextType>;
   EmailThread?: EmailThreadResolvers<ContextType>;
   EmailThreadConnection?: EmailThreadConnectionResolvers<ContextType>;
+  ExchangeRate?: ExchangeRateResolvers<ContextType>;
   GoogleDriveConfig?: GoogleDriveConfigResolvers<ContextType>;
   GoogleIntegrationStatus?: GoogleIntegrationStatusResolvers<ContextType>;
   GoogleTokenData?: GoogleTokenDataResolvers<ContextType>;
@@ -7341,6 +7686,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Territory?: TerritoryResolvers<ContextType>;
   ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
+  UserCurrencyPreferences?: UserCurrencyPreferencesResolvers<ContextType>;
   UserReminderPreferences?: UserReminderPreferencesResolvers<ContextType>;
   WFMProject?: WfmProjectResolvers<ContextType>;
   WFMProjectType?: WfmProjectTypeResolvers<ContextType>;

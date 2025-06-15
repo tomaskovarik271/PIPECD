@@ -96,6 +96,7 @@ const DEAL_CORE_FIELDS_FRAGMENT = gql`
     id
     name
     amount
+    currency
     expected_close_date
     created_at
     updated_at

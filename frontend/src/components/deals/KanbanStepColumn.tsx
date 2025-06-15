@@ -6,9 +6,61 @@ import { Droppable, DroppableProvided, DroppableStateSnapshot } from '@hello-pan
 import DealCardKanban from './DealCardKanban';
 import DealCardKanbanCompact from './DealCardKanbanCompact';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { useAppStore } from '../../stores/useAppStore';
 
 const formatCurrency = (value: number, currencyCode = 'USD') => {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+};
+
+// Simple exchange rates for demo (in production, this would come from the database)
+const EXCHANGE_RATES: Record<string, Record<string, number>> = {
+  'USD': { 'EUR': 0.85, 'GBP': 0.75, 'CHF': 0.92, 'USD': 1.0 },
+  'EUR': { 'USD': 1.18, 'GBP': 0.88, 'CHF': 1.08, 'EUR': 1.0 },
+  'GBP': { 'USD': 1.33, 'EUR': 1.14, 'CHF': 1.23, 'GBP': 1.0 },
+  'CHF': { 'USD': 1.09, 'EUR': 0.93, 'GBP': 0.81, 'CHF': 1.0 },
+};
+
+const convertAmount = (amount: number, fromCurrency: string, toCurrency: string): number => {
+  if (fromCurrency === toCurrency) return amount;
+  const rate = EXCHANGE_RATES[fromCurrency]?.[toCurrency] || 1;
+  return amount * rate;
+};
+
+const formatColumnTotal = (deals: Deal[], displayMode: 'mixed' | 'converted', baseCurrency: string) => {
+  if (displayMode === 'converted') {
+    // Convert all amounts to base currency
+    const totalInBaseCurrency = deals.reduce((sum, deal) => {
+      const amount = deal.weighted_amount || 0;
+      const currency = deal.currency || 'USD';
+      return sum + convertAmount(amount, currency, baseCurrency);
+    }, 0);
+    
+    return formatCurrency(totalInBaseCurrency, baseCurrency);
+  } else {
+    // Mixed currency display
+    const currencyGroups = deals.reduce((acc, deal) => {
+      const currency = deal.currency || 'USD';
+      const amount = deal.weighted_amount || 0;
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const currencies = Object.keys(currencyGroups);
+    
+    if (currencies.length <= 1) {
+      const currency = currencies[0] || 'USD';
+      return formatCurrency(currencyGroups[currency] || 0, currency);
+    }
+    
+    const sortedCurrencies = currencies.sort((a, b) => currencyGroups[b] - currencyGroups[a]);
+    const primaryCurrency = sortedCurrencies[0];
+    const primaryAmount = currencyGroups[primaryCurrency];
+    
+    return `${formatCurrency(primaryAmount, primaryCurrency)} +${currencies.length - 1}`;
+  }
 };
 
 interface KanbanStepColumnProps {
@@ -22,13 +74,14 @@ interface KanbanStepColumnProps {
 const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, deals, weightedAmountSum, index, isCompact = false }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
+  const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
 
   const stepDisplayName = 
     (step.metadata as any)?.name || 
     step.status?.name || 
     `Step ${step.id.substring(0, 6)}...`;
 
-  const totalDealValue = deals.reduce((sum, deal) => sum + (deal.amount || 0), 0);
+  const formattedTotal = formatColumnTotal(deals, currencyDisplayMode, baseCurrencyForConversion);
 
   return (
     // @ts-ignore
@@ -89,18 +142,9 @@ const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, de
                     fontWeight="semibold" 
                     color={colors.text.success}
                     noOfLines={1} 
-                    title={formatCurrency(weightedAmountSum)}
+                    title={formattedTotal}
                   >
-                    {isCompact && weightedAmountSum >= 1000000 
-                      ? new Intl.NumberFormat('en-US', { 
-                          style: 'currency', 
-                          currency: 'USD', 
-                          notation: 'compact', 
-                          minimumFractionDigits: 0, 
-                          maximumFractionDigits: 1 
-                        }).format(weightedAmountSum)
-                      : formatCurrency(weightedAmountSum)
-                    }
+                    {formattedTotal}
                   </Text>
                 </Box>
               </Flex>

@@ -712,7 +712,7 @@ const DealDetailPage = () => {
                                                   <Text fontSize="md" fontWeight="semibold" color={colors.status.success}>
                                                       {currentDeal.amount ? new Intl.NumberFormat('en-US', { 
                                                           style: 'currency', 
-                                                          currency: 'USD', 
+                                                          currency: currentDeal.currency || 'USD', 
                                                           minimumFractionDigits: 0, 
                                                           maximumFractionDigits: 0 
                                                       }).format(currentDeal.amount) : '-'}

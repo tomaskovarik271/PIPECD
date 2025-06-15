@@ -157,35 +157,91 @@ function DealsPage() {
     searchTerm,
   });
   
-  // Calculate statistics for the header
-  const totalValue = useMemo(() => displayedDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0), [displayedDeals]);
-  const averageDealSize = useMemo(() => displayedDeals.length > 0 ? totalValue / displayedDeals.length : 0, [totalValue, displayedDeals.length]);
+  // Helper function to format mixed currency totals
+  const formatMixedCurrencyStatistic = useCallback((deals: Deal[]) => {
+    const currencyGroups = deals.reduce((acc, deal) => {
+      const currency = deal.currency || 'EUR';
+      const amount = deal.amount || 0;
+      if (!acc[currency]) {
+        acc[currency] = 0;
+      }
+      acc[currency] += amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const currencies = Object.keys(currencyGroups);
+    
+    if (currencies.length === 0) return '€0';
+    if (currencies.length === 1) {
+      const currency = currencies[0];
+      return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(currencyGroups[currency]);
+    }
+    
+    // Multiple currencies - show primary + count
+    const sortedCurrencies = currencies.sort((a, b) => currencyGroups[b] - currencyGroups[a]);
+    const primaryCurrency = sortedCurrencies[0];
+    const primaryAmount = currencyGroups[primaryCurrency];
+    const formattedPrimary = new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: primaryCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(primaryAmount);
+    
+    return `${formattedPrimary} +${currencies.length - 1}`;
+  }, []);
+
+  // Calculate statistics for the header with multi-currency support
+  const totalValueFormatted = useMemo(() => formatMixedCurrencyStatistic(displayedDeals), [displayedDeals, formatMixedCurrencyStatistic]);
+  
+  const averageDealSizeFormatted = useMemo(() => {
+    if (displayedDeals.length === 0) return '€0';
+    
+    // For average, we'll use the most common currency
+    const currencyGroups = displayedDeals.reduce((acc, deal) => {
+      const currency = deal.currency || 'EUR';
+      if (!acc[currency]) {
+        acc[currency] = { total: 0, count: 0 };
+      }
+      acc[currency].total += deal.amount || 0;
+      acc[currency].count += 1;
+      return acc;
+    }, {} as Record<string, { total: number; count: number }>);
+
+    const currencies = Object.keys(currencyGroups);
+    if (currencies.length === 0) return '€0';
+    
+    // Use the currency with the most deals
+    const primaryCurrency = currencies.sort((a, b) => currencyGroups[b].count - currencyGroups[a].count)[0];
+    const avgAmount = currencyGroups[primaryCurrency].total / currencyGroups[primaryCurrency].count;
+    
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: primaryCurrency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(avgAmount);
+  }, [displayedDeals]);
+
   const winRate = useMemo(() => {
     const closedDeals = displayedDeals.filter(d => d.currentWfmStep?.isFinalStep);
-    const wonDeals = closedDeals.filter(d => d.currentWfmStep?.status?.name?.toLowerCase().includes('won')); // Fix: use status name instead of isWon
+    const wonDeals = closedDeals.filter(d => d.currentWfmStep?.status?.name?.toLowerCase().includes('won'));
     return closedDeals.length > 0 ? Math.round((wonDeals.length / closedDeals.length) * 100) : 0;
   }, [displayedDeals]);
 
   const statistics = [
     {
       label: 'Total Value',
-      value: totalValue,
-      formatter: (value: number | string) => new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
-        currency: 'USD', 
-        minimumFractionDigits: 0, 
-        maximumFractionDigits: 0 
-      }).format(Number(value))
+      value: totalValueFormatted
     },
     {
       label: 'Avg. Deal Size',
-      value: averageDealSize,
-      formatter: (value: number | string) => new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
-        currency: 'USD', 
-        minimumFractionDigits: 0, 
-        maximumFractionDigits: 0 
-      }).format(Math.round(Number(value)))
+      value: averageDealSizeFormatted
     },
     {
       label: 'Win Rate',

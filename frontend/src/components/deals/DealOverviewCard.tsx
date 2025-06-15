@@ -197,12 +197,15 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
           {!isEditingAmount ? (
             <HStack spacing={2}>
               <Text fontSize="md" fontWeight="semibold" color="green.300">
-                {deal.amount ? new Intl.NumberFormat('en-US', { 
-                  style: 'currency', 
-                  currency: 'USD', 
-                  minimumFractionDigits: 0, 
-                  maximumFractionDigits: 0 
-                }).format(deal.amount) : '-'}
+                {deal.amount ? (() => {
+                  const currencyToUse = deal.currency || 'USD';
+                  return new Intl.NumberFormat('en-US', { 
+                    style: 'currency', 
+                    currency: currencyToUse, 
+                    minimumFractionDigits: 0, 
+                    maximumFractionDigits: 0 
+                  }).format(deal.amount);
+                })() : '-'}
               </Text>
               <IconButton 
                 icon={<EditIcon />} 

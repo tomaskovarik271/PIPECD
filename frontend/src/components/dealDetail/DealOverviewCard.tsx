@@ -10,6 +10,7 @@ import {
 import { InlineEditableField } from '../common/InlineEditableField';
 import type { Deal } from '../../stores/useDealsStore';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { DealAmount } from '../currency/CurrencyDisplay';
 
 interface DealOverviewCardProps {
   deal: Deal;
@@ -24,6 +25,17 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
 }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
+
+  // DEBUG: Log the deal object to see what currency value we're getting
+  console.log('🔍 DealOverviewCard - Deal object:', {
+    id: deal.id,
+    name: deal.name,
+    amount: deal.amount,
+    currency: deal.currency,
+    currencyType: typeof deal.currency,
+    currencyJSON: JSON.stringify(deal.currency),
+    fullDeal: deal
+  });
 
   const getEffectiveProbabilityDisplay = useMemo(() => {
     let probability = deal.deal_specific_probability;
@@ -54,9 +66,21 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
     if (!value || (typeof value === 'string' && value === '')) return '-';
     const amount = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(amount)) return '-';
+    
+    // DEBUG: Log currency formatting
+    const currencyToUse = deal.currency || 'USD';
+    console.log('💰 formatCurrency called:', {
+      amount,
+      dealCurrency: deal.currency,
+      currencyToUse,
+      dealId: deal.id,
+      dealName: deal.name
+    });
+    
+    // Format with currency symbol
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
-      currency: 'USD', 
+      currency: currencyToUse, 
       minimumFractionDigits: 0, 
       maximumFractionDigits: 0 
     }).format(amount);

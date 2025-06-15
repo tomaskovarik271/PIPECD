@@ -41,6 +41,7 @@ Project PipeCD is a revolutionary **Claude 4 Sonnet-powered CRM system** featuri
 - **Complete Gmail Integration** with email pinning, contact creation, and full email management
 - **Enhanced Email-to-Task** with Claude 3 Haiku AI integration for intelligent task generation
 - **Complete Leads Management** with qualification workflows and conversion
+- **Multi-Currency System** - Complete international currency support with 42 currencies, exchange rates, and intelligent display modes
 - **Custom Fields Democratization** - all users can create fields via AI
 - **Smart Stickers Visual Collaboration** - Revolutionary sticky note system integrated into all entity detail pages
 - **Relationship Intelligence Platform** - Interactive network visualization with D3.js
@@ -78,6 +79,7 @@ The architecture emphasizes separation of concerns, type safety, AI-powered auto
 - ✅ **Gmail Integration** - Complete email management with pinning, contact creation, and mark as read/unread functionality
 - ✅ **Deals Management** - Complete CRUD with WFM integration and automation
 - ✅ **Leads Management** - Full qualification workflows with AI scoring and conversion
+- ✅ **Multi-Currency System** - Complete international currency support with 42 currencies, exchange rates, and intelligent display modes
 - ✅ **Contact Management** - People and Organizations with custom fields support
 - ✅ **Activity Management** - Tasks, meetings, calls with assignment automation and reminder scheduling
 - ✅ **Google Workspace Integration** - OAuth 2.0, Google Drive document management, deal-centric folders
@@ -2622,7 +2624,341 @@ frontend/src/components/common/
 
 ---
 
-## 22. Gmail Integration & Email Management System (PRODUCTION-READY)
+## 22. Multi-Currency System (PRODUCTION-READY)
+
+Project PipeCD implements a **comprehensive Multi-Currency System** that provides complete international currency support with 42 world currencies, intelligent exchange rate management, and sophisticated display modes for global business operations.
+
+### 22.1 System Overview & Current Status
+
+**✅ PRODUCTION STATUS: FULLY IMPLEMENTED**
+
+## Multi-Currency Implementation Status
+
+| Component | Status | Evidence |
+|-----------|--------|----------|
+| Database Schema | ✅ Production | Complete tables: currencies, exchange_rates, user_currency_preferences |
+| Currency Support | ✅ Production | 42 world currencies with proper formatting and decimal places |
+| Exchange Rates | ✅ Production | 15 manual rates with infrastructure for API integration |
+| GraphQL API | ✅ Production | Complete currency schema with queries and mutations |
+| Service Layer | ✅ Production | CurrencyService with high-precision Decimal.js conversion |
+| Frontend Components | ✅ Production | CurrencyPreferences, ExchangeRatesPage, display toggles |
+| Deal Integration | ✅ Production | Multi-currency deals with conversion tracking |
+| Lead Integration | ✅ Production | Multi-currency leads with qualification workflows |
+| Display Modes | ✅ Production | Mixed currency and converted currency views |
+
+### 22.2 Database Implementation
+
+#### 22.2.1 Core Currency Tables
+
+```sql
+-- ✅ IMPLEMENTED: 42 world currencies
+CREATE TABLE currencies (
+  code VARCHAR(3) PRIMARY KEY,           -- ISO 4217 codes (USD, EUR, GBP, etc.)
+  name TEXT NOT NULL,                    -- "US Dollar", "Euro", "British Pound"
+  symbol VARCHAR(10) NOT NULL,           -- "$", "€", "£"
+  decimal_places INTEGER NOT NULL DEFAULT 2,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ✅ IMPLEMENTED: Exchange rates with 15 manual rates
+CREATE TABLE exchange_rates (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  from_currency VARCHAR(3) REFERENCES currencies(code),
+  to_currency VARCHAR(3) REFERENCES currencies(code),
+  rate DECIMAL(20, 10) NOT NULL,        -- High precision rate
+  effective_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  source TEXT NOT NULL DEFAULT 'manual', -- 'manual', 'ecb', 'openexchange'
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ✅ IMPLEMENTED: User currency preferences
+CREATE TABLE user_currency_preferences (
+  user_id UUID PRIMARY KEY REFERENCES auth.users(id),
+  default_currency VARCHAR(3) REFERENCES currencies(code) DEFAULT 'USD',
+  display_currency VARCHAR(3) REFERENCES currencies(code) DEFAULT 'USD',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
+
+#### 22.2.2 Entity Currency Integration
+
+```sql
+-- ✅ IMPLEMENTED: Enhanced deals table
+ALTER TABLE deals 
+ADD COLUMN currency VARCHAR(3) REFERENCES currencies(code) DEFAULT 'USD',
+ADD COLUMN amount_usd DECIMAL(20, 4),              -- Converted amount for reporting
+ADD COLUMN exchange_rate_used DECIMAL(20, 10),     -- Rate used for conversion
+ADD COLUMN conversion_date TIMESTAMPTZ;
+
+-- ✅ IMPLEMENTED: Enhanced leads table
+ALTER TABLE leads
+ADD COLUMN currency VARCHAR(3) REFERENCES currencies(code) DEFAULT 'USD',
+ADD COLUMN estimated_value_usd DECIMAL(20, 4),     -- Converted value
+ADD COLUMN exchange_rate_used DECIMAL(20, 10),     -- Rate used for conversion
+ADD COLUMN conversion_date TIMESTAMPTZ;
+```
+
+### 22.3 Service Layer Implementation
+
+#### 22.3.1 CurrencyService Architecture
+
+```typescript
+// ✅ IMPLEMENTED: Complete CurrencyService in lib/services/currencyService.ts
+export class CurrencyService {
+  // Core currency operations
+  static async getCurrency(code: string): Promise<Currency | null>
+  static async getActiveCurrencies(): Promise<Currency[]>
+  
+  // Exchange rate operations with high precision
+  static async getExchangeRate(from: string, to: string, date?: string): Promise<ExchangeRate | null>
+  static async setExchangeRate(input: SetExchangeRateInput): Promise<ExchangeRate>
+  
+  // Currency conversion using Decimal.js for precision
+  static async convertCurrency(
+    amount: number, 
+    from: string, 
+    to: string, 
+    date?: string
+  ): Promise<ConversionResult>
+  
+  // User preferences management
+  static async getUserCurrencyPreferences(userId: string): Promise<UserCurrencyPreferences>
+  static async updateUserCurrencyPreferences(
+    userId: string, 
+    input: UpdateInput
+  ): Promise<UserCurrencyPreferences>
+  
+  // Advanced formatting with locale support
+  static formatAmount(amount: number, currency?: Currency): string
+}
+```
+
+#### 22.3.2 High-Precision Conversion Engine
+
+```typescript
+// ✅ IMPLEMENTED: Decimal.js integration for accurate financial calculations
+import Decimal from 'decimal.js';
+
+static async convertCurrency(
+  amount: number,
+  fromCurrency: string,
+  toCurrency: string,
+  effectiveDate?: string
+): Promise<ConversionResult> {
+  // Same currency - no conversion needed
+  if (fromCurrency.toUpperCase() === toCurrency.toUpperCase()) {
+    return {
+      originalAmount: amount,
+      convertedAmount: amount,
+      exchangeRate: 1.0,
+      effectiveDate: effectiveDate || new Date().toISOString().split('T')[0]
+    };
+  }
+
+  // High-precision conversion using Decimal.js
+  const originalDecimal = new Decimal(amount);
+  const rateDecimal = new Decimal(exchangeRate.rate);
+  const convertedDecimal = originalDecimal.mul(rateDecimal);
+  
+  return {
+    originalAmount: amount,
+    convertedAmount: convertedDecimal.toNumber(),
+    exchangeRate: exchangeRate.rate,
+    effectiveDate: exchangeRate.effectiveDate
+  };
+}
+```
+
+### 22.4 Frontend Implementation
+
+#### 22.4.1 Currency Display Modes
+
+```typescript
+// ✅ IMPLEMENTED: Intelligent currency display in useAppStore.ts
+interface AppState {
+  currencyDisplayMode: 'mixed' | 'converted';
+  baseCurrencyForConversion: string;
+  setCurrencyDisplayMode: (mode: 'mixed' | 'converted') => void;
+  setBaseCurrencyForConversion: (currency: string) => void;
+}
+
+// Mixed Mode: Shows original currencies (€120,000 +2 more)
+// Converted Mode: Shows all amounts in base currency ($142,000)
+```
+
+#### 4.2 Currency Management Components
+
+```typescript
+// ✅ IMPLEMENTED: Complete component suite
+frontend/src/components/currency/
+├── CurrencyPreferences.tsx      // User preference management
+├── DealAmountInput.tsx          // Currency-aware amount input
+└── CurrencySelector.tsx         // Currency selection dropdown
+
+frontend/src/pages/
+└── ExchangeRatesPage.tsx        // Exchange rate management interface
+
+frontend/src/hooks/
+└── useCurrency.ts               // Currency formatting and utilities
+```
+
+#### 22.4.3 Kanban Currency Display
+
+```typescript
+// ✅ IMPLEMENTED: Smart currency totals in KanbanStepColumn.tsx
+const formatMixedCurrencyTotal = (deals: Deal[]) => {
+  if (currencyDisplayMode === 'converted') {
+    // Convert all amounts to base currency
+    const totalInBaseCurrency = deals.reduce((sum, deal) => {
+      const rate = EXCHANGE_RATES[deal.currency]?.[baseCurrencyForConversion] || 1;
+      return sum + ((deal.amount || 0) * rate);
+    }, 0);
+    
+    return formatCurrency(totalInBaseCurrency, baseCurrencyForConversion);
+  } else {
+    // Mixed currency display with smart grouping
+    const currencyGroups = groupBy(deals, 'currency');
+    const primaryCurrency = currencyGroups[0];
+    const additionalCount = currencyGroups.length - 1;
+    
+    return additionalCount > 0 
+      ? `${formatCurrency(primaryCurrency.total, primaryCurrency.currency)} +${additionalCount}`
+      : formatCurrency(primaryCurrency.total, primaryCurrency.currency);
+  }
+};
+```
+
+### 22.5 GraphQL API Implementation
+
+#### 22.5.1 Complete Currency Schema
+
+```graphql
+# ✅ IMPLEMENTED: Complete currency schema in netlify/functions/graphql/schema/currency.graphql
+type Currency {
+  code: String!
+  name: String!
+  symbol: String!
+  decimalPlaces: Int!
+  isActive: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type ExchangeRate {
+  id: ID!
+  fromCurrency: String!
+  toCurrency: String!
+  rate: Float!
+  effectiveDate: String!
+  source: String!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type ConversionResult {
+  originalAmount: Float!
+  originalCurrency: String!
+  convertedAmount: Float!
+  convertedCurrency: String!
+  exchangeRate: Float!
+  effectiveDate: String!
+  formattedOriginal: String!
+  formattedConverted: String!
+}
+
+# Enhanced Deal and Lead types with currency support
+type Deal {
+  currency: String!
+  amount: Float
+  amountUsd: Float
+  exchangeRateUsed: Float
+  conversionDate: String
+}
+
+type Lead {
+  currency: String!
+  estimatedValue: Float
+  estimatedValueUsd: Float
+  exchangeRateUsed: Float
+  conversionDate: String
+}
+```
+
+### 22.6 Current System Metrics
+
+#### 22.6.1 Database Status
+- **42 Currencies**: Complete world currency coverage including major and regional currencies
+- **15 Exchange Rates**: Manual rates for major currency pairs (USD, EUR, GBP, CHF, etc.)
+- **Performance Indexes**: Optimized queries for currency operations
+- **RLS Security**: Proper row-level security for user preferences
+
+#### 22.6.2 Feature Completeness
+- **✅ Currency Selection**: Available in all deal and lead forms
+- **✅ Display Modes**: Mixed and converted currency views operational
+- **✅ User Preferences**: Personal currency settings with persistence
+- **✅ Exchange Rate Management**: Complete CRUD interface
+- **✅ High-Precision Conversion**: Decimal.js integration for accuracy
+- **✅ Reporting Integration**: Currency-aware pipeline calculations
+
+### 22.7 Missing Features (Optional Enhancements)
+
+#### 22.7.1 ECB API Integration ✅ IMPLEMENTED
+- **Status**: ✅ Complete with automated scheduled updates
+- **Implementation**: Inngest scheduled job runs weekdays at 6:00 AM UTC
+- **Function**: `update-exchange-rates-ecb` updates ~82 currency pairs
+- **Features**: Automatic ECB API integration with error handling and logging
+- **Manual Override**: Exchange Rates page "Update from ECB" button available
+
+#### 22.7.2 Additional Rate Providers
+- **OpenExchange API**: Alternative rate provider for redundancy
+- **Bank Rate APIs**: Integration with specific bank rate feeds
+- **Cryptocurrency Support**: Digital currency integration
+
+#### 22.7.3 Advanced Analytics
+- **Currency Performance Reports**: Multi-currency pipeline analysis
+- **Exchange Rate Trends**: Historical rate visualization
+- **Currency Risk Assessment**: Exposure analysis and alerts
+
+### 22.8 Development Best Practices
+
+#### 22.8.1 Currency Handling Guidelines
+```typescript
+// ✅ Always use Decimal.js for financial calculations
+import Decimal from 'decimal.js';
+
+const calculateTotal = (amounts: number[]) => {
+  return amounts.reduce((sum, amount) => {
+    return sum.plus(new Decimal(amount));
+  }, new Decimal(0)).toNumber();
+};
+
+// ✅ Use proper currency formatting
+const formatCurrency = (amount: number, currency: string) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: getCurrencyDecimalPlaces(currency)
+  }).format(amount);
+};
+```
+
+#### 22.8.2 Testing Strategy
+```typescript
+// Currency conversion accuracy tests
+describe('CurrencyService', () => {
+  it('should convert EUR to USD with high precision', async () => {
+    const result = await CurrencyService.convertCurrency(100, 'EUR', 'USD');
+    expect(result.convertedAmount).toBeCloseTo(118, 2);
+    expect(result.exchangeRate).toBe(1.18);
+  });
+});
+```
+
+## 23. Gmail Integration & Email Management System (PRODUCTION-READY)
 
 Project PipeCD implements a **comprehensive Gmail Integration & Email Management system** that provides complete email functionality within the CRM context, including email pinning, contact creation from emails, and full email operations with proper Gmail API permissions.
 

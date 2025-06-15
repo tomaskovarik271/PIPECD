@@ -78,6 +78,9 @@ import { User as UserResolver, userMutations } from './graphql/resolvers/user';
 import { activityReminderQueries } from './graphql/resolvers/queries/activityReminderQueries';
 import { activityReminderMutations } from './graphql/resolvers/mutations/activityReminderMutations';
 
+// Import Currency Resolvers
+import { currencyResolvers } from './graphql/resolvers/currency';
+
 
 
 const loadTypeDefs = (): string => {
@@ -120,6 +123,7 @@ const loadTypeDefs = (): string => {
     'agent.graphql',
     'appSettings.graphql',
     'base.graphql', 
+    'currency.graphql',
     'customFields.graphql', 
     'deal.graphql',
     'dealFolders.graphql',
@@ -187,6 +191,7 @@ export const resolvers = {
     ...sharedDriveQueries,
     ...appSettingsQueries,
     ...activityReminderQueries,
+    ...currencyResolvers.Query,
   },
   Mutation: {
     ...BaseMutation,
@@ -204,14 +209,22 @@ export const resolvers = {
     ...appSettingsMutations,
     ...userMutations,
     ...activityReminderMutations,
+    ...currencyResolvers.Mutation,
   },
   Person,
-  Deal,
-  Lead,
+  Deal: {
+    ...Deal,
+    ...currencyResolvers.Deal,
+  },
+  Lead: {
+    ...Lead,
+    ...currencyResolvers.Lead,
+  },
   Organization,
   Activity,
   DealHistoryEntry,
   User: UserResolver,
+  CurrencyAmount: currencyResolvers.CurrencyAmount,
   WFMStatus: WFMStatusResolvers.WFMStatus,
   WFMWorkflow: WFMWorkflowResolvers.WFMWorkflow,
   WFMWorkflowStep: WFMWorkflowStepResolver,

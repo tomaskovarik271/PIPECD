@@ -33,6 +33,7 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
       id
       name
       amount
+      currency
       expected_close_date
       created_at
       updated_at
@@ -105,7 +106,8 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
   }
 `;
 
-export interface DealWithHistory extends GraphQLDeal {
+export interface DealWithHistory extends Omit<GraphQLDeal, 'history'> {
+    currency?: string | null;
     history: (Pick<GraphQLDealHistoryEntry, 'id' | 'eventType' | 'changes' | 'createdAt'> & {
         user: Pick<GraphQLUser, 'id' | 'email' | 'display_name'> | null;
     })[];
@@ -143,6 +145,12 @@ export interface AppState {
   // currentActivityLoading: boolean;
   // currentActivityError: string | null;
   // fetchActivityById: (activityId: string) => Promise<void>;
+
+  // Currency display preferences
+  currencyDisplayMode: 'mixed' | 'converted';
+  baseCurrencyForConversion: string;
+  setCurrencyDisplayMode: (mode: 'mixed' | 'converted') => void;
+  setBaseCurrencyForConversion: (currency: string) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -165,6 +173,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   // currentActivity: null,
   // currentActivityLoading: false,
   // currentActivityError: null,
+
+  // Currency display preferences
+  currencyDisplayMode: 'mixed', // Default to mixed currency display
+  baseCurrencyForConversion: 'USD', // Default base currency
 
   // Auth Action Implementations
   setSession: (session) => set({ session, user: session?.user ?? null, isLoadingAuth: false }),
@@ -257,6 +269,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // UI Actions
   toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
+
+  // Currency display preferences
+  setCurrencyDisplayMode: (mode: 'mixed' | 'converted') => {
+    set({ currencyDisplayMode: mode });
+  },
+  
+  setBaseCurrencyForConversion: (currency: string) => {
+    set({ baseCurrencyForConversion: currency });
+  },
 }));
 
 // Initialize auth check when store is loaded (client-side only)

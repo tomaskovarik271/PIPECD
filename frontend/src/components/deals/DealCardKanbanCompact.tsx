@@ -13,6 +13,46 @@ import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pan
 import { Link as RouterLink } from 'react-router-dom';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
+import { useAppStore } from '../../stores/useAppStore';
+
+// Simple exchange rates for demo (in production, this would come from the database)
+const EXCHANGE_RATES: Record<string, Record<string, number>> = {
+  'USD': { 'EUR': 0.85, 'GBP': 0.75, 'CHF': 0.92, 'USD': 1.0 },
+  'EUR': { 'USD': 1.18, 'GBP': 0.88, 'CHF': 1.08, 'EUR': 1.0 },
+  'GBP': { 'USD': 1.33, 'EUR': 1.14, 'CHF': 1.23, 'GBP': 1.0 },
+  'CHF': { 'USD': 1.09, 'EUR': 0.93, 'GBP': 0.81, 'CHF': 1.0 },
+};
+
+const convertAmount = (amount: number, fromCurrency: string, toCurrency: string): number => {
+  if (fromCurrency === toCurrency) return amount;
+  const rate = EXCHANGE_RATES[fromCurrency]?.[toCurrency] || 1;
+  return amount * rate;
+};
+
+const formatDealAmount = (deal: Deal, displayMode: 'mixed' | 'converted', baseCurrency: string) => {
+  if (!deal.amount) return '-';
+  
+  const originalCurrency = deal.currency || 'USD';
+  
+  if (displayMode === 'converted' && originalCurrency !== baseCurrency) {
+    const convertedAmount = convertAmount(deal.amount, originalCurrency, baseCurrency);
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: baseCurrency, 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0,
+      notation: convertedAmount >= 1000000 ? 'compact' : 'standard'
+    }).format(convertedAmount);
+  } else {
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: originalCurrency, 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0,
+      notation: deal.amount >= 1000000 ? 'compact' : 'standard'
+    }).format(deal.amount);
+  }
+};
 
 interface DealCardKanbanCompactProps {
   deal: Deal;
@@ -21,6 +61,7 @@ interface DealCardKanbanCompactProps {
 
 const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo(({ deal, index }) => {
   const colors = useThemeColors();
+  const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
 
   const getEffectiveProbability = () => {
     if (deal.deal_specific_probability != null) return deal.deal_specific_probability;
@@ -86,13 +127,7 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
               </Text>
             </RouterLink>
             <Text fontSize="sm" fontWeight="bold" color={colors.text.success} ml={2}>
-              {deal.amount ? new Intl.NumberFormat('en-US', { 
-                style: 'currency', 
-                currency: 'USD', 
-                minimumFractionDigits: 0, 
-                maximumFractionDigits: 0,
-                notation: deal.amount >= 1000000 ? 'compact' : 'standard' // Use compact notation for large numbers
-              }).format(deal.amount) : '-'}
+              {formatDealAmount(deal, currencyDisplayMode, baseCurrencyForConversion)}
             </Text>
           </HStack>
 

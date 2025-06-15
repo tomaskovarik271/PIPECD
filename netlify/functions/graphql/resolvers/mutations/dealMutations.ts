@@ -8,7 +8,7 @@ import { wfmWorkflowService } from '../../../../../lib/wfmWorkflowService';
 import { wfmStatusService } from '../../../../../lib/wfmStatusService';
 import { calculateDealProbabilityFields } from '../../../../../lib/dealService/dealProbability';
 import type { MutationResolvers, Deal as GraphQLDeal, DealInput as GraphQLDealInput, DealUpdateInput as GraphQLDealUpdateInput, WfmWorkflowStep, User as GraphQLUser } from '../../../../../lib/generated/graphql';
-import type { DealServiceUpdateData } from '../../../../../lib/dealService/dealCrud';
+import type { DealServiceUpdateData, DbDeal } from '../../../../../lib/dealService/dealCrud';
 import { recordEntityHistory, getAuthenticatedClient } from '../../../../../lib/serviceUtils';
 
 export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal' | 'updateDeal' | 'deleteDeal' | 'updateDealWFMProgress'> = {
@@ -29,6 +29,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
           const serviceInput: GraphQLDealInput = {
             name: validatedInput.name!,
             amount: validatedInput.amount,
+            currency: validatedInput.currency,
             expected_close_date: convertToDateOrNull(validatedInput.expected_close_date),
             wfmProjectTypeId: validatedInput.wfmProjectTypeId!, // Schema ensures it's present
             person_id: validatedInput.person_id,
@@ -52,6 +53,9 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
             updated_at: newDealRecord.updated_at, 
             name: newDealRecord.name!,
             amount: newDealRecord.amount,
+            currency: newDealRecord.currency,
+            amount_usd: newDealRecord.amount_usd,
+            exchange_rate_used: newDealRecord.exchange_rate_used,
             expected_close_date: newDealRecord.expected_close_date, 
             deal_specific_probability: newDealRecord.deal_specific_probability,
             user_id: newDealRecord.user_id!, 
@@ -152,6 +156,9 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
             updated_at: updatedDealRecord.updated_at, 
             name: updatedDealRecord.name!, // Assuming name is non-null on DbDeal if deal exists
             amount: updatedDealRecord.amount,
+            currency: updatedDealRecord.currency,
+            amount_usd: updatedDealRecord.amount_usd,
+            exchange_rate_used: updatedDealRecord.exchange_rate_used,
             expected_close_date: updatedDealRecord.expected_close_date, 
             deal_specific_probability: updatedDealRecord.deal_specific_probability,
             // weighted_amount is resolved by a field resolver, not directly mapped here from DbDeal
@@ -275,7 +282,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
 
         const probabilityUpdates = await calculateDealProbabilityFields(
           {}, 
-          oldDealDataForCalc, 
+          oldDealDataForCalc as any, 
           supabase,
           targetStepMetadata
         );
@@ -287,7 +294,7 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
           needsDBUpdate = true;
         }
         
-        let finalDealRecord: GraphQLDeal;
+        let finalDealRecord: DbDeal | null;
         if (needsDBUpdate) {
           finalDealRecord = await dealService.updateDeal(userId, dealId, updatePayloadForService, accessToken);
         } else {
@@ -298,7 +305,28 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
           finalDealRecord = refetchedDeal;
         }
         
-        return finalDealRecord;
+        if (!finalDealRecord) {
+          throw new GraphQLError('Failed to get final deal record after WFM progress update.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+        }
+        
+        return {
+          id: finalDealRecord.id,
+          created_at: finalDealRecord.created_at, 
+          updated_at: finalDealRecord.updated_at, 
+          name: finalDealRecord.name!,
+          amount: finalDealRecord.amount,
+          currency: finalDealRecord.currency,
+          amount_usd: finalDealRecord.amount_usd,
+          exchange_rate_used: finalDealRecord.exchange_rate_used,
+          expected_close_date: finalDealRecord.expected_close_date, 
+          deal_specific_probability: finalDealRecord.deal_specific_probability,
+          user_id: finalDealRecord.user_id!, 
+          assigned_to_user_id: finalDealRecord.assigned_to_user_id,
+          person_id: finalDealRecord.person_id, 
+          organization_id: finalDealRecord.organization_id,
+          project_id: finalDealRecord.project_id,
+          wfm_project_id: finalDealRecord.wfm_project_id,
+        } as unknown as GraphQLDeal;
 
       } catch (error) {
         console.error(`[Mutation.updateDealWFMProgress] Error:`, error);

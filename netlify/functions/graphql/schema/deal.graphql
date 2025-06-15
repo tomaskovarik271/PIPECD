@@ -3,6 +3,9 @@ type Deal {
   user_id: ID!
   name: String!
   amount: Float
+  currency: String
+  amount_usd: Float
+  exchange_rate_used: Float
   expected_close_date: DateTime
   created_at: DateTime!
   updated_at: DateTime!
@@ -37,6 +40,7 @@ type Deal {
 input DealInput {
   name: String!
   amount: Float
+  currency: String
   expected_close_date: DateTime
   wfmProjectTypeId: ID!
   person_id: ID
@@ -49,6 +53,7 @@ input DealInput {
 input DealUpdateInput {
   name: String
   amount: Float
+  currency: String
   expected_close_date: DateTime
   person_id: ID
   organization_id: ID

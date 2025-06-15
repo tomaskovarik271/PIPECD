@@ -59,6 +59,7 @@ export const OrganizationInputSchema = z.object({
 export const DealBaseSchema = z.object({
   name: z.string().min(1, { message: "Deal name is required" }).optional(),
   amount: z.number().positive("Amount must be positive").optional().nullable(),
+  currency: z.string().length(3, { message: "Currency must be a 3-letter ISO code" }).optional().nullable(),
   expected_close_date: z.string().optional().nullable(),
   wfmProjectTypeId: z.string().uuid("Valid WFM Project Type ID is required").optional(),
   person_id: z.string().uuid("Valid Person ID is required").optional().nullable(),

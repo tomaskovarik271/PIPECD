@@ -12,7 +12,8 @@ import {
   Tag,
   TagLabel,
   TagCloseButton,
-
+  Text,
+  Select,
 } from '@chakra-ui/react';
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import DealsKanbanPageView from './DealsKanbanPageView';
@@ -21,6 +22,8 @@ import type { Deal } from '../../stores/useDealsStore';
 import UnifiedPageHeader from '../layout/UnifiedPageHeader';
 import { usePageLayoutStyles } from '../../utils/headerUtils';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { useAppStore } from '../../stores/useAppStore';
+import { TbCurrencyDollar, TbWorld } from 'react-icons/tb';
 
 interface DealsKanbanPageLayoutProps {
   displayedDeals: Deal[];
@@ -63,10 +66,131 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
   const colors = useThemeColors();
   const styles = useThemeStyles();
   const pageLayoutStyles = usePageLayoutStyles(true);
+  
+  // Currency display mode from app store
+  const { 
+    currencyDisplayMode, 
+    setCurrencyDisplayMode, 
+    baseCurrencyForConversion,
+    setBaseCurrencyForConversion 
+  } = useAppStore();
 
-  // Calculate statistics for the header (same as table view)
-  const totalValue = useMemo(() => displayedDeals.reduce((sum, deal) => sum + (deal.amount || 0), 0), [displayedDeals]);
-  const averageDealSize = useMemo(() => displayedDeals.length > 0 ? totalValue / displayedDeals.length : 0, [totalValue, displayedDeals.length]);
+  // Helper function to format mixed currency totals
+  const formatMixedCurrencyStatistic = useCallback((deals: Deal[]) => {
+    if (currencyDisplayMode === 'converted') {
+      // Convert all amounts to base currency
+      const totalInBaseCurrency = deals.reduce((sum, deal) => {
+        const amount = deal.amount || 0;
+        const currency = deal.currency || 'USD';
+        const rate = EXCHANGE_RATES[currency]?.[baseCurrencyForConversion] || 1;
+        return sum + (amount * rate);
+      }, 0);
+      
+      return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: baseCurrencyForConversion,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(totalInBaseCurrency);
+    } else {
+      // Mixed currency display
+      const currencyGroups = deals.reduce((acc, deal) => {
+        const currency = deal.currency || 'EUR';
+        const amount = deal.amount || 0;
+        if (!acc[currency]) {
+          acc[currency] = 0;
+        }
+        acc[currency] += amount;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const currencies = Object.keys(currencyGroups);
+      
+      if (currencies.length === 0) return '€0';
+      if (currencies.length === 1) {
+        const currency = currencies[0];
+        return new Intl.NumberFormat('en-US', { 
+          style: 'currency', 
+          currency: currency,
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(currencyGroups[currency]);
+      }
+      
+      // Multiple currencies - show primary + count
+      const sortedCurrencies = currencies.sort((a, b) => currencyGroups[b] - currencyGroups[a]);
+      const primaryCurrency = sortedCurrencies[0];
+      const primaryAmount = currencyGroups[primaryCurrency];
+      const formattedPrimary = new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: primaryCurrency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(primaryAmount);
+      
+      return `${formattedPrimary} +${currencies.length - 1}`;
+    }
+  }, [currencyDisplayMode, baseCurrencyForConversion]);
+
+  // Simple exchange rates for demo (in production, this would come from the database)
+  const EXCHANGE_RATES: Record<string, Record<string, number>> = {
+    'USD': { 'EUR': 0.85, 'GBP': 0.75, 'CHF': 0.92, 'USD': 1.0 },
+    'EUR': { 'USD': 1.18, 'GBP': 0.88, 'CHF': 1.08, 'EUR': 1.0 },
+    'GBP': { 'USD': 1.33, 'EUR': 1.14, 'CHF': 1.23, 'GBP': 1.0 },
+    'CHF': { 'USD': 1.09, 'EUR': 0.93, 'GBP': 0.81, 'CHF': 1.0 },
+  };
+
+  // Calculate statistics for the header with multi-currency support
+  const totalValueFormatted = useMemo(() => formatMixedCurrencyStatistic(displayedDeals), [displayedDeals, formatMixedCurrencyStatistic]);
+  
+  const averageDealSizeFormatted = useMemo(() => {
+    if (displayedDeals.length === 0) return '€0';
+    
+    if (currencyDisplayMode === 'converted') {
+      // Convert all amounts to base currency and calculate average
+      const totalInBaseCurrency = displayedDeals.reduce((sum, deal) => {
+        const amount = deal.amount || 0;
+        const currency = deal.currency || 'USD';
+        const rate = EXCHANGE_RATES[currency]?.[baseCurrencyForConversion] || 1;
+        return sum + (amount * rate);
+      }, 0);
+      
+      const avgAmount = totalInBaseCurrency / displayedDeals.length;
+      
+      return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: baseCurrencyForConversion,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(avgAmount);
+    } else {
+      // For average in mixed mode, use the most common currency
+      const currencyGroups = displayedDeals.reduce((acc, deal) => {
+        const currency = deal.currency || 'EUR';
+        if (!acc[currency]) {
+          acc[currency] = { total: 0, count: 0 };
+        }
+        acc[currency].total += deal.amount || 0;
+        acc[currency].count += 1;
+        return acc;
+      }, {} as Record<string, { total: number; count: number }>);
+
+      const currencies = Object.keys(currencyGroups);
+      if (currencies.length === 0) return '€0';
+      
+      // Use the currency with the most deals
+      const primaryCurrency = currencies.sort((a, b) => currencyGroups[b].count - currencyGroups[a].count)[0];
+      const avgAmount = currencyGroups[primaryCurrency].total / currencyGroups[primaryCurrency].count;
+      
+      return new Intl.NumberFormat('en-US', { 
+        style: 'currency', 
+        currency: primaryCurrency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(avgAmount);
+    }
+  }, [displayedDeals, currencyDisplayMode, baseCurrencyForConversion]);
+
   const winRate = useMemo(() => {
     const closedDeals = displayedDeals.filter(d => d.currentWfmStep?.isFinalStep);
     const wonDeals = closedDeals.filter(d => d.currentWfmStep?.status?.name?.toLowerCase().includes('won'));
@@ -81,13 +205,11 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
   const statistics = useMemo(() => [
     {
       label: 'Total Value',
-      value: totalValue,
-      formatter: (value: number | string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value))
+      value: totalValueFormatted
     },
     {
       label: 'Avg. Deal Size',
-      value: averageDealSize,
-      formatter: (value: number | string) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value))
+      value: averageDealSizeFormatted
     },
     {
       label: 'Win Rate',
@@ -97,7 +219,7 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
       label: 'Open Deals',
       value: openDealsCount
     }
-  ], [totalValue, averageDealSize, winRate, openDealsCount]);
+  ], [totalValueFormatted, averageDealSizeFormatted, winRate, openDealsCount]);
 
   // Helper function to get user display name
   const getUserDisplayName = useCallback((userId: string) => {
@@ -117,64 +239,90 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
     setSelectedAssignedUserIds(valueArray);
   }, [setSelectedAssignedUserIds]);
 
-  // Secondary actions (multi-select assigned user filter for kanban)
+  // Enhanced secondary actions with currency display toggle
   const secondaryActions = (
-    <VStack spacing={2} align="stretch" minW="200px">
-      <Menu closeOnSelect={false}>
-        <MenuButton
-          as={Button}
-          rightIcon={<ChevronDownIcon />}
-          size="md"
-          height="40px"
-          minW="180px"
-          bg={colors.bg.input}
-          color={colors.text.primary}
-          borderColor={colors.border.input}
-          _hover={{
-            bg: colors.component.button.secondaryHover,
-            borderColor: colors.border.focus
-          }}
-          textAlign="left"
-          fontWeight="normal"
-          isDisabled={usersLoading}
+    <HStack spacing={3}>
+      {/* Currency Display Mode Toggle - Cleaner Design */}
+      <HStack spacing={2} bg={colors.bg.elevated} p={1} borderRadius="md" borderWidth="1px" borderColor={colors.border.default}>
+        <Button
+          size="sm"
+          variant={currencyDisplayMode === 'mixed' ? 'solid' : 'ghost'}
+          colorScheme={currencyDisplayMode === 'mixed' ? 'blue' : undefined}
+          leftIcon={<TbWorld size={14} />}
+          onClick={() => setCurrencyDisplayMode('mixed')}
+          fontSize="xs"
+          px={3}
+          py={1}
+          h="32px"
         >
-          {selectedAssignedUserIds.length === 0 ? 'Assigned User' : `${selectedAssignedUserIds.length} selected`}
-        </MenuButton>
-        <MenuList>
-          <MenuOptionGroup 
-            type="checkbox" 
-            value={selectedAssignedUserIds}
-            onChange={handleMenuOptionChange}
-          >
-            <MenuItemOption value="unassigned">Unassigned</MenuItemOption>
-            {userList.map(user => (
-              <MenuItemOption key={user.id} value={user.id}>
-                {user.display_name || user.email}
-              </MenuItemOption>
-            ))}
-          </MenuOptionGroup>
-        </MenuList>
-      </Menu>
-      
-      {/* Selected users tags */}
-      {selectedAssignedUserIds.length > 0 && (
-        <HStack spacing={1} wrap="wrap" maxW="200px">
-          {selectedAssignedUserIds.map(userId => (
-            <Tag 
-              key={userId} 
-              size="sm" 
-              colorScheme="blue" 
-              variant="subtle"
-              bg={colors.interactive.default}
-              color={colors.text.onAccent}
-            >
-              <TagLabel>{getUserDisplayName(userId)}</TagLabel>
-              <TagCloseButton onClick={() => removeSelectedUser(userId)} />
-            </Tag>
-          ))}
-        </HStack>
+          Mixed
+        </Button>
+        <Button
+          size="sm"
+          variant={currencyDisplayMode === 'converted' ? 'solid' : 'ghost'}
+          colorScheme={currencyDisplayMode === 'converted' ? 'blue' : undefined}
+          leftIcon={<TbCurrencyDollar size={14} />}
+          onClick={() => setCurrencyDisplayMode('converted')}
+          fontSize="xs"
+          px={3}
+          py={1}
+          h="32px"
+        >
+          Convert
+        </Button>
+      </HStack>
+
+      {/* Base Currency Selector (only show when in converted mode) */}
+      {currencyDisplayMode === 'converted' && (
+        <Select
+          value={baseCurrencyForConversion}
+          onChange={(e) => setBaseCurrencyForConversion(e.target.value)}
+          size="sm"
+          width="80px"
+          fontSize="xs"
+          {...styles.input}
+        >
+          <option value="USD">USD</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+          <option value="CHF">CHF</option>
+        </Select>
       )}
-    </VStack>
+
+      {/* Existing User Filter */}
+      {userList.length > 0 && (
+        <Menu>
+          <MenuButton
+            as={Button}
+            rightIcon={<ChevronDownIcon />}
+            size="md"
+            height="40px"
+            minW="120px"
+            {...styles.button.secondary}
+          >
+            {selectedAssignedUserIds.length === 0 
+              ? 'All Users' 
+              : selectedAssignedUserIds.length === 1 
+                ? userList.find(u => u.id === selectedAssignedUserIds[0])?.display_name || 'User'
+                : `${selectedAssignedUserIds.length} Users`
+            }
+          </MenuButton>
+          <MenuList>
+            <MenuOptionGroup 
+              value={selectedAssignedUserIds} 
+              type="checkbox"
+              onChange={(values) => setSelectedAssignedUserIds(values as string[])}
+            >
+              {userList.map(user => (
+                <MenuItemOption key={user.id} value={user.id}>
+                  {user.display_name || user.email}
+                </MenuItemOption>
+              ))}
+            </MenuOptionGroup>
+          </MenuList>
+        </Menu>
+      )}
+    </HStack>
   );
 
   return (
