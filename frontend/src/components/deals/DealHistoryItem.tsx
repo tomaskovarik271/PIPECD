@@ -51,7 +51,12 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
         definitionsMap.set(cfValue.definition.id, cfValue.definition as CustomFieldDefinition);
       }
     });
-    return Array.from(definitionsMap.values());
+    const definitions = Array.from(definitionsMap.values());
+    
+    // Debug: Log available definition IDs
+    console.log('Available custom field definition IDs:', definitions.map(d => d.id));
+    
+    return definitions;
   };
   const availableCustomFieldDefinitions = getCustomFieldDefinitionsFromCurrentDeal();
 
@@ -288,24 +293,50 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
       
       Object.entries(changes).forEach(([key, valueObj]: [string, any]) => {
         if (key.startsWith('custom_field_values.')) {
-          // Handle individual custom field changes (this is the actual format used)
+          // Handle individual custom field changes
           const cfId = key.replace('custom_field_values.', '');
           const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
           const fieldLabel = definition?.fieldLabel || cfId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
           
-          if (typeof valueObj === 'object' && valueObj !== null && 'oldValue' in valueObj && 'newValue' in valueObj) {
-            const oldF = formatSingleCustomFieldValue(cfId, valueObj.oldValue);
-            const newF = formatSingleCustomFieldValue(cfId, valueObj.newValue);
-            if (oldF !== newF) {
+          if (typeof valueObj === 'object' && valueObj !== null) {
+            if ('oldValue' in valueObj && 'newValue' in valueObj) {
+              // Standard update case (old value -> new value)
+              const oldF = formatSingleCustomFieldValue(cfId, valueObj.oldValue);
+              const newF = formatSingleCustomFieldValue(cfId, valueObj.newValue);
+              if (oldF !== newF) {
+                changeItems.push(
+                  <ListItem key={cfId}>
+                    <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from &quot;{oldF}&quot; to &quot;{newF}&quot;
+                  </ListItem>
+                );
+              }
+            } else if ('newValue' in valueObj) {
+              // Field creation case (only newValue, no oldValue)
+              const newF = formatSingleCustomFieldValue(cfId, valueObj.newValue);
               changeItems.push(
                 <ListItem key={cfId}>
-                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from &quot;{oldF}&quot; to &quot;{newF}&quot;
+                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> set to &quot;{newF}&quot;
+                </ListItem>
+              );
+            } else if ('oldValue' in valueObj) {
+              // Field deletion case (only oldValue, no newValue)
+              const oldF = formatSingleCustomFieldValue(cfId, valueObj.oldValue);
+              changeItems.push(
+                <ListItem key={cfId}>
+                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> removed (was &quot;{oldF}&quot;)
+                </ListItem>
+              );
+            } else {
+              // Unknown structure - show raw data
+              changeItems.push(
+                <ListItem key={cfId}>
+                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> {JSON.stringify(valueObj)}
                 </ListItem>
               );
             }
           }
         } else if (key === 'custom_field_values') {
-          // Handle nested custom field changes (fallback, might not be used in current implementation)
+          // Handle nested custom field changes (fallback)
           if (typeof valueObj === 'object' && valueObj !== null) {
             Object.entries(valueObj).forEach(([cfId, cfChange]) => {
               const definition = availableCustomFieldDefinitions.find(def => def.id === cfId);
