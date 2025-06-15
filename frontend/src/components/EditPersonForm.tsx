@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Button,
   FormControl,
@@ -15,20 +15,19 @@ import {
   Alert,
   AlertIcon,
   Text,
+  NumberInput,
+  NumberInputField,
+  Checkbox,
 } from '@chakra-ui/react';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
-import { useOrganizationsStore } from '../stores/useOrganizationsStore';
+import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
+import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
 import type {
   PersonInput,
   CustomFieldValueInput,
   CustomFieldEntityType,
+  CustomFieldType as GQLCustomFieldType,
 } from '../generated/graphql/graphql';
-import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
-import { CustomFieldRenderer } from './common/CustomFieldRenderer';
-import { 
-  initializeCustomFieldValuesFromEntity,
-  processCustomFieldsForSubmission
-} from '../lib/utils/customFieldProcessing';
 
 interface EditPersonFormProps {
   person: Person;
@@ -59,41 +58,82 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
 
   const { updatePerson: updatePersonAction, peopleError } = usePeopleStore();
   
+  const allDefinitions = useCustomFieldDefinitionStore(state => state.definitions);
+  const definitionsLoading = useCustomFieldDefinitionStore(state => state.loading);
+  const definitionsError = useCustomFieldDefinitionStore(state => state.error);
+  const fetchDefinitions = useCustomFieldDefinitionStore(state => state.fetchCustomFieldDefinitions);
+  
   const [localError, setLocalError] = useState<string | null>(null);
 
-  // Custom fields hook
-  const {
-    definitions,
-    loading: customFieldsLoading,
-    error: customFieldsError,
-    getDefinitionsForEntity,
-    refetch: refetchCustomFields
-  } = useOptimizedCustomFields({ entityTypes: ['PERSON' as CustomFieldEntityType] });
-  
-  const customFieldDefinitions = useMemo(() => 
-    getDefinitionsForEntity('PERSON' as CustomFieldEntityType), 
-    [getDefinitionsForEntity]
+  const personCustomFieldDefinitions = allDefinitions.filter(
+    d => d.entityType === 'PERSON' && d.isActive
   );
 
-  const hasFetchedOrgs = useRef(false);
-
   useEffect(() => {
-    if (!orgLoading && (!organizations || organizations.length === 0) && !hasFetchedOrgs.current) {
-      hasFetchedOrgs.current = true;
+    if (!orgLoading && (!organizations || organizations.length === 0)) {
       fetchOrganizations();
     }
-  }, [orgLoading, organizations]);
+    if (!definitionsLoading && !allDefinitions.some(d => d.entityType === 'PERSON')) {
+      fetchDefinitions('PERSON' as CustomFieldEntityType);
+    }
+  }, [organizations, orgLoading, fetchOrganizations, definitionsLoading, allDefinitions, fetchDefinitions]);
 
   // Initialize custom field data from person
   useEffect(() => {
-    if (person.customFieldValues && customFieldDefinitions.length > 0) {
-      const initializedData = initializeCustomFieldValuesFromEntity(
-        customFieldDefinitions,
-        person.customFieldValues
-      );
+    if (person.customFieldValues && personCustomFieldDefinitions.length > 0) {
+      const initializedData: Record<string, any> = {};
+      
+      personCustomFieldDefinitions.forEach(def => {
+        const existingValue = person.customFieldValues?.find(cfv => cfv.definition.id === def.id);
+        
+        if (existingValue) {
+          switch (def.fieldType) {
+            case 'TEXT':
+              initializedData[def.fieldName] = existingValue.stringValue || '';
+              break;
+            case 'NUMBER':
+              initializedData[def.fieldName] = existingValue.numberValue !== null && existingValue.numberValue !== undefined 
+                ? existingValue.numberValue 
+                : '';
+              break;
+            case 'BOOLEAN':
+              initializedData[def.fieldName] = existingValue.booleanValue ?? false;
+              break;
+            case 'DATE':
+              initializedData[def.fieldName] = existingValue.dateValue 
+                ? new Date(existingValue.dateValue).toISOString().split('T')[0]
+                : '';
+              break;
+            case 'MULTI_SELECT':
+              initializedData[def.fieldName] = existingValue.selectedOptionValues || [];
+              break;
+            case 'DROPDOWN':
+              initializedData[def.fieldName] = existingValue.stringValue || 
+                (existingValue.selectedOptionValues && existingValue.selectedOptionValues.length > 0 
+                  ? existingValue.selectedOptionValues[0] 
+                  : '');
+              break;
+            default:
+              initializedData[def.fieldName] = '';
+          }
+        } else {
+          // Default values if not found
+          switch (def.fieldType) {
+            case 'BOOLEAN':
+              initializedData[def.fieldName] = false;
+              break;
+            case 'MULTI_SELECT':
+              initializedData[def.fieldName] = [];
+              break;
+            default:
+              initializedData[def.fieldName] = '';
+          }
+        }
+      });
+      
       setCustomFieldData(initializedData);
     }
-  }, [person.customFieldValues, customFieldDefinitions]);
+  }, [person.customFieldValues, personCustomFieldDefinitions]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -104,10 +144,10 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
     }
   };
 
-  const handleCustomFieldChange = (fieldName: string, value: any) => {
+  const handleCustomFieldChange = (fieldName: string, value: any, type: GQLCustomFieldType) => {
     setCustomFieldData(prev => ({
       ...prev,
-      [fieldName]: value,
+      [fieldName]: type === 'BOOLEAN' ? (value as React.ChangeEvent<HTMLInputElement>).target.checked : value,
     }));
   };
 
@@ -122,23 +162,59 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
       return;
     }
 
+    const processedCustomFields: CustomFieldValueInput[] = personCustomFieldDefinitions
+      .map(def => {
+        const rawValue = customFieldData[def.fieldName];
+        if (rawValue === undefined || rawValue === null || rawValue === '') {
+          if (def.isRequired) {
+            setLocalError((prev) => (prev ? prev + `\n` : ``) + `Field '${def.fieldLabel}' is required.`);
+          }
+          return null;
+        }
+
+        const cfInput: CustomFieldValueInput = { definitionId: def.id };
+        switch (def.fieldType) {
+          case 'TEXT':
+            cfInput.stringValue = String(rawValue);
+            break;
+          case 'NUMBER':
+            const num = parseFloat(rawValue);
+            if (!isNaN(num)) cfInput.numberValue = num;
+            else setLocalError((prev) => (prev ? prev + `\n` : ``) + `Invalid number for '${def.fieldLabel}'.`);
+            break;
+          case 'BOOLEAN':
+            cfInput.booleanValue = Boolean(rawValue);
+            break;
+          case 'DATE':
+            cfInput.dateValue = rawValue;
+            break;
+          case 'DROPDOWN':
+            cfInput.selectedOptionValues = [String(rawValue)];
+            break;
+          case 'MULTI_SELECT':
+            cfInput.selectedOptionValues = Array.isArray(rawValue) ? rawValue.map(String) : (rawValue ? [String(rawValue)] : []);
+            break;
+        }
+        return cfInput;
+      })
+      .filter(Boolean) as CustomFieldValueInput[];
+      
+    if (localError) {
+        setIsLoading(false);
+        return;
+    }
+
+    const mutationInput: PersonInput = {
+      first_name: formData.first_name || null,
+      last_name: formData.last_name || null,
+      email: formData.email || null,
+      phone: formData.phone || null,
+      notes: formData.notes || null,
+      organization_id: formData.organization_id || null,
+      customFields: processedCustomFields.length > 0 ? processedCustomFields : null,
+    };
+
     try {
-      // Process custom fields
-      const processedCustomFields = processCustomFieldsForSubmission(
-        customFieldDefinitions,
-        customFieldData
-      );
-
-      const mutationInput: PersonInput = {
-        first_name: formData.first_name || null,
-        last_name: formData.last_name || null,
-        email: formData.email || null,
-        phone: formData.phone || null,
-        notes: formData.notes || null,
-        organization_id: formData.organization_id || null,
-        customFields: processedCustomFields.length > 0 ? processedCustomFields : null,
-      };
-
       // Update person
       const updatedPerson = await updatePersonAction(person.id, mutationInput);
       if (!updatedPerson) {
@@ -215,7 +291,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
                 placeholder="Select organization (optional)"
                 isDisabled={orgLoading || !organizations || organizations.length === 0}
               >
-                {organizations && organizations.map((org) => (
+                {organizations && organizations.map((org: Organization) => (
                   <option key={org.id} value={org.id}>{org.name}</option>
                 ))}
               </Select>
@@ -228,23 +304,74 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
           </FormControl>
 
           {/* Custom Fields */}
-          {customFieldsLoading && <Spinner />}
-          {customFieldsError && (
-            <Alert status="error">
-              <AlertIcon />
-              Error loading custom fields: {customFieldsError}
-            </Alert>
-          )}
-          {!customFieldsLoading && !customFieldsError && customFieldDefinitions.length > 0 && (
+          {personCustomFieldDefinitions.length > 0 && (
             <>
               <Text fontSize="lg" fontWeight="semibold" color="gray.700" mt={6}>Custom Fields</Text>
-              {customFieldDefinitions.map((def) => (
-                <CustomFieldRenderer
-                  key={def.id}
-                  definition={def}
-                  value={customFieldData[def.fieldName]}
-                  onChange={(value) => handleCustomFieldChange(def.fieldName, value)}
-                />
+              {personCustomFieldDefinitions.map((def) => (
+                <FormControl key={def.id} isRequired={def.isRequired}>
+                  <FormLabel>{def.fieldLabel}</FormLabel>
+                  {def.fieldType === 'TEXT' && (
+                    <Input
+                      value={customFieldData[def.fieldName] || ''}
+                      onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
+                    />
+                  )}
+                  {def.fieldType === 'NUMBER' && (
+                    <NumberInput
+                      value={customFieldData[def.fieldName] || ''}
+                      onChange={(value) => handleCustomFieldChange(def.fieldName, value, def.fieldType)}
+                    >
+                      <NumberInputField />
+                    </NumberInput>
+                  )}
+                  {def.fieldType === 'BOOLEAN' && (
+                    <Checkbox
+                      isChecked={customFieldData[def.fieldName] || false}
+                      onChange={(e) => handleCustomFieldChange(def.fieldName, e, def.fieldType)}
+                    >
+                      {def.fieldLabel}
+                    </Checkbox>
+                  )}
+                  {def.fieldType === 'DATE' && (
+                    <Input
+                      type="date"
+                      value={customFieldData[def.fieldName] || ''}
+                      onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
+                    />
+                  )}
+                  {def.fieldType === 'DROPDOWN' && (
+                    <Select
+                      placeholder={`Select ${def.fieldLabel.toLowerCase()}...`}
+                      value={customFieldData[def.fieldName] || ''}
+                      onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
+                    >
+                      {def.dropdownOptions?.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Select>
+                  )}
+                  {def.fieldType === 'MULTI_SELECT' && (
+                    <div>
+                      {def.dropdownOptions?.map((option) => (
+                        <Checkbox
+                          key={option.value}
+                          isChecked={(customFieldData[def.fieldName] || []).includes(option.value)}
+                          onChange={(e) => {
+                            const currentValues = customFieldData[def.fieldName] || [];
+                            const newValues = e.target.checked
+                              ? [...currentValues, option.value]
+                              : currentValues.filter((v: string) => v !== option.value);
+                            handleCustomFieldChange(def.fieldName, newValues, def.fieldType);
+                          }}
+                        >
+                          {option.label}
+                        </Checkbox>
+                      ))}
+                    </div>
+                  )}
+                </FormControl>
               ))}
             </>
           )}
