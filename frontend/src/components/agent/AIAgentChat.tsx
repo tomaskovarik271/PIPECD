@@ -60,6 +60,31 @@ const GET_AGENT_THOUGHTS = gql`
   }
 `;
 
+// CSS for pulse animation
+const pulseKeyframes = `
+  @keyframes pulse {
+    0% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.02);
+    }
+    100% {
+      opacity: 0.6;
+      transform: scale(1);
+    }
+  }
+`;
+
+// Inject CSS into document head
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = pulseKeyframes;
+  document.head.appendChild(style);
+}
+
 // Thought Details Component for showing complete autonomous behavior
 const ThoughtDetailsComponent: React.FC<{ thoughts: AgentMessage['thoughts'] }> = React.memo(({ thoughts }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -771,59 +796,180 @@ export const AIAgentChat: React.FC = () => {
                     <HStack spacing={2}>
                       <Spinner size="sm" color="blue.500" />
                       <Text fontWeight="semibold" color="blue.600">
-                        AI Assistant is working...
+                        AI Assistant is thinking...
                       </Text>
                       <Badge colorScheme="blue" size="sm">
                         {realTimeThoughts.length} step{realTimeThoughts.length > 1 ? 's' : ''}
                       </Badge>
                     </HStack>
                     
-                    <VStack align="stretch" spacing={2} pl={4} borderLeft="2px" borderColor="blue.200">
-                      {realTimeThoughts.slice(-5).map((thought, idx) => (
-                        <HStack key={thought.id || idx} spacing={3}>
-                          <Box>
-                            {thought.type === 'TOOL_CALL' ? (
-                              <FiTool size={14} color="blue" />
-                            ) : thought.type === 'REASONING' ? (
-                              <FiZap size={14} color="purple" />
-                            ) : thought.type === 'OBSERVATION' ? (
-                              <FiEye size={14} color="green" />
-                            ) : (
-                              <FiActivity size={14} color="gray" />
+                    {/* Enhanced thinking steps display */}
+                    <VStack align="stretch" spacing={3} pl={4} borderLeft="3px" borderColor="blue.300">
+                      {realTimeThoughts.slice(-5).map((thought, idx) => {
+                        const isLatest = idx === realTimeThoughts.slice(-5).length - 1;
+                        const isThinking = thought.type === 'REASONING';
+                        
+                        return (
+                          <Box 
+                            key={thought.id || idx}
+                            p={3}
+                            bg={isLatest ? 'blue.50' : 'gray.50'}
+                            _dark={{ 
+                              bg: isLatest ? 'blue.900' : 'gray.700',
+                              borderColor: isLatest ? "blue.500" : "gray.600"
+                            }}
+                            borderRadius="md"
+                            borderWidth={isLatest ? "2px" : "1px"}
+                            borderColor={isLatest ? "blue.300" : "gray.200"}
+                            position="relative"
+                            transition="all 0.3s ease"
+                          >
+                            {/* Step indicator */}
+                            <HStack spacing={3} align="start">
+                              <Box 
+                                minW="24px" 
+                                h="24px" 
+                                borderRadius="full" 
+                                bg={
+                                  thought.type === 'TOOL_CALL' ? 'blue.500' :
+                                  isThinking ? 'purple.500' :
+                                  thought.type === 'OBSERVATION' ? 'green.500' : 'gray.500'
+                                }
+                                color="white"
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                                fontSize="xs"
+                                fontWeight="bold"
+                              >
+                                {thought.type === 'TOOL_CALL' ? (
+                                  <FiTool size={12} />
+                                ) : isThinking ? (
+                                  <FiZap size={12} />
+                                ) : thought.type === 'OBSERVATION' ? (
+                                  <FiEye size={12} />
+                                ) : (
+                                  <FiActivity size={12} />
+                                )}
+                              </Box>
+                              
+                              <VStack align="start" spacing={2} flex={1}>
+                                {/* Step header */}
+                                <HStack spacing={2} wrap="wrap">
+                                  <Badge 
+                                    colorScheme={
+                                      thought.type === 'TOOL_CALL' ? 'blue' :
+                                      isThinking ? 'purple' :
+                                      thought.type === 'OBSERVATION' ? 'green' : 'gray'
+                                    }
+                                    size="sm"
+                                    fontWeight="medium"
+                                  >
+                                    {isThinking ? '🧠 Thinking' : 
+                                     thought.type === 'TOOL_CALL' ? '🔧 Action' :
+                                     thought.type === 'OBSERVATION' ? '👁️ Result' : 
+                                     thought.type.toLowerCase()}
+                                  </Badge>
+                                  <Text fontSize="xs" color="gray.500">
+                                    {new Date(thought.timestamp).toLocaleTimeString()}
+                                  </Text>
+                                  {isLatest && (
+                                    <Badge colorScheme="green" size="xs" variant="solid">
+                                      Current
+                                    </Badge>
+                                  )}
+                                </HStack>
+                                
+                                {/* Enhanced thought content */}
+                                <Box>
+                                  {isThinking ? (
+                                    <VStack align="start" spacing={2}>
+                                      <Text 
+                                        fontSize="sm" 
+                                        color="gray.700" 
+                                        _dark={{ color: 'gray.200' }}
+                                        fontWeight="medium"
+                                        lineHeight="tall"
+                                      >
+                                        💭 {thought.content}
+                                      </Text>
+                                      {/* Show next actions if available */}
+                                      {thought.metadata?.nextActions && thought.metadata.nextActions.length > 0 && (
+                                        <VStack align="start" spacing={1} pl={3}>
+                                          <Text fontSize="xs" color="purple.600" fontWeight="medium">
+                                            Next steps:
+                                          </Text>
+                                          {thought.metadata.nextActions.slice(0, 2).map((action: string, actionIdx: number) => (
+                                            <HStack key={actionIdx} spacing={2} fontSize="xs">
+                                              <Text color="purple.500">→</Text>
+                                              <Text color="gray.600" _dark={{ color: 'gray.300' }}>
+                                                {action}
+                                              </Text>
+                                            </HStack>
+                                          ))}
+                                        </VStack>
+                                      )}
+                                    </VStack>
+                                  ) : (
+                                    <VStack align="start" spacing={1}>
+                                      <Text 
+                                        fontSize="sm" 
+                                        color="gray.700" 
+                                        _dark={{ color: 'gray.200' }}
+                                        lineHeight="tall"
+                                      >
+                                        {thought.content}
+                                      </Text>
+                                      {thought.metadata?.toolName && (
+                                        <HStack spacing={2}>
+                                          <Text fontSize="xs" color="blue.600" fontWeight="medium">
+                                            🔧 {thought.metadata.toolName}
+                                          </Text>
+                                          {thought.metadata?.confidence && (
+                                            <Badge 
+                                              colorScheme={
+                                                thought.metadata.confidence > 0.8 ? 'green' : 
+                                                thought.metadata.confidence > 0.6 ? 'yellow' : 'red'
+                                              }
+                                              size="xs"
+                                            >
+                                              {Math.round(thought.metadata.confidence * 100)}%
+                                            </Badge>
+                                          )}
+                                        </HStack>
+                                      )}
+                                    </VStack>
+                                  )}
+                                </Box>
+                              </VStack>
+                            </HStack>
+                            
+                            {/* Pulse animation for current step */}
+                            {isLatest && (
+                              <Box
+                                position="absolute"
+                                top="-2px"
+                                left="-2px"
+                                right="-2px"
+                                bottom="-2px"
+                                borderRadius="md"
+                                border="2px solid"
+                                borderColor="blue.400"
+                                opacity={0.6}
+                                animation="pulse 2s infinite"
+                                pointerEvents="none"
+                              />
                             )}
                           </Box>
-                          <VStack align="start" spacing={1} flex={1}>
-                            <HStack spacing={2}>
-                              <Badge 
-                                colorScheme={
-                                  thought.type === 'TOOL_CALL' ? 'blue' :
-                                  thought.type === 'REASONING' ? 'purple' :
-                                  thought.type === 'OBSERVATION' ? 'green' : 'gray'
-                                }
-                                size="xs"
-                              >
-                                {thought.type.toLowerCase()}
-                              </Badge>
-                              <Text fontSize="xs" color="gray.500">
-                                {new Date(thought.timestamp).toLocaleTimeString()}
-                              </Text>
-                            </HStack>
-                            <Text fontSize="sm" color="gray.700" _dark={{ color: 'gray.300' }}>
-                              {thought.content}
-                            </Text>
-                            {thought.metadata?.toolName && (
-                              <Text fontSize="xs" color="blue.600">
-                                🔧 {thought.metadata.toolName}
-                              </Text>
-                            )}
-                          </VStack>
-                        </HStack>
-                      ))}
+                        );
+                      })}
                       
                       {realTimeThoughts.length > 5 && (
-                        <Text fontSize="xs" color="gray.500" fontStyle="italic" textAlign="center">
-                          ... and {realTimeThoughts.length - 5} more steps
-                        </Text>
+                        <Box textAlign="center" py={2}>
+                          <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                            ... and {realTimeThoughts.length - 5} more steps
+                          </Text>
+                        </Box>
                       )}
                     </VStack>
                   </VStack>
