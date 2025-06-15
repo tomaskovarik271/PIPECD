@@ -536,6 +536,9 @@ export class AgentService {
     let iterationCount = 0;
     const maxIterations = 5; // Prevent infinite loops
 
+    // Build an updated conversation history that includes tool results from this workflow
+    let updatedConversationHistory = [...conversationHistory];
+
     while (remainingTools.length > 0 && iterationCount < maxIterations) {
       iterationCount++;
       
@@ -589,6 +592,13 @@ export class AgentService {
             timestamp: new Date(),
           });
 
+          // ✅ ADD TOOL RESULT TO CONVERSATION HISTORY
+          updatedConversationHistory.push({
+            role: 'assistant',
+            content: `🔧 **${currentTool.toolName}** executed successfully:\n\n${toolResultText}`,
+            timestamp: new Date(),
+          });
+
         } else {
           toolResultText = `❌ **${currentTool.toolName}** failed: ${toolResponse.error}`;
           // Don't add error results to main response - errors are shown in technical details
@@ -605,6 +615,13 @@ export class AgentService {
               reasoning: currentTool.reasoning,
             },
           }]);
+
+          // ✅ ADD TOOL ERROR TO CONVERSATION HISTORY
+          updatedConversationHistory.push({
+            role: 'assistant',
+            content: toolResultText,
+            timestamp: new Date(),
+          });
         }
 
         // Remove the executed tool
@@ -632,7 +649,7 @@ Please provide a clear, user-friendly summary of what was accomplished. Do not i
 
             const completionResponse = await this.aiService.generateResponse(
               completionPrompt,
-              conversationHistory,
+              updatedConversationHistory, // ✅ Use updated history
               { ...DEFAULT_AGENT_CONFIG },
               [], // No tools needed for completion summary
               {
@@ -662,16 +679,20 @@ IMPORTANT CONTEXT:
 - Do NOT repeat the same search operations
 - If you found the data you need, proceed to the next logical action
 
+WORKFLOW EXECUTION HISTORY:
+${updatedConversationHistory.slice(-3).map(msg => `${msg.role}: ${msg.content}`).join('\n\n')}
+
 DECISION RULES:
 1. If the user requested to CREATE something and you found the required information (like organization IDs), proceed to CREATE the entity
 2. If the user's request has been fulfilled completely, respond with "TASK_COMPLETE"
 3. Only suggest additional tools if they are NECESSARY and DIFFERENT from what you've already done
+4. NEVER repeat the same search tool with the same parameters
 
-Based on this result, what is the NEXT logical step to complete the user's request? If the request is complete, respond with "TASK_COMPLETE". If you need to create something with the data you found, make the appropriate create_* tool call.`;
+Based on this result and the execution history above, what is the NEXT logical step to complete the user's request? If the request is complete, respond with "TASK_COMPLETE". If you need to create something with the data you found, make the appropriate create_* tool call.`;
 
           const followUpResponse = await this.aiService.generateResponse(
             followUpPrompt,
-            conversationHistory,
+            updatedConversationHistory, // ✅ Use updated history with tool results
             { ...DEFAULT_AGENT_CONFIG },
             await this.discoverTools(),
             {
@@ -730,6 +751,13 @@ Based on this result, what is the NEXT logical step to complete the user's reque
             exception: toolError instanceof Error ? toolError.message : 'Unknown error',
           },
         }]);
+
+        // ✅ ADD TOOL ERROR TO CONVERSATION HISTORY
+        updatedConversationHistory.push({
+          role: 'assistant',
+          content: errorText,
+          timestamp: new Date(),
+        });
 
         // Remove the failed tool and continue
         remainingTools = remainingTools.slice(1);
