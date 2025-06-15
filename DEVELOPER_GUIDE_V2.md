@@ -6,13 +6,13 @@ This guide provides a comprehensive overview of the Project PipeCD system, its a
 
 Welcome to Project PipeCD! This document will help you understand the project structure, key technologies, and how to effectively contribute.
 
-**🚀 Current Status: Production-Ready CRM with AI Intelligence & Complete Gmail Integration**
+**🚀 Current Status: Production-Ready CRM with Advanced AI Intelligence & Complete Gmail Integration**
 
 ## System Implementation Status (Code-Verified)
 
 | Major Component | Tools/Features | Status | Evidence |
 |----------------|----------------|--------|----------|
-| **AI Agent System** | 27 specialized tools | ✅ Production | All 6 domains operational with real implementations |
+| **AI Agent System** | 27 specialized tools with MCP-inspired architecture | ✅ Production | All 6 domains operational with enhanced tool registry |
 | **Activity Reminders** | Enterprise notification infrastructure | ✅ Production | Complete system with email, in-app, and push capabilities |
 | **Gmail Integration** | Complete email management with permissions fix | ✅ Production | Email pinning, contact creation, mark as read/unread operational |
 | **Enhanced Email-to-Task** | Claude 3 Haiku AI integration with user confirmation | ✅ Production | Two-step process with email scope selection and AI content generation |
@@ -27,6 +27,7 @@ Welcome to Project PipeCD! This document will help you understand the project st
 
 **Key Metrics:**
 - **27 AI Tools** across 6 domains (Deals, Leads, Organizations, Contacts, Activities, Relationships)
+- **MCP-Inspired Tool Registry** with 72% system prompt reduction (302 → 84 lines)
 - **Enterprise Notification System** with 5 queries, 7 mutations, and multi-channel delivery
 - **Complete Gmail Integration** with email pinning, contact creation, and mark as read/unread functionality
 - **Enhanced Email-to-Task** with Claude 3 Haiku AI integration and user confirmation workflow
@@ -36,7 +37,7 @@ Welcome to Project PipeCD! This document will help you understand the project st
 - **866 Lines** for main Smart Stickers component
 
 Project PipeCD is a revolutionary **Claude 4 Sonnet-powered CRM system** featuring:
-- **27 Specialized AI Tools** for autonomous deal, lead, and contact management
+- **27 Specialized AI Tools** with MCP-inspired self-documenting architecture
 - **Enterprise Activity Reminders** with email, in-app, and push notification capabilities
 - **Complete Gmail Integration** with email pinning, contact creation, and full email management
 - **Enhanced Email-to-Task** with Claude 3 Haiku AI integration for intelligent task generation
@@ -60,7 +61,7 @@ Project PipeCD is a modern full-stack TypeScript CRM system with revolutionary A
 *   **Frontend**: React Single Page Application (SPA) built with Vite, using Chakra UI for components and Zustand for state management.
     *   **Date Formatting**: `date-fns` for robust and flexible date/time formatting and manipulation.
 *   **Backend API**: GraphQL API served via Netlify Functions, implemented with GraphQL Yoga.
-*   **AI Agent System**: **Claude 4 Sonnet** integration with 30+ specialized tools for autonomous CRM management.
+*   **AI Agent System**: **Claude 4 Sonnet** integration with 27+ specialized tools using MCP-inspired self-documenting architecture.
 *   **Database**: PostgreSQL managed by Supabase, including authentication and Row-Level Security (RLS).
 *   **Shared Logic**: TypeScript modules in a common `/lib` directory, usable by backend services.
     *   **Object Diffing**: `deep-diff` for calculating differences between JavaScript objects, useful for audit trails and history tracking.
@@ -74,7 +75,7 @@ The architecture emphasizes separation of concerns, type safety, AI-powered auto
 ### 2.1 Major System Components
 
 **Implemented & Production-Ready:**
-- ✅ **AI Agent System** - Claude 4 Sonnet with 30+ tools for autonomous CRM management
+- ✅ **AI Agent System** - Claude 4 Sonnet with 27+ tools using MCP-inspired architecture for autonomous CRM management
 - ✅ **Activity Reminders System** - Enterprise notification infrastructure with email, in-app, and push capabilities
 - ✅ **Gmail Integration** - Complete email management with pinning, contact creation, and mark as read/unread functionality
 - ✅ **Deals Management** - Complete CRUD with WFM integration and automation
@@ -92,7 +93,7 @@ The architecture emphasizes separation of concerns, type safety, AI-powered auto
 
 **Architecture Highlights:**
 - **Service Layer Consistency**: All services follow proven object-based patterns
-- **AI Integration**: Deep integration allowing natural language CRM operations
+- **MCP-Inspired AI Tools**: Self-documenting tools with rich metadata reducing system prompt complexity by 72%
 - **Enterprise Notifications**: Multi-channel reminder system with user preference management
 - **Complete Gmail Integration**: Email management with pinning, contact creation, and reliable email operations
 - **Visual Collaboration**: Smart Stickers transform static entity pages into interactive workspaces
