@@ -33,8 +33,10 @@ import {
   useDisclosure,
   SimpleGrid,
   Code,
+  Collapse,
+  Flex,
 } from '@chakra-ui/react';
-import { SettingsIcon, TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
+import { SettingsIcon, TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { FiSend, FiUser, FiCpu, FiActivity, FiMessageSquare, FiClock, FiTool, FiEye, FiZap, FiTarget } from 'react-icons/fi';
 
 import { useNavigate } from 'react-router-dom';
@@ -42,6 +44,7 @@ import { useAgentStore } from '../../stores/useAgentStore';
 import type { AgentMessage, AgentConversation, AgentThought } from '../../stores/useAgentStore';
 import { gql } from '@apollo/client';
 import { apolloClient } from '../../lib/apolloClient';
+import { NotificationCenter } from '../common/NotificationCenter';
 // Enhanced AI Agent Components
 import { EnhancedResponse } from './enhanced';
 import type { SuggestedAction } from './enhanced';
@@ -285,13 +288,14 @@ export const AIAgentChat: React.FC = () => {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [realTimeThoughts, setRealTimeThoughts] = useState<AgentThought[]>([]);
   const [isPollingThoughts, setIsPollingThoughts] = useState(false);
+  const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Navigation hook
   const navigate = useNavigate();
   
-  // Modal for conversation history
+  // Modal for conversation history (keeping for potential future use)
   const { isOpen: isHistoryOpen, onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
   
   // UI theme
@@ -527,6 +531,14 @@ export const AIAgentChat: React.FC = () => {
     loadConversationHistory();
   }, [onHistoryOpen, loadConversationHistory]);
   
+  // Toggle history panel
+  const toggleHistoryPanel = useCallback(() => {
+    setIsHistoryPanelOpen(prev => !prev);
+    if (!isHistoryPanelOpen) {
+      loadConversationHistory();
+    }
+  }, [isHistoryPanelOpen, loadConversationHistory]);
+  
   const MessageComponent: React.FC<{ message: AgentMessage }> = React.memo(({ message }) => {
     const isUser = message.role === 'user';
     const Icon = isUser ? FiUser : FiCpu;
@@ -619,276 +631,303 @@ export const AIAgentChat: React.FC = () => {
   }
   
   return (
-    <Box h="100vh" bg={bgColor} display="flex" flexDirection="column">
-      {/* Header */}
-      <Box
-        bg={cardBg}
-        borderBottom="1px"
-        borderColor="gray.200"
-        px={6}
-        py={4}
-      >
-        <HStack justify="space-between">
-          <HStack spacing={3}>
-            <Box p={2} borderRadius="full" bg="blue.500" color="white">
-              <FiCpu size={20} />
-            </Box>
-            <VStack align="start" spacing={0}>
-              <Text fontWeight="semibold">AI Assistant</Text>
-              <HStack spacing={2}>
-                <Badge colorScheme="green" size="sm">
-                  Active
-                </Badge>
-                {localIsSendingMessage && (
-                  <HStack spacing={1}>
-                    <Spinner size="xs" />
-                    {isPollingThoughts && realTimeThoughts.length > 0 ? (
-                      <VStack align="start" spacing={0}>
+    <Flex h="100vh" bg={bgColor}>
+      {/* Main Chat Area */}
+      <Flex direction="column" flex={1} minW={0}>
+        {/* Header */}
+        <Box
+          bg={cardBg}
+          borderBottom="1px"
+          borderColor="gray.200"
+          px={6}
+          py={4}
+        >
+          <HStack justify="space-between">
+            <HStack spacing={3}>
+              <Box p={2} borderRadius="full" bg="blue.500" color="white">
+                <FiCpu size={20} />
+              </Box>
+              <VStack align="start" spacing={0}>
+                <Text fontWeight="semibold">AI Assistant</Text>
+                <HStack spacing={2}>
+                  <Badge colorScheme="green" size="sm">
+                    Active
+                  </Badge>
+                  {localIsSendingMessage && (
+                    <HStack spacing={1}>
+                      <Spinner size="xs" />
+                      {isPollingThoughts && realTimeThoughts.length > 0 ? (
+                        <VStack align="start" spacing={0}>
+                          <Text fontSize="xs" color="gray.500">
+                            Working... ({realTimeThoughts.length} steps)
+                          </Text>
+                          {realTimeThoughts.length > 0 && (
+                            <Text fontSize="xs" color="blue.600">
+                              {realTimeThoughts[realTimeThoughts.length - 1]?.metadata?.toolName 
+                                ? `🔧 ${realTimeThoughts[realTimeThoughts.length - 1].metadata.toolName}`
+                                : realTimeThoughts[realTimeThoughts.length - 1]?.type.toLowerCase()
+                              }
+                            </Text>
+                          )}
+                        </VStack>
+                      ) : (
                         <Text fontSize="xs" color="gray.500">
-                          Working... ({realTimeThoughts.length} steps)
+                          Thinking...
                         </Text>
-                        {realTimeThoughts.length > 0 && (
-                          <Text fontSize="xs" color="blue.600">
-                            {realTimeThoughts[realTimeThoughts.length - 1]?.metadata?.toolName 
-                              ? `🔧 ${realTimeThoughts[realTimeThoughts.length - 1].metadata.toolName}`
-                              : realTimeThoughts[realTimeThoughts.length - 1]?.type.toLowerCase()
-                            }
+                      )}
+                    </HStack>
+                  )}
+                </HStack>
+              </VStack>
+            </HStack>
+            
+            <HStack spacing={2}>
+              <NotificationCenter />
+              <Tooltip label={isHistoryPanelOpen ? "Hide Chat History" : "Show Chat History"}>
+                <IconButton
+                  icon={isHistoryPanelOpen ? <ChevronRightIcon /> : <TimeIcon />}
+                  variant="ghost"
+                  size="sm"
+                  aria-label="Toggle History"
+                  onClick={toggleHistoryPanel}
+                />
+              </Tooltip>
+              <Tooltip label="Start New Chat">
+                <Button
+                  leftIcon={<FiMessageSquare size={16} />}
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleStartConversation}
+                  isLoading={localIsLoading}
+                  loadingText="Starting..."
+                >
+                  New Chat
+                </Button>
+              </Tooltip>
+            </HStack>
+          </HStack>
+        </Box>
+        
+        {/* Messages */}
+        <Box flex={1} overflow="auto" p={6}>
+          {localIsLoading ? (
+            <VStack spacing={4} justify="center" h="100%">
+              <Spinner size="lg" color="blue.500" />
+              <Text color="gray.500">Starting conversation...</Text>
+            </VStack>
+          ) : !localCurrentConversation ? (
+            <VStack spacing={4} justify="center" h="100%">
+              <Card bg={cardBg} maxW="md">
+                <CardBody>
+                  <VStack spacing={4} textAlign="center">
+                    <FiCpu size={48} color="gray" />
+                    <Text fontWeight="semibold" color="gray.600" fontSize="lg">
+                      Welcome to your AI Assistant
+                    </Text>
+                    <Text fontSize="sm" color="gray.500" textAlign="center">
+                      I'm here to help with your PipeCD workflows. I can assist with deals, 
+                      contacts, activities, and much more. Ready to get started?
+                    </Text>
+                    <Button 
+                      colorScheme="blue" 
+                      size="lg"
+                      onClick={handleStartConversation}
+                      isLoading={localIsLoading}
+                      loadingText="Starting..."
+                    >
+                      Start Conversation
+                    </Button>
+                  </VStack>
+                </CardBody>
+              </Card>
+            </VStack>
+          ) : (
+            <VStack spacing={0} align="stretch">
+              {!localCurrentConversation?.messages?.length && (
+                <Card bg={cardBg} mb={6}>
+                  <CardBody>
+                    <VStack spacing={3} textAlign="center">
+                      <FiCpu size={32} color="gray" />
+                      <Text fontWeight="semibold" color="gray.600">
+                        Conversation Started
+                      </Text>
+                      <Text fontSize="sm" color="gray.500" textAlign="center">
+                        What would you like to work on today?
+                      </Text>
+                    </VStack>
+                  </CardBody>
+                </Card>
+              )}
+              
+              {localCurrentConversation?.messages?.map((message, index) => (
+                <MessageComponent key={`${message.timestamp}-${index}`} message={message} />
+              ))}
+              
+              {localSendError && (
+                <Alert status="error" mb={4}>
+                  <AlertIcon />
+                  <AlertDescription>{localSendError}</AlertDescription>
+                  <Button ml={4} size="sm" onClick={clearSendError}>
+                    Dismiss
+                  </Button>
+                </Alert>
+              )}
+              
+              {/* Real-time thought display during message sending */}
+              {isPollingThoughts && realTimeThoughts.length > 0 && (
+                <Card bg={cardBg} mb={4} borderColor="blue.200" borderWidth="2px">
+                  <CardBody>
+                    <VStack align="stretch" spacing={3}>
+                      <HStack spacing={2}>
+                        <Spinner size="sm" color="blue.500" />
+                        <Text fontWeight="semibold" color="blue.600">
+                          AI Assistant is working...
+                        </Text>
+                        <Badge colorScheme="blue" size="sm">
+                          {realTimeThoughts.length} step{realTimeThoughts.length > 1 ? 's' : ''}
+                        </Badge>
+                      </HStack>
+                      
+                      <VStack align="stretch" spacing={2} pl={4} borderLeft="2px" borderColor="blue.200">
+                        {realTimeThoughts.slice(-5).map((thought, idx) => (
+                          <HStack key={thought.id || idx} spacing={3}>
+                            <Box>
+                              {thought.type === 'TOOL_CALL' ? (
+                                <FiTool size={14} color="blue" />
+                              ) : thought.type === 'REASONING' ? (
+                                <FiZap size={14} color="purple" />
+                              ) : thought.type === 'OBSERVATION' ? (
+                                <FiEye size={14} color="green" />
+                              ) : (
+                                <FiActivity size={14} color="gray" />
+                              )}
+                            </Box>
+                            <VStack align="start" spacing={1} flex={1}>
+                              <HStack spacing={2}>
+                                <Badge 
+                                  colorScheme={
+                                    thought.type === 'TOOL_CALL' ? 'blue' :
+                                    thought.type === 'REASONING' ? 'purple' :
+                                    thought.type === 'OBSERVATION' ? 'green' : 'gray'
+                                  }
+                                  size="xs"
+                                >
+                                  {thought.type.toLowerCase()}
+                                </Badge>
+                                <Text fontSize="xs" color="gray.500">
+                                  {new Date(thought.timestamp).toLocaleTimeString()}
+                                </Text>
+                              </HStack>
+                              <Text fontSize="sm" color="gray.700" _dark={{ color: 'gray.300' }}>
+                                {thought.content}
+                              </Text>
+                              {thought.metadata?.toolName && (
+                                <Text fontSize="xs" color="blue.600">
+                                  🔧 {thought.metadata.toolName}
+                                </Text>
+                              )}
+                            </VStack>
+                          </HStack>
+                        ))}
+                        
+                        {realTimeThoughts.length > 5 && (
+                          <Text fontSize="xs" color="gray.500" fontStyle="italic" textAlign="center">
+                            ... and {realTimeThoughts.length - 5} more steps
                           </Text>
                         )}
                       </VStack>
-                    ) : (
-                      <Text fontSize="xs" color="gray.500">
-                        Thinking...
-                      </Text>
-                    )}
-                  </HStack>
-                )}
-              </HStack>
-            </VStack>
-          </HStack>
-          
-          <HStack spacing={2}>
-            <Tooltip label="Conversation History">
-              <IconButton
-                icon={<TimeIcon />}
-                variant="ghost"
-                size="sm"
-                aria-label="History"
-                onClick={handleOpenHistory}
-              />
-            </Tooltip>
-            <Tooltip label="Start New Chat">
-              <Button
-                leftIcon={<FiMessageSquare size={16} />}
-                variant="ghost"
-                size="sm"
-                onClick={handleStartConversation}
-                isLoading={localIsLoading}
-                loadingText="Starting..."
-              >
-                New Chat
-              </Button>
-            </Tooltip>
-          </HStack>
-        </HStack>
-      </Box>
-      
-      {/* Messages */}
-      <Box flex={1} overflow="auto" p={6}>
-        {localIsLoading ? (
-          <VStack spacing={4} justify="center" h="100%">
-            <Spinner size="lg" color="blue.500" />
-            <Text color="gray.500">Starting conversation...</Text>
-          </VStack>
-        ) : !localCurrentConversation ? (
-          <VStack spacing={4} justify="center" h="100%">
-            <Card bg={cardBg} maxW="md">
-              <CardBody>
-                <VStack spacing={4} textAlign="center">
-                  <FiCpu size={48} color="gray" />
-                  <Text fontWeight="semibold" color="gray.600" fontSize="lg">
-                    Welcome to your AI Assistant
-                  </Text>
-                  <Text fontSize="sm" color="gray.500" textAlign="center">
-                    I'm here to help with your PipeCD workflows. I can assist with deals, 
-                    contacts, activities, and much more. Ready to get started?
-                  </Text>
-                  <Button 
-                    colorScheme="blue" 
-                    size="lg"
-                    onClick={handleStartConversation}
-                    isLoading={localIsLoading}
-                    loadingText="Starting..."
-                  >
-                    Start Conversation
-                  </Button>
-                </VStack>
-              </CardBody>
-            </Card>
-          </VStack>
-        ) : (
-          <VStack spacing={0} align="stretch">
-            {!localCurrentConversation?.messages?.length && (
-              <Card bg={cardBg} mb={6}>
-                <CardBody>
-                  <VStack spacing={3} textAlign="center">
-                    <FiCpu size={32} color="gray" />
-                    <Text fontWeight="semibold" color="gray.600">
-                      Conversation Started
-                    </Text>
-                    <Text fontSize="sm" color="gray.500" textAlign="center">
-                      What would you like to work on today?
-                    </Text>
-                  </VStack>
-                </CardBody>
-              </Card>
-            )}
-            
-            {localCurrentConversation?.messages?.map((message, index) => (
-              <MessageComponent key={`${message.timestamp}-${index}`} message={message} />
-            ))}
-            
-            {localSendError && (
-              <Alert status="error" mb={4}>
-                <AlertIcon />
-                <AlertDescription>{localSendError}</AlertDescription>
-                <Button ml={4} size="sm" onClick={clearSendError}>
-                  Dismiss
-                </Button>
-              </Alert>
-            )}
-            
-            {/* Real-time thought display during message sending */}
-            {isPollingThoughts && realTimeThoughts.length > 0 && (
-              <Card bg={cardBg} mb={4} borderColor="blue.200" borderWidth="2px">
-                <CardBody>
-                  <VStack align="stretch" spacing={3}>
-                    <HStack spacing={2}>
-                      <Spinner size="sm" color="blue.500" />
-                      <Text fontWeight="semibold" color="blue.600">
-                        AI Assistant is working...
-                      </Text>
-                      <Badge colorScheme="blue" size="sm">
-                        {realTimeThoughts.length} step{realTimeThoughts.length > 1 ? 's' : ''}
-                      </Badge>
-                    </HStack>
-                    
-                    <VStack align="stretch" spacing={2} pl={4} borderLeft="2px" borderColor="blue.200">
-                      {realTimeThoughts.slice(-5).map((thought, idx) => (
-                        <HStack key={thought.id || idx} spacing={3}>
-                          <Box>
-                            {thought.type === 'TOOL_CALL' ? (
-                              <FiTool size={14} color="blue" />
-                            ) : thought.type === 'REASONING' ? (
-                              <FiZap size={14} color="purple" />
-                            ) : thought.type === 'OBSERVATION' ? (
-                              <FiEye size={14} color="green" />
-                            ) : (
-                              <FiActivity size={14} color="gray" />
-                            )}
-                          </Box>
-                          <VStack align="start" spacing={1} flex={1}>
-                            <HStack spacing={2}>
-                              <Badge 
-                                colorScheme={
-                                  thought.type === 'TOOL_CALL' ? 'blue' :
-                                  thought.type === 'REASONING' ? 'purple' :
-                                  thought.type === 'OBSERVATION' ? 'green' : 'gray'
-                                }
-                                size="xs"
-                              >
-                                {thought.type.toLowerCase()}
-                              </Badge>
-                              <Text fontSize="xs" color="gray.500">
-                                {new Date(thought.timestamp).toLocaleTimeString()}
-                              </Text>
-                            </HStack>
-                            <Text fontSize="sm" color="gray.700" _dark={{ color: 'gray.300' }}>
-                              {thought.content}
-                            </Text>
-                            {thought.metadata?.toolName && (
-                              <Text fontSize="xs" color="blue.600">
-                                🔧 {thought.metadata.toolName}
-                              </Text>
-                            )}
-                          </VStack>
-                        </HStack>
-                      ))}
-                      
-                      {realTimeThoughts.length > 5 && (
-                        <Text fontSize="xs" color="gray.500" fontStyle="italic" textAlign="center">
-                          ... and {realTimeThoughts.length - 5} more steps
-                        </Text>
-                      )}
                     </VStack>
-                  </VStack>
-                </CardBody>
-              </Card>
-            )}
-            
-            <div ref={messagesEndRef} />
-          </VStack>
-        )}
-      </Box>
+                  </CardBody>
+                </Card>
+              )}
+              
+              <div ref={messagesEndRef} />
+            </VStack>
+          )}
+        </Box>
+        
+        {/* Message Input */}
+        <Box
+          bg={cardBg}
+          borderTop="1px"
+          borderColor="gray.200"
+          p={6}
+        >
+          <HStack spacing={3}>
+            <Input
+              value={messageInput}
+              onChange={(e) => setMessageInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={
+                !localCurrentConversation 
+                  ? "Start a conversation to begin chatting..." 
+                  : "Type your message..."
+              }
+              disabled={localIsSendingMessage || localIsLoading || !localCurrentConversation}
+              flex={1}
+              bg="white"
+              _dark={{ bg: 'gray.700' }}
+            />
+            <Button
+              onClick={handleSendMessage}
+              disabled={!messageInput.trim() || localIsSendingMessage || localIsLoading || !localCurrentConversation}
+              colorScheme="blue"
+              size="md"
+              leftIcon={<FiSend size={16} />}
+              isLoading={localIsSendingMessage}
+              loadingText="Sending"
+            >
+              Send
+            </Button>
+          </HStack>
+        </Box>
+      </Flex>
       
-      {/* Message Input */}
-      <Box
-        bg={cardBg}
-        borderTop="1px"
-        borderColor="gray.200"
-        p={6}
-      >
-        <HStack spacing={3}>
-          <Input
-            value={messageInput}
-            onChange={(e) => setMessageInput(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder={
-              !localCurrentConversation 
-                ? "Start a conversation to begin chatting..." 
-                : "Type your message..."
-            }
-            disabled={localIsSendingMessage || localIsLoading || !localCurrentConversation}
-            flex={1}
-            bg="white"
-            _dark={{ bg: 'gray.700' }}
-          />
-          <Button
-            onClick={handleSendMessage}
-            disabled={!messageInput.trim() || localIsSendingMessage || localIsLoading || !localCurrentConversation}
-            colorScheme="blue"
-            size="md"
-            leftIcon={<FiSend size={16} />}
-            isLoading={localIsSendingMessage}
-            loadingText="Sending"
+      {/* Collapsible Chat History Panel */}
+      <Collapse in={isHistoryPanelOpen} animateOpacity>
+        <Box
+          w="350px"
+          h="100vh"
+          bg={cardBg}
+          borderLeft="1px"
+          borderColor="gray.200"
+          display="flex"
+          flexDirection="column"
+        >
+          {/* History Panel Header */}
+          <Box
+            px={4}
+            py={3}
+            borderBottom="1px"
+            borderColor="gray.200"
           >
-            Send
-          </Button>
-        </HStack>
-      </Box>
-      
-      {/* Conversation History Modal */}
-      <Modal isOpen={isHistoryOpen} onClose={onHistoryClose} size="xl" scrollBehavior="inside">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            <HStack spacing={3}>
-              <FiClock size={20} />
-              <Text>Conversation History</Text>
+            <HStack justify="space-between">
+              <HStack spacing={2}>
+                <FiClock size={16} />
+                <Text fontWeight="semibold">Chat History</Text>
+              </HStack>
+              <IconButton
+                icon={<ChevronRightIcon />}
+                variant="ghost"
+                size="sm"
+                aria-label="Close History"
+                onClick={toggleHistoryPanel}
+              />
             </HStack>
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
+          </Box>
+
+          {/* History Panel Content */}
+          <Box flex={1} overflow="auto" p={4}>
             {isLoadingHistory ? (
               <VStack spacing={4} py={8}>
                 <Spinner size="lg" color="blue.500" />
-                <Text color="gray.500">Loading conversations...</Text>
+                <Text color="gray.500" fontSize="sm">Loading conversations...</Text>
               </VStack>
             ) : conversations.length === 0 ? (
               <VStack spacing={4} py={8} textAlign="center">
-                <FiMessageSquare size={48} color="gray" />
-                <Text color="gray.500" fontSize="lg">No conversations yet</Text>
-                <Text color="gray.400" fontSize="sm">
+                <FiMessageSquare size={32} color="gray" />
+                <Text color="gray.500" fontSize="sm">No conversations yet</Text>
+                <Text color="gray.400" fontSize="xs">
                   Start a new conversation to see it appear here
                 </Text>
               </VStack>
@@ -907,68 +946,61 @@ export const AIAgentChat: React.FC = () => {
                       onClick={() => handleSelectConversation(conversation)}
                       borderColor={isCurrentConversation ? 'blue.500' : 'gray.200'}
                       borderWidth={isCurrentConversation ? '2px' : '1px'}
-                      bg={isCurrentConversation ? 'blue.50' : cardBg}
+                      bg={isCurrentConversation ? 'blue.50' : 'white'}
                       _dark={{ 
                         bg: isCurrentConversation ? 'blue.900' : 'gray.700',
                         borderColor: isCurrentConversation ? 'blue.400' : 'gray.600'
                       }}
+                      size="sm"
                     >
-                      <CardBody py={3}>
-                        <HStack justify="space-between" align="start">
-                          <VStack align="start" spacing={2} flex={1}>
-                            <HStack spacing={2} wrap="wrap">
-                              {isCurrentConversation && (
-                                <Badge colorScheme="blue" size="sm">Current</Badge>
-                              )}
-                              <Badge variant="outline" size="sm">
-                                {messageCount} message{messageCount !== 1 ? 's' : ''}
-                              </Badge>
-                            </HStack>
-                            
-                            {lastMessage && (
-                              <Text
-                                fontSize="sm"
-                                color="gray.600"
-                                _dark={{ color: 'gray.300' }}
-                                noOfLines={2}
-                              >
-                                {lastMessage.role === 'user' ? '👤 ' : '🤖 '}
-                                {lastMessage.content}
-                              </Text>
+                      <CardBody py={2} px={3}>
+                        <VStack align="start" spacing={1}>
+                          <HStack spacing={2} wrap="wrap">
+                            {isCurrentConversation && (
+                              <Badge colorScheme="blue" size="xs">Current</Badge>
                             )}
-                            
-                            <Text fontSize="xs" color="gray.500">
-                              {new Date(conversation.updatedAt).toLocaleDateString()} at{' '}
-                              {new Date(conversation.updatedAt).toLocaleTimeString([], { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </Text>
-                          </VStack>
+                            <Badge variant="outline" size="xs">
+                              {messageCount} msg{messageCount !== 1 ? 's' : ''}
+                            </Badge>
+                          </HStack>
                           
-                          <IconButton
-                            icon={<DeleteIcon />}
-                            size="sm"
-                            variant="ghost"
-                            colorScheme="red"
-                            aria-label="Delete conversation"
-                            onClick={(e) => handleDeleteConversation(conversation.id, e)}
-                            _hover={{ bg: 'red.100' }}
-                            _dark={{ _hover: { bg: 'red.900' } }}
-                          />
-                        </HStack>
+                          {lastMessage && (
+                            <Text
+                              fontSize="xs"
+                              color="gray.600"
+                              _dark={{ color: 'gray.300' }}
+                              noOfLines={2}
+                            >
+                              {lastMessage.role === 'user' ? '👤 ' : '🤖 '}
+                              {lastMessage.content}
+                            </Text>
+                          )}
+                          
+                          <HStack justify="space-between" w="full">
+                            <Text fontSize="xs" color="gray.500">
+                              {new Date(conversation.updatedAt).toLocaleDateString()}
+                            </Text>
+                            <IconButton
+                              icon={<DeleteIcon />}
+                              size="xs"
+                              variant="ghost"
+                              colorScheme="red"
+                              aria-label="Delete conversation"
+                              onClick={(e) => handleDeleteConversation(conversation.id, e)}
+                              _hover={{ bg: 'red.100' }}
+                              _dark={{ _hover: { bg: 'red.900' } }}
+                            />
+                          </HStack>
+                        </VStack>
                       </CardBody>
                     </Card>
                   );
                 })}
               </VStack>
             )}
-          </ModalBody>
-          <ModalFooter>
-            <Button onClick={onHistoryClose}>Close</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </Box>
+          </Box>
+        </Box>
+      </Collapse>
+    </Flex>
   );
 }; 
