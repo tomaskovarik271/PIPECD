@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Button,
   FormControl,
@@ -75,11 +75,14 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
     [getDefinitionsForEntity]
   );
 
+  const hasFetchedOrgs = useRef(false);
+
   useEffect(() => {
-    if (!orgLoading && (!organizations || organizations.length === 0)) {
+    if (!orgLoading && (!organizations || organizations.length === 0) && !hasFetchedOrgs.current) {
+      hasFetchedOrgs.current = true;
       fetchOrganizations();
     }
-  }, [organizations, orgLoading, fetchOrganizations]);
+  }, [orgLoading, organizations]);
 
   // Initialize custom field data from person
   useEffect(() => {
