@@ -44,7 +44,7 @@ export class GraphQLClient {
 
   constructor(config: GraphQLClientConfig) {
     this.endpoint = config.endpoint;
-    this.defaultTimeout = config.defaultTimeout || 30000; // 30 seconds
+    this.defaultTimeout = config.defaultTimeout || 120000; // 2 minutes for AI agent operations
     this.retryAttempts = config.retryAttempts || 2;
     this.retryDelay = config.retryDelay || 1000; // 1 second
   }

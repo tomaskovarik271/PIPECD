@@ -19,6 +19,8 @@
 # This might help resolve module issues like the one with inngest/netlify
 [functions]
   node_bundler = "esbuild"
+  # Increase timeout for AI agent operations (max 15 minutes for background functions)
+  timeout = 300  # 5 minutes for complex AI workflows
   # ADDED: Explicitly include the schema files directory for the graphql function
   # Use a specific function entry if only needed for graphql, or keep global if needed elsewhere
   # included_files = ["netlify/functions/graphql/schema/**"]

@@ -42,7 +42,7 @@ export class ToolExecutor {
 
   constructor(config: ToolExecutorConfig, toolRegistry: ToolRegistry) {
     this.config = {
-      timeout: 30000,
+      timeout: 120000, // 2 minutes for complex AI workflows
       enableLogging: false,
       enableMetrics: false,
       ...config,
