@@ -37,12 +37,15 @@ export class ResponseParser {
 
     // Parse deal entities from tool results in thoughts
     if (thoughts) {
-      // First pass: collect all organizations
-      for (const thought of thoughts) {
-        const isToolCall = thought.type?.toLowerCase() === 'tool_call';
-        const rawData = thought.rawData || thought.metadata?.rawData;
+      // Only process the LAST tool result to show most recent entities
+      const toolThoughts = thoughts.filter(thought => thought.type?.toLowerCase() === 'tool_call');
+      const lastToolThought = toolThoughts.length > 0 ? toolThoughts[toolThoughts.length - 1] : null;
+      
+      if (lastToolThought) {
+        // First pass: collect organizations from the last tool result
+        const rawData = lastToolThought.rawData || lastToolThought.metadata?.rawData;
         
-        if (isToolCall && rawData) {
+        if (rawData) {
           try {
             const data = typeof rawData === 'string' 
               ? JSON.parse(rawData) 
@@ -95,14 +98,9 @@ export class ResponseParser {
             console.warn('Failed to parse thought data:', error);
           }
         }
-      }
 
-      // Second pass: process deals and link to organizations
-      for (const thought of thoughts) {
-        const isToolCall = thought.type?.toLowerCase() === 'tool_call';
-        const rawData = thought.rawData || thought.metadata?.rawData;
-        
-        if (isToolCall && rawData) {
+        // Second pass: process deals from the last tool result
+        if (rawData) {
           try {
             const data = typeof rawData === 'string' 
               ? JSON.parse(rawData) 
@@ -148,7 +146,7 @@ export class ResponseParser {
               }
             }
 
-            // Single deal from create_deal
+            // Single deal from create_deal or update_deal
             if (data.id && data.amount !== undefined) {
               const organization = organizationMap.get(data.organization_id);
               
@@ -162,86 +160,31 @@ export class ResponseParser {
                 }
               }
               
-              // Check for duplicates before adding - for updates, we want to REPLACE the existing entity
-              const isUpdateTool = thought.metadata?.toolName === 'update_deal';
-              if (!entityMap.has(data.id) || isUpdateTool) {
-                const dealEntity = {
-                  type: 'deal' as const,
-                  id: data.id,
-                  name: dealName,
-                  amount: data.amount,
-                  organizationName: organization?.name,
-                  metadata: {
-                    status: data.currentWfmStatus?.name || data.status, // Use WFM status first, fallback to direct status
-                    stage: data.stage,
-                    createdAt: data.created_at,
-                    organizationId: data.organization_id,
-                    updatedAt: data.updated_at, // Include updated timestamp for update operations
-                  },
-                };
-                
-                // For updates, replace the existing entity
-                if (isUpdateTool && entityMap.has(data.id)) {
-                  // Find and replace in entities array
-                  const entityIndex = entities.findIndex(e => e.id === data.id);
-                  if (entityIndex !== -1) {
-                    entities[entityIndex] = dealEntity;
-                  }
-                } else if (!entityMap.has(data.id)) {
-                  // For new entities, add to array
-                  entities.push(dealEntity);
-                }
-                
-                // Always update the map
-                entityMap.set(data.id, dealEntity);
-              }
+              // Always add the entity from the last tool result
+              const dealEntity = {
+                type: 'deal' as const,
+                id: data.id,
+                name: dealName,
+                amount: data.amount,
+                organizationName: organization?.name,
+                metadata: {
+                  status: data.currentWfmStatus?.name || data.status, // Use WFM status first, fallback to direct status
+                  stage: data.stage,
+                  createdAt: data.created_at,
+                  organizationId: data.organization_id,
+                  updatedAt: data.updated_at, // Include updated timestamp for update operations
+                  toolName: lastToolThought.metadata?.toolName, // Track which tool created this entity
+                },
+              };
+              
+              entityMap.set(data.id, dealEntity);
+              entities.push(dealEntity);
             }
 
           } catch (error) {
             console.warn('Failed to parse thought data:', error);
           }
         }
-      }
-    }
-
-    // Parse entities from text patterns
-    const patterns = {
-      // Deal ID patterns
-      dealId: /deal\s+(?:id\s*:?\s*)?([a-f0-9-]{36})/gi,
-      // Organization ID patterns  
-      orgId: /organization\s+(?:id\s*:?\s*)?([a-f0-9-]{36})/gi,
-      // Contact ID patterns
-      contactId: /contact\s+(?:id\s*:?\s*)?([a-f0-9-]{36})/gi,
-      // Amount patterns
-      amount: /\$?([\d,]+(?:\.\d{2})?)/g,
-    };
-
-    // Extract deal IDs from text
-    let match: RegExpExecArray | null;
-    while ((match = patterns.dealId.exec(content)) !== null) {
-      // Check for duplicates before adding
-      if (!entityMap.has(match[1])) {
-        const dealEntity = {
-          type: 'deal' as const,
-          id: match[1],
-          name: `Deal ${match[1].substring(0, 8)}`,
-        };
-        entityMap.set(match[1], dealEntity);
-        entities.push(dealEntity);
-      }
-    }
-
-    // Extract organization IDs from text
-    while ((match = patterns.orgId.exec(content)) !== null) {
-      // Check for duplicates before adding
-      if (!entityMap.has(match[1])) {
-        const orgEntity = {
-          type: 'organization' as const,
-          id: match[1],
-          name: `Organization ${match[1].substring(0, 8)}`,
-        };
-        entityMap.set(match[1], orgEntity);
-        entities.push(orgEntity);
       }
     }
 

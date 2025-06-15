@@ -34,8 +34,8 @@ import {
   SimpleGrid,
   Code,
 } from '@chakra-ui/react';
+import { SettingsIcon, TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { FiSend, FiUser, FiCpu, FiActivity, FiMessageSquare, FiClock, FiTool, FiEye, FiZap, FiTarget } from 'react-icons/fi';
-import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 
 import { useNavigate } from 'react-router-dom';
 import { useAgentStore } from '../../stores/useAgentStore';
@@ -281,6 +281,8 @@ export const AIAgentChat: React.FC = () => {
   const [localIsSendingMessage, setLocalIsSendingMessage] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
   const [localSendError, setLocalSendError] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<AgentConversation[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [realTimeThoughts, setRealTimeThoughts] = useState<AgentThought[]>([]);
   const [isPollingThoughts, setIsPollingThoughts] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -288,6 +290,9 @@ export const AIAgentChat: React.FC = () => {
   
   // Navigation hook
   const navigate = useNavigate();
+  
+  // Modal for conversation history
+  const { isOpen: isHistoryOpen, onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
   
   // UI theme
   const bgColor = useColorModeValue('gray.50', 'gray.900');
@@ -297,13 +302,6 @@ export const AIAgentChat: React.FC = () => {
   const reasoningBg = useColorModeValue('gray.50', 'gray.700');
   const reasoningColor = useColorModeValue('gray.800', 'gray.200');
   
-  // Auto-start conversation when component mounts (when user enters AI assistant page)
-  useEffect(() => {
-    if (!localCurrentConversation && !localIsLoading) {
-      handleStartConversation();
-    }
-  }, []); // Run only on mount
-
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -459,6 +457,29 @@ export const AIAgentChat: React.FC = () => {
     }
   }, []);
   
+  // Load conversation history
+  const loadConversationHistory = useCallback(async () => {
+    setIsLoadingHistory(true);
+    try {
+      const store = useAgentStore.getState();
+      await store.loadConversations();
+      const updatedState = useAgentStore.getState();
+      setConversations(updatedState.conversations);
+    } catch (error) {
+      console.error('Failed to load conversation history:', error);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  }, []);
+
+  // Handle conversation selection from history
+  const handleSelectConversation = useCallback(async (conversation: AgentConversation) => {
+    setLocalCurrentConversation(conversation);
+    const store = useAgentStore.getState();
+    store.setCurrentConversation(conversation);
+    onHistoryClose();
+  }, [onHistoryClose]);
+
   // Handle enhanced response actions
   const handleEnhancedAction = useCallback((action: SuggestedAction) => {
     switch (action.action) {
@@ -482,6 +503,29 @@ export const AIAgentChat: React.FC = () => {
         console.log('Unknown action:', action);
     }
   }, [navigate]);
+
+  // Handle conversation deletion
+  const handleDeleteConversation = useCallback(async (conversationId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent conversation selection
+    try {
+      const store = useAgentStore.getState();
+      await store.deleteConversation(conversationId);
+      // Reload conversations after deletion
+      await loadConversationHistory();
+      // If we deleted the current conversation, clear it
+      if (localCurrentConversation?.id === conversationId) {
+        setLocalCurrentConversation(null);
+      }
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+    }
+  }, [loadConversationHistory, localCurrentConversation?.id]);
+
+  // Open history modal and load conversations
+  const handleOpenHistory = useCallback(() => {
+    onHistoryOpen();
+    loadConversationHistory();
+  }, [onHistoryOpen, loadConversationHistory]);
   
   const MessageComponent: React.FC<{ message: AgentMessage }> = React.memo(({ message }) => {
     const isUser = message.role === 'user';
@@ -624,25 +668,26 @@ export const AIAgentChat: React.FC = () => {
           </HStack>
           
           <HStack spacing={2}>
-            <Button
-              size="sm"
-              colorScheme="blue"
-              variant="outline"
-              onClick={handleStartConversation}
-              isLoading={localIsLoading}
-              loadingText="Starting..."
-              leftIcon={<FiMessageSquare size={14} />}
-            >
-              Start New Chat
-            </Button>
-            <Tooltip label="Toggle Thinking Process">
+            <Tooltip label="Conversation History">
               <IconButton
-                icon={<FiActivity size={16} />}
+                icon={<TimeIcon />}
                 variant="ghost"
                 size="sm"
-                aria-label="Thinking"
-                onClick={toggleThinkingProcess}
+                aria-label="History"
+                onClick={handleOpenHistory}
               />
+            </Tooltip>
+            <Tooltip label="Start New Chat">
+              <Button
+                leftIcon={<FiMessageSquare size={16} />}
+                variant="ghost"
+                size="sm"
+                onClick={handleStartConversation}
+                isLoading={localIsLoading}
+                loadingText="Starting..."
+              >
+                New Chat
+              </Button>
             </Tooltip>
           </HStack>
         </HStack>
@@ -821,6 +866,109 @@ export const AIAgentChat: React.FC = () => {
           </Button>
         </HStack>
       </Box>
+      
+      {/* Conversation History Modal */}
+      <Modal isOpen={isHistoryOpen} onClose={onHistoryClose} size="xl" scrollBehavior="inside">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            <HStack spacing={3}>
+              <FiClock size={20} />
+              <Text>Conversation History</Text>
+            </HStack>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {isLoadingHistory ? (
+              <VStack spacing={4} py={8}>
+                <Spinner size="lg" color="blue.500" />
+                <Text color="gray.500">Loading conversations...</Text>
+              </VStack>
+            ) : conversations.length === 0 ? (
+              <VStack spacing={4} py={8} textAlign="center">
+                <FiMessageSquare size={48} color="gray" />
+                <Text color="gray.500" fontSize="lg">No conversations yet</Text>
+                <Text color="gray.400" fontSize="sm">
+                  Start a new conversation to see it appear here
+                </Text>
+              </VStack>
+            ) : (
+              <VStack spacing={3} align="stretch">
+                {conversations.map((conversation) => {
+                  const lastMessage = conversation.messages[conversation.messages.length - 1];
+                  const messageCount = conversation.messages.length;
+                  const isCurrentConversation = localCurrentConversation?.id === conversation.id;
+                  
+                  return (
+                    <Card
+                      key={conversation.id}
+                      cursor="pointer"
+                      _hover={{ shadow: 'md' }}
+                      onClick={() => handleSelectConversation(conversation)}
+                      borderColor={isCurrentConversation ? 'blue.500' : 'gray.200'}
+                      borderWidth={isCurrentConversation ? '2px' : '1px'}
+                      bg={isCurrentConversation ? 'blue.50' : cardBg}
+                      _dark={{ 
+                        bg: isCurrentConversation ? 'blue.900' : 'gray.700',
+                        borderColor: isCurrentConversation ? 'blue.400' : 'gray.600'
+                      }}
+                    >
+                      <CardBody py={3}>
+                        <HStack justify="space-between" align="start">
+                          <VStack align="start" spacing={2} flex={1}>
+                            <HStack spacing={2} wrap="wrap">
+                              {isCurrentConversation && (
+                                <Badge colorScheme="blue" size="sm">Current</Badge>
+                              )}
+                              <Badge variant="outline" size="sm">
+                                {messageCount} message{messageCount !== 1 ? 's' : ''}
+                              </Badge>
+                            </HStack>
+                            
+                            {lastMessage && (
+                              <Text
+                                fontSize="sm"
+                                color="gray.600"
+                                _dark={{ color: 'gray.300' }}
+                                noOfLines={2}
+                              >
+                                {lastMessage.role === 'user' ? '👤 ' : '🤖 '}
+                                {lastMessage.content}
+                              </Text>
+                            )}
+                            
+                            <Text fontSize="xs" color="gray.500">
+                              {new Date(conversation.updatedAt).toLocaleDateString()} at{' '}
+                              {new Date(conversation.updatedAt).toLocaleTimeString([], { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
+                            </Text>
+                          </VStack>
+                          
+                          <IconButton
+                            icon={<DeleteIcon />}
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="red"
+                            aria-label="Delete conversation"
+                            onClick={(e) => handleDeleteConversation(conversation.id, e)}
+                            _hover={{ bg: 'red.100' }}
+                            _dark={{ _hover: { bg: 'red.900' } }}
+                          />
+                        </HStack>
+                      </CardBody>
+                    </Card>
+                  );
+                })}
+              </VStack>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={onHistoryClose}>Close</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }; 

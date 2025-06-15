@@ -2,9 +2,11 @@
  * Agent Page - Main page for AI agent interactions
  */
 
-import React from 'react';
-import { Box, Alert, AlertIcon, AlertTitle, AlertDescription, Button, VStack } from '@chakra-ui/react';
+import React, { useEffect } from 'react';
+import { Box, Alert, AlertIcon, AlertTitle, AlertDescription, Button, VStack, Text, Spinner } from '@chakra-ui/react';
 import { AIAgentChat } from '../components/agent/AIAgentChat';
+import { useAppStore } from '../stores/useAppStore';
+import { useAgentStore } from '../stores/useAgentStore';
 
 // Error Boundary Component
 class AgentErrorBoundary extends React.Component<
@@ -54,6 +56,60 @@ class AgentErrorBoundary extends React.Component<
 }
 
 const AgentPage: React.FC = () => {
+  const { userPermissions, permissionsLoading } = useAppStore();
+  const { createConversation } = useAgentStore();
+
+  // Check if user has admin permissions
+  const hasAdminPermissions = userPermissions?.some(permission => 
+    permission.includes('admin') || 
+    permission.includes('manage') || 
+    permission.includes('custom_fields') ||
+    permission.includes('wfm') ||
+    permission.endsWith(':update_any') ||
+    permission.endsWith(':delete_any') ||
+    permission.endsWith(':create_any')
+  ) || false;
+
+  // Auto-start conversation when page loads (for admin users)
+  useEffect(() => {
+    if (hasAdminPermissions && !permissionsLoading) {
+      // Auto-start a new conversation when the page loads
+      createConversation();
+    }
+  }, [hasAdminPermissions, permissionsLoading, createConversation]);
+
+  // Show loading while checking permissions
+  if (permissionsLoading) {
+    return (
+      <Box h="100vh" display="flex" alignItems="center" justifyContent="center">
+        <VStack spacing={4}>
+          <Spinner size="lg" color="blue.500" />
+          <Text color="gray.500">Checking permissions...</Text>
+        </VStack>
+      </Box>
+    );
+  }
+
+  // Show access denied for non-admin users
+  if (!hasAdminPermissions) {
+    return (
+      <Box h="100vh" display="flex" alignItems="center" justifyContent="center" p={6}>
+        <VStack spacing={4} maxW="md" textAlign="center">
+          <Alert status="warning">
+            <AlertIcon />
+            <Box>
+              <AlertTitle>Access Restricted</AlertTitle>
+              <AlertDescription>
+                The AI Assistant is currently available to administrators only. 
+                Please contact your system administrator for access.
+              </AlertDescription>
+            </Box>
+          </Alert>
+        </VStack>
+      </Box>
+    );
+  }
+
   return (
     <Box h="100vh" overflow="hidden">
       <AgentErrorBoundary>
