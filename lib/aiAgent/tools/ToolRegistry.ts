@@ -1,14 +1,17 @@
 /**
- * Tool Registry for PipeCD AI Agent
+ * Tool Registry for PipeCD AI Agent (Enhanced with MCP Best Practices)
  * 
  * Centralized registry for all available tools with:
- * - Tool discovery and metadata management
- * - Category-based organization
- * - Dynamic tool registration
- * - Tool validation and constraints
+ * - Rich MCP-inspired tool documentation and examples
+ * - Workflow guidance embedded in tool metadata
+ * - Self-documenting tools to reduce system prompt complexity
+ * - Category-based organization with relationship mapping
+ * - Dynamic tool discovery and contextual guidance
+ * 
+ * Architecture: Uses existing GraphQL adapters (not MCP server) for internal functionality
  */
 
-import type { MCPTool } from '../types';
+import type { MCPTool, MCPToolAnnotations } from '../types';
 import type { ToolCategory } from '../types/tools';
 
 export interface ToolRegistryConfig {
@@ -24,103 +27,302 @@ export class ToolRegistry {
 
   constructor(config: ToolRegistryConfig = {}) {
     this.config = config;
-    this.initializeDefaultTools();
+    this.initializeEnhancedTools();
   }
 
   /**
-   * Initialize all default tools available in the system
+   * Initialize all tools with rich MCP-inspired documentation
    */
-  private initializeDefaultTools(): void {
-    // Register all tools by category
-    this.registerDealTools();
-    this.registerLeadTools();
-    this.registerOrganizationTools();
-    this.registerContactTools();
-    this.registerActivityTools();
-    this.registerCustomFieldTools();
-    this.registerUserTools();
-    this.registerWorkflowTools();
+  private initializeEnhancedTools(): void {
+    // Register all tools by category with enhanced documentation
+    this.registerEnhancedDealTools();
+    this.registerEnhancedLeadTools();
+    this.registerEnhancedOrganizationTools();
+    this.registerEnhancedContactTools();
+    this.registerEnhancedActivityTools();
+    this.registerEnhancedCustomFieldTools();
+    this.registerEnhancedUserTools();
+    this.registerEnhancedWorkflowTools();
   }
 
   /**
-   * Register all deal-related tools
+   * Register deal tools with rich MCP-inspired documentation
    */
-  private registerDealTools(): void {
+  private registerEnhancedDealTools(): void {
     const dealTools: MCPTool[] = [
       {
         name: 'search_deals',
-        description: 'Search and filter deals by various criteria',
+        description: 'Search and filter deals in the CRM system. Use this when users ask about finding deals, checking deal status, analyzing deal pipelines, or getting deal overviews. Essential for understanding the current deal landscape before taking actions.',
         parameters: {
           type: 'object',
           properties: {
-            search_term: { type: 'string', description: 'Search term to filter deals by name' },
-            assigned_to: { type: 'string', description: 'User ID to filter deals assigned to' },
-            min_amount: { type: 'number', description: 'Minimum deal amount' },
-            max_amount: { type: 'number', description: 'Maximum deal amount' },
-            limit: { type: 'number', description: 'Maximum number of deals to return', default: 20 },
-          },
+            search_term: { 
+              type: 'string', 
+              description: 'Search term to filter deals by name or description. Supports partial matching. Leave empty to get all deals. Examples: "Acme Corp", "Q1 2024", "Enterprise License"'
+            },
+            assigned_to: { 
+              type: 'string', 
+              description: 'User ID or name to filter deals assigned to specific person. Use when user asks about "my deals" or "John\'s deals". Examples: "user_123", "john.doe@company.com"'
+            },
+            min_amount: { 
+              type: 'number', 
+              description: 'Minimum deal value in USD. Use for queries like "deals over $10k" or "high-value opportunities". Examples: 1000, 10000, 50000'
+            },
+            max_amount: { 
+              type: 'number', 
+              description: 'Maximum deal value in USD. Use for queries like "small deals under $5k". Examples: 5000, 25000, 100000'
+            },
+            stage: {
+              type: 'string',
+              description: 'Deal stage to filter by. Common stages: "Prospecting", "Qualification", "Proposal", "Negotiation", "Closed Won", "Closed Lost". Examples: "Prospecting", "Proposal", "Closed Won"'
+            },
+            limit: { 
+              type: 'number', 
+              description: 'Maximum number of deals to return. Default is 20. Use higher values for comprehensive analysis. Examples: 10, 50, 100',
+              default: 20
+            }
+          }
         },
+        annotations: {
+          title: 'Search Deals',
+          readOnlyHint: true,
+          openWorldHint: false,
+          workflowStage: 'discovery',
+          category: 'deals',
+          examples: [
+            'Show me all deals over $50,000',
+            'Find deals assigned to Sarah Johnson',
+            'What deals are in the proposal stage?',
+            'Show me deals for Acme Corporation',
+            'List all deals closing this quarter',
+            'Find high-priority deals in negotiation'
+          ],
+          usagePatterns: [
+            'Start with search_deals to understand the current deal landscape',
+            'Use filters to narrow down to specific criteria mentioned by user',
+            'Follow up with get_deal_details for specific deals that need analysis',
+            'Combine with search_organizations when deals relate to specific companies',
+            'Use before creating new deals to check for duplicates'
+          ],
+          relatedTools: ['get_deal_details', 'search_organizations', 'search_activities', 'create_deal']
+        }
       },
       {
         name: 'get_deal_details',
-        description: 'Get comprehensive deal analysis with full context',
+        description: 'Get comprehensive details for a specific deal including all related data, activities, contacts, custom fields, and analysis. Use this after search_deals when user wants detailed information about a particular deal, or when they mention a specific deal by name/ID.',
         parameters: {
           type: 'object',
           properties: {
-            deal_id: { type: 'string', description: 'ID of the deal to get details for' },
+            deal_id: { 
+              type: 'string', 
+              description: 'Unique identifier of the deal. Get this from search_deals results or when user provides a specific deal ID. Examples: "deal_123", "uuid-format-id"'
+            }
           },
-          required: ['deal_id'],
+          required: ['deal_id']
         },
+        annotations: {
+          title: 'Get Deal Details',
+          readOnlyHint: true,
+          openWorldHint: false,
+          workflowStage: 'analysis',
+          category: 'deals',
+          examples: [
+            'Tell me more about the Acme Corp deal',
+            'What\'s the status of deal #123?',
+            'Show me all details for this deal',
+            'Analyze the Microsoft partnership deal',
+            'Get full information about the Q2 enterprise deal'
+          ],
+          usagePatterns: [
+            'Use after search_deals to get detailed information about specific deals',
+            'Essential for deal analysis and comprehensive reporting',
+            'Provides context needed before update_deal operations',
+            'Use when user asks about specific deal progress, activities, or details',
+            'Required before making deal modifications to understand current state'
+          ],
+          relatedTools: ['search_deals', 'update_deal', 'search_activities', 'create_activity']
+        }
       },
       {
         name: 'create_deal',
-        description: 'Create a new deal in the CRM system',
+        description: 'Create a new deal in the CRM system. Use this when users want to add a new sales opportunity, convert a lead to a deal, or record a new business opportunity. CRITICAL: Always search for existing organizations first to avoid duplicates.',
         parameters: {
           type: 'object',
           properties: {
-            name: { type: 'string', description: 'Deal name/title' },
-            organization_id: { type: 'string', description: 'Organization ID to associate with deal' },
-            primary_contact_id: { type: 'string', description: 'Primary contact person ID' },
-            value: { type: 'number', description: 'Deal value/amount' },
-            stage: { type: 'string', description: 'Deal stage' },
-            priority: { type: 'string', description: 'Deal priority (HIGH, MEDIUM, LOW)' },
-            description: { type: 'string', description: 'Deal description' },
-            source: { type: 'string', description: 'Deal source (e.g., Website, Referral, Cold Call)' },
-            deal_type: { type: 'string', description: 'Type of deal' },
-            close_date: { type: 'string', description: 'Expected close date (YYYY-MM-DD format)' },
-            custom_fields: { type: 'array', description: 'Custom field values array with definitionId and value fields' },
+            name: { 
+              type: 'string', 
+              description: 'Deal name/title. Should be descriptive and include company name if applicable. Examples: "Acme Corp - Software License Deal", "Q2 2024 Enterprise Package", "Microsoft Partnership Agreement"'
+            },
+            organization_id: { 
+              type: 'string', 
+              description: 'ID of the organization/company for this deal. IMPORTANT: Always search_organizations first to find existing organization or create_organization if needed. Examples: "org_123", "uuid-format-org-id"'
+            },
+            primary_contact_id: { 
+              type: 'string', 
+              description: 'ID of the main contact person for this deal. Search contacts first or create if needed. Examples: "contact_456", "uuid-format-contact-id"'
+            },
+            value: { 
+              type: 'number', 
+              description: 'Deal value/amount in USD. Use the total expected revenue from this deal. Examples: 5000, 25000, 100000'
+            },
+            stage: { 
+              type: 'string', 
+              description: 'Initial deal stage. Common values: "Prospecting", "Qualification", "Proposal", "Negotiation". Default is usually "Prospecting". Examples: "Prospecting", "Qualification", "Proposal"'
+            },
+            priority: { 
+              type: 'string', 
+              description: 'Deal priority level: HIGH, MEDIUM, or LOW. Use HIGH for urgent/large deals. Examples: "HIGH", "MEDIUM", "LOW"'
+            },
+            description: { 
+              type: 'string', 
+              description: 'Detailed description of the deal, requirements, or opportunity details. Examples: "Enterprise software license renewal", "New customer onboarding package", "Custom integration project"'
+            },
+            source: { 
+              type: 'string', 
+              description: 'How this deal was acquired. Common sources: Website, Referral, Cold Call, LinkedIn, Trade Show. Examples: "Website", "Referral", "Cold Call", "LinkedIn", "Trade Show"'
+            },
+            deal_type: { 
+              type: 'string', 
+              description: 'Type of deal or product category. Examples: "Software License", "Consulting", "Hardware", "Subscription"'
+            },
+            close_date: { 
+              type: 'string', 
+              description: 'Expected close date in YYYY-MM-DD format. Use realistic timeline based on deal complexity. Examples: "2024-03-15", "2024-06-30", "2024-12-31"'
+            },
+            custom_fields: { 
+              type: 'array', 
+              description: 'Array of custom field values with definitionId and value. Use for RFP data, special requirements, etc. Examples: [{"definitionId": "field_123", "value": "Enterprise"}], [{"definitionId": "budget_field", "value": "50000"}]'
+            }
           },
-          required: ['name'],
+          required: ['name']
         },
+        annotations: {
+          title: 'Create Deal',
+          readOnlyHint: false,
+          destructiveHint: false,
+          openWorldHint: false,
+          workflowStage: 'creation',
+          category: 'deals',
+          examples: [
+            'Create a new deal for Acme Corp worth $50,000',
+            'Add a software license deal for Microsoft',
+            'Record this RFP as a new opportunity',
+            'Convert this lead into a deal',
+            'Create a Q2 enterprise package deal'
+          ],
+          usagePatterns: [
+            'ALWAYS search_organizations first to find or create the company',
+            'Search for existing contacts or create_contact if needed',
+            'Use custom_fields for RFP-specific data or special requirements',
+            'Set realistic close_date based on deal complexity and sales cycle',
+            'Follow up with create_activity to add initial notes or next steps',
+            'Assign appropriate priority based on deal size and urgency'
+          ],
+          relatedTools: ['search_organizations', 'create_organization', 'search_contacts', 'create_contact', 'create_activity', 'create_custom_field_definition'],
+          prerequisites: ['organization_id from search_organizations or create_organization']
+        }
       },
       {
         name: 'update_deal',
-        description: 'Update existing deal information',
+        description: 'Update existing deal information including amount, stage, dates, assignments, and other details. Use this when users want to modify deal data, change deal stage, update amounts, reassign deals, or progress deals through the sales pipeline.',
         parameters: {
           type: 'object',
           properties: {
-            deal_id: { type: 'string', description: 'ID of the deal to update' },
-            name: { type: 'string', description: 'New deal name' },
-            amount: { type: 'number', description: 'New deal amount' },
-            person_id: { type: 'string', description: 'New contact person ID' },
-            organization_id: { type: 'string', description: 'New organization ID' },
-            expected_close_date: { type: 'string', description: 'New expected close date (YYYY-MM-DD)' },
-            assigned_to_user_id: { type: 'string', description: 'New assigned user ID' },
+            deal_id: { 
+              type: 'string', 
+              description: 'ID of the deal to update. Get this from search_deals or get_deal_details. Examples: "deal_123", "uuid-format-deal-id"'
+            },
+            name: { 
+              type: 'string', 
+              description: 'New deal name/title if changing. Examples: "Updated Deal Name", "Acme Corp - Expanded Package"'
+            },
+            amount: { 
+              type: 'number', 
+              description: 'New deal amount/value in USD. Examples: 75000, 125000, 250000'
+            },
+            person_id: { 
+              type: 'string', 
+              description: 'New primary contact person ID if changing. Examples: "contact_789", "uuid-format-contact-id"'
+            },
+            organization_id: { 
+              type: 'string', 
+              description: 'New organization ID if changing company association. Examples: "org_456", "uuid-format-org-id"'
+            },
+            expected_close_date: { 
+              type: 'string', 
+              description: 'New expected close date in YYYY-MM-DD format. Examples: "2024-04-15", "2024-07-30"'
+            },
+            assigned_to_user_id: { 
+              type: 'string', 
+              description: 'ID of user to reassign deal to. Examples: "user_456", "uuid-format-user-id"'
+            }
           },
-          required: ['deal_id'],
+          required: ['deal_id']
         },
+        annotations: {
+          title: 'Update Deal',
+          readOnlyHint: false,
+          destructiveHint: false,
+          idempotentHint: false,
+          openWorldHint: false,
+          workflowStage: 'update',
+          category: 'deals',
+          examples: [
+            'Update the deal amount to $75,000',
+            'Move this deal to the proposal stage',
+            'Change the close date to next month',
+            'Reassign this deal to Sarah',
+            'Mark this deal as high priority',
+            'Update the deal name to include new requirements'
+          ],
+          usagePatterns: [
+            'Use get_deal_details first to understand current state before updating',
+            'Update stage progressively through sales pipeline (don\'t skip stages without reason)',
+            'When updating amount, consider if close_date should also change',
+            'Follow up with create_activity to log the reason for changes',
+            'Reassign deals when workload balancing is needed'
+          ],
+          relatedTools: ['get_deal_details', 'search_deals', 'create_activity', 'search_users'],
+          prerequisites: ['deal_id from search_deals or get_deal_details']
+        }
       },
       {
         name: 'delete_deal',
-        description: 'Delete a deal permanently',
+        description: 'Permanently delete a deal from the system. Use this only when explicitly requested by user and when deal was created in error or is no longer valid. This action cannot be undone and should be used with extreme caution.',
         parameters: {
           type: 'object',
           properties: {
-            deal_id: { type: 'string', description: 'ID of the deal to delete' },
+            deal_id: { 
+              type: 'string', 
+              description: 'ID of the deal to delete permanently. Examples: "deal_123", "uuid-format-deal-id"'
+            }
           },
-          required: ['deal_id'],
+          required: ['deal_id']
         },
-      },
+        annotations: {
+          title: 'Delete Deal',
+          readOnlyHint: false,
+          destructiveHint: true,
+          idempotentHint: true,
+          openWorldHint: false,
+          workflowStage: 'cleanup',
+          category: 'deals',
+          examples: [
+            'Delete this duplicate deal',
+            'Remove the test deal we created',
+            'This deal was created by mistake, please delete it',
+            'Delete the cancelled deal permanently'
+          ],
+          usagePatterns: [
+            'ALWAYS confirm with user before deleting - this action is irreversible',
+            'Use get_deal_details first to show what will be deleted',
+            'Consider update_deal to mark as "Closed Lost" instead of deleting',
+            'Only delete when explicitly requested and confirmed by user',
+            'Document reason for deletion in activity log before deleting'
+          ],
+          relatedTools: ['get_deal_details', 'update_deal', 'create_activity']
+        }
+      }
     ];
 
     this.registerToolsForCategory('deals', dealTools);
@@ -709,7 +911,7 @@ export class ToolRegistry {
     this.config = { ...this.config, ...newConfig };
     this.tools.clear();
     this.categories.clear();
-    this.initializeDefaultTools();
+    this.initializeEnhancedTools();
   }
 
   /**
@@ -717,5 +919,205 @@ export class ToolRegistry {
    */
   getConfig(): ToolRegistryConfig {
     return { ...this.config };
+  }
+
+  /**
+   * Register enhanced lead tools with comprehensive documentation
+   */
+  private registerEnhancedLeadTools(): void {
+    // For now, use existing implementation - will enhance later
+    this.registerLeadTools();
+  }
+
+  /**
+   * Register enhanced organization tools
+   */
+  private registerEnhancedOrganizationTools(): void {
+    // For now, use existing implementation - will enhance later
+    this.registerOrganizationTools();
+  }
+
+  /**
+   * Register enhanced contact tools
+   */
+  private registerEnhancedContactTools(): void {
+    // For now, use existing implementation - will enhance later
+    this.registerContactTools();
+  }
+
+  /**
+   * Register enhanced activity tools
+   */
+  private registerEnhancedActivityTools(): void {
+    // For now, use existing implementation - will enhance later
+    this.registerActivityTools();
+  }
+
+  /**
+   * Register enhanced custom field tools
+   */
+  private registerEnhancedCustomFieldTools(): void {
+    // For now, use existing implementation - will enhance later
+    this.registerCustomFieldTools();
+  }
+
+  /**
+   * Register enhanced user tools
+   */
+  private registerEnhancedUserTools(): void {
+    // For now, use existing implementation - will enhance later
+    this.registerUserTools();
+  }
+
+  /**
+   * Register enhanced workflow tools
+   */
+  private registerEnhancedWorkflowTools(): void {
+    // For now, use existing implementation - will enhance later
+    this.registerWorkflowTools();
+  }
+
+  /**
+   * Get tools by workflow stage for contextual discovery
+   */
+  getToolsByWorkflowStage(stage: 'discovery' | 'creation' | 'update' | 'analysis' | 'cleanup'): MCPTool[] {
+    return Array.from(this.tools.values()).filter(tool => 
+      tool.annotations?.workflowStage === stage
+    );
+  }
+
+  /**
+   * Get related tools for a given tool to suggest workflow continuations
+   */
+  getRelatedTools(toolName: string): MCPTool[] {
+    const tool = this.tools.get(toolName);
+    if (!tool?.annotations?.relatedTools) {
+      return [];
+    }
+
+    return tool.annotations.relatedTools
+      .map(name => this.tools.get(name))
+      .filter(Boolean) as MCPTool[];
+  }
+
+  /**
+   * Get tools that have specific annotations (e.g., readOnlyHint: true)
+   */
+  getToolsByAnnotation(annotation: keyof MCPToolAnnotations, value: any): MCPTool[] {
+    return Array.from(this.tools.values()).filter(tool => 
+      tool.annotations?.[annotation] === value
+    );
+  }
+
+  /**
+   * Generate dynamic tool usage guidance based on current context
+   * This replaces the need for massive static prompts
+   */
+  generateContextualGuidance(context?: {
+    userQuery?: string;
+    currentStage?: 'discovery' | 'creation' | 'update' | 'analysis' | 'cleanup';
+    recentTools?: string[];
+  }): string {
+    const guidance = [
+      "# Dynamic Tool Guidance",
+      "",
+      "## Core Workflow Patterns",
+      "",
+      "### Deal Management Workflow:",
+      "1. **Discovery**: search_deals → get_deal_details",
+      "2. **Creation**: search_organizations → create_organization (if needed) → create_deal → create_activity",
+      "3. **Updates**: get_deal_details → update_deal → create_activity (log changes)",
+      "",
+      "### Lead Processing Workflow:",
+      "1. **Discovery**: search_leads → get_lead_details",
+      "2. **Qualification**: qualify_lead → create_activity (notes)",
+      "3. **Conversion**: convert_lead → create_deal workflow",
+      "",
+      "## Tool Selection Guidelines",
+      "",
+      "- **Always search before creating** to avoid duplicates",
+      "- **Use read-only tools first** to gather context",
+      "- **Follow workflow stages**: discovery → creation → update → analysis",
+      "- **Check tool annotations** for usage hints and examples",
+      ""
+    ];
+
+    // Add contextual guidance based on current stage
+    if (context?.currentStage) {
+      const stageTools = this.getToolsByWorkflowStage(context.currentStage);
+      if (stageTools.length > 0) {
+        guidance.push(`## Recommended Tools for ${context.currentStage.toUpperCase()} Stage:`);
+        guidance.push("");
+        stageTools.forEach(tool => {
+          guidance.push(`- **${tool.annotations?.title || tool.name}**: ${tool.description}`);
+          if (tool.annotations?.examples?.length) {
+            guidance.push(`  Examples: ${tool.annotations.examples.slice(0, 2).join(', ')}`);
+          }
+        });
+        guidance.push("");
+      }
+    }
+
+    // Add related tools guidance if recent tools were used
+    if (context?.recentTools?.length) {
+      const lastTool = context.recentTools[context.recentTools.length - 1];
+      if (lastTool) {
+        const relatedTools = this.getRelatedTools(lastTool);
+        if (relatedTools.length > 0) {
+          guidance.push(`## Suggested Next Steps after ${lastTool}:`);
+          guidance.push("");
+          relatedTools.forEach(tool => {
+            guidance.push(`- **${tool.annotations?.title || tool.name}**: ${tool.description}`);
+          });
+          guidance.push("");
+        }
+      }
+    }
+
+    guidance.push("## Key Principles");
+    guidance.push("");
+    guidance.push("- **Self-documenting tools**: Each tool contains examples and usage patterns");
+    guidance.push("- **Workflow awareness**: Tools indicate their stage and related tools");
+    guidance.push("- **Context preservation**: Always gather context before making changes");
+    guidance.push("- **User confirmation**: Confirm destructive actions before execution");
+
+    return guidance.join('\n');
+  }
+
+  /**
+   * Get tool examples for a specific tool to help with parameter usage
+   */
+  getToolExamples(toolName: string): string[] {
+    const tool = this.tools.get(toolName);
+    return tool?.annotations?.examples || [];
+  }
+
+  /**
+   * Get usage patterns for a specific tool
+   */
+  getToolUsagePatterns(toolName: string): string[] {
+    const tool = this.tools.get(toolName);
+    return tool?.annotations?.usagePatterns || [];
+  }
+
+  /**
+   * Check if a tool is safe to use (read-only, non-destructive)
+   */
+  isToolSafe(toolName: string): boolean {
+    const tool = this.tools.get(toolName);
+    return tool?.annotations?.readOnlyHint === true || 
+           tool?.annotations?.destructiveHint === false;
+  }
+
+  /**
+   * Get tools that require prerequisites
+   */
+  getToolsWithPrerequisites(): Array<{tool: MCPTool, prerequisites: string[]}> {
+    return Array.from(this.tools.values())
+      .filter(tool => tool.annotations?.prerequisites?.length)
+      .map(tool => ({
+        tool,
+        prerequisites: tool.annotations!.prerequisites!
+      }));
   }
 } 

@@ -83,6 +83,21 @@ export interface MCPTool {
   name: string;
   description: string;
   parameters: Record<string, any>; // JSON Schema
+  annotations?: MCPToolAnnotations;
+}
+
+export interface MCPToolAnnotations {
+  title?: string;                    // Human-friendly name
+  readOnlyHint?: boolean;           // Safe to use repeatedly, doesn't modify data
+  destructiveHint?: boolean;        // Requires caution, modifies/deletes data
+  idempotentHint?: boolean;         // Repeated calls with same args have no additional effect
+  openWorldHint?: boolean;          // Interacts with external entities
+  workflowStage?: 'discovery' | 'creation' | 'update' | 'analysis' | 'cleanup';
+  examples?: string[];              // Concrete usage examples
+  usagePatterns?: string[];         // When and how to use this tool
+  relatedTools?: string[];          // Tools that work well together
+  prerequisites?: string[];         // Required prior actions or data
+  category?: string;                // Tool category for organization
 }
 
 export interface MCPToolCall {
