@@ -141,27 +141,26 @@ async function createDealViaUI(
   }
 
   // --- Person Selection ---
-  if (true) { // Always try to select a person if the dropdown exists
-    const personSelect = modal.getByLabel('Person');
-    // 1. Wait for Person dropdown to be enabled
-    await expect(personSelect).toBeEnabled({ timeout: 10000 });
-    
-    // 2. Wait for at least one option to be present (likely placeholder + person)
-    const personOptionCount = await personSelect.locator('option').count();
-    expect(personOptionCount).toBeGreaterThanOrEqual(1);
+  // Always try to select a person if the dropdown exists
+  const personSelect = modal.getByLabel('Person');
+  // 1. Wait for Person dropdown to be enabled
+  await expect(personSelect).toBeEnabled({ timeout: 10000 });
+  
+  // 2. Wait for at least one option to be present (likely placeholder + person)
+  const personOptionCount = await personSelect.locator('option').count();
+  expect(personOptionCount).toBeGreaterThanOrEqual(1);
 
-    // 3. Select the SECOND person option (index 1, assuming index 0 is placeholder)
-    const secondPersonOption = personSelect.locator('option').nth(1);
-    await expect(secondPersonOption).toBeEnabled({ timeout: 10000 }); // Ensure it's usable
-    const personOptionValue = await secondPersonOption.getAttribute('value');
-    const personOptionText = await secondPersonOption.textContent(); // Get text for logging
+  // 3. Select the SECOND person option (index 1, assuming index 0 is placeholder)
+  const secondPersonOption = personSelect.locator('option').nth(1);
+  await expect(secondPersonOption).toBeEnabled({ timeout: 10000 }); // Ensure it's usable
+  const personOptionValue = await secondPersonOption.getAttribute('value');
+  const personOptionText = await secondPersonOption.textContent(); // Get text for logging
 
-    if (personOptionValue) {
-        await personSelect.selectOption({ value: personOptionValue });
-        console.log(`Selected the first available person: ${personOptionText} (Value: ${personOptionValue})`);
-    } else {
-        throw new Error("Could not get value attribute from the second person option.");
-    }
+  if (personOptionValue) {
+      await personSelect.selectOption({ value: personOptionValue });
+      console.log(`Selected the first available person: ${personOptionText} (Value: ${personOptionValue})`);
+  } else {
+      throw new Error("Could not get value attribute from the second person option.");
   }
   // --- End Person Selection ---
 

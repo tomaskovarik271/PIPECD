@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   Button,
   FormControl,
   FormLabel,
@@ -23,8 +16,8 @@ import {
   NumberInput,
   NumberInputField,
   Checkbox,
-  HStack,
-  VStack,
+  ModalBody,
+  ModalFooter,
 } from '@chakra-ui/react';
 import {
   PersonInput,
@@ -68,7 +61,6 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
   
   const allDefinitions = useCustomFieldDefinitionStore(state => state.definitions);
   const definitionsLoading = useCustomFieldDefinitionStore(state => state.loading);
-  const definitionsError = useCustomFieldDefinitionStore(state => state.error);
   const fetchDefinitions = useCustomFieldDefinitionStore(state => state.fetchCustomFieldDefinitions);
 
   const [localError, setLocalError] = useState<string | null>(null);
@@ -128,11 +120,12 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
           case 'TEXT':
             cfInput.stringValue = String(rawValue);
             break;
-          case 'NUMBER':
+          case 'NUMBER': {
             const num = parseFloat(rawValue);
             if (!isNaN(num)) cfInput.numberValue = num;
             else setLocalError((prev) => (prev ? prev + `\n` : ``) + `Invalid number for '${def.fieldLabel}'.`);
             break;
+          }
           case 'BOOLEAN':
             cfInput.booleanValue = Boolean(rawValue);
             break;

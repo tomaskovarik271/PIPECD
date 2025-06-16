@@ -37,7 +37,6 @@ import {
 import { useAppStore } from './stores/useAppStore';
 import { useWFMConfigStore } from './stores/useWFMConfigStore';
 import Sidebar from './components/layout/Sidebar';
-import { useThemeStore } from './stores/useThemeStore';
 import { useThemeColors } from './hooks/useThemeColors';
 
 function AppContent() {
