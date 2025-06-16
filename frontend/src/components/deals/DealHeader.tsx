@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Flex,
   VStack,
@@ -99,11 +99,16 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing, setIsEd
     fetchWorkflowSteps();
   }, [deal.id, deal.wfm_project_id]);
 
-  // Calculate deal health metrics
-  const getDealHealth = () => {
-    const daysSinceUpdate = Math.ceil((new Date().getTime() - new Date(deal.updated_at).getTime()) / (1000 * 60 * 60 * 24));
-    const hasRecentActivity = dealActivities.length > 0 && Math.ceil((new Date().getTime() - new Date(dealActivities[0].created_at).getTime()) / (1000 * 60 * 60 * 24)) <= 7;
-    const isPastDue = deal.expected_close_date && new Date(deal.expected_close_date) < new Date();
+  // Calculate deal health metrics (memoized to prevent date object recreation)
+  const getDealHealth = useMemo(() => {
+    const now = Date.now(); // Use timestamp for better performance
+    const updatedAt = new Date(deal.updated_at).getTime();
+    const daysSinceUpdate = Math.ceil((now - updatedAt) / (1000 * 60 * 60 * 24));
+    
+    const hasRecentActivity = dealActivities.length > 0 && 
+      Math.ceil((now - new Date(dealActivities[0].created_at).getTime()) / (1000 * 60 * 60 * 24)) <= 7;
+    
+    const isPastDue = deal.expected_close_date && new Date(deal.expected_close_date).getTime() < now;
     
     if (deal.currentWfmStatus?.name === 'Won') return { status: 'Won', color: 'green', icon: CheckIcon };
     if (deal.currentWfmStatus?.name === 'Lost') return { status: 'Lost', color: 'red', icon: WarningIcon };
@@ -111,7 +116,7 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing, setIsEd
     if (hasRecentActivity) return { status: 'Active', color: 'green', icon: CheckIcon };
     if (daysSinceUpdate > 14) return { status: 'Stale', color: 'orange', icon: TimeIcon };
     return { status: 'On Track', color: 'blue', icon: CheckIcon };
-  };
+  }, [deal.updated_at, deal.expected_close_date, deal.currentWfmStatus?.name, dealActivities]);
 
   // Calculate pipeline progress based on actual WFM workflow steps
   const getPipelineProgress = () => {
@@ -175,7 +180,7 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing, setIsEd
     };
   };
 
-  const dealHealth = getDealHealth();
+  const dealHealth = getDealHealth;
   const pipelineProgress = getPipelineProgress();
   const nextSteps = dealActivities.filter(a => !a.is_done && a.due_date).slice(0, 2);
 
