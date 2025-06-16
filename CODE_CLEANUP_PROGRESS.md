@@ -39,11 +39,11 @@ CurrencyFormatter.formatColumnTotal(deals, 'mixed', 'USD')
 
 **Replaces Functions In:**
 - `frontend/src/pages/LeadDetailPage.tsx` ✅ **MIGRATED**
-- `frontend/src/lib/utils/formatters.ts` ⏳ Next target
-- `lib/aiAgent/utils/ResponseFormatter.ts` ⏳ Next target  
+- `frontend/src/lib/utils/formatters.ts` ✅ **MIGRATED**
+- `lib/aiAgent/utils/ResponseFormatter.ts` ✅ **MIGRATED**  
+- `frontend/src/components/deals/KanbanStepColumn.tsx` ✅ **MIGRATED**
 - `frontend/src/components/deals/DealCardKanban.tsx` ⏳ Next target
 - `frontend/src/components/deals/DealCardKanbanCompact.tsx` ⏳ Next target
-- `frontend/src/components/dealDetail/DealOverviewCard.tsx` ⏳ Next target
 - 10+ more files identified
 
 ### **B. Validators Utility (`lib/utils/validators.ts`)**
@@ -92,6 +92,8 @@ const { debouncedCallback, isPending, cancel } = useDebounceWithState(apiCall, 5
 **Files Cleaned:**
 - **`e2e/deals-crud.spec.ts`** ✅ 8 debug statements removed
 - **`lib/dealFolderService.ts`** ✅ 4 debug statements cleaned up
+- **`lib/services/ecbService.ts`** ✅ 5 business logic console.log statements cleaned
+- **`frontend/src/components/dealDetail/DealOverviewCard.tsx`** ✅ 2 debug statements removed
 
 **Remaining High-Priority Files:**
 - `lib/services/ecbService.ts` (5 statements) - Business logic logs

@@ -7,9 +7,10 @@ import DealCardKanban from './DealCardKanban';
 import DealCardKanbanCompact from './DealCardKanbanCompact';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../stores/useAppStore';
+import { CurrencyFormatter } from '../../../../lib/utils/currencyFormatter';
 
 const formatCurrency = (value: number, currencyCode = 'USD') => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+  return CurrencyFormatter.format(value, currencyCode, { precision: 0 });
 };
 
 // Simple exchange rates for demo (in production, this would come from the database)

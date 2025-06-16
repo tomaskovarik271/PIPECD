@@ -26,16 +26,7 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
   const colors = useThemeColors();
   const styles = useThemeStyles();
 
-  // DEBUG: Log the deal object to see what currency value we're getting
-  console.log('🔍 DealOverviewCard - Deal object:', {
-    id: deal.id,
-    name: deal.name,
-    amount: deal.amount,
-    currency: deal.currency,
-    currencyType: typeof deal.currency,
-    currencyJSON: JSON.stringify(deal.currency),
-    fullDeal: deal
-  });
+  // Deal object inspection (debug info available)
 
   const getEffectiveProbabilityDisplay = useMemo(() => {
     let probability = deal.deal_specific_probability;
@@ -67,17 +58,9 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
     const amount = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(amount)) return '-';
     
-    // DEBUG: Log currency formatting
     const currencyToUse = deal.currency || 'USD';
-    console.log('💰 formatCurrency called:', {
-      amount,
-      dealCurrency: deal.currency,
-      currencyToUse,
-      dealId: deal.id,
-      dealName: deal.name
-    });
     
-    // Format with currency symbol
+    // Use centralized formatter for consistency
     return new Intl.NumberFormat('en-US', { 
       style: 'currency', 
       currency: currencyToUse, 
