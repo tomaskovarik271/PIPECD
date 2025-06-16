@@ -8,7 +8,8 @@ import type { Deal } from '../stores/useDealsStore';
 import type { Person as GeneratedPerson, CustomFieldDefinition as GQLCustomFieldDefinition } from '../generated/graphql/graphql';
 
 import { getLinkDisplayDetails } from '../lib/utils/linkUtils';
-import { formatPersonName, formatDate, formatCurrency } from '../lib/utils/formatters';
+import { formatPersonName, formatDate } from '../lib/utils/formatters';
+import { CurrencyFormatter } from '../../../lib/utils/currencyFormatter';
 
 interface UseDealsTableColumnsProps {
   dealCustomFieldDefinitions: GQLCustomFieldDefinition[];
@@ -93,7 +94,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
     {
       key: 'amount',
       header: 'Amount',
-      renderCell: (d) => formatCurrency(d.amount),
+      renderCell: (d) => CurrencyFormatter.format(d.amount, d.currency || 'USD', { precision: 0 }),
       isSortable: true,
       isNumeric: true,
       sortAccessor: (d) => d.amount,
@@ -108,7 +109,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
     {
       key: 'weighted_amount',
       header: 'Weighted Amount',
-      renderCell: (d) => formatCurrency(d.weighted_amount),
+      renderCell: (d) => CurrencyFormatter.format(d.weighted_amount, d.currency || 'USD', { precision: 0 }),
       isSortable: true,
       isNumeric: true,
       sortAccessor: (d) => d.weighted_amount,

@@ -5,7 +5,8 @@ import { Link as RouterLink } from 'react-router-dom';
 import type { ColumnDefinition } from '../components/common/SortableTable';
 import type { Lead } from '../stores/useLeadsStore';
 import type { CustomFieldDefinition } from '../generated/graphql/graphql';
-import { formatDate, formatCurrency } from '../lib/utils/formatters';
+import { formatDate } from '../lib/utils/formatters';
+import { CurrencyFormatter } from '../../../lib/utils/currencyFormatter';
 import { getLinkDisplayDetails } from '../lib/utils/linkUtils';
 import { useThemeColors } from '../hooks/useThemeColors';
 
@@ -153,7 +154,7 @@ export function useLeadsTableColumns({
       header: 'Est. Value',
       isSortable: true,
       renderCell: (lead: Lead) => lead.estimated_value ? (
-        <Text>{formatCurrency(lead.estimated_value)}</Text>
+        <Text>{CurrencyFormatter.format(lead.estimated_value, 'USD', { precision: 0 })}</Text>
       ) : (
         <Text color="text.secondary" fontStyle="italic">—</Text>
       ),

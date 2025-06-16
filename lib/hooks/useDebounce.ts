@@ -1,29 +1,69 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 
 /**
  * Centralized debounce hook
  * Replaces multiple debounce implementations across the codebase
+ * Features: Proper React hook compliance with cleanup and dependency handling
  */
-export const useDebounce = (callback: Function, delay: number) => {
+export const useDebounce = <T extends (...args: any[]) => any>(
+  callback: T, 
+  delay: number
+): T => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const callbackRef = useRef(callback);
+
+  // Always keep callback ref current
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
   
-  return useCallback((...args: any[]) => {
+  return useCallback((...args: Parameters<T>) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    timeoutRef.current = setTimeout(() => callback(...args), delay);
-  }, [callback, delay]);
+    timeoutRef.current = setTimeout(() => {
+      callbackRef.current(...args);
+    }, delay);
+  }, [delay]) as T;
 };
 
 /**
  * Debounce hook with state tracking
- * Provides additional state for pending status
+ * Provides additional state for pending status and cancel functionality
  */
-export const useDebounceWithState = (callback: Function, delay: number) => {
+export const useDebounceWithState = <T extends (...args: any[]) => any>(
+  callback: T, 
+  delay: number
+) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pendingRef = useRef(false);
+  const callbackRef = useRef(callback);
   
-  const debouncedCallback = useCallback((...args: any[]) => {
+  // Always keep callback ref current
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        pendingRef.current = false;
+      }
+    };
+  }, []);
+  
+  const debouncedCallback = useCallback((...args: Parameters<T>) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -31,10 +71,10 @@ export const useDebounceWithState = (callback: Function, delay: number) => {
     pendingRef.current = true;
     
     timeoutRef.current = setTimeout(() => {
-      callback(...args);
+      callbackRef.current(...args);
       pendingRef.current = false;
     }, delay);
-  }, [callback, delay]);
+  }, [delay]) as T;
   
   const cancel = useCallback(() => {
     if (timeoutRef.current) {
@@ -44,7 +84,7 @@ export const useDebounceWithState = (callback: Function, delay: number) => {
     }
   }, []);
   
-  const isPending = () => pendingRef.current;
+  const isPending = useCallback(() => pendingRef.current, []);
   
   return {
     debouncedCallback,

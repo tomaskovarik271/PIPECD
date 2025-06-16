@@ -1,5 +1,5 @@
 import type { Person as GeneratedPerson } from '../../generated/graphql/graphql';
-import { CurrencyFormatter } from './currencyFormatter';
+import { CurrencyFormatter } from '../../../../lib/utils/currencyFormatter';
 
 // Memoized date formatter
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -11,6 +11,8 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
   timeStyle: 'short'
 });
 
+// DEPRECATED: Use CurrencyFormatter.format() directly instead
+// This wrapper exists only for backward compatibility
 export const formatCurrency = (amount: number | null | undefined, includeCents: boolean = false): string => {
   const precision = includeCents ? 2 : 0;
   return CurrencyFormatter.format(amount, 'USD', { precision });

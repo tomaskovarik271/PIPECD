@@ -8,12 +8,16 @@ export interface CurrencyFormatOptions {
 /**
  * Centralized currency formatter utility
  * Replaces 16+ duplicate formatting functions across the codebase
+ * Features: Cached formatters with LRU eviction to prevent memory leaks
  */
 export class CurrencyFormatter {
   private static formatters = new Map<string, Intl.NumberFormat>();
+  private static readonly MAX_CACHE_SIZE = 50; // Prevent memory leaks
+  private static accessOrder = new Map<string, number>(); // For LRU eviction
+  private static accessCounter = 0;
 
   /**
-   * Format currency amount with caching for performance
+   * Format currency amount with performance-optimized caching
    */
   static format(
     amount: number | null | undefined, 
@@ -32,7 +36,15 @@ export class CurrencyFormatter {
 
     const key = `${currency}-${locale}-${precision}-${compact}-${showSymbol}`;
     
+    // Update access order for LRU
+    this.accessOrder.set(key, ++this.accessCounter);
+    
     if (!this.formatters.has(key)) {
+      // Evict least recently used formatter if cache is full
+      if (this.formatters.size >= this.MAX_CACHE_SIZE) {
+        this.evictLRU();
+      }
+      
       const formatOptions: Intl.NumberFormatOptions = {
         minimumFractionDigits: precision,
         maximumFractionDigits: precision,
@@ -48,6 +60,26 @@ export class CurrencyFormatter {
     }
 
     return this.formatters.get(key)!.format(amount);
+  }
+
+  /**
+   * Evict least recently used formatter to prevent memory leaks
+   */
+  private static evictLRU(): void {
+    let oldestKey: string | null = null;
+    let oldestAccess = Infinity;
+    
+    for (const [key, accessTime] of this.accessOrder) {
+      if (accessTime < oldestAccess) {
+        oldestAccess = accessTime;
+        oldestKey = key;
+      }
+    }
+    
+    if (oldestKey) {
+      this.formatters.delete(oldestKey);
+      this.accessOrder.delete(oldestKey);
+    }
   }
 
   /**
@@ -136,5 +168,18 @@ export class CurrencyFormatter {
    */
   static clearCache(): void {
     this.formatters.clear();
+    this.accessOrder.clear();
+    this.accessCounter = 0;
+  }
+
+  /**
+   * Get cache statistics for monitoring
+   */
+  static getCacheStats(): { size: number; maxSize: number; accessCount: number } {
+    return {
+      size: this.formatters.size,
+      maxSize: this.MAX_CACHE_SIZE,
+      accessCount: this.accessCounter
+    };
   }
 } 

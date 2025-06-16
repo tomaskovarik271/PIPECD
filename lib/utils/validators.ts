@@ -1,15 +1,21 @@
 /**
  * Centralized validation utilities
  * Consolidates duplicate validation functions across the codebase
+ * Features: Pre-compiled regex patterns for optimal performance
  */
 export class Validators {
+  // Pre-compiled regex patterns for performance optimization
+  private static readonly UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  private static readonly EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  private static readonly PHONE_REGEX = /^[\+]?[1-9][\d]{0,15}$/;
+  private static readonly CURRENCY_REGEX = /^[A-Z]{3}$/;
+
   /**
    * Validate UUID format
    * Replaces multiple UUID validation implementations
    */
   static isValidUUID(str: string): boolean {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(str);
+    return this.UUID_REGEX.test(str);
   }
 
   /**
@@ -30,8 +36,7 @@ export class Validators {
    * Standard email validation
    */
   static isEmail(str: string): boolean {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(str);
+    return this.EMAIL_REGEX.test(str);
   }
 
   /**
@@ -39,9 +44,8 @@ export class Validators {
    * Accepts various phone number formats
    */
   static isPhoneNumber(str: string): boolean {
-    const phoneRegex = /^[\+]?[1-9][\d]{0,15}$/;
     const cleanedPhone = str.replace(/[\s\-\(\)\.]/g, '');
-    return phoneRegex.test(cleanedPhone);
+    return this.PHONE_REGEX.test(cleanedPhone);
   }
 
   /**
@@ -67,8 +71,7 @@ export class Validators {
    * 3-letter currency codes
    */
   static isCurrencyCode(str: string): boolean {
-    const currencyRegex = /^[A-Z]{3}$/;
-    return currencyRegex.test(str);
+    return this.CURRENCY_REGEX.test(str);
   }
 
   /**

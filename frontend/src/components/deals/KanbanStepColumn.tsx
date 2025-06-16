@@ -7,11 +7,9 @@ import DealCardKanban from './DealCardKanban';
 import DealCardKanbanCompact from './DealCardKanbanCompact';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../stores/useAppStore';
-import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
+import { CurrencyFormatter } from '../../../../lib/utils/currencyFormatter';
 
-const formatCurrency = (value: number, currencyCode = 'USD') => {
-  return CurrencyFormatter.format(value, currencyCode, { precision: 0 });
-};
+// REMOVED: Duplicate wrapper function - using CurrencyFormatter.format directly
 
 // Simple exchange rates for demo (in production, this would come from the database)
 const EXCHANGE_RATES: Record<string, Record<string, number>> = {
@@ -36,7 +34,7 @@ const formatColumnTotal = (deals: Deal[], displayMode: 'mixed' | 'converted', ba
       return sum + convertAmount(amount, currency, baseCurrency);
     }, 0);
     
-    return formatCurrency(totalInBaseCurrency, baseCurrency);
+    return CurrencyFormatter.format(totalInBaseCurrency, baseCurrency, { precision: 0 });
   } else {
     // Mixed currency display
     const currencyGroups = deals.reduce((acc, deal) => {
@@ -53,14 +51,14 @@ const formatColumnTotal = (deals: Deal[], displayMode: 'mixed' | 'converted', ba
     
     if (currencies.length <= 1) {
       const currency = currencies[0] || 'USD';
-      return formatCurrency(currencyGroups[currency] || 0, currency);
+      return CurrencyFormatter.format(currencyGroups[currency] || 0, currency, { precision: 0 });
     }
     
     const sortedCurrencies = currencies.sort((a, b) => currencyGroups[b] - currencyGroups[a]);
     const primaryCurrency = sortedCurrencies[0];
     const primaryAmount = currencyGroups[primaryCurrency];
     
-    return `${formatCurrency(primaryAmount, primaryCurrency)} +${currencies.length - 1}`;
+    return `${CurrencyFormatter.format(primaryAmount, primaryCurrency, { precision: 0 })} +${currencies.length - 1}`;
   }
 };
 
