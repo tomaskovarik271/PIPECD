@@ -17,12 +17,10 @@ async function login(page: Page) {
   await page.getByLabel('Password').fill(userPassword);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByRole('button', { name: /Sign Out/i })).toBeVisible({ timeout: 15000 });
-  console.log('Login successful');
 }
 
 // Helper function to create a pipeline via UI
 async function createPipelineViaUI(page: Page, pipelineName: string): Promise<string> {
-  console.log(`Creating pipeline: ${pipelineName}`);
   await page.goto('/pipelines');
   await expect(page.getByRole('heading', { name: 'Pipelines' })).toBeVisible({ timeout: 10000 });
   await page.getByRole('button', { name: 'New Pipeline' }).click();
@@ -34,13 +32,11 @@ async function createPipelineViaUI(page: Page, pipelineName: string): Promise<st
 
   await expect(page.getByText('Pipeline created successfully.')).toBeVisible({ timeout: 10000 });
   await expect(modal).not.toBeVisible({ timeout: 5000 });
-  console.log(`Pipeline ${pipelineName} created successfully.`);
   return pipelineName; 
 }
 
 // Helper function to create a stage via UI (Navigates via Pipeline)
 async function createStageViaUI(page: Page, stageName: string, pipelineName: string, probability: number): Promise<string> {
-    console.log(`Creating stage: ${stageName} for pipeline: ${pipelineName}`);
     
     await page.goto('/pipelines');
     await expect(page.getByRole('heading', { name: /Pipelines/i })).toBeVisible({ timeout: 10000 });
@@ -62,7 +58,6 @@ async function createStageViaUI(page: Page, stageName: string, pipelineName: str
 
     await expect(page.getByText('Stage created successfully.')).toBeVisible({ timeout: 10000 });
     await expect(modal).not.toBeVisible({ timeout: 5000 });
-    console.log(`Stage ${stageName} created successfully.`);
     return stageName;
 }
 

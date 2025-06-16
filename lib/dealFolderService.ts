@@ -41,7 +41,7 @@ class DealFolderService {
         .single();
 
       if (error || !data) {
-        console.log('No parent folder configured in app settings');
+        // No parent folder configured in app settings
         return null;
       }
 
@@ -154,14 +154,14 @@ class DealFolderService {
     // Check if auto-creation is enabled
     const autoCreate = await this.getAutoCreateSetting();
     if (!autoCreate) {
-      console.log('Auto-creation is disabled in settings');
+      // Auto-creation is disabled in settings
       return await this.getDealFolderInfo(config);
     }
 
     // Check if folder already exists
     const folderInfo = await this.getDealFolderInfo(config);
     if (folderInfo.exists) {
-      console.log('Deal folder already exists:', folderInfo.dealFolder?.name);
+      // Deal folder already exists
       return folderInfo;
     }
 
