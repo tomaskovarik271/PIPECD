@@ -110,9 +110,7 @@ const formatDate = (dateString?: string | null) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-const formatCurrency = (amount?: number | null) => {
-  return CurrencyFormatter.format(amount, 'USD', { precision: 2 });
-};
+
 
 const LeadDetailPage = () => {
   const { leadId } = useParams<{ leadId: string }>();
@@ -243,8 +241,6 @@ const LeadDetailPage = () => {
       toast({ title: 'Error Updating Contact Phone', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
     }
   };
-
-
 
   const handleEstimatedValueUpdate = async () => {
     if (!currentLead || !leadId) return;
@@ -525,7 +521,7 @@ const LeadDetailPage = () => {
             </HStack>
             {!isEditingEstimatedValue ? (
               <Heading size="md" color={colors.text.success}>
-                {formatCurrency(currentLead.estimated_value)}
+                                          {CurrencyFormatter.format(currentLead.estimated_value, 'USD', { precision: 2 })}
               </Heading>
             ) : (
               <VStack spacing={2} align="stretch" w="full">
@@ -871,8 +867,6 @@ const LeadDetailPage = () => {
                   Lead Information
                 </Heading>
                 <VStack align="stretch" spacing={3}>
-
-
                   <Box>
                     <Text fontSize="sm" color={colors.text.muted}>Created</Text>
                     <Text fontWeight="medium" color={colors.text.primary}>
