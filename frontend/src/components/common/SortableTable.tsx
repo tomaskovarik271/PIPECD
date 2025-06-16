@@ -165,20 +165,7 @@ function SortableTable<T extends { id: string }>({
                 position="relative"
                 _hover={column.isSortable ? { 
                   bg: colors.component.table.rowHover,
-                  color: colors.text.primary,
-                  transform: styles.theme === 'industrialMetal' ? 'translateY(-1px)' : 'none',
-                  boxShadow: styles.theme === 'industrialMetal' ? '0 2px 4px rgba(255,170,0,0.2)' : 'none',
-                  transition: 'all 0.2s ease-in-out'
-                } : {}}
-                _before={styles.theme === 'industrialMetal' ? {
-                  content: '""',
-                  position: 'absolute',
-                  left: '0',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: '2px',
-                  height: '60%',
-                  background: 'linear-gradient(180deg, transparent 0%, rgba(255,170,0,0.3) 50%, transparent 100%)',
+                  color: colors.text.primary
                 } : {}}
                 onClick={column.isSortable ? () => requestSort(String(column.key)) : undefined}
               >
