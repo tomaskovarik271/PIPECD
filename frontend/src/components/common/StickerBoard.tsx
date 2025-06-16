@@ -447,39 +447,6 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
     debouncedUpdateSize(stickerId, size);
   }, [debouncedUpdateSize]);
 
-  // Find empty space on the board
-  const findEmptySpace = useCallback((): Position => {
-    const occupiedAreas = Array.from(stickerLayouts.values()).map(layout => ({
-      x: layout.position.x,
-      y: layout.position.y,
-      width: layout.size.width,
-      height: layout.size.height,
-    }));
-
-    // Simple algorithm to find empty space
-    const defaultWidth = 200;
-    const defaultHeight = 150;
-    const margin = 20;
-
-    for (let y = margin; y < boardSize.height - defaultHeight; y += defaultHeight + margin) {
-      for (let x = margin; x < boardSize.width - defaultWidth; x += defaultWidth + margin) {
-        const overlaps = occupiedAreas.some(area => 
-          x < area.x + area.width + margin &&
-          x + defaultWidth + margin > area.x &&
-          y < area.y + area.height + margin &&
-          y + defaultHeight + margin > area.y
-        );
-        
-        if (!overlaps) {
-          return { x, y };
-        }
-      }
-    }
-
-    // If no empty space found, place at origin
-    return { x: margin, y: margin };
-  }, [boardSize.width, boardSize.height]);
-
   // Handle create new sticker
   const handleCreateSticker = useCallback((data: any) => {
     // Calculate empty space at call time instead of relying on callback
@@ -522,7 +489,7 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
     });
     
     closeCreateModal();
-  }, [createSticker, entityType, entityId, closeCreateModal, stickerLayouts, boardSize]);
+  }, [createSticker, entityType, entityId, closeCreateModal, boardSize]);
 
   // Handle keyboard shortcuts
   useEffect(() => {

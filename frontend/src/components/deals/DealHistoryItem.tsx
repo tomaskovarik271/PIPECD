@@ -53,9 +53,6 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
     });
     const definitions = Array.from(definitionsMap.values());
     
-    // Debug: Log available definition IDs
-    console.log('Available custom field definition IDs:', definitions.map(d => d.id));
-    
     return definitions;
   };
   const availableCustomFieldDefinitions = getCustomFieldDefinitionsFromCurrentDeal();

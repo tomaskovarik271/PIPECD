@@ -70,34 +70,22 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing, setIsEd
   // Fetch workflow steps when component mounts
   React.useEffect(() => {
     const fetchWorkflowSteps = async () => {
-      console.log('[DealHeader] Deal data:', { 
-        id: deal.id, 
-        wfm_project_id: deal.wfm_project_id,
-        currentWfmStep: deal.currentWfmStep 
-      });
-      
       if (!deal.wfm_project_id) {
-        console.log('[DealHeader] No wfm_project_id, skipping workflow steps fetch');
         return;
       }
       
       setIsLoadingSteps(true);
       try {
-        console.log('[DealHeader] Fetching workflow steps for deal:', deal.id);
         const response = await gqlClient.request(GET_DEAL_WORKFLOW_STEPS, {
           dealId: deal.id
         }) as any;
         
-        console.log('[DealHeader] GraphQL response:', response);
-        
         if (response.deal?.wfmProject?.workflow?.steps) {
           const steps = response.deal.wfmProject.workflow.steps;
-          console.log('[DealHeader] Found workflow steps:', steps);
           // Sort by stepOrder to ensure correct sequence
           steps.sort((a: any, b: any) => a.stepOrder - b.stepOrder);
           setWorkflowSteps(steps);
         } else {
-          console.log('[DealHeader] No workflow steps found in response');
           setWorkflowSteps([]);
         }
       } catch (error) {
