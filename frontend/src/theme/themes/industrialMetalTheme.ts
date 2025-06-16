@@ -724,13 +724,11 @@ export const industrialMetalTheme = extendTheme({
           tbody: {
             tr: {
               bg: 'linear-gradient(135deg, #303030 0%, #262626 100%)',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'background 0.2s ease',
               borderBottomWidth: '1px',
               borderBottomColor: 'neutral.700',
               _hover: {
                 bg: 'linear-gradient(135deg, #3A3A3A 0%, #303030 100%)',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.6), 0 0 20px rgba(255, 170, 0, 0.1)',
                 borderBottomColor: 'accentHazard.500',
               },
               _odd: {
