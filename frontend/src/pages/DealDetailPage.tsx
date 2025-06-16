@@ -194,10 +194,7 @@ const DealDetailPage = () => {
   const { definitions: customFieldDefinitions, fetchCustomFieldDefinitions } = useCustomFieldDefinitionStore();
   const { users: userList, fetchUsers: fetchUserList, hasFetched: usersHaveBeenFetched } = useUserListStore();
 
-  // DEBUG: Log when isCreateActivityModalOpen changes
-  useEffect(() => {
-    console.log('[DealDetailPage] isCreateActivityModalOpen changed to:', isCreateActivityModalOpen);
-  }, [isCreateActivityModalOpen]);
+  // Monitor activity modal state changes
 
   useEffect(() => {
     if (dealId) {

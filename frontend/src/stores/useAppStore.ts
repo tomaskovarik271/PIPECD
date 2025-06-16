@@ -233,7 +233,6 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Deal Detail Actions
   fetchDealById: async (dealId: string) => {
-    console.log('[useAppStore.fetchDealById] Received dealId:', dealId);
     set({ currentDealLoading: true, currentDealError: null });
     if (!get().session?.access_token) {
       set({ currentDealLoading: false, currentDealError: 'User not authenticated to fetch deal.' });
@@ -241,7 +240,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     try {
       const variables = { dealId };
-      console.log('[useAppStore.fetchDealById] Variables for gqlClient.request:', variables);
       const data = await gqlClient.request<
         { deal: DealWithHistory }, 
         { dealId: string } 
