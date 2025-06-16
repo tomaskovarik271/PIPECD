@@ -209,14 +209,16 @@ function SortableTable<T extends { id: string }>({
                     '&::before': {
                       content: '""',
                       position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
+                      left: '0',
+                      top: '0',
+                      bottom: '0',
                       width: '3px',
                       background: 'linear-gradient(180deg, rgba(255,170,0,0.6) 0%, rgba(255,170,0,0.3) 50%, rgba(255,170,0,0.6) 100%)',
                       borderTopLeftRadius: 'md',
                       borderBottomLeftRadius: 'md',
                       opacity: 1,
+                      zIndex: 1,
+                      pointerEvents: 'none',
                     }
                   } : {})
                 }}
@@ -233,6 +235,7 @@ function SortableTable<T extends { id: string }>({
                       borderColor={colors.component.table.border}
                       py={3}
                       px={4}
+                      position="relative"
                       onClick={shouldPreventClick ? (e) => e.stopPropagation() : undefined}
                     >
                       {column.renderCell(item)}
