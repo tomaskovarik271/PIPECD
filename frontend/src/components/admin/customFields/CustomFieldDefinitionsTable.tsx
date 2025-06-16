@@ -22,7 +22,7 @@ interface CustomFieldDefinitionsTableProps {
   entityTypeName?: string;
 }
 
-export const CustomFieldDefinitionsTable: React.FC<CustomFieldDefinitionsTableProps> = ({
+export const CustomFieldDefinitionsTable: React.FC<CustomFieldDefinitionsTableProps> = React.memo(({
   definitions,
   onEdit,
   onDeactivate,
@@ -98,4 +98,6 @@ export const CustomFieldDefinitionsTable: React.FC<CustomFieldDefinitionsTablePr
       </Tbody>
     </Table>
   );
-}; 
+});
+
+CustomFieldDefinitionsTable.displayName = 'CustomFieldDefinitionsTable'; 

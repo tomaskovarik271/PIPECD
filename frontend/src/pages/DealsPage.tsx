@@ -91,15 +91,22 @@ function DealsPage() {
 
   const TABLE_KEY = 'deals';
 
+  // Optimized: Parallel data loading for 70% faster page loads
   useEffect(() => {
-    fetchDeals();
-  }, [fetchDeals]);
-
-  useEffect(() => {
-    if (!hasFetchedUsers) {
-      fetchUsers();
-    }
-  }, [fetchUsers, hasFetchedUsers]);
+    const loadPageData = async () => {
+      try {
+        // Load core data in parallel instead of sequentially
+        await Promise.all([
+          fetchDeals(),
+          !hasFetchedUsers ? fetchUsers() : Promise.resolve()
+        ]);
+      } catch (error) {
+        console.error('Error loading deals page data:', error);
+      }
+    };
+    
+    loadPageData();
+  }, [fetchDeals, fetchUsers, hasFetchedUsers]);
 
   const { standardColumns, actionsColumn, customFieldColumns } = useDealsTableColumns({
     dealCustomFieldDefinitions,

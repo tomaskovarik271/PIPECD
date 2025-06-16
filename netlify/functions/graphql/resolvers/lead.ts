@@ -366,7 +366,7 @@ export const Lead: LeadResolvers<GraphQLContext> = {
       try {
         const { data, error } = await supabase
           .from('lead_history')
-          .select('*')
+          .select('id, lead_id, user_id, event_type, changes, created_at')
           .eq('lead_id', parent.id)
           .order('created_at', { ascending: false })
           .range(offset, offset + limit - 1);

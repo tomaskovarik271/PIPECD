@@ -55,7 +55,7 @@ export const activityService = {
     const supabaseClient: SupabaseClient = getAuthenticatedClient(accessToken);
     const { data, error } = await supabaseClient
       .from('activities')
-      .select('*')
+      .select('id, user_id, type, subject, due_date, notes, is_done, assigned_to_user_id, deal_id, person_id, organization_id, lead_id, is_system_activity, created_at, updated_at')
       // RLS will enforce whether this user (userId, from accessToken) can access this activityId.
       // The RLS policy allows access if:
       // 1. auth.uid() = activities.user_id (current user is the creator)
@@ -83,7 +83,7 @@ export const activityService = {
     const supabaseClient: SupabaseClient = getAuthenticatedClient(accessToken);
     let query = supabaseClient
       .from('activities')
-      .select('*');
+      .select('id, user_id, type, subject, due_date, notes, is_done, assigned_to_user_id, deal_id, person_id, organization_id, lead_id, is_system_activity, created_at, updated_at');
       // RLS handles user_id filtering
 
     // Apply filters (logic remains the same)

@@ -29,7 +29,7 @@ export const appSettingsMutations = {
           ignoreDuplicates: false,
         }
       )
-      .select('*')
+      .select('id, setting_key, setting_value, setting_type, description, is_public, created_at, updated_at')
       .single();
 
     if (error) {
