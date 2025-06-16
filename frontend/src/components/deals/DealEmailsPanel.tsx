@@ -271,6 +271,136 @@ interface EmailFilter {
   showPinnedOnly: boolean;
 }
 
+// Compose Email Modal Component
+const ComposeEmailModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onSend: (data: any) => void;
+  defaultTo?: string;
+  defaultSubject?: string;
+}> = ({ isOpen, onClose, onSend, defaultTo, defaultSubject }) => {
+  const [formData, setFormData] = useState({
+    to: defaultTo || '',
+    cc: '',
+    subject: defaultSubject || '',
+    body: '',
+  });
+
+  const handleSend = () => {
+    onSend({
+      to: formData.to.split(',').map(email => email.trim()),
+      cc: formData.cc ? formData.cc.split(',').map(email => email.trim()) : [],
+      subject: formData.subject,
+      body: formData.body,
+    });
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Compose Email</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <VStack spacing={4}>
+            <FormControl>
+              <FormLabel>To</FormLabel>
+              <Input
+                value={formData.to}
+                onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                placeholder="recipient@example.com"
+              />
+            </FormControl>
+            
+            <FormControl>
+              <FormLabel>CC</FormLabel>
+              <Input
+                value={formData.cc}
+                onChange={(e) => setFormData({ ...formData, cc: e.target.value })}
+                placeholder="cc@example.com (optional)"
+              />
+            </FormControl>
+            
+            <FormControl>
+              <FormLabel>Subject</FormLabel>
+              <Input
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                placeholder="Email subject"
+              />
+            </FormControl>
+            
+            <FormControl>
+              <FormLabel>Message</FormLabel>
+              <Textarea
+                value={formData.body}
+                onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                placeholder="Type your message here..."
+                rows={8}
+              />
+            </FormControl>
+          </VStack>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button colorScheme="blue" onClick={handleSend}>
+            Send Email
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
+// Convert to Note Modal Component
+const EmailToNoteModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  emailMessage: any;
+  dealId: string;
+}> = ({ isOpen, onClose, emailMessage, dealId }) => {
+  const [noteContent, setNoteContent] = useState('');
+
+  const handleConvert = () => {
+    // Logic to convert email to note
+    setNoteContent(emailMessage.body);
+    onClose();
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Convert Email to Note</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <VStack spacing={4}>
+            <FormControl>
+              <FormLabel>Note Content</FormLabel>
+              <Textarea
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                placeholder="Type your note content here..."
+                rows={8}
+              />
+            </FormControl>
+          </VStack>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="ghost" mr={3} onClick={onClose}>
+            Cancel
+          </Button>
+          <Button colorScheme="blue" onClick={handleConvert}>
+            Convert to Note
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   dealId,
   primaryContactEmail,
@@ -602,18 +732,15 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   // Show enhanced filtering UI if not using primary contact only
   const shouldShowContactFilter = filter.contactScope !== 'PRIMARY' || !primaryContactEmail;
 
-  if (!primaryContactEmail) {
-    return (
-      <Box p={6} textAlign="center">
-        <Text color={colors.text.secondary}>
-          No primary contact email found for this deal.
-        </Text>
-        <Text fontSize="sm" color={colors.text.muted} mt={2}>
-          Add a primary contact with an email address to view email conversations.
-        </Text>
-      </Box>
-    );
-  }
+  // Don't block access when no primary contact - just show a helpful alert
+  const showNoPrimaryContactMessage = !primaryContactEmail && filter.contactScope === 'PRIMARY';
+
+  // Auto-open filters when there's no primary contact to guide user
+  useEffect(() => {
+    if (!primaryContactEmail && !showAdvancedFilters) {
+      setShowAdvancedFilters(true);
+    }
+  }, [primaryContactEmail, showAdvancedFilters]);
 
   return (
     <Box h="600px" bg={colors.bg.surface} borderRadius="lg" overflow="hidden">
@@ -664,9 +791,34 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                   </Button>
                 </HStack>
               </HStack>
+
+              {/* No Primary Contact Alert */}
+              {showNoPrimaryContactMessage && (
+                <Alert status="info" size="sm" borderRadius="md">
+                  <AlertIcon />
+                  <VStack spacing={1} align="start" flex={1}>
+                    <Text fontSize="sm">
+                      No primary contact email found for this deal.
+                    </Text>
+                    <HStack spacing={2}>
+                      <Text fontSize="xs" color={colors.text.muted}>
+                        Switch to "All Participants" below to view all emails.
+                      </Text>
+                      <Button
+                        size="xs"
+                        colorScheme="blue"
+                        variant="link"
+                        onClick={() => handleScopeChange('ALL')}
+                      >
+                        Switch to All
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </Alert>
+              )}
               
-              {/* Enhanced Contact Filter */}
-              <Collapse in={showAdvancedFilters || shouldShowContactFilter}>
+              {/* Enhanced Contact Filter - Now respects showAdvancedFilters toggle */}
+              <Collapse in={showAdvancedFilters}>
                 <Box 
                   p={3} 
                   bg={colors.bg.elevated} 
@@ -1161,136 +1313,6 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
         dealId={dealId}
       />
     </Box>
-  );
-};
-
-// Compose Email Modal Component
-const ComposeEmailModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  onSend: (data: any) => void;
-  defaultTo?: string;
-  defaultSubject?: string;
-}> = ({ isOpen, onClose, onSend, defaultTo, defaultSubject }) => {
-  const [formData, setFormData] = useState({
-    to: defaultTo || '',
-    cc: '',
-    subject: defaultSubject || '',
-    body: '',
-  });
-
-  const handleSend = () => {
-    onSend({
-      to: formData.to.split(',').map(email => email.trim()),
-      cc: formData.cc ? formData.cc.split(',').map(email => email.trim()) : [],
-      subject: formData.subject,
-      body: formData.body,
-    });
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Compose Email</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <VStack spacing={4}>
-            <FormControl>
-              <FormLabel>To</FormLabel>
-              <Input
-                value={formData.to}
-                onChange={(e) => setFormData({ ...formData, to: e.target.value })}
-                placeholder="recipient@example.com"
-              />
-            </FormControl>
-            
-            <FormControl>
-              <FormLabel>CC</FormLabel>
-              <Input
-                value={formData.cc}
-                onChange={(e) => setFormData({ ...formData, cc: e.target.value })}
-                placeholder="cc@example.com (optional)"
-              />
-            </FormControl>
-            
-            <FormControl>
-              <FormLabel>Subject</FormLabel>
-              <Input
-                value={formData.subject}
-                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                placeholder="Email subject"
-              />
-            </FormControl>
-            
-            <FormControl>
-              <FormLabel>Message</FormLabel>
-              <Textarea
-                value={formData.body}
-                onChange={(e) => setFormData({ ...formData, body: e.target.value })}
-                placeholder="Type your message here..."
-                rows={8}
-              />
-            </FormControl>
-          </VStack>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose}>
-            Cancel
-          </Button>
-          <Button colorScheme="blue" onClick={handleSend}>
-            Send Email
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-};
-
-// Convert to Note Modal Component
-const EmailToNoteModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  emailMessage: any;
-  dealId: string;
-}> = ({ isOpen, onClose, emailMessage, dealId }) => {
-  const [noteContent, setNoteContent] = useState('');
-
-  const handleConvert = () => {
-    // Logic to convert email to note
-    setNoteContent(emailMessage.body);
-    onClose();
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
-      <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>Convert Email to Note</ModalHeader>
-        <ModalCloseButton />
-        <ModalBody>
-          <VStack spacing={4}>
-            <FormControl>
-              <FormLabel>Note Content</FormLabel>
-              <Textarea
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-                placeholder="Type your note content here..."
-                rows={8}
-              />
-            </FormControl>
-          </VStack>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose}>
-            Cancel
-          </Button>
-          <Button colorScheme="blue" onClick={handleConvert}>
-            Convert to Note
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
   );
 };
 
