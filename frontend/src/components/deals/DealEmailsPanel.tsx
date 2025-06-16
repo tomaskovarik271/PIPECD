@@ -288,7 +288,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
     hasAttachments: null,
     dateRange: 'all',
     selectedContacts: primaryContactEmail ? [primaryContactEmail] : [],
-    contactScope: 'PRIMARY',
+    contactScope: 'ALL',
     includeAllParticipants: false,
     showPinnedOnly: false,
   });
@@ -349,7 +349,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   // GraphQL Hooks
   const { data: threadsData, loading: threadsLoading, error: threadsError, refetch: refetchThreads } = useQuery(GET_EMAIL_THREADS, {
     variables: { filter: buildEmailThreadsFilter() },
-    skip: !primaryContactEmail,
+    skip: filter.contactScope === 'PRIMARY' && !primaryContactEmail, // Only skip for PRIMARY scope without contact
     fetchPolicy: 'cache-and-network',
   });
 

@@ -449,12 +449,12 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
 
   // Handle create new sticker
   const handleCreateSticker = useCallback((data: any) => {
-    // Calculate empty space at call time instead of relying on callback
-    const occupiedAreas = Array.from(stickerLayouts.values()).map(layout => ({
-      x: layout.position.x,
-      y: layout.position.y,
-      width: layout.size.width,
-      height: layout.size.height,
+    // Calculate empty space directly from stickers data (more stable than layouts state)
+    const occupiedAreas = stickers.map(sticker => ({
+      x: sticker.positionX,
+      y: sticker.positionY,
+      width: sticker.width,
+      height: sticker.height,
     }));
 
     // Simple algorithm to find empty space
@@ -489,7 +489,7 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
     });
     
     closeCreateModal();
-  }, [createSticker, entityType, entityId, closeCreateModal, boardSize]);
+  }, [createSticker, entityType, entityId, closeCreateModal, boardSize, stickers]);
 
   // Handle keyboard shortcuts
   useEffect(() => {

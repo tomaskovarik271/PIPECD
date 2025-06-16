@@ -761,7 +761,11 @@ export const AIAgentChat: React.FC = () => {
               
               {localCurrentConversation?.messages?.map((message) => {
                 // Create stable unique key from message properties instead of index
-                const messageKey = `${message.role}-${message.timestamp.getTime()}-${message.content.slice(0, 50)}`;
+                // Handle timestamp as either Date object or string from GraphQL
+                const timestampValue = message.timestamp instanceof Date 
+                  ? message.timestamp.getTime() 
+                  : new Date(message.timestamp).getTime();
+                const messageKey = `${message.role}-${timestampValue}-${message.content.slice(0, 50)}`;
                 return <MessageComponent key={messageKey} message={message} />;
               })}
               

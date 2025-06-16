@@ -95,7 +95,40 @@ const now = new Date(); // In render!
 ```
 **Recommended Fix**: Memoize date calculations, use timestamps
 
-### **10. ECB Service Type Issues (MEDIUM - NEEDS FIX)**
+## **🚨 CRITICAL PRODUCTION CRASHES RESOLVED**
+
+### **10. AI Agent Timestamp Type Error (CRITICAL - FIXED ✅)**
+**File**: `frontend/src/components/agent/AIAgentChat.tsx:764`
+**Issue**: `message.timestamp.getTime is not a function` - GraphQL returns timestamps as strings but code expects Date objects
+**Impact**: Complete AI Agent crashes with "AI Assistant Error" message after successful tool execution
+**Fix**: Added type checking to handle both Date objects and string timestamps from GraphQL
+```tsx
+// Before (CRASH):
+const messageKey = `${message.role}-${message.timestamp.getTime()}-${message.content.slice(0, 50)}`;
+
+// After (FIXED):
+const timestampValue = message.timestamp instanceof Date 
+  ? message.timestamp.getTime() 
+  : new Date(message.timestamp).getTime();
+const messageKey = `${message.role}-${timestampValue}-${message.content.slice(0, 50)}`;
+```
+
+### **11. StickerBoard Infinite Re-render Loop (CRITICAL - FIXED ✅)**
+**File**: `frontend/src/components/common/StickerBoard.tsx`
+**Issue**: "Maximum update depth exceeded" - `handleCreateSticker` callback had stale closure on `stickerLayouts` Map
+**Impact**: Deal detail page crashes, infinite re-renders, console spam, browser freeze
+**Fix**: Replaced unstable `stickerLayouts` Map dependency with stable `stickers` array data
+```tsx
+// Before (INFINITE LOOP):
+const occupiedAreas = Array.from(stickerLayouts.values()).map(layout => (...));
+}, [createSticker, entityType, entityId, closeCreateModal, boardSize]); // Missing stickerLayouts
+
+// After (STABLE):
+const occupiedAreas = stickers.map(sticker => (...)); // Use source data directly
+}, [createSticker, entityType, entityId, closeCreateModal, boardSize, stickers]);
+```
+
+### **12. ECB Service Type Issues (MEDIUM - NEEDS FIX)**
 **Files**: `lib/services/currencyService.ts:269`, `lib/services/ecbService.ts:96,109`
 **Issue**: TypeScript type mismatches in `effectiveDate` assignments
 **Impact**: Runtime errors with undefined values
@@ -148,7 +181,8 @@ const now = new Date(); // In render!
 ## **🏆 SUCCESS METRICS**
 
 ### **Quantitative Results**
-- **7 critical issues resolved** out of 10 discovered
+- **9 critical issues resolved** out of 12 discovered  
+- **2 CRITICAL production crashes fixed** (AI Agent, StickerBoard)
 - **200+ lines of duplicated code eliminated**
 - **50+ console.log statements cleaned**
 - **4 memory leak sources fixed**

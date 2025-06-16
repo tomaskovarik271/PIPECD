@@ -60,13 +60,16 @@ export const useUserListStore = create<UserListState>((set, get) => ({
       const response = await gqlClient.request<GetUserListResponse>(GET_USER_LIST_QUERY);
       
       // Map to UserListItem, ensuring display_name is handled correctly (it's Maybe<string>)
-      const userListItems: UserListItem[] = response.users.map(user => ({
-        id: user.id,
-        display_name: user.display_name, // This is already Maybe<String>
-        email: user.email,
-        avatar_url: user.avatar_url,
-        roles: user.roles || [],
-      }));
+      // Filter out System Automation user from assignment lists (used for system automations only)
+      const userListItems: UserListItem[] = response.users
+        .filter(user => user.email !== 'system@automation.cz')
+        .map(user => ({
+          id: user.id,
+          display_name: user.display_name, // This is already Maybe<String>
+          email: user.email,
+          avatar_url: user.avatar_url,
+          roles: user.roles || [],
+        }));
 
       set({ users: userListItems, loading: false, error: null, hasFetched: true });
     } catch (error: unknown) {
