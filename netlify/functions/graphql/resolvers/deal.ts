@@ -255,7 +255,7 @@ export const Deal: DealResolvers<GraphQLContext> = {
       const offset = args.offset || 0;
       const { data, error } = await supabase
         .from('deal_history')
-        .select('*')
+        .select('id, deal_id, field_name, old_value, new_value, created_at, user_id, event_type, severity')
         .eq('deal_id', parent.id)
         .order('created_at', { ascending: false })
         .limit(limit)
@@ -265,7 +265,12 @@ export const Deal: DealResolvers<GraphQLContext> = {
         throw new GraphQLError('Could not fetch deal history.');
       }
               // console.log('[Deal.history resolver] Raw data for deal_id', parent.id, ':', JSON.stringify(data, null, 2));
-      return data || [];
+      return (data || []).map(entry => ({
+        ...entry,
+        createdAt: entry.created_at,
+        eventType: entry.event_type,
+        severity: entry.severity
+      }));
     },
     wfmProject: async (parent: GraphQLDealParent, _args, context: GraphQLContext): Promise<WfmProject | null> => {
       if (!parent.wfm_project_id) {

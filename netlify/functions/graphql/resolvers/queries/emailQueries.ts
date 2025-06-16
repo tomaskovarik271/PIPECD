@@ -112,7 +112,7 @@ export const emailQueries: QueryResolvers<GraphQLContext> = {
     try {
       const { data: pinnedEmails, error } = await supabaseClient
         .from('email_pins')
-        .select('*')
+        .select('id, user_id, deal_id, email_id, thread_id, subject, from_email, pinned_at, notes, created_at, updated_at')
         .eq('user_id', userId)
         .eq('deal_id', dealId)
         .order('pinned_at', { ascending: false });
@@ -148,7 +148,7 @@ export const emailQueries: QueryResolvers<GraphQLContext> = {
     try {
       const { data: emailPin, error } = await supabaseClient
         .from('email_pins')
-        .select('*')
+        .select('id, user_id, deal_id, email_id, thread_id, subject, from_email, pinned_at, notes, created_at, updated_at')
         .eq('id', id)
         .eq('user_id', userId) // Ensure user can only access their own pins
         .single();

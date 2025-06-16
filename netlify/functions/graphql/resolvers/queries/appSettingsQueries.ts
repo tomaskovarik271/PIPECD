@@ -10,7 +10,7 @@ export const appSettingsQueries = {
   appSettings: async (_: any, __: any, context: any) => {
     const { data, error } = await supabase
       .from('app_settings')
-      .select('*')
+      .select('id, setting_key, setting_value, setting_type, description, is_public, created_at, updated_at')
       .order('setting_key');
 
     if (error) {
@@ -34,7 +34,7 @@ export const appSettingsQueries = {
   appSetting: async (_: any, { settingKey }: { settingKey: string }, context: any) => {
     const { data, error } = await supabase
       .from('app_settings')
-      .select('*')
+      .select('id, setting_key, setting_value, setting_type, description, is_public, created_at, updated_at')
       .eq('setting_key', settingKey)
       .single();
 
