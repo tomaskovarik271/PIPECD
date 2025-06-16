@@ -142,7 +142,7 @@ export const driveQueries = {
     
     const { data: documents, error } = await context.supabaseClient
       .from('deal_documents')
-      .select('*')
+      .select('id, deal_id, file_id, file_name, file_url, category, attached_at, attached_by')
       .eq('deal_id', dealId)
       .order('attached_at', { ascending: false });
     
@@ -168,7 +168,7 @@ export const driveQueries = {
     
     const { data: folder, error } = await context.supabaseClient
       .from('deal_drive_folders')
-      .select('*')
+      .select('folder_id, folder_name, parent_folder_id, folder_url, created_at, updated_at')
       .eq('deal_id', dealId)
       .eq('is_main_folder', true)
       .single();

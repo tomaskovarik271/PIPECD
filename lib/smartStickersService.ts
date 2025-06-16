@@ -222,7 +222,7 @@ export const smartStickersService = {
       
       const { data, error } = await supabase
         .from('smart_stickers')
-        .select('*')
+        .select('id, entity_type, entity_id, title, content, category_id, position_x, position_y, width, height, color, is_pinned, is_private, priority, mentions, tags, created_at, updated_at, created_by_user_id, last_edited_by_user_id, last_edited_at')
         .eq('id', id)
         .single();
 
@@ -318,7 +318,7 @@ export const smartStickersService = {
       
       let query = supabase
         .from('smart_stickers')
-        .select('*')
+        .select('id, entity_type, entity_id, title, content, category_id, position_x, position_y, width, height, color, is_pinned, is_private, priority, mentions, tags, created_at, updated_at, created_by_user_id, last_edited_by_user_id, last_edited_at')
         .eq('entity_type', entityType)
         .eq('entity_id', entityId);
 
