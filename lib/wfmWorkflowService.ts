@@ -351,21 +351,41 @@ export const wfmWorkflowService = {
     console.log(`wfmWorkflowService.removeStepFromWorkflow called for stepId: ${stepId}, by user: ${context.currentUser?.id}`);
     
     // Check if the step is part of any transitions first
-    // const { data: fromTransitions, error: fromError } = await context.supabaseClient
-    //   .from('workflow_transitions') 
-    //   .select('id')
-    //   .eq('from_step_id', stepId);
+    const { data: fromTransitions, error: fromError } = await context.supabaseClient
+      .from('workflow_transitions') 
+      .select('id, name')
+      .eq('from_step_id', stepId);
 
-    // // TODO: Handle fromError or if fromTransitions.length > 0 (prevent deletion or reassign transitions)
+    if (fromError) {
+      console.error('Error checking from_transitions:', fromError);
+      return { success: false, message: `Failed to validate step dependencies: ${fromError.message}` };
+    }
 
-    // const { data: toTransitions, error: toError } = await context.supabaseClient
-    //   .from('workflow_transitions') 
-    //   .select('id')
-    //   .eq('to_step_id', stepId);
+    const { data: toTransitions, error: toError } = await context.supabaseClient
+      .from('workflow_transitions') 
+      .select('id, name')
+      .eq('to_step_id', stepId);
     
-    // // TODO: Handle toError or if toTransitions.length > 0 (prevent deletion or reassign transitions)
+    if (toError) {
+      console.error('Error checking to_transitions:', toError);
+      return { success: false, message: `Failed to validate step dependencies: ${toError.message}` };
+    }
 
-    // For now, proceed with deletion. Robust implementation would check/handle active transitions.
+    // Prevent deletion if step has active transitions
+    const totalTransitions = (fromTransitions?.length || 0) + (toTransitions?.length || 0);
+    if (totalTransitions > 0) {
+      const transitionNames = [
+        ...(fromTransitions || []).map(t => t.name || 'Unnamed'),
+        ...(toTransitions || []).map(t => t.name || 'Unnamed')
+      ].join(', ');
+      
+      return { 
+        success: false, 
+        message: `Cannot delete step: it is referenced by ${totalTransitions} transition(s): ${transitionNames}. Please remove these transitions first.` 
+      };
+    }
+
+    // Safe to proceed with deletion
     const { error: deleteError } = await context.supabaseClient
         .from(WFM_WORKFLOW_STEP_TABLE_NAME) // Use constant
         .delete()
@@ -379,7 +399,6 @@ export const wfmWorkflowService = {
     return { success: true, stepId: stepId };
   },
 
-  // TODO: Implement reorder steps method
   async updateStepsOrder(workflowId: string, orderedStepIds: string[], context: GraphQLContext): Promise<ServiceLayerWfmWorkflowStep[]> {
     console.log(`wfmWorkflowService.updateStepsOrder called for workflowId: ${workflowId}, orderedStepIds:`, orderedStepIds, `user: ${context.currentUser?.id}`);
 
@@ -466,8 +485,20 @@ export const wfmWorkflowService = {
 
     if (error) {
       console.error('Error adding transition to workflow:', error);
-      // TODO: More specific error handling for duplicate transitions (uq_workflow_transition constraint)
-      // if (error.code === '23505' && error.message.includes('uq_workflow_transition')) { ... }
+      
+      // Handle duplicate transition constraint violations
+      if (error.code === '23505') {
+        if (error.message.includes('uq_workflow_transition') || error.message.includes('workflow_transitions')) {
+          throw new Error('A transition between these steps already exists. Each pair of steps can only have one transition.');
+        }
+        throw new Error('Duplicate transition detected. Please check your workflow configuration.');
+      }
+      
+      // Handle foreign key constraint violations
+      if (error.code === '23503') {
+        throw new Error('Invalid step or workflow ID. Please ensure both steps belong to the specified workflow.');
+      }
+      
       throw new Error(`Failed to add transition: ${error.message}`);
     }
     if (!data) {
@@ -657,6 +688,8 @@ export const wfmWorkflowService = {
     return true; // Transition exists
   },
 
-  // TODO: Implement transition management methods (create, delete)
-  // async createTransition(...) { ... }
+  // Note: Transition management methods are implemented above:
+  // - addTransitionToWorkflow() - creates transitions
+  // - removeTransitionFromWorkflow() - deletes transitions
+  // - updateWorkflowTransition() - updates transitions
 }; 

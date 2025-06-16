@@ -9,9 +9,9 @@ import {
 
 // Import services
 import { wfmWorkflowService } from '../../../../lib/wfmWorkflowService'; // For defaultWorkflow resolver
-import { getServiceLevelUserProfileData, ServiceLevelUserProfile } from '../../../../lib/userProfileService';
+import { getServiceLevelUserProfileData } from '../../../../lib/userProfileService';
 import { wfmProjectTypeService } from '../../../../lib/wfmProjectTypeService'; // Make sure this is imported
-// import { wfmProjectTypeService } from '../../../../lib/wfmProjectTypeService'; // Not directly needed for these field resolvers
+import { mapServiceUserToGraphqlUser } from '../utils/userMapping';
 
 // Interface to represent WfmProjectType with IDs needed for field resolution
 interface WfmProjectTypeWithResolvedIds extends WfmProjectType {
@@ -19,18 +19,6 @@ interface WfmProjectTypeWithResolvedIds extends WfmProjectType {
   created_by_user_id?: string | null;
   updated_by_user_id?: string | null;
 }
-
-// Helper to map ServiceLevelUserProfile to GraphQL User type
-// TODO: Move this to a shared utility file
-const mapServiceUserToGraphqlUser = (serviceUser: ServiceLevelUserProfile): User => {
-  return {
-    __typename: 'User',
-    id: serviceUser.user_id,
-    email: serviceUser.email,
-    display_name: serviceUser.display_name,
-    avatar_url: serviceUser.avatar_url,
-  };
-};
 
 export const WFMProjectTypeResolvers = {
   Query: {

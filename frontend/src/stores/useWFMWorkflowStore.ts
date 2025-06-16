@@ -202,20 +202,54 @@ export const useWFMWorkflowStore = create<WFMWorkflowState>((set, get) => ({
     }
   },
 
-  // --- Placeholder implementations for Step and Transition mutations ---
+  // --- Step and Transition mutations ---
   addWorkflowStep: async (workflowId, statusId, stepOrder, isInitialStep, isFinalStep) => {
     set({ submitting: true, error: null });
     console.log('Store: addWorkflowStep called', { workflowId, statusId, stepOrder, isInitialStep, isFinalStep });
     try {
-      // const response = await gqlClient.request(ADD_WFM_WORKFLOW_STEP, { workflowId, statusId, stepOrder, isInitialStep, isFinalStep });
-      // TODO: Process response, update currentWorkflowWithDetails.steps
-      // await get().fetchWFMWorkflowWithDetails(workflowId); // Refetch for now
-      set({ submitting: false });
-      // return response.addWFMWorkflowStep;
-      return null; // Placeholder
-    } catch (err) {
+      const input: CreateWfmWorkflowStepInput = {
+        workflowId,
+        statusId,
+        stepOrder: stepOrder || 1,
+        isInitialStep: isInitialStep || false,
+        isFinalStep: isFinalStep || false,
+      };
+
+      const response = await gqlClient.request<
+        { createWFMWorkflowStep: WfmWorkflowStep },
+        MutationCreateWfmWorkflowStepArgs
+      >(ADD_WFM_WORKFLOW_STEP, { input });
+
+      const newStep = response.createWFMWorkflowStep;
+      if (!newStep) {
+        throw new Error('Failed to create workflow step, no data returned.');
+      }
+
+      // Update currentWorkflowWithDetails.steps in place instead of refetching
+      set((state) => {
+        if (state.currentWorkflowWithDetails?.id === workflowId) {
+          const updatedSteps = [...(state.currentWorkflowWithDetails.steps || []), newStep]
+            .sort((a, b) => a.stepOrder - b.stepOrder);
+          
+          return {
+            submitting: false,
+            currentWorkflowWithDetails: {
+              ...state.currentWorkflowWithDetails,
+              steps: updatedSteps,
+            },
+          };
+        }
+        return { submitting: false };
+      });
+
+      return newStep;
+    } catch (err: any) {
       console.error('Error adding workflow step:', err);
-      set({ submitting: false, error: 'Failed to add step' });
+      let message = 'Failed to add step';
+      if (isGraphQLErrorWithMessage(err)) {
+        message = err.response?.errors?.[0]?.message || message;
+      }
+      set({ submitting: false, error: message });
       throw err;
     }
   },

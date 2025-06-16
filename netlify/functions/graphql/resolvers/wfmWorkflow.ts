@@ -18,8 +18,9 @@ import {
 
 // Import services
 import { wfmWorkflowService } from '../../../../lib/wfmWorkflowService';
-import { getServiceLevelUserProfileData, ServiceLevelUserProfile } from '../../../../lib/userProfileService';
+import { getServiceLevelUserProfileData } from '../../../../lib/userProfileService';
 import { wfmStatusService } from '../../../../lib/wfmStatusService'; // For WFMWorkflowStep.status resolver
+import { mapServiceUserToGraphqlUser } from '../utils/userMapping';
 
 // Interface to represent WfmWorkflow with user IDs from the database/service layer
 interface WfmWorkflowWithUserIds extends WfmWorkflow {
@@ -39,17 +40,7 @@ interface WfmWorkflowTransitionWithStepIds extends WfmWorkflowTransition {
   to_step_id: string;   // From DbWfmWorkflowTransition
 }
 
-// Helper to map ServiceLevelUserProfile to GraphQL User type
-// TODO: Move this to a shared utility file if used by many resolvers
-const mapServiceUserToGraphqlUser = (serviceUser: ServiceLevelUserProfile): User => {
-  return {
-    __typename: 'User',
-    id: serviceUser.user_id,
-    email: serviceUser.email,
-    display_name: serviceUser.display_name,
-    avatar_url: serviceUser.avatar_url,
-  };
-};
+
 
 export const WFMWorkflowResolvers = {
   Query: {

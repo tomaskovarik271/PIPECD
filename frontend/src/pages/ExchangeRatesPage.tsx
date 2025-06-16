@@ -38,6 +38,7 @@ import { useQuery, useMutation } from '@apollo/client';
 import { gql } from '@apollo/client';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { useCurrency } from '../hooks/useCurrency';
+import { useAppStore } from '../stores/useAppStore';
 import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
 
 // GraphQL Queries
@@ -96,6 +97,7 @@ const ExchangeRatesPage: React.FC = () => {
   const toast = useToast();
   const { currencies } = useCurrency();
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const userPermissions = useAppStore((state) => state.userPermissions);
   
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('EUR');
@@ -201,7 +203,7 @@ const ExchangeRatesPage: React.FC = () => {
         primaryButtonLabel="Set Manual Rate"
         onPrimaryButtonClick={onOpen}
         requiredPermission="app_settings:manage"
-        userPermissions={['app_settings:manage']} // TODO: Get from auth context
+        userPermissions={userPermissions || []}
       />
 
       <Box p={6} maxW="1200px" mx="auto">

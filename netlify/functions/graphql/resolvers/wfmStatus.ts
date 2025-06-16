@@ -6,8 +6,9 @@ import {
   User // GraphQL User type
 } from '../../../../lib/generated/graphql';
 
-import { getServiceLevelUserProfileData, ServiceLevelUserProfile } from '../../../../lib/userProfileService';
+import { getServiceLevelUserProfileData } from '../../../../lib/userProfileService';
 import { wfmStatusService } from '../../../../lib/wfmStatusService';
+import { mapServiceUserToGraphqlUser } from '../utils/userMapping';
 
 // This interface represents the WfmStatus entity as it would be retrieved from the service,
 // including the foreign key user IDs before they are resolved to User objects.
@@ -18,16 +19,7 @@ interface WfmStatusWithUserIds extends WfmStatus {
   updated_by_user_id?: string | null;
 }
 
-// Helper to map ServiceLevelUserProfile to GraphQL User type
-const mapServiceUserToGraphqlUser = (serviceUser: ServiceLevelUserProfile): User => {
-  return {
-    __typename: 'User',
-    id: serviceUser.user_id,
-    email: serviceUser.email,
-    display_name: serviceUser.display_name,
-    avatar_url: serviceUser.avatar_url,
-  };
-};
+
 
 export const WFMStatusResolvers = {
   Query: {
