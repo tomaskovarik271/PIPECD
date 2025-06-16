@@ -42,7 +42,7 @@ export const personService = {
     const supabase = getAuthenticatedClient(accessToken); 
     
     const { customFields, ...personData } = input;
-    const processedCustomFieldValues = await processCustomFieldsForCreate(customFields, supabase, CustomFieldEntityType.Person, false);
+    const processedCustomFieldValues = await processCustomFieldsForCreate(customFields, supabase, CustomFieldEntityType.Person, true);
 
     const dbInput: any = { 
       ...personData, 
@@ -85,7 +85,7 @@ export const personService = {
       customFields, 
       supabase,
       CustomFieldEntityType.Person,
-      false
+      true
     );
 
     const dbUpdatePayload: any = { ...personDataToUpdate };

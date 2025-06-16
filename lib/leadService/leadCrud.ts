@@ -319,8 +319,8 @@ export async function updateLead(userId: string, id: string, input: LeadServiceU
   const { customFields, ...leadUpdateData } = input;
   
   // Process custom fields if provided
-  const processedCustomFields = customFields ? 
-    await processCustomFieldsForUpdate(customFields, supabase) : undefined;
+  const { finalCustomFieldValues } = customFields ? 
+    await processCustomFieldsForUpdate(currentLead.custom_field_values || null, customFields, supabase) : { finalCustomFieldValues: undefined };
 
   // Handle contact field mapping
   const mappedUpdateData: any = {
@@ -342,8 +342,8 @@ export async function updateLead(userId: string, id: string, input: LeadServiceU
   }
 
   // Add custom fields if processed
-  if (processedCustomFields !== undefined) {
-    mappedUpdateData.custom_field_values = processedCustomFields;
+  if (finalCustomFieldValues !== undefined) {
+    mappedUpdateData.custom_field_values = finalCustomFieldValues;
   }
 
   // Filter out undefined values

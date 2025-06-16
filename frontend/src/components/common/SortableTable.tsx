@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   Table,
   Thead,
@@ -62,13 +62,13 @@ function SortableTable<T extends { id: string }>({
       direction: initialSortDirection 
   });
 
-  const requestSort = (key: string) => {
+  const requestSort = useCallback((key: string) => {
     let direction: 'ascending' | 'descending' = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
       direction = 'descending';
     }
     setSortConfig({ key, direction });
-  };
+  }, [sortConfig.key, sortConfig.direction]);
 
   const sortedData = useMemo(() => {
     const sortableItems = [...data];
@@ -116,12 +116,12 @@ function SortableTable<T extends { id: string }>({
     return sortableItems;
   }, [data, columns, sortConfig]);
 
-  const renderSortIcon = (columnKey: string) => {
+  const renderSortIcon = useCallback((columnKey: string) => {
       if (sortConfig.key !== columnKey) return null;
       return sortConfig.direction === 'ascending' ? 
              <TriangleUpIcon aria-label="sorted ascending" ml={1} w={3} h={3} color={colors.text.secondary} /> : 
              <TriangleDownIcon aria-label="sorted descending" ml={1} w={3} h={3} color={colors.text.secondary} />;
-  };
+  }, [sortConfig.key, sortConfig.direction, colors.text.secondary]);
 
   return (
     <TableContainer 
@@ -205,4 +205,5 @@ function SortableTable<T extends { id: string }>({
   );
 }
 
-export default SortableTable; 
+// Memoize the component to prevent unnecessary re-renders
+export default React.memo(SortableTable) as typeof SortableTable; 
