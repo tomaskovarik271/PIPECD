@@ -140,7 +140,7 @@ export const wfmWorkflowService = {
   },
 
   async create(input: CreateWfmWorkflowInput, userId: string, context: GraphQLContext): Promise<WfmWorkflow> {
-    console.log(`wfmWorkflowService.create called with input:`, input, `by user: ${userId}`);
+    // Debug: Creating WFM workflow
     const recordToInsert = {
         name: input.name,
         description: input.description,
@@ -161,7 +161,7 @@ export const wfmWorkflowService = {
   },
 
   async update(id: string, input: UpdateWfmWorkflowInput, userId: string, context: GraphQLContext): Promise<WfmWorkflow> {
-    console.log(`wfmWorkflowService.update called with id: ${id}, input:`, input, `by user: ${userId}`);
+    // Debug: Updating WFM workflow
     const recordToUpdate: Partial<Omit<DbWfmWorkflow, 'id' | 'created_at' | 'created_by_user_id'>> = {
         updated_by_user_id: userId,
     };
@@ -193,7 +193,7 @@ export const wfmWorkflowService = {
   },
 
   async delete(id: string, context: GraphQLContext): Promise<{ success: boolean; message?: string }> {
-    console.log(`wfmWorkflowService.delete called with id: ${id}, user: ${context.currentUser?.id}`);
+    // Debug: Deleting WFM workflow
     const { error } = await context.supabaseClient
         .from('workflows')
         .delete()
@@ -250,7 +250,7 @@ export const wfmWorkflowService = {
   },
 
   async getAllowedTransitions(workflowId: string, fromStepId: string, context: GraphQLContext): Promise<WfmWorkflowTransition[]> {
-    console.log(`wfmWorkflowService.getAllowedTransitions called for workflow: ${workflowId}, from step: ${fromStepId}`);
+    // Debug: Getting allowed transitions
     const { supabaseClient } = context;
 
     const { data: transitionsData, error: transitionsError } = await supabaseClient
@@ -272,7 +272,7 @@ export const wfmWorkflowService = {
   },
 
   async addStepToWorkflow(input: CreateWfmWorkflowStepInput, userId: string, context: GraphQLContext): Promise<ServiceLayerWfmWorkflowStep> {
-    console.log(`wfmWorkflowService.addStepToWorkflow called with input:`, input, `by user: ${userId}`);
+    // Debug: Adding step to workflow
     // In a real scenario, you might want to add created_by_user_id, updated_by_user_id to workflow_steps table
     // and populate them here, similar to how workflows are handled.
     // For now, the table schema for workflow_steps doesn't have these user tracking columns.
@@ -309,7 +309,7 @@ export const wfmWorkflowService = {
   },
 
   async updateStepInWorkflow(stepId: string, input: UpdateWfmWorkflowStepInput, userId: string, context: GraphQLContext): Promise<ServiceLayerWfmWorkflowStep> {
-    console.log(`wfmWorkflowService.updateStepInWorkflow called for stepId: ${stepId}, input:`, input, `by user: ${userId}`);
+    // Debug: Updating workflow step
 
     const recordToUpdate: Partial<DbWfmWorkflowStep> = {
       // updated_by_user_id: userId, // If workflow_steps table had this

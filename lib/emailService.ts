@@ -95,7 +95,7 @@ class EmailService {
       // Set up automatic token refresh
       oauth2Client.on('tokens', async (newTokens) => {
         if (newTokens.refresh_token) {
-          console.log('New refresh token received, updating database...');
+          // Info: Gmail refresh token updated
           // If we get a new refresh token, update our stored tokens
           await googleIntegrationService.storeExtendedTokens(
             userId,
@@ -108,7 +108,7 @@ class EmailService {
             accessToken
           );
         } else if (newTokens.access_token) {
-          console.log('Access token refreshed, updating database...');
+          // Info: Gmail access token refreshed
           // Just update the access token and expiry
           const supabase = getAuthenticatedClient(accessToken);
           await supabase
@@ -202,7 +202,7 @@ class EmailService {
       }
 
       const query = queryParts.join(' ');
-      console.log('Enhanced Gmail query:', query);
+      // Debug: Gmail query constructed
 
       // Get threads list
       const threadsResponse = await gmail.users.threads.list({
@@ -364,7 +364,7 @@ class EmailService {
     try {
       // Store the email-deal association in database
       // This would typically be done through your database service
-      console.log(`Linking email ${emailId} to deal ${dealId} for user ${userId}`);
+      // Info: Linking email to deal
       return true;
     } catch (error) {
       console.error('Failed to link email to deal:', error);

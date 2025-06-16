@@ -173,7 +173,7 @@ class DealFolderService {
         return { exists: false };
       }
 
-      console.log(`Creating deal folder for deal ${config.dealId} in parent folder ${parentFolderId}`);
+      // Info: Creating deal folder (logged to debug level if needed)
 
       // Create the deal folder
       const createInput: CreateDealFolderInput = {

@@ -172,7 +172,7 @@ class GoogleDriveService {
       // Set up automatic token refresh
       oauth2Client.on('tokens', async (newTokens) => {
         if (newTokens.refresh_token) {
-          console.log('New refresh token received for Drive, updating database...');
+          // Info: Google Drive refresh token updated
           // If we get a new refresh token, update our stored tokens
           await googleIntegrationService.storeExtendedTokens(
             userId,
@@ -185,7 +185,7 @@ class GoogleDriveService {
             accessToken
           );
         } else if (newTokens.access_token) {
-          console.log('Access token refreshed for Drive, updating database...');
+          // Info: Google Drive access token refreshed
           // Just update the access token and expiry
           const supabase = getAuthenticatedClient(accessToken);
           await supabase
