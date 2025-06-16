@@ -79,7 +79,7 @@ export const getCustomFieldDefinitions = async (
 ): Promise<GraphQLCustomFieldDefinition[]> => {
   let query = supabase
     .from(CUSTOM_FIELD_DEFINITIONS_TABLE)
-    .select('*')
+    .select('id, entity_type, field_name, field_label, field_type, is_required, dropdown_options, is_active, display_order, created_at, updated_at')
     .eq('entity_type', entityType);
 
   if (!includeInactive) {
@@ -117,7 +117,7 @@ export const getCustomFieldDefinitionById = async (
 ): Promise<GraphQLCustomFieldDefinition | null> => {
   const { data, error } = await supabase
     .from(CUSTOM_FIELD_DEFINITIONS_TABLE)
-    .select('*')
+    .select('id, entity_type, field_name, field_label, field_type, is_required, dropdown_options, is_active, display_order, created_at, updated_at')
     .eq('id', id)
     .single(); // Use single to get one record or null, and error if multiple
 
@@ -145,7 +145,7 @@ export const getCustomFieldDefinitionsByIds = async (
   }
   const { data, error } = await supabase
     .from(CUSTOM_FIELD_DEFINITIONS_TABLE)
-    .select('*')
+    .select('id, entity_type, field_name, field_label, field_type, is_required, dropdown_options, is_active, display_order, created_at, updated_at')
     .in('id', ids);
 
   handleSupabaseError(error, `fetching custom field definitions by ids ${ids.join(', ')}`);

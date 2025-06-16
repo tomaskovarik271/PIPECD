@@ -125,7 +125,7 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
   const { data: newDealRecord, error: dealCreateError } = await supabase
     .from('deals')
     .insert(finalDealInsertPayload)
-    .select('*')
+    .select('id, user_id, name, amount, currency, amount_usd, exchange_rate_used, expected_close_date, created_at, updated_at, person_id, organization_id, project_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, custom_field_values')
     .single();
 
   handleSupabaseError(dealCreateError, 'creating deal');
