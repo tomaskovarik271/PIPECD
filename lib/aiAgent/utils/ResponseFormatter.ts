@@ -13,6 +13,7 @@ import type {
   CustomFieldDefinitionData,
   CustomFieldValueData,
 } from '../types/tools';
+import { CurrencyFormatter } from '../../utils/currencyFormatter';
 
 export class ResponseFormatter {
   
@@ -392,9 +393,6 @@ The custom field is now available for use in ${definition.entityType.toLowerCase
   }
 
   static formatCurrency(amount: number, currency: string = 'USD'): string {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: currency
-    }).format(amount);
+    return CurrencyFormatter.format(amount, currency, { precision: 2 });
   }
 } 

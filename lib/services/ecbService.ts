@@ -63,11 +63,11 @@ export class ECBService {
    */
   static async updateRatesFromECB(): Promise<{ success: boolean; message: string; updatedCount: number }> {
     try {
-      console.log('🌍 Starting ECB exchange rate update...');
+      // Starting ECB exchange rate update
       
       // Fetch latest rates from ECB
       const ecbData = await this.fetchECBRates();
-      console.log(`📊 Fetched ECB rates for ${Object.keys(ecbData.rates).length} currencies`);
+      // Fetched ECB rates for ${Object.keys(ecbData.rates).length} currencies
 
       // Get list of supported currencies from our database
       const { data: currencies, error: currenciesError } = await this.supabase
@@ -80,7 +80,7 @@ export class ECBService {
       }
 
       const supportedCurrencies = new Set(currencies?.map(c => c.code) || []);
-      console.log(`💱 Found ${supportedCurrencies.size} supported currencies in database`);
+      // Found ${supportedCurrencies.size} supported currencies in database
 
       // Prepare rate updates
       const rateUpdates: ECBRateUpdate[] = [];
@@ -112,7 +112,7 @@ export class ECBService {
         }
       });
 
-      console.log(`🔄 Prepared ${rateUpdates.length} rate updates`);
+      // Prepared ${rateUpdates.length} rate updates
 
       if (rateUpdates.length === 0) {
         return {
@@ -152,7 +152,7 @@ export class ECBService {
         }
       }
 
-      console.log(`✅ Successfully updated ${updatedCount} exchange rates`);
+      // Successfully updated ${updatedCount} exchange rates
       
       if (errors.length > 0) {
         console.warn(`⚠️ ${errors.length} errors during update:`, errors);

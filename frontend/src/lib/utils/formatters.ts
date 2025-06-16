@@ -1,19 +1,5 @@
 import type { Person as GeneratedPerson } from '../../generated/graphql/graphql';
-
-// Memoized currency formatter
-const currencyFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 0,
-  maximumFractionDigits: 0
-});
-
-const currencyFormatterWithCents = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-});
+import { CurrencyFormatter } from '../../../../lib/utils/currencyFormatter';
 
 // Memoized date formatter
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
@@ -26,9 +12,8 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 export const formatCurrency = (amount: number | null | undefined, includeCents: boolean = false): string => {
-  if (amount === null || amount === undefined) return '-';
-  const formatter = includeCents ? currencyFormatterWithCents : currencyFormatter;
-  return formatter.format(amount);
+  const precision = includeCents ? 2 : 0;
+  return CurrencyFormatter.format(amount, 'USD', { precision });
 };
 
 export const formatDate = (dateString: string | null | undefined): string => {
