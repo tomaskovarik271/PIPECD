@@ -113,7 +113,7 @@ export const semanticTokens: ThemeSemanticTokens = {
     background: {
       app: {
         modern: '#1A1D29',
-        lightModern: '#fcfcfd',  // ENHANCED: Ultra-light background with subtle warmth
+        lightModern: 'linear-gradient(135deg, #fcfcfd 0%, #f8fafc 100%)',  // ENHANCED: Subtle gradient for depth
         industrialMetal: 'neutral.900',
         _default: '#ffffff'
       },
@@ -131,25 +131,25 @@ export const semanticTokens: ThemeSemanticTokens = {
       },
       elevated: {
         modern: '#2D3748',
-        lightModern: '#f8fafc',  // ENHANCED: Slightly elevated surface
+        lightModern: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',  // ENHANCED: Subtle gradient for elevated surfaces
         industrialMetal: 'neutral.700',
         _default: '#ffffff'
       },
       overlay: {
         modern: 'rgba(0,0,0,0.8)',
-        lightModern: 'rgba(15,23,42,0.4)',  // ENHANCED: Darker overlay with blur support
+        lightModern: 'rgba(15,23,42,0.5)',  // ENHANCED: Slightly darker for better focus
         industrialMetal: 'rgba(0,0,0,0.85)',
         _default: 'rgba(0,0,0,0.6)'
       },
       sidebar: {
         modern: '#1A1D29',
-        lightModern: '#ffffff',  // Clean white sidebar with enhanced shadows
+        lightModern: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',  // ENHANCED: Subtle vertical gradient
         industrialMetal: 'neutral.900',
         _default: '#ffffff'
       },
       card: {
         modern: '#1A202C',
-        lightModern: '#ffffff',  // ENHANCED: White cards with subtle borders and shadows
+        lightModern: 'linear-gradient(135deg, #ffffff 0%, #fcfcfd 100%)',  // ENHANCED: Subtle card gradient
         industrialMetal: 'neutral.800',
         _default: '#ffffff'
       },
@@ -161,7 +161,7 @@ export const semanticTokens: ThemeSemanticTokens = {
       },
       kanbanColumn: {
         modern: '#1A202C',
-        lightModern: '#f8fafc',  // ENHANCED: Very light background for better card separation
+        lightModern: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',  // ENHANCED: Gradient columns for better depth
         industrialMetal: 'neutral.800',
         _default: '#f7fafc'
       }
@@ -472,25 +472,25 @@ export const semanticTokens: ThemeSemanticTokens = {
       kanban: {
         column: {
           modern: '#1A202C',
-          lightModern: '#f8fafc',  // ENHANCED: Light kanban columns with better separation
+          lightModern: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',  // ENHANCED: Gradient columns for better depth
           industrialMetal: 'neutral.800',
           _default: '#f7fafc'
         },
         card: {
           modern: '#2D3748',
-          lightModern: '#ffffff',  // ENHANCED: White kanban cards with shadow elevation
+          lightModern: 'linear-gradient(135deg, #ffffff 0%, #fcfcfd 100%)',  // ENHANCED: Subtle card gradient
           industrialMetal: 'neutral.700',
           _default: '#ffffff'
         },
         cardHover: {
           modern: '#4A5568',
-          lightModern: '#f8fafc',  // ENHANCED: Subtle card hover with elevation change
+          lightModern: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',  // ENHANCED: Gradient hover for depth
           industrialMetal: 'neutral.600',
           _default: '#f7fafc'
         },
         cardBorder: {
           modern: '#4A5568',
-          lightModern: '#e2e8f0',  // Light card borders
+          lightModern: 'rgba(226, 232, 240, 0.6)',  // ENHANCED: More subtle card borders
           industrialMetal: 'neutral.600',
           _default: '#e2e8f0'
         }
