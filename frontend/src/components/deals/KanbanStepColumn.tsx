@@ -99,19 +99,39 @@ const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, de
             bg={columnBg}
             p={isCompact ? 4 : 6} 
             borderRadius="xl" 
-            borderWidth="1px"
-            borderColor={colors.border.default}
+            borderWidth="2px"
+            borderColor={colors.component.kanban.cardBorder}
             minH={isCompact ? "500px" : "600px"}
             w={isCompact ? "260px" : "320px"}
             m={isCompact ? 1.5 : 2}
-            boxShadow={snapshot.isDraggingOver ? `0 0 0 2px ${colors.interactive.default}` : 'sm'}
+            boxShadow={snapshot.isDraggingOver ? 'forgeFire' : 'steelPlate'}
             flexShrink={0}
             maxHeight="calc(100vh - 250px)"
             overflowY="auto"
+            position="relative"
+            transition="all 0.3s ease"
+            _before={snapshot.isDraggingOver ? {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              borderRadius: "xl",
+              background: 'linear-gradient(180deg, transparent 0%, rgba(255, 170, 0, 0.05) 50%, transparent 100%)',
+              pointerEvents: 'none',
+            } : undefined}
             sx={{
-              '&::-webkit-scrollbar': { width: '8px' },
-              '&::-webkit-scrollbar-thumb': { background: colors.border.subtle, borderRadius: '8px' },
-              '&::-webkit-scrollbar-track': { background: 'transparent' },
+              '&::-webkit-scrollbar': { width: '6px' },
+              '&::-webkit-scrollbar-thumb': { 
+                background: 'linear-gradient(180deg, #4A4A4A 0%, #3E3E3E 100%)',
+                borderRadius: '8px',
+                border: '1px solid rgba(58, 58, 58, 0.5)',
+              },
+              '&::-webkit-scrollbar-track': { 
+                background: 'rgba(28, 28, 28, 0.3)',
+                borderRadius: '8px',
+              },
             }}
           >
             <Box 

@@ -199,6 +199,7 @@ const UnifiedPageHeader: React.FC<UnifiedPageHeaderProps> = ({
               onClick={onPrimaryButtonClick}
               isDisabled={isPrimaryButtonDisabled}
               size="md"
+              minW="120px"
             >
               {primaryButtonLabel}
             </Button>

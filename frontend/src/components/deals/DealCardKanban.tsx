@@ -95,38 +95,47 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
   }
 
   const baseStyle = {
-    bg: colors.bg.elevated,
+    bg: colors.component.kanban.card,
     p: 5,
     borderRadius: "lg",
     borderWidth: "1px",
-    borderColor: colors.border.default,
+    borderColor: colors.component.kanban.cardBorder,
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    boxShadow: 'metallic',
+    position: 'relative',
+    _before: {
+      content: '""',
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: "lg",
+      background: 'transparent',
+      transition: 'all 0.3s ease',
+    },
     _hover: {
       transform: "translateY(-4px) scale(1.02)",
-      boxShadow: `
-        0 20px 25px -5px rgba(59, 130, 246, 0.15),
-        0 10px 10px -5px rgba(59, 130, 246, 0.1),
-        0 0 20px rgba(59, 130, 246, 0.2),
-        0 0 40px rgba(59, 130, 246, 0.1)
-      `,
-      borderColor: 'rgba(59, 130, 246, 0.5)',
-      bg: colors.bg.elevated,
-      filter: 'brightness(1.05)'
+      boxShadow: 'industrial3d',
+      borderColor: colors.component.kanban.cardBorder,
+      bg: colors.component.kanban.cardHover,
+      filter: 'brightness(1.05)',
+      _before: {
+        background: 'linear-gradient(45deg, transparent 30%, rgba(255, 170, 0, 0.05) 50%, transparent 70%)',
+      },
     }
   };
 
   const draggingStyle = {
     ...baseStyle,
-    borderColor: 'rgba(59, 130, 246, 0.8)',
-    boxShadow: `
-      0 25px 50px -12px rgba(59, 130, 246, 0.25),
-      0 15px 15px -5px rgba(59, 130, 246, 0.15),
-      0 0 30px rgba(59, 130, 246, 0.3),
-      0 0 60px rgba(59, 130, 246, 0.15)
-    `,
+    borderColor: colors.component.kanban.cardBorder,
+    boxShadow: 'forgeFire',
     transform: 'translateY(-6px) rotate(2deg) scale(1.05)',
     filter: 'brightness(1.1)',
-    bg: colors.bg.elevated,
+    bg: colors.component.kanban.cardHover,
+    _before: {
+      background: 'linear-gradient(45deg, transparent 20%, rgba(255, 170, 0, 0.1) 50%, transparent 80%)',
+    },
   };
 
   return (

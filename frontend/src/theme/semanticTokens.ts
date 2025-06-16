@@ -103,6 +103,20 @@ export interface ThemeSemanticTokens {
         cardBorder: SemanticTokenValue
       }
     }
+    
+    // Shadow effects for 3D depth
+    shadows: {
+      sidebar: SemanticTokenValue
+      kanbanColumn: SemanticTokenValue
+      card: SemanticTokenValue
+      cardHover: SemanticTokenValue
+      button: SemanticTokenValue
+      buttonHover: SemanticTokenValue
+      modal: SemanticTokenValue
+      input: SemanticTokenValue
+      inputFocus: SemanticTokenValue
+      table: SemanticTokenValue
+    }
   }
 }
 
@@ -144,25 +158,25 @@ export const semanticTokens: ThemeSemanticTokens = {
       sidebar: {
         modern: '#1A1D29',
         lightModern: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',  // ENHANCED: Subtle vertical gradient
-        industrialMetal: 'neutral.900',
+        industrialMetal: 'linear-gradient(180deg, #1A1A1A 0%, #262626 30%, #1C1C1C 70%, #141414 100%)', // ENHANCED: 3D industrial panel gradient
         _default: '#ffffff'
       },
       card: {
         modern: '#1A202C',
         lightModern: 'linear-gradient(135deg, #ffffff 0%, #fcfcfd 100%)',  // ENHANCED: Subtle card gradient
-        industrialMetal: 'neutral.800',
+        industrialMetal: 'linear-gradient(135deg, #303030 0%, #262626 50%, #1C1C1C 100%)', // ENHANCED: 3D metallic card gradient
         _default: '#ffffff'
       },
       input: {
         modern: '#2D3748',
         lightModern: '#ffffff',  // ENHANCED: White input backgrounds for better contrast
-        industrialMetal: 'neutral.850',
+        industrialMetal: 'linear-gradient(135deg, rgba(28, 28, 28, 0.9) 0%, rgba(38, 38, 38, 0.8) 100%)', // ENHANCED: Metallic input gradient
         _default: '#ffffff'
       },
       kanbanColumn: {
         modern: '#1A202C',
         lightModern: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',  // ENHANCED: Gradient columns for better depth
-        industrialMetal: 'neutral.800',
+        industrialMetal: 'linear-gradient(180deg, #262626 0%, #1C1C1C 50%, #181818 100%)', // ENHANCED: 3D forge column gradient
         _default: '#f7fafc'
       }
     },
@@ -435,31 +449,31 @@ export const semanticTokens: ThemeSemanticTokens = {
         background: {
           modern: 'linear-gradient(180deg, #1A1D29 0%, #2D3748 100%)',
           lightModern: '#ffffff',  // ENHANCED: Pure white sidebar with shadow-based elevation
-          industrialMetal: 'neutral.900',
+          industrialMetal: 'linear-gradient(180deg, #1A1A1A 0%, #262626 30%, #1C1C1C 70%, #141414 100%)', // ENHANCED: 3D industrial sidebar gradient
           _default: '#ffffff'
         },
         item: {
           modern: 'transparent',
           lightModern: 'transparent',  // Transparent sidebar items
-          industrialMetal: 'transparent',
+          industrialMetal: 'linear-gradient(135deg, rgba(42, 42, 42, 0.3) 0%, rgba(26, 26, 26, 0.5) 50%, rgba(20, 20, 20, 0.7) 100%)', // ENHANCED: 3D steel plate effect
           _default: 'transparent'
         },
         itemActive: {
           modern: '#667eea',
           lightModern: '#6366f1',  // ENHANCED: Modern active sidebar item color
-          industrialMetal: 'primary.600',
+          industrialMetal: 'linear-gradient(135deg, #4A4A4A 0%, #3E3E3E 50%, #323232 100%)', // ENHANCED: 3D active forge effect
           _default: '#667eea'
         },
         itemHover: {
           modern: '#2D3748',
           lightModern: '#f1f5f9',  // ENHANCED: Very subtle sidebar item hover
-          industrialMetal: 'primary.700',
+          industrialMetal: 'linear-gradient(135deg, rgba(74, 74, 74, 0.4) 0%, rgba(62, 62, 62, 0.6) 50%, rgba(42, 42, 42, 0.8) 100%)', // ENHANCED: 3D steel hover effect
           _default: '#f7fafc'
         },
         text: {
           modern: '#A0AEC0',
           lightModern: '#64748b',  // ENHANCED: Better contrast sidebar text
-          industrialMetal: 'neutral.200',
+          industrialMetal: 'neutral.100',
           _default: '#4a5568'
         },
         textActive: {
@@ -473,25 +487,25 @@ export const semanticTokens: ThemeSemanticTokens = {
         column: {
           modern: '#1A202C',
           lightModern: 'linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%)',  // ENHANCED: Gradient columns for better depth
-          industrialMetal: 'neutral.800',
+          industrialMetal: 'linear-gradient(180deg, #262626 0%, #1C1C1C 50%, #181818 100%)', // ENHANCED: 3D forge column gradient
           _default: '#f7fafc'
         },
         card: {
           modern: '#2D3748',
           lightModern: 'linear-gradient(135deg, #ffffff 0%, #fcfcfd 100%)',  // ENHANCED: Subtle card gradient
-          industrialMetal: 'neutral.700',
+          industrialMetal: 'linear-gradient(135deg, #303030 0%, #262626 50%, #1C1C1C 100%)', // ENHANCED: 3D metallic card gradient
           _default: '#ffffff'
         },
         cardHover: {
           modern: '#4A5568',
           lightModern: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',  // ENHANCED: Gradient hover for depth
-          industrialMetal: 'neutral.600',
+          industrialMetal: 'linear-gradient(135deg, #3A3A3A 0%, #303030 50%, #242424 100%)', // ENHANCED: 3D metallic hover effect
           _default: '#f7fafc'
         },
         cardBorder: {
           modern: '#4A5568',
           lightModern: 'rgba(226, 232, 240, 0.6)',  // ENHANCED: More subtle card borders
-          industrialMetal: 'neutral.600',
+          industrialMetal: 'rgba(255, 170, 0, 0.3)', // ENHANCED: Hazard yellow accent border
           _default: '#e2e8f0'
         }
       }
