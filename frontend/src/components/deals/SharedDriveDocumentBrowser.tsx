@@ -148,9 +148,6 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
   const colors = useThemeColors();
   const toast = useToast();
   
-  // NEW: Check for industrial theme for conditional 3D effects
-  const isIndustrialTheme = colors.themeName === 'industrialMetal';
-  
   // State
   const [sharedDrives, setSharedDrives] = useState<SharedDrive[]>([]);
   const [selectedDrive, setSelectedDrive] = useState<SharedDrive | null>(null);
@@ -512,17 +509,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
   const renderFileList = (fileList: DriveFile[], showAttachButton = true) => (
     <VStack spacing={2} align="stretch">
       {fileList.map((file) => (
-        <Card key={file.id} size="sm" _hover={{ 
-          bg: isIndustrialTheme ? 'linear-gradient(135deg, #3A3A3A 0%, #303030 100%)' : colors.bg.surface, 
-          borderColor: isIndustrialTheme ? 'rgba(255, 170, 0, 0.6)' : colors.interactive.default,
-          transform: 'translateY(-1px)',
-          boxShadow: isIndustrialTheme ? '0 4px 12px rgba(0,0,0,0.35), 0 0 20px rgba(255,170,0,0.2)' : 'md',
-        }}
-        bg={isIndustrialTheme ? 'linear-gradient(135deg, #2E2E2E 0%, #262626 100%)' : 'transparent'}
-        borderColor={isIndustrialTheme ? 'rgba(255, 170, 0, 0.2)' : 'gray.200'}
-        boxShadow={isIndustrialTheme ? '0 1px 3px rgba(0,0,0,0.2)' : 'sm'}
-        transition="all 0.2s ease"
-        >
+        <Card key={file.id} size="sm" _hover={{ bg: colors.bg.surface, borderColor: colors.interactive.default }}>
           <CardBody>
             <HStack justify="space-between" align="center">
               <HStack spacing={3} flex={1} minW={0}>
@@ -582,16 +569,8 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
           size="sm" 
           cursor="pointer" 
           onClick={() => navigateToFolder(folder)}
-          _hover={{ 
-            bg: isIndustrialTheme ? 'linear-gradient(135deg, #3A3A3A 0%, #303030 100%)' : colors.bg.surface, 
-            borderColor: isIndustrialTheme ? 'rgba(255, 170, 0, 0.6)' : colors.interactive.default, 
-            transform: 'translateY(-1px)',
-            boxShadow: isIndustrialTheme ? '0 4px 12px rgba(0,0,0,0.35), 0 0 20px rgba(255,170,0,0.2)' : 'md',
-          }}
-          bg={isIndustrialTheme ? 'linear-gradient(135deg, #2E2E2E 0%, #262626 100%)' : 'transparent'}
-          borderColor={isIndustrialTheme ? 'rgba(255, 170, 0, 0.2)' : 'gray.200'}
-          boxShadow={isIndustrialTheme ? '0 1px 3px rgba(0,0,0,0.2)' : 'sm'}
-          transition="all 0.2s ease"
+          _hover={{ bg: colors.bg.surface, borderColor: colors.interactive.default, transform: 'translateY(-1px)' }}
+          transition="all 0.2s"
         >
           <CardBody>
             <HStack spacing={3}>
@@ -682,29 +661,8 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
   );
 
   return (
-    <Box
-      bg={isIndustrialTheme ? 'linear-gradient(180deg, #1C1C1C 0%, #181818 50%, #141414 100%)' : 'transparent'}
-      borderRadius="lg"
-      p={isIndustrialTheme ? 4 : 0}
-      position="relative"
-      boxShadow={isIndustrialTheme ? '0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)' : 'none'}
-      _before={isIndustrialTheme ? {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '3px',
-        background: 'linear-gradient(90deg, rgba(255,170,0,0.3) 0%, rgba(255,170,0,0.1) 50%, rgba(255,170,0,0.3) 100%)',
-        borderTopRadius: 'lg',
-        zIndex: 1
-      } : {}}
-    >
-      <Card
-        bg={isIndustrialTheme ? 'linear-gradient(135deg, #303030 0%, #262626 100%)' : 'transparent'}
-        borderColor={isIndustrialTheme ? 'rgba(255, 170, 0, 0.3)' : 'gray.200'}
-        boxShadow={isIndustrialTheme ? '0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)' : 'sm'}
-      >
+    <Box>
+      <Card>
         <CardHeader>
           <VStack spacing={4} align="stretch">
             <HStack justify="space-between" align="center">

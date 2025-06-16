@@ -129,19 +129,6 @@ function SortableTable<T extends { id: string }>({
       borderWidth={propBorderWidth || "1px"}
       borderRadius={propBorderRadius || "md"}
       borderColor={colors.border.default}
-      bg={colors.component.table.row}
-      boxShadow={colors.shadows.table}
-      position="relative"
-      _before={styles.theme === 'industrialMetal' ? {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '3px',
-        background: 'linear-gradient(90deg, rgba(255,170,0,0.3) 0%, rgba(255,170,0,0.1) 50%, rgba(255,170,0,0.3) 100%)',
-        borderTopRadius: 'md'
-      } : {}}
     >
       <Table variant="unstyled" size="sm" width="100%">
         <Thead>
@@ -162,10 +149,8 @@ function SortableTable<T extends { id: string }>({
                 py={3}
                 px={4}
                 borderBottomWidth="0px"
-                position="relative"
                 _hover={column.isSortable ? { 
-                  bg: colors.component.table.rowHover,
-                  color: colors.text.primary
+                  bg: colors.component.table.rowHover
                 } : {}}
                 onClick={column.isSortable ? () => requestSort(String(column.key)) : undefined}
               >
@@ -186,26 +171,11 @@ function SortableTable<T extends { id: string }>({
                 borderBottomWidth="1px"
                 borderColor={colors.component.table.border}
                 cursor={isClickable ? "pointer" : "default"}
-                position="relative"
                 _hover={{ 
                   bg: colors.component.table.rowHover,
                   transform: isClickable ? "translateY(-1px)" : "none",
-                  boxShadow: isClickable ? colors.shadows.cardHover : colors.shadows.card,
-                  transition: "all 0.2s ease-in-out",
-                  ...(styles.theme === 'industrialMetal' && isClickable ? {
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      left: 0,
-                      top: 0,
-                      bottom: 0,
-                      width: '3px',
-                      background: 'linear-gradient(180deg, rgba(255,170,0,0.6) 0%, rgba(255,170,0,0.3) 50%, rgba(255,170,0,0.6) 100%)',
-                      borderTopLeftRadius: 'md',
-                      borderBottomLeftRadius: 'md',
-                      opacity: 1,
-                    }
-                  } : {})
+                  boxShadow: isClickable ? "sm" : "none",
+                  transition: "all 0.2s ease-in-out"
                 }}
                 onClick={isClickable ? () => onRowClick(item) : undefined}
               >

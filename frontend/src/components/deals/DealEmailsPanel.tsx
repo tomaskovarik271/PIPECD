@@ -409,9 +409,6 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   const colors = useThemeColors();
   const toast = useToast();
 
-  // NEW: Check for industrial theme for conditional 3D effects
-  const isIndustrialTheme = colors.themeName === 'industrialMetal';
-
   // State
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -746,48 +743,17 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   }, [primaryContactEmail, showAdvancedFilters]);
 
   return (
-    <Box 
-      h="600px" 
-      bg={colors.bg.surface} 
-      borderRadius="lg" 
-      overflow="hidden"
-      boxShadow={colors.shadows.table}
-      position="relative"
-      _before={isIndustrialTheme ? {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '3px',
-        background: 'linear-gradient(90deg, rgba(255,170,0,0.3) 0%, rgba(255,170,0,0.1) 50%, rgba(255,170,0,0.3) 100%)',
-        borderTopRadius: 'lg',
-        zIndex: 1
-      } : {}}
-    >
+    <Box h="600px" bg={colors.bg.surface} borderRadius="lg" overflow="hidden">
       <Grid templateColumns="1fr 2fr" h="full">
         {/* Left Panel - Thread List */}
         <GridItem 
           borderRightWidth="1px" 
-          borderColor={isIndustrialTheme ? 'rgba(255, 170, 0, 0.3)' : colors.border.default}
-          bg={isIndustrialTheme ? 'linear-gradient(180deg, #262626 0%, #1C1C1C 50%, #181818 100%)' : 'transparent'}
+          borderColor={colors.border.default} 
           sx={{
             display: 'flex',
             flexDirection: 'column',
             height: '100%',
-            minHeight: 0, // Important for flex children to shrink
-            ...(isIndustrialTheme ? {
-              position: 'relative',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                right: 0,
-                top: 0,
-                bottom: 0,
-                width: '2px',
-                background: 'linear-gradient(180deg, transparent 0%, rgba(255,170,0,0.4) 50%, transparent 100%)',
-              }
-            } : {})
+            minHeight: 0 // Important for flex children to shrink
           }}
         >
           {/* Header with Analytics */}
@@ -1040,37 +1006,10 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                     key={thread.id}
                     p={3}
                     borderBottomWidth="1px"
-                    borderColor={isIndustrialTheme ? 'rgba(255, 170, 0, 0.2)' : colors.border.default}
+                    borderColor={colors.border.default}
                     cursor="pointer"
-                    bg={selectedThreadId === thread.id ? 
-                      (isIndustrialTheme ? 'linear-gradient(135deg, #3A3A3A 0%, #303030 50%, #242424 100%)' : colors.bg.elevated) : 
-                      'transparent'
-                    }
-                    position="relative"
-                    _hover={{ 
-                      bg: isIndustrialTheme ? 
-                        'linear-gradient(135deg, #3A3A3A 0%, #303030 50%, #242424 100%)' : 
-                        colors.bg.elevated,
-                      transform: isIndustrialTheme ? 'translateY(-1px)' : 'none',
-                      boxShadow: isIndustrialTheme ? 
-                        '0 4px 12px rgba(0,0,0,0.35), 0 0 20px rgba(255,170,0,0.2)' : 
-                        'none',
-                      transition: 'all 0.2s ease-in-out',
-                      ...(isIndustrialTheme ? {
-                        '&::before': {
-                          content: '""',
-                          position: 'absolute',
-                          left: 0,
-                          top: 0,
-                          bottom: 0,
-                          width: '3px',
-                          background: 'linear-gradient(180deg, rgba(255,170,0,0.6) 0%, rgba(255,170,0,0.3) 50%, rgba(255,170,0,0.6) 100%)',
-                          borderTopLeftRadius: 'md',
-                          borderBottomLeftRadius: 'md',
-                          opacity: 1,
-                        }
-                      } : {})
-                    }}
+                    bg={selectedThreadId === thread.id ? colors.bg.elevated : 'transparent'}
+                    _hover={{ bg: colors.bg.elevated }}
                     onClick={() => handleThreadSelect(thread.id)}
                   >
                     <VStack spacing={2} align="stretch">
@@ -1117,21 +1056,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
         </GridItem>
 
         {/* Right Panel - Message View */}
-        <GridItem
-          bg={isIndustrialTheme ? 'linear-gradient(180deg, #1C1C1C 0%, #181818 50%, #141414 100%)' : 'transparent'}
-          position="relative"
-          sx={isIndustrialTheme ? {
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: '2px',
-              background: 'linear-gradient(180deg, transparent 0%, rgba(255,170,0,0.4) 50%, transparent 100%)',
-            }
-          } : {}}
-        >
+        <GridItem>
           {selectedThreadId ? (
             threadLoading ? (
               <Box p={6} textAlign="center">
@@ -1260,28 +1185,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
 
                 {/* Message Content - Scrollable */}
                 <Box flex={1} overflowY="auto" w="full" p={4}>
-                  <Card
-                    bg={isIndustrialTheme ? 
-                      'linear-gradient(135deg, #303030 0%, #262626 50%, #1C1C1C 100%)' : 
-                      colors.bg.surface
-                    }
-                    borderColor={isIndustrialTheme ? 'rgba(255, 170, 0, 0.3)' : colors.border.default}
-                    boxShadow={isIndustrialTheme ? 
-                      '0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1)' : 
-                      colors.shadows.card
-                    }
-                    position="relative"
-                    _before={isIndustrialTheme ? {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      right: 0,
-                      height: '2px',
-                      background: 'linear-gradient(90deg, rgba(255,170,0,0.4) 0%, rgba(255,170,0,0.1) 50%, rgba(255,170,0,0.4) 100%)',
-                      borderTopRadius: 'md'
-                    } : {}}
-                  >
+                  <Card>
                     <CardBody>
                       <VStack spacing={4} align="stretch">
                         {/* Message Details */}

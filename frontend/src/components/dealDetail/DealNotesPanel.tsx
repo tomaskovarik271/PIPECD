@@ -36,9 +36,6 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
   
   const colors = useThemeColors();
 
-  // NEW: Check for industrial theme for conditional 3D effects
-  const isIndustrialTheme = colors.themeName === 'industrialMetal';
-
   const handleTabChange = (index: number) => {
     setActiveTab(index);
   };
@@ -61,52 +58,21 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
   }, [totalNotesCount, onNoteCountChange]);
 
   return (
-    <Box 
-      className={className}
-      bg={isIndustrialTheme ? 'linear-gradient(180deg, #1C1C1C 0%, #181818 50%, #141414 100%)' : 'transparent'}
-      borderRadius="lg"
-      p={isIndustrialTheme ? 4 : 0}
-      position="relative"
-      boxShadow={isIndustrialTheme ? '0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)' : 'none'}
-      _before={isIndustrialTheme ? {
-        content: '""',
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        height: '3px',
-        background: 'linear-gradient(90deg, rgba(255,170,0,0.3) 0%, rgba(255,170,0,0.1) 50%, rgba(255,170,0,0.3) 100%)',
-        borderTopRadius: 'lg',
-        zIndex: 1
-      } : {}}
-    >
+    <Box className={className}>
       <Tabs 
         index={activeTab} 
         onChange={handleTabChange}
         variant="soft-rounded"
         colorScheme="blue"
       >
-        <TabList 
-          mb={4} 
-          bg={isIndustrialTheme ? 'linear-gradient(135deg, #2A2A2A 0%, #1E1E1E 100%)' : colors.bg.surface} 
-          p={1} 
-          borderRadius="lg"
-          border={isIndustrialTheme ? '1px solid rgba(255, 170, 0, 0.2)' : 'none'}
-          boxShadow={isIndustrialTheme ? '0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)' : 'none'}
-        >
+        <TabList mb={4} bg={colors.bg.surface} p={1} borderRadius="lg">
           <Tab 
             flex={1} 
             fontSize="sm" 
             fontWeight="medium"
             _selected={{
-              bg: isIndustrialTheme ? 'linear-gradient(135deg, #3A3A3A 0%, #2E2E2E 100%)' : colors.interactive.default,
-              color: isIndustrialTheme ? '#FFAA00' : 'white',
-              boxShadow: isIndustrialTheme ? '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,170,0,0.1)' : 'none',
-              borderColor: isIndustrialTheme ? 'rgba(255, 170, 0, 0.3)' : 'transparent',
-            }}
-            _hover={{
-              bg: isIndustrialTheme ? 'linear-gradient(135deg, #353535 0%, #2A2A2A 100%)' : undefined,
-              transform: isIndustrialTheme ? 'translateY(-1px)' : undefined,
+              bg: colors.interactive.default,
+              color: 'white',
             }}
           >
             <HStack spacing={2}>
@@ -137,14 +103,8 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
             fontSize="sm" 
             fontWeight="medium"
             _selected={{
-              bg: isIndustrialTheme ? 'linear-gradient(135deg, #3A3A3A 0%, #2E2E2E 100%)' : colors.interactive.default,
-              color: isIndustrialTheme ? '#FFAA00' : 'white',
-              boxShadow: isIndustrialTheme ? '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,170,0,0.1)' : 'none',
-              borderColor: isIndustrialTheme ? 'rgba(255, 170, 0, 0.3)' : 'transparent',
-            }}
-            _hover={{
-              bg: isIndustrialTheme ? 'linear-gradient(135deg, #353535 0%, #2A2A2A 100%)' : undefined,
-              transform: isIndustrialTheme ? 'translateY(-1px)' : undefined,
+              bg: colors.interactive.default,
+              color: 'white',
             }}
           >
             <HStack spacing={2}>
