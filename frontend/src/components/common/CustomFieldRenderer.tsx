@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   FormControl,
   FormLabel,
@@ -23,32 +23,32 @@ interface CustomFieldRendererProps {
   isDisabled?: boolean;
 }
 
-export const CustomFieldRenderer: React.FC<CustomFieldRendererProps> = ({
+export const CustomFieldRenderer: React.FC<CustomFieldRendererProps> = React.memo(({
   definition,
   value,
   onChange,
   isRequired = false,
   isDisabled = false,
 }) => {
-  const fieldName = definition.fieldName;
-  const fieldLabel = definition.fieldLabel || definition.fieldName;
-  const dropdownOptions = definition.dropdownOptions || [];
+  const fieldName = useMemo(() => definition.fieldName, [definition.fieldName]);
+  const fieldLabel = useMemo(() => definition.fieldLabel || definition.fieldName, [definition.fieldLabel, definition.fieldName]);
+  const dropdownOptions = useMemo(() => definition.dropdownOptions || [], [definition.dropdownOptions]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     onChange(e.target.value);
-  };
+  }, [onChange]);
 
-  const handleNumberChange = (valueAsString: string) => {
+  const handleNumberChange = useCallback((valueAsString: string) => {
     onChange(valueAsString);
-  };
+  }, [onChange]);
 
-  const handleSwitchChange = (checked: boolean) => {
+  const handleSwitchChange = useCallback((checked: boolean) => {
     onChange(checked);
-  };
+  }, [onChange]);
 
-  const handleCheckboxGroupChange = (values: string[]) => {
+  const handleCheckboxGroupChange = useCallback((values: string[]) => {
     onChange(values);
-  };
+  }, [onChange]);
 
   const renderFieldInput = () => {
     switch (definition.fieldType) {
@@ -161,4 +161,4 @@ export const CustomFieldRenderer: React.FC<CustomFieldRendererProps> = ({
       {renderFieldInput()}
     </FormControl>
   );
-}; 
+}); 

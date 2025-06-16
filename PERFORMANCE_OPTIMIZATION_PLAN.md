@@ -79,26 +79,31 @@ const processedCustomFieldValues = await processCustomFieldsForCreate(customFiel
 
 ### 4. Bundle Size Optimizations
 
-#### A. Large Dependencies (LOW-MEDIUM IMPACT)
-**Issue**: Some heavy dependencies that could be optimized
+#### A. Large Bundle Size (MEDIUM IMPACT) ⚠️ IDENTIFIED
+**Issue**: Current bundle size is 3.7MB (1.14MB gzipped) - exceeding 500KB warning threshold
+**Current Analysis**:
+- Main bundle: 3,712.94 kB minified, 1,141.08 kB gzipped
+- Vite warning suggests code splitting needed
+
 **Examples**:
 - Chakra UI components (tree-shaking optimization)
 - Date libraries (consider lighter alternatives)
 - Rich text editor dependencies
+- Large GraphQL generated types
 
 **Fix**: Implement code splitting and lazy loading
 
 ## Implementation Priority
 
-### Phase 1: Backend Service Optimizations (Immediate - High Impact)
-1. ✅ **Person Service Bulk Fetch** - Change `useBulkFetch: false` to `true`
-2. ✅ **Organization Service Migration** - Replace custom implementation with shared utility
-3. ✅ **Lead Service Verification** - Ensure bulk fetch is enabled
+### Phase 1: Backend Service Optimizations (Immediate - High Impact) ✅ COMPLETED
+1. ✅ **Person Service Bulk Fetch** - Changed `useBulkFetch: false` to `true`
+2. ✅ **Organization Service Migration** - Replaced custom implementation with shared utility
+3. ✅ **Lead Service Optimization** - Updated to use shared utilities with bulk fetch enabled
 
-### Phase 2: Critical Frontend Optimizations (Week 1 - High Impact)
-1. ✅ **Store Selector Optimization** - Implement selective subscriptions
-2. ✅ **Large List Memoization** - Add React.memo to table and list components
-3. ✅ **Custom Field Component Optimization** - Memoize custom field rendering
+### Phase 2: Critical Frontend Optimizations (Week 1 - High Impact) ✅ IN PROGRESS
+1. ✅ **Store Selector Optimization** - Created useOptimizedStores.ts with selective subscriptions
+2. ✅ **Large List Memoization** - Added React.memo to SortableTable with useCallback optimizations
+3. ✅ **Custom Field Component Optimization** - Memoized CustomFieldRenderer with React.memo and useMemo
 
 ### Phase 3: Data Fetching Improvements (Week 2 - Medium Impact)
 1. ✅ **API Call Deduplication** - Implement request caching
