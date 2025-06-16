@@ -1,4 +1,4 @@
-import { Box, Text, VStack, HStack, Avatar, UnorderedList, ListItem, chakra } from '@chakra-ui/react';
+import { Box, Text, VStack, HStack, Avatar, UnorderedList, ListItem, Code } from '@chakra-ui/react';
 import { format, parseISO } from 'date-fns';
 import { DealHistoryEntryDisplayItem } from './DealHistoryList'; // Import the type
 import { useAppStore, DealWithHistory } from '../../stores/useAppStore'; // Added store import and DealWithHistory
@@ -178,17 +178,17 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
         const newStatusName = changeData.new_wfm_status?.name || 'Unknown Status';
         // Make sure to check if old/new status are the same (can happen if only metadata changed on step)
         if (oldStatusName === newStatusName && changeData.old_wfm_status?.id === changeData.new_wfm_status?.id) {
-            return <Text>Deal progress updated within status <chakra.strong>{newStatusName}</chakra.strong>.</Text>;
+            return <Text>Deal progress updated within status <Text as="span" fontWeight="bold">{newStatusName}</Text>.</Text>;
         }    
         return (
           <Text>
-            Status changed from <chakra.strong>{oldStatusName}</chakra.strong> to <chakra.strong>{newStatusName}</chakra.strong>.
+            Status changed from <Text as="span" fontWeight="bold">{oldStatusName}</Text> to <Text as="span" fontWeight="bold">{newStatusName}</Text>.
           </Text>
         );
       } catch (e) {
         console.error("Error parsing DEAL_WFM_STATUS_CHANGED data:", e, changes);
         // Fallback to JSON if parsing fails
-        return <chakra.pre fontSize="xs" fontFamily="mono">{JSON.stringify(changes, null, 2)}</chakra.pre>;
+        return <Code fontSize="xs" display="block" p={2} borderRadius="md">{JSON.stringify(changes, null, 2)}</Code>;
       }
     }
 
@@ -372,7 +372,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
       return <UnorderedList spacing={1} styleType="none" ml={0}>{changeItems}</UnorderedList>;
     }
     // Fallback for other event types or if structure is unexpected
-    return <chakra.pre fontSize="xs" fontFamily="mono">{JSON.stringify(changes, null, 2)}</chakra.pre>;
+    return <Code fontSize="xs" display="block" p={2} borderRadius="md">{JSON.stringify(changes, null, 2)}</Code>;
   };
 
   const userName = entry.user?.display_name || 'System Action';
