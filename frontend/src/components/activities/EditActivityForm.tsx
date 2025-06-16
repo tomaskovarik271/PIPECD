@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import {
   Button,
@@ -53,6 +53,9 @@ type FormValues = Partial<UpdateActivityInput>; // Use Partial for flexibility, 
 type LinkType = 'deal' | 'person' | 'organization' | 'none';
 
 function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProps) {
+  // Memoize today's date to prevent Date object creation in renders
+  const todayDateString = useMemo(() => new Date().toISOString().split('T')[0], []);
+  
   // Actions and state from useActivitiesStore
   const { updateActivity, activitiesError, activitiesLoading } = useActivitiesStore();
   const toast = useToast();
@@ -298,9 +301,11 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
                   placeholder='Time'
                   border="none"
                   _focus={{ boxShadow: "none" }}
-                  onChange={(e) => {
+                                    onChange={(e) => {
                     const currentValue = watch('due_date') || '';
-                    const dateValue = currentValue.includes('T') ? currentValue.split('T')[0] : new Date().toISOString().split('T')[0];
+                    // Use existing date or fallback (optimized to prevent Date creation in render)
+                    const dateValue = currentValue.includes('T') ? currentValue.split('T')[0] : 
+                      (currentValue || new Date().toISOString().split('T')[0]);
                     const newDateTime = dateValue && e.target.value ? `${dateValue}T${e.target.value}` : '';
                     setValue('due_date', newDateTime);
                   }}

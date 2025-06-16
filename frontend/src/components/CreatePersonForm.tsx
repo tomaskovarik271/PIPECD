@@ -289,8 +289,8 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
                       onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
                       placeholder="Select option"
                     >
-                      {def.dropdownOptions?.map((option, index) => (
-                        <option key={index} value={option.value}>{option.label}</option>
+                      {def.dropdownOptions?.map((option) => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
                     </Select>
                   )}

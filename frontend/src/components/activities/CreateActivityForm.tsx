@@ -271,7 +271,9 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
                   _focus={{ boxShadow: "none" }}
                   onChange={(e) => {
                     const currentValue = watch('due_date') || '';
-                    const dateValue = currentValue.includes('T') ? currentValue.split('T')[0] : new Date().toISOString().split('T')[0];
+                    // Use existing date or fallback (optimized to prevent Date creation in render)
+                    const dateValue = currentValue.includes('T') ? currentValue.split('T')[0] : 
+                      (currentValue || new Date().toISOString().split('T')[0]);
                     const newDateTime = dateValue && e.target.value ? `${dateValue}T${e.target.value}` : '';
                     setValue('due_date', newDateTime);
                   }}

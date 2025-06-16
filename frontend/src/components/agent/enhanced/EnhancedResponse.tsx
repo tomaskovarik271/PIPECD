@@ -151,8 +151,8 @@ export const EnhancedResponse: React.FC<ResponseEnhancementProps> = ({
                 📊 Detected Entities
               </Text>
               <Wrap spacing={3}>
-                {enhancementData.entities.map((entity, index) => (
-                  <WrapItem key={`${entity.type}-${entity.id}-${index}`}>
+                {enhancementData.entities.map((entity) => (
+                  <WrapItem key={`${entity.type}-${entity.id}`}>
                     <EntityCard
                       entity={entity}
                       actions={enhancementData.suggestedActions.filter(

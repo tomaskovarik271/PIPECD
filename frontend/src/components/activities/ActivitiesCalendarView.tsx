@@ -190,12 +190,14 @@ const ActivitiesCalendarView: React.FC<ActivitiesCalendarViewProps> = ({
 
           {/* Calendar Days */}
           <Grid templateColumns="repeat(7, 1fr)" gap={1}>
-            {calendarData.calendarDays.map((dayData, index) => {
+            {calendarData.calendarDays.map((dayData) => {
               const isCurrentDay = isToday(dayData.date);
+              // Use date string as unique key instead of index for better React reconciliation
+              const dayKey = `${dayData.date.getFullYear()}-${dayData.date.getMonth()}-${dayData.date.getDate()}`;
               
               return (
                 <Box
-                  key={index}
+                  key={dayKey}
                   minH="120px"
                   p={2}
                   border="1px solid"

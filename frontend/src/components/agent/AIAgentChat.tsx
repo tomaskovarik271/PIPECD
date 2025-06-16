@@ -759,9 +759,11 @@ export const AIAgentChat: React.FC = () => {
                 </Card>
               )}
               
-              {localCurrentConversation?.messages?.map((message, index) => (
-                <MessageComponent key={`${message.timestamp}-${index}`} message={message} />
-              ))}
+              {localCurrentConversation?.messages?.map((message) => {
+                // Create stable unique key from message properties instead of index
+                const messageKey = `${message.role}-${message.timestamp.getTime()}-${message.content.slice(0, 50)}`;
+                return <MessageComponent key={messageKey} message={message} />;
+              })}
               
               {localSendError && (
                 <Alert status="error" mb={4}>
