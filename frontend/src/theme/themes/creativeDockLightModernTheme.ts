@@ -8,19 +8,50 @@ const lightModernConfig: ThemeConfig = {
   useSystemColorMode: false,
 };
 
+// Enhanced shadows for better depth and visual hierarchy
+const shadows = {
+  xs: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+  sm: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+  md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+  lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+  xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+  '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+  inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+  outline: '0 0 0 3px rgba(99, 102, 241, 0.1)',
+  focus: '0 0 0 3px rgba(99, 102, 241, 0.2)',
+};
+
 export const creativeDockLightModernTheme = extendTheme({
   config: lightModernConfig,
+  
+  shadows,
   
   // Global styles for light modern theme
   styles: {
     global: {
       body: {
-        bg: '#f8fafc', // Very light blue-gray background
-        color: '#1a202c', // Dark text for readability
+        bg: '#fcfcfd', // Ultra-light background with subtle warmth
+        color: '#0f172a', // Very dark text for excellent readability
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+        lineHeight: '1.6',
       },
       '*': {
-        borderColor: '#e2e8f0 !important', // Light borders globally
+        borderColor: '#e2e8f0 !important', // Consistent light borders
+      },
+      // Enhanced scrollbar styling
+      '*::-webkit-scrollbar': {
+        width: '6px',
+        height: '6px',
+      },
+      '*::-webkit-scrollbar-thumb': {
+        background: '#cbd5e0',
+        borderRadius: '3px',
+        '&:hover': {
+          background: '#94a3b8',
+        },
+      },
+      '*::-webkit-scrollbar-track': {
+        background: 'transparent',
       },
     },
   },
@@ -31,35 +62,60 @@ export const creativeDockLightModernTheme = extendTheme({
       baseStyle: {
         fontWeight: '500',
         borderRadius: 'lg',
+        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         _focus: {
-          boxShadow: '0 0 0 3px rgba(90, 103, 216, 0.1)',
+          boxShadow: 'focus',
+          outline: 'none',
         },
       },
       variants: {
         solid: {
-          bg: '#5a67d8',
+          bg: '#6366f1',
           color: 'white',
           _hover: {
-            bg: '#4c51bf',
+            bg: '#5b21b6',
             transform: 'translateY(-1px)',
             boxShadow: 'lg',
+            _disabled: {
+              bg: '#6366f1',
+              transform: 'none',
+              boxShadow: 'none',
+            },
           },
           _active: {
             bg: '#4338ca',
             transform: 'translateY(0)',
           },
+          _disabled: {
+            bg: '#cbd5e0',
+            color: '#9ca3af',
+            cursor: 'not-allowed',
+          },
         },
         outline: {
-          borderColor: '#e2e8f0',
-          color: '#4a5568',
+          borderColor: '#d1d5db',
+          borderWidth: '1px',
+          color: '#374151',
+          bg: 'white',
           _hover: {
-            bg: '#f7fafc',
-            borderColor: '#cbd5e0',
+            bg: '#f9fafb',
+            borderColor: '#9ca3af',
+            transform: 'translateY(-1px)',
+            boxShadow: 'sm',
+          },
+          _active: {
+            bg: '#f3f4f6',
+            transform: 'translateY(0)',
           },
         },
         ghost: {
+          color: '#6b7280',
           _hover: {
-            bg: '#f7fafc',
+            bg: '#f1f5f9',
+            color: '#374151',
+          },
+          _active: {
+            bg: '#e2e8f0',
           },
         },
       },
@@ -70,12 +126,35 @@ export const creativeDockLightModernTheme = extendTheme({
         container: {
           bg: 'white',
           borderRadius: 'xl',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+          boxShadow: 'sm',
           borderWidth: '1px',
-          borderColor: '#e2e8f0',
+          borderColor: '#f1f5f9',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
           _hover: {
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            boxShadow: 'md',
+            borderColor: '#e2e8f0',
+            transform: 'translateY(-2px)',
           },
+        },
+        header: {
+          bg: '#f8fafc',
+          borderTopRadius: 'xl',
+          borderBottomWidth: '1px',
+          borderColor: '#f1f5f9',
+          px: 6,
+          py: 4,
+        },
+        body: {
+          px: 6,
+          py: 5,
+        },
+        footer: {
+          bg: '#fcfcfd',
+          borderBottomRadius: 'xl',
+          borderTopWidth: '1px',
+          borderColor: '#f1f5f9',
+          px: 6,
+          py: 4,
         },
       },
     },
@@ -84,10 +163,30 @@ export const creativeDockLightModernTheme = extendTheme({
       baseStyle: {
         dialog: {
           bg: 'white',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          boxShadow: '2xl',
+          borderRadius: 'xl',
+          borderWidth: '1px',
+          borderColor: '#f1f5f9',
         },
         overlay: {
-          bg: 'rgba(0, 0, 0, 0.4)',
+          bg: 'rgba(15, 23, 42, 0.4)',
+          backdropFilter: 'blur(4px)',
+        },
+        header: {
+          bg: '#f8fafc',
+          borderTopRadius: 'xl',
+          borderBottomWidth: '1px',
+          borderColor: '#f1f5f9',
+          fontSize: 'lg',
+          fontWeight: '600',
+          color: '#0f172a',
+        },
+        closeButton: {
+          color: '#6b7280',
+          _hover: {
+            color: '#374151',
+            bg: '#f1f5f9',
+          },
         },
       },
     },
@@ -96,20 +195,33 @@ export const creativeDockLightModernTheme = extendTheme({
       variants: {
         simple: {
           th: {
-            color: '#4a5568',
+            color: '#6b7280',
             fontWeight: '600',
             textTransform: 'uppercase',
             fontSize: 'xs',
-            letterSpacing: 'wider',
+            letterSpacing: '0.05em',
             borderColor: '#e2e8f0',
+            bg: '#f8fafc',
+            px: 6,
+            py: 3,
           },
           td: {
             borderColor: '#e2e8f0',
+            px: 6,
+            py: 4,
+            color: '#374151',
           },
           tbody: {
             tr: {
+              bg: 'white',
               _hover: {
-                bg: '#f8fafc',
+                bg: '#fcfcfd',
+              },
+              _odd: {
+                bg: '#fcfcfd',
+                _hover: {
+                  bg: '#f8fafc',
+                },
               },
             },
           },
@@ -122,13 +234,24 @@ export const creativeDockLightModernTheme = extendTheme({
         outline: {
           field: {
             bg: 'white',
-            borderColor: '#e2e8f0',
+            borderColor: '#d1d5db',
+            borderWidth: '1px',
+            borderRadius: 'lg',
+            color: '#0f172a',
+            _placeholder: {
+              color: '#9ca3af',
+            },
             _hover: {
-              borderColor: '#cbd5e0',
+              borderColor: '#9ca3af',
             },
             _focus: {
-              borderColor: '#5a67d8',
-              boxShadow: '0 0 0 1px #5a67d8',
+              borderColor: '#6366f1',
+              boxShadow: 'focus',
+              outline: 'none',
+            },
+            _invalid: {
+              borderColor: '#dc2626',
+              boxShadow: '0 0 0 3px rgba(220, 38, 38, 0.1)',
             },
           },
         },
@@ -139,15 +262,18 @@ export const creativeDockLightModernTheme = extendTheme({
       baseStyle: {
         track: {
           bg: '#f1f5f9',
+          borderRadius: 'full',
         },
         filledTrack: {
-          bg: '#5a67d8',
+          bg: '#6366f1',
+          borderRadius: 'full',
+          transition: 'all 0.3s ease',
         },
       },
     },
   },
   
-  // Color overrides for light modern theme
+  // Enhanced color overrides for light modern theme
   colors: {
     brand: {
       50: '#f0f4ff',
@@ -155,24 +281,25 @@ export const creativeDockLightModernTheme = extendTheme({
       200: '#c7d2fe',
       300: '#a5b4fc',
       400: '#818cf8',
-      500: '#5a67d8',
-      600: '#4c51bf',
+      500: '#6366f1',
+      600: '#5b21b6',
       700: '#4338ca',
       800: '#3730a3',
       900: '#312e81',
     },
     
     gray: {
+      25: '#fcfcfd',
       50: '#f8fafc',
       100: '#f1f5f9',
       200: '#e2e8f0',
       300: '#cbd5e0',
-      400: '#a0aec0',
-      500: '#718096',
-      600: '#4a5568',
-      700: '#2d3748',
-      800: '#1a202c',
-      900: '#171923',
+      400: '#94a3b8',
+      500: '#64748b',
+      600: '#475569',
+      700: '#334155',
+      800: '#1e293b',
+      900: '#0f172a',
     },
   },
 });

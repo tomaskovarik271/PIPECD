@@ -113,55 +113,55 @@ export const semanticTokens: ThemeSemanticTokens = {
     background: {
       app: {
         modern: '#1A1D29',
-        lightModern: '#f8fafc',  // NEW: Very light blue-gray background
+        lightModern: '#fcfcfd',  // ENHANCED: Ultra-light background with subtle warmth
         industrialMetal: 'neutral.900',
         _default: '#ffffff'
       },
       content: {
         modern: '#171923', 
-        lightModern: '#ffffff',  // NEW: Pure white content areas
+        lightModern: '#ffffff',  // Pure white content areas
         industrialMetal: 'neutral.900',
         _default: '#fafbfc'
       },
       surface: {
         modern: '#1A202C',
-        lightModern: '#ffffff',  // NEW: White surfaces with subtle shadows
+        lightModern: '#ffffff',  // White surfaces with enhanced shadows
         industrialMetal: 'neutral.800', 
         _default: '#ffffff'
       },
       elevated: {
         modern: '#2D3748',
-        lightModern: '#f7fafc',  // NEW: Very subtle gray for elevated surfaces
+        lightModern: '#f8fafc',  // ENHANCED: Slightly elevated surface
         industrialMetal: 'neutral.700',
         _default: '#ffffff'
       },
       overlay: {
         modern: 'rgba(0,0,0,0.8)',
-        lightModern: 'rgba(0,0,0,0.4)',  // NEW: Lighter overlay for better visibility
+        lightModern: 'rgba(15,23,42,0.4)',  // ENHANCED: Darker overlay with blur support
         industrialMetal: 'rgba(0,0,0,0.85)',
         _default: 'rgba(0,0,0,0.6)'
       },
       sidebar: {
         modern: '#1A1D29',
-        lightModern: '#ffffff',  // NEW: Clean white sidebar
+        lightModern: '#ffffff',  // Clean white sidebar with enhanced shadows
         industrialMetal: 'neutral.900',
         _default: '#ffffff'
       },
       card: {
         modern: '#1A202C',
-        lightModern: '#ffffff',  // NEW: White cards with subtle borders
+        lightModern: '#ffffff',  // ENHANCED: White cards with subtle borders and shadows
         industrialMetal: 'neutral.800',
         _default: '#ffffff'
       },
       input: {
         modern: '#2D3748',
-        lightModern: '#f7fafc',  // NEW: Light gray input backgrounds
+        lightModern: '#ffffff',  // ENHANCED: White input backgrounds for better contrast
         industrialMetal: 'neutral.850',
         _default: '#ffffff'
       },
       kanbanColumn: {
         modern: '#1A202C',
-        lightModern: '#f8fafc',  // NEW: Very light background for kanban columns
+        lightModern: '#f8fafc',  // ENHANCED: Very light background for better card separation
         industrialMetal: 'neutral.800',
         _default: '#f7fafc'
       }
@@ -171,61 +171,61 @@ export const semanticTokens: ThemeSemanticTokens = {
     text: {
       primary: {
         modern: '#EDF2F7',
-        lightModern: '#1a202c',  // NEW: Dark text for light backgrounds
+        lightModern: '#0f172a',  // ENHANCED: Much darker for excellent readability
         industrialMetal: 'neutral.100',
         _default: '#1a202c'
       },
       secondary: {
         modern: '#A0AEC0',
-        lightModern: '#4a5568',  // NEW: Medium gray for secondary text
+        lightModern: '#475569',  // ENHANCED: Better contrast secondary text
         industrialMetal: 'neutral.200',
         _default: '#4a5568'
       },
       muted: {
         modern: '#718096',
-        lightModern: '#718096',  // NEW: Same muted gray works well in light theme
+        lightModern: '#64748b',  // ENHANCED: Improved muted text contrast
         industrialMetal: 'neutral.300',
         _default: '#718096'
       },
       onAccent: {
         modern: '#ffffff',
-        lightModern: '#ffffff',  // NEW: White text on colored backgrounds
+        lightModern: '#ffffff',  // White text on colored backgrounds
         industrialMetal: '#ffffff',
         _default: '#ffffff'
       },
       link: {
         modern: '#667eea',
-        lightModern: '#5a67d8',  // NEW: Slightly darker blue for better contrast
+        lightModern: '#6366f1',  // ENHANCED: Better brand color for links
         industrialMetal: 'primary.400',
         _default: '#667eea'
       },
       error: {
         modern: '#fc8181',
-        lightModern: '#e53e3e',  // NEW: Darker red for better visibility
+        lightModern: '#dc2626',  // ENHANCED: Stronger error color for visibility
         industrialMetal: 'semanticRed.400',
         _default: '#e53e3e'
       },
       success: {
         modern: '#68d391',
-        lightModern: '#38a169',  // NEW: Darker green for better contrast
+        lightModern: '#059669',  // ENHANCED: Stronger success color
         industrialMetal: '#68d391',
         _default: '#38a169'
       },
       warning: {
         modern: '#fbb32f',
-        lightModern: '#d69e2e',  // NEW: Darker orange for better visibility
+        lightModern: '#d97706',  // ENHANCED: Better warning visibility
         industrialMetal: 'accentHazard.400',
         _default: '#d69e2e'
       },
       accent: {
         modern: '#667eea',
-        lightModern: '#5a67d8',  // NEW: Accent color with good contrast
+        lightModern: '#6366f1',  // ENHANCED: Modern accent color
         industrialMetal: 'primary.400',
         _default: '#667eea'
       },
       inverse: {
         modern: '#1a202c',
-        lightModern: '#ffffff',  // NEW: White text for inverse situations
+        lightModern: '#ffffff',  // White text for inverse situations
         industrialMetal: 'neutral.900',
         _default: '#ffffff'
       }
@@ -235,49 +235,49 @@ export const semanticTokens: ThemeSemanticTokens = {
     border: {
       default: {
         modern: '#2D3748',
-        lightModern: '#e2e8f0',  // NEW: Light gray borders
+        lightModern: '#e2e8f0',  // ENHANCED: Softer default borders
         industrialMetal: 'neutral.700',
         _default: '#e2e8f0'
       },
       subtle: {
         modern: '#4A5568',
-        lightModern: '#edf2f7',  // NEW: Very subtle borders
+        lightModern: '#f1f5f9',  // ENHANCED: Ultra-subtle borders
         industrialMetal: 'neutral.800',
         _default: '#edf2f7'
       },
       emphasis: {
         modern: '#4A5568',
-        lightModern: '#cbd5e0',  // NEW: More prominent borders when needed
+        lightModern: '#cbd5e0',  // ENHANCED: More prominent borders when needed
         industrialMetal: 'neutral.600',
         _default: '#cbd5e0'
       },
       accent: {
         modern: '#667eea',
-        lightModern: '#5a67d8',  // NEW: Accent color borders
+        lightModern: '#6366f1',  // ENHANCED: Modern accent borders
         industrialMetal: 'primary.400',
         _default: '#667eea'
       },
       input: {
         modern: '#4A5568',
-        lightModern: '#e2e8f0',  // NEW: Clean input borders
+        lightModern: '#d1d5db',  // ENHANCED: Better input border visibility
         industrialMetal: 'neutral.600',
         _default: '#e2e8f0'
       },
       focus: {
         modern: '#667eea',
-        lightModern: '#5a67d8',  // NEW: Focus state borders
+        lightModern: '#6366f1',  // ENHANCED: Modern focus borders
         industrialMetal: 'primary.400',
         _default: '#667eea'
       },
       error: {
         modern: '#fc8181',
-        lightModern: '#e53e3e',  // NEW: Error state borders
+        lightModern: '#dc2626',  // ENHANCED: Strong error borders
         industrialMetal: 'semanticRed.400',
         _default: '#e53e3e'
       },
       divider: {
         modern: '#2A2D3A',
-        lightModern: '#f1f5f9',  // NEW: Very subtle dividers
+        lightModern: '#f1f5f9',  // ENHANCED: Very subtle dividers
         industrialMetal: 'neutral.700',
         _default: '#f8fafc'
       }
@@ -350,37 +350,37 @@ export const semanticTokens: ThemeSemanticTokens = {
       button: {
         primary: {
           modern: '#667eea',
-          lightModern: '#5a67d8',  // NEW: Primary button color
+          lightModern: '#6366f1',  // ENHANCED: Modern primary button color
           industrialMetal: 'accentHazard.500',
           _default: '#667eea'
         },
         primaryHover: {
           modern: '#5a6acc',
-          lightModern: '#4c51bf',  // NEW: Primary button hover
+          lightModern: '#5b21b6',  // ENHANCED: Deeper hover state
           industrialMetal: 'accentHazard.600',
           _default: '#5a6acc'
         },
         secondary: {
           modern: '#2A2D3A',
-          lightModern: '#f7fafc',  // NEW: Light secondary buttons
+          lightModern: '#ffffff',  // ENHANCED: Clean white secondary buttons
           industrialMetal: 'neutral.800',
           _default: '#edf2f7'
         },
         secondaryHover: {
           modern: '#4A5568',
-          lightModern: '#edf2f7',  // NEW: Secondary button hover
+          lightModern: '#f8fafc',  // ENHANCED: Subtle secondary button hover
           industrialMetal: 'neutral.700',
           _default: '#e2e8f0'
         },
         ghost: {
           modern: 'transparent',
-          lightModern: 'transparent',  // NEW: Transparent ghost buttons
+          lightModern: 'transparent',  // Transparent ghost buttons
           industrialMetal: 'transparent',
           _default: 'transparent'
         },
         ghostHover: {
           modern: '#2D3748',
-          lightModern: '#f7fafc',  // NEW: Light ghost button hover
+          lightModern: '#f1f5f9',  // ENHANCED: Very subtle ghost button hover
           industrialMetal: 'neutral.700',
           _default: '#f7fafc'
         }
@@ -388,25 +388,25 @@ export const semanticTokens: ThemeSemanticTokens = {
       table: {
         header: {
           modern: '#2A2D3A',
-          lightModern: '#f8fafc',  // FIXED: Light background for table headers
+          lightModern: '#f8fafc',  // ENHANCED: Light table headers with better contrast
           industrialMetal: 'neutral.900',
           _default: '#f7fafc'
         },
         row: {
           modern: '#1A202C',
-          lightModern: '#ffffff',  // NEW: White table rows
+          lightModern: '#ffffff',  // White table rows
           industrialMetal: 'neutral.850',
           _default: '#ffffff'
         },
         rowHover: {
           modern: '#2D3748',
-          lightModern: '#f8fafc',  // NEW: Subtle row hover
+          lightModern: '#f8fafc',  // ENHANCED: Subtle row hover with better contrast
           industrialMetal: 'neutral.800',
           _default: '#f7fafc'
         },
         border: {
           modern: '#2D3748',
-          lightModern: '#e2e8f0',  // NEW: Light table borders
+          lightModern: '#e2e8f0',  // Light table borders
           industrialMetal: 'neutral.600',
           _default: '#e2e8f0'
         }
@@ -414,19 +414,19 @@ export const semanticTokens: ThemeSemanticTokens = {
       modal: {
         background: {
           modern: '#1A202C',
-          lightModern: '#ffffff',  // NEW: White modal backgrounds
+          lightModern: '#ffffff',  // White modal backgrounds
           industrialMetal: 'neutral.800',
           _default: '#ffffff'
         },
         header: {
           modern: '#2D3748',
-          lightModern: '#f8fafc',  // NEW: Light modal headers
+          lightModern: '#f8fafc',  // ENHANCED: Light modal headers with subtle background
           industrialMetal: 'neutral.700',
           _default: '#f7fafc'
         },
         overlay: {
           modern: 'rgba(0,0,0,0.8)',
-          lightModern: 'rgba(0,0,0,0.4)',  // NEW: Lighter modal overlay
+          lightModern: 'rgba(15,23,42,0.4)',  // ENHANCED: Modern overlay with backdrop blur support
           industrialMetal: 'rgba(0,0,0,0.85)',
           _default: 'rgba(0,0,0,0.6)'
         }
@@ -434,37 +434,37 @@ export const semanticTokens: ThemeSemanticTokens = {
       sidebar: {
         background: {
           modern: 'linear-gradient(180deg, #1A1D29 0%, #2D3748 100%)',
-          lightModern: 'linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)',  // NEW: Light gradient sidebar
+          lightModern: '#ffffff',  // ENHANCED: Pure white sidebar with shadow-based elevation
           industrialMetal: 'neutral.900',
           _default: '#ffffff'
         },
         item: {
           modern: 'transparent',
-          lightModern: 'transparent',  // NEW: Transparent sidebar items
+          lightModern: 'transparent',  // Transparent sidebar items
           industrialMetal: 'transparent',
           _default: 'transparent'
         },
         itemActive: {
           modern: '#667eea',
-          lightModern: '#5a67d8',  // NEW: Active sidebar item color
+          lightModern: '#6366f1',  // ENHANCED: Modern active sidebar item color
           industrialMetal: 'primary.600',
           _default: '#667eea'
         },
         itemHover: {
           modern: '#2D3748',
-          lightModern: '#f1f5f9',  // NEW: Light sidebar item hover
+          lightModern: '#f1f5f9',  // ENHANCED: Very subtle sidebar item hover
           industrialMetal: 'primary.700',
           _default: '#f7fafc'
         },
         text: {
           modern: '#A0AEC0',
-          lightModern: '#64748b',  // NEW: Readable sidebar text
+          lightModern: '#64748b',  // ENHANCED: Better contrast sidebar text
           industrialMetal: 'neutral.200',
           _default: '#4a5568'
         },
         textActive: {
           modern: '#ffffff',
-          lightModern: '#ffffff',  // NEW: White text for active items
+          lightModern: '#ffffff',  // White text for active items
           industrialMetal: '#ffffff',
           _default: '#ffffff'
         }
@@ -472,25 +472,25 @@ export const semanticTokens: ThemeSemanticTokens = {
       kanban: {
         column: {
           modern: '#1A202C',
-          lightModern: '#f8fafc',  // NEW: Light kanban columns
+          lightModern: '#f8fafc',  // ENHANCED: Light kanban columns with better separation
           industrialMetal: 'neutral.800',
           _default: '#f7fafc'
         },
         card: {
           modern: '#2D3748',
-          lightModern: '#ffffff',  // NEW: White kanban cards
+          lightModern: '#ffffff',  // ENHANCED: White kanban cards with shadow elevation
           industrialMetal: 'neutral.700',
           _default: '#ffffff'
         },
         cardHover: {
           modern: '#4A5568',
-          lightModern: '#f1f5f9',  // NEW: Light card hover
+          lightModern: '#f8fafc',  // ENHANCED: Subtle card hover with elevation change
           industrialMetal: 'neutral.600',
           _default: '#f7fafc'
         },
         cardBorder: {
           modern: '#4A5568',
-          lightModern: '#e2e8f0',  // NEW: Light card borders
+          lightModern: '#e2e8f0',  // Light card borders
           industrialMetal: 'neutral.600',
           _default: '#e2e8f0'
         }
