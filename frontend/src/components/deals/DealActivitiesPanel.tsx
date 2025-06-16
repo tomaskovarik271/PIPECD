@@ -56,6 +56,9 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
   const colors = useThemeColors();
   const appStore = useAppStore();
   
+  // NEW: Check for industrial theme for conditional 3D effects
+  const isIndustrialTheme = colors.themeName === 'industrialMetal';
+  
   // View mode state (local to this component)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
   
@@ -138,19 +141,53 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
         p={4} 
         borderWidth="1px" 
         borderRadius="lg" 
-        borderColor={isOverdue ? colors.status.error : (colors.border.default || 'gray.200')}
+        borderColor={isOverdue ? colors.status.error : (
+          isIndustrialTheme ? 'rgba(255, 170, 0, 0.3)' : (colors.border.default || 'gray.200')
+        )}
         justifyContent="space-between" 
         alignItems="center" 
-        bg={activity.is_done ? colors.bg.surface : (colors.bg.surface || 'gray.50')}
+        bg={
+          isIndustrialTheme 
+            ? (activity.is_done 
+                ? 'linear-gradient(135deg, #2A2A2A 0%, #1E1E1E 100%)' 
+                : 'linear-gradient(135deg, #303030 0%, #262626 100%)'
+              )
+            : (activity.is_done ? colors.bg.surface : (colors.bg.surface || 'gray.50'))
+        }
         _hover={{
-          borderColor: colors.interactive.default || 'blue.400', 
+          borderColor: isIndustrialTheme 
+            ? 'rgba(255, 170, 0, 0.6)' 
+            : (colors.interactive.default || 'blue.400'), 
           transform: 'translateY(-1px)',
-          boxShadow: 'md'
+          boxShadow: isIndustrialTheme 
+            ? '0 4px 12px rgba(0,0,0,0.35), 0 0 20px rgba(255,170,0,0.2)' 
+            : 'md',
+          ...(isIndustrialTheme ? {
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: '3px',
+              background: 'linear-gradient(180deg, rgba(255,170,0,0.6) 0%, rgba(255,170,0,0.3) 50%, rgba(255,170,0,0.6) 100%)',
+              borderTopLeftRadius: 'lg',
+              borderBottomLeftRadius: 'lg',
+            }
+          } : {})
         }}
         minW={0}
         w="100%"
+        position="relative"
         transition="all 0.2s ease"
-        boxShadow={isOverdue ? `0 0 0 1px ${colors.status.error}` : 'sm'}
+        boxShadow={
+          isOverdue 
+            ? `0 0 0 1px ${colors.status.error}` 
+            : (isIndustrialTheme 
+                ? '0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)' 
+                : 'sm'
+              )
+        }
       >
         <HStack spacing={3} alignItems="center" flex={1} minW={0}>
           <Tooltip 
@@ -288,7 +325,24 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
   };
 
   return (
-    <Box>
+    <Box
+      bg={isIndustrialTheme ? 'linear-gradient(180deg, #1C1C1C 0%, #181818 50%, #141414 100%)' : 'transparent'}
+      borderRadius="lg"
+      p={isIndustrialTheme ? 4 : 0}
+      position="relative"
+      boxShadow={isIndustrialTheme ? '0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)' : 'none'}
+      _before={isIndustrialTheme ? {
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '3px',
+        background: 'linear-gradient(90deg, rgba(255,170,0,0.3) 0%, rgba(255,170,0,0.1) 50%, rgba(255,170,0,0.3) 100%)',
+        borderTopRadius: 'lg',
+        zIndex: 1
+      } : {}}
+    >
       <Flex justifyContent="space-between" alignItems="center" mb={6}>
         <Heading size="md" color={colors.text.primary}>Activities Timeline</Heading>
         <HStack spacing={3}>

@@ -403,19 +403,19 @@ export const semanticTokens: ThemeSemanticTokens = {
         header: {
           modern: '#2A2D3A',
           lightModern: '#f8fafc',  // ENHANCED: Light table headers with better contrast
-          industrialMetal: 'linear-gradient(135deg, #1C1C1C 0%, #262626 100%)', // ENHANCED: 3D metallic header gradient
+          industrialMetal: 'neutral.800', // ENHANCED: Clean industrial header background
           _default: '#f7fafc'
         },
         row: {
           modern: '#1A202C',
           lightModern: '#ffffff',  // White table rows
-          industrialMetal: 'linear-gradient(135deg, #303030 0%, #262626 100%)', // ENHANCED: 3D metallic row gradient
+          industrialMetal: 'neutral.850', // ENHANCED: Clean industrial row background
           _default: '#ffffff'
         },
         rowHover: {
           modern: '#2D3748',
           lightModern: '#f8fafc',  // ENHANCED: Subtle row hover with better contrast
-          industrialMetal: 'linear-gradient(135deg, #3A3A3A 0%, #303030 100%)', // ENHANCED: 3D metallic hover gradient
+          industrialMetal: 'neutral.800', // ENHANCED: Clean industrial hover
           _default: '#f7fafc'
         },
         border: {
