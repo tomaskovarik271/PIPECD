@@ -1,12 +1,9 @@
-import { GraphQLContext } from '../netlify/functions/graphql/helpers'; // For auth context
+import { GraphQLContext, requirePermission } from '../netlify/functions/graphql/helpers'; // For auth context
 import { 
   WfmStatus, 
   CreateWfmStatusInput, 
   UpdateWfmStatusInput 
-} from './generated/graphql'; 
-
-// Placeholder for permission checks if you have a utility for it
-// import { checkPermission, Permission } from './permissionUtils'; // Assuming Permission enum/type exists
+} from './generated/graphql';
 
 // Define the fields to be selected for WfmStatus from the database.
 const WFM_STATUS_DB_COLUMNS = 'id, name, description, color, is_archived, created_at, updated_at, created_by_user_id, updated_by_user_id';
@@ -47,7 +44,7 @@ const mapDbStatusToGraphqlStatus = (dbStatus: DbWfmStatus): WfmStatus => {
 export const wfmStatusService = {
   async getAll(isArchived: boolean = false, context: GraphQLContext): Promise<WfmStatus[]> {
     // console.log(`wfmStatusService.getAll called with isArchived: ${isArchived}, user: ${context.currentUser?.id}`);
-    // TODO: checkPermission(context, Permission.WFM_STATUS_READ_ALL); 
+    requirePermission(context, 'wfm_status:read_all'); 
     const { data, error } = await context.supabaseClient
       .from('statuses')
       .select(WFM_STATUS_DB_COLUMNS)
@@ -62,7 +59,7 @@ export const wfmStatusService = {
 
   async getById(id: string, context: GraphQLContext): Promise<WfmStatus | null> {
     // console.log(`wfmStatusService.getById called with id: ${id}, user: ${context.currentUser?.id}`);
-    // TODO: checkPermission(context, Permission.WFM_STATUS_READ_ONE);
+    requirePermission(context, 'wfm_status:read_one');
     const { data, error } = await context.supabaseClient
       .from('statuses')
       .select(WFM_STATUS_DB_COLUMNS)
@@ -78,6 +75,7 @@ export const wfmStatusService = {
 
   async create(input: CreateWfmStatusInput, userId: string, context: GraphQLContext): Promise<WfmStatus> {
     console.log(`wfmStatusService.create called with input:`, input, `by user: ${userId}`);
+    requirePermission(context, 'wfm_status:create');
     // userId is now non-nullable based on resolver logic, removed redundant context.currentUser check here
     
     const recordToInsert = {
@@ -105,6 +103,7 @@ export const wfmStatusService = {
 
   async update(id: string, input: UpdateWfmStatusInput, userId: string, context: GraphQLContext): Promise<WfmStatus> {
     console.log(`wfmStatusService.update called with id: ${id}, input:`, input, `by user: ${userId}`);
+    requirePermission(context, 'wfm_status:update');
     // userId is now non-nullable
 
     const recordToUpdate: Partial<Omit<DbWfmStatus, 'id' | 'created_at' | 'created_by_user_id'>> = {
@@ -151,6 +150,7 @@ export const wfmStatusService = {
 
   async delete(id: string, context: GraphQLContext): Promise<{ success: boolean; message?: string }> {
     console.log(`wfmStatusService.delete called with id: ${id}, user: ${context.currentUser?.id}`);
+    requirePermission(context, 'wfm_status:delete');
     const { error } = await context.supabaseClient
         .from('statuses')
         .delete()
