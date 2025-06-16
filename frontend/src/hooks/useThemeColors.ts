@@ -26,6 +26,9 @@ export const useThemeColors = () => {
   }
   
   return {
+    // Current theme name for conditional styling
+    themeName: currentTheme,
+    
     // Background colors
     bg: {
       app: getColor('background.app'),
@@ -80,6 +83,20 @@ export const useThemeColors = () => {
       warning: getColor('status.warning'),
       error: getColor('status.error'),
       info: getColor('status.info'),
+    },
+    
+    // Shadow effects for 3D depth
+    shadows: {
+      sidebar: getColor('shadows.sidebar'),
+      kanbanColumn: getColor('shadows.kanbanColumn'),
+      card: getColor('shadows.card'),
+      cardHover: getColor('shadows.cardHover'),
+      button: getColor('shadows.button'),
+      buttonHover: getColor('shadows.buttonHover'),
+      modal: getColor('shadows.modal'),
+      input: getColor('shadows.input'),
+      inputFocus: getColor('shadows.inputFocus'),
+      table: getColor('shadows.table'),
     },
     
     // Component-specific colors
@@ -151,6 +168,9 @@ export const useThemeStyles = () => {
   const colors = useThemeColors()
   
   return {
+    // Current theme name for conditional styling
+    theme: colors.themeName,
+    
     // Common card styling
     card: {
       bg: colors.bg.surface,

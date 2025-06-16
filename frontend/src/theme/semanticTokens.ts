@@ -403,25 +403,25 @@ export const semanticTokens: ThemeSemanticTokens = {
         header: {
           modern: '#2A2D3A',
           lightModern: '#f8fafc',  // ENHANCED: Light table headers with better contrast
-          industrialMetal: 'neutral.900',
+          industrialMetal: 'linear-gradient(135deg, #1C1C1C 0%, #262626 100%)', // ENHANCED: 3D metallic header gradient
           _default: '#f7fafc'
         },
         row: {
           modern: '#1A202C',
           lightModern: '#ffffff',  // White table rows
-          industrialMetal: 'neutral.850',
+          industrialMetal: 'linear-gradient(135deg, #303030 0%, #262626 100%)', // ENHANCED: 3D metallic row gradient
           _default: '#ffffff'
         },
         rowHover: {
           modern: '#2D3748',
           lightModern: '#f8fafc',  // ENHANCED: Subtle row hover with better contrast
-          industrialMetal: 'neutral.800',
+          industrialMetal: 'linear-gradient(135deg, #3A3A3A 0%, #303030 100%)', // ENHANCED: 3D metallic hover gradient
           _default: '#f7fafc'
         },
         border: {
           modern: '#2D3748',
           lightModern: '#e2e8f0',  // Light table borders
-          industrialMetal: 'neutral.600',
+          industrialMetal: 'rgba(255, 170, 0, 0.3)', // ENHANCED: Hazard yellow accent borders
           _default: '#e2e8f0'
         }
       },
@@ -508,6 +508,70 @@ export const semanticTokens: ThemeSemanticTokens = {
           industrialMetal: 'rgba(255, 170, 0, 0.3)', // ENHANCED: Hazard yellow accent border
           _default: '#e2e8f0'
         }
+      }
+    },
+    
+    // Shadow effects for 3D depth
+    shadows: {
+      sidebar: {
+        modern: '0 2px 8px rgba(0,0,0,0.2)',
+        lightModern: '0 1px 3px rgba(15,23,42,0.08), 0 4px 6px rgba(15,23,42,0.05)',
+        industrialMetal: '0 2px 8px rgba(0,0,0,0.4), inset 0 0 20px rgba(255,170,0,0.1)',
+        _default: '0 2px 8px rgba(0,0,0,0.1)'
+      },
+      kanbanColumn: {
+        modern: '0 2px 4px rgba(0,0,0,0.1)',
+        lightModern: '0 1px 3px rgba(15,23,42,0.05)',
+        industrialMetal: '0 4px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,170,0,0.1)',
+        _default: '0 2px 4px rgba(0,0,0,0.1)'
+      },
+      card: {
+        modern: '0 2px 4px rgba(0,0,0,0.1)',
+        lightModern: '0 1px 3px rgba(15,23,42,0.08)',
+        industrialMetal: '0 2px 6px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1)',
+        _default: '0 1px 3px rgba(0,0,0,0.1)'
+      },
+      cardHover: {
+        modern: '0 4px 8px rgba(0,0,0,0.15)',
+        lightModern: '0 4px 6px rgba(15,23,42,0.1), 0 1px 3px rgba(15,23,42,0.08)',
+        industrialMetal: '0 4px 12px rgba(0,0,0,0.35), 0 0 20px rgba(255,170,0,0.2)',
+        _default: '0 2px 6px rgba(0,0,0,0.1)'
+      },
+      button: {
+        modern: '0 1px 3px rgba(0,0,0,0.12)',
+        lightModern: '0 1px 2px rgba(15,23,42,0.05)',
+        industrialMetal: '0 2px 4px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.1)',
+        _default: '0 1px 3px rgba(0,0,0,0.12)'
+      },
+      buttonHover: {
+        modern: '0 2px 6px rgba(0,0,0,0.15)',
+        lightModern: '0 2px 4px rgba(15,23,42,0.08)',
+        industrialMetal: '0 3px 8px rgba(0,0,0,0.3), 0 0 15px rgba(255,170,0,0.15)',
+        _default: '0 2px 6px rgba(0,0,0,0.15)'
+      },
+      modal: {
+        modern: '0 20px 25px rgba(0,0,0,0.25)',
+        lightModern: '0 20px 25px rgba(15,23,42,0.15)',
+        industrialMetal: '0 20px 40px rgba(0,0,0,0.4), 0 0 30px rgba(255,170,0,0.1)',
+        _default: '0 20px 25px rgba(0,0,0,0.25)'
+      },
+      input: {
+        modern: 'inset 0 1px 3px rgba(0,0,0,0.1)',
+        lightModern: 'inset 0 1px 2px rgba(15,23,42,0.05)',
+        industrialMetal: 'inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,170,0,0.1)',
+        _default: 'inset 0 1px 3px rgba(0,0,0,0.1)'
+      },
+      inputFocus: {
+        modern: 'inset 0 1px 3px rgba(0,0,0,0.1), 0 0 0 3px rgba(102,126,234,0.1)',
+        lightModern: 'inset 0 1px 2px rgba(15,23,42,0.05), 0 0 0 3px rgba(99,102,241,0.1)',
+        industrialMetal: 'inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 2px rgba(255,170,0,0.3)',
+        _default: 'inset 0 1px 3px rgba(0,0,0,0.1), 0 0 0 3px rgba(102,126,234,0.1)'
+      },
+      table: {
+        modern: '0 1px 3px rgba(0,0,0,0.08)',
+        lightModern: '0 1px 3px rgba(15,23,42,0.05)',
+        industrialMetal: '0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,170,0,0.05)',
+        _default: '0 1px 3px rgba(0,0,0,0.08)'
       }
     }
   }
