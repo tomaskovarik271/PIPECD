@@ -1,4 +1,4 @@
-import { GraphQLContext } from '../helpers';
+import { GraphQLContext, requirePermission } from '../helpers';
 import { 
   WfmStatus, 
   CreateWfmStatusInput, 
@@ -33,11 +33,13 @@ export const WFMStatusResolvers = {
   Query: {
     wfmStatuses: async (_parent: unknown, args: { isArchived?: boolean }, context: GraphQLContext): Promise<WfmStatus[]> => {
       // console.log('Resolving Query.wfmStatuses with args:', args, 'user:', context.currentUser?.id);
+      requirePermission(context, 'wfm_status:read_all');
       const statuses = await wfmStatusService.getAll(args.isArchived ?? false, context);
       return statuses.map(status => status as WfmStatusWithUserIds);
     },
     wfmStatus: async (_parent: unknown, args: { id: string }, context: GraphQLContext): Promise<WfmStatus | null> => {
       console.log('Resolving Query.wfmStatus with ID:', args.id, 'user:', context.currentUser?.id);
+      requirePermission(context, 'wfm_status:read_one');
       const status = await wfmStatusService.getById(args.id, context);
       if (!status) {
         return null;

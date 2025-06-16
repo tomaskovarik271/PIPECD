@@ -44,7 +44,7 @@ const mapDbStatusToGraphqlStatus = (dbStatus: DbWfmStatus): WfmStatus => {
 export const wfmStatusService = {
   async getAll(isArchived: boolean = false, context: GraphQLContext): Promise<WfmStatus[]> {
     // console.log(`wfmStatusService.getAll called with isArchived: ${isArchived}, user: ${context.currentUser?.id}`);
-    requirePermission(context, 'wfm_status:read_all'); 
+    // Permission check moved to GraphQL resolver level for direct queries 
     const { data, error } = await context.supabaseClient
       .from('statuses')
       .select(WFM_STATUS_DB_COLUMNS)
@@ -59,7 +59,7 @@ export const wfmStatusService = {
 
   async getById(id: string, context: GraphQLContext): Promise<WfmStatus | null> {
     // console.log(`wfmStatusService.getById called with id: ${id}, user: ${context.currentUser?.id}`);
-    requirePermission(context, 'wfm_status:read_one');
+    // No permission check needed - used by field resolvers for related data
     const { data, error } = await context.supabaseClient
       .from('statuses')
       .select(WFM_STATUS_DB_COLUMNS)
