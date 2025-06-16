@@ -138,15 +138,19 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
         p={4} 
         borderWidth="1px" 
         borderRadius="lg" 
-        borderColor={isOverdue ? colors.status.error : colors.border.default}
+        borderColor={isOverdue ? colors.status.error : (colors.border.default || 'gray.200')}
         justifyContent="space-between" 
         alignItems="center" 
-        bg={activity.is_done ? colors.bg.surface : colors.bg.elevated}
-        _hover={{borderColor: colors.interactive.default, transform: 'translateY(-1px)'}}
+        bg={activity.is_done ? colors.bg.surface : (colors.bg.surface || 'gray.50')}
+        _hover={{
+          borderColor: colors.interactive.default || 'blue.400', 
+          transform: 'translateY(-1px)',
+          boxShadow: 'md'
+        }}
         minW={0}
         w="100%"
         transition="all 0.2s ease"
-        boxShadow={isOverdue ? `0 0 0 1px ${colors.status.error}` : 'none'}
+        boxShadow={isOverdue ? `0 0 0 1px ${colors.status.error}` : 'sm'}
       >
         <HStack spacing={3} alignItems="center" flex={1} minW={0}>
           <Tooltip 

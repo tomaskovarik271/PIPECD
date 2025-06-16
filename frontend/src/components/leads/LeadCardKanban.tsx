@@ -17,6 +17,7 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { useLeadTheme } from '../../hooks/useLeadTheme';
 import { StarIcon } from '@chakra-ui/icons';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
+import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
 interface LeadCardKanbanProps {
   lead: Lead;
@@ -124,7 +125,7 @@ const LeadCardKanban: React.FC<LeadCardKanbanProps> = React.memo(({ lead, index 
               </VStack>
               <VStack align="end" spacing={1}>
                 <Text fontSize="lg" fontWeight="bold" color={colors.text.success}>
-                  {lead.estimated_value ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits:0, maximumFractionDigits:0 }).format(lead.estimated_value) : '-'}
+                  {lead.estimated_value ? CurrencyFormatter.format(lead.estimated_value, 'USD', { precision: 0 }) : '-'}
                 </Text>
                 <HStack spacing={1}>
                   <StarIcon boxSize={3} color={scoreColor} />

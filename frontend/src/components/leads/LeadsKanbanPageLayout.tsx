@@ -21,6 +21,7 @@ import UnifiedPageHeader from '../layout/UnifiedPageHeader';
 import { usePageLayoutStyles } from '../../utils/headerUtils';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useLeadTheme } from '../../hooks/useLeadTheme';
+import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
 interface LeadsKanbanPageLayoutProps {
   displayedLeads: Lead[];
@@ -80,7 +81,7 @@ const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
     {
       label: 'Total Value',
       value: totalValue,
-      formatter: (value: string | number) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(Number(value)),
+      formatter: (value: string | number) => CurrencyFormatter.format(Number(value), 'USD', { precision: 0 }),
       color: leadTheme.colors.metrics.totalValue
     },
     {

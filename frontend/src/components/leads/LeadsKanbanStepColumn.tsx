@@ -1,14 +1,13 @@
 import React from 'react';
-import { Box, Heading, Text, VStack, Flex } from '@chakra-ui/react';
+import { Box, Heading, Text, VStack, Flex, Card, CardHeader, HStack, Badge, Tooltip } from '@chakra-ui/react';
 import type { WfmWorkflowStep } from '../../generated/graphql/graphql';
 import { Lead } from '../../stores/useLeadsStore';
 import { Droppable, DroppableProvided, DroppableStateSnapshot } from '@hello-pangea/dnd';
 import LeadCardKanban from './LeadCardKanban.tsx';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
-const formatCurrency = (value: number, currencyCode = 'USD') => {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
-};
+
 
 interface LeadsKanbanStepColumnProps {
   step: WfmWorkflowStep;
@@ -25,6 +24,8 @@ const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo((
     (step.metadata as any)?.stage_name || 
     step.status?.name || 
     `Step ${step.id.substring(0, 6)}...`;
+
+  const totalValueFormatted = CurrencyFormatter.format(estimatedValueSum, 'USD', { precision: 0 });
 
   return (
     // @ts-ignore
@@ -80,15 +81,20 @@ const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo((
                   <Text fontSize="sm" color={colors.text.muted}>{leads.length} Leads</Text>
                 </Box>
                 <Box textAlign="right">
-                  <Text 
-                    fontSize="lg" 
-                    fontWeight="semibold" 
-                    color={colors.text.success}
-                    noOfLines={1} 
-                    title={formatCurrency(estimatedValueSum)}
+                  <Tooltip 
+                    label={`Total estimated value in ${stepDisplayName} stage`} 
+                    placement="top"
                   >
-                    {formatCurrency(estimatedValueSum)}
-                  </Text>
+                    <Text 
+                      fontSize="lg" 
+                      fontWeight="semibold" 
+                      color={colors.text.success}
+                      noOfLines={1} 
+                      title={totalValueFormatted}
+                    >
+                      {totalValueFormatted}
+                    </Text>
+                  </Tooltip>
                 </Box>
               </Flex>
               <Box 

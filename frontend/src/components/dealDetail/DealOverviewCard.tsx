@@ -11,6 +11,7 @@ import { InlineEditableField } from '../common/InlineEditableField';
 import type { Deal } from '../../stores/useDealsStore';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { DealAmount } from '../currency/CurrencyDisplay';
+import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
 interface DealOverviewCardProps {
   deal: Deal;
@@ -53,20 +54,8 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
     };
   }, [deal]);
 
-  const formatCurrency = (value: string | number | null | undefined) => {
-    if (!value || (typeof value === 'string' && value === '')) return '-';
-    const amount = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(amount)) return '-';
-    
-    const currencyToUse = deal.currency || 'USD';
-    
-    // Use centralized formatter for consistency
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: currencyToUse, 
-      minimumFractionDigits: 0, 
-      maximumFractionDigits: 0 
-    }).format(amount);
+  const formatDisplay = (value: string | number | null | undefined) => {
+    return CurrencyFormatter.format(Number(value) || 0, 'USD', { precision: 0 });
   };
 
   const formatDate = (value: string | number | null | undefined) => {
@@ -151,7 +140,7 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
         <InlineEditableField
           label="Value"
           value={deal.amount}
-          formatDisplay={formatCurrency}
+          formatDisplay={formatDisplay}
           inputType="number"
           onSave={handleAmountSave}
           validate={validateAmount}

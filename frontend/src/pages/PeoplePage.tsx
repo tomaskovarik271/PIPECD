@@ -85,7 +85,7 @@ function PeoplePage() {
     const loadPageData = async () => {
       try {
         // Load core data in parallel instead of sequentially
-        const fetchCustomFieldDefinitions = async () => {
+    const fetchCustomFieldDefinitions = async () => {
           const data = await gqlClient.request<{ customFieldDefinitions: CustomFieldDefinition[] }>(GET_PERSON_CUSTOM_FIELD_DEFS_QUERY);
           return data.customFieldDefinitions || [];
         };
@@ -104,7 +104,7 @@ function PeoplePage() {
         setCustomFieldsLoading(false);
       }
     };
-    
+
     loadPageData();
   }, [fetchPeople]);
 
