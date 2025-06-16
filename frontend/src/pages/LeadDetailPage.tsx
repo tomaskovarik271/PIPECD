@@ -52,7 +52,7 @@ import { gqlClient } from '../lib/graphqlClient';
 import { gql } from 'graphql-request';
 import { EntityType } from '../generated/graphql/graphql';
 import EditLeadModal from '../components/EditLeadModal';
-import { CurrencyFormatter } from '../../../lib/utils/currencyFormatter';
+import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 
 // GraphQL query for lead details
 const GET_LEAD_DETAILS_QUERY = gql`

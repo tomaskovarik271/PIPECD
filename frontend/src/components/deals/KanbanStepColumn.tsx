@@ -7,7 +7,7 @@ import DealCardKanban from './DealCardKanban';
 import DealCardKanbanCompact from './DealCardKanbanCompact';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../stores/useAppStore';
-import { CurrencyFormatter } from '../../../../lib/utils/currencyFormatter';
+import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
 const formatCurrency = (value: number, currencyCode = 'USD') => {
   return CurrencyFormatter.format(value, currencyCode, { precision: 0 });
