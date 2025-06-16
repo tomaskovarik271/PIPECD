@@ -52,6 +52,7 @@ import { gqlClient } from '../lib/graphqlClient';
 import { gql } from 'graphql-request';
 import { EntityType } from '../generated/graphql/graphql';
 import EditLeadModal from '../components/EditLeadModal';
+import { CurrencyFormatter } from '../../../lib/utils/currencyFormatter';
 
 // GraphQL query for lead details
 const GET_LEAD_DETAILS_QUERY = gql`
@@ -110,11 +111,7 @@ const formatDate = (dateString?: string | null) => {
 };
 
 const formatCurrency = (amount?: number | null) => {
-  if (!amount) return '$0';
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(amount);
+  return CurrencyFormatter.format(amount, 'USD', { precision: 2 });
 };
 
 const LeadDetailPage = () => {
