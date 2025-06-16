@@ -73,6 +73,7 @@ import DealDocumentsPanel from '../components/deals/DealDocumentsPanel';
 import { SharedDriveDocumentBrowser } from '../components/deals/SharedDriveDocumentBrowser';
 import { DealNotesPanel } from '../components/dealDetail/DealNotesPanel';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
+import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 
 // Type imports
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
@@ -707,12 +708,7 @@ const DealDetailPage = () => {
                                           {!isEditingAmount ? (
                                               <HStack spacing={2}>
                                                   <Text fontSize="md" fontWeight="semibold" color={colors.status.success}>
-                                                      {currentDeal.amount ? new Intl.NumberFormat('en-US', { 
-                                                          style: 'currency', 
-                                                          currency: currentDeal.currency || 'USD', 
-                                                          minimumFractionDigits: 0, 
-                                                          maximumFractionDigits: 0 
-                                                      }).format(currentDeal.amount) : '-'}
+                                                      {currentDeal.amount ? CurrencyFormatter.format(currentDeal.amount, currentDeal.currency || 'USD', { precision: 0 }) : '-'}
                                                   </Text>
                                                   <IconButton 
                                                       icon={<EditIcon />} 

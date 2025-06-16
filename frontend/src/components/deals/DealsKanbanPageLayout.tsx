@@ -24,6 +24,7 @@ import { usePageLayoutStyles } from '../../utils/headerUtils';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../stores/useAppStore';
 import { TbCurrencyDollar, TbWorld } from 'react-icons/tb';
+import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
 interface DealsKanbanPageLayoutProps {
   displayedDeals: Deal[];
@@ -75,63 +76,6 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
     setBaseCurrencyForConversion 
   } = useAppStore();
 
-  // Helper function to format mixed currency totals
-  const formatMixedCurrencyStatistic = useCallback((deals: Deal[]) => {
-    if (currencyDisplayMode === 'converted') {
-      // Convert all amounts to base currency
-      const totalInBaseCurrency = deals.reduce((sum, deal) => {
-        const amount = deal.amount || 0;
-        const currency = deal.currency || 'USD';
-        const rate = EXCHANGE_RATES[currency]?.[baseCurrencyForConversion] || 1;
-        return sum + (amount * rate);
-      }, 0);
-      
-      return new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
-        currency: baseCurrencyForConversion,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(totalInBaseCurrency);
-    } else {
-      // Mixed currency display
-      const currencyGroups = deals.reduce((acc, deal) => {
-        const currency = deal.currency || 'EUR';
-        const amount = deal.amount || 0;
-        if (!acc[currency]) {
-          acc[currency] = 0;
-        }
-        acc[currency] += amount;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const currencies = Object.keys(currencyGroups);
-      
-      if (currencies.length === 0) return '€0';
-      if (currencies.length === 1) {
-        const currency = currencies[0];
-        return new Intl.NumberFormat('en-US', { 
-          style: 'currency', 
-          currency: currency,
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 0
-        }).format(currencyGroups[currency]);
-      }
-      
-      // Multiple currencies - show primary + count
-      const sortedCurrencies = currencies.sort((a, b) => currencyGroups[b] - currencyGroups[a]);
-      const primaryCurrency = sortedCurrencies[0];
-      const primaryAmount = currencyGroups[primaryCurrency];
-      const formattedPrimary = new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
-        currency: primaryCurrency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(primaryAmount);
-      
-      return `${formattedPrimary} +${currencies.length - 1}`;
-    }
-  }, [currencyDisplayMode, baseCurrencyForConversion]);
-
   // Simple exchange rates for demo (in production, this would come from the database)
   const EXCHANGE_RATES: Record<string, Record<string, number>> = {
     'USD': { 'EUR': 0.85, 'GBP': 0.75, 'CHF': 0.92, 'USD': 1.0 },
@@ -141,7 +85,25 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
   };
 
   // Calculate statistics for the header with multi-currency support
-  const totalValueFormatted = useMemo(() => formatMixedCurrencyStatistic(displayedDeals), [displayedDeals, formatMixedCurrencyStatistic]);
+  const totalValueFormatted = useMemo(() => {
+    if (currencyDisplayMode === 'converted') {
+      // Convert all amounts to base currency
+      const totalInBaseCurrency = displayedDeals.reduce((sum, deal) => {
+        const amount = deal.amount || 0;
+        const currency = deal.currency || 'USD';
+        const rate = EXCHANGE_RATES[currency]?.[baseCurrencyForConversion] || 1;
+        return sum + (amount * rate);
+      }, 0);
+      
+      return CurrencyFormatter.format(totalInBaseCurrency, baseCurrencyForConversion, { precision: 0 });
+    } else {
+      // Mixed currency display
+      return CurrencyFormatter.formatMixedCurrencyTotal(
+        displayedDeals.map(deal => ({ amount: deal.amount, currency: deal.currency })),
+        'EUR'
+      );
+    }
+  }, [displayedDeals, currencyDisplayMode, baseCurrencyForConversion]);
   
   const averageDealSizeFormatted = useMemo(() => {
     if (displayedDeals.length === 0) return '€0';
@@ -156,13 +118,7 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
       }, 0);
       
       const avgAmount = totalInBaseCurrency / displayedDeals.length;
-      
-      return new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
-        currency: baseCurrencyForConversion,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(avgAmount);
+      return CurrencyFormatter.format(avgAmount, baseCurrencyForConversion, { precision: 0 });
     } else {
       // For average in mixed mode, use the most common currency
       const currencyGroups = displayedDeals.reduce((acc, deal) => {
@@ -182,12 +138,7 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
       const primaryCurrency = currencies.sort((a, b) => currencyGroups[b].count - currencyGroups[a].count)[0];
       const avgAmount = currencyGroups[primaryCurrency].total / currencyGroups[primaryCurrency].count;
       
-      return new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
-        currency: primaryCurrency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(avgAmount);
+      return CurrencyFormatter.format(avgAmount, primaryCurrency, { precision: 0 });
     }
   }, [displayedDeals, currencyDisplayMode, baseCurrencyForConversion]);
 

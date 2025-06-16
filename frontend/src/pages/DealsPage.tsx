@@ -32,6 +32,7 @@ import { useFilteredDeals } from '../hooks/useFilteredDeals';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
+import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 
 function DealsPage() {
   const navigate = useNavigate();
@@ -164,47 +165,14 @@ function DealsPage() {
     searchTerm,
   });
   
-  // Helper function to format mixed currency totals
-  const formatMixedCurrencyStatistic = useCallback((deals: Deal[]) => {
-    const currencyGroups = deals.reduce((acc, deal) => {
-      const currency = deal.currency || 'EUR';
-      const amount = deal.amount || 0;
-      if (!acc[currency]) {
-        acc[currency] = 0;
-      }
-      acc[currency] += amount;
-      return acc;
-    }, {} as Record<string, number>);
-
-    const currencies = Object.keys(currencyGroups);
-    
-    if (currencies.length === 0) return '€0';
-    if (currencies.length === 1) {
-      const currency = currencies[0];
-      return new Intl.NumberFormat('en-US', { 
-        style: 'currency', 
-        currency: currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-      }).format(currencyGroups[currency]);
-    }
-    
-    // Multiple currencies - show primary + count
-    const sortedCurrencies = currencies.sort((a, b) => currencyGroups[b] - currencyGroups[a]);
-    const primaryCurrency = sortedCurrencies[0];
-    const primaryAmount = currencyGroups[primaryCurrency];
-    const formattedPrimary = new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: primaryCurrency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(primaryAmount);
-    
-    return `${formattedPrimary} +${currencies.length - 1}`;
-  }, []);
-
   // Calculate statistics for the header with multi-currency support
-  const totalValueFormatted = useMemo(() => formatMixedCurrencyStatistic(displayedDeals), [displayedDeals, formatMixedCurrencyStatistic]);
+  const totalValueFormatted = useMemo(() => 
+    CurrencyFormatter.formatMixedCurrencyTotal(
+      displayedDeals.map(deal => ({ amount: deal.amount, currency: deal.currency })),
+      'EUR'
+    ), 
+    [displayedDeals]
+  );
   
   const averageDealSizeFormatted = useMemo(() => {
     if (displayedDeals.length === 0) return '€0';
@@ -227,12 +195,7 @@ function DealsPage() {
     const primaryCurrency = currencies.sort((a, b) => currencyGroups[b].count - currencyGroups[a].count)[0];
     const avgAmount = currencyGroups[primaryCurrency].total / currencyGroups[primaryCurrency].count;
     
-    return new Intl.NumberFormat('en-US', { 
-      style: 'currency', 
-      currency: primaryCurrency,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(avgAmount);
+    return CurrencyFormatter.format(avgAmount, primaryCurrency, { precision: 0 });
   }, [displayedDeals]);
 
   const winRate = useMemo(() => {
