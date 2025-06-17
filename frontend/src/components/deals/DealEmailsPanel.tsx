@@ -787,9 +787,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
         height: '2px',
         background: currentThemeName === 'industrialMetal' 
           ? `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' ? 'rgba(255, 170, 0, 0.8)' : 'transparent'} 50%, transparent 100%)`
-          : currentThemeName === 'lightModern'
-          ? 'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.8) 50%, transparent 100%)'
-          : 'linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.8) 50%, transparent 100%)',
+          : 'transparent', // No accent for modern themes
         pointerEvents: 'none',
       }}
     >

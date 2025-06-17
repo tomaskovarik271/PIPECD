@@ -99,9 +99,7 @@ function Sidebar() {
     borderLeft: '3px solid',
     borderColor: currentThemeName === 'industrialMetal' 
       ? 'rgba(255, 170, 0, 0.8)' // Hazard yellow for industrial only
-      : currentThemeName === 'lightModern'
-      ? '#6366f1' // Indigo for light modern
-      : '#667eea', // Blue for modern dark
+      : 'transparent', // No accent for modern themes
     _hover: {
       color: colors.component.sidebar.textActive,
       bg: colors.component.sidebar.itemActive,
