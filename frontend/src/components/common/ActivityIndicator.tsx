@@ -40,7 +40,9 @@ export const ActivityIndicator: React.FC<ActivityIndicatorProps> = ({
             px={isCompact ? 1.5 : 2}
             py={isCompact ? 0.5 : 1}
             borderRadius="md"
-            fontWeight="semibold"
+            fontWeight="bold"
+            cursor="pointer"
+            _hover={{ transform: "scale(1.05)", transition: "transform 0.2s ease" }}
           >
             <Icon as={FiAlertCircle} boxSize={isCompact ? "10px" : "12px"} />
             {indicators.overdueCount}
@@ -63,7 +65,9 @@ export const ActivityIndicator: React.FC<ActivityIndicatorProps> = ({
             px={isCompact ? 1.5 : 2}
             py={isCompact ? 0.5 : 1}
             borderRadius="md"
-            fontWeight="semibold"
+            fontWeight="bold"
+            cursor="pointer"
+            _hover={{ transform: "scale(1.05)", transition: "transform 0.2s ease" }}
           >
             <Icon as={FiClock} boxSize={isCompact ? "10px" : "12px"} />
             {indicators.dueTodayCount}

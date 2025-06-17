@@ -100,19 +100,22 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
     }
   }
 
-  // Enhanced styling based on activity urgency - simplified
+  // Enhanced styling based on activity urgency - just a little more
   const hasOverdueActivities = activityIndicators.overdueCount > 0;
   const hasDueTodayActivities = activityIndicators.dueTodayCount > 0;
   
   let borderLeftColor = "transparent";
   let borderLeftWidth = "1px";
+  let boxShadowBase = 'metallic';
   
   if (hasOverdueActivities) {
     borderLeftColor = "red.400";
-    borderLeftWidth = "4px";
+    borderLeftWidth = "5px";
+    boxShadowBase = 'metallic, 0 0 0 1px rgba(239, 68, 68, 0.1)';
   } else if (hasDueTodayActivities) {
     borderLeftColor = "orange.400";
-    borderLeftWidth = "4px";
+    borderLeftWidth = "5px";
+    boxShadowBase = 'metallic, 0 0 0 1px rgba(251, 146, 60, 0.1)';
   }
 
   const baseStyle = {
@@ -124,7 +127,7 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
     borderLeftWidth: borderLeftWidth,
     borderLeftColor: borderLeftColor,
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    boxShadow: 'metallic',
+    boxShadow: boxShadowBase,
     position: 'relative',
     cursor: "pointer",
     _before: {
