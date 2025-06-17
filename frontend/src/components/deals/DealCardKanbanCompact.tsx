@@ -102,11 +102,11 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
   
   if (hasOverdueActivities) {
     borderLeftColor = "red.400";
-    borderLeftWidth = "4px";
+    borderLeftWidth = "3px";
     boxShadowHint = "0 0 0 1px rgba(239, 68, 68, 0.1)";
   } else if (hasDueTodayActivities) {
     borderLeftColor = "orange.400";
-    borderLeftWidth = "4px";
+    borderLeftWidth = "3px";
     boxShadowHint = "0 0 0 1px rgba(251, 146, 60, 0.1)";
   }
 

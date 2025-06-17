@@ -110,11 +110,11 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
   
   if (hasOverdueActivities) {
     borderLeftColor = "red.400";
-    borderLeftWidth = "5px";
+    borderLeftWidth = "4px";
     boxShadowBase = 'metallic, 0 0 0 1px rgba(239, 68, 68, 0.1)';
   } else if (hasDueTodayActivities) {
     borderLeftColor = "orange.400";
-    borderLeftWidth = "5px";
+    borderLeftWidth = "4px";
     boxShadowBase = 'metallic, 0 0 0 1px rgba(251, 146, 60, 0.1)';
   }
 
