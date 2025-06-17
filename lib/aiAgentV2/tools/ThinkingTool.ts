@@ -67,7 +67,7 @@ export class ThinkingTool {
   async execute(
     parameters: ThinkingParameters,
     context: ToolExecutionContext
-  ): Promise<ToolResult<ThinkingResult>> {
+  ): Promise<ToolResult> {
     try {
       const startTime = Date.now();
 
@@ -589,5 +589,18 @@ export class ThinkingTool {
 
   private generateSynthesisAlternatives(thought: string): string[] {
     return ['Use different synthesis frameworks', 'Validate synthesis with stakeholders'];
+  }
+
+  /**
+   * Get tool definition for registration
+   */
+  getDefinition() {
+    return {
+      name: this.name,
+      description: this.description,
+      parameters: this.parameters,
+      requiredPermissions: this.requiredPermissions,
+      execute: this.execute.bind(this)
+    };
   }
 } 
