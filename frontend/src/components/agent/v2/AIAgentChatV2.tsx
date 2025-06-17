@@ -32,6 +32,9 @@ import { useThemeColors } from '../../../hooks/useThemeColors';
 import { MessageBubbleV2 } from './MessageBubbleV2';
 import { ToolExecutionPanel } from './ToolExecutionPanel';
 import { ConversationStarter } from './ConversationStarter';
+import { useAgentV2, AgentV2Message } from '../../../hooks/useAgentV2';
+import { useMutation } from '@apollo/client';
+import { PROCESS_MESSAGE_V2 } from '../../../lib/graphql/agentV2Operations';
 
 interface Message {
   id: string;
@@ -61,14 +64,25 @@ interface ReasoningStep {
 
 export const AIAgentChatV2: React.FC = () => {
   const colors = useThemeColors();
-  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
   const { isOpen: showAdvanced, onToggle: toggleAdvanced } = useDisclosure();
+  
+  // Use the real V2 agent service
+  const { 
+    messages, 
+    isProcessing, 
+    sendMessage, 
+    clearMessages, 
+    healthStatus,
+    isHealthy
+  } = useAgentV2();
+
+  // Add direct GraphQL mutation for testing
+  const [testMutation] = useMutation(PROCESS_MESSAGE_V2);
 
   const chatBg = useColorModeValue('gray.50', 'gray.900');
   const inputBg = useColorModeValue('white', 'gray.800');
@@ -85,47 +99,52 @@ export const AIAgentChatV2: React.FC = () => {
   }, []);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isProcessing) return;
 
-    const userMessage: Message = {
-      id: `user-${Date.now()}`,
-      content: inputValue.trim(),
-      sender: 'user',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const messageContent = inputValue.trim();
     setInputValue('');
-    setIsLoading(true);
 
     try {
-      // This will integrate with your V2 agent service
-      const response = await sendToAgentV2(userMessage.content);
-      
-      const assistantMessage: Message = {
-        id: `assistant-${Date.now()}`,
-        content: response.message,
-        sender: 'assistant',
-        timestamp: new Date(),
-        toolCalls: response.toolCalls,
-        reasoning: response.reasoning,
-        systemContext: response.systemContext
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+      // Use the real V2 agent service
+      await sendMessage(messageContent, {
+        useAdvancedReasoning: showAdvanced,
+        maxToolCalls: 5,
+        thinkingDepth: 'standard',
+        responseStyle: 'professional'
+      });
     } catch (error) {
-      console.error('Error sending message:', error);
-      
-      const errorMessage: Message = {
-        id: `error-${Date.now()}`,
-        content: 'Sorry, I encountered an error. Please try again.',
-        sender: 'assistant',
-        timestamp: new Date()
-      };
+      console.error('Error sending message to V2 agent:', error);
+      // Error handling is done in the useAgentV2 hook
+    }
+  };
 
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
+  // Add test function for direct GraphQL call
+  const testDirectGraphQL = async () => {
+    try {
+      console.log('Testing direct GraphQL call...');
+      const { data } = await testMutation({
+        variables: {
+          input: {
+            message: "Test direct GraphQL call",
+            conversationContext: {
+              userId: "test-user",
+              recentMessages: []
+            },
+            config: {
+              useAdvancedReasoning: true,
+              maxToolCalls: 5,
+              thinkingDepth: "standard",
+              responseStyle: "professional"
+            }
+          }
+        }
+      });
+      
+      console.log('Direct GraphQL response:', data);
+      alert(`Direct GraphQL Success: ${data?.processMessageV2?.success}`);
+    } catch (error) {
+      console.error('Direct GraphQL error:', error);
+      alert(`Direct GraphQL Error: ${error}`);
     }
   };
 
@@ -137,7 +156,7 @@ export const AIAgentChatV2: React.FC = () => {
   };
 
   const clearConversation = () => {
-    setMessages([]);
+    clearMessages();
     inputRef.current?.focus();
   };
 
@@ -146,38 +165,7 @@ export const AIAgentChatV2: React.FC = () => {
     // Voice input implementation would go here
   };
 
-  // Mock function - replace with actual V2 agent integration
-  const sendToAgentV2 = async (message: string): Promise<{
-    message: string;
-    toolCalls?: ToolCall[];
-    reasoning?: ReasoningStep[];
-    systemContext?: any;
-  }> => {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
 
-    return {
-      message: `V2 Response to: "${message}"\n\nThis is a mock response from the V2 AI Agent. The actual implementation will use the ToolRegistryV2 and real GraphQL integration we just built.`,
-      toolCalls: [
-        {
-          id: 'tool-1',
-          tool: 'think',
-          parameters: { reasoning_type: 'analysis', thought: 'Analyzing user request' },
-          result: { confidence: 0.95, insights: ['User wants information', 'Should search data'] },
-          status: 'completed',
-          executionTime: 234
-        }
-      ],
-      reasoning: [
-        {
-          type: 'planning',
-          content: 'I need to understand what the user is asking for and plan my response.',
-          confidence: 0.9,
-          evidence: ['User message content', 'Previous conversation context']
-        }
-      ]
-    };
-  };
 
   return (
     <VStack h="full" spacing={0}>
@@ -274,7 +262,7 @@ export const AIAgentChatV2: React.FC = () => {
             ))}
             
             {/* Loading indicator */}
-            {isLoading && (
+            {isProcessing && (
               <HStack justify="center" py={4}>
                 <Spinner size="sm" color="blue.500" />
                 <Text fontSize="sm" color={colors.text.secondary}>
@@ -298,7 +286,7 @@ export const AIAgentChatV2: React.FC = () => {
         spacing={3}
       >
         {/* Tool Execution Panel (when tools are running) */}
-        {isLoading && (
+        {isProcessing && (
           <ToolExecutionPanel
             currentTool="think"
             progress={0.7}
@@ -324,8 +312,8 @@ export const AIAgentChatV2: React.FC = () => {
               borderColor: 'blue.300'
             }}
             size="lg"
-            borderRadius="xl"
-            disabled={isLoading}
+            disabled={isProcessing}
+            flex="1"
           />
           
           <Tooltip label={isListening ? "Stop listening" : "Voice input"}>
@@ -337,14 +325,14 @@ export const AIAgentChatV2: React.FC = () => {
               colorScheme={isListening ? "red" : "blue"}
               borderRadius="xl"
               onClick={toggleVoiceInput}
-              disabled={isLoading}
+              disabled={isProcessing}
             />
           </Tooltip>
           
           <Button
             leftIcon={<FiSend />}
             onClick={handleSendMessage}
-            isLoading={isLoading}
+            isLoading={isProcessing}
             loadingText="Sending"
             colorScheme="blue"
             size="lg"

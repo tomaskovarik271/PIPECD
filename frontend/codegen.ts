@@ -11,11 +11,12 @@ const config: CodegenConfig = {
         // Optional: You can add specific configurations for the preset or plugins here
         // e.g., naming conventions, enumsAsTypes, etc.
         // For now, defaults should be fine.
-        enumsAsTypes: true, // Generates string literal types for enums instead of TypeScript enums
+        enumsAsTypes: false, // Generate actual TypeScript enums for better imports
         strictScalars: true, // Makes scalars strict, useful for custom scalars if you define them
         useTypeImports: true, // Uses `import type` for generated types
         scalars: { // Add this section to map custom scalars
-          DateTime: 'string' // Map the GraphQL DateTime scalar to TypeScript string
+          DateTime: 'string', // Map the GraphQL DateTime scalar to TypeScript string
+          JSON: 'any' // Map the GraphQL JSON scalar to TypeScript any
         }
       },
       plugins: [] // No additional plugins needed if client-preset handles everything

@@ -1,0 +1,151 @@
+input AgentV2Request {
+  message: String!
+  conversationContext: ConversationContextInput
+  config: AgentV2ConfigInput
+}
+
+input ConversationContextInput {
+  conversationId: String
+  userId: String!
+  recentMessages: [String!]
+  systemState: String
+}
+
+input AgentV2ConfigInput {
+  useAdvancedReasoning: Boolean
+  maxToolCalls: Int
+  thinkingDepth: String
+  responseStyle: String
+}
+
+type AgentV2Response {
+  success: Boolean!
+  message: String!
+  data: JSON
+  toolCalls: [ToolCallV2!]
+  toolResults: [ToolResultV2!]
+  reasoning: [ReasoningStepV2!]
+  suggestions: [SuggestionV2!]
+  insights: [InsightV2!]
+  nextActions: [NextActionV2!]
+  metadata: AgentV2Metadata!
+  error: AgentV2Error
+}
+
+type ToolCallV2 {
+  id: String!
+  tool: String!
+  parameters: JSON!
+  reasoning: String
+  timestamp: DateTime!
+}
+
+type ToolResultV2 {
+  success: Boolean!
+  message: String
+  data: JSON
+  error: AgentV2Error
+  executionTime: Int
+}
+
+type ReasoningStepV2 {
+  step: Int!
+  type: String!
+  description: String!
+  confidence: Float!
+  evidence: [String!]!
+}
+
+type SuggestionV2 {
+  id: String!
+  type: String!
+  title: String!
+  description: String!
+  confidence: Float!
+  impact: String!
+  urgency: String!
+  actionable: Boolean!
+}
+
+type InsightV2 {
+  id: String!
+  type: String!
+  category: String!
+  content: String!
+  confidence: Float!
+  businessValue: String!
+  actionable: Boolean!
+  relatedEntities: [String!]!
+}
+
+type NextActionV2 {
+  id: String!
+  title: String!
+  description: String!
+  priority: String!
+  estimatedTime: String!
+  category: String!
+  requiresInput: Boolean!
+}
+
+type AgentV2Metadata {
+  agentVersion: String!
+  processingTime: Int!
+  systemStateTimestamp: DateTime
+  toolsUsed: [String!]!
+  confidenceScore: Float!
+  rateLimitStatus: RateLimitStatusV2!
+  cacheStatus: CacheStatusV2!
+  sources: [DataSourceV2!]!
+}
+
+type RateLimitStatusV2 {
+  remaining: Int!
+  resetTime: DateTime!
+  burst: Int!
+}
+
+type CacheStatusV2 {
+  systemStateFromCache: Boolean!
+  rulesFromCache: Boolean!
+  searchResultsFromCache: Boolean!
+}
+
+type DataSourceV2 {
+  type: String!
+  name: String!
+  version: String!
+  confidence: Float!
+}
+
+type AgentV2Error {
+  code: String!
+  message: String!
+  type: String!
+  recoverable: Boolean!
+  suggestions: [String!]
+}
+
+type AgentV2HealthCheck {
+  status: String!
+  components: AgentV2ComponentStatus!
+  lastCheck: DateTime!
+  uptime: Int!
+}
+
+type AgentV2ComponentStatus {
+  systemStateEncoder: String!
+  pipeCDRulesEngine: String!
+  semanticSearchEngine: String!
+  toolRegistry: String!
+  aiService: String!
+  graphQLClient: String!
+}
+
+type Query {
+  agentV2HealthCheck: AgentV2HealthCheck!
+}
+
+type Mutation {
+  processMessageV2(input: AgentV2Request!): AgentV2Response!
+} 

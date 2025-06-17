@@ -41,7 +41,7 @@ export class AgentService {
     this.systemStateEncoder = new SystemStateEncoder(supabaseUrl, supabaseKey);
     this.rulesEngine = new PipeCDRulesEngine();
     this.promptGenerator = new EnhancedSystemPrompt(this.systemStateEncoder, this.rulesEngine);
-    this.toolExecutor = new ToolExecutor(supabaseUrl, supabaseKey);
+    this.toolExecutor = new ToolExecutor(this.rulesEngine);
     this.aiService = new AIService(anthropicApiKey);
     this.workflowOrchestrator = new WorkflowOrchestrator(this.toolExecutor, this.rulesEngine);
 

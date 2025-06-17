@@ -403,6 +403,12 @@ export class ToolExecutor {
     return Array.from(this.registeredTools.keys());
   }
 
+  async getAvailableTools(userId: string): Promise<Tool[]> {
+    // Return all registered tools for now
+    // In the future, this could filter based on user permissions
+    return Array.from(this.registeredTools.values());
+  }
+
   getToolDefinition(toolName: string): Tool | undefined {
     return this.registeredTools.get(toolName);
   }

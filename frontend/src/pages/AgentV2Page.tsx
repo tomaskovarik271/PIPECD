@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   VStack,
@@ -18,11 +18,13 @@ import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
 import { AIAgentChatV2 } from '../components/agent/v2/AIAgentChatV2';
 import { SystemStatusPanel } from '../components/agent/v2/SystemStatusPanel';
 import { ToolCategoryPanel } from '../components/agent/v2/ToolCategoryPanel';
+import { useAgentV2 } from '../hooks/useAgentV2';
 
 const AgentV2Page: React.FC = () => {
   const colors = useThemeColors();
-  const [isConnected, setIsConnected] = useState(false);
-  const [systemHealth, setSystemHealth] = useState<'healthy' | 'degraded' | 'offline'>('healthy');
+  
+  // Use real V2 agent health status
+  const { healthStatus, isHealthy } = useAgentV2();
 
   const bgGradient = useColorModeValue(
     'linear(to-br, blue.50, purple.50, teal.50)',
@@ -32,25 +34,10 @@ const AgentV2Page: React.FC = () => {
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.700');
 
-  // Check system health on mount
-  useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        // This would connect to your GraphQL health check
-        setIsConnected(true);
-        setSystemHealth('healthy');
-      } catch (error) {
-        setIsConnected(false);
-        setSystemHealth('offline');
-      }
-    };
-
-    checkHealth();
-    
-    // Check health every 30 seconds
-    const interval = setInterval(checkHealth, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // Determine system health from V2 status
+  const systemHealth = healthStatus.status === 'healthy' ? 'healthy' : 
+                      healthStatus.status === 'degraded' ? 'degraded' : 'offline';
+  const isConnected = isHealthy;
 
   const features = [
     {
