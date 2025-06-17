@@ -16,7 +16,7 @@ import {
 } from '@chakra-ui/react';
 import { Deal } from '../../stores/useDealsStore';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { TimeIcon, ExternalLinkIcon, EditIcon, ViewIcon as EyeIcon } from '@chakra-ui/icons';
 import { differenceInDays, formatDistanceToNowStrict, isPast, format } from 'date-fns';
@@ -68,6 +68,7 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
   const colors = useThemeColors();
   const styles = useThemeStyles();
   const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
+  const navigate = useNavigate();
 
   const placeholderTags = [deal.currentWfmStep?.status?.name].filter(Boolean) as string[];
   if (deal.amount && deal.amount > 50000) placeholderTags.push('High Value');
@@ -103,6 +104,7 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     boxShadow: 'metallic',
     position: 'relative',
+    cursor: "pointer",
     _before: {
       content: '""',
       position: 'absolute',
@@ -138,6 +140,12 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
     },
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation when dragging
+    if (e.defaultPrevented) return;
+    navigate(`/deals/${deal.id}`);
+  };
+
   return (
     <Draggable draggableId={deal.id} index={index}>
       {(provided: DraggableProvided, snapshot: DraggableStateSnapshot) => (
@@ -149,21 +157,20 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
           mb={4}
           {...(snapshot.isDragging ? draggingStyle : baseStyle)}
           position="relative"
+          onClick={handleCardClick}
         >
           <VStack align="stretch" spacing={3}>
             <HStack justify="space-between" mb={2}>
               <VStack align="start" spacing={0.5}>
-                <RouterLink to={`/deals/${deal.id}`} style={{ textDecoration: 'none' }}>
-                  <Text 
-                    fontWeight="bold" 
-                    color={colors.text.primary}
-                    _hover={{ color: colors.text.link }}
-                    fontSize="md"
-                    lineHeight="1.3"
-                  >
-                    {deal.name}
-                  </Text>
-                </RouterLink>
+                <Text 
+                  fontWeight="bold" 
+                  color={colors.text.primary}
+                  fontSize="md"
+                  lineHeight="1.3"
+                  noOfLines={2}
+                >
+                  {deal.name}
+                </Text>
                 <Text fontSize="sm" color={colors.text.muted}>
                   {deal.organization?.name || '-'}
                 </Text>
