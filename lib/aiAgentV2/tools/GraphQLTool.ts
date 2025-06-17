@@ -1,4 +1,5 @@
 import type { ToolExecutionContext, ToolResult } from '../types/tools.js';
+import { graphqlClient } from '../utils/RealGraphQLClient.js';
 
 /**
  * Base class for V2 tools that interact with GraphQL
@@ -35,39 +36,39 @@ export abstract class GraphQLTool {
   }
 
   /**
-   * Mock GraphQL request - replace with actual GraphQL client integration
+   * Real GraphQL request using PipeCD's GraphQL client
    */
   private async makeGraphQLRequest(
     query: string,
     variables: Record<string, any>,
     context: ToolExecutionContext
   ): Promise<{ data?: any; errors?: any[] }> {
-    // This is where you'd integrate with your actual GraphQL client
-    // Example using fetch:
-    /*
-    const response = await fetch('/.netlify/functions/graphql', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${context.authToken}`,
-      },
-      body: JSON.stringify({
-        query,
-        variables,
-      }),
-    });
+    try {
+      // Use the real GraphQL client that connects to /.netlify/functions/graphql
+      const response = await graphqlClient.request(
+        {
+          query,
+          variables
+        },
+        context
+      );
 
-    return response.json();
-    */
-
-    // For now, return a mock response structure
-    console.log(`[MOCK] GraphQL Query: ${query.replace(/\s+/g, ' ').trim()}`);
-    console.log(`[MOCK] Variables:`, variables);
-    
-    return {
-      data: {},
-      errors: undefined
-    };
+      return {
+        data: response.data,
+        errors: response.errors
+      };
+    } catch (error: any) {
+      // Convert client errors to GraphQL error format
+      return {
+        data: null,
+        errors: [{
+          message: error.message,
+          extensions: {
+            code: 'CLIENT_ERROR'
+          }
+        }]
+      };
+    }
   }
 
   /**

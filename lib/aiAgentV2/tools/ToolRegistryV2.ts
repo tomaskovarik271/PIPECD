@@ -5,6 +5,10 @@ import { SearchOrganizationsTool } from './SearchOrganizationsTool.js';
 import { CreateOrganizationTool } from './CreateOrganizationTool.js';
 import { GetDropdownDataTool } from './GetDropdownDataTool.js';
 import { CreateDealTool } from './CreateDealTool.js';
+import { SearchDealsTool } from './SearchDealsTool.js';
+import { SearchContactsTool } from './SearchContactsTool.js';
+import { GetDetailsTool } from './GetDetailsTool.js';
+import { CreateContactTool } from './CreateContactTool.js';
 import { ThinkingTool } from './ThinkingTool.js';
 
 export interface ToolDefinition {
@@ -53,13 +57,27 @@ export class ToolRegistryV2 {
     const createOrganizationTool = new CreateOrganizationTool();
     this.registerTool(createOrganizationTool.getDefinition(), 'organizations');
 
+    // Contact/People tools
+    const searchContactsTool = new SearchContactsTool();
+    this.registerTool(searchContactsTool.getDefinition(), 'contacts');
+
+    const createContactTool = new CreateContactTool();
+    this.registerTool(createContactTool.getDefinition(), 'contacts');
+
+    // Deal tools
+    const searchDealsTool = new SearchDealsTool();
+    this.registerTool(searchDealsTool.getDefinition(), 'deals');
+
+    const createDealTool = new CreateDealTool();
+    this.registerTool(createDealTool.getDefinition(), 'deals');
+
+    // Universal detail tool
+    const getDetailsTool = new GetDetailsTool();
+    this.registerTool(getDetailsTool.getDefinition(), 'system');
+
     // System tools
     const getDropdownDataTool = new GetDropdownDataTool();
     this.registerTool(getDropdownDataTool.getDefinition(), 'system');
-
-    // Deal tools
-    const createDealTool = new CreateDealTool();
-    this.registerTool(createDealTool.getDefinition(), 'deals');
   }
 
   /**
@@ -80,18 +98,25 @@ export class ToolRegistryV2 {
       color: '#059669'
     });
 
-    this.categories.set('system', {
-      name: 'System & Metadata',
-      description: 'Tools for accessing system data, dropdown options, and configuration',
-      tools: ['get_dropdown_data'],
-      color: '#DC2626'
+    this.categories.set('contacts', {
+      name: 'Contact Management',
+      description: 'Tools for searching, creating, and managing contacts/people',
+      tools: ['search_contacts', 'create_contact'],
+      color: '#7C3AED'
     });
 
     this.categories.set('deals', {
       name: 'Deal Management',
-      description: 'Tools for creating, updating, and managing sales deals',
-      tools: ['create_deal'],
+      description: 'Tools for searching, creating, and managing sales deals',
+      tools: ['search_deals', 'create_deal'],
       color: '#2563EB'
+    });
+
+    this.categories.set('system', {
+      name: 'System & Metadata',
+      description: 'Tools for accessing system data, dropdown options, and detailed information',
+      tools: ['get_dropdown_data', 'get_details'],
+      color: '#DC2626'
     });
   }
 
