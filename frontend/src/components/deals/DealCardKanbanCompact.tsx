@@ -92,26 +92,66 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
     dueDateColor = colors.text.error;
   }
 
+  // Enhanced styling based on activity urgency
+  const hasOverdueActivities = activityIndicators.overdueCount > 0;
+  const hasDueTodayActivities = activityIndicators.dueTodayCount > 0;
+  
+  let urgentBorderColor = colors.border.default;
+  let urgentBorderWidth = "1px";
+  let urgentBorderLeftWidth = "1px";
+  let urgentBorderLeftColor = "transparent";
+  
+  if (hasOverdueActivities) {
+    urgentBorderColor = "red.200";
+    urgentBorderWidth = "1px";
+    urgentBorderLeftWidth = "4px";
+    urgentBorderLeftColor = "red.500";
+  } else if (hasDueTodayActivities) {
+    urgentBorderColor = "orange.200";
+    urgentBorderWidth = "1px";
+    urgentBorderLeftWidth = "4px";
+    urgentBorderLeftColor = "orange.400";
+  }
+
   const baseStyle = {
     bg: colors.bg.elevated,
-    p: 3, // Reduced from 5 to 3
-    borderRadius: "md", // Reduced from lg to md
-    borderWidth: "1px",
-    borderColor: colors.border.default,
-    transition: "all 0.2s ease", // Faster transition
+    p: 3,
+    borderRadius: "md",
+    borderWidth: urgentBorderWidth,
+    borderColor: urgentBorderColor,
+    borderLeftWidth: urgentBorderLeftWidth,
+    borderLeftColor: urgentBorderLeftColor,
+    transition: "all 0.2s ease",
     cursor: "pointer",
+    position: "relative" as const,
     _hover: {
-      transform: "translateY(-2px)", // Reduced from -4px
-      boxShadow: `0 8px 15px -3px rgba(59, 130, 246, 0.1)`, // Smaller shadow
-      borderColor: 'rgba(59, 130, 246, 0.3)',
+      transform: "translateY(-2px)",
+      boxShadow: hasOverdueActivities 
+        ? `0 8px 15px -3px rgba(239, 68, 68, 0.2)` 
+        : hasDueTodayActivities 
+        ? `0 8px 15px -3px rgba(251, 146, 60, 0.2)`
+        : `0 8px 15px -3px rgba(59, 130, 246, 0.1)`,
+      borderColor: hasOverdueActivities 
+        ? "red.300" 
+        : hasDueTodayActivities 
+        ? "orange.300"
+        : 'rgba(59, 130, 246, 0.3)',
       bg: colors.bg.elevated,
     }
   };
 
   const draggingStyle = {
     ...baseStyle,
-    borderColor: 'rgba(59, 130, 246, 0.6)',
-    boxShadow: `0 15px 25px -5px rgba(59, 130, 246, 0.15)`,
+    borderColor: hasOverdueActivities 
+      ? "red.400" 
+      : hasDueTodayActivities 
+      ? "orange.400"
+      : 'rgba(59, 130, 246, 0.6)',
+    boxShadow: hasOverdueActivities 
+      ? `0 15px 25px -5px rgba(239, 68, 68, 0.25)` 
+      : hasDueTodayActivities 
+      ? `0 15px 25px -5px rgba(251, 146, 60, 0.25)`
+      : `0 15px 25px -5px rgba(59, 130, 246, 0.15)`,
     transform: 'translateY(-3px) rotate(1deg)',
     bg: colors.bg.elevated,
   };

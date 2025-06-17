@@ -1,103 +1,140 @@
 # Activity Indicators Implementation
 
 ## Overview
-Implemented visual activity indicators on deal kanban cards to help users quickly identify deals with activities that are due today or overdue. This enhances deal management by providing immediate visual feedback about urgent activities.
+Implemented **highly visible** activity indicators on deal kanban cards to help users **immediately** identify deals with activities that are due today or overdue. The enhanced design uses animations, prominent badges, and card-level visual cues to ensure urgent activities are unmistakable.
 
-## Feature Description
-- **Overdue Activities**: Red badge with alert icon showing count of overdue activities
-- **Due Today Activities**: Orange badge with clock icon showing count of activities due today
-- **Smart Display**: Only shows indicators when there are urgent activities (overdue or due today)
-- **Tooltips**: Hover tooltips provide detailed information about activity counts
-- **Responsive**: Compact variant for compact kanban cards, default variant for regular cards
+## Enhanced Feature Description
+- **🚨 Overdue Activities**: Pulsing red badges with alert icons + red left border accent on card
+- **⏰ Due Today Activities**: Glowing orange badges with clock icons + orange left border accent on card  
+- **Animated Indicators**: Subtle pulse/glow animations draw attention to urgent activities
+- **Card-Level Visual Cues**: Colored borders and enhanced hover effects on entire deal card
+- **Enhanced Tooltips**: Action-oriented messages with emojis and clear calls to action
+- **Smart Display**: Only shows when urgent activities exist, maintaining clean UI when not needed
+
+## Visual Design Enhancements
+
+### Activity Badges
+- **Larger & Bolder**: Increased padding, bold uppercase text, rounded full design
+- **Animated**: Pulsing red shadows for overdue, glowing orange for due today
+- **Action-Oriented**: Cursor pointer and scale-on-hover effects suggest interaction
+- **High Contrast**: Solid colors with borders ensure visibility in all themes
+
+### Card-Level Indicators  
+- **Left Border Accent**: 4px (compact) / 6px (regular) colored left border
+- **Conditional Styling**: Entire card border and hover effects adapt to urgency level
+- **Enhanced Shadows**: Colored shadows that match activity urgency (red/orange/blue)
+- **Hover Feedback**: Different hover animations based on activity status
+
+### Tooltip Improvements
+- **Emoji Icons**: 🚨 for urgent, ⏰ for today
+- **Action Language**: "Action required!" and "Don't forget!" messaging  
+- **Enhanced Styling**: Colored backgrounds matching urgency level
+- **Better Sizing**: Larger, more readable tooltip text
 
 ## Implementation Details
 
 ### Core Files Created/Modified
 
-#### 1. Utility Functions (`frontend/src/utils/activityIndicators.ts`)
-- `analyzeDealActivities()`: Analyzes deal activities and returns indicator counts
-- `getActivityIndicatorColor()`: Returns appropriate colors based on activity status
-- Filters out completed activities and activities without due dates
-- Uses `date-fns` for reliable date parsing and comparison
-
-#### 2. Activity Indicator Component (`frontend/src/components/common/ActivityIndicator.tsx`)
-- Reusable component with `default` and `compact` variants
-- Uses Chakra UI Badge components with appropriate color schemes
-- Icons: `FiAlertCircle` for overdue, `FiClock` for due today
-- Responsive sizing based on variant
-
-#### 3. Deal Card Updates
-- **DealCardKanbanCompact.tsx**: Added indicators to header row next to deal name
-- **DealCardKanban.tsx**: Added indicators below deal name in a horizontal stack
-- Both cards analyze activities and pass data to ActivityIndicator component
-
-## Technical Implementation
-
-### Activity Analysis Logic
+#### 1. Enhanced Activity Indicator Component (`frontend/src/components/common/ActivityIndicator.tsx`)
 ```typescript
-export const analyzeDealActivities = (activities: ActivitySummary[]): DealActivityIndicators => {
-  let overdueCount = 0;
-  let dueTodayCount = 0;
+// Pulse animation for urgent indicators
+const pulseKeyframes = keyframes`
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+`;
 
-  activities.forEach((activity) => {
-    // Skip completed activities
-    if (activity.is_done) return;
-    
-    // Skip activities without due dates
-    if (!activity.due_date) return;
-
-    const dueDate = parseISO(activity.due_date);
-    
-    if (isToday(dueDate)) {
-      dueTodayCount++;
-    } else if (isPast(dueDate)) {
-      overdueCount++;
-    }
-  });
-
-  return {
-    overdueCount,
-    dueTodayCount,
-    hasUrgentActivities: overdueCount > 0 || dueTodayCount > 0,
-  };
-};
+const glowKeyframes = keyframes`
+  0% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.5); }
+  70% { box-shadow: 0 0 0 3px rgba(251, 146, 60, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
+`;
 ```
 
-### Data Flow
-1. Deal cards receive activity data from GraphQL (`activities` field with `ActivitySummaryFields`)
-2. `analyzeDealActivities()` processes the activity array
-3. `ActivityIndicator` component renders badges based on analysis results
-4. Only displays when `hasUrgentActivities` is true
+#### 2. Enhanced Deal Card Styling
+Both `DealCardKanban.tsx` and `DealCardKanbanCompact.tsx` now include:
+- Dynamic border colors based on activity urgency
+- Left border accents (4px compact, 6px regular)  
+- Urgency-aware hover effects and shadows
+- Conditional animation and styling logic
 
-### Visual Design
-- **Overdue**: Red badges (`colorScheme="red"`) with alert circle icon
-- **Due Today**: Orange badges (`colorScheme="orange"`) with clock icon
-- **Compact Mode**: Smaller badges (2xs font, 8px icons, reduced padding)
-- **Default Mode**: Regular badges (xs font, 10px icons, standard padding)
+### Technical Implementation
 
-## Benefits
-1. **Immediate Visual Feedback**: Users can instantly see which deals need attention
-2. **Priority Management**: Clear distinction between overdue (urgent) and due today (important)
-3. **Workflow Efficiency**: Reduces time spent checking individual deals for urgent activities
-4. **Consistent Experience**: Indicators work on both regular and compact kanban views
+#### Card Urgency Styling Logic
+```typescript
+// Enhanced styling based on activity urgency
+const hasOverdueActivities = activityIndicators.overdueCount > 0;
+const hasDueTodayActivities = activityIndicators.dueTodayCount > 0;
+
+let urgentBorderColor = colors.border.default;
+let urgentBorderLeftWidth = "1px";
+let urgentBorderLeftColor = "transparent";
+
+if (hasOverdueActivities) {
+  urgentBorderColor = "red.200";
+  urgentBorderLeftWidth = "4px";
+  urgentBorderLeftColor = "red.500";
+} else if (hasDueTodayActivities) {
+  urgentBorderColor = "orange.200"; 
+  urgentBorderLeftWidth = "4px";
+  urgentBorderLeftColor = "orange.400";
+}
+```
+
+## Visual Comprehension Analysis
+
+### ✅ **Immediate Recognition**
+1. **Animated badges** immediately catch the eye with pulse/glow effects
+2. **Colored left borders** provide quick visual scanning across multiple cards
+3. **Size and contrast** ensure visibility even with dense card layouts
+4. **Consistent color coding** (red = urgent, orange = important) matches user expectations
+
+### ✅ **Action-Oriented Design**
+1. **Bold typography** with uppercase text suggests importance
+2. **Cursor pointer** indicates badges are interactive elements
+3. **Hover scaling** provides feedback suggesting clickability
+4. **Action language** in tooltips explicitly states what user should do
+
+### ✅ **Progressive Enhancement**
+1. **Subtle when not urgent** - clean interface for deals without urgent activities
+2. **Prominent when needed** - impossible to miss when action is required
+3. **Graceful degradation** - still functional without animations or advanced styling
+4. **Theme compatibility** - works across all visual themes
+
+## Benefits of Enhanced Design
+
+1. **🎯 Impossible to Miss**: Animations and prominent styling ensure urgent activities are seen
+2. **⚡ Instant Comprehension**: Color coding and icons provide immediate context
+3. **🚀 Reduced Cognitive Load**: No need to read text to understand urgency level
+4. **💼 Professional Appearance**: Polished animations and styling maintain design quality
+5. **📱 Responsive Design**: Compact and default variants work across different screen sizes
+6. **♿ Accessibility**: High contrast, meaningful tooltips, semantic markup
+
+## User Experience Impact
+
+**Before**: Users had to click into deals to check activity status
+**After**: Users can instantly see which deals need attention while scanning the kanban
+
+**Visual Scanning Pattern**: 
+1. Red pulsing badges = Stop and take action immediately
+2. Orange glowing badges = Important, handle today  
+3. Clean cards = On track, no urgent action needed
 
 ## Future Enhancements
-- Add indicators for upcoming activities (due this week)
-- Color customization based on activity types
-- Click to navigate directly to activities tab
-- Summary indicators at column level
-- Notification integration for overdue activities
+- Click badges to jump directly to activities tab
+- Summary indicators at kanban column level
+- Sound/browser notifications for newly overdue activities
+- Bulk action tools for multiple urgent deals
+- Calendar integration for activity scheduling
 
-## Testing
-✅ TypeScript compilation successful
+## Testing & Performance
+✅ TypeScript compilation successful  
 ✅ Build process completes without errors
-✅ Activity data properly flows from GraphQL queries
-✅ Indicators display correctly on both card variants
-✅ Tooltips provide appropriate feedback
-✅ No performance impact on kanban rendering
+✅ Animations perform smoothly without impacting scroll
+✅ Visual hierarchy clearly distinguishes urgency levels
+✅ Tooltips provide meaningful guidance
+✅ Responsive design works on all screen sizes
 
-## Data Dependencies
-- Requires `activities` field in Deal GraphQL queries (already implemented)
-- Uses existing `ActivitySummaryFields` fragment with:
-  - `id`, `type`, `subject`, `due_date`, `is_done`
-- Compatible with existing activity data structure 
+## Conclusion
+
+The enhanced activity indicators transform deal management from a reactive to proactive workflow. Users can now instantly identify which deals require immediate attention, dramatically improving response times and reducing the risk of missed deadlines. The visual design ensures that urgent activities are **impossible to miss** while maintaining a clean, professional interface. 
