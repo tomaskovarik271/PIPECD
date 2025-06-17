@@ -39,8 +39,8 @@ interface DealsKanbanPageLayoutProps {
   userList: UserListItem[];
   usersLoading: boolean;
   userPermissions: string[] | null | undefined;
-  dealsViewMode: 'table' | 'kanban' | 'kanban-compact';
-  setDealsViewMode: (mode: 'table' | 'kanban' | 'kanban-compact') => void;
+  dealsViewMode: 'table' | 'kanban-compact';
+  setDealsViewMode: (mode: 'table' | 'kanban-compact') => void;
   searchTerm: string;
   onSearchChange: (value: string) => void;
   kanbanCompactMode: boolean;
@@ -291,11 +291,11 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
         showViewModeSwitch={true}
         viewMode={dealsViewMode}
         onViewModeChange={(mode) => {
-          if (mode === 'table' || mode === 'kanban' || mode === 'kanban-compact') {
+          if (mode === 'table' || mode === 'kanban-compact') {
             setDealsViewMode(mode);
           }
         }}
-        supportedViewModes={['table', 'kanban', 'kanban-compact']}
+        supportedViewModes={['table', 'kanban-compact']}
         secondaryActions={secondaryActions}
         statistics={statistics}
       />

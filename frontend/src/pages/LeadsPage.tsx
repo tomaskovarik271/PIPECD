@@ -258,9 +258,9 @@ function LeadsPage() {
   }, [resetTableToDefaults, defaultVisibleColumnKeys]);
 
   // Early return for kanban mode (matches DealsPage structure)
-  if (leadsViewMode === 'kanban' || leadsViewMode === 'kanban-compact') {
-    // Map the new 3-state view mode to the existing compact mode for backward compatibility
-    const isCompactMode = leadsViewMode === 'kanban-compact';
+  if (leadsViewMode === 'kanban-compact') {
+    // Always use compact mode for kanban view
+    const isCompactMode = true;
     
     return (
       <>
@@ -280,8 +280,8 @@ function LeadsPage() {
           onSearchChange={setSearchTerm}
           kanbanCompactMode={isCompactMode}
           setKanbanCompactMode={(isCompact: boolean) => {
-            // Map compact state back to the 3-state view mode
-            setLeadsViewMode(isCompact ? 'kanban-compact' : 'kanban');
+            // Always stay in compact mode - no toggle functionality
+            setLeadsViewMode('kanban-compact');
           }}
         />
 
@@ -333,11 +333,11 @@ function LeadsPage() {
         showViewModeSwitch={true}
         viewMode={leadsViewMode}
         onViewModeChange={(mode) => {
-          if (mode === 'table' || mode === 'kanban' || mode === 'kanban-compact') {
+          if (mode === 'table' || mode === 'kanban-compact') {
             setLeadsViewMode(mode);
           }
         }}
-        supportedViewModes={['table', 'kanban', 'kanban-compact']}
+        supportedViewModes={['table', 'kanban-compact']}
         secondaryActions={secondaryActions}
         statistics={statistics}
       />

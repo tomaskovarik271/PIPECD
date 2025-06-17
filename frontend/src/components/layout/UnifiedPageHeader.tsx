@@ -59,7 +59,7 @@ const UnifiedPageHeader: React.FC<UnifiedPageHeaderProps> = ({
   viewMode,
   onViewModeChange,
   showViewModeSwitch = false,
-  supportedViewModes = ['table', 'kanban', 'kanban-compact'],
+  supportedViewModes = ['table', 'kanban-compact'],
   statistics,
   userPermissions,
   requiredPermission,
@@ -135,25 +135,10 @@ const UnifiedPageHeader: React.FC<UnifiedPageHeaderProps> = ({
                   onClick={() => onViewModeChange('table')}
                 />
               )}
-              {supportedViewModes.includes('kanban') && (
-                <IconButton
-                  aria-label="Kanban view - Visual cards with full details"
-                  icon={<TbLayoutColumns size={18} />}
-                  size="md"
-                  variant={viewMode === 'kanban' ? 'solid' : 'outline'}
-                  colorScheme={viewMode === 'kanban' ? 'blue' : undefined}
-                  bg={viewMode === 'kanban' ? colors.interactive.default : colors.component.button.secondary}
-                  borderColor={colors.border.input}
-                  color={viewMode === 'kanban' ? colors.text.onAccent : colors.text.primary}
-                  _hover={{
-                    bg: viewMode === 'kanban' ? colors.interactive.hover : colors.component.button.secondaryHover
-                  }}
-                  onClick={() => onViewModeChange('kanban')}
-                />
-              )}
+
               {supportedViewModes.includes('kanban-compact') && (
                 <IconButton
-                  aria-label="Compact kanban - Dense view with more deals visible"
+                  aria-label="Kanban view - Visual cards organized by workflow stage"
                   icon={<TbLayoutGrid size={18} />}
                   size="md"
                   variant={viewMode === 'kanban-compact' ? 'solid' : 'outline'}

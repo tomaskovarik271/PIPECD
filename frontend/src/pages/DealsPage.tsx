@@ -246,9 +246,9 @@ function DealsPage() {
     </Button>
   ) : null;
 
-  if (dealsViewMode === 'kanban' || dealsViewMode === 'kanban-compact') {
-    // Map the new 3-state view mode to the existing compact mode for backward compatibility
-    const isCompactMode = dealsViewMode === 'kanban-compact';
+  if (dealsViewMode === 'kanban-compact') {
+    // Always use compact mode for kanban view
+    const isCompactMode = true;
     
     return (
       <>
@@ -271,8 +271,8 @@ function DealsPage() {
           onSearchChange={setSearchTerm}
         kanbanCompactMode={isCompactMode}
         setKanbanCompactMode={(isCompact: boolean) => {
-          // Map compact state back to the 3-state view mode
-          setDealsViewMode(isCompact ? 'kanban-compact' : 'kanban');
+          // Always stay in compact mode - no toggle functionality
+          setDealsViewMode('kanban-compact');
         }}
         />
 
@@ -333,11 +333,11 @@ function DealsPage() {
         showViewModeSwitch={true}
         viewMode={dealsViewMode}
         onViewModeChange={(mode) => {
-          if (mode === 'table' || mode === 'kanban' || mode === 'kanban-compact') {
+          if (mode === 'table' || mode === 'kanban-compact') {
             setDealsViewMode(mode);
           }
         }}
-        supportedViewModes={['table', 'kanban', 'kanban-compact']}
+        supportedViewModes={['table', 'kanban-compact']}
         secondaryActions={secondaryActions}
         statistics={statistics}
       />

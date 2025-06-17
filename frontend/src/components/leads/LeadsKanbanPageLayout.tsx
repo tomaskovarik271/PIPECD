@@ -33,8 +33,8 @@ interface LeadsKanbanPageLayoutProps {
   userList: UserListItem[];
   usersLoading: boolean;
   userPermissions: string[] | null | undefined;
-  leadsViewMode: 'table' | 'kanban' | 'kanban-compact';
-  setLeadsViewMode: (mode: 'table' | 'kanban' | 'kanban-compact') => void;
+  leadsViewMode: 'table' | 'kanban-compact';
+  setLeadsViewMode: (mode: 'table' | 'kanban-compact') => void;
   searchTerm: string;
   onSearchChange: (value: string) => void;
   kanbanCompactMode: boolean;
@@ -194,11 +194,11 @@ const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
         showViewModeSwitch={true}
         viewMode={leadsViewMode}
         onViewModeChange={(mode) => {
-          if (mode === 'table' || mode === 'kanban' || mode === 'kanban-compact') {
+          if (mode === 'table' || mode === 'kanban-compact') {
             setLeadsViewMode(mode);
           }
         }}
-        supportedViewModes={['table', 'kanban', 'kanban-compact']}
+        supportedViewModes={['table', 'kanban-compact']}
         secondaryActions={secondaryActions}
         statistics={statistics}
       />

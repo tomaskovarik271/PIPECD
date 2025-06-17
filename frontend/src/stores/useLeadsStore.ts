@@ -220,20 +220,20 @@ interface LeadsState {
   updateLeadWFMProgress: (leadId: string, targetWfmWorkflowStepId: string) => Promise<Lead | null>;
 
   // View State and Actions
-  leadsViewMode: 'table' | 'kanban' | 'kanban-compact';
-  setLeadsViewMode: (mode: 'table' | 'kanban' | 'kanban-compact') => void;
+  leadsViewMode: 'table' | 'kanban-compact';
+  setLeadsViewMode: (mode: 'table' | 'kanban-compact') => void;
   kanbanCompactMode: boolean;
   setKanbanCompactMode: (isCompact: boolean) => void;
 }
 
 // Local storage helpers
-const getLeadsViewModeFromLocalStorage = (): 'table' | 'kanban' | 'kanban-compact' => {
+const getLeadsViewModeFromLocalStorage = (): 'table' | 'kanban-compact' => {
   try {
     const stored = localStorage.getItem('leadsViewMode');
-    if (stored === 'kanban' || stored === 'kanban-compact') return stored;
-    return 'table';
+    if (stored === 'kanban-compact' || stored === 'table') return stored;
+    return 'kanban-compact'; // Default to 'kanban-compact' instead of 'table'
   } catch {
-    return 'table';
+    return 'kanban-compact';
   }
 };
 
@@ -246,7 +246,7 @@ const getKanbanCompactModeFromLocalStorage = (): boolean => {
   }
 };
 
-const setLeadsViewModeInLocalStorage = (mode: 'table' | 'kanban' | 'kanban-compact') => {
+const setLeadsViewModeInLocalStorage = (mode: 'table' | 'kanban-compact') => {
   try {
     localStorage.setItem('leadsViewMode', mode);
   } catch {
@@ -405,7 +405,7 @@ export const useLeadsStore = create<LeadsState>((set, get) => ({
     }
   },
 
-  setLeadsViewMode: (mode: 'table' | 'kanban' | 'kanban-compact') => {
+  setLeadsViewMode: (mode: 'table' | 'kanban-compact') => {
     set({ leadsViewMode: mode });
     setLeadsViewModeInLocalStorage(mode);
   },
