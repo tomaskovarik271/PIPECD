@@ -4,19 +4,19 @@ import type { WfmWorkflowStep } from '../../generated/graphql/graphql';
 import { Lead } from '../../stores/useLeadsStore';
 import { Droppable, DroppableProvided, DroppableStateSnapshot } from '@hello-pangea/dnd';
 import LeadCardKanban from './LeadCardKanban.tsx';
+import LeadCardKanbanCompact from './LeadCardKanbanCompact.tsx';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
-
-
 
 interface LeadsKanbanStepColumnProps {
   step: WfmWorkflowStep;
   leads: Lead[];
   estimatedValueSum: number;
   index: number;
+  isCompact?: boolean;
 }
 
-const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo(({ step, leads, estimatedValueSum, index }) => {
+const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo(({ step, leads, estimatedValueSum, index, isCompact = false }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
 
@@ -105,13 +105,21 @@ const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo((
             </Box>
             
             {/* Lead Cards */}
-            <VStack spacing={4} align="stretch" flexGrow={1}>
+            <VStack spacing={isCompact ? 2 : 4} align="stretch" flexGrow={1}>
               {leads.map((lead, idx) => (
-                <LeadCardKanban 
-                  key={lead.id} 
-                  lead={lead} 
-                  index={idx}
-                />
+                isCompact ? (
+                  <LeadCardKanbanCompact 
+                    key={lead.id} 
+                    lead={lead} 
+                    index={idx}
+                  />
+                ) : (
+                  <LeadCardKanban 
+                    key={lead.id} 
+                    lead={lead} 
+                    index={idx}
+                  />
+                )
               ))}
               {/* @ts-ignore */}
               {provided.placeholder as any}

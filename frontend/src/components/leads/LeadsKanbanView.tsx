@@ -233,6 +233,7 @@ const LeadsKanbanView: React.FC<LeadsKanbanViewProps> = ({ leads, isCompact = fa
                       leads={leadsByWfmStep[step.id] || []} 
                       estimatedValueSum={estimatedValueByStepId[step.id] || 0}
                       index={index}
+                      isCompact={isCompact}
                     />
                   ))}
               </Flex>
