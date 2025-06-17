@@ -529,9 +529,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
             height: '100%',
             background: currentThemeName === 'industrialMetal' 
         ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)'
-        : currentThemeName === 'lightModern'
-        ? 'linear-gradient(180deg, rgba(99, 102, 241, 0.6) 0%, rgba(99, 102, 241, 0.8) 50%, rgba(99, 102, 241, 0.6) 100%)'
-        : 'linear-gradient(180deg, rgba(102, 126, 234, 0.6) 0%, rgba(102, 126, 234, 0.8) 50%, rgba(102, 126, 234, 0.6) 100%)',
+        : 'transparent',
             borderRadius: '0 0 0 lg',
           }}
           _hover={{ 
@@ -749,11 +747,9 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
         left: 0,
         right: 0,
         height: '2px',
-        background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
-  ? 'rgba(255, 170, 0, 0.6)' 
-  : currentThemeName === 'lightModern'
-  ? 'rgba(99, 102, 241, 0.6)'
-  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+        background: currentThemeName === 'industrialMetal' 
+          ? 'linear-gradient(90deg, transparent 0%, rgba(255, 170, 0, 0.6) 50%, transparent 100%)'
+          : 'transparent',
         pointerEvents: 'none',
       }}
     >
@@ -831,11 +827,9 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
             left: '8px',
             right: '8px',
             height: '1px',
-            background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
-  ? 'rgba(255, 170, 0, 0.6)' 
-  : currentThemeName === 'lightModern'
-  ? 'rgba(99, 102, 241, 0.6)'
-  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+            background: currentThemeName === 'industrialMetal' 
+              ? 'linear-gradient(90deg, transparent 0%, rgba(255, 170, 0, 0.6) 50%, transparent 100%)'
+              : 'transparent',
           }}
         >
           <Tab>

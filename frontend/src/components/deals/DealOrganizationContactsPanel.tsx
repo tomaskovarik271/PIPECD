@@ -116,11 +116,7 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
         left: 0,
         right: 0,
         height: '2px',
-        background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
-  ? 'rgba(255, 170, 0, 0.6)' 
-  : currentThemeName === 'lightModern'
-  ? 'rgba(99, 102, 241, 0.6)'
-  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+        background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' ? 'rgba(255, 170, 0, 0.6)' : 'transparent'} 50%, transparent 100%)`,
         pointerEvents: 'none',
       }}
     >
@@ -180,11 +176,7 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
                 left: 0,
                 width: '3px',
                 height: '100%',
-                background: currentThemeName === 'industrialMetal' 
-        ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)'
-        : currentThemeName === 'lightModern'
-        ? 'linear-gradient(180deg, rgba(99, 102, 241, 0.6) 0%, rgba(99, 102, 241, 0.8) 50%, rgba(99, 102, 241, 0.6) 100%)'
-        : 'linear-gradient(180deg, rgba(102, 126, 234, 0.6) 0%, rgba(102, 126, 234, 0.8) 50%, rgba(102, 126, 234, 0.6) 100%)',
+                background: currentThemeName === 'industrialMetal' ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)' : 'transparent',
                 borderRadius: '0 0 0 md',
               }}
               _hover={{ 

@@ -88,11 +88,7 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
         left: 0,
         right: 0,
         height: '2px',
-        background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
-  ? 'rgba(255, 170, 0, 0.6)' 
-  : currentThemeName === 'lightModern'
-  ? 'rgba(99, 102, 241, 0.6)'
-  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+        background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' ? 'rgba(255, 170, 0, 0.6)' : 'transparent'} 50%, transparent 100%)`,
         pointerEvents: 'none',
       }}
     >
@@ -118,11 +114,7 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
             left: '8px',
             right: '8px',
             height: '1px',
-            background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
-  ? 'rgba(255, 170, 0, 0.6)' 
-  : currentThemeName === 'lightModern'
-  ? 'rgba(99, 102, 241, 0.6)'
-  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+            background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' ? 'rgba(255, 170, 0, 0.6)' : 'transparent'} 50%, transparent 100%)`,
           }}
         >
           <Tab 

@@ -786,11 +786,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
         right: 0,
         height: '2px',
         background: currentThemeName === 'industrialMetal' 
-          ? `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
-  ? 'rgba(255, 170, 0, 0.8)' 
-  : currentThemeName === 'lightModern'
-  ? 'rgba(99, 102, 241, 0.8)'
-  : 'rgba(102, 126, 234, 0.8)'} 50%, transparent 100%)`
+          ? `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' ? 'rgba(255, 170, 0, 0.8)' : 'transparent'} 50%, transparent 100%)`
           : currentThemeName === 'lightModern'
           ? 'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.8) 50%, transparent 100%)'
           : 'linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.8) 50%, transparent 100%)',
@@ -827,11 +823,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
               left: '0',
               right: '0',
               height: '1px',
-              background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
-  ? 'rgba(255, 170, 0, 0.8)' 
-  : currentThemeName === 'lightModern'
-  ? 'rgba(99, 102, 241, 0.8)'
-  : 'rgba(102, 126, 234, 0.8)'} 50%, transparent 100%)`,
+              background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' ? 'rgba(255, 170, 0, 0.8)' : 'transparent'} 50%, transparent 100%)`,
             }}
           >
             <VStack spacing={3} align="stretch">
@@ -1103,11 +1095,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                       boxShadow: 'industrial3d',
                       borderColor: colors.component.kanban.cardBorder,
                       _before: {
-                        background: currentThemeName === 'industrialMetal' 
-        ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)'
-        : currentThemeName === 'lightModern'
-        ? 'linear-gradient(180deg, rgba(99, 102, 241, 0.6) 0%, rgba(99, 102, 241, 0.8) 50%, rgba(99, 102, 241, 0.6) 100%)'
-        : 'linear-gradient(180deg, rgba(102, 126, 234, 0.6) 0%, rgba(102, 126, 234, 0.8) 50%, rgba(102, 126, 234, 0.6) 100%)',
+                        background: currentThemeName === 'industrialMetal' ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)' : 'transparent',
                       },
                     }}
                     onClick={() => handleThreadSelect(thread.id)}
@@ -1183,11 +1171,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                     left: '0',
                     right: '0',
                     height: '1px',
-                    background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
-  ? 'rgba(255, 170, 0, 0.8)' 
-  : currentThemeName === 'lightModern'
-  ? 'rgba(99, 102, 241, 0.8)'
-  : 'rgba(102, 126, 234, 0.8)'} 50%, transparent 100%)`,
+                    background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' ? 'rgba(255, 170, 0, 0.8)' : 'transparent'} 50%, transparent 100%)`,
                   }}
                 >
                   <VStack spacing={3} align="stretch">
