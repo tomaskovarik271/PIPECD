@@ -32,14 +32,21 @@ export class ECBService {
    */
   static async fetchECBRates(): Promise<ECBApiResponse> {
     try {
+      // Add timeout to prevent hanging requests
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
       // Using exchangerate-api.com as it provides ECB data in JSON format
       const response = await fetch(ECB_API_URL, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
           'User-Agent': 'PipeCD-CRM/1.0'
-        }
+        },
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error(`ECB API request failed: ${response.status} ${response.statusText}`);
@@ -53,6 +60,9 @@ export class ECBService {
 
       return data;
     } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('ECB API request timed out after 8 seconds');
+      }
       console.error('ECB API fetch error:', error);
       throw new Error(`Failed to fetch ECB rates: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
@@ -63,11 +73,11 @@ export class ECBService {
    */
   static async updateRatesFromECB(): Promise<{ success: boolean; message: string; updatedCount: number }> {
     try {
-      // Starting ECB exchange rate update
+      console.log('🔄 Starting ECB exchange rate update');
       
       // Fetch latest rates from ECB
       const ecbData = await this.fetchECBRates();
-      // Fetched ECB rates for ${Object.keys(ecbData.rates).length} currencies
+      console.log(`📊 Fetched ECB rates for ${Object.keys(ecbData.rates).length} currencies`);
 
       // Get list of supported currencies from our database
       const { data: currencies, error: currenciesError } = await this.supabase
@@ -80,21 +90,23 @@ export class ECBService {
       }
 
       const supportedCurrencies = new Set(currencies?.map(c => c.code) || []);
-      // Found ${supportedCurrencies.size} supported currencies in database
+      console.log(`💰 Found ${supportedCurrencies.size} supported currencies in database`);
 
-      // Prepare rate updates
-      const rateUpdates: ECBRateUpdate[] = [];
+      // Prepare rate updates for batch operation
+      const rateUpdates: any[] = [];
       const effectiveDate = ecbData.date || new Date().toISOString().split('T')[0];
+      const currentTimestamp = new Date().toISOString();
 
       // EUR to other currencies (direct from ECB)
       Object.entries(ecbData.rates).forEach(([toCurrency, rate]) => {
         if (supportedCurrencies.has(toCurrency) && typeof rate === 'number' && rate > 0) {
           rateUpdates.push({
-            fromCurrency: 'EUR',
-            toCurrency,
+            from_currency: 'EUR',
+            to_currency: toCurrency,
             rate,
-            effectiveDate,
-            source: 'ecb'
+            effective_date: effectiveDate,
+            source: 'ecb',
+            updated_at: currentTimestamp
           });
         }
       });
@@ -103,16 +115,17 @@ export class ECBService {
       Object.entries(ecbData.rates).forEach(([fromCurrency, rate]) => {
         if (supportedCurrencies.has(fromCurrency) && typeof rate === 'number' && rate > 0) {
           rateUpdates.push({
-            fromCurrency,
-            toCurrency: 'EUR',
+            from_currency: fromCurrency,
+            to_currency: 'EUR',
             rate: 1 / rate, // Inverse rate
-            effectiveDate,
-            source: 'ecb'
+            effective_date: effectiveDate,
+            source: 'ecb',
+            updated_at: currentTimestamp
           });
         }
       });
 
-      // Prepared ${rateUpdates.length} rate updates
+      console.log(`🔄 Prepared ${rateUpdates.length} rate updates for batch operation`);
 
       if (rateUpdates.length === 0) {
         return {
@@ -122,46 +135,47 @@ export class ECBService {
         };
       }
 
-      // Update rates in database (upsert to handle existing rates)
-      let updatedCount = 0;
+      // OPTIMIZATION: Use batch upsert instead of individual operations
+      // Process in smaller chunks to avoid memory issues
+      const BATCH_SIZE = 50;
+      let totalUpdatedCount = 0;
       const errors: string[] = [];
 
-      for (const update of rateUpdates) {
+      for (let i = 0; i < rateUpdates.length; i += BATCH_SIZE) {
+        const batch = rateUpdates.slice(i, i + BATCH_SIZE);
+        
         try {
-          const { error } = await this.supabase
+          const { data, error } = await this.supabase
             .from('exchange_rates')
-            .upsert({
-              from_currency: update.fromCurrency,
-              to_currency: update.toCurrency,
-              rate: update.rate,
-              effective_date: update.effectiveDate,
-              source: update.source,
-              updated_at: new Date().toISOString()
-            }, {
+            .upsert(batch, {
               onConflict: 'from_currency,to_currency,effective_date',
               ignoreDuplicates: false
-            });
+            })
+            .select('from_currency, to_currency');
 
           if (error) {
-            errors.push(`${update.fromCurrency}->${update.toCurrency}: ${error.message}`);
+            errors.push(`Batch ${Math.floor(i/BATCH_SIZE) + 1}: ${error.message}`);
           } else {
-            updatedCount++;
+            totalUpdatedCount += batch.length;
+            console.log(`✅ Updated batch ${Math.floor(i/BATCH_SIZE) + 1}: ${batch.length} rates`);
           }
         } catch (error) {
-          errors.push(`${update.fromCurrency}->${update.toCurrency}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          const errorMsg = `Batch ${Math.floor(i/BATCH_SIZE) + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+          errors.push(errorMsg);
+          console.error('❌ Batch update error:', errorMsg);
         }
       }
 
-      // Successfully updated ${updatedCount} exchange rates
+      console.log(`🎉 Successfully updated ${totalUpdatedCount} exchange rates`);
       
       if (errors.length > 0) {
-        console.warn(`⚠️ ${errors.length} errors during update:`, errors);
+        console.warn(`⚠️ ${errors.length} batch errors during update:`, errors);
       }
 
       return {
         success: true,
-        message: `Successfully updated ${updatedCount} exchange rates from ECB${errors.length > 0 ? ` (${errors.length} errors)` : ''}`,
-        updatedCount
+        message: `Successfully updated ${totalUpdatedCount} exchange rates from ECB${errors.length > 0 ? ` (${errors.length} batch errors)` : ''}`,
+        updatedCount: totalUpdatedCount
       };
 
     } catch (error) {

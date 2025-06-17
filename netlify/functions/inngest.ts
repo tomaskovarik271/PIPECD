@@ -506,55 +506,108 @@ export const cleanupExpiredNotifications = inngest.createFunction(
 
 // Function to update exchange rates from ECB API
 export const updateExchangeRatesFromECB = inngest.createFunction(
-  { id: 'update-exchange-rates-ecb', name: 'Update Exchange Rates from ECB' },
+  { 
+    id: 'update-exchange-rates-ecb', 
+    name: 'Update Exchange Rates from ECB',
+    retries: 2, // Only retry twice for transient errors
+  },
   { cron: '0 6 * * 1-5' }, // Run weekdays at 6 AM (ECB updates rates around 4 PM CET)
   async ({ event, step }) => {
     console.log('[Inngest Fn: updateExchangeRatesFromECB] Starting scheduled ECB exchange rate update');
 
     try {
-      // Step 1: Test ECB API connectivity
+      // Step 1: Test ECB API connectivity with timeout
       const connectionStatus = await step.run('test-ecb-connection', async () => {
+        console.log('[Inngest Fn: updateExchangeRatesFromECB] Testing ECB API connectivity...');
         return await ECBService.testECBConnection();
       });
 
       if (!connectionStatus.success) {
-        throw new Error(`ECB API connection failed: ${connectionStatus.message}`);
+        // Don't retry for API connectivity issues as they're likely external
+        console.error(`[Inngest Fn: updateExchangeRatesFromECB] ECB API connection failed: ${connectionStatus.message}`);
+        return { 
+          success: false, 
+          error: `ECB API unavailable: ${connectionStatus.message}`,
+          retry: false, // Don't retry API connectivity issues
+          message: 'ECB API connection failed - will retry on next schedule'
+        };
       }
 
-      console.log('[Inngest Fn: updateExchangeRatesFromECB] ECB API connection successful');
+      console.log('[Inngest Fn: updateExchangeRatesFromECB] ✅ ECB API connection successful');
 
-      // Step 2: Update exchange rates
+      // Step 2: Update exchange rates with optimized batch processing
       const updateResult = await step.run('update-rates-from-ecb', async () => {
-        return await ECBService.updateRatesFromECB();
+        console.log('[Inngest Fn: updateExchangeRatesFromECB] Updating exchange rates...');
+        const startTime = Date.now();
+        
+        const result = await ECBService.updateRatesFromECB();
+        
+        const duration = Date.now() - startTime;
+        console.log(`[Inngest Fn: updateExchangeRatesFromECB] Update completed in ${duration}ms`);
+        
+        return { ...result, duration };
       });
 
       if (!updateResult.success) {
         throw new Error(`ECB rate update failed: ${updateResult.message}`);
       }
 
-      console.log(`[Inngest Fn: updateExchangeRatesFromECB] Successfully updated ${updateResult.updatedCount} exchange rates from ECB`);
+      console.log(`[Inngest Fn: updateExchangeRatesFromECB] ✅ Successfully updated ${updateResult.updatedCount} exchange rates from ECB in ${updateResult.duration}ms`);
 
-      // Step 3: Get update status for logging
+      // Step 3: Get update status for monitoring
       const statusResult = await step.run('get-update-status', async () => {
+        console.log('[Inngest Fn: updateExchangeRatesFromECB] Getting update status...');
         return await ECBService.getECBUpdateStatus();
       });
 
-      return { 
+      const finalResult = { 
         success: true, 
         updatedCount: updateResult.updatedCount,
         totalRates: statusResult.totalECBRates || 0,
         lastUpdate: statusResult.lastUpdate,
-        message: `Updated ${updateResult.updatedCount} exchange rates from ECB API`
+        duration: updateResult.duration,
+        supportedCurrencies: statusResult.supportedCurrencies.length,
+        message: `Updated ${updateResult.updatedCount} exchange rates from ECB API in ${updateResult.duration}ms`
       };
+
+      console.log('[Inngest Fn: updateExchangeRatesFromECB] Final result:', finalResult);
+      return finalResult;
+
     } catch (error) {
       console.error('[Inngest Fn: updateExchangeRatesFromECB] Error:', error);
       
-      // Log the error but don't throw to prevent infinite retries
+      // Check if it's a timeout error
+      const isTimeoutError = error instanceof Error && (
+        error.message.includes('timeout') ||
+        error.message.includes('timed out') ||
+        error.message.includes('AbortError')
+      );
+
+      // Check if it's a weekend/holiday when ECB doesn't update
+      const isWeekend = [0, 6].includes(new Date().getDay()); // Sunday = 0, Saturday = 6
+      
+      if (isWeekend) {
+        console.log('[Inngest Fn: updateExchangeRatesFromECB] Weekend detected - ECB likely not updating rates');
+        return { 
+          success: false, 
+          error: 'Weekend - ECB not updating',
+          retry: false, // Don't retry on weekends
+          message: 'ECB exchange rate update skipped - weekend/holiday'
+        };
+      }
+
+      if (isTimeoutError) {
+        console.error('[Inngest Fn: updateExchangeRatesFromECB] Timeout error detected - this may indicate function timeout issues');
+      }
+
+      // For production monitoring: Log but don't throw to prevent infinite retries
       // ECB API failures are expected on weekends/holidays
       return { 
         success: false, 
         error: error instanceof Error ? error.message : 'Unknown error',
-        message: 'ECB exchange rate update failed - will retry on next schedule'
+        isTimeout: isTimeoutError,
+        timestamp: new Date().toISOString(),
+        message: `ECB exchange rate update failed${isTimeoutError ? ' (timeout)' : ''} - will retry on next schedule`
       };
     }
   }

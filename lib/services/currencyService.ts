@@ -266,7 +266,7 @@ export class CurrencyService {
         convertedAmount: amount,
         convertedCurrency: toCurrency.toUpperCase(),
         exchangeRate: 1.0,
-        effectiveDate: effectiveDate || new Date().toISOString().split('T')[0],
+        effectiveDate: effectiveDate ?? new Date().toISOString().split('T')[0],
         formattedOriginal: formatted,
         formattedConverted: formatted,
       };
