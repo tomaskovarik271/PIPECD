@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../../lib/supabaseClient';
 import { getISOEndOfDay } from '../../lib/dateUtils';
 import { serve } from 'inngest/lambda';
 
+// Environment variable validation
 if (!process.env.INNGEST_EVENT_KEY) {
   throw new Error('INNGEST_EVENT_KEY environment variable is not set.');
 }
@@ -17,8 +18,20 @@ if (!process.env.INNGEST_SIGNING_KEY) {
 }
 
 if (!process.env.SYSTEM_USER_ID) {
-    console.warn('SYSTEM_USER_ID environment variable is not set. Cannot create system-generated activities.');
+  console.warn('SYSTEM_USER_ID environment variable is not set. Assignment task functions will fail.');
 }
+
+if (!supabaseAdmin) {
+  console.warn('supabaseAdmin is not initialized. Database-dependent functions will fail.');
+}
+
+console.log('[Inngest Init] Environment validation complete:', {
+  hasEventKey: !!process.env.INNGEST_EVENT_KEY,
+  hasSigningKey: !!process.env.INNGEST_SIGNING_KEY,
+  hasSystemUserId: !!process.env.SYSTEM_USER_ID,
+  hasSupabaseAdmin: !!supabaseAdmin,
+  nodeEnv: process.env.NODE_ENV
+});
 
 export const inngest = new Inngest({
   id: 'pipe-cd-crm',
@@ -82,15 +95,17 @@ export const createDealAssignmentTask = inngest.createFunction(
     const systemUserId = process.env.SYSTEM_USER_ID;
     if (!systemUserId) {
       console.error('[Inngest Fn: createDealAssignmentTask] SYSTEM_USER_ID environment variable is not set. Skipping activity creation.');
-      // Optionally, throw an error to make the step fail and retry if this is critical
-      throw new Error('SYSTEM_USER_ID is not configured.'); 
+      // Import NonRetriableError for configuration issues
+      const { NonRetriableError } = await import('inngest');
+      throw new NonRetriableError('SYSTEM_USER_ID is not configured - this is a configuration issue'); 
     }
 
     try {
       const newActivity = await step.run('create-review-activity', async () => {
         if (!supabaseAdmin) {
           console.error('[Inngest Fn: createDealAssignmentTask] supabaseAdmin is not initialized. SUPABASE_SERVICE_ROLE_KEY might be missing. Skipping activity creation.');
-          throw new Error('supabaseAdmin is not initialized. Cannot create system activity.');
+          const { NonRetriableError } = await import('inngest');
+          throw new NonRetriableError('supabaseAdmin is not initialized - SUPABASE_SERVICE_ROLE_KEY missing');
         }
 
         const activityInput = {
@@ -113,7 +128,7 @@ export const createDealAssignmentTask = inngest.createFunction(
 
         if (activityError) {
           console.error('[Inngest Fn: createDealAssignmentTask] Error creating activity:', activityError);
-          throw activityError; // This will make the Inngest step fail and retry
+          throw new Error(`Database error creating activity: ${activityError.message}`);
         }
         if (!createdActivity) {
           console.error('[Inngest Fn: createDealAssignmentTask] Failed to create activity, no data returned.');
@@ -126,8 +141,14 @@ export const createDealAssignmentTask = inngest.createFunction(
       return { success: true, activityId: newActivity.id, message: `Activity created for deal ${event.data.dealName}` };
     } catch (error) {
       console.error('[Inngest Fn: createDealAssignmentTask] Overall error in function execution:', error);
-      // Ensure the error is re-thrown if not handled by a step retry, so Inngest knows the run failed.
-      throw error;
+      
+      // Re-throw NonRetriableErrors as-is
+      if (error instanceof Error && error.name === 'NonRetriableError') {
+        throw error;
+      }
+      
+      // For other errors, wrap them appropriately
+      throw new Error(`Deal assignment task failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 );
@@ -144,14 +165,16 @@ export const createLeadAssignmentTask = inngest.createFunction(
     const systemUserId = process.env.SYSTEM_USER_ID;
     if (!systemUserId) {
       console.error('[Inngest Fn: createLeadAssignmentTask] SYSTEM_USER_ID environment variable is not set. Skipping activity creation.');
-      throw new Error('SYSTEM_USER_ID is not configured.'); 
+      const { NonRetriableError } = await import('inngest');
+      throw new NonRetriableError('SYSTEM_USER_ID is not configured - this is a configuration issue'); 
     }
 
     try {
       const newActivity = await step.run('create-lead-review-activity', async () => {
         if (!supabaseAdmin) {
           console.error('[Inngest Fn: createLeadAssignmentTask] supabaseAdmin is not initialized. SUPABASE_SERVICE_ROLE_KEY might be missing. Skipping activity creation.');
-          throw new Error('supabaseAdmin is not initialized. Cannot create system activity.');
+          const { NonRetriableError } = await import('inngest');
+          throw new NonRetriableError('supabaseAdmin is not initialized - SUPABASE_SERVICE_ROLE_KEY missing');
         }
 
         const activityInput = {
@@ -174,7 +197,7 @@ export const createLeadAssignmentTask = inngest.createFunction(
 
         if (activityError) {
           console.error('[Inngest Fn: createLeadAssignmentTask] Error creating activity:', activityError);
-          throw activityError; // This will make the Inngest step fail and retry
+          throw new Error(`Database error creating activity: ${activityError.message}`);
         }
         if (!createdActivity) {
           console.error('[Inngest Fn: createLeadAssignmentTask] Failed to create activity, no data returned.');
@@ -187,7 +210,14 @@ export const createLeadAssignmentTask = inngest.createFunction(
       return { success: true, activityId: newActivity.id, message: `Activity created for lead ${event.data.leadName}` };
     } catch (error) {
       console.error('[Inngest Fn: createLeadAssignmentTask] Overall error in function execution:', error);
-      throw error;
+      
+      // Re-throw NonRetriableErrors as-is
+      if (error instanceof Error && error.name === 'NonRetriableError') {
+        throw error;
+      }
+      
+      // For other errors, wrap them appropriately
+      throw new Error(`Lead assignment task failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 );
@@ -515,7 +545,18 @@ export const updateExchangeRatesFromECB = inngest.createFunction(
   async ({ event, step }) => {
     console.log('[Inngest Fn: updateExchangeRatesFromECB] Starting scheduled ECB exchange rate update');
 
+    // Import NonRetriableError for better error handling
+    const { NonRetriableError } = await import('inngest');
+
     try {
+      // Check if it's a weekend/holiday when ECB doesn't update
+      const isWeekend = [0, 6].includes(new Date().getDay()); // Sunday = 0, Saturday = 6
+      
+      if (isWeekend) {
+        console.log('[Inngest Fn: updateExchangeRatesFromECB] Weekend detected - ECB likely not updating rates');
+        throw new NonRetriableError('Weekend - ECB not updating rates on weekend/holiday');
+      }
+
       // Step 1: Test ECB API connectivity with timeout
       const connectionStatus = await step.run('test-ecb-connection', async () => {
         console.log('[Inngest Fn: updateExchangeRatesFromECB] Testing ECB API connectivity...');
@@ -523,14 +564,9 @@ export const updateExchangeRatesFromECB = inngest.createFunction(
       });
 
       if (!connectionStatus.success) {
-        // Don't retry for API connectivity issues as they're likely external
+        // API connectivity issues are usually external and shouldn't be retried immediately
         console.error(`[Inngest Fn: updateExchangeRatesFromECB] ECB API connection failed: ${connectionStatus.message}`);
-        return { 
-          success: false, 
-          error: `ECB API unavailable: ${connectionStatus.message}`,
-          retry: false, // Don't retry API connectivity issues
-          message: 'ECB API connection failed - will retry on next schedule'
-        };
+        throw new NonRetriableError(`ECB API unavailable: ${connectionStatus.message}`);
       }
 
       console.log('[Inngest Fn: updateExchangeRatesFromECB] ✅ ECB API connection successful');
@@ -549,6 +585,7 @@ export const updateExchangeRatesFromECB = inngest.createFunction(
       });
 
       if (!updateResult.success) {
+        // If the service itself reports failure, this might be retryable
         throw new Error(`ECB rate update failed: ${updateResult.message}`);
       }
 
@@ -576,6 +613,11 @@ export const updateExchangeRatesFromECB = inngest.createFunction(
     } catch (error) {
       console.error('[Inngest Fn: updateExchangeRatesFromECB] Error:', error);
       
+      // If it's already a NonRetriableError, just re-throw it
+      if (error instanceof Error && error.name === 'NonRetriableError') {
+        throw error;
+      }
+
       // Check if it's a timeout error
       const isTimeoutError = error instanceof Error && (
         error.message.includes('timeout') ||
@@ -583,32 +625,22 @@ export const updateExchangeRatesFromECB = inngest.createFunction(
         error.message.includes('AbortError')
       );
 
-      // Check if it's a weekend/holiday when ECB doesn't update
-      const isWeekend = [0, 6].includes(new Date().getDay()); // Sunday = 0, Saturday = 6
-      
-      if (isWeekend) {
-        console.log('[Inngest Fn: updateExchangeRatesFromECB] Weekend detected - ECB likely not updating rates');
-        return { 
-          success: false, 
-          error: 'Weekend - ECB not updating',
-          retry: false, // Don't retry on weekends
-          message: 'ECB exchange rate update skipped - weekend/holiday'
-        };
-      }
-
       if (isTimeoutError) {
         console.error('[Inngest Fn: updateExchangeRatesFromECB] Timeout error detected - this may indicate function timeout issues');
+        // Timeout errors might be transient, so allow retries
+        throw new Error(`Function timeout: ${error instanceof Error ? error.message : 'Unknown timeout error'}`);
       }
 
-      // For production monitoring: Log but don't throw to prevent infinite retries
-      // ECB API failures are expected on weekends/holidays
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error',
-        isTimeout: isTimeoutError,
-        timestamp: new Date().toISOString(),
-        message: `ECB exchange rate update failed${isTimeoutError ? ' (timeout)' : ''} - will retry on next schedule`
-      };
+      // For other errors, determine if they should be retryable
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      
+      // API errors that suggest external service issues (non-retryable)
+      if (errorMessage.includes('ECB API') || errorMessage.includes('unavailable')) {
+        throw new NonRetriableError(`External service error: ${errorMessage}`);
+      }
+
+      // Database or internal errors might be retryable
+      throw new Error(`ECB exchange rate update failed: ${errorMessage}`);
     }
   }
 );
