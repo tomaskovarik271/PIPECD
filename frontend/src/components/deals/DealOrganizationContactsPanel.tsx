@@ -21,6 +21,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom';
 import { EmailIcon, PhoneIcon, InfoIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { usePeopleStore } from '../../stores/usePeopleStore';
 
 interface DealOrganizationContactsPanelProps {
@@ -36,6 +37,7 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
   onContactCountChange,
 }) => {
   const colors = useThemeColors();
+  const currentThemeName = useThemeStore((state) => state.currentTheme);
   const { people, fetchPeople, peopleLoading, peopleError } = usePeopleStore();
   const [organizationContacts, setOrganizationContacts] = useState<any[]>([]);
 
@@ -99,23 +101,47 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
   }
 
   return (
-    <>
+    <Box
+      bg={colors.component.kanban.column} 
+      borderRadius="xl" 
+      borderWidth="1px"
+      borderColor={colors.component.kanban.cardBorder}
+      boxShadow="steelPlate"
+      p={6}
+      position="relative"
+      _before={{
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
+  ? 'rgba(255, 170, 0, 0.6)' 
+  : currentThemeName === 'lightModern'
+  ? 'rgba(99, 102, 241, 0.6)'
+  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+        pointerEvents: 'none',
+      }}
+    >
       <Flex justifyContent="space-between" alignItems="center" mb={3}>
         <Heading size="sm" color={colors.text.primary}>Organization Contacts</Heading>
         <HStack spacing={2}>
           <Badge variant="subtle" colorScheme="blue" fontSize="xs">
             {organizationContacts.length} contact{organizationContacts.length !== 1 ? 's' : ''}
           </Badge>
-          <Tooltip label="View organization profile">
-            <IconButton
-              as={RouterLink}
-              to={`/organizations/${organization.id}`}
-              icon={<ExternalLinkIcon />}
-              aria-label="View organization"
-              size="xs"
-              variant="ghost"
-            />
-          </Tooltip>
+          {organization && (
+            <Tooltip label="View organization profile">
+              <IconButton
+                as={RouterLink}
+                to={`/organizations/${organization.id}`}
+                icon={<ExternalLinkIcon />}
+                aria-label="View organization"
+                size="xs"
+                variant="ghost"
+              />
+            </Tooltip>
+          )}
         </HStack>
       </Flex>
 
@@ -136,21 +162,38 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
           </Button>
         </Center>
       ) : (
-        <VStack spacing={3} align="stretch" bg={colors.bg.elevated} p={4} borderRadius="lg" borderWidth="1px" borderColor={colors.border.default}>
+        <VStack spacing={3} align="stretch" bg={colors.component.kanban.card} p={4} borderRadius="lg" borderWidth="1px" borderColor={colors.component.kanban.cardBorder} boxShadow="metallic">
           {organizationContacts.map((contact) => (
             <Box 
               key={contact.id} 
               p={3}
               borderRadius="md"
-              bg={colors.bg.surface}
+              bg={colors.component.kanban.card}
               borderWidth="1px"
-              borderColor={colors.border.default}
-              _hover={{ 
-                borderColor: colors.interactive.default,
-                transform: 'translateY(-1px)',
-                boxShadow: 'sm'
+              borderColor={colors.component.kanban.cardBorder}
+              boxShadow="metallic"
+              position="relative"
+              _before={{
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '3px',
+                height: '100%',
+                background: currentThemeName === 'industrialMetal' 
+        ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)'
+        : currentThemeName === 'lightModern'
+        ? 'linear-gradient(180deg, rgba(99, 102, 241, 0.6) 0%, rgba(99, 102, 241, 0.8) 50%, rgba(99, 102, 241, 0.6) 100%)'
+        : 'linear-gradient(180deg, rgba(102, 126, 234, 0.6) 0%, rgba(102, 126, 234, 0.8) 50%, rgba(102, 126, 234, 0.6) 100%)',
+                borderRadius: '0 0 0 md',
               }}
-              transition="all 0.2s"
+              _hover={{ 
+                borderColor: colors.component.kanban.cardBorder,
+                transform: 'translateX(4px) translateY(-1px)',
+                boxShadow: 'industrial3d',
+                bg: colors.component.kanban.cardHover,
+              }}
+              transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
             >
               <HStack spacing={3} align="start">
                 <Avatar 
@@ -241,6 +284,6 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
           )}
         </VStack>
       )}
-    </>
+    </Box>
   );
 }; 

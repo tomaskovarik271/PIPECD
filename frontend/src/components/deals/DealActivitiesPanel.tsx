@@ -31,6 +31,7 @@ import { Activity, ActivityType as GQLActivityType } from '../../stores/useActiv
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../stores/useAppStore';
 import ActivitiesCalendarView from '../activities/ActivitiesCalendarView';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 interface DealActivitiesPanelProps {
   activities: Activity[];
@@ -55,6 +56,8 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
 }) => {
   const colors = useThemeColors();
   const appStore = useAppStore();
+  const themeStore = useThemeStore();
+  const currentThemeName = useThemeStore((state) => state.currentTheme);
   
   // View mode state (local to this component)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
@@ -63,6 +66,18 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
   const userPermissions = appStore.userPermissions;
   const session = appStore.session;
   const currentUserId = session?.user.id;
+
+  // Helper function for theme-specific accent colors
+  const getAccentColor = () => {
+    switch (currentThemeName) {
+      case 'industrialMetal':
+        return 'rgba(255, 170, 0, 0.6)'; // Hazard yellow for industrial only
+      case 'lightModern':
+        return '#6366f1'; // Indigo for light modern
+      default:
+        return '#667eea'; // Blue for modern dark
+    }
+  };
 
   // Sort activities by due date and completion status for better timeline view
   const sortedActivities = React.useMemo(() => {
@@ -138,19 +153,39 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
         p={4} 
         borderWidth="1px" 
         borderRadius="lg" 
-        borderColor={isOverdue ? colors.status.error : (colors.border.default || 'gray.200')}
+        borderColor={isOverdue ? colors.status.error : colors.component.kanban.cardBorder}
         justifyContent="space-between" 
         alignItems="center" 
-        bg={activity.is_done ? colors.bg.surface : (colors.bg.surface || 'gray.50')}
+        bg={activity.is_done ? colors.component.kanban.card : colors.component.kanban.card}
         _hover={{
-          borderColor: colors.interactive.default || 'blue.400', 
-          transform: 'translateY(-1px)',
-          boxShadow: 'md'
+          borderColor: colors.component.kanban.cardBorder, 
+          transform: 'translateX(4px) translateY(-1px)',
+          boxShadow: 'industrial3d',
+          bg: colors.component.kanban.cardHover,
         }}
         minW={0}
         w="100%"
-        transition="all 0.2s ease"
-        boxShadow={isOverdue ? `0 0 0 1px ${colors.status.error}` : 'sm'}
+        transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+        boxShadow={isOverdue ? 'forgeFire' : 'metallic'}
+        position="relative"
+        _before={{
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '3px',
+          height: '100%',
+          background: isOverdue 
+            ? 'linear-gradient(180deg, rgba(239, 68, 68, 0.8) 0%, rgba(239, 68, 68, 1) 50%, rgba(239, 68, 68, 0.8) 100%)'
+            : activity.is_done
+              ? 'linear-gradient(180deg, rgba(34, 197, 94, 0.8) 0%, rgba(34, 197, 94, 1) 50%, rgba(34, 197, 94, 0.8) 100%)'
+              : currentThemeName === 'industrialMetal' 
+                ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)'
+                : currentThemeName === 'lightModern'
+                ? 'linear-gradient(180deg, rgba(99, 102, 241, 0.6) 0%, rgba(99, 102, 241, 0.8) 50%, rgba(99, 102, 241, 0.6) 100%)'
+                : 'linear-gradient(180deg, rgba(102, 126, 234, 0.6) 0%, rgba(102, 126, 234, 0.8) 50%, rgba(102, 126, 234, 0.6) 100%)',
+          borderRadius: '0 0 0 lg',
+        }}
       >
         <HStack spacing={3} alignItems="center" flex={1} minW={0}>
           <Tooltip 
@@ -272,14 +307,34 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
 
     return (
       <Box mb={6}>
-        <HStack spacing={2} mb={3}>
-          <Heading size="xs" color={colors.text.secondary} textTransform="uppercase" letterSpacing="wide">
-            {title}
-          </Heading>
-          <Badge {...badgeProps} fontSize="xs">
-            {activities.length}
-          </Badge>
-        </HStack>
+        <Box
+          p={3}
+          mb={3}
+          bg={colors.component.kanban.card}
+          borderRadius="md"
+          borderWidth="1px"
+          borderColor={colors.component.kanban.cardBorder}
+          boxShadow="metallic"
+          position="relative"
+          _after={{
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: '8px',
+            right: '8px',
+            height: '1px',
+            background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' ? 'rgba(255,170,0,0.6)' : currentThemeName === 'lightModern' ? 'rgba(99, 102, 241, 0.6)' : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+          }}
+        >
+          <HStack spacing={2}>
+            <Heading size="xs" color={colors.text.secondary} textTransform="uppercase" letterSpacing="wide">
+              {title}
+            </Heading>
+            <Badge {...badgeProps} fontSize="xs">
+              {activities.length}
+            </Badge>
+          </HStack>
+        </Box>
         <VStack spacing={2} align="stretch">
           {activities.map((activity) => renderActivityCard(activity))}
         </VStack>
@@ -288,7 +343,25 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
   };
 
   return (
-    <Box>
+    <Box
+      bg={colors.component.kanban.column} 
+      borderRadius="xl" 
+      borderWidth="1px"
+      borderColor={colors.component.kanban.cardBorder}
+      boxShadow="steelPlate"
+      p={6}
+      position="relative"
+      _before={{
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: `linear-gradient(90deg, transparent 0%, ${getAccentColor()} 50%, transparent 100%)`,
+        pointerEvents: 'none',
+      }}
+    >
       <Flex justifyContent="space-between" alignItems="center" mb={6}>
         <Heading size="md" color={colors.text.primary}>Activities Timeline</Heading>
         <HStack spacing={3}>

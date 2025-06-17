@@ -84,6 +84,11 @@ function Sidebar() {
       color: colors.component.sidebar.textActive,
       bg: colors.component.sidebar.itemHover,
       textDecoration: 'none',
+      // Industrial theme specific hover effects
+      ...(currentThemeName === 'industrialMetal' && {
+        transform: 'translateX(2px)',
+        boxShadow: 'inset 0 0 0 1px rgba(255, 170, 0, 0.2)',
+      }),
     },
   };
 
@@ -92,7 +97,11 @@ function Sidebar() {
     color: colors.component.sidebar.textActive,
     bg: colors.component.sidebar.itemActive,
     borderLeft: '3px solid',
-    borderColor: colors.border.accent,
+    borderColor: currentThemeName === 'industrialMetal' 
+      ? 'rgba(255, 170, 0, 0.8)' // Hazard yellow for industrial only
+      : currentThemeName === 'lightModern'
+      ? '#6366f1' // Indigo for light modern
+      : '#667eea', // Blue for modern dark
     _hover: {
       color: colors.component.sidebar.textActive,
       bg: colors.component.sidebar.itemActive,
@@ -135,15 +144,52 @@ function Sidebar() {
       w={sidebarWidth}
       p={0}
       height="100vh"
-      bg={colors.component.sidebar.background} // NEW: Semantic token
+      bg={colors.component.sidebar.background}
       borderRightWidth="1px"
-      borderColor={colors.border.default} // NEW: Semantic token
+      borderColor={colors.border.default}
       transition="width 0.2s ease-in-out"
       position="fixed"
       top="0"
       left="0"
       zIndex="sticky"
       overflowY="auto"
+      // Industrial theme specific enhancements
+      boxShadow={currentThemeName === 'industrialMetal' ? 'steelPlate' : 'none'}
+      sx={currentThemeName === 'industrialMetal' ? {
+        position: 'relative',
+        _before: {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: '2px',
+          height: '100%',
+          background: 'linear-gradient(180deg, transparent 0%, rgba(255, 170, 0, 0.4) 30%, rgba(255, 170, 0, 0.6) 50%, rgba(255, 170, 0, 0.4) 70%, transparent 100%)',
+          pointerEvents: 'none',
+        },
+        _after: {
+          content: '""',
+          position: 'absolute',
+          top: '20px',
+          right: '-6px',
+          width: '12px',
+          height: '12px',
+          background: 'radial-gradient(circle, #4A4A4A 30%, #2A2A2A 60%, #1A1A1A 100%)',
+          borderRadius: '50%',
+          boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.6), inset 0 -2px 4px rgba(255, 255, 255, 0.1), 0 2px 8px rgba(0, 0, 0, 0.4)',
+          border: '1px solid #3A3A3A',
+        },
+        '&::-webkit-scrollbar': { width: '8px' },
+        '&::-webkit-scrollbar-thumb': { 
+          background: 'linear-gradient(180deg, #4A4A4A 0%, #3E3E3E 100%)',
+          borderRadius: '8px',
+          border: '1px solid rgba(58, 58, 58, 0.5)',
+        },
+        '&::-webkit-scrollbar-track': { 
+          background: 'rgba(28, 28, 28, 0.3)',
+          borderRadius: '8px',
+        },
+      } : {}}
     >
       <Flex 
         direction="column" 

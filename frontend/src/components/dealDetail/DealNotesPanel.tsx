@@ -14,6 +14,7 @@ import {
 } from '@chakra-ui/react';
 import { FiEdit3, FiGrid, FiInfo } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { SimpleNotes } from '../common/SimpleNotes';
 import { EnhancedSimpleNotes } from '../common/EnhancedSimpleNotes';
 import { StickerBoard } from '../common/StickerBoard';
@@ -35,6 +36,19 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
   const [activeTab, setActiveTab] = useState(0);
   
   const colors = useThemeColors();
+  const currentThemeName = useThemeStore((state) => state.currentTheme);
+  
+  // Helper function for theme-specific accent colors
+  const getAccentColor = () => {
+    switch (currentThemeName) {
+      case 'industrialMetal':
+        return 'rgba(255, 170, 0, 0.6)'; // Hazard yellow for industrial only
+      case 'lightModern':
+        return '#6366f1'; // Indigo for light modern
+      default:
+        return '#667eea'; // Blue for modern dark
+    }
+  };
 
   const handleTabChange = (index: number) => {
     setActiveTab(index);
@@ -58,14 +72,59 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
   }, [totalNotesCount, onNoteCountChange]);
 
   return (
-    <Box className={className}>
+    <Box 
+      className={className}
+      bg={colors.component.kanban.column} 
+      borderRadius="xl" 
+      borderWidth="1px"
+      borderColor={colors.component.kanban.cardBorder}
+      boxShadow="steelPlate"
+      p={6}
+      position="relative"
+      _before={{
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
+  ? 'rgba(255, 170, 0, 0.6)' 
+  : currentThemeName === 'lightModern'
+  ? 'rgba(99, 102, 241, 0.6)'
+  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+        pointerEvents: 'none',
+      }}
+    >
       <Tabs 
         index={activeTab} 
         onChange={handleTabChange}
         variant="soft-rounded"
         colorScheme="blue"
       >
-        <TabList mb={4} bg={colors.bg.surface} p={1} borderRadius="lg">
+        <TabList 
+          mb={4} 
+          bg={colors.component.kanban.card} 
+          p={1} 
+          borderRadius="lg"
+          borderWidth="1px"
+          borderColor={colors.component.kanban.cardBorder}
+          boxShadow="metallic"
+          position="relative"
+          _after={{
+            content: '""',
+            position: 'absolute',
+            bottom: '-1px',
+            left: '8px',
+            right: '8px',
+            height: '1px',
+            background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
+  ? 'rgba(255, 170, 0, 0.6)' 
+  : currentThemeName === 'lightModern'
+  ? 'rgba(99, 102, 241, 0.6)'
+  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+          }}
+        >
           <Tab 
             flex={1} 
             fontSize="sm" 

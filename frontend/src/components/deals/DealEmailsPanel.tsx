@@ -74,6 +74,7 @@ import {
 import { FaTasks, FaUserPlus, FaMapPin } from 'react-icons/fa';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useThemeStore } from '../../stores/useThemeStore';
 import EmailContactFilter from './EmailContactFilter';
 import CreateContactFromEmailModal from './CreateContactFromEmailModal';
 import EnhancedCreateTaskModal from './EnhancedCreateTaskModal';
@@ -407,7 +408,32 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   dealName,
 }) => {
   const colors = useThemeColors();
+  const currentThemeName = useThemeStore((state) => state.currentTheme);
   const toast = useToast();
+
+  // Helper function for theme-specific accent colors
+  const getAccentColor = () => {
+    switch (currentThemeName) {
+      case 'industrialMetal':
+        return 'rgba(255, 170, 0, 0.6)'; // Hazard yellow for industrial only
+      case 'lightModern':
+        return '#6366f1'; // Indigo for light modern
+      default:
+        return '#667eea'; // Blue for modern dark
+    }
+  };
+
+  // Helper function for stronger accent colors
+  const getStrongAccentColor = () => {
+    switch (currentThemeName) {
+      case 'industrialMetal':
+        return 'rgba(255, 170, 0, 0.8)'; // Stronger hazard yellow for industrial only
+      case 'lightModern':
+        return 'rgba(99, 102, 241, 0.8)'; // Stronger indigo for light modern
+      default:
+        return 'rgba(102, 126, 234, 0.8)'; // Stronger blue for modern dark
+    }
+  };
 
   // State
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
@@ -743,7 +769,34 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   }, [primaryContactEmail, showAdvancedFilters]);
 
   return (
-    <Box h="600px" bg={colors.bg.surface} borderRadius="lg" overflow="hidden">
+    <Box 
+      h="600px" 
+      bg={colors.component.kanban.column} 
+      borderRadius="xl" 
+      overflow="hidden"
+      borderWidth="1px"
+      borderColor={colors.component.kanban.cardBorder}
+      boxShadow="steelPlate"
+      position="relative"
+      _before={{
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: currentThemeName === 'industrialMetal' 
+          ? `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
+  ? 'rgba(255, 170, 0, 0.8)' 
+  : currentThemeName === 'lightModern'
+  ? 'rgba(99, 102, 241, 0.8)'
+  : 'rgba(102, 126, 234, 0.8)'} 50%, transparent 100%)`
+          : currentThemeName === 'lightModern'
+          ? 'linear-gradient(90deg, transparent 0%, rgba(99, 102, 241, 0.8) 50%, transparent 100%)'
+          : 'linear-gradient(90deg, transparent 0%, rgba(102, 126, 234, 0.8) 50%, transparent 100%)',
+        pointerEvents: 'none',
+      }}
+    >
       <Grid templateColumns="1fr 2fr" h="full">
         {/* Left Panel - Thread List */}
         <GridItem 
@@ -760,11 +813,26 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
           <Box 
             p={4} 
             borderBottomWidth="1px" 
-            borderColor={colors.border.default} 
+            borderColor={colors.component.kanban.cardBorder} 
             w="full"
             sx={{ flexShrink: 0 }}
             maxH="400px" // Prevent header from taking too much space
             overflowY="auto" // Allow header to scroll if needed
+            bg={colors.component.kanban.card}
+            position="relative"
+            _after={{
+              content: '""',
+              position: 'absolute',
+              bottom: 0,
+              left: '0',
+              right: '0',
+              height: '1px',
+              background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
+  ? 'rgba(255, 170, 0, 0.8)' 
+  : currentThemeName === 'lightModern'
+  ? 'rgba(99, 102, 241, 0.8)'
+  : 'rgba(102, 126, 234, 0.8)'} 50%, transparent 100%)`,
+            }}
           >
             <VStack spacing={3} align="stretch">
               <HStack justify="space-between">
@@ -945,14 +1013,16 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                 width: '6px',
               },
               '&::-webkit-scrollbar-track': {
-                background: colors.bg.surface,
+                background: 'rgba(28, 28, 28, 0.3)',
+                borderRadius: '8px',
               },
               '&::-webkit-scrollbar-thumb': {
-                background: colors.border.default,
-                borderRadius: '3px',
+                background: 'linear-gradient(180deg, #4A4A4A 0%, #3E3E3E 100%)',
+                borderRadius: '8px',
+                border: '1px solid rgba(58, 58, 58, 0.5)',
               },
               '&::-webkit-scrollbar-thumb:hover': {
-                background: colors.border.emphasis,
+                background: 'linear-gradient(180deg, #5F5F5F 0%, #4A4A4A 100%)',
               },
             }}
           >
@@ -1005,11 +1075,41 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                   <Box
                     key={thread.id}
                     p={3}
-                    borderBottomWidth="1px"
-                    borderColor={colors.border.default}
+                    m={2}
+                    borderRadius="lg"
+                    borderWidth="1px"
+                    borderColor={colors.component.kanban.cardBorder}
                     cursor="pointer"
-                    bg={selectedThreadId === thread.id ? colors.bg.elevated : 'transparent'}
-                    _hover={{ bg: colors.bg.elevated }}
+                    bg={selectedThreadId === thread.id ? colors.component.kanban.cardHover : colors.component.kanban.card}
+                    boxShadow={selectedThreadId === thread.id ? 'industrial3d' : 'metallic'}
+                    transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+                    position="relative"
+                    _before={{
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '3px',
+                      height: '100%',
+                      background: selectedThreadId === thread.id 
+                        ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.8) 0%, rgba(255, 170, 0, 1) 50%, rgba(255, 170, 0, 0.8) 100%)'
+                        : 'transparent',
+                      borderRadius: '0 0 0 lg',
+                      transition: 'all 0.3s ease',
+                    }}
+                    _hover={{ 
+                      bg: colors.component.kanban.cardHover,
+                      transform: 'translateX(4px) translateY(-1px)',
+                      boxShadow: 'industrial3d',
+                      borderColor: colors.component.kanban.cardBorder,
+                      _before: {
+                        background: currentThemeName === 'industrialMetal' 
+        ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)'
+        : currentThemeName === 'lightModern'
+        ? 'linear-gradient(180deg, rgba(99, 102, 241, 0.6) 0%, rgba(99, 102, 241, 0.8) 50%, rgba(99, 102, 241, 0.6) 100%)'
+        : 'linear-gradient(180deg, rgba(102, 126, 234, 0.6) 0%, rgba(102, 126, 234, 0.8) 50%, rgba(102, 126, 234, 0.6) 100%)',
+                      },
+                    }}
                     onClick={() => handleThreadSelect(thread.id)}
                   >
                     <VStack spacing={2} align="stretch">
@@ -1068,13 +1168,27 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                 <Box 
                   p={4} 
                   borderBottomWidth="1px" 
-                  borderColor={colors.border.default} 
+                  borderColor={colors.component.kanban.cardBorder} 
                   w="full" 
-                  bg={colors.bg.surface}
+                  bg={colors.component.kanban.card}
                   position="sticky"
                   top={0}
                   zIndex={10}
                   flexShrink={0}
+                  boxShadow="metallic"
+                  _after={{
+                    content: '""',
+                    position: 'absolute',
+                    bottom: 0,
+                    left: '0',
+                    right: '0',
+                    height: '1px',
+                    background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
+  ? 'rgba(255, 170, 0, 0.8)' 
+  : currentThemeName === 'lightModern'
+  ? 'rgba(99, 102, 241, 0.8)'
+  : 'rgba(102, 126, 234, 0.8)'} 50%, transparent 100%)`,
+                  }}
                 >
                   <VStack spacing={3} align="stretch">
                     <HStack justify="space-between" align="center">

@@ -56,6 +56,7 @@ import { useActivitiesStore, Activity, ActivityType as GQLActivityType, Generate
 import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
 import { useUserListStore } from '../stores/useUserListStore';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
+import { useThemeStore } from '../stores/useThemeStore';
 
 // Component imports
 import CreateActivityForm from '../components/activities/CreateActivityForm';
@@ -125,6 +126,19 @@ const DealDetailPage = () => {
   // NEW: Use semantic tokens for automatic theme adaptation
   const colors = useThemeColors();
   const styles = useThemeStyles();
+  const currentThemeName = useThemeStore((state) => state.currentTheme);
+  
+  // Helper function for theme-specific accent colors
+  const getAccentColor = () => {
+    switch (currentThemeName) {
+      case 'industrialMetal':
+        return 'rgba(255, 170, 0, 0.6)'; // Hazard yellow for industrial only
+      case 'lightModern':
+        return '#6366f1'; // Indigo for light modern
+      default:
+        return '#667eea'; // Blue for modern dark
+    }
+  };
   
   const fetchDealById = useAppStore((state) => state.fetchDealById);
   const currentDeal = useAppStore((state) => state.currentDeal);
@@ -558,9 +572,29 @@ const DealDetailPage = () => {
                 />
 
                               {/* Tabs Section - No more Deal Overview Card here */}
-                <Box bg={colors.bg.elevated} borderRadius="xl" border="1px solid" borderColor={colors.border.default} minH="400px" w="100%" maxW="100%">
-                                  <Tabs variant="line" colorScheme="blue" size="md" isFitted>
-                                      <TabList borderBottomColor={colors.border.default}>
+                <Box 
+                  bg={colors.component.kanban.column} 
+                  borderRadius="xl" 
+                  border="1px solid" 
+                  borderColor={colors.component.kanban.cardBorder} 
+                  minH="400px" 
+                  w="100%" 
+                  maxW="100%"
+                  boxShadow="steelPlate"
+                  position="relative"
+                  _before={{
+                    content: '""',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: '2px',
+                    background: `linear-gradient(90deg, transparent 0%, ${getAccentColor()} 50%, transparent 100%)`,
+                    pointerEvents: 'none',
+                  }}
+                >
+                                <Tabs variant="line" colorScheme="blue" size="md" isFitted>
+                                    <TabList borderBottomColor={colors.border.default}>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         <HStack spacing={2}>
                           <Text>Notes</Text>
@@ -599,468 +633,561 @@ const DealDetailPage = () => {
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         History
                       </Tab>
-                                      </TabList>
-                    
-                    <TabPanels p={{base: 3, md: 4}} minH="350px" w="100%" maxW="100%">
-                                          <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                        <Box w="100%" maxW="100%">
-                          <DealNotesPanel 
-                            dealId={currentDeal.id}
-                            onNoteCountChange={handleStickyNotesCountChange}
-                          />
-                        </Box>
-                                          </TabPanel>
-                      
-                                          <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                        <Box w="100%" maxW="100%">
-                          <DealActivitiesPanel
-                            activities={dealActivities}
-                            loading={activitiesLoading}
-                            error={activitiesError}
-                            onCreateActivity={onCreateActivityModalOpen}
-                            onEditActivity={handleEditActivityClick}
-                            onToggleComplete={handleToggleActivityComplete}
-                            onDeleteActivity={handleDeleteActivityClick}
-                            getActivityTypeIcon={getActivityTypeIcon}
-                          />
-                        </Box>
-                                          </TabPanel>
+                                    </TabList>
+                                  
+                                  <TabPanels p={{base: 3, md: 4}} minH="350px" w="100%" maxW="100%">
+                                        <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
+                                          <Box w="100%" maxW="100%">
+                                            <DealNotesPanel 
+                                              dealId={currentDeal.id}
+                                              onNoteCountChange={handleStickyNotesCountChange}
+                                            />
+                                          </Box>
+                                        </TabPanel>
+                                      
+                                        <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
+                                          <Box w="100%" maxW="100%">
+                                            <DealActivitiesPanel
+                                              activities={dealActivities}
+                                              loading={activitiesLoading}
+                                              error={activitiesError}
+                                              onCreateActivity={onCreateActivityModalOpen}
+                                              onEditActivity={handleEditActivityClick}
+                                              onToggleComplete={handleToggleActivityComplete}
+                                              onDeleteActivity={handleDeleteActivityClick}
+                                              getActivityTypeIcon={getActivityTypeIcon}
+                                            />
+                                          </Box>
+                                        </TabPanel>
 
-                      <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                        <Box w="100%" maxW="100%">
-                          <DealEmailsPanel
-                            dealId={currentDeal.id}
-                            dealName={currentDeal.name || ''}
-                            primaryContactEmail={currentDeal.person?.email || undefined}
-                          />
-                        </Box>
-                                                                </TabPanel>
-
-                      <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                        <Box w="100%" maxW="100%">
-                          <SharedDriveDocumentBrowser
-                            dealId={currentDeal.id}
-                            dealName={currentDeal.name || undefined}
-                            onDocumentCountChange={handleDocumentCountChange}
-                          />
-                        </Box>
-                      </TabPanel>
-
-                      <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                        <Box w="100%" maxW="100%">
-                          <DealOrganizationContactsPanel
-                            organization={currentDeal.organization ? {
-                              id: currentDeal.organization.id,
-                              name: currentDeal.organization.name
-                            } : null}
-                            onContactCountChange={handleContactsCountChange}
-                          />
-                        </Box>
-                      </TabPanel>
-                      
-                                          <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                        <Box w="100%" maxW="100%">
-                          <DealHistoryPanel historyEntries={currentDeal.history} />
-                        </Box>
-                                          </TabPanel>
-                                      </TabPanels>
-                                  </Tabs>
-                              </Box>
-                          </VStack>
-                      )}
-            
-                      {!currentDeal && !isLoadingDeal && !dealError && (
-                           <Center h="full" flexDirection="column" bg={colors.bg.elevated} borderRadius="xl" p={6}>
-                             <Icon as={WarningIcon} w={8} h={8} color={colors.text.warning} mb={4} />
-                             <Text color={colors.text.secondary} fontSize="lg">Deal not found.</Text>
-                             <Button as={RouterLink} to="/deals" mt={6} {...styles.button.primary}>Back to Deals</Button>
-                           </Center>
-                      )}
-                  </Box>
-
-                  {/* Right Sidebar - Enhanced with Key Information */}
-                  <Box 
-                      bg={colors.bg.elevated}
-                      p={{base: 4, md: 6}} 
-                      borderLeftWidth={{base: 0, lg: "1px"}} 
-                      borderTopWidth={{base: "1px", lg: 0}}
-                      borderColor={colors.border.default}
-                      overflowY="auto"
-                      w="450px"
-                      minW="450px"
-                      maxW="450px"
-                      flexShrink={0}
-                      sx={{
-                          '&::-webkit-scrollbar': { width: '8px' },
-                          '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '8px' },
-                          '&::-webkit-scrollbar-track': { background: colors.bg.surface },
-                      }}
-                  >
-                      {!isLoadingDeal && currentDeal && (
-                          <VStack spacing={6} align="stretch">
-                              {/* Key Information Section */}
-                              <Box p={5} bg={colors.bg.surface} borderRadius="lg" border="1px solid" borderColor={colors.border.default}>
-                                  <Heading size="sm" mb={4} color={colors.text.primary}>Key Information</Heading>
-                                  <VStack spacing={4} align="stretch">
-                                      {/* Amount Field */}
-                                      <HStack justifyContent="space-between" alignItems="center">
-                                          <Text fontSize="sm" color={colors.text.secondary}>Value</Text>
-                                          {!isEditingAmount ? (
-                                              <HStack spacing={2}>
-                                                  <Text fontSize="md" fontWeight="semibold" color={colors.status.success}>
-                                                      {currentDeal.amount ? CurrencyFormatter.format(currentDeal.amount, currentDeal.currency || 'USD', { precision: 0 }) : '-'}
-                                                  </Text>
-                                                  <IconButton 
-                                                      icon={<EditIcon />} 
-                                                      size="xs" 
-                                                      variant="ghost" 
-                                                      aria-label="Edit Amount" 
-                                                      onClick={() => {
-                                                          setIsEditingAmount(true);
-                                                          setNewAmount(currentDeal.amount ? String(currentDeal.amount) : '');
-                                                      }}
-                                                      color={colors.text.secondary}
-                                                      _hover={{color: colors.text.link}}
-                                                      isDisabled={!canEditDeal}
-                                                  />
-                                              </HStack>
-                                          ) : (
-                                              <HStack spacing={2} flex={1} justifyContent="flex-end">
-                                                  <Input 
-                                                      type="number" 
-                                                      value={newAmount} 
-                                                      onChange={(e) => setNewAmount(e.target.value)} 
-                                                      placeholder="Enter amount" 
-                                                      size="sm" 
-                                                      w="120px"
-                                                      textAlign="right"
-                                                      bg={colors.bg.elevated}
-                                                      borderColor={colors.border.default}
-                                                      _hover={{borderColor: colors.border.default}}
-                                                      _focus={{borderColor: colors.text.link, boxShadow: `0 0 0 1px ${colors.text.link}`}}
-                                                  />
-                                                  <IconButton 
-                                                      icon={<CheckIcon />} 
-                                                      size="xs" 
-                                                      colorScheme="green" 
-                                                      aria-label="Save Amount" 
-                                                      onClick={handleAmountUpdate}
-                                                  />
-                                                  <IconButton 
-                                                      icon={<SmallCloseIcon />} 
-                                                      size="xs" 
-                                                      variant="ghost" 
-                                                      colorScheme="red" 
-                                                      aria-label="Cancel Edit Amount" 
-                                                      onClick={() => setIsEditingAmount(false)}
-                                                  />
-                                              </HStack>
-                                          )}
-                                      </HStack>
-
-                                      {/* Probability Field */}
-                                      <HStack justifyContent="space-between" alignItems="center">
-                                          <Text fontSize="sm" color={colors.text.secondary}>Probability</Text>
-                                          <HStack flex={1} justifyContent="flex-end" spacing={2} maxW="60%">
-                                              <Progress 
-                                                  value={getEffectiveProbabilityDisplay.value ? getEffectiveProbabilityDisplay.value * 100 : 0} 
-                                                  size="xs" 
-                                                  colorScheme="blue" 
-                                                  flex={1} 
-                                                  borderRadius="full" 
-                                                  bg={colors.bg.elevated} 
-                                              />
-                                              <Text fontSize="sm" fontWeight="medium" color={colors.text.link} minW="40px" textAlign="right">
-                                                  {getEffectiveProbabilityDisplay.value != null ? 
-                                                      `${(getEffectiveProbabilityDisplay.value * 100).toFixed(0)}%` : 'N/A'}
-                                              </Text>
-                                          </HStack>
-                                      </HStack>
-
-                                      {/* Expected Close Date Field */}
-                                      <HStack justifyContent="space-between" alignItems="center">
-                                          <Text fontSize="sm" color={colors.text.secondary}>Expected Close Date</Text>
-                                          {!isEditingCloseDate ? (
-                                              <HStack spacing={2}>
-                                                  <Text fontSize="md" fontWeight="medium" color={colors.text.primary}>
-                                                      {currentDeal.expected_close_date ? new Date(currentDeal.expected_close_date).toLocaleDateString() : '-'}
-                                                  </Text>
-                                                  <IconButton 
-                                                      icon={<EditIcon />} 
-                                                      size="xs" 
-                                                      variant="ghost" 
-                                                      aria-label="Edit Expected Close Date" 
-                                                      onClick={() => {
-                                                          setIsEditingCloseDate(true);
-                                                          if (currentDeal.expected_close_date) {
-                                                              const date = new Date(currentDeal.expected_close_date);
-                                                              setNewCloseDateStr(date.toISOString().split('T')[0]);
-                                                          } else {
-                                                              setNewCloseDateStr('');
-                                                          }
-                                                      }}
-                                                      color={colors.text.secondary}
-                                                      _hover={{color: colors.text.link}}
-                                                      isDisabled={!canEditDeal}
-                                                  />
-                                              </HStack>
-                                          ) : (
-                                              <HStack spacing={2} flex={1} justifyContent="flex-end">
-                                                  <Input 
-                                                      type="date" 
-                                                      value={newCloseDateStr} 
-                                                      onChange={(e) => setNewCloseDateStr(e.target.value)} 
-                                                      size="sm" 
-                                                      w="160px"
-                                                      bg={colors.bg.elevated}
-                                                      borderColor={colors.border.default}
-                                                      _hover={{borderColor: colors.border.default}}
-                                                      _focus={{borderColor: colors.text.link, boxShadow: `0 0 0 1px ${colors.text.link}`}}
-                                                  />
-                                                  <IconButton 
-                                                      icon={<CheckIcon />} 
-                                                      size="xs" 
-                                                      colorScheme="green" 
-                                                      aria-label="Save Expected Close Date" 
-                                                      onClick={handleCloseDateUpdate}
-                                                  />
-                                                  <IconButton 
-                                                      icon={<SmallCloseIcon />} 
-                                                      size="xs" 
-                                                      variant="ghost" 
-                                                      colorScheme="red" 
-                                                      aria-label="Cancel Edit Date" 
-                                                      onClick={() => setIsEditingCloseDate(false)}
-                                                  />
-                                              </HStack>
-                                          )}
-                                      </HStack>
-
-                                      {/* Owner Field */}
-                                      <HStack justifyContent="space-between">
-                                          <Text fontSize="sm" color={colors.text.secondary}>Owner</Text>
-                                          {!isEditingOwner ? (
-                                              <HStack spacing={2}>
-                                                  <Avatar 
-                                                      size="xs" 
-                                                      name={currentDeal.assignedToUser?.display_name || 'Unassigned'} 
-                                                      src={currentDeal.assignedToUser?.avatar_url || undefined}
-                                                      bg={colors.interactive.default}
-                                                  />
-                                                  <Text fontSize="md" fontWeight="medium" color={colors.text.primary}>
-                                                      {currentDeal.assignedToUser?.display_name || 'Unassigned'}
-                                                  </Text>
-                                                  <IconButton 
-                                                      icon={<EditIcon />} 
-                                                      size="xs" 
-                                                      variant="ghost" 
-                                                      aria-label="Edit Owner" 
-                                                      onClick={() => {
-                                                          setIsEditingOwner(true);
-                                                          setNewOwnerId(currentDeal.assigned_to_user_id || null);
-                                                      }}
-                                                      color={colors.text.secondary}
-                                                      _hover={{color: colors.text.link}}
-                                                      isDisabled={!canEditDeal}
-                                                  />
-                                              </HStack>
-                                          ) : (
-                                              <HStack spacing={2} flex={1} justifyContent="flex-end">
-                                                  <Select 
-                                                      value={newOwnerId || ''}
-                                                      onChange={(e) => setNewOwnerId(e.target.value || null)}
-                                                      size="sm" 
-                                                      w="180px"
-                                                      bg={colors.bg.elevated}
-                                                      borderColor={colors.border.default}
-                                                      _hover={{borderColor: colors.border.default}}
-                                                      _focus={{borderColor: colors.text.link, boxShadow: `0 0 0 1px ${colors.text.link}`}}
-                                                  >
-                                                      <option value="">Unassigned</option>
-                                                      {formattedUserList.map(user => (
-                                                          <option key={user.id} value={user.id}>
-                                                              {user.display_name || user.email}
-                                                          </option>
-                                                      ))}
-                                                  </Select>
-                                                  <IconButton 
-                                                      icon={<CheckIcon />} 
-                                                      size="xs" 
-                                                      colorScheme="green" 
-                                                      aria-label="Save Owner" 
-                                                      onClick={handleOwnerUpdate}
-                                                  />
-                                                  <IconButton 
-                                                      icon={<SmallCloseIcon />} 
-                                                      size="xs" 
-                                                      variant="ghost" 
-                                                      colorScheme="red" 
-                                                      aria-label="Cancel Edit Owner" 
-                                                      onClick={() => setIsEditingOwner(false)}
-                                                  />
-                                              </HStack>
-                                          )}
-                                      </HStack>
-
-                                      {/* Project ID Field */}
-                                      <HStack justifyContent="space-between" alignItems="center">
-                                          <Text fontSize="sm" color={colors.text.secondary}>Project ID</Text>
-                                          <Text 
-                                              fontSize="md" 
-                                              fontWeight="bold" 
-                                              color={colors.text.link}
-                                              fontFamily="mono"
-                                              bg={colors.bg.elevated}
-                                              px={3}
-                                              py={1}
-                                              borderRadius="md"
-                                              border="1px solid"
-                                              borderColor={colors.border.default}
-                                          >
-                                              #{(currentDeal as any).project_id || '-'}
-                                          </Text>
-                                      </HStack>
-                                  </VStack>
-                              </Box>
-
-                                            {/* Custom Fields Section */}
-              {customFieldDefinitions && customFieldDefinitions.length > 0 && (
-                  <Box p={5} bg={colors.bg.surface} borderRadius="lg" border="1px solid" borderColor={colors.border.default}>
-                      <HStack justifyContent="space-between" alignItems="center" mb={isCustomFieldsExpanded ? 4 : 0}>
-                          <Heading size="sm" color={colors.text.primary}>Custom Information</Heading>
-                          <IconButton
-                              icon={isCustomFieldsExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                              size="xs"
-                              variant="ghost"
-                              aria-label={isCustomFieldsExpanded ? "Collapse Custom Fields" : "Expand Custom Fields"}
-                              onClick={() => setIsCustomFieldsExpanded(!isCustomFieldsExpanded)}
-                              color={colors.text.secondary}
-                              _hover={{color: colors.text.link}}
-                          />
-                      </HStack>
-                      <Collapse in={isCustomFieldsExpanded} animateOpacity>
-                          <DealCustomFieldsPanel
-                              customFieldDefinitions={customFieldDefinitions || []}
-                              customFieldValues={currentDeal.customFieldValues || []}
-                              dealId={currentDeal.id}
-                              onUpdate={canEditDeal ? handleCustomFieldUpdate : undefined}
-                              getLinkDisplayDetails={getLinkDisplayDetails}
-                          />
-                      </Collapse>
-                  </Box>
-              )}
-
-                              {/* Primary Contact Section */}
-                              {currentDeal.person && (
-                                  <Box p={5} bg={colors.bg.surface} borderRadius="lg" border="1px solid" borderColor={colors.border.default}>
-                                      <Heading size="sm" mb={3} color={colors.text.primary}>Primary Contact</Heading>
-                                      <HStack spacing={3} alignItems="center">
-                                          <Avatar 
-                                              size="md" 
-                                              name={`${currentDeal.person?.first_name || ''} ${currentDeal.person?.last_name || ''}`}
-                                              bg={colors.interactive.default}
-                                              color={colors.text.onAccent}
+                                      <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
+                                        <Box w="100%" maxW="100%">
+                                          <DealEmailsPanel
+                                            dealId={currentDeal.id}
+                                            dealName={currentDeal.name || ''}
+                                            primaryContactEmail={currentDeal.person?.email || undefined}
                                           />
-                                          <VStack align="start" spacing={0} flex={1}>
-                                              <Link as={RouterLink} to={`/people/${currentDeal.person?.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
-                                                  {currentDeal.person?.first_name} {currentDeal.person?.last_name}
-                                              </Link>
-                                                  {currentDeal.person?.email && (
-                                                      <Text fontSize="sm" color={colors.text.secondary}>
-                                                          {currentDeal.person?.email}
-                                                      </Text>
-                                                  )}
-                                          </VStack>
-                                      </HStack>
-                                      {currentDeal.person?.email && (
-                                          <Button 
-                                              size="xs" 
-                                              variant="outline" 
-                                              leftIcon={<EmailIcon />}
-                                              onClick={() => window.open(`mailto:${currentDeal.person?.email}`)}
-                                              width="full"
-                                              mt={3}
-                                          >
-                                              Email
-                                          </Button>
-                                      )}
-                                  </Box>
-                              )}
+                                        </Box>
+                                                                  </TabPanel>
 
-                              {/* Organization Section */}
-                              {currentDeal.organization && (
-                                  <Box p={5} bg={colors.bg.surface} borderRadius="lg" border="1px solid" borderColor={colors.border.default}>
-                                      <Heading size="sm" mb={3} color={colors.text.primary}>Organization</Heading>
-                                      <HStack spacing={3} alignItems="center">
-                                          <VStack align="start" spacing={0}>
-                                              <Link as={RouterLink} to={`/organizations/${currentDeal.organization.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
-                                                  {currentDeal.organization.name}
-                                              </Link>
-                                          </VStack>
-                                      </HStack>
-                                  </Box>
-                              )}
-                              
-                          </VStack>
-                      )}
-                  </Box>
-              </Flex>
-      </Box>
+                                      <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
+                                        <Box w="100%" maxW="100%">
+                                          <SharedDriveDocumentBrowser
+                                            dealId={currentDeal.id}
+                                            dealName={currentDeal.name || undefined}
+                                            onDocumentCountChange={handleDocumentCountChange}
+                                          />
+                                        </Box>
+                                      </TabPanel>
 
-      {/* Modals */}
-      <Modal isOpen={isCreateActivityModalOpen} onClose={onCreateActivityModalClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Create New Activity</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-                <CreateActivityForm 
-                  onSuccess={handleActivityCreated} 
-              onClose={onCreateActivityModalClose} 
-              initialDealId={dealId}
-              initialDealName={currentDeal?.name}
-                />
-              </ModalBody>
-            </ModalContent>
-          </Modal>
+                                      <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
+                                        <Box w="100%" maxW="100%">
+                                          <DealOrganizationContactsPanel
+                                            organization={currentDeal.organization ? {
+                                              id: currentDeal.organization.id,
+                                              name: currentDeal.organization.name
+                                            } : null}
+                                            onContactCountChange={handleContactsCountChange}
+                                          />
+                                        </Box>
+                                      </TabPanel>
+                                      
+                                        <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
+                                          <Box w="100%" maxW="100%">
+                                            <DealHistoryPanel historyEntries={currentDeal.history} />
+                                          </Box>
+                                        </TabPanel>
+                                    </TabPanels>
+                                </Tabs>
+                            </Box>
+                        </VStack>
+                    )}
+            
+                    {!currentDeal && !isLoadingDeal && !dealError && (
+                         <Center h="full" flexDirection="column" bg={colors.bg.elevated} borderRadius="xl" p={6}>
+                           <Icon as={WarningIcon} w={8} h={8} color={colors.text.warning} mb={4} />
+                           <Text color={colors.text.secondary} fontSize="lg">Deal not found.</Text>
+                           <Button as={RouterLink} to="/deals" mt={6} {...styles.button.primary}>Back to Deals</Button>
+                         </Center>
+                    )}
+                </Box>
 
-      <Modal isOpen={isEditActivityModalOpen} onClose={onEditActivityModalClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Edit Activity</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {selectedActivity && (
-                <EditActivityForm 
-                  activity={selectedActivity} 
-                  onSuccess={handleActivityUpdated} 
-                onClose={onEditActivityModalClose} 
-                />
-            )}
-              </ModalBody>
-            </ModalContent>
-          </Modal>
+                {/* Right Sidebar - Enhanced with Key Information */}
+                <Box 
+                    bg={colors.component.kanban.column}
+                    p={{base: 4, md: 6}} 
+                    borderLeftWidth={{base: 0, lg: "1px"}} 
+                    borderTopWidth={{base: "1px", lg: 0}}
+                    borderColor={colors.component.kanban.cardBorder}
+                    overflowY="auto"
+                    w="450px"
+                    minW="450px"
+                    maxW="450px"
+                    flexShrink={0}
+                    boxShadow="steelPlate"
+                    position="relative"
+                    _before={{
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '2px',
+                      height: '100%',
+                      background: currentThemeName === 'industrialMetal' 
+                        ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)'
+                        : 'none',
+                      pointerEvents: 'none',
+                    }}
+                    sx={{
+                        '&::-webkit-scrollbar': { width: '8px' },
+                        '&::-webkit-scrollbar-thumb': { 
+                          background: 'linear-gradient(180deg, #4A4A4A 0%, #3E3E3E 100%)',
+                          borderRadius: '8px',
+                          border: '1px solid rgba(58, 58, 58, 0.5)',
+                        },
+                        '&::-webkit-scrollbar-track': { 
+                          background: 'rgba(28, 28, 28, 0.3)',
+                          borderRadius: '8px',
+                        },
+                    }}
+                >
+                    {!isLoadingDeal && currentDeal && (
+                        <VStack spacing={6} align="stretch">
+                            {/* Key Information Section */}
+                            <Box 
+                              p={5} 
+                              bg={colors.component.kanban.card} 
+                              borderRadius="lg" 
+                              border="1px solid" 
+                              borderColor={colors.component.kanban.cardBorder}
+                              boxShadow="metallic"
+                              position="relative"
+                              _before={{
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                height: '2px',
+                                background: `linear-gradient(90deg, transparent 0%, ${getAccentColor()} 50%, transparent 100%)`,
+                                pointerEvents: 'none',
+                              }}
+                            >
+                                <Heading size="sm" mb={4} color={colors.text.primary}>Key Information</Heading>
+                                <VStack spacing={4} align="stretch">
+                                    {/* Amount Field */}
+                                    <HStack justifyContent="space-between" alignItems="center">
+                                        <Text fontSize="sm" color={colors.text.secondary}>Value</Text>
+                                        {!isEditingAmount ? (
+                                            <HStack spacing={2}>
+                                                <Text fontSize="md" fontWeight="semibold" color={colors.status.success}>
+                                                    {currentDeal.amount ? CurrencyFormatter.format(currentDeal.amount, currentDeal.currency || 'USD', { precision: 0 }) : '-'}
+                                                </Text>
+                                                <IconButton 
+                                                    icon={<EditIcon />} 
+                                                    size="xs" 
+                                                    variant="ghost" 
+                                                    aria-label="Edit Amount" 
+                                                    onClick={() => {
+                                                        setIsEditingAmount(true);
+                                                        setNewAmount(currentDeal.amount ? String(currentDeal.amount) : '');
+                                                    }}
+                                                    color={colors.text.secondary}
+                                                    _hover={{color: colors.text.link}}
+                                                    isDisabled={!canEditDeal}
+                                                />
+                                            </HStack>
+                                        ) : (
+                                            <HStack spacing={2} flex={1} justifyContent="flex-end">
+                                                <Input 
+                                                    type="number" 
+                                                    value={newAmount} 
+                                                    onChange={(e) => setNewAmount(e.target.value)} 
+                                                    placeholder="Enter amount" 
+                                                    size="sm" 
+                                                    w="120px"
+                                                    textAlign="right"
+                                                    bg={colors.bg.elevated}
+                                                    borderColor={colors.border.default}
+                                                    _hover={{borderColor: colors.border.default}}
+                                                    _focus={{borderColor: colors.text.link, boxShadow: `0 0 0 1px ${colors.text.link}`}}
+                                                />
+                                                <IconButton 
+                                                    icon={<CheckIcon />} 
+                                                    size="xs" 
+                                                    colorScheme="green" 
+                                                    aria-label="Save Amount" 
+                                                    onClick={handleAmountUpdate}
+                                                />
+                                                <IconButton 
+                                                    icon={<SmallCloseIcon />} 
+                                                    size="xs" 
+                                                    variant="ghost" 
+                                                    colorScheme="red" 
+                                                    aria-label="Cancel Edit Amount" 
+                                                    onClick={() => setIsEditingAmount(false)}
+                                                />
+                                            </HStack>
+                                        )}
+                                    </HStack>
 
-      <AlertDialog isOpen={isDeleteConfirmOpen} leastDestructiveRef={cancelRef} onClose={onDeleteConfirmClose}>
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-                  Delete Activity
-                </AlertDialogHeader>
-            <AlertDialogBody>
-              Are you sure you want to delete this activity? This action cannot be undone.
-                </AlertDialogBody>
-                <AlertDialogFooter>
-              <Button ref={cancelRef} onClick={onDeleteConfirmClose}>
-                    Cancel
-                  </Button>
-                  <Button colorScheme="red" onClick={confirmDeleteActivity} ml={3}>
-                    Delete
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialogOverlay>
-          </AlertDialog>
+                                    {/* Probability Field */}
+                                    <HStack justifyContent="space-between" alignItems="center">
+                                        <Text fontSize="sm" color={colors.text.secondary}>Probability</Text>
+                                        <HStack flex={1} justifyContent="flex-end" spacing={2} maxW="60%">
+                                            <Progress 
+                                                value={getEffectiveProbabilityDisplay.value ? getEffectiveProbabilityDisplay.value * 100 : 0} 
+                                                size="xs" 
+                                                colorScheme="blue" 
+                                                flex={1} 
+                                                borderRadius="full" 
+                                                bg={colors.bg.elevated} 
+                                            />
+                                            <Text fontSize="sm" fontWeight="medium" color={colors.text.link} minW="40px" textAlign="right">
+                                                {getEffectiveProbabilityDisplay.value != null ? 
+                                                    `${(getEffectiveProbabilityDisplay.value * 100).toFixed(0)}%` : 'N/A'}
+                                            </Text>
+                                        </HStack>
+                                    </HStack>
+
+                                    {/* Expected Close Date Field */}
+                                    <HStack justifyContent="space-between" alignItems="center">
+                                        <Text fontSize="sm" color={colors.text.secondary}>Expected Close Date</Text>
+                                        {!isEditingCloseDate ? (
+                                            <HStack spacing={2}>
+                                                <Text fontSize="md" fontWeight="medium" color={colors.text.primary}>
+                                                    {currentDeal.expected_close_date ? new Date(currentDeal.expected_close_date).toLocaleDateString() : '-'}
+                                                </Text>
+                                                <IconButton 
+                                                    icon={<EditIcon />} 
+                                                    size="xs" 
+                                                    variant="ghost" 
+                                                    aria-label="Edit Expected Close Date" 
+                                                    onClick={() => {
+                                                        setIsEditingCloseDate(true);
+                                                        if (currentDeal.expected_close_date) {
+                                                            const date = new Date(currentDeal.expected_close_date);
+                                                            setNewCloseDateStr(date.toISOString().split('T')[0]);
+                                                        } else {
+                                                            setNewCloseDateStr('');
+                                                        }
+                                                    }}
+                                                    color={colors.text.secondary}
+                                                    _hover={{color: colors.text.link}}
+                                                    isDisabled={!canEditDeal}
+                                                />
+                                            </HStack>
+                                        ) : (
+                                            <HStack spacing={2} flex={1} justifyContent="flex-end">
+                                                <Input 
+                                                    type="date" 
+                                                    value={newCloseDateStr} 
+                                                    onChange={(e) => setNewCloseDateStr(e.target.value)} 
+                                                    size="sm" 
+                                                    w="160px"
+                                                    bg={colors.bg.elevated}
+                                                    borderColor={colors.border.default}
+                                                    _hover={{borderColor: colors.border.default}}
+                                                    _focus={{borderColor: colors.text.link, boxShadow: `0 0 0 1px ${colors.text.link}`}}
+                                                />
+                                                <IconButton 
+                                                    icon={<CheckIcon />} 
+                                                    size="xs" 
+                                                    colorScheme="green" 
+                                                    aria-label="Save Expected Close Date" 
+                                                    onClick={handleCloseDateUpdate}
+                                                />
+                                                <IconButton 
+                                                    icon={<SmallCloseIcon />} 
+                                                    size="xs" 
+                                                    variant="ghost" 
+                                                    colorScheme="red" 
+                                                    aria-label="Cancel Edit Date" 
+                                                    onClick={() => setIsEditingCloseDate(false)}
+                                                />
+                                            </HStack>
+                                        )}
+                                    </HStack>
+
+                                    {/* Owner Field */}
+                                    <HStack justifyContent="space-between">
+                                        <Text fontSize="sm" color={colors.text.secondary}>Owner</Text>
+                                        {!isEditingOwner ? (
+                                            <HStack spacing={2}>
+                                                <Avatar 
+                                                    size="xs" 
+                                                    name={currentDeal.assignedToUser?.display_name || 'Unassigned'} 
+                                                    src={currentDeal.assignedToUser?.avatar_url || undefined}
+                                                    bg={colors.interactive.default}
+                                                />
+                                                <Text fontSize="md" fontWeight="medium" color={colors.text.primary}>
+                                                    {currentDeal.assignedToUser?.display_name || 'Unassigned'}
+                                                </Text>
+                                                <IconButton 
+                                                    icon={<EditIcon />} 
+                                                    size="xs" 
+                                                    variant="ghost" 
+                                                    aria-label="Edit Owner" 
+                                                    onClick={() => {
+                                                        setIsEditingOwner(true);
+                                                        setNewOwnerId(currentDeal.assigned_to_user_id || null);
+                                                    }}
+                                                    color={colors.text.secondary}
+                                                    _hover={{color: colors.text.link}}
+                                                    isDisabled={!canEditDeal}
+                                                />
+                                            </HStack>
+                                        ) : (
+                                            <HStack spacing={2} flex={1} justifyContent="flex-end">
+                                                <Select 
+                                                    value={newOwnerId || ''}
+                                                    onChange={(e) => setNewOwnerId(e.target.value || null)}
+                                                    size="sm" 
+                                                    w="180px"
+                                                    bg={colors.bg.elevated}
+                                                    borderColor={colors.border.default}
+                                                    _hover={{borderColor: colors.border.default}}
+                                                    _focus={{borderColor: colors.text.link, boxShadow: `0 0 0 1px ${colors.text.link}`}}
+                                                >
+                                                    <option value="">Unassigned</option>
+                                                    {formattedUserList.map(user => (
+                                                        <option key={user.id} value={user.id}>
+                                                            {user.display_name || user.email}
+                                                        </option>
+                                                    ))}
+                                                </Select>
+                                                <IconButton 
+                                                    icon={<CheckIcon />} 
+                                                    size="xs" 
+                                                    colorScheme="green" 
+                                                    aria-label="Save Owner" 
+                                                    onClick={handleOwnerUpdate}
+                                                />
+                                                <IconButton 
+                                                    icon={<SmallCloseIcon />} 
+                                                    size="xs" 
+                                                    variant="ghost" 
+                                                    colorScheme="red" 
+                                                    aria-label="Cancel Edit Owner" 
+                                                    onClick={() => setIsEditingOwner(false)}
+                                                />
+                                            </HStack>
+                                        )}
+                                    </HStack>
+
+                                    {/* Project ID Field */}
+                                    <HStack justifyContent="space-between" alignItems="center">
+                                        <Text fontSize="sm" color={colors.text.secondary}>Project ID</Text>
+                                        <Text 
+                                            fontSize="md" 
+                                            fontWeight="bold" 
+                                            color={colors.text.link}
+                                            fontFamily="mono"
+                                            bg={colors.bg.elevated}
+                                            px={3}
+                                            py={1}
+                                            borderRadius="md"
+                                            border="1px solid"
+                                            borderColor={colors.border.default}
+                                        >
+                                            #{(currentDeal as any).project_id || '-'}
+                                        </Text>
+                                    </HStack>
+                                </VStack>
+                            </Box>
+
+                                          {/* Custom Fields Section */}
+                {customFieldDefinitions && customFieldDefinitions.length > 0 && (
+                    <Box 
+                      p={5} 
+                      bg={colors.component.kanban.card} 
+                      borderRadius="lg" 
+                      border="1px solid" 
+                      borderColor={colors.component.kanban.cardBorder}
+                      boxShadow="metallic"
+                      position="relative"
+                      _before={{
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '2px',
+                        background: `linear-gradient(90deg, transparent 0%, ${getAccentColor()} 50%, transparent 100%)`,
+                        pointerEvents: 'none',
+                      }}
+                    >
+                        <HStack justifyContent="space-between" alignItems="center" mb={isCustomFieldsExpanded ? 4 : 0}>
+                            <Heading size="sm" color={colors.text.primary}>Custom Information</Heading>
+                            <IconButton
+                                icon={isCustomFieldsExpanded ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                                size="xs"
+                                variant="ghost"
+                                aria-label={isCustomFieldsExpanded ? "Collapse Custom Fields" : "Expand Custom Fields"}
+                                onClick={() => setIsCustomFieldsExpanded(!isCustomFieldsExpanded)}
+                                color={colors.text.secondary}
+                                _hover={{color: colors.text.link}}
+                            />
+                        </HStack>
+                        <Collapse in={isCustomFieldsExpanded} animateOpacity>
+                            <DealCustomFieldsPanel
+                                customFieldDefinitions={customFieldDefinitions || []}
+                                customFieldValues={currentDeal.customFieldValues || []}
+                                dealId={currentDeal.id}
+                                onUpdate={canEditDeal ? handleCustomFieldUpdate : undefined}
+                                getLinkDisplayDetails={getLinkDisplayDetails}
+                            />
+                        </Collapse>
+                    </Box>
+                )}
+
+                                {/* Primary Contact Section */}
+                                {currentDeal.person && (
+                                    <Box 
+                                      p={5} 
+                                      bg={colors.component.kanban.card} 
+                                      borderRadius="lg" 
+                                      border="1px solid" 
+                                      borderColor={colors.component.kanban.cardBorder}
+                                      boxShadow="metallic"
+                                      position="relative"
+                                      _before={{
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        height: '2px',
+                                        background: `linear-gradient(90deg, transparent 0%, ${getAccentColor()} 50%, transparent 100%)`,
+                                        pointerEvents: 'none',
+                                      }}
+                                    >
+                                        <Heading size="sm" mb={3} color={colors.text.primary}>Primary Contact</Heading>
+                                        <HStack spacing={3} alignItems="center">
+                                            <Avatar 
+                                                size="md" 
+                                                name={`${currentDeal.person?.first_name || ''} ${currentDeal.person?.last_name || ''}`}
+                                                bg={colors.interactive.default}
+                                                color={colors.text.onAccent}
+                                            />
+                                            <VStack align="start" spacing={0} flex={1}>
+                                                <Link as={RouterLink} to={`/people/${currentDeal.person?.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
+                                                    {currentDeal.person?.first_name} {currentDeal.person?.last_name}
+                                                </Link>
+                                                    {currentDeal.person?.email && (
+                                                        <Text fontSize="sm" color={colors.text.secondary}>
+                                                            {currentDeal.person?.email}
+                                                        </Text>
+                                                    )}
+                                            </VStack>
+                                        </HStack>
+                                        {currentDeal.person?.email && (
+                                            <Button 
+                                                size="xs" 
+                                                variant="outline" 
+                                                leftIcon={<EmailIcon />}
+                                                onClick={() => window.open(`mailto:${currentDeal.person?.email}`)}
+                                                width="full"
+                                                mt={3}
+                                            >
+                                                Email
+                                            </Button>
+                                        )}
+                                    </Box>
+                                )}
+
+                                {/* Organization Section */}
+                                {currentDeal.organization && (
+                                    <Box 
+                                      p={5} 
+                                      bg={colors.component.kanban.card} 
+                                      borderRadius="lg" 
+                                      border="1px solid" 
+                                      borderColor={colors.component.kanban.cardBorder}
+                                      boxShadow="metallic"
+                                      position="relative"
+                                      _before={{
+                                        content: '""',
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        height: '2px',
+                                        background: `linear-gradient(90deg, transparent 0%, ${getAccentColor()} 50%, transparent 100%)`,
+                                        pointerEvents: 'none',
+                                      }}
+                                    >
+                                        <Heading size="sm" mb={3} color={colors.text.primary}>Organization</Heading>
+                                        <HStack spacing={3} alignItems="center">
+                                            <VStack align="start" spacing={0}>
+                                                <Link as={RouterLink} to={`/organizations/${currentDeal.organization.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
+                                                    {currentDeal.organization.name}
+                                                </Link>
+                                            </VStack>
+                                        </HStack>
+                                    </Box>
+                                )}
+                                
+                            </VStack>
+                        )}
+                    </Box>
+                </Flex>
+        </Box>
+
+        {/* Modals */}
+        <Modal isOpen={isCreateActivityModalOpen} onClose={onCreateActivityModalClose} size="lg">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Create New Activity</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+                  <CreateActivityForm 
+                    onSuccess={handleActivityCreated} 
+                onClose={onCreateActivityModalClose} 
+                initialDealId={dealId}
+                initialDealName={currentDeal?.name}
+                  />
+                </ModalBody>
+              </ModalContent>
+            </Modal>
+
+        <Modal isOpen={isEditActivityModalOpen} onClose={onEditActivityModalClose} size="lg">
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Edit Activity</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              {selectedActivity && (
+                  <EditActivityForm 
+                    activity={selectedActivity} 
+                    onSuccess={handleActivityUpdated} 
+                  onClose={onEditActivityModalClose} 
+                  />
+              )}
+                </ModalBody>
+              </ModalContent>
+            </Modal>
+
+        <AlertDialog isOpen={isDeleteConfirmOpen} leastDestructiveRef={cancelRef} onClose={onDeleteConfirmClose}>
+          <AlertDialogOverlay>
+            <AlertDialogContent>
+              <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                    Delete Activity
+                  </AlertDialogHeader>
+              <AlertDialogBody>
+                Are you sure you want to delete this activity? This action cannot be undone.
+                  </AlertDialogBody>
+                  <AlertDialogFooter>
+                <Button ref={cancelRef} onClick={onDeleteConfirmClose}>
+                      Cancel
+                    </Button>
+                    <Button colorScheme="red" onClick={confirmDeleteActivity} ml={3}>
+                      Delete
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialogOverlay>
+            </AlertDialog>
 
       <Modal isOpen={isEditDealModalOpen} onClose={onEditDealModalClose} size="xl">
         <ModalOverlay />

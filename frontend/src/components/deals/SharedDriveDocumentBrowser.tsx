@@ -59,6 +59,7 @@ import {
   SiGoogle,
 } from 'react-icons/si';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useThemeStore } from '../../stores/useThemeStore';
 import { gqlClient } from '../../lib/graphqlClient';
 import {
   GET_SHARED_DRIVES,
@@ -146,6 +147,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
   onDocumentCountChange
 }) => {
   const colors = useThemeColors();
+  const currentThemeName = useThemeStore((state) => state.currentTheme);
   const toast = useToast();
   
   // State
@@ -509,54 +511,82 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
   const renderFileList = (fileList: DriveFile[], showAttachButton = true) => (
     <VStack spacing={2} align="stretch">
       {fileList.map((file) => (
-        <Card key={file.id} size="sm" _hover={{ bg: colors.bg.surface, borderColor: colors.interactive.default }}>
-          <CardBody>
-            <HStack justify="space-between" align="center">
-              <HStack spacing={3} flex={1} minW={0}>
-                <Box>
-                  {renderFileIcon(file.mimeType)}
-                </Box>
-                <VStack align="start" spacing={0} flex={1} minW={0}>
-                  <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
-                    {file.name}
-                  </Text>
-                  <HStack spacing={4} fontSize="xs" color={colors.text.muted}>
-                    <Badge size="sm" colorScheme="gray" variant="subtle">
-                      {getFileTypeLabel(file.mimeType)}
-                    </Badge>
-                    <Text>{formatFileSize(file.size)}</Text>
-                    <Text>{formatDate(file.modifiedTime)}</Text>
-                    {file.owners?.[0] && (
-                      <Text noOfLines={1}>{file.owners[0].displayName}</Text>
-                    )}
-                  </HStack>
-                </VStack>
-              </HStack>
-              <HStack spacing={2}>
-                {file.webViewLink && (
-                  <IconButton
-                    aria-label="Open in Google Drive"
-                    icon={<ExternalLinkIcon />}
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => window.open(file.webViewLink, '_blank')}
-                  />
-                )}
-                {showAttachButton && (
-                  <Button
-                    size="sm"
-                    leftIcon={<AttachmentIcon />}
-                    colorScheme="blue"
-                    variant="outline"
-                    onClick={() => openAttachModal(file)}
-                  >
-                    Attach
-                  </Button>
-                )}
-              </HStack>
+        <Box
+          key={file.id}
+          p={4}
+          borderRadius="lg"
+          borderWidth="1px"
+          borderColor={colors.component.kanban.cardBorder}
+          bg={colors.component.kanban.card}
+          boxShadow="metallic"
+          position="relative"
+          _before={{
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '3px',
+            height: '100%',
+            background: currentThemeName === 'industrialMetal' 
+        ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)'
+        : currentThemeName === 'lightModern'
+        ? 'linear-gradient(180deg, rgba(99, 102, 241, 0.6) 0%, rgba(99, 102, 241, 0.8) 50%, rgba(99, 102, 241, 0.6) 100%)'
+        : 'linear-gradient(180deg, rgba(102, 126, 234, 0.6) 0%, rgba(102, 126, 234, 0.8) 50%, rgba(102, 126, 234, 0.6) 100%)',
+            borderRadius: '0 0 0 lg',
+          }}
+          _hover={{ 
+            bg: colors.component.kanban.cardHover,
+            transform: 'translateX(4px) translateY(-1px)',
+            boxShadow: 'industrial3d',
+            borderColor: colors.component.kanban.cardBorder,
+          }}
+          transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+        >
+          <HStack justify="space-between" align="center">
+            <HStack spacing={3} flex={1} minW={0}>
+              <Box>
+                {renderFileIcon(file.mimeType)}
+              </Box>
+              <VStack align="start" spacing={0} flex={1} minW={0}>
+                <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
+                  {file.name}
+                </Text>
+                <HStack spacing={4} fontSize="xs" color={colors.text.muted}>
+                  <Badge size="sm" colorScheme="gray" variant="subtle">
+                    {getFileTypeLabel(file.mimeType)}
+                  </Badge>
+                  <Text>{formatFileSize(file.size)}</Text>
+                  <Text>{formatDate(file.modifiedTime)}</Text>
+                  {file.owners?.[0] && (
+                    <Text noOfLines={1}>{file.owners[0].displayName}</Text>
+                  )}
+                </HStack>
+              </VStack>
             </HStack>
-          </CardBody>
-        </Card>
+            <HStack spacing={2}>
+              {file.webViewLink && (
+                <IconButton
+                  aria-label="Open in Google Drive"
+                  icon={<ExternalLinkIcon />}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => window.open(file.webViewLink, '_blank')}
+                />
+              )}
+              {showAttachButton && (
+                <Button
+                  size="sm"
+                  leftIcon={<AttachmentIcon />}
+                  colorScheme="blue"
+                  variant="outline"
+                  onClick={() => openAttachModal(file)}
+                >
+                  Attach
+                </Button>
+              )}
+            </HStack>
+          </HStack>
+        </Box>
       ))}
     </VStack>
   );
@@ -564,31 +594,50 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
   const renderFolderList = (folderList: DriveFolder[]) => (
     <VStack spacing={2} align="stretch">
       {folderList.map((folder) => (
-        <Card 
-          key={folder.id} 
-          size="sm" 
-          cursor="pointer" 
+        <Box
+          key={folder.id}
+          p={4}
+          borderRadius="lg"
+          borderWidth="1px"
+          borderColor={colors.component.kanban.cardBorder}
+          bg={colors.component.kanban.card}
+          boxShadow="metallic"
+          cursor="pointer"
           onClick={() => navigateToFolder(folder)}
-          _hover={{ bg: colors.bg.surface, borderColor: colors.interactive.default, transform: 'translateY(-1px)' }}
-          transition="all 0.2s"
+          position="relative"
+          _before={{
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '3px',
+            height: '100%',
+            background: 'linear-gradient(180deg, rgba(68, 133, 244, 0.6) 0%, rgba(68, 133, 244, 0.8) 50%, rgba(68, 133, 244, 0.6) 100%)',
+            borderRadius: '0 0 0 lg',
+          }}
+          _hover={{ 
+            bg: colors.component.kanban.cardHover,
+            transform: 'translateX(4px) translateY(-1px)',
+            boxShadow: 'industrial3d',
+            borderColor: colors.component.kanban.cardBorder,
+          }}
+          transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
         >
-          <CardBody>
-            <HStack spacing={3}>
-              <Box>
-                <FiFolder size={16} color="#4285f4" />
-              </Box>
-              <VStack align="start" spacing={0} flex={1}>
-                <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
-                  {folder.name}
-                </Text>
-                <Text fontSize="xs" color={colors.text.muted}>
-                  Modified {formatDate(folder.modifiedTime)}
-                </Text>
-              </VStack>
-              <ChevronRightIcon color={colors.text.muted} />
-            </HStack>
-          </CardBody>
-        </Card>
+          <HStack spacing={3}>
+            <Box>
+              <FiFolder size={16} color="#4285f4" />
+            </Box>
+            <VStack align="start" spacing={0} flex={1}>
+              <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
+                {folder.name}
+              </Text>
+              <Text fontSize="xs" color={colors.text.muted}>
+                Modified {formatDate(folder.modifiedTime)}
+              </Text>
+            </VStack>
+            <ChevronRightIcon color={colors.text.muted} />
+          </HStack>
+        </Box>
       ))}
     </VStack>
   );
@@ -596,52 +645,76 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
   const renderAttachments = () => (
     <VStack spacing={2} align="stretch">
       {attachments.map((attachment) => (
-        <Card key={attachment.id} size="sm">
-          <CardBody>
-            <HStack justify="space-between" align="center">
-              <HStack spacing={3} flex={1} minW={0}>
-                <Box color={colors.text.muted}>
-                  {renderFileIcon(attachment.mimeType || '')}
-                </Box>
-                <VStack align="start" spacing={0} flex={1} minW={0}>
-                  <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
-                    {attachment.fileName}
-                  </Text>
-                  <HStack spacing={4} fontSize="xs" color={colors.text.muted}>
-                    {attachment.category && (
-                      <Badge colorScheme={getCategoryColor(attachment.category.toLowerCase())} size="sm">
-                        {DOCUMENT_CATEGORIES.find(c => c.value === attachment.category?.toLowerCase())?.label || attachment.category}
-                      </Badge>
-                    )}
-                    <Text>{formatDate(attachment.attachedAt)}</Text>
-                    {attachment.fileSize && (
-                      <Text>{formatFileSize(attachment.fileSize)}</Text>
-                    )}
-                  </HStack>
-                </VStack>
-              </HStack>
-              <HStack spacing={2}>
-                {attachment.fileUrl && (
-                  <IconButton
-                    aria-label="Open in Google Drive"
-                    icon={<ExternalLinkIcon />}
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => window.open(attachment.fileUrl, '_blank')}
-                  />
-                )}
+        <Box
+          key={attachment.id}
+          p={4}
+          borderRadius="lg"
+          borderWidth="1px"
+          borderColor={colors.component.kanban.cardBorder}
+          bg={colors.component.kanban.card}
+          boxShadow="metallic"
+          position="relative"
+          _before={{
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '3px',
+            height: '100%',
+            background: 'linear-gradient(180deg, rgba(34, 197, 94, 0.6) 0%, rgba(34, 197, 94, 0.8) 50%, rgba(34, 197, 94, 0.6) 100%)',
+            borderRadius: '0 0 0 lg',
+          }}
+          _hover={{ 
+            bg: colors.component.kanban.cardHover,
+            transform: 'translateX(4px) translateY(-1px)',
+            boxShadow: 'industrial3d',
+            borderColor: colors.component.kanban.cardBorder,
+          }}
+          transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+        >
+          <HStack justify="space-between" align="center">
+            <HStack spacing={3} flex={1} minW={0}>
+              <Box color={colors.text.muted}>
+                {renderFileIcon(attachment.mimeType || '')}
+              </Box>
+              <VStack align="start" spacing={0} flex={1} minW={0}>
+                <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
+                  {attachment.fileName}
+                </Text>
+                <HStack spacing={4} fontSize="xs" color={colors.text.muted}>
+                  {attachment.category && (
+                    <Badge colorScheme={getCategoryColor(attachment.category.toLowerCase())} size="sm">
+                      {DOCUMENT_CATEGORIES.find(c => c.value === attachment.category?.toLowerCase())?.label || attachment.category}
+                    </Badge>
+                  )}
+                  <Text>{formatDate(attachment.attachedAt)}</Text>
+                  {attachment.fileSize && (
+                    <Text>{formatFileSize(attachment.fileSize)}</Text>
+                  )}
+                </HStack>
+              </VStack>
+            </HStack>
+            <HStack spacing={2}>
+              {attachment.fileUrl && (
                 <IconButton
-                  aria-label="Remove attachment"
-                  icon={<FiX />}
+                  aria-label="Open in Google Drive"
+                  icon={<ExternalLinkIcon />}
                   size="sm"
                   variant="ghost"
-                  colorScheme="red"
-                  onClick={() => handleRemoveAttachment(attachment.id)}
+                  onClick={() => window.open(attachment.fileUrl, '_blank')}
                 />
-              </HStack>
+              )}
+              <IconButton
+                aria-label="Remove attachment"
+                icon={<FiX />}
+                size="sm"
+                variant="ghost"
+                colorScheme="red"
+                onClick={() => handleRemoveAttachment(attachment.id)}
+              />
             </HStack>
-          </CardBody>
-        </Card>
+          </HStack>
+        </Box>
       ))}
       {attachments.length === 0 && (
         <Center py={8}>
@@ -661,212 +734,257 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
   );
 
   return (
-    <Box>
-      <Card>
-        <CardHeader>
-          <VStack spacing={4} align="stretch">
-            <HStack justify="space-between" align="center">
-              <Text fontSize="lg" fontWeight="semibold">
-                Document Browser
-              </Text>
-              <HStack spacing={2}>
-                <Select
-                  size="sm"
-                  placeholder="Select shared drive"
-                  value={selectedDrive?.id || ''}
-                  onChange={(e) => {
-                    const drive = sharedDrives.find(d => d.id === e.target.value);
-                    setSelectedDrive(drive || null);
-                    setCurrentFolderId(null);
-                    setFolderPath([]);
-                  }}
-                  minW="200px"
-                >
-                  {sharedDrives.map((drive) => (
-                    <option key={drive.id} value={drive.id}>
-                      {drive.name}
-                    </option>
-                  ))}
-                </Select>
-              </HStack>
+    <Box
+      bg={colors.component.kanban.column} 
+      borderRadius="xl" 
+      borderWidth="1px"
+      borderColor={colors.component.kanban.cardBorder}
+      boxShadow="steelPlate"
+      p={6}
+      position="relative"
+      _before={{
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: '2px',
+        background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
+  ? 'rgba(255, 170, 0, 0.6)' 
+  : currentThemeName === 'lightModern'
+  ? 'rgba(99, 102, 241, 0.6)'
+  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+        pointerEvents: 'none',
+      }}
+    >
+      <VStack spacing={4} align="stretch">
+        <HStack justify="space-between" align="center">
+          <Text fontSize="lg" fontWeight="semibold" color={colors.text.primary}>
+            Document Browser
+          </Text>
+          <HStack spacing={2}>
+            <Select
+              size="sm"
+              placeholder="Select shared drive"
+              value={selectedDrive?.id || ''}
+              onChange={(e) => {
+                const drive = sharedDrives.find(d => d.id === e.target.value);
+                setSelectedDrive(drive || null);
+                setCurrentFolderId(null);
+                setFolderPath([]);
+              }}
+              minW="200px"
+              bg={colors.component.kanban.card}
+              borderColor={colors.component.kanban.cardBorder}
+            >
+              {sharedDrives.map((drive) => (
+                <option key={drive.id} value={drive.id}>
+                  {drive.name}
+                </option>
+              ))}
+            </Select>
+          </HStack>
+        </HStack>
+
+        {/* Search Bar */}
+        <InputGroup>
+          <InputLeftElement pointerEvents="none">
+            <SearchIcon color={colors.text.muted} />
+          </InputLeftElement>
+          <Input
+            placeholder="Search documents..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          />
+          <Button
+            ml={2}
+            leftIcon={<FiSearch />}
+            onClick={handleSearch}
+            disabled={!searchQuery.trim()}
+            size="md"
+          >
+            Search
+          </Button>
+        </InputGroup>
+      </VStack>
+
+      <Tabs 
+        index={activeTab} 
+        onChange={setActiveTab}
+        bg={colors.component.kanban.card}
+        borderRadius="lg"
+        borderWidth="1px"
+        borderColor={colors.component.kanban.cardBorder}
+        boxShadow="metallic"
+        mt={4}
+      >
+        <TabList 
+          borderBottomColor={colors.component.kanban.cardBorder}
+          bg={colors.component.kanban.card}
+          borderTopRadius="lg"
+          position="relative"
+          _after={{
+            content: '""',
+            position: 'absolute',
+            bottom: 0,
+            left: '8px',
+            right: '8px',
+            height: '1px',
+            background: `linear-gradient(90deg, transparent 0%, ${currentThemeName === 'industrialMetal' 
+  ? 'rgba(255, 170, 0, 0.6)' 
+  : currentThemeName === 'lightModern'
+  ? 'rgba(99, 102, 241, 0.6)'
+  : 'rgba(102, 126, 234, 0.6)'} 50%, transparent 100%)`,
+          }}
+        >
+          <Tab>
+            <HStack spacing={2}>
+              <FiHardDrive />
+              <Text>Browse</Text>
             </HStack>
+          </Tab>
+          <Tab>
+            <HStack spacing={2}>
+              <FiSearch />
+              <Text>Search Results</Text>
+              {searchResults.length > 0 && (
+                <Badge colorScheme="blue" size="sm">
+                  {searchResults.length}
+                </Badge>
+              )}
+            </HStack>
+          </Tab>
+          <Tab>
+            <HStack spacing={2}>
+              <FiClock />
+              <Text>Recent</Text>
+            </HStack>
+          </Tab>
+          <Tab>
+            <HStack spacing={2}>
+              <AttachmentIcon />
+              <Text>Attached</Text>
+              {attachments.length > 0 && (
+                <Badge colorScheme="green" size="sm">
+                  {attachments.length}
+                </Badge>
+              )}
+            </HStack>
+          </Tab>
+        </TabList>
 
-            {/* Search Bar */}
-            <InputGroup>
-              <InputLeftElement pointerEvents="none">
-                <SearchIcon color={colors.text.muted} />
-              </InputLeftElement>
-              <Input
-                placeholder="Search documents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <Button
-                ml={2}
-                leftIcon={<FiSearch />}
-                onClick={handleSearch}
-                disabled={!searchQuery.trim()}
-                size="md"
-              >
-                Search
-              </Button>
-            </InputGroup>
-          </VStack>
-        </CardHeader>
+        <TabPanels>
+          {/* Browse Tab */}
+          <TabPanel px={0}>
+            {selectedDrive ? (
+              <VStack spacing={4} align="stretch">
+                {/* Breadcrumb */}
+                <Breadcrumb separator={<ChevronRightIcon />} fontSize="sm">
+                  <BreadcrumbItem>
+                    <BreadcrumbLink onClick={() => navigateToPath(-1)}>
+                      {selectedDrive.name}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  {folderPath.map((folder, index) => (
+                    <BreadcrumbItem key={folder.id}>
+                      <BreadcrumbLink onClick={() => navigateToPath(index)}>
+                        {folder.name}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                  ))}
+                </Breadcrumb>
 
-        <CardBody>
-          <Tabs index={activeTab} onChange={setActiveTab}>
-            <TabList>
-              <Tab>
-                <HStack spacing={2}>
-                  <FiHardDrive />
-                  <Text>Browse</Text>
-                </HStack>
-              </Tab>
-              <Tab>
-                <HStack spacing={2}>
-                  <FiSearch />
-                  <Text>Search Results</Text>
-                  {searchResults.length > 0 && (
-                    <Badge colorScheme="blue" size="sm">
-                      {searchResults.length}
-                    </Badge>
-                  )}
-                </HStack>
-              </Tab>
-              <Tab>
-                <HStack spacing={2}>
-                  <FiClock />
-                  <Text>Recent</Text>
-                </HStack>
-              </Tab>
-              <Tab>
-                <HStack spacing={2}>
-                  <AttachmentIcon />
-                  <Text>Attached</Text>
-                  {attachments.length > 0 && (
-                    <Badge colorScheme="green" size="sm">
-                      {attachments.length}
-                    </Badge>
-                  )}
-                </HStack>
-              </Tab>
-            </TabList>
-
-            <TabPanels>
-              {/* Browse Tab */}
-              <TabPanel px={0}>
-                {selectedDrive ? (
+                {loading ? (
+                  <Center py={8}>
+                    <Spinner />
+                  </Center>
+                ) : (
                   <VStack spacing={4} align="stretch">
-                    {/* Breadcrumb */}
-                    <Breadcrumb separator={<ChevronRightIcon />} fontSize="sm">
-                      <BreadcrumbItem>
-                        <BreadcrumbLink onClick={() => navigateToPath(-1)}>
-                          {selectedDrive.name}
-                        </BreadcrumbLink>
-                      </BreadcrumbItem>
-                      {folderPath.map((folder, index) => (
-                        <BreadcrumbItem key={folder.id}>
-                          <BreadcrumbLink onClick={() => navigateToPath(index)}>
-                            {folder.name}
-                          </BreadcrumbLink>
-                        </BreadcrumbItem>
-                      ))}
-                    </Breadcrumb>
-
-                    {loading ? (
+                    {folders.length > 0 && (
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" mb={2} color={colors.text.muted}>
+                          Folders
+                        </Text>
+                        {renderFolderList(folders)}
+                      </Box>
+                    )}
+                    
+                    {files.length > 0 && (
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium" mb={2} color={colors.text.muted}>
+                          Files
+                        </Text>
+                        {renderFileList(files)}
+                      </Box>
+                    )}
+                    
+                    {folders.length === 0 && files.length === 0 && (
                       <Center py={8}>
-                        <Spinner />
+                        <Text color={colors.text.muted}>
+                          This folder is empty.
+                        </Text>
                       </Center>
-                    ) : (
-                      <VStack spacing={4} align="stretch">
-                        {folders.length > 0 && (
-                          <Box>
-                            <Text fontSize="sm" fontWeight="medium" mb={2} color={colors.text.muted}>
-                              Folders
-                            </Text>
-                            {renderFolderList(folders)}
-                          </Box>
-                        )}
-                        
-                        {files.length > 0 && (
-                          <Box>
-                            <Text fontSize="sm" fontWeight="medium" mb={2} color={colors.text.muted}>
-                              Files
-                            </Text>
-                            {renderFileList(files)}
-                          </Box>
-                        )}
-                        
-                        {folders.length === 0 && files.length === 0 && (
-                          <Center py={8}>
-                            <Text color={colors.text.muted}>
-                              This folder is empty.
-                            </Text>
-                          </Center>
-                        )}
-                      </VStack>
                     )}
                   </VStack>
-                ) : (
-                  <Center py={8}>
-                    <VStack spacing={3}>
-                      <Box color={colors.text.muted} fontSize="2xl">
-                        <FiHardDrive />
-                      </Box>
-                      <Text color={colors.text.muted} textAlign="center">
-                        Select a shared drive to browse documents.
-                      </Text>
-                    </VStack>
-                  </Center>
                 )}
-              </TabPanel>
+              </VStack>
+            ) : (
+              <Center py={8}>
+                <VStack spacing={3}>
+                  <Box color={colors.text.muted} fontSize="2xl">
+                    <FiHardDrive />
+                  </Box>
+                  <Text color={colors.text.muted} textAlign="center">
+                    Select a shared drive to browse documents.
+                  </Text>
+                </VStack>
+              </Center>
+            )}
+          </TabPanel>
 
-              {/* Search Results Tab */}
-              <TabPanel px={0}>
-                {searchResults.length > 0 ? (
-                  renderFileList(searchResults)
-                ) : (
-                  <Center py={8}>
-                    <VStack spacing={3}>
-                      <Box color={colors.text.muted} fontSize="2xl">
-                        <FiSearch />
-                      </Box>
-                      <Text color={colors.text.muted} textAlign="center">
-                        {searchQuery ? 'No files found matching your search.' : 'Enter a search term to find documents.'}
-                      </Text>
-                    </VStack>
-                  </Center>
-                )}
-              </TabPanel>
+          {/* Search Results Tab */}
+          <TabPanel px={0}>
+            {searchResults.length > 0 ? (
+              renderFileList(searchResults)
+            ) : (
+              <Center py={8}>
+                <VStack spacing={3}>
+                  <Box color={colors.text.muted} fontSize="2xl">
+                    <FiSearch />
+                  </Box>
+                  <Text color={colors.text.muted} textAlign="center">
+                    {searchQuery ? 'No files found matching your search.' : 'Enter a search term to find documents.'}
+                  </Text>
+                </VStack>
+              </Center>
+            )}
+          </TabPanel>
 
-              {/* Recent Files Tab */}
-              <TabPanel px={0}>
-                {recentFiles.length > 0 ? (
-                  renderFileList(recentFiles)
-                ) : (
-                  <Center py={8}>
-                    <VStack spacing={3}>
-                      <Box color={colors.text.muted} fontSize="2xl">
-                        <FiClock />
-                      </Box>
-                      <Text color={colors.text.muted} textAlign="center">
-                        No recent files found.
-                      </Text>
-                    </VStack>
-                  </Center>
-                )}
-              </TabPanel>
+          {/* Recent Files Tab */}
+          <TabPanel px={0}>
+            {recentFiles.length > 0 ? (
+              renderFileList(recentFiles)
+            ) : (
+              <Center py={8}>
+                <VStack spacing={3}>
+                  <Box color={colors.text.muted} fontSize="2xl">
+                    <FiClock />
+                  </Box>
+                  <Text color={colors.text.muted} textAlign="center">
+                    No recent files found.
+                  </Text>
+                </VStack>
+              </Center>
+            )}
+          </TabPanel>
 
-              {/* Attachments Tab */}
-              <TabPanel px={0}>
-                {renderAttachments()}
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </CardBody>
-      </Card>
+          {/* Attachments Tab */}
+          <TabPanel px={0}>
+            {renderAttachments()}
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
 
       {/* Attach Document Modal */}
       <Modal isOpen={isAttachModalOpen} onClose={onAttachModalClose} size="md">
