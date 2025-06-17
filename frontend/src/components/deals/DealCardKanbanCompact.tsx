@@ -10,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 import { Deal } from '../../stores/useDealsStore';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
-import { Link as RouterLink } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
 import { useAppStore } from '../../stores/useAppStore';
@@ -62,6 +62,14 @@ interface DealCardKanbanCompactProps {
 const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo(({ deal, index }) => {
   const colors = useThemeColors();
   const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
+  const navigate = useNavigate();
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if it's a drag event
+    if (e.defaultPrevented) return;
+    
+    navigate(`/deals/${deal.id}`);
+  };
 
   const getEffectiveProbability = () => {
     if (deal.deal_specific_probability != null) return deal.deal_specific_probability;
@@ -86,6 +94,7 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
     borderWidth: "1px",
     borderColor: colors.border.default,
     transition: "all 0.2s ease", // Faster transition
+    cursor: "pointer",
     _hover: {
       transform: "translateY(-2px)", // Reduced from -4px
       boxShadow: `0 8px 15px -3px rgba(59, 130, 246, 0.1)`, // Smaller shadow
@@ -111,21 +120,21 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
           {...provided.dragHandleProps}
           style={{ ...provided.draggableProps.style }}
           mb={2} // Reduced from 4 to 2
+          onClick={handleCardClick}
           {...(snapshot.isDragging ? draggingStyle : baseStyle)}
         >
           {/* Header Row: Name + Amount */}
           <HStack justify="space-between" mb={2}>
-            <RouterLink to={`/deals/${deal.id}`} style={{ textDecoration: 'none', flex: 1, minWidth: 0 }}>
-              <Text 
-                fontWeight="semibold" 
-                color={colors.text.primary}
-                _hover={{ color: colors.text.link }}
-                fontSize="sm"
-                noOfLines={1}
-              >
-                {deal.name}
-              </Text>
-            </RouterLink>
+            <Text 
+              fontWeight="semibold" 
+              color={colors.text.primary}
+              fontSize="sm"
+              noOfLines={1}
+              flex={1}
+              minWidth={0}
+            >
+              {deal.name}
+            </Text>
             <Text fontSize="sm" fontWeight="bold" color={colors.text.success} ml={2}>
               {formatDealAmount(deal, currencyDisplayMode, baseCurrencyForConversion)}
             </Text>
