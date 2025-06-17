@@ -100,22 +100,19 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
     }
   }
 
-  // Enhanced styling based on activity urgency
+  // Enhanced styling based on activity urgency - simplified
   const hasOverdueActivities = activityIndicators.overdueCount > 0;
   const hasDueTodayActivities = activityIndicators.dueTodayCount > 0;
   
-  let urgentBorderColor = colors.component.kanban.cardBorder;
-  let urgentBorderLeftWidth = "1px";
-  let urgentBorderLeftColor = "transparent";
+  let borderLeftColor = "transparent";
+  let borderLeftWidth = "1px";
   
   if (hasOverdueActivities) {
-    urgentBorderColor = "red.200";
-    urgentBorderLeftWidth = "6px";
-    urgentBorderLeftColor = "red.500";
+    borderLeftColor = "red.400";
+    borderLeftWidth = "4px";
   } else if (hasDueTodayActivities) {
-    urgentBorderColor = "orange.200";
-    urgentBorderLeftWidth = "6px";
-    urgentBorderLeftColor = "orange.400";
+    borderLeftColor = "orange.400";
+    borderLeftWidth = "4px";
   }
 
   const baseStyle = {
@@ -123,9 +120,9 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
     p: 5,
     borderRadius: "lg",
     borderWidth: "1px",
-    borderColor: urgentBorderColor,
-    borderLeftWidth: urgentBorderLeftWidth,
-    borderLeftColor: urgentBorderLeftColor,
+    borderColor: colors.component.kanban.cardBorder,
+    borderLeftWidth: borderLeftWidth,
+    borderLeftColor: borderLeftColor,
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
     boxShadow: 'metallic',
     position: 'relative',
@@ -143,49 +140,25 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
     },
     _hover: {
       transform: "translateY(-4px) scale(1.02)",
-      boxShadow: hasOverdueActivities 
-        ? 'forgeFire' 
-        : hasDueTodayActivities 
-        ? 'metalRivets'
-        : 'industrial3d',
-      borderColor: hasOverdueActivities 
-        ? "red.300" 
-        : hasDueTodayActivities 
-        ? "orange.300"
-        : colors.component.kanban.cardBorder,
+      boxShadow: 'industrial3d',
+      borderColor: colors.component.kanban.cardBorder,
       bg: colors.component.kanban.cardHover,
       filter: 'brightness(1.05)',
       _before: {
-        background: hasOverdueActivities 
-          ? 'linear-gradient(45deg, transparent 30%, rgba(239, 68, 68, 0.1) 50%, transparent 70%)'
-          : hasDueTodayActivities 
-          ? 'linear-gradient(45deg, transparent 30%, rgba(251, 146, 60, 0.1) 50%, transparent 70%)'
-          : 'linear-gradient(45deg, transparent 30%, rgba(255, 170, 0, 0.05) 50%, transparent 70%)',
+        background: 'linear-gradient(45deg, transparent 30%, rgba(255, 170, 0, 0.05) 50%, transparent 70%)',
       },
     }
   };
 
   const draggingStyle = {
     ...baseStyle,
-    borderColor: hasOverdueActivities 
-      ? "red.400" 
-      : hasDueTodayActivities 
-      ? "orange.400"
-      : colors.component.kanban.cardBorder,
-    boxShadow: hasOverdueActivities 
-      ? 'forgeFire' 
-      : hasDueTodayActivities 
-      ? 'metalRivets'
-      : 'forgeFire',
+    borderColor: colors.component.kanban.cardBorder,
+    boxShadow: 'forgeFire',
     transform: 'translateY(-6px) rotate(2deg) scale(1.05)',
     filter: 'brightness(1.1)',
     bg: colors.component.kanban.cardHover,
     _before: {
-      background: hasOverdueActivities 
-        ? 'linear-gradient(45deg, transparent 20%, rgba(239, 68, 68, 0.15) 50%, transparent 80%)'
-        : hasDueTodayActivities 
-        ? 'linear-gradient(45deg, transparent 20%, rgba(251, 146, 60, 0.15) 50%, transparent 80%)'
-        : 'linear-gradient(45deg, transparent 20%, rgba(255, 170, 0, 0.1) 50%, transparent 80%)',
+      background: 'linear-gradient(45deg, transparent 20%, rgba(255, 170, 0, 0.1) 50%, transparent 80%)',
     },
   };
 
