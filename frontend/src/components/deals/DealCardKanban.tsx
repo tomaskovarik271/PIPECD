@@ -21,6 +21,8 @@ import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { TimeIcon, ExternalLinkIcon, EditIcon, ViewIcon as EyeIcon } from '@chakra-ui/icons';
 import { differenceInDays, formatDistanceToNowStrict, isPast, format } from 'date-fns';
 import { useAppStore } from '../../stores/useAppStore';
+import { ActivityIndicator } from '../common/ActivityIndicator';
+import { analyzeDealActivities } from '../../utils/activityIndicators';
 
 interface DealCardKanbanProps {
   deal: Deal;
@@ -69,6 +71,9 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
   const styles = useThemeStyles();
   const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
   const navigate = useNavigate();
+
+  // Analyze activities for indicators
+  const activityIndicators = analyzeDealActivities(deal.activities || []);
 
   const placeholderTags = [deal.currentWfmStep?.status?.name].filter(Boolean) as string[];
   if (deal.amount && deal.amount > 50000) placeholderTags.push('High Value');
@@ -162,15 +167,18 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
           <VStack align="stretch" spacing={3}>
             <HStack justify="space-between" mb={2}>
               <VStack align="start" spacing={0.5}>
-                <Text 
-                  fontWeight="bold" 
-                  color={colors.text.primary}
-                  fontSize="md"
-                  lineHeight="1.3"
-                  noOfLines={2}
-                >
-                  {deal.name}
-                </Text>
+                <HStack spacing={2} align="start">
+                  <Text 
+                    fontWeight="bold" 
+                    color={colors.text.primary}
+                    fontSize="md"
+                    lineHeight="1.3"
+                    noOfLines={2}
+                  >
+                    {deal.name}
+                  </Text>
+                  <ActivityIndicator indicators={activityIndicators} variant="default" />
+                </HStack>
                 <Text fontSize="sm" color={colors.text.muted}>
                   {deal.organization?.name || '-'}
                 </Text>

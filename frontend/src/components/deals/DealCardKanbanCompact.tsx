@@ -14,6 +14,8 @@ import { useNavigate } from 'react-router-dom';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
 import { useAppStore } from '../../stores/useAppStore';
+import { ActivityIndicator } from '../common/ActivityIndicator';
+import { analyzeDealActivities } from '../../utils/activityIndicators';
 
 // Simple exchange rates for demo (in production, this would come from the database)
 const EXCHANGE_RATES: Record<string, Record<string, number>> = {
@@ -71,6 +73,9 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
     navigate(`/deals/${deal.id}`);
   };
 
+  // Analyze activities for indicators
+  const activityIndicators = analyzeDealActivities(deal.activities || []);
+
   const getEffectiveProbability = () => {
     if (deal.deal_specific_probability != null) return deal.deal_specific_probability;
     if (deal.currentWfmStep?.metadata && typeof deal.currentWfmStep.metadata === 'object' && 'deal_probability' in deal.currentWfmStep.metadata) {
@@ -123,19 +128,22 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
           onClick={handleCardClick}
           {...(snapshot.isDragging ? draggingStyle : baseStyle)}
         >
-          {/* Header Row: Name + Amount */}
-          <HStack justify="space-between" mb={2}>
-            <Text 
-              fontWeight="semibold" 
-              color={colors.text.primary}
-              fontSize="sm"
-              noOfLines={1}
-              flex={1}
-              minWidth={0}
-            >
-              {deal.name}
-            </Text>
-            <Text fontSize="sm" fontWeight="bold" color={colors.text.success} ml={2}>
+          {/* Header Row: Name + Activity Indicators + Amount */}
+          <HStack justify="space-between" mb={2} align="center">
+            <HStack spacing={2} flex={1} minWidth={0}>
+              <Text 
+                fontWeight="semibold" 
+                color={colors.text.primary}
+                fontSize="sm"
+                noOfLines={1}
+                flex={1}
+                minWidth={0}
+              >
+                {deal.name}
+              </Text>
+              <ActivityIndicator indicators={activityIndicators} variant="compact" />
+            </HStack>
+            <Text fontSize="sm" fontWeight="bold" color={colors.text.success} ml={2} flexShrink={0}>
               {formatDealAmount(deal, currencyDisplayMode, baseCurrencyForConversion)}
             </Text>
           </HStack>
