@@ -133,10 +133,8 @@ const DealDetailPage = () => {
     switch (currentThemeName) {
       case 'industrialMetal':
         return 'rgba(255, 170, 0, 0.6)'; // Hazard yellow for industrial only
-      case 'lightModern':
-        return '#6366f1'; // Indigo for light modern
       default:
-        return '#667eea'; // Blue for modern dark
+        return 'transparent'; // No accent for modern themes
     }
   };
   
