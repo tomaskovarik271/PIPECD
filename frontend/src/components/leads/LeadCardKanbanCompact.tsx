@@ -6,15 +6,14 @@ import {
   Tooltip,
   Progress,
   Avatar,
-  Badge,
   Flex,
+  Badge,
 } from '@chakra-ui/react';
-import { useNavigate } from 'react-router-dom';
 import { Lead } from '../../stores/useLeadsStore';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
+import { useNavigate } from 'react-router-dom';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useLeadTheme } from '../../hooks/useLeadTheme';
-import { StarIcon } from '@chakra-ui/icons';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
 import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
@@ -102,11 +101,18 @@ const LeadCardKanbanCompact: React.FC<LeadCardKanbanCompactProps> = React.memo((
             <Text fontSize="xs" color={colors.text.muted} noOfLines={1} flex={1} minWidth={0}>
               {lead.company_name || lead.contact_name || 'No company'}
             </Text>
-            <HStack spacing={1}>
-              <StarIcon boxSize={2.5} color={scoreColor} />
-              <Text fontSize="xs" fontWeight="semibold" color={scoreColor}>
+            <HStack spacing={1} ml={2}>
+              <Text fontSize="xs" color={scoreColor} fontWeight="medium">
                 {leadScore}
               </Text>
+              <Badge
+                size="xs"
+                bg={lead.isQualified ? colors.status.success : colors.bg.input}
+                color={lead.isQualified ? colors.text.onAccent : colors.text.primary}
+                fontSize="2xs"
+              >
+                {lead.isQualified ? 'Q' : 'NQ'}
+              </Badge>
             </HStack>
           </HStack>
 
@@ -120,7 +126,7 @@ const LeadCardKanbanCompact: React.FC<LeadCardKanbanCompactProps> = React.memo((
             mb={2}
           />
 
-          {/* Footer Row: User + Qualified Status + Due Date */}
+          {/* Footer Row: User + Due Date */}
           <HStack justify="space-between" align="center">
             <HStack spacing={1}>
               <Tooltip 
@@ -136,24 +142,19 @@ const LeadCardKanbanCompact: React.FC<LeadCardKanbanCompactProps> = React.memo((
                   color={lead.assignedToUser ? colors.text.onAccent : colors.text.muted}
                 />
               </Tooltip>
-              <Text fontSize="xs" color={colors.text.secondary} noOfLines={1} maxW="50px">
+              <Text fontSize="xs" color={colors.text.secondary} noOfLines={1} maxW="60px">
                 {lead.assignedToUser?.display_name || lead.assignedToUser?.email || 'Unassigned'}
               </Text>
             </HStack>
             
             <Flex direction="column" align="end" minWidth={0}>
-              <Badge
-                size="xs"
-                bg={lead.isQualified ? colors.status.success : colors.bg.input}
-                color={lead.isQualified ? colors.text.onAccent : colors.text.primary}
-                fontSize="xs"
-                px={1}
-                py={0.5}
-              >
-                {lead.isQualified ? 'Q' : 'NQ'}
-              </Badge>
+              {lead.source && (
+                <Text fontSize="xs" color={colors.text.link} fontWeight="medium" noOfLines={1}>
+                  {lead.source}
+                </Text>
+              )}
               {estimatedCloseDate && (
-                <Text fontSize="xs" color={dueDateColor} noOfLines={1} mt={0.5}>
+                <Text fontSize="xs" color={dueDateColor} noOfLines={1}>
                   {isPast(estimatedCloseDate) ? 'Overdue' : formatDistanceToNowStrict(estimatedCloseDate)}
                 </Text>
               )}

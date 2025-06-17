@@ -39,16 +39,16 @@ const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo((
           <VStack 
             ref={provided.innerRef}
             {...provided.droppableProps}
-            spacing={6} 
+            spacing={isCompact ? 4 : 6} 
             align="stretch" 
             bg={columnBg}
-            p={6} 
+            p={isCompact ? 4 : 6} 
             borderRadius="xl" 
             borderWidth="1px"
             borderColor={colors.border.default}
-            minH="600px"
-            w="320px"
-            m={2}
+            minH={isCompact ? "500px" : "600px"}
+            w={isCompact ? "260px" : "320px"}
+            m={isCompact ? 1.5 : 2}
             boxShadow={snapshot.isDraggingOver ? `0 0 0 2px ${colors.interactive.default}` : 'sm'}
             flexShrink={0}
             maxHeight="calc(100vh - 250px)"
@@ -71,14 +71,14 @@ const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo((
               <Flex alignItems="center" justifyContent="space-between" mb={2}>
                 <Box flexGrow={1}>
                   <Heading 
-                    size="md" 
+                    size={isCompact ? "sm" : "md"} 
                     color={colors.text.primary}
                     noOfLines={1} 
                     mb={1}
                   >
                     {stepDisplayName}
                   </Heading>
-                  <Text fontSize="sm" color={colors.text.muted}>{leads.length} Leads</Text>
+                  <Text fontSize={isCompact ? "xs" : "sm"} color={colors.text.muted}>{leads.length} Leads</Text>
                 </Box>
                 <Box textAlign="right">
                   <Tooltip 
@@ -86,7 +86,7 @@ const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo((
                     placement="top"
                   >
                     <Text 
-                      fontSize="lg" 
+                      fontSize={isCompact ? "md" : "lg"} 
                       fontWeight="semibold" 
                       color={colors.text.success}
                       noOfLines={1} 
@@ -106,7 +106,7 @@ const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo((
             
             {/* Lead Cards */}
             <VStack spacing={isCompact ? 2 : 4} align="stretch" flexGrow={1}>
-              {leads.map((lead, idx) => (
+              {leads.map((lead, idx) => 
                 isCompact ? (
                   <LeadCardKanbanCompact 
                     key={lead.id} 
@@ -120,7 +120,7 @@ const LeadsKanbanStepColumn: React.FC<LeadsKanbanStepColumnProps> = React.memo((
                     index={idx}
                   />
                 )
-              ))}
+              )}
               {/* @ts-ignore */}
               {provided.placeholder as any}
               {leads.length === 0 && !snapshot.isDraggingOver && (
