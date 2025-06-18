@@ -31,8 +31,22 @@ export class SystemStateEncoder {
       snapshot.user_context = await this.getUserContext(userId);
       snapshot.timestamp = new Date();
 
+      // Debug logging to see what we're actually returning
+      console.log('[SystemStateEncoder] Debug - Generated snapshot:', {
+        userId,
+        permissionCount: userPermissions.length,
+        dealsTotal: snapshot.deals.total,
+        organizationsTotal: snapshot.organizations.total,
+        peopleTotal: snapshot.people.total,
+        activitiesOverdue: snapshot.activities.overdue,
+        pipelineHealthStatus: snapshot.pipeline_health.status
+      });
+
       // Cache the result
-      this.cache.set(cacheKey, { data: snapshot, timestamp: new Date() });
+      this.cache.set(cacheKey, {
+        data: snapshot,
+        timestamp: new Date()
+      });
 
       return snapshot;
     } catch (error) {
