@@ -113,7 +113,20 @@ export const agentV2Resolvers = {
               userId: userId,
               messageHistory: executionContext.conversationHistory,
               currentObjective: undefined,
-              systemState: undefined,
+              systemState: {
+                deals: { total: 0, by_stage: {}, closing_this_month: [], at_risk: [], recent_activity: [] },
+                organizations: { total: 0, enterprise: 0, recent_activity: [], top_by_deal_volume: [] },
+                people: { total: 0, recent_contacts: [], key_stakeholders: [] },
+                activities: { overdue: 0, due_today: 0, upcoming: 0, recent_completions: [] },
+                pipeline_health: { status: 'moderate', weighted_value: 0, close_rate_trend: 0, key_insights: [] },
+                intelligent_suggestions: [],
+                user_context: {
+                  role: '',
+                  permissions: userPermissions,
+                  recent_focus_areas: []
+                },
+                timestamp: new Date()
+              },
               workflowState: undefined
             }
           });
