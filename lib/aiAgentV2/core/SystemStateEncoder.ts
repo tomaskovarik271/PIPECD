@@ -90,14 +90,12 @@ export class SystemStateEncoder {
     // Get deals summary
     const { data: dealsCount } = await this.supabase
       .from('deals')
-      .select('id', { count: 'exact' })
-      .eq('deleted_at', null);
+      .select('id', { count: 'exact' });
 
     // Get deals by stage
     const { data: dealsByStage } = await this.supabase
       .from('deals')
-      .select('current_wfm_status:wfm_statuses(name)')
-      .eq('deleted_at', null);
+      .select('current_wfm_status:wfm_statuses(name)');
 
     // Get closing this month
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
@@ -106,14 +104,13 @@ export class SystemStateEncoder {
     const { data: closingThisMonth } = await this.supabase
       .from('deals')
       .select(`
-        id, name, value, currency,
+        id, name, amount, currency,
         current_wfm_status:wfm_statuses(name),
         organization:organizations(name),
-        estimated_close_date
+        expected_close_date
       `)
-      .eq('deleted_at', null)
-      .gte('estimated_close_date', startOfMonth.toISOString())
-      .lte('estimated_close_date', endOfMonth.toISOString())
+      .gte('expected_close_date', startOfMonth.toISOString())
+      .lte('expected_close_date', endOfMonth.toISOString())
       .limit(10);
 
     // Get at-risk deals (no activity in 14 days)
@@ -121,12 +118,11 @@ export class SystemStateEncoder {
     const { data: atRiskDeals } = await this.supabase
       .from('deals')
       .select(`
-        id, name, value, currency,
+        id, name, amount, currency,
         current_wfm_status:wfm_statuses(name),
         organization:organizations(name),
         updated_at
       `)
-      .eq('deleted_at', null)
       .lt('updated_at', fourteenDaysAgo.toISOString())
       .neq('current_wfm_status->name', 'Closed Won')
       .neq('current_wfm_status->name', 'Closed Lost')
@@ -136,12 +132,11 @@ export class SystemStateEncoder {
     const { data: recentActivity } = await this.supabase
       .from('deals')
       .select(`
-        id, name, value, currency,
+        id, name, amount, currency,
         current_wfm_status:wfm_statuses(name),
         organization:organizations(name),
         updated_at
       `)
-      .eq('deleted_at', null)
       .order('updated_at', { ascending: false })
       .limit(10);
 
@@ -176,14 +171,12 @@ export class SystemStateEncoder {
     // Get total organizations
     const { data: orgCount } = await this.supabase
       .from('organizations')
-      .select('id', { count: 'exact' })
-      .eq('deleted_at', null);
+      .select('id', { count: 'exact' });
 
     // Get enterprise organizations (assuming they have > 1000 employees or specific industries)
     const { data: enterpriseCount } = await this.supabase
       .from('organizations')
       .select('id', { count: 'exact' })
-      .eq('deleted_at', null)
       .in('industry', ['Technology', 'Financial Services', 'Healthcare', 'Manufacturing']);
 
     // Get recent activity
@@ -191,9 +184,8 @@ export class SystemStateEncoder {
       .from('organizations')
       .select(`
         id, name, industry, updated_at,
-        deals(id, value)
+        deals(id, amount)
       `)
-      .eq('deleted_at', null)
       .order('updated_at', { ascending: false })
       .limit(10);
 
@@ -202,9 +194,8 @@ export class SystemStateEncoder {
       .from('organizations')
       .select(`
         id, name, industry,
-        deals(id, value)
+        deals(id, amount)
       `)
-      .eq('deleted_at', null)
       .limit(20);
 
     const orgSummaries = this.formatOrganizationSummaries(recentActivity || []);
@@ -234,8 +225,7 @@ export class SystemStateEncoder {
     // Get total people
     const { data: peopleCount } = await this.supabase
       .from('people')
-      .select('id', { count: 'exact' })
-      .eq('deleted_at', null);
+      .select('id', { count: 'exact' });
 
     // Get recent contacts
     const { data: recentContacts } = await this.supabase
@@ -245,7 +235,6 @@ export class SystemStateEncoder {
         organization:organizations(name),
         job_title, updated_at
       `)
-      .eq('deleted_at', null)
       .order('updated_at', { ascending: false })
       .limit(10);
 
@@ -257,7 +246,6 @@ export class SystemStateEncoder {
         organization:organizations(name),
         job_title, updated_at
       `)
-      .eq('deleted_at', null)
       .limit(10);
 
     return {
@@ -280,14 +268,11 @@ export class SystemStateEncoder {
       };
     }
 
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-
     // Get overdue activities
+    const today = new Date().toISOString().split('T')[0];
     const { data: overdueCount } = await this.supabase
       .from('activities')
       .select('id', { count: 'exact' })
-      .eq('deleted_at', null)
       .eq('status', 'pending')
       .lt('due_date', today);
 
@@ -295,7 +280,6 @@ export class SystemStateEncoder {
     const { data: dueTodayCount } = await this.supabase
       .from('activities')
       .select('id', { count: 'exact' })
-      .eq('deleted_at', null)
       .eq('status', 'pending')
       .eq('due_date', today);
 
@@ -304,7 +288,6 @@ export class SystemStateEncoder {
     const { data: upcomingCount } = await this.supabase
       .from('activities')
       .select('id', { count: 'exact' })
-      .eq('deleted_at', null)
       .eq('status', 'pending')
       .gt('due_date', today)
       .lte('due_date', nextWeek);
@@ -317,7 +300,6 @@ export class SystemStateEncoder {
         deal:deals(name),
         organization:organizations(name)
       `)
-      .eq('deleted_at', null)
       .eq('status', 'completed')
       .order('completed_date', { ascending: false })
       .limit(10);
@@ -435,11 +417,11 @@ export class SystemStateEncoder {
     return deals.map(deal => ({
       id: deal.id,
       name: deal.name,
-      value: deal.value || 0,
+      value: deal.amount || 0,
       currency: deal.currency || 'USD',
       stage: deal.current_wfm_status?.name || 'Unknown',
       organization: deal.organization?.name || 'Unknown',
-      close_date: deal.estimated_close_date,
+      close_date: deal.expected_close_date,
       last_activity: deal.updated_at,
       risk_level: this.calculateRiskLevel(deal)
     }));
