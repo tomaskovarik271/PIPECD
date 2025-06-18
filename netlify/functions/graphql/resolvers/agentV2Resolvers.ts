@@ -107,6 +107,7 @@ export const agentV2Resolvers = {
             message: input.message,
             userId: userId,
             sessionId: executionContext.sessionId,
+            authToken: authToken,
             context: {
               sessionId: executionContext.sessionId,
               userId: userId,

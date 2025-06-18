@@ -203,7 +203,7 @@ export class AgentService {
   ): Promise<AgentResponse> {
     const toolsUsed: string[] = [];
     const toolResults: ToolResult[] = [];
-    const reasoning = [];
+    const reasoningSteps = [];
 
     switch (decision.action) {
       case 'execute_tool':
@@ -230,6 +230,29 @@ export class AgentService {
           toolsUsed.push(decision.toolName);
           toolResults.push(result);
 
+          // Extract thinking steps from ToolExecutor if this was a think tool execution
+          const thinkingHistory = this.toolExecutor.getThinkingHistory();
+          if (thinkingHistory.length > 0) {
+            // Convert thinking steps to reasoning steps format for frontend
+            const latestThinking = thinkingHistory[thinkingHistory.length - 1];
+            if (latestThinking) {
+              reasoningSteps.push({
+                type: latestThinking.reasoning_type,
+                content: latestThinking.thought,
+                confidence: latestThinking.confidence,
+                evidence: latestThinking.focus_areas || []
+              });
+            }
+          }
+
+          // Add decision reasoning as a reasoning step
+          reasoningSteps.push({
+            type: 'decision',
+            content: decision.reasoning,
+            confidence: decision.confidence,
+            evidence: [decision.reasoning]
+          });
+
           // Generate response based on tool result
           const responseMessage = await this.generateResponseFromToolResult(result, decision);
           
@@ -245,13 +268,7 @@ export class AgentService {
               timestamp: new Date()
             }],
             toolResults: [result],
-            reasoning: [{
-              step: 1,
-              type: 'decision',
-              description: decision.reasoning,
-              confidence: decision.confidence,
-              evidence: [decision.reasoning]
-            }],
+            reasoning: reasoningSteps,
             suggestions: await this.generateSuggestions(result, context),
             insights: await this.generateInsights(result, context),
             nextActions: await this.generateNextActions(result, context),
@@ -272,6 +289,12 @@ export class AgentService {
         return {
           success: true,
           message: decision.reasoning,
+          reasoning: [{
+            type: 'analysis',
+            content: `Need clarification: ${decision.reasoning}`,
+            confidence: decision.confidence,
+            evidence: decision.alternatives.map(alt => alt.action)
+          }],
           suggestions: decision.alternatives.map(alt => ({
             id: `alt-${Math.random().toString(36).substr(2, 9)}`,
             type: 'question' as const,
@@ -297,6 +320,12 @@ export class AgentService {
         return {
           success: true,
           message: decision.reasoning,
+          reasoning: [{
+            type: 'synthesis',
+            content: `Information synthesis: ${decision.reasoning}`,
+            confidence: decision.confidence,
+            evidence: ['System knowledge', 'Context analysis']
+          }],
           insights: await this.generateContextualInsights(context),
           metadata: {
             agentVersion: '2.0.0',
@@ -313,6 +342,12 @@ export class AgentService {
         return {
           success: true,
           message: decision.reasoning,
+          reasoning: [{
+            type: 'planning',
+            content: `Alternative approaches identified: ${decision.reasoning}`,
+            confidence: decision.confidence,
+            evidence: decision.alternatives.map(alt => alt.action)
+          }],
           suggestions: decision.alternatives.map((alt, index) => ({
             id: `alt-${index}`,
             type: 'action' as const,
@@ -338,6 +373,12 @@ export class AgentService {
         return {
           success: true,
           message: decision.reasoning,
+          reasoning: [{
+            type: 'validation',
+            content: `Conversation completion: ${decision.reasoning}`,
+            confidence: decision.confidence,
+            evidence: ['Task completed', 'User objective achieved']
+          }],
           metadata: {
             agentVersion: '2.0.0',
             processingTime: 0,
@@ -357,6 +398,12 @@ export class AgentService {
     return {
       success: false,
       message: 'Unable to process request',
+      reasoning: [{
+        type: 'analysis',
+        content: 'Failed to execute decision - unknown action type',
+        confidence: 0.1,
+        evidence: ['Decision execution error']
+      }],
       error: {
         code: 'DECISION_EXECUTION_FAILED',
         message: 'Failed to execute decision',

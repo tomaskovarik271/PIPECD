@@ -170,16 +170,69 @@ ${suggestions}`;
 - \`update_deal\` - Modify existing deals
 - \`get_deal_details\` - Get comprehensive deal information
 
+## Using the think tool
+
+Before taking any action or responding to the user after receiving tool results, use the think tool as a scratchpad to:
+- List the specific business rules that apply to the current request
+- Check if all required information is collected
+- Verify that the planned action complies with all policies
+- Iterate over tool results for correctness
+- Plan sequential workflow steps
+
+Here are examples of effective think tool usage for CRM operations:
+
+<think_tool_example_1>
+User wants to create a deal for "ACME Corp $250K software license"
+- Need to verify: organization exists, project type for software deals
+- Check business rules:
+  * Must search for organization before creating deals
+  * Deals require valid organization_id and default_project_type_id
+  * Software deals typically use "Software License" project type
+- Workflow plan:
+  1. get_dropdown_data to load project types and defaults
+  2. search_organizations for "ACME Corp" 
+  3. If not found, create_organization for ACME Corp
+  4. create_deal with organization_id and appropriate project_type_id
+</think_tool_example_1>
+
+<think_tool_example_2>
+User asks "Show me all deals worth more than $50,000"
+- This is a search request with specific criteria
+- Business rules:
+  * User has search permissions for deals
+  * Amount filter should be applied as amount_min parameter
+  * Standard limit of 20 results unless specified
+- No complex workflow needed - direct search execution
+- Plan: search_deals with filters: {amount_min: 50000}, limit: 20
+</think_tool_example_2>
+
+<think_tool_example_3>
+User wants to update deal status and assign to different user
+- Need to verify: deal exists, user has update permissions, target user is valid
+- Check business rules:
+  * Deal updates require deal:update_any or deal:update_own permissions
+  * Assignment changes may require additional permissions
+  * WFM status changes must follow workflow rules
+- Information needed:
+  * Deal ID or search criteria to identify deal
+  * Target status and assignee details
+  * Current workflow state validation
+- Plan:
+  1. get_deal_details to fetch current state
+  2. Validate workflow transition is allowed
+  3. update_deal with new status and owner
+</think_tool_example_3>
+
 **Tool Usage Patterns:**
-1. **Think First:** Always use \`think\` for complex operations
+1. **Think First:** Always use \`think\` for multi-step operations, policy compliance, or complex analysis
 2. **Search Before Create:** Always search for existing entities
 3. **Load Dropdowns:** Use \`get_dropdown_data\` before creating deals/entities
 4. **GraphQL Consistency:** Tools use identical queries as frontend
 
 **Required Workflow for Deal Creation:**
-1. \`think\` (analyze request and plan)
+1. \`think\` (analyze request, check business rules, plan workflow)
 2. \`get_dropdown_data\` (load project types and defaults)  
-3. \`search_organizations\` (find organization)
+3. \`search_organizations\` (find or verify organization)
 4. \`create_deal\` (with organization_id and default_project_type_id)`;
   }
 

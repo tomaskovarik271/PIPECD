@@ -19,26 +19,30 @@ export class AIService {
 
   async makeDecision(prompt: string, context: DecisionContext): Promise<DecisionResult> {
     try {
-      // Log the prompt being sent to Claude
-      console.log('[AIService] Sending prompt to Claude for decision:', {
-        model: this.defaultModel,
-        promptLength: prompt.length,
-        promptPreview: prompt.substring(0, 500) + (prompt.length > 500 ? '...' : ''),
-        contextObjective: context.objective,
-        availableToolsCount: context.availableTools?.length || 0
-      });
-
-      const response = await this.anthropic.messages.create({
+      // Prepare the request payload
+      const requestPayload = {
         model: this.defaultModel,
         max_tokens: 2000,
         temperature: 0.1,
         messages: [
           {
-            role: 'user',
+            role: 'user' as const,
             content: prompt
           }
         ]
-      });
+      };
+
+      // Log the complete request payload in BLUE
+      console.log('\x1b[34m%s\x1b[0m', '[CLAUDE API REQUEST] ═══════════════════════════════════════');
+      console.log('\x1b[34m%s\x1b[0m', JSON.stringify(requestPayload, null, 2));
+      console.log('\x1b[34m%s\x1b[0m', '═══════════════════════════════════════════════════════════');
+
+      const response = await this.anthropic.messages.create(requestPayload);
+
+      // Log the complete response payload in ORANGE
+      console.log('\x1b[33m%s\x1b[0m', '[CLAUDE API RESPONSE] ══════════════════════════════════════');
+      console.log('\x1b[33m%s\x1b[0m', JSON.stringify(response, null, 2));
+      console.log('\x1b[33m%s\x1b[0m', '════════════════════════════════════════════════════════════');
 
       // Parse the response to extract decision
       const content = response.content[0];
@@ -74,26 +78,30 @@ export class AIService {
     try {
       const model = options.model || this.defaultModel;
       
-      // Log the prompt being sent to Claude
-      console.log('[AIService] Sending prompt to Claude for response generation:', {
-        model,
-        promptLength: prompt.length,
-        promptPreview: prompt.substring(0, 500) + (prompt.length > 500 ? '...' : ''),
-        temperature: options.temperature || 0.1,
-        maxTokens: options.maxTokens || 4000
-      });
-
-      const response = await this.anthropic.messages.create({
+      // Prepare the request payload
+      const requestPayload = {
         model,
         max_tokens: options.maxTokens || 4000,
         temperature: options.temperature || 0.1,
         messages: [
           {
-            role: 'user',
+            role: 'user' as const,
             content: prompt
           }
         ]
-      });
+      };
+
+      // Log the complete request payload in BLUE
+      console.log('\x1b[34m%s\x1b[0m', '[CLAUDE API REQUEST - GENERATE] ══════════════════════════');
+      console.log('\x1b[34m%s\x1b[0m', JSON.stringify(requestPayload, null, 2));
+      console.log('\x1b[34m%s\x1b[0m', '══════════════════════════════════════════════════════════');
+
+      const response = await this.anthropic.messages.create(requestPayload);
+
+      // Log the complete response payload in ORANGE
+      console.log('\x1b[33m%s\x1b[0m', '[CLAUDE API RESPONSE - GENERATE] ═════════════════════════');
+      console.log('\x1b[33m%s\x1b[0m', JSON.stringify(response, null, 2));
+      console.log('\x1b[33m%s\x1b[0m', '═════════════════════════════════════════════════════════');
 
       const content = response.content[0];
       if (content && content.type === 'text') {
