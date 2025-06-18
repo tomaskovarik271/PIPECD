@@ -221,6 +221,9 @@ export function AIAgentChatV2() {
                 </HStack>
                 <Text fontSize="sm" whiteSpace="pre-wrap">
                   {streamingContent}
+                  <Text as="span" animation="pulse 1s infinite" color={colors.interactive.default}>
+                    ▋
+                  </Text>
                 </Text>
               </Box>
             )}

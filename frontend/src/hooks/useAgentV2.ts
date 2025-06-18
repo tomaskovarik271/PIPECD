@@ -8,7 +8,6 @@ import { useMutation, useQuery } from '@apollo/client';
 import {
   CREATE_AGENT_V2_CONVERSATION,
   SEND_AGENT_V2_MESSAGE,
-  SEND_AGENT_V2_MESSAGE_STREAM,
   GET_AGENT_V2_CONVERSATIONS,
   GET_AGENT_V2_THOUGHTS,
   type AgentV2Conversation,
@@ -56,7 +55,6 @@ export function useAgentV2(): UseAgentV2Return {
   // GraphQL hooks
   const [createConversationMutation] = useMutation(CREATE_AGENT_V2_CONVERSATION);
   const [sendMessageMutation] = useMutation(SEND_AGENT_V2_MESSAGE);
-  const [sendMessageStreamMutation] = useMutation(SEND_AGENT_V2_MESSAGE_STREAM);
   
   const { 
     data: conversationsData, 
@@ -197,8 +195,26 @@ export function useAgentV2(): UseAgentV2Return {
         conversationId = currentConversation.id;
       }
 
-      // Start streaming mutation
-      const { data } = await sendMessageStreamMutation({
+      // Add user message to conversation immediately
+      if (currentConversation) {
+        const userMessage = {
+          role: 'user' as const,
+          content: input.content,
+          timestamp: new Date(),
+          thoughts: []
+        };
+        
+        const updatedConversation = {
+          ...currentConversation,
+          messages: [...currentConversation.messages, userMessage],
+          updatedAt: new Date()
+        };
+        
+        setCurrentConversation(updatedConversation);
+      }
+
+      // Get the AI response in the background
+      const { data } = await sendMessageMutation({
         variables: {
           input: {
             ...input,
@@ -207,21 +223,58 @@ export function useAgentV2(): UseAgentV2Return {
         }
       });
 
-      if (!data?.sendAgentV2MessageStream) {
-        throw new Error('Failed to start message streaming');
+      if (!data?.sendAgentV2Message) {
+        throw new Error('Failed to send message');
       }
 
-      // For now, since we don't have WebSocket subscriptions implemented,
-      // we'll simulate streaming by polling or use the regular mutation
-      // TODO: Implement proper WebSocket subscriptions for real-time streaming
+      // Get the AI response content
+      const aiResponse = data.sendAgentV2Message.message.content;
       
-      // Fallback to regular message sending for now
-      await sendMessage({
-        conversationId,
-        content: input.content,
-        enableExtendedThinking: input.enableExtendedThinking,
-        thinkingBudget: input.thinkingBudget
-      });
+      // Simulate streaming by updating content character by character
+      let streamedContent = '';
+      const streamDelay = Math.max(10, Math.min(50, 1000 / aiResponse.length)); // Adaptive delay based on response length
+      
+      for (let i = 0; i < aiResponse.length; i++) {
+        streamedContent += aiResponse[i];
+        setStreamingContent(streamedContent);
+        
+        // Call onChunk callback if provided
+        if (onChunk) {
+          onChunk({
+            type: 'CONTENT',
+            content: aiResponse[i],
+            conversationId: conversationId || 'unknown'
+          });
+        }
+        
+        // Add delay for streaming effect
+        await new Promise(resolve => setTimeout(resolve, streamDelay));
+      }
+
+      // Stream complete - update the full conversation
+      const finalConversation = {
+        ...data.sendAgentV2Message.conversation,
+        createdAt: new Date(data.sendAgentV2Message.conversation.createdAt),
+        updatedAt: new Date(data.sendAgentV2Message.conversation.updatedAt),
+        messages: data.sendAgentV2Message.conversation.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
+      };
+
+      setCurrentConversation(finalConversation);
+      
+      // Call completion callback
+      if (onChunk) {
+        onChunk({
+          type: 'COMPLETE',
+          conversationId: conversationId || 'unknown',
+          complete: data.sendAgentV2Message
+        });
+      }
+      
+      // Refetch conversations to update the list
+      await refetchConversations();
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send streaming message';
@@ -231,7 +284,7 @@ export function useAgentV2(): UseAgentV2Return {
       setIsStreaming(false);
       setStreamingContent('');
     }
-  }, [sendMessageStreamMutation, createConversation, currentConversation, sendMessage]);
+  }, [sendMessageMutation, createConversation, currentConversation, refetchConversations]);
 
   const clearError = useCallback(() => {
     setError(null);
