@@ -95,25 +95,48 @@ export class AgentService {
       // Generate real-time system state if enabled
       let systemState: SystemSnapshot | undefined;
       if (this.config.realTimeContext) {
-        console.log('[AgentService] Debug - About to generate snapshot with permissions:', {
-          permissionCount: request.context?.systemState?.user_context?.permissions?.length || 0,
-          permissionsPreview: request.context?.systemState?.user_context?.permissions?.slice(0, 5) || []
-        });
-        
-        systemState = await this.systemStateEncoder.generateSnapshot(
-          request.userId, 
-          request.context?.systemState?.user_context?.permissions || []
-        );
-        
-        console.log('[AgentService] Debug - Generated snapshot result:', {
-          dealsTotal: systemState.deals.total,
-          dealsRecentActivity: systemState.deals.recent_activity.length,
-          organizationsTotal: systemState.organizations.total,
-          peopleTotal: systemState.people.total,
-          activitiesOverdue: systemState.activities.overdue,
-          pipelineHealthStatus: systemState.pipeline_health.status,
-          userContextPermissions: systemState.user_context.permissions.length
-        });
+        // Check if we can reuse recent system state (cache for 5 minutes for follow-up messages)
+        const now = new Date();
+        const systemStateCacheMinutes = 5;
+        const canReuseSystemState = context.systemState && 
+          context.systemState.timestamp && 
+          (now.getTime() - new Date(context.systemState.timestamp).getTime()) < (systemStateCacheMinutes * 60 * 1000);
+
+        if (canReuseSystemState) {
+          systemState = context.systemState;
+          console.log('[AgentService] Debug - Using cached system state:', {
+            dealsTotal: systemState.deals.total,
+            cacheAge: Math.round((now.getTime() - new Date(systemState.timestamp).getTime()) / 1000) + 's',
+            source: 'cache'
+          });
+        } else {
+          // Generate fresh system state
+          const userPermissions = (request as any).permissions || [];
+          console.log('[AgentService] Debug - About to generate snapshot with permissions:', {
+            permissionCount: userPermissions.length,
+            permissionsPreview: userPermissions.slice(0, 5),
+            reason: canReuseSystemState ? 'expired' : 'no_cache'
+          });
+          
+          systemState = await this.systemStateEncoder.generateSnapshot(
+            request.userId, 
+            userPermissions
+          );
+          
+          // Update context with fresh system state for future caching
+          context.systemState = systemState;
+          
+          console.log('[AgentService] Debug - Generated snapshot result:', {
+            dealsTotal: systemState.deals.total,
+            dealsRecentActivity: systemState.deals.recent_activity.length,
+            organizationsTotal: systemState.organizations.total,
+            peopleTotal: systemState.people.total,
+            activitiesOverdue: systemState.activities.overdue,
+            pipelineHealthStatus: systemState.pipeline_health.status,
+            userContextPermissions: systemState.user_context.permissions.length,
+            source: 'fresh'
+          });
+        }
       }
 
       // Make intelligent decision about how to proceed
@@ -264,8 +287,20 @@ export class AgentService {
             evidence: [decision.reasoning]
           });
 
+          // Debug: Log the tool result to see what we're working with
+          console.log('[AgentService] DEBUG - Tool result for response generation:', {
+            toolName: decision.toolName,
+            success: result.success,
+            message: result.message,
+            data: result.data,
+            reasoning: result.reasoning,
+            metadata: result.metadata
+          });
+
           // Generate response based on tool result
           const responseMessage = await this.generateResponseFromToolResult(result, decision);
+          
+          console.log('[AgentService] DEBUG - Generated response message:', responseMessage);
           
           return {
             success: result.success,
@@ -280,9 +315,10 @@ export class AgentService {
             }],
             toolResults: [result],
             reasoning: reasoningSteps,
-            suggestions: await this.generateSuggestions(result, context),
-            insights: await this.generateInsights(result, context),
-            nextActions: await this.generateNextActions(result, context),
+            // Remove unnecessary empty generators - keep response clean
+            suggestions: [],
+            insights: [],
+            nextActions: [],
             metadata: {
               agentVersion: '2.0.0',
               processingTime: 0, // Will be set by caller
@@ -339,7 +375,7 @@ export class AgentService {
             confidence: decision.confidence,
             evidence: ['System knowledge', 'Context analysis']
           }],
-          insights: await this.generateContextualInsights(context),
+          insights: [], // Remove unnecessary empty generator
           metadata: {
             agentVersion: '2.0.0',
             processingTime: 0,
@@ -511,26 +547,19 @@ export class AgentService {
 
   private async generateResponseFromToolResult(result: ToolResult, decision: DecisionResult): Promise<string> {
     if (result.success) {
+      // Handle think tool specifically - just return Claude's original thinking
+      if (decision.toolName === 'think' && result.data?.thinking_step) {
+        const thought = result.data.thinking_step.thought;
+        
+        // Return Claude's analysis with a simple intro and offer to proceed
+        return `Based on your request, here's my analysis:\n\n${thought}\n\nWould you like me to proceed with searching for your high-value deals, or would you prefer to discuss the strategic recommendations first?`;
+      }
+      
+      // Handle other tool results
       return result.message || 'Operation completed successfully';
     } else {
       return result.error?.message || 'Operation failed';
     }
-  }
-
-  private async generateSuggestions(result: ToolResult, context: ConversationContext): Promise<any[]> {
-    return []; // Would generate contextual suggestions
-  }
-
-  private async generateInsights(result: ToolResult, context: ConversationContext): Promise<any[]> {
-    return []; // Would generate business insights
-  }
-
-  private async generateNextActions(result: ToolResult, context: ConversationContext): Promise<any[]> {
-    return []; // Would generate recommended next actions
-  }
-
-  private async generateContextualInsights(context: ConversationContext): Promise<any[]> {
-    return []; // Would generate insights based on system state
   }
 
   private calculateConfidenceScore(response: AgentResponse): number {
