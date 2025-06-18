@@ -9,14 +9,14 @@ import type {
   AgentResponse,
   AgentConfig,
   AgentCapabilities,
-  ConversationContext,
   DecisionContext,
   DecisionResult,
   WorkflowExecution
 } from '../types/agent.js';
 import type { 
   SystemSnapshot,
-  BusinessRule 
+  BusinessRule,
+  ConversationContext
 } from '../types/system.js';
 import type { ToolResult, ToolExecutionContext } from '../types/tools.js';
 
@@ -83,12 +83,27 @@ export class AgentService {
       // Get or create conversation context
       const context = await this.getOrCreateContext(request);
       
+      // Debug logging to track permissions flow
+      console.log('[AgentService] Debug - Request context:', {
+        userId: request.userId,
+        hasContext: !!request.context,
+        contextSystemState: !!request.context?.systemState,
+        contextPermissions: request.context?.systemState?.user_context?.permissions?.length || 0,
+        contextPermissionsPreview: request.context?.systemState?.user_context?.permissions?.slice(0, 5) || []
+      });
+      
       // Generate real-time system state if enabled
       let systemState: SystemSnapshot | undefined;
       if (this.config.realTimeContext) {
+        const permissionsForSnapshot = context.systemState?.user_context.permissions || [];
+        console.log('[AgentService] Debug - About to generate snapshot with permissions:', {
+          permissionCount: permissionsForSnapshot.length,
+          permissionsPreview: permissionsForSnapshot.slice(0, 5)
+        });
+        
         systemState = await this.systemStateEncoder.generateSnapshot(
           request.userId, 
-          context.systemState?.user_context.permissions || []
+          permissionsForSnapshot
         );
         context.systemState = systemState;
       }
