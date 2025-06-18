@@ -117,7 +117,7 @@ export class AgentService {
       }
 
       // Make intelligent decision about how to proceed
-      const decision = await this.makeDecision(request, context);
+      const decision = await this.makeDecision(request, context, systemState);
       
       // Execute the decision
       const response = await this.executeDecision(decision, request, context);
@@ -168,7 +168,7 @@ export class AgentService {
     return context;
   }
 
-  private async makeDecision(request: AgentRequest, context: ConversationContext): Promise<DecisionResult> {
+  private async makeDecision(request: AgentRequest, context: ConversationContext, systemState?: SystemSnapshot): Promise<DecisionResult> {
     const availableTools = await this.toolExecutor.getAvailableTools(request.userId);
     
     // Debug logging to see what tools are available
@@ -178,11 +178,20 @@ export class AgentService {
       registeredToolNames: this.toolExecutor.getRegisteredTools()
     });
 
+    // Use fresh systemState if provided, otherwise fall back to context
+    const currentSystemState = systemState || context.systemState!;
+    
+    console.log('[AgentService] Decision using system state:', {
+      dealsTotal: currentSystemState.deals.total,
+      source: systemState ? 'fresh' : 'context',
+      timestamp: currentSystemState.timestamp
+    });
+
     const decisionContext: DecisionContext = {
       objective: this.extractObjective(request.message),
       userMessage: request.message,
       availableTools: availableTools,
-      systemState: context.systemState!,
+      systemState: currentSystemState,
       conversationHistory: context.messageHistory,
       businessRules: await this.rulesEngine.getRelevantRules(context),
       userProfile: await this.getUserProfile(request.userId),
@@ -237,8 +246,9 @@ export class AgentService {
             const latestThinking = thinkingHistory[thinkingHistory.length - 1];
             if (latestThinking) {
               reasoningSteps.push({
+                step: 1,
                 type: latestThinking.reasoning_type,
-                content: latestThinking.thought,
+                description: latestThinking.thought,
                 confidence: latestThinking.confidence,
                 evidence: latestThinking.focus_areas || []
               });
@@ -247,8 +257,9 @@ export class AgentService {
 
           // Add decision reasoning as a reasoning step
           reasoningSteps.push({
+            step: reasoningSteps.length + 1,
             type: 'decision',
-            content: decision.reasoning,
+            description: decision.reasoning,
             confidence: decision.confidence,
             evidence: [decision.reasoning]
           });
@@ -290,8 +301,9 @@ export class AgentService {
           success: true,
           message: decision.reasoning,
           reasoning: [{
+            step: 1,
             type: 'analysis',
-            content: `Need clarification: ${decision.reasoning}`,
+            description: `Need clarification: ${decision.reasoning}`,
             confidence: decision.confidence,
             evidence: decision.alternatives.map(alt => alt.action)
           }],
@@ -321,8 +333,9 @@ export class AgentService {
           success: true,
           message: decision.reasoning,
           reasoning: [{
+            step: 1,
             type: 'synthesis',
-            content: `Information synthesis: ${decision.reasoning}`,
+            description: `Information synthesis: ${decision.reasoning}`,
             confidence: decision.confidence,
             evidence: ['System knowledge', 'Context analysis']
           }],

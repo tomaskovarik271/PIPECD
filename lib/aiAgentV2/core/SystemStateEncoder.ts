@@ -102,7 +102,7 @@ export class SystemStateEncoder {
     }
 
     // Get deals summary
-    const { data: dealsCount } = await this.supabase
+    const { count: dealsCount } = await this.supabase
       .from('deals')
       .select('id', { count: 'exact' });
 
@@ -162,7 +162,7 @@ export class SystemStateEncoder {
     });
 
     return {
-      total: dealsCount?.length || 0,
+      total: dealsCount || 0,
       by_stage: stageDistribution,
       closing_this_month: this.formatDealSummaries(closingThisMonth || []),
       at_risk: this.formatDealSummaries(atRiskDeals || []),
@@ -183,12 +183,12 @@ export class SystemStateEncoder {
     }
 
     // Get total organizations
-    const { data: orgCount } = await this.supabase
+    const { count: orgCount } = await this.supabase
       .from('organizations')
       .select('id', { count: 'exact' });
 
     // Get enterprise organizations (assuming they have > 1000 employees or specific industries)
-    const { data: enterpriseCount } = await this.supabase
+    const { count: enterpriseCount } = await this.supabase
       .from('organizations')
       .select('id', { count: 'exact' })
       .in('industry', ['Technology', 'Financial Services', 'Healthcare', 'Manufacturing']);
@@ -218,8 +218,8 @@ export class SystemStateEncoder {
       .slice(0, 10);
 
     return {
-      total: orgCount?.length || 0,
-      enterprise: enterpriseCount?.length || 0,
+      total: orgCount || 0,
+      enterprise: enterpriseCount || 0,
       recent_activity: orgSummaries,
       top_by_deal_volume: topVolumeOrgs
     };
@@ -237,7 +237,7 @@ export class SystemStateEncoder {
     }
 
     // Get total people
-    const { data: peopleCount } = await this.supabase
+    const { count: peopleCount } = await this.supabase
       .from('people')
       .select('id', { count: 'exact' });
 
@@ -263,7 +263,7 @@ export class SystemStateEncoder {
       .limit(10);
 
     return {
-      total: peopleCount?.length || 0,
+      total: peopleCount || 0,
       recent_contacts: this.formatPersonSummaries(recentContacts || []),
       key_stakeholders: this.formatPersonSummaries(keyStakeholders || [])
     };
@@ -284,14 +284,14 @@ export class SystemStateEncoder {
 
     // Get overdue activities
     const today = new Date().toISOString().split('T')[0];
-    const { data: overdueCount } = await this.supabase
+    const { count: overdueCount } = await this.supabase
       .from('activities')
       .select('id', { count: 'exact' })
       .eq('status', 'pending')
       .lt('due_date', today);
 
     // Get due today
-    const { data: dueTodayCount } = await this.supabase
+    const { count: dueTodayCount } = await this.supabase
       .from('activities')
       .select('id', { count: 'exact' })
       .eq('status', 'pending')
@@ -299,7 +299,7 @@ export class SystemStateEncoder {
 
     // Get upcoming (next 7 days)
     const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const { data: upcomingCount } = await this.supabase
+    const { count: upcomingCount } = await this.supabase
       .from('activities')
       .select('id', { count: 'exact' })
       .eq('status', 'pending')
@@ -319,9 +319,9 @@ export class SystemStateEncoder {
       .limit(10);
 
     return {
-      overdue: overdueCount?.length || 0,
-      due_today: dueTodayCount?.length || 0,
-      upcoming: upcomingCount?.length || 0,
+      overdue: overdueCount || 0,
+      due_today: dueTodayCount || 0,
+      upcoming: upcomingCount || 0,
       recent_completions: this.formatActivitySummaries(recentCompletions || [])
     };
   }

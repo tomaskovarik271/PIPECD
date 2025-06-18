@@ -113,28 +113,14 @@ export const agentV2Resolvers = {
               userId: userId,
               messageHistory: executionContext.conversationHistory,
               currentObjective: undefined,
-              systemState: {
-                deals: { total: 0, by_stage: {}, closing_this_month: [], at_risk: [], recent_activity: [] },
-                organizations: { total: 0, enterprise: 0, recent_activity: [], top_by_deal_volume: [] },
-                people: { total: 0, recent_contacts: [], key_stakeholders: [] },
-                activities: { overdue: 0, due_today: 0, upcoming: 0, recent_completions: [] },
-                pipeline_health: { status: 'moderate' as const, weighted_value: 0, close_rate_trend: 0, key_insights: [] },
-                intelligent_suggestions: [],
-                user_context: {
-                  role: '',
-                  permissions: userPermissions,
-                  recent_focus_areas: []
-                },
-                timestamp: new Date()
-              },
+              systemState: undefined, // Let AgentService generate fresh system state
               workflowState: undefined
             }
           };
           
           loggers.ai.info('[Agent V2] About to call AgentService with:', {
             permissionCount: userPermissions.length,
-            systemStatePermissionCount: requestToSend.context.systemState.user_context.permissions.length,
-            permissionsMatch: userPermissions.length === requestToSend.context.systemState.user_context.permissions.length
+            systemStateSource: 'will be generated fresh by AgentService'
           });
           
           // Process the message using Claude AI
