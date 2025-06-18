@@ -26,31 +26,47 @@ export class ToolExecutor {
     parameters: Record<string, any>,
     context: ToolExecutionContext
   ): Promise<ToolResult> {
+    console.log(`[ToolExecutor] Executing tool: ${toolName}`);
+    console.log(`[ToolExecutor] Available tools:`, Array.from(this.registeredTools.keys()));
+    
     const tool = this.registeredTools.get(toolName);
     if (!tool) {
+      console.log(`[ToolExecutor] Tool "${toolName}" not found in registry`);
       return this.createErrorResult(`Tool "${toolName}" not found`, 'tool_not_found');
     }
+
+    console.log(`[ToolExecutor] Tool found: ${tool.name}`);
 
     // Validate parameters
     const validation = this.validateToolCall(tool, parameters, context);
     if (!validation.valid) {
+      console.log(`[ToolExecutor] Parameter validation failed:`, validation.errors);
       return this.createErrorResult(
         `Parameter validation failed: ${validation.errors.join(', ')}`,
         'validation_error'
       );
     }
 
+    console.log(`[ToolExecutor] Parameter validation passed`);
+
     // Check business rules
     const rulesCheck = await this.checkBusinessRules(toolName, parameters, context);
     if (!rulesCheck.allowed) {
+      console.log(`[ToolExecutor] Business rule violation:`, rulesCheck.reason);
       return this.createErrorResult(
         `Business rule violation: ${rulesCheck.reason}`,
         'business_rule_violation'
       );
     }
 
+    console.log(`[ToolExecutor] Business rules check passed`);
+
     // Execute tool with retry logic
-    return await this.executeWithRetry(tool, parameters, context);
+    console.log(`[ToolExecutor] Starting tool execution`);
+    const result = await this.executeWithRetry(tool, parameters, context);
+    console.log(`[ToolExecutor] Tool execution completed:`, result.success ? 'SUCCESS' : 'FAILED');
+    
+    return result;
   }
 
   async executeMultipleTools(

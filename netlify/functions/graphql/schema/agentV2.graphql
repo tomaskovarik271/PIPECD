@@ -119,10 +119,10 @@ type DataSourceV2 {
 }
 
 type AgentV2Error {
-  code: String!
-  message: String!
-  type: String!
-  recoverable: Boolean!
+  code: String
+  message: String
+  type: String
+  recoverable: Boolean
   suggestions: [String!]
 }
 

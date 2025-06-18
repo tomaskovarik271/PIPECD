@@ -18,7 +18,8 @@ import type {
   BusinessRule,
   ConversationContext
 } from '../types/system.js';
-import type { ToolResult, ToolExecutionContext } from '../types/tools.js';
+import type { ToolExecutionContext } from '../types/tools.js';
+import type { ToolResult } from '../types/system.js';
 
 export class AgentService {
   private systemStateEncoder: SystemStateEncoder;
@@ -46,7 +47,7 @@ export class AgentService {
 
     // Set configuration with defaults
     this.config = {
-      model: 'claude-3-5-sonnet',
+      model: 'claude-sonnet-4-20250514',
       temperature: 0.1,
       maxTokens: 4000,
       systemPromptStrategy: 'dynamic',
@@ -179,6 +180,7 @@ export class AgentService {
 
     const decisionContext: DecisionContext = {
       objective: this.extractObjective(request.message),
+      userMessage: request.message,
       availableTools: availableTools,
       systemState: context.systemState!,
       conversationHistory: context.messageHistory,
@@ -211,7 +213,7 @@ export class AgentService {
             userId: request.userId,
             sessionId: request.sessionId,
             permissions: context.systemState?.user_context.permissions || [],
-            authToken: '', // Would be provided from request
+            authToken: request.authToken || '', // Use authToken from request
             requestId: `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             toolCallId: `tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             systemState: context.systemState,
@@ -407,12 +409,22 @@ export class AgentService {
 
   // Utility methods
   private extractObjective(message: string): string {
-    // Simple objective extraction - could be enhanced with NLP
+    // Enhanced objective extraction for better intent recognition
     const lowerMessage = message.toLowerCase();
     
     if (lowerMessage.includes('create') && lowerMessage.includes('deal')) {
       return 'create_deal';
-    } else if (lowerMessage.includes('search') || lowerMessage.includes('find')) {
+    } else if (
+      lowerMessage.includes('search') || 
+      lowerMessage.includes('find') || 
+      lowerMessage.includes('show') || 
+      lowerMessage.includes('list') || 
+      lowerMessage.includes('get') ||
+      lowerMessage.includes('all deals') ||
+      lowerMessage.includes('deals worth') ||
+      lowerMessage.includes('deals over') ||
+      lowerMessage.includes('deals above')
+    ) {
       return 'search_entities';
     } else if (lowerMessage.includes('update') || lowerMessage.includes('edit')) {
       return 'update_entity';

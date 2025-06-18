@@ -48,36 +48,20 @@ export class RealGraphQLClient {
   }
 
   /**
-   * Execute a GraphQL request
+   * Real GraphQL request using PipeCD's GraphQL client
    */
-  async request(
-    request: GraphQLRequest,
+  private async makeGraphQLRequest(
+    query: string,
+    variables: Record<string, any>,
     context: ToolExecutionContext
-  ): Promise<GraphQLResponse> {
-    const startTime = Date.now();
-
+  ): Promise<{ data?: any; errors?: any[] }> {
     try {
       const endpoint = `${this.baseUrl}/.netlify/functions/graphql`;
       
-      // Debug logging
-      console.log('GraphQL Request:', {
-        endpoint,
-        baseUrl: this.baseUrl,
-        operationType: this.detectOperationType(request.query),
-        executionTime: `${Date.now() - startTime}ms`,
-        query: request.query.substring(0, 200) + '...',
-        variables: request.variables,
-        userId: context.userId,
-        requestId: context.requestId
-      });
-      
-      // Prepare headers
+      // Prepare headers - simple approach like V1
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'X-Request-ID': context.requestId,
-        'X-Session-ID': context.sessionId,
-        'X-User-ID': context.userId,
       };
 
       // Add authentication if available
@@ -85,70 +69,66 @@ export class RealGraphQLClient {
         headers['Authorization'] = `Bearer ${context.authToken}`;
       }
 
-      // Prepare request body
-      const body = JSON.stringify({
-        query: request.query,
-        variables: request.variables || {},
-        operationName: request.operationName
-      });
-
-      // Create AbortController for timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-      // Make the request
+      // Make the request - simple approach like V1
       const response = await fetch(endpoint, {
         method: 'POST',
         headers,
-        body,
-        signal: controller.signal
+        body: JSON.stringify({
+          query: query.trim(),
+          variables: variables || {},
+        }),
       });
 
-      clearTimeout(timeoutId);
-
-      // Check if request was successful
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      // Parse JSON response
-      const jsonResponse: GraphQLResponse = await response.json();
+      const result = await response.json();
 
-      // Log performance metrics
-      const executionTime = Date.now() - startTime;
-      this.logMetrics(request, executionTime, jsonResponse, context);
+      return {
+        data: result.data,
+        errors: result.errors
+      };
+    } catch (error: any) {
+      // Convert client errors to GraphQL error format
+      return {
+        data: null,
+        errors: [{
+          message: error.message,
+          extensions: {
+            code: 'CLIENT_ERROR'
+          }
+        }]
+      };
+    }
+  }
 
-      // Handle GraphQL errors
-      if (jsonResponse.errors && jsonResponse.errors.length > 0) {
-        this.handleGraphQLErrors(jsonResponse.errors, request);
+  /**
+   * Execute a GraphQL request
+   */
+  async request(
+    request: GraphQLRequest,
+    context: ToolExecutionContext
+  ): Promise<GraphQLResponse> {
+    try {
+      // Use the simplified makeGraphQLRequest method
+      const result = await this.makeGraphQLRequest(request.query, request.variables || {}, context);
+      
+      if (result.errors && result.errors.length > 0) {
+        this.handleGraphQLErrors(result.errors, request);
       }
 
-      return jsonResponse;
+      return {
+        data: result.data,
+        errors: result.errors
+      };
 
     } catch (error: any) {
-      const executionTime = Date.now() - startTime;
-      
-      // Handle different types of errors
-      if (error.name === 'AbortError') {
-        throw new Error(`GraphQL request timeout after ${this.timeout}ms`);
-      }
-
-      if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        throw new Error('Network error: Unable to connect to GraphQL endpoint');
-      }
-
-      // Log error metrics
-      this.logError(error, request, executionTime, context);
-
-      // Enhanced error logging
       console.error('GraphQL Request Error:', {
         error: error.message,
-        operationType: this.detectOperationType(request.query),
-        executionTime: `${executionTime}ms`,
         query: request.query.substring(0, 200) + '...',
         variables: request.variables,
-        userId: context.userId,
-        requestId: context.requestId
+        userId: context.userId
       });
 
       throw error;

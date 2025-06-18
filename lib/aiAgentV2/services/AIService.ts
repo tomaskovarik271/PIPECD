@@ -8,7 +8,7 @@ import type {
 
 export class AIService {
   private anthropic: Anthropic;
-  private defaultModel = 'claude-3-5-sonnet-20241022';
+  private defaultModel = 'claude-sonnet-4-20250514';
   private rateLimiter: Map<string, { count: number; resetTime: number }> = new Map();
 
   constructor(apiKey: string) {

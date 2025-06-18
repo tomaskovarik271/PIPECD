@@ -9,7 +9,7 @@ import type {
 import type { ToolResult, ToolExecutionContext } from './tools.js';
 
 export interface AgentConfig {
-  model: 'claude-3-5-sonnet' | 'claude-3-5-sonnet-20241022' | 'claude-3-haiku' | 'claude-3-opus';
+  model: 'claude-3-5-sonnet' | 'claude-3-5-sonnet-20241022' | 'claude-sonnet-4-20250514' | 'claude-3-haiku' | 'claude-3-opus';
   temperature: number;
   maxTokens: number;
   systemPromptStrategy: 'dynamic' | 'static' | 'contextual';
@@ -39,6 +39,7 @@ export interface AgentRequest {
   sessionId: string;
   userId: string;
   message: string;
+  authToken?: string;  // JWT token for authentication
   context?: Partial<ConversationContext>;
   metadata?: RequestMetadata;
   preferences?: UserPreferences;
@@ -178,6 +179,7 @@ export interface AgentError {
 // Decision making interfaces
 export interface DecisionContext {
   objective: string;
+  userMessage: string;
   availableTools: string[];
   systemState: SystemSnapshot;
   conversationHistory: any[];

@@ -56,7 +56,7 @@ export class EnhancedSystemPrompt {
       this.buildSystemStateSection(decisionContext.systemState),
       this.buildBusinessRulesSection(decisionContext.businessRules),
       this.buildAvailableToolsSection(decisionContext.availableTools),
-      this.buildObjectiveSection(decisionContext.objective),
+      this.buildObjectiveSection(decisionContext.objective, decisionContext.userMessage),
       this.buildDecisionConstraintsSection(decisionContext.constraints),
       this.buildDecisionInstructionsSection()
     ];
@@ -292,11 +292,17 @@ You: Use \`search_deals\` with relevant filters, analyze results, provide insigh
 - Consider user permissions when selecting tools`;
   }
 
-  private buildObjectiveSection(objective: string): string {
-    return `**User Objective:** ${objective}
-
-**Objective Analysis:**
+  private buildObjectiveSection(objective: string, userMessage?: string): string {
+    let section = `**User Objective:** ${objective}`;
+    
+    if (userMessage) {
+      section += `\n**User Message:** "${userMessage}"`;
+    }
+    
+    section += `\n\n**Objective Analysis:**
 Determine if this objective can be completed with available tools and information, or if clarification is needed.`;
+    
+    return section;
   }
 
   private buildBusinessRulesSection(rules: BusinessRule[]): string {
@@ -327,6 +333,14 @@ ${constraints.map(c => `- ${c.description} (${c.severity})`).join('\n')}`;
 4. **Assess** risks and potential alternatives
 5. **Decide** on the best course of action
 
+**IMPORTANT: Search Operations**
+When the user wants to find, show, list, or search for entities (deals, organizations, people), ALWAYS choose \`execute_tool\` with the appropriate search tool. Do NOT ask for clarification unless the request is genuinely ambiguous.
+
+Examples that should execute search tools:
+- "Show me all deals worth more than $50,000" → execute search_deals
+- "Find organizations in technology" → execute search_organizations  
+- "List my contacts at ACME" → execute search_contacts
+
 **Output Format:**
 Return a JSON object with:
 - \`action\`: One of the decision types above
@@ -337,17 +351,19 @@ Return a JSON object with:
 - \`alternatives\`: Array of alternative approaches
 - \`risks\`: Array of identified risks
 
-**Example Decision:**
+**Example Decision for Search:**
 \`\`\`json
 {
   "action": "execute_tool",
-  "toolName": "think",
+  "toolName": "search_deals",
   "parameters": {
-    "reasoning_type": "planning",
-    "thought": "User wants to create a deal. I need to plan the workflow: get dropdown data, search for organization, then create deal."
+    "filters": {
+      "amount_min": 50000
+    },
+    "limit": 20
   },
-  "reasoning": "Starting with structured thinking to plan the deal creation workflow",
-  "confidence": 0.9,
+  "reasoning": "User wants to find deals worth more than $50,000. This is a clear search request that can be executed with search_deals tool.",
+  "confidence": 0.95,
   "alternatives": [],
   "risks": []
 }
