@@ -92,7 +92,7 @@ export const agentV2Resolvers = {
             context.supabaseClient,
             process.env.ANTHROPIC_API_KEY!,
             {
-              model: 'claude-3-5-sonnet',
+              model: 'claude-3-5-sonnet-20241022',
               temperature: 0.1,
               maxTokens: 4000,
               systemPromptStrategy: 'dynamic',

@@ -19,6 +19,15 @@ export class AIService {
 
   async makeDecision(prompt: string, context: DecisionContext): Promise<DecisionResult> {
     try {
+      // Log the prompt being sent to Claude
+      console.log('[AIService] Sending prompt to Claude for decision:', {
+        model: this.defaultModel,
+        promptLength: prompt.length,
+        promptPreview: prompt.substring(0, 500) + (prompt.length > 500 ? '...' : ''),
+        contextObjective: context.objective,
+        availableToolsCount: context.availableTools?.length || 0
+      });
+
       const response = await this.anthropic.messages.create({
         model: this.defaultModel,
         max_tokens: 2000,
@@ -34,7 +43,17 @@ export class AIService {
       // Parse the response to extract decision
       const content = response.content[0];
       if (content && content.type === 'text') {
-        return this.parseDecisionResponse((content as any).text, context);
+        const decision = this.parseDecisionResponse((content as any).text, context);
+        
+        console.log('[AIService] Claude decision result:', {
+          action: decision.action,
+          toolName: decision.toolName,
+          confidence: decision.confidence,
+          hasParameters: !!decision.parameters && Object.keys(decision.parameters).length > 0,
+          reasoningLength: decision.reasoning?.length || 0
+        });
+        
+        return decision;
       }
 
       throw new Error('Unexpected response format from Claude');
@@ -53,8 +72,19 @@ export class AIService {
     } = {}
   ): Promise<string> {
     try {
+      const model = options.model || this.defaultModel;
+      
+      // Log the prompt being sent to Claude
+      console.log('[AIService] Sending prompt to Claude for response generation:', {
+        model,
+        promptLength: prompt.length,
+        promptPreview: prompt.substring(0, 500) + (prompt.length > 500 ? '...' : ''),
+        temperature: options.temperature || 0.1,
+        maxTokens: options.maxTokens || 4000
+      });
+
       const response = await this.anthropic.messages.create({
-        model: options.model || this.defaultModel,
+        model,
         max_tokens: options.maxTokens || 4000,
         temperature: options.temperature || 0.1,
         messages: [
@@ -67,7 +97,14 @@ export class AIService {
 
       const content = response.content[0];
       if (content && content.type === 'text') {
-        return (content as any).text;
+        const responseText = (content as any).text;
+        
+        console.log('[AIService] Claude response generated:', {
+          responseLength: responseText.length,
+          responsePreview: responseText.substring(0, 200) + (responseText.length > 200 ? '...' : '')
+        });
+        
+        return responseText;
       }
 
       throw new Error('Unexpected response format from Claude');
