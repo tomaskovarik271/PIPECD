@@ -32,13 +32,12 @@ export class AgentService {
   private conversationContexts: Map<string, ConversationContext> = new Map();
 
   constructor(
-    supabaseUrl: string,
-    supabaseKey: string,
+    supabaseClient: any,
     anthropicApiKey: string,
     config: Partial<AgentConfig> = {}
   ) {
     // Initialize core components
-    this.systemStateEncoder = new SystemStateEncoder(supabaseUrl, supabaseKey);
+    this.systemStateEncoder = new SystemStateEncoder(supabaseClient);
     this.rulesEngine = new PipeCDRulesEngine();
     this.promptGenerator = new EnhancedSystemPrompt(this.systemStateEncoder, this.rulesEngine);
     this.toolExecutor = new ToolExecutor(this.rulesEngine);
@@ -95,17 +94,25 @@ export class AgentService {
       // Generate real-time system state if enabled
       let systemState: SystemSnapshot | undefined;
       if (this.config.realTimeContext) {
-        const permissionsForSnapshot = context.systemState?.user_context.permissions || [];
         console.log('[AgentService] Debug - About to generate snapshot with permissions:', {
-          permissionCount: permissionsForSnapshot.length,
-          permissionsPreview: permissionsForSnapshot.slice(0, 5)
+          permissionCount: request.context?.systemState?.user_context?.permissions?.length || 0,
+          permissionsPreview: request.context?.systemState?.user_context?.permissions?.slice(0, 5) || []
         });
         
         systemState = await this.systemStateEncoder.generateSnapshot(
           request.userId, 
-          permissionsForSnapshot
+          request.context?.systemState?.user_context?.permissions || []
         );
-        context.systemState = systemState;
+        
+        console.log('[AgentService] Debug - Generated snapshot result:', {
+          dealsTotal: systemState.deals.total,
+          dealsRecentActivity: systemState.deals.recent_activity.length,
+          organizationsTotal: systemState.organizations.total,
+          peopleTotal: systemState.people.total,
+          activitiesOverdue: systemState.activities.overdue,
+          pipelineHealthStatus: systemState.pipeline_health.status,
+          userContextPermissions: systemState.user_context.permissions.length
+        });
       }
 
       // Make intelligent decision about how to proceed

@@ -12,8 +12,8 @@ export class SystemStateEncoder {
   private cache: Map<string, { data: SystemSnapshot; timestamp: Date }> = new Map();
   private cacheTimeout = 5 * 60 * 1000; // 5 minutes
 
-  constructor(supabaseUrl: string, supabaseKey: string) {
-    this.supabase = createClient(supabaseUrl, supabaseKey);
+  constructor(supabaseClient: any) {
+    this.supabase = supabaseClient;
   }
 
   async generateSnapshot(userId: string, userPermissions: string[]): Promise<SystemSnapshot> {

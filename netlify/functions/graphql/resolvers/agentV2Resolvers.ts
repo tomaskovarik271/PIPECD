@@ -87,10 +87,9 @@ export const agentV2Resolvers = {
         try {
           const { AgentService } = await import('../../../../lib/aiAgentV2/services/AgentService.js');
           
-          // Initialize AgentService with required configuration
+          // Initialize AgentService with authenticated Supabase client
           const agentService = new AgentService(
-            process.env.SUPABASE_URL!,
-            process.env.SUPABASE_ANON_KEY!,
+            context.supabaseClient,
             process.env.ANTHROPIC_API_KEY!,
             {
               model: 'claude-3-5-sonnet',
