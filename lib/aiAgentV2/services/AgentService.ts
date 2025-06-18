@@ -168,9 +168,18 @@ export class AgentService {
   }
 
   private async makeDecision(request: AgentRequest, context: ConversationContext): Promise<DecisionResult> {
+    const availableTools = await this.toolExecutor.getAvailableTools(request.userId);
+    
+    // Debug logging to see what tools are available
+    console.log('[AgentService] Available tools for decision:', {
+      toolCount: availableTools.length,
+      toolNames: availableTools.map(t => t.name),
+      registeredToolNames: this.toolExecutor.getRegisteredTools()
+    });
+
     const decisionContext: DecisionContext = {
       objective: this.extractObjective(request.message),
-      availableTools: await this.toolExecutor.getAvailableTools(request.userId),
+      availableTools: availableTools,
       systemState: context.systemState!,
       conversationHistory: context.messageHistory,
       businessRules: await this.rulesEngine.getRelevantRules(context),

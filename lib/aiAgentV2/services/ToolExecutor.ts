@@ -7,6 +7,7 @@ import type {
 } from '../types/tools.js';
 import type { BusinessRule } from '../types/system.js';
 import { PipeCDRulesEngine } from '../core/PipeCDRulesEngine.js';
+import { ToolRegistryV2 } from '../tools/ToolRegistryV2.js';
 
 export class ToolExecutor {
   private registeredTools: Map<string, Tool> = new Map();
@@ -500,8 +501,57 @@ export class ToolExecutor {
   }
 
   private initializeTools(): void {
-    // This would be where we register V2 tools
-    // For now, we'll initialize with an empty registry
-    // Tools will be registered by the main agent system
+    // Register V2 tools directly
+    try {
+      // Import and register all V2 tools
+      import('../tools/SearchDealsTool.js').then(module => {
+        const tool = new module.SearchDealsTool();
+        this.registeredTools.set('search_deals', tool);
+      });
+      
+      import('../tools/SearchOrganizationsTool.js').then(module => {
+        const tool = new module.SearchOrganizationsTool();
+        this.registeredTools.set('search_organizations', tool);
+      });
+      
+      import('../tools/SearchContactsTool.js').then(module => {
+        const tool = new module.SearchContactsTool();
+        this.registeredTools.set('search_contacts', tool);
+      });
+      
+      import('../tools/CreateDealTool.js').then(module => {
+        const tool = new module.CreateDealTool();
+        this.registeredTools.set('create_deal', tool);
+      });
+      
+      import('../tools/CreateOrganizationTool.js').then(module => {
+        const tool = new module.CreateOrganizationTool();
+        this.registeredTools.set('create_organization', tool);
+      });
+      
+      import('../tools/CreateContactTool.js').then(module => {
+        const tool = new module.CreateContactTool();
+        this.registeredTools.set('create_contact', tool);
+      });
+      
+      import('../tools/GetDetailsTool.js').then(module => {
+        const tool = new module.GetDetailsTool();
+        this.registeredTools.set('get_details', tool);
+      });
+      
+      import('../tools/GetDropdownDataTool.js').then(module => {
+        const tool = new module.GetDropdownDataTool();
+        this.registeredTools.set('get_dropdown_data', tool);
+      });
+      
+      import('../tools/ThinkingTool.js').then(module => {
+        const tool = new module.ThinkingTool();
+        this.registeredTools.set('think', tool);
+      });
+      
+      console.log('[ToolExecutor] V2 tools registration initiated');
+    } catch (error) {
+      console.error('[ToolExecutor] Error registering V2 tools:', error);
+    }
   }
 } 
