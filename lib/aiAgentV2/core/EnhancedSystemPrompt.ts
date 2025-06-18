@@ -451,4 +451,69 @@ Return a JSON object with:
 }
 \`\`\``;
   }
+
+  private initializePromptTemplates(): void {
+    // Store reusable prompt templates
+    this.promptTemplates.set('deal_creation', `
+**Deal Creation Workflow:**
+1. Think and plan the approach
+2. Get dropdown data for project types and defaults
+3. Search for the organization
+4. Create the deal with proper relationships
+`);
+
+    this.promptTemplates.set('search_analysis', `
+**Search and Analysis Workflow:**
+1. Think about search strategy
+2. Execute appropriate search tools
+3. Analyze results for patterns and insights
+4. Provide actionable recommendations
+`);
+
+    this.promptTemplates.set('error_recovery', `
+**Error Recovery Approach:**
+1. Analyze the error and its context
+2. Determine if the error is recoverable
+3. Suggest specific recovery actions
+4. Provide alternative approaches if needed
+`);
+  }
+
+  // Utility methods for accessing templates
+  getTemplate(templateName: string): string | undefined {
+    return this.promptTemplates.get(templateName);
+  }
+
+  addTemplate(name: string, template: string): void {
+    this.promptTemplates.set(name, template);
+  }
+
+  // Generate lightweight prompts for simple operations
+  generateLightweightPrompt(userMessage: string, systemState: SystemSnapshot): string {
+    return `You are PipeCD's AI Agent. User message: "${userMessage}"
+
+Current system status: ${systemState.deals.total} deals, ${systemState.activities.overdue} overdue activities.
+
+Provide a helpful response using available tools if needed. Keep it concise and actionable.`;
+  }
+
+  // Generate error recovery prompts
+  generateErrorRecoveryPrompt(error: any, context: any): string {
+    return `Error Recovery Mode - An operation failed and needs intelligent recovery.
+
+**Error Details:**
+- Type: ${error.type || 'Unknown'}
+- Message: ${error.message || 'No details available'}
+- Recoverable: ${error.recoverable || false}
+
+**Context:** ${JSON.stringify(context, null, 2)}
+
+**Recovery Strategy:**
+1. Analyze the error cause
+2. Determine if retry is appropriate
+3. Suggest alternative approaches
+4. Provide clear next steps to user
+
+Focus on providing actionable recovery options.`;
+  }
 }

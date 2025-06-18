@@ -108,6 +108,7 @@ export const agentV2Resolvers = {
             userId: userId,
             sessionId: executionContext.sessionId,
             authToken: authToken,
+            permissions: userPermissions, // Pass the permissions directly
             context: {
               sessionId: executionContext.sessionId,
               userId: userId,
@@ -177,7 +178,28 @@ export const agentV2Resolvers = {
             toolCalls: [],
             toolResults: [],
             reasoning: [],
-            suggestions: ['Please try again', 'Check your request format'],
+            suggestions: [
+              {
+                id: `suggestion-${Date.now()}-1`,
+                type: 'action',
+                title: 'Try Again',
+                description: 'Please try your request again',
+                confidence: 0.8,
+                impact: 'medium',
+                urgency: 'medium',
+                actionable: true
+              },
+              {
+                id: `suggestion-${Date.now()}-2`,
+                type: 'format',
+                title: 'Check Request Format',
+                description: 'Verify your request format is correct',
+                confidence: 0.7,
+                impact: 'low',
+                urgency: 'low',
+                actionable: true
+              }
+            ],
             insights: [],
             nextActions: [],
             metadata: {
