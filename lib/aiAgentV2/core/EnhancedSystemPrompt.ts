@@ -363,4 +363,92 @@ Determine if this objective can be completed with available tools and informatio
     const criticalRules = rules.filter(r => r.priority === 'critical').slice(0, 5);
     
     return `**Critical Business Rules:**
-${criticalRules.map(rule => `
+- Always search for existing entities before creating new ones
+- Use Claude thinking when search returns zero results for entity creation
+- Use Think-First methodology for complex operations
+- Every deal must have a WFM project type (default: Sales Deal)
+- Never expose sensitive data in logs or responses
+
+**Rule Compliance:**
+Ensure your decision adheres to these critical business rules.`;
+  }
+
+  private buildDecisionConstraintsSection(constraints: any[]): string {
+    if (constraints.length === 0) {
+      return `**Constraints:** No specific constraints identified.`;
+    }
+
+    return `**Constraints:**
+${constraints.map(c => `- ${c.description} (${c.severity})`).join('\n')}`;
+  }
+
+  private buildDecisionInstructionsSection(): string {
+    return `**Decision Instructions:**
+
+1. **Analyze** the user objective against available tools and constraints
+2. **Evaluate** if you have sufficient information to proceed
+3. **Consider** business rules and user permissions
+4. **Assess** risks and potential alternatives
+5. **Decide** on the best course of action
+
+## Strategic Thinking for Search Operations
+
+**When to use THINK tool before search:**
+- System state suggests potential issues (e.g., 0 deals but user searching for high-value deals)
+- Search criteria might return empty results based on current pipeline state
+- User request suggests broader business analysis needs
+- Complex filtering requirements that need workflow planning
+- Search results would benefit from contextual business insights
+
+**When to execute search directly:**
+- Straightforward data retrieval with clear criteria
+- System state indicates likely successful results
+- User request is purely informational without strategic context
+
+## Context-Aware Decision Making
+
+**Consider System State Context:**
+- Current pipeline health and deal counts
+- User's role and permissions for strategic insights
+- Recent activity patterns that inform search relevance
+- Business intelligence opportunities in the request
+
+**Example Strategic Thinking Scenarios:**
+
+**Scenario 1 - System shows 0 deals, user asks for $50K+ deals:**
+→ Use THINK tool to analyze: "User is searching for high-value deals but system shows 0 total deals. Should I execute search AND provide strategic insights about pipeline building, lead generation, or deal creation workflows?"
+
+**Scenario 2 - System shows 50 deals, user asks for $50K+ deals:**
+→ Execute search_deals directly (likely to return results)
+
+**Scenario 3 - User asks for deals "closing this month" when it's end of quarter:**
+→ Use THINK tool to analyze: "End-of-quarter search suggests pipeline review, forecasting needs, or urgent deal management. Should I provide Q4 insights along with results?"
+
+**Output Format:**
+Return a JSON object with:
+- \`action\`: One of the decision types above
+- \`toolName\`: Tool to execute (if action is execute_tool)
+- \`parameters\`: Tool parameters (if action is execute_tool)
+- \`reasoning\`: Clear explanation considering system context and strategic value
+- \`confidence\`: Confidence level (0.0 to 1.0)
+- \`alternatives\`: Array of alternative approaches
+- \`risks\`: Array of identified risks
+
+**Example Strategic Decision:**
+\`\`\`json
+{
+  "action": "execute_tool",
+  "toolName": "think",
+  "parameters": {
+    "thought": "User is searching for deals worth $50,000+ but system shows 0 total deals in pipeline. This search will likely return empty results. I should analyze whether to execute the search and provide strategic insights about pipeline development, lead generation opportunities, or deal creation workflows to help build a healthy pipeline.",
+    "reasoning_type": "analysis",
+    "focus_areas": ["pipeline health", "deal creation strategy", "business development"]
+  },
+  "reasoning": "System context (0 deals) suggests user's search will return empty results. Strategic thinking about pipeline building would be more valuable than just returning empty search results.",
+  "confidence": 0.85,
+  "alternatives": ["Direct search execution", "Ask about deal creation needs"],
+  "risks": ["User might want simple data confirmation", "Overcomplicating simple request"]
+}
+\`\`\``;
+  }
+}
