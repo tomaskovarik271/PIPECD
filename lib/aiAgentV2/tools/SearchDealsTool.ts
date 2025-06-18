@@ -19,11 +19,17 @@ export interface DealSearchResult {
   amount?: number;
   currency?: string;
   expected_close_date?: string;
-  priority?: string;
   project_id: string;
   created_at: string;
   updated_at: string;
-  organization: {
+  person_id?: string;
+  organization_id?: string;
+  user_id: string;
+  assigned_to_user_id?: string;
+  deal_specific_probability?: number;
+  weighted_amount?: number;
+  wfm_project_id?: string;
+  organization?: {
     id: string;
     name: string;
   };
@@ -32,6 +38,7 @@ export interface DealSearchResult {
     first_name?: string;
     last_name?: string;
     email?: string;
+    phone?: string;
   };
   assignedToUser?: {
     id: string;
@@ -40,15 +47,19 @@ export interface DealSearchResult {
   };
   currentWfmStep?: {
     id: string;
-    name: string;
+    stepOrder: number;
+    isInitialStep: boolean;
+    isFinalStep: boolean;
     status: {
+      id: string;
       name: string;
       color: string;
     };
   };
-  wfmProject?: {
+  currentWfmStatus?: {
     id: string;
     name: string;
+    color: string;
   };
 }
 
@@ -100,7 +111,7 @@ export class SearchDealsTool extends GraphQLTool {
     required: []
   };
 
-  protected requiredPermissions = ['read:deals'];
+  protected requiredPermissions = ['deal:read_any', 'deal:read_own'];
 
   async execute(
     parameters: SearchDealsParameters,
@@ -128,19 +139,16 @@ export class SearchDealsTool extends GraphQLTool {
             amount
             currency
             expected_close_date
-            priority
-            description
-            project_id
             created_at
             updated_at
-            organization_id
             person_id
+            organization_id
+            project_id
+            user_id
             assigned_to_user_id
-            organization {
-              id
-              name
-              address
-            }
+            deal_specific_probability
+            weighted_amount
+            wfm_project_id
             person {
               id
               first_name
@@ -148,24 +156,14 @@ export class SearchDealsTool extends GraphQLTool {
               email
               phone
             }
+            organization {
+              id
+              name
+            }
             assignedToUser {
               id
               display_name
               email
-            }
-            currentWfmStep {
-              id
-              name
-              order
-              status {
-                name
-                color
-              }
-            }
-            wfmProject {
-              id
-              name
-              description
             }
             customFieldValues {
               stringValue
@@ -179,6 +177,30 @@ export class SearchDealsTool extends GraphQLTool {
                 fieldLabel
                 fieldType
               }
+            }
+            activities {
+              id
+              subject
+              type
+              is_done
+              due_date
+            }
+            currentWfmStep {
+              id
+              stepOrder
+              isInitialStep
+              isFinalStep
+              metadata
+              status {
+                id
+                name
+                color
+              }
+            }
+            currentWfmStatus {
+              id
+              name
+              color
             }
           }
         }
@@ -213,15 +235,21 @@ export class SearchDealsTool extends GraphQLTool {
         amount: deal.amount,
         currency: deal.currency,
         expected_close_date: deal.expected_close_date,
-        priority: deal.priority,
         project_id: deal.project_id,
         created_at: deal.created_at,
         updated_at: deal.updated_at,
+        person_id: deal.person_id,
+        organization_id: deal.organization_id,
+        user_id: deal.user_id,
+        assigned_to_user_id: deal.assigned_to_user_id,
+        deal_specific_probability: deal.deal_specific_probability,
+        weighted_amount: deal.weighted_amount,
+        wfm_project_id: deal.wfm_project_id,
         organization: deal.organization,
         person: deal.person,
         assignedToUser: deal.assignedToUser,
         currentWfmStep: deal.currentWfmStep,
-        wfmProject: deal.wfmProject
+        currentWfmStatus: deal.currentWfmStatus
       }));
 
       // Generate AI-friendly message
@@ -284,11 +312,6 @@ export class SearchDealsTool extends GraphQLTool {
       filtered = filtered.filter(deal => (deal.amount || 0) <= parameters.max_amount!);
     }
 
-    // Priority filter
-    if (parameters.priority) {
-      filtered = filtered.filter(deal => deal.priority === parameters.priority);
-    }
-
     // Currency filter
     if (parameters.currency) {
       filtered = filtered.filter(deal => (deal.currency || 'USD') === parameters.currency);
@@ -335,7 +358,7 @@ No deals match your search criteria. You may need to:
         '💰 Amount not set';
       
       const stageStr = deal.currentWfmStep ? 
-        `📈 ${deal.currentWfmStep.name}` : 
+        `📈 ${deal.currentWfmStep.status.name}` : 
         '📈 Stage not set';
 
       const assigneeStr = deal.assignedToUser ? 
@@ -343,7 +366,7 @@ No deals match your search criteria. You may need to:
         '👤 Unassigned';
 
       message += `**${index + 1}. ${deal.name}** (ID: ${deal.id})\n`;
-      message += `   🏢 ${deal.organization.name}\n`;
+      message += `   🏢 ${deal.organization?.name || 'Unknown Organization'}\n`;
       if (deal.person) {
         message += `   👤 ${deal.person.first_name} ${deal.person.last_name}\n`;
       }
@@ -375,9 +398,6 @@ No deals match your search criteria. You may need to:
       const min = parameters.min_amount ? `$${parameters.min_amount.toLocaleString()}` : '0';
       const max = parameters.max_amount ? `$${parameters.max_amount.toLocaleString()}` : '∞';
       filters.push(`Amount: ${min} - ${max}`);
-    }
-    if (parameters.priority) {
-      filters.push(`Priority: ${parameters.priority}`);
     }
     if (parameters.currency) {
       filters.push(`Currency: ${parameters.currency}`);

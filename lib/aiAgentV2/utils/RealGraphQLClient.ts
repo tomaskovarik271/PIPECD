@@ -33,8 +33,17 @@ export class RealGraphQLClient {
   private timeout: number;
 
   constructor(baseUrl: string = '', timeout: number = 30000) {
-    // Use relative URL in production environment
-    this.baseUrl = baseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
+    // In development (Node.js environment), use localhost:8888
+    // In production (browser environment), use window.location.origin
+    if (baseUrl) {
+      this.baseUrl = baseUrl;
+    } else if (typeof window !== 'undefined') {
+      // Browser environment - use current origin
+      this.baseUrl = window.location.origin;
+    } else {
+      // Node.js environment (development) - use netlify dev URL
+      this.baseUrl = 'http://localhost:8888';
+    }
     this.timeout = timeout;
   }
 
@@ -49,6 +58,18 @@ export class RealGraphQLClient {
 
     try {
       const endpoint = `${this.baseUrl}/.netlify/functions/graphql`;
+      
+      // Debug logging
+      console.log('GraphQL Request:', {
+        endpoint,
+        baseUrl: this.baseUrl,
+        operationType: this.detectOperationType(request.query),
+        executionTime: `${Date.now() - startTime}ms`,
+        query: request.query.substring(0, 200) + '...',
+        variables: request.variables,
+        userId: context.userId,
+        requestId: context.requestId
+      });
       
       // Prepare headers
       const headers: HeadersInit = {
@@ -118,6 +139,17 @@ export class RealGraphQLClient {
 
       // Log error metrics
       this.logError(error, request, executionTime, context);
+
+      // Enhanced error logging
+      console.error('GraphQL Request Error:', {
+        error: error.message,
+        operationType: this.detectOperationType(request.query),
+        executionTime: `${executionTime}ms`,
+        query: request.query.substring(0, 200) + '...',
+        variables: request.variables,
+        userId: context.userId,
+        requestId: context.requestId
+      });
 
       throw error;
     }

@@ -37,7 +37,7 @@ export class SearchOrganizationsTool extends GraphQLTool {
     required: ['search_term']
   };
 
-  protected requiredPermissions = ['read:organizations'];
+  protected requiredPermissions = ['organization:read_any'];
 
   async execute(
     parameters: SearchOrganizationsParameters,

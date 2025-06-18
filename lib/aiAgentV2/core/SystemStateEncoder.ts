@@ -68,7 +68,7 @@ export class SystemStateEncoder {
   }
 
   private async getDealsData(userId: string, userPermissions: string[]) {
-    const hasReadAll = userPermissions.includes('deal:read_all');
+    const hasReadAll = userPermissions.includes('deal:read_any');
     const hasReadOwn = userPermissions.includes('deal:read_own');
 
     if (!hasReadAll && !hasReadOwn) {
@@ -162,7 +162,7 @@ export class SystemStateEncoder {
   }
 
   private async getOrganizationsData(userId: string, userPermissions: string[]) {
-    const hasReadAll = userPermissions.includes('organization:read_all');
+    const hasReadAll = userPermissions.includes('organization:read_any');
 
     if (!hasReadAll) {
       return {
@@ -221,7 +221,7 @@ export class SystemStateEncoder {
   }
 
   private async getPeopleData(userId: string, userPermissions: string[]) {
-    const hasReadAll = userPermissions.includes('person:read_all');
+    const hasReadAll = userPermissions.includes('person:read_any');
 
     if (!hasReadAll) {
       return {
@@ -268,7 +268,7 @@ export class SystemStateEncoder {
   }
 
   private async getActivitiesData(userId: string, userPermissions: string[]) {
-    const hasReadAll = userPermissions.includes('activity:read_all');
+    const hasReadAll = userPermissions.includes('activity:read_any');
     const hasReadOwn = userPermissions.includes('activity:read_own');
 
     if (!hasReadAll && !hasReadOwn) {

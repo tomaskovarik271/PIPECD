@@ -62,7 +62,7 @@ export class SearchContactsTool extends GraphQLTool {
     required: []
   };
 
-  protected requiredPermissions = ['read:people'];
+  protected requiredPermissions = ['person:read_any'];
 
   async execute(
     parameters: SearchContactsParameters,

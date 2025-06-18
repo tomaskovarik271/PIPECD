@@ -67,7 +67,7 @@ export class CreateOrganizationTool extends GraphQLTool {
     required: ['name']
   };
 
-  protected requiredPermissions = ['create:organizations'];
+  protected requiredPermissions = ['organization:create'];
 
   async execute(
     parameters: CreateOrganizationParameters,

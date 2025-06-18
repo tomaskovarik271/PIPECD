@@ -64,7 +64,7 @@ export class CreateContactTool extends GraphQLTool {
     required: ['first_name']
   };
 
-  protected requiredPermissions = ['create:people'];
+  protected requiredPermissions = ['person:create'];
 
   async execute(
     parameters: CreateContactParameters,

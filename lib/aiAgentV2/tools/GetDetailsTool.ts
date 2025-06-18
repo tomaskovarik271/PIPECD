@@ -32,7 +32,7 @@ export class GetDetailsTool extends GraphQLTool {
     required: ['entity_type', 'entity_id']
   };
 
-  protected requiredPermissions = ['read:deals', 'read:organizations', 'read:people'];
+  protected requiredPermissions = ['deal:read_any', 'organization:read_any', 'person:read_any'];
 
   async execute(
     parameters: GetDetailsParameters,
@@ -114,11 +114,11 @@ export class GetDetailsTool extends GraphQLTool {
   private getRequiredPermissionForEntity(entityType: string): string {
     switch (entityType) {
       case 'deal':
-        return 'read:deals';
+        return 'deal:read_any';
       case 'organization':
-        return 'read:organizations';
+        return 'organization:read_any';
       case 'contact':
-        return 'read:people';
+        return 'person:read_any';
       default:
         return 'read:basic';
     }

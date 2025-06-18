@@ -92,7 +92,7 @@ export class GetDropdownDataTool extends GraphQLTool {
     required: []
   };
 
-  protected requiredPermissions = ['read:system_metadata'];
+  protected requiredPermissions: string[] = []; // Dropdown data should be accessible to all authenticated users
 
   async execute(
     parameters: { entity_types?: string[]; include_custom_fields?: boolean },

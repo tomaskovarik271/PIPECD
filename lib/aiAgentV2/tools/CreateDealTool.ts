@@ -119,7 +119,7 @@ export class CreateDealTool extends GraphQLTool {
     required: ['name', 'organization_id']
   };
 
-  protected requiredPermissions = ['create:deals'];
+  protected requiredPermissions = ['deal:create'];
 
   async execute(
     parameters: CreateDealParameters,
