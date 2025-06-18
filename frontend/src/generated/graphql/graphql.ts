@@ -15,7 +15,7 @@ export type Scalars = {
   Int: { input: number; output: number; }
   Float: { input: number; output: number; }
   DateTime: { input: string; output: string; }
-  JSON: { input: any; output: any; }
+  JSON: { input: Record<string, any>; output: Record<string, any>; }
 };
 
 export type AiGeneratedTaskContent = {
@@ -80,14 +80,13 @@ export type ActivityReminder = {
 };
 
 /** Defines the GraphQL schema for Activities. */
-export enum ActivityType {
-  Call = 'CALL',
-  Deadline = 'DEADLINE',
-  Email = 'EMAIL',
-  Meeting = 'MEETING',
-  SystemTask = 'SYSTEM_TASK',
-  Task = 'TASK'
-}
+export type ActivityType =
+  | 'CALL'
+  | 'DEADLINE'
+  | 'EMAIL'
+  | 'MEETING'
+  | 'SYSTEM_TASK'
+  | 'TASK';
 
 export type AgentConfig = {
   __typename?: 'AgentConfig';
@@ -108,11 +107,14 @@ export type AgentConfigInput = {
 
 export type AgentConversation = {
   __typename?: 'AgentConversation';
+  agentVersion: Scalars['String']['output'];
   context: Scalars['JSON']['output'];
   createdAt: Scalars['DateTime']['output'];
+  extendedThinkingEnabled: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   messages: Array<AgentMessage>;
   plan?: Maybe<AgentPlan>;
+  thinkingBudget: ThinkingBudget;
   updatedAt: Scalars['DateTime']['output'];
   userId: Scalars['ID']['output'];
 };
@@ -158,19 +160,24 @@ export type AgentResponse = {
   thoughts: Array<AgentThought>;
 };
 
-export enum AgentStepStatus {
-  Completed = 'COMPLETED',
-  Failed = 'FAILED',
-  InProgress = 'IN_PROGRESS',
-  Pending = 'PENDING'
-}
+export type AgentStepStatus =
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'IN_PROGRESS'
+  | 'PENDING';
 
 export type AgentThought = {
   __typename?: 'AgentThought';
+  concerns?: Maybe<Scalars['String']['output']>;
   content: Scalars['String']['output'];
   conversationId: Scalars['ID']['output'];
   id: Scalars['ID']['output'];
   metadata: Scalars['JSON']['output'];
+  nextSteps?: Maybe<Scalars['String']['output']>;
+  reasoning?: Maybe<Scalars['String']['output']>;
+  reflectionData: Scalars['JSON']['output'];
+  strategy?: Maybe<Scalars['String']['output']>;
+  thinkingBudget?: Maybe<ThinkingBudget>;
   timestamp: Scalars['DateTime']['output'];
   type: AgentThoughtType;
 };
@@ -181,79 +188,49 @@ export type AgentThoughtInput = {
   type: AgentThoughtType;
 };
 
-export enum AgentThoughtType {
-  Observation = 'OBSERVATION',
-  Plan = 'PLAN',
-  Question = 'QUESTION',
-  Reasoning = 'REASONING',
-  ToolCall = 'TOOL_CALL'
-}
-
-export type AgentV2ComponentStatus = {
-  __typename?: 'AgentV2ComponentStatus';
-  aiService: Scalars['String']['output'];
-  graphQLClient: Scalars['String']['output'];
-  pipeCDRulesEngine: Scalars['String']['output'];
-  semanticSearchEngine: Scalars['String']['output'];
-  systemStateEncoder: Scalars['String']['output'];
-  toolRegistry: Scalars['String']['output'];
-};
-
-export type AgentV2ConfigInput = {
-  maxToolCalls?: InputMaybe<Scalars['Int']['input']>;
-  responseStyle?: InputMaybe<Scalars['String']['input']>;
-  thinkingDepth?: InputMaybe<Scalars['String']['input']>;
-  useAdvancedReasoning?: InputMaybe<Scalars['Boolean']['input']>;
-};
-
-export type AgentV2Error = {
-  __typename?: 'AgentV2Error';
-  code: Scalars['String']['output'];
-  message: Scalars['String']['output'];
-  recoverable: Scalars['Boolean']['output'];
-  suggestions?: Maybe<Array<Scalars['String']['output']>>;
-  type: Scalars['String']['output'];
-};
-
-export type AgentV2HealthCheck = {
-  __typename?: 'AgentV2HealthCheck';
-  components: AgentV2ComponentStatus;
-  lastCheck: Scalars['DateTime']['output'];
-  status: Scalars['String']['output'];
-  uptime: Scalars['Int']['output'];
-};
-
-export type AgentV2Metadata = {
-  __typename?: 'AgentV2Metadata';
-  agentVersion: Scalars['String']['output'];
-  cacheStatus: CacheStatusV2;
-  confidenceScore: Scalars['Float']['output'];
-  processingTime: Scalars['Int']['output'];
-  rateLimitStatus: RateLimitStatusV2;
-  sources: Array<DataSourceV2>;
-  systemStateTimestamp?: Maybe<Scalars['DateTime']['output']>;
-  toolsUsed: Array<Scalars['String']['output']>;
-};
-
-export type AgentV2Request = {
-  config?: InputMaybe<AgentV2ConfigInput>;
-  conversationContext?: InputMaybe<ConversationContextInput>;
-  message: Scalars['String']['input'];
-};
+export type AgentThoughtType =
+  | 'OBSERVATION'
+  | 'PLAN'
+  | 'QUESTION'
+  | 'REASONING'
+  | 'TOOL_CALL';
 
 export type AgentV2Response = {
   __typename?: 'AgentV2Response';
-  data?: Maybe<Scalars['JSON']['output']>;
-  error?: Maybe<AgentV2Error>;
-  insights?: Maybe<Array<InsightV2>>;
-  message: Scalars['String']['output'];
-  metadata: AgentV2Metadata;
-  nextActions?: Maybe<Array<NextActionV2>>;
-  reasoning?: Maybe<Array<ReasoningStepV2>>;
-  success: Scalars['Boolean']['output'];
-  suggestions?: Maybe<Array<SuggestionV2>>;
-  toolCalls?: Maybe<Array<ToolCallV2>>;
-  toolResults?: Maybe<Array<ToolResultV2>>;
+  confidenceScore?: Maybe<Scalars['Float']['output']>;
+  conversation: AgentConversation;
+  extendedThoughts: Array<AgentThought>;
+  message: AgentMessage;
+  planModifications: Array<Scalars['String']['output']>;
+  reflections: Array<AgentThought>;
+  thinkingTime?: Maybe<Scalars['Float']['output']>;
+};
+
+export type AgentV2StreamChunk = {
+  __typename?: 'AgentV2StreamChunk';
+  complete?: Maybe<AgentV2Response>;
+  content?: Maybe<Scalars['String']['output']>;
+  conversationId: Scalars['ID']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  thinking?: Maybe<AgentThought>;
+  type: AgentV2StreamChunkType;
+};
+
+export type AgentV2StreamChunkType =
+  | 'COMPLETE'
+  | 'CONTENT'
+  | 'ERROR'
+  | 'THINKING';
+
+export type AgentV2ThoughtInput = {
+  concerns?: InputMaybe<Scalars['String']['input']>;
+  content: Scalars['String']['input'];
+  nextSteps?: InputMaybe<Scalars['String']['input']>;
+  reasoning?: InputMaybe<Scalars['String']['input']>;
+  reflectionData?: InputMaybe<Scalars['JSON']['input']>;
+  strategy?: InputMaybe<Scalars['String']['input']>;
+  thinkingBudget?: InputMaybe<ThinkingBudget>;
+  type: AgentThoughtType;
 };
 
 export type AppSetting = {
@@ -297,13 +274,6 @@ export type AttachFileInput = {
   fileId: Scalars['String']['input'];
 };
 
-export type CacheStatusV2 = {
-  __typename?: 'CacheStatusV2';
-  rulesFromCache: Scalars['Boolean']['output'];
-  searchResultsFromCache: Scalars['Boolean']['output'];
-  systemStateFromCache: Scalars['Boolean']['output'];
-};
-
 export type ComposeEmailInput = {
   attachments?: InputMaybe<Array<EmailAttachmentInput>>;
   bcc?: InputMaybe<Array<Scalars['String']['input']>>;
@@ -321,25 +291,16 @@ export type ConnectGoogleIntegrationInput = {
   tokenData: GoogleTokenInput;
 };
 
-export enum ContactRoleType {
-  Cc = 'CC',
-  Participant = 'PARTICIPANT',
-  Primary = 'PRIMARY'
-}
+export type ContactRoleType =
+  | 'CC'
+  | 'PARTICIPANT'
+  | 'PRIMARY';
 
-export enum ContactScopeType {
-  All = 'ALL',
-  Custom = 'CUSTOM',
-  Primary = 'PRIMARY',
-  SelectedRoles = 'SELECTED_ROLES'
-}
-
-export type ConversationContextInput = {
-  conversationId?: InputMaybe<Scalars['String']['input']>;
-  recentMessages?: InputMaybe<Array<Scalars['String']['input']>>;
-  systemState?: InputMaybe<Scalars['String']['input']>;
-  userId: Scalars['String']['input'];
-};
+export type ContactScopeType =
+  | 'ALL'
+  | 'CUSTOM'
+  | 'PRIMARY'
+  | 'SELECTED_ROLES';
 
 export type ConversionResult = {
   __typename?: 'ConversionResult';
@@ -371,6 +332,12 @@ export type CreateActivityInput = {
   person_id?: InputMaybe<Scalars['ID']['input']>;
   subject: Scalars['String']['input'];
   type: ActivityType;
+};
+
+export type CreateAgentV2ConversationInput = {
+  enableExtendedThinking: Scalars['Boolean']['input'];
+  initialContext?: InputMaybe<Scalars['JSON']['input']>;
+  thinkingBudget: ThinkingBudget;
 };
 
 export type CreateContactFromEmailInput = {
@@ -552,12 +519,11 @@ export type CustomFieldDefinitionInput = {
   isRequired?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-export enum CustomFieldEntityType {
-  Deal = 'DEAL',
-  Lead = 'LEAD',
-  Organization = 'ORGANIZATION',
-  Person = 'PERSON'
-}
+export type CustomFieldEntityType =
+  | 'DEAL'
+  | 'LEAD'
+  | 'ORGANIZATION'
+  | 'PERSON';
 
 export type CustomFieldOption = {
   __typename?: 'CustomFieldOption';
@@ -570,15 +536,14 @@ export type CustomFieldOptionInput = {
   value: Scalars['String']['input'];
 };
 
-export enum CustomFieldType {
-  Boolean = 'BOOLEAN',
-  Date = 'DATE',
-  Dropdown = 'DROPDOWN',
-  MultiSelect = 'MULTI_SELECT',
-  Number = 'NUMBER',
-  Text = 'TEXT',
-  TextArea = 'TEXT_AREA'
-}
+export type CustomFieldType =
+  | 'BOOLEAN'
+  | 'DATE'
+  | 'DROPDOWN'
+  | 'MULTI_SELECT'
+  | 'NUMBER'
+  | 'TEXT'
+  | 'TEXT_AREA';
 
 export type CustomFieldValue = {
   __typename?: 'CustomFieldValue';
@@ -597,14 +562,6 @@ export type CustomFieldValueInput = {
   numberValue?: InputMaybe<Scalars['Float']['input']>;
   selectedOptionValues?: InputMaybe<Array<Scalars['String']['input']>>;
   stringValue?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type DataSourceV2 = {
-  __typename?: 'DataSourceV2';
-  confidence: Scalars['Float']['output'];
-  name: Scalars['String']['output'];
-  type: Scalars['String']['output'];
-  version: Scalars['String']['output'];
 };
 
 export type Deal = {
@@ -764,15 +721,14 @@ export type Document = {
   updatedAt: Scalars['DateTime']['output'];
 };
 
-export enum DocumentCategory {
-  ClientDocument = 'CLIENT_DOCUMENT',
-  ClientRequest = 'CLIENT_REQUEST',
-  Contract = 'CONTRACT',
-  Correspondence = 'CORRESPONDENCE',
-  Other = 'OTHER',
-  Presentation = 'PRESENTATION',
-  Proposal = 'PROPOSAL'
-}
+export type DocumentCategory =
+  | 'CLIENT_DOCUMENT'
+  | 'CLIENT_REQUEST'
+  | 'CONTRACT'
+  | 'CORRESPONDENCE'
+  | 'OTHER'
+  | 'PRESENTATION'
+  | 'PROPOSAL';
 
 export type DriveFile = {
   __typename?: 'DriveFile';
@@ -845,21 +801,19 @@ export type DrivePermissionInput = {
   type: DrivePermissionType;
 };
 
-export enum DrivePermissionRole {
-  Commenter = 'COMMENTER',
-  FileOrganizer = 'FILE_ORGANIZER',
-  Organizer = 'ORGANIZER',
-  Owner = 'OWNER',
-  Reader = 'READER',
-  Writer = 'WRITER'
-}
+export type DrivePermissionRole =
+  | 'COMMENTER'
+  | 'FILE_ORGANIZER'
+  | 'ORGANIZER'
+  | 'OWNER'
+  | 'READER'
+  | 'WRITER';
 
-export enum DrivePermissionType {
-  Anyone = 'ANYONE',
-  Domain = 'DOMAIN',
-  Group = 'GROUP',
-  User = 'USER'
-}
+export type DrivePermissionType =
+  | 'ANYONE'
+  | 'DOMAIN'
+  | 'GROUP'
+  | 'USER';
 
 export type DriveSearchInput = {
   folderId?: InputMaybe<Scalars['String']['input']>;
@@ -907,14 +861,13 @@ export type EmailActivity = {
   occurredAt: Scalars['DateTime']['output'];
 };
 
-export enum EmailActivityType {
-  ClickedLink = 'CLICKED_LINK',
-  Delivered = 'DELIVERED',
-  Forwarded = 'FORWARDED',
-  Opened = 'OPENED',
-  Replied = 'REPLIED',
-  Sent = 'SENT'
-}
+export type EmailActivityType =
+  | 'CLICKED_LINK'
+  | 'DELIVERED'
+  | 'FORWARDED'
+  | 'OPENED'
+  | 'REPLIED'
+  | 'SENT';
 
 export type EmailAnalytics = {
   __typename?: 'EmailAnalytics';
@@ -941,11 +894,10 @@ export type EmailAttachmentInput = {
   mimeType: Scalars['String']['input'];
 };
 
-export enum EmailImportance {
-  High = 'HIGH',
-  Low = 'LOW',
-  Normal = 'NORMAL'
-}
+export type EmailImportance =
+  | 'HIGH'
+  | 'LOW'
+  | 'NORMAL';
 
 export type EmailMessage = {
   __typename?: 'EmailMessage';
@@ -1018,12 +970,11 @@ export type EmailThreadsFilterInput = {
   selectedContacts?: InputMaybe<Array<Scalars['String']['input']>>;
 };
 
-export enum EntityType {
-  Deal = 'DEAL',
-  Lead = 'LEAD',
-  Organization = 'ORGANIZATION',
-  Person = 'PERSON'
-}
+export type EntityType =
+  | 'DEAL'
+  | 'LEAD'
+  | 'ORGANIZATION'
+  | 'PERSON';
 
 export type ExchangeRate = {
   __typename?: 'ExchangeRate';
@@ -1035,6 +986,16 @@ export type ExchangeRate = {
   source: Scalars['String']['output'];
   toCurrency: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
+};
+
+export type ExtendedThinkingAnalysis = {
+  __typename?: 'ExtendedThinkingAnalysis';
+  identifiedConcerns: Array<Scalars['String']['output']>;
+  reasoningDepth: Scalars['Float']['output'];
+  recommendedActions: Array<Scalars['String']['output']>;
+  strategicInsights: Array<Scalars['String']['output']>;
+  thinkingBudgetUsed: ThinkingBudget;
+  totalThoughts: Scalars['Int']['output'];
 };
 
 export type GenerateTaskContentInput = {
@@ -1074,18 +1035,6 @@ export type GoogleTokenInput = {
   expires_at?: InputMaybe<Scalars['DateTime']['input']>;
   granted_scopes: Array<Scalars['String']['input']>;
   refresh_token?: InputMaybe<Scalars['String']['input']>;
-};
-
-export type InsightV2 = {
-  __typename?: 'InsightV2';
-  actionable: Scalars['Boolean']['output'];
-  businessValue: Scalars['String']['output'];
-  category: Scalars['String']['output'];
-  confidence: Scalars['Float']['output'];
-  content: Scalars['String']['output'];
-  id: Scalars['String']['output'];
-  relatedEntities: Array<Scalars['String']['output']>;
-  type: Scalars['String']['output'];
 };
 
 export type Lead = {
@@ -1158,12 +1107,11 @@ export type LeadConversionResult = {
   leadId: Scalars['ID']['output'];
 };
 
-export enum LeadConversionTargetType {
-  All = 'ALL',
-  Deal = 'DEAL',
-  Organization = 'ORGANIZATION',
-  Person = 'PERSON'
-}
+export type LeadConversionTargetType =
+  | 'ALL'
+  | 'DEAL'
+  | 'ORGANIZATION'
+  | 'PERSON';
 
 export type LeadFilters = {
   assignedToUserId?: InputMaybe<Scalars['ID']['input']>;
@@ -1234,6 +1182,7 @@ export type LeadsStats = {
 export type Mutation = {
   __typename?: 'Mutation';
   addAgentThoughts: Array<AgentThought>;
+  addAgentV2Thoughts: Array<AgentThought>;
   addDealParticipant: DealParticipant;
   archiveThread: Scalars['Boolean']['output'];
   assignUserRole: User;
@@ -1248,6 +1197,7 @@ export type Mutation = {
   copyDriveFile: DriveFile;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
+  createAgentV2Conversation: AgentConversation;
   createContactFromEmail: Person;
   createCurrency: Currency;
   createCustomFieldDefinition: CustomFieldDefinition;
@@ -1290,7 +1240,6 @@ export type Mutation = {
   moveDriveFile: DriveFile;
   moveStickersBulk: Array<SmartSticker>;
   pinEmail: EmailPin;
-  processMessageV2: AgentV2Response;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
   removeDealParticipant: Scalars['Boolean']['output'];
@@ -1300,6 +1249,8 @@ export type Mutation = {
   revokeGoogleIntegration: Scalars['Boolean']['output'];
   scheduleActivityReminder: ActivityReminder;
   sendAgentMessage: AgentResponse;
+  sendAgentV2Message: AgentV2Response;
+  sendAgentV2MessageStream: Scalars['String']['output'];
   setExchangeRate: ExchangeRate;
   shareDriveFolder: Scalars['Boolean']['output'];
   syncGmailEmails: Array<Email>;
@@ -1343,6 +1294,12 @@ export type Mutation = {
 export type MutationAddAgentThoughtsArgs = {
   conversationId: Scalars['ID']['input'];
   thoughts: Array<AgentThoughtInput>;
+};
+
+
+export type MutationAddAgentV2ThoughtsArgs = {
+  conversationId: Scalars['ID']['input'];
+  thoughts: Array<AgentV2ThoughtInput>;
 };
 
 
@@ -1420,6 +1377,11 @@ export type MutationCreateActivityArgs = {
 
 export type MutationCreateAgentConversationArgs = {
   config?: InputMaybe<AgentConfigInput>;
+};
+
+
+export type MutationCreateAgentV2ConversationArgs = {
+  input: CreateAgentV2ConversationInput;
 };
 
 
@@ -1632,11 +1594,6 @@ export type MutationPinEmailArgs = {
 };
 
 
-export type MutationProcessMessageV2Args = {
-  input: AgentV2Request;
-};
-
-
 export type MutationReactivateCustomFieldDefinitionArgs = {
   id: Scalars['ID']['input'];
 };
@@ -1678,6 +1635,16 @@ export type MutationScheduleActivityReminderArgs = {
 
 export type MutationSendAgentMessageArgs = {
   input: SendMessageInput;
+};
+
+
+export type MutationSendAgentV2MessageArgs = {
+  input: SendAgentV2MessageInput;
+};
+
+
+export type MutationSendAgentV2MessageStreamArgs = {
+  input: SendAgentV2MessageStreamInput;
 };
 
 
@@ -1882,17 +1849,6 @@ export type MutationUploadToGoogleDriveArgs = {
   mimeType: Scalars['String']['input'];
 };
 
-export type NextActionV2 = {
-  __typename?: 'NextActionV2';
-  category: Scalars['String']['output'];
-  description: Scalars['String']['output'];
-  estimatedTime: Scalars['String']['output'];
-  id: Scalars['String']['output'];
-  priority: Scalars['String']['output'];
-  requiresInput: Scalars['Boolean']['output'];
-  title: Scalars['String']['output'];
-};
-
 export type NoteDocumentAttachment = {
   __typename?: 'NoteDocumentAttachment';
   attachedAt: Scalars['String']['output'];
@@ -1934,12 +1890,11 @@ export type NotificationFilterInput = {
   priority?: InputMaybe<NotificationPriority>;
 };
 
-export enum NotificationPriority {
-  High = 'HIGH',
-  Low = 'LOW',
-  Normal = 'NORMAL',
-  Urgent = 'URGENT'
-}
+export type NotificationPriority =
+  | 'HIGH'
+  | 'LOW'
+  | 'NORMAL'
+  | 'URGENT';
 
 export type NotificationSummary = {
   __typename?: 'NotificationSummary';
@@ -1948,14 +1903,13 @@ export type NotificationSummary = {
   unreadCount: Scalars['Int']['output'];
 };
 
-export enum NotificationType {
-  ActivityOverdue = 'ACTIVITY_OVERDUE',
-  ActivityReminder = 'ACTIVITY_REMINDER',
-  Custom = 'CUSTOM',
-  DealAssigned = 'DEAL_ASSIGNED',
-  LeadAssigned = 'LEAD_ASSIGNED',
-  SystemAnnouncement = 'SYSTEM_ANNOUNCEMENT'
-}
+export type NotificationType =
+  | 'ACTIVITY_OVERDUE'
+  | 'ACTIVITY_REMINDER'
+  | 'CUSTOM'
+  | 'DEAL_ASSIGNED'
+  | 'LEAD_ASSIGNED'
+  | 'SYSTEM_ANNOUNCEMENT';
 
 /** Defines the Organization type and related queries/mutations. */
 export type Organization = {
@@ -2049,7 +2003,9 @@ export type Query = {
   agentConversation?: Maybe<AgentConversation>;
   agentConversations: Array<AgentConversation>;
   agentThoughts: Array<AgentThought>;
-  agentV2HealthCheck: AgentV2HealthCheck;
+  agentV2Conversations: Array<AgentConversation>;
+  agentV2ThinkingAnalysis: ExtendedThinkingAnalysis;
+  agentV2Thoughts: Array<AgentThought>;
   /** Get a specific app setting by key */
   appSetting?: Maybe<AppSetting>;
   /** Get all app settings (admin only for private settings) */
@@ -2158,6 +2114,23 @@ export type QueryAgentConversationsArgs = {
 
 
 export type QueryAgentThoughtsArgs = {
+  conversationId: Scalars['ID']['input'];
+  limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryAgentV2ConversationsArgs = {
+  limit?: InputMaybe<Scalars['Int']['input']>;
+  offset?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryAgentV2ThinkingAnalysisArgs = {
+  conversationId: Scalars['ID']['input'];
+};
+
+
+export type QueryAgentV2ThoughtsArgs = {
   conversationId: Scalars['ID']['input'];
   limit?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -2442,34 +2415,31 @@ export type QueryWfmWorkflowsArgs = {
   isArchived?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
-export type RateLimitStatusV2 = {
-  __typename?: 'RateLimitStatusV2';
-  burst: Scalars['Int']['output'];
-  remaining: Scalars['Int']['output'];
-  resetTime: Scalars['DateTime']['output'];
-};
-
-export type ReasoningStepV2 = {
-  __typename?: 'ReasoningStepV2';
-  confidence: Scalars['Float']['output'];
-  description: Scalars['String']['output'];
-  evidence: Array<Scalars['String']['output']>;
-  step: Scalars['Int']['output'];
-  type: Scalars['String']['output'];
-};
-
 /** Activity Reminders and Notifications GraphQL Schema */
-export enum ReminderType {
-  Email = 'EMAIL',
-  InApp = 'IN_APP',
-  Push = 'PUSH'
-}
+export type ReminderType =
+  | 'EMAIL'
+  | 'IN_APP'
+  | 'PUSH';
 
 export type Role = {
   __typename?: 'Role';
   description: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
+};
+
+export type SendAgentV2MessageInput = {
+  content: Scalars['String']['input'];
+  conversationId?: InputMaybe<Scalars['ID']['input']>;
+  enableExtendedThinking: Scalars['Boolean']['input'];
+  thinkingBudget: ThinkingBudget;
+};
+
+export type SendAgentV2MessageStreamInput = {
+  content: Scalars['String']['input'];
+  conversationId?: InputMaybe<Scalars['ID']['input']>;
+  enableExtendedThinking: Scalars['Boolean']['input'];
+  thinkingBudget: ThinkingBudget;
 };
 
 export type SendMessageInput = {
@@ -2554,16 +2524,14 @@ export type SmartSticker = {
   width: Scalars['Int']['output'];
 };
 
-export enum SortDirection {
-  Asc = 'ASC',
-  Desc = 'DESC'
-}
+export type SortDirection =
+  | 'ASC'
+  | 'DESC';
 
-export enum StageType {
-  Lost = 'LOST',
-  Open = 'OPEN',
-  Won = 'WON'
-}
+export type StageType =
+  | 'LOST'
+  | 'OPEN'
+  | 'WON';
 
 export type StickerCategory = {
   __typename?: 'StickerCategory';
@@ -2604,31 +2572,32 @@ export type StickerMoveInput = {
   positionY: Scalars['Int']['input'];
 };
 
-export enum StickerPriority {
-  High = 'HIGH',
-  Normal = 'NORMAL',
-  Urgent = 'URGENT'
-}
+export type StickerPriority =
+  | 'HIGH'
+  | 'NORMAL'
+  | 'URGENT';
 
 export type StickerSortBy = {
   direction?: InputMaybe<SortDirection>;
   field: StickerSortField;
 };
 
-export enum StickerSortField {
-  CreatedAt = 'CREATED_AT',
-  PositionX = 'POSITION_X',
-  PositionY = 'POSITION_Y',
-  Priority = 'PRIORITY',
-  Title = 'TITLE',
-  UpdatedAt = 'UPDATED_AT'
-}
+export type StickerSortField =
+  | 'CREATED_AT'
+  | 'POSITION_X'
+  | 'POSITION_Y'
+  | 'PRIORITY'
+  | 'TITLE'
+  | 'UPDATED_AT';
 
 export type Subscription = {
   __typename?: 'Subscription';
   agentConversationUpdated: AgentConversation;
   agentPlanUpdated: AgentPlan;
   agentThoughtsAdded: Array<AgentThought>;
+  agentV2MessageStream: AgentV2StreamChunk;
+  agentV2ReflectionAdded: AgentThought;
+  agentV2ThinkingUpdated: Array<AgentThought>;
   notificationAdded: Notification;
   notificationUpdated: Notification;
 };
@@ -2649,6 +2618,21 @@ export type SubscriptionAgentThoughtsAddedArgs = {
 };
 
 
+export type SubscriptionAgentV2MessageStreamArgs = {
+  conversationId: Scalars['ID']['input'];
+};
+
+
+export type SubscriptionAgentV2ReflectionAddedArgs = {
+  conversationId: Scalars['ID']['input'];
+};
+
+
+export type SubscriptionAgentV2ThinkingUpdatedArgs = {
+  conversationId: Scalars['ID']['input'];
+};
+
+
 export type SubscriptionNotificationAddedArgs = {
   userId: Scalars['ID']['input'];
 };
@@ -2658,48 +2642,17 @@ export type SubscriptionNotificationUpdatedArgs = {
   userId: Scalars['ID']['input'];
 };
 
-export type SuggestionV2 = {
-  __typename?: 'SuggestionV2';
-  actionable: Scalars['Boolean']['output'];
-  confidence: Scalars['Float']['output'];
-  description: Scalars['String']['output'];
-  id: Scalars['String']['output'];
-  impact: Scalars['String']['output'];
-  title: Scalars['String']['output'];
-  type: Scalars['String']['output'];
-  urgency: Scalars['String']['output'];
-};
-
-export enum ThinkingBudget {
-  Standard = 'STANDARD',
-  Think = 'THINK',
-  ThinkHard = 'THINK_HARD',
-  ThinkHarder = 'THINK_HARDER',
-  Ultrathink = 'ULTRATHINK'
-}
-
-export type ToolCallV2 = {
-  __typename?: 'ToolCallV2';
-  id: Scalars['String']['output'];
-  parameters: Scalars['JSON']['output'];
-  reasoning?: Maybe<Scalars['String']['output']>;
-  timestamp: Scalars['DateTime']['output'];
-  tool: Scalars['String']['output'];
-};
+export type ThinkingBudget =
+  | 'STANDARD'
+  | 'THINK'
+  | 'THINK_HARD'
+  | 'THINK_HARDER'
+  | 'ULTRATHINK';
 
 export type ToolDiscoveryResponse = {
   __typename?: 'ToolDiscoveryResponse';
   error?: Maybe<Scalars['String']['output']>;
   tools: Array<Scalars['JSON']['output']>;
-};
-
-export type ToolResultV2 = {
-  __typename?: 'ToolResultV2';
-  data?: Maybe<Scalars['JSON']['output']>;
-  error?: Maybe<AgentV2Error>;
-  executionTime?: Maybe<Scalars['Int']['output']>;
-  message?: Maybe<Scalars['String']['output']>;
-  success: Scalars['Boolean']['output'];
 };
 
 export type UpdateActivityInput = {
@@ -2969,7 +2922,7 @@ export type GetAgentThoughtsQueryVariables = Exact<{
 }>;
 
 
-export type GetAgentThoughtsQuery = { __typename?: 'Query', agentThoughts: Array<{ __typename?: 'AgentThought', id: string, conversationId: string, type: AgentThoughtType, content: string, metadata: any, timestamp: string }> };
+export type GetAgentThoughtsQuery = { __typename?: 'Query', agentThoughts: Array<{ __typename?: 'AgentThought', id: string, conversationId: string, type: AgentThoughtType, content: string, metadata: Record<string, any>, timestamp: string }> };
 
 export type GetMyNotificationsQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']['input']>;
@@ -2977,7 +2930,7 @@ export type GetMyNotificationsQueryVariables = Exact<{
 }>;
 
 
-export type GetMyNotificationsQuery = { __typename?: 'Query', myNotifications: { __typename?: 'NotificationSummary', totalCount: number, unreadCount: number, notifications: Array<{ __typename?: 'Notification', id: string, userId: string, title: string, message: string, notificationType: NotificationType, isRead: boolean, readAt?: string | null, entityType?: string | null, entityId?: string | null, actionUrl?: string | null, metadata?: any | null, priority: NotificationPriority, expiresAt?: string | null, createdAt: string, updatedAt: string }> } };
+export type GetMyNotificationsQuery = { __typename?: 'Query', myNotifications: { __typename?: 'NotificationSummary', totalCount: number, unreadCount: number, notifications: Array<{ __typename?: 'Notification', id: string, userId: string, title: string, message: string, notificationType: NotificationType, isRead: boolean, readAt?: string | null, entityType?: string | null, entityId?: string | null, actionUrl?: string | null, metadata?: Record<string, any> | null, priority: NotificationPriority, expiresAt?: string | null, createdAt: string, updatedAt: string }> } };
 
 export type GetUnreadNotificationCountQueryVariables = Exact<{ [key: string]: never; }>;
 

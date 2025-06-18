@@ -5,13 +5,17 @@ import react from '@vitejs/plugin-react'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  optimizeDeps: {
-    exclude: ['chunk-3WCZWZZN.js'], // Exclude problematic chunk
-    include: ['@apollo/client', '@chakra-ui/react', 'react', 'react-dom']
+  define: {
+    // Disable PWA features completely
+    __PWA_ENABLED__: false,
+    __WORKBOX_ENABLED__: false
   },
-  server: {
-    fs: {
-      strict: false // Allow serving files outside of root
+  build: {
+    rollupOptions: {
+      output: {
+        // Prevent problematic chunks
+        manualChunks: undefined
+      }
     }
   },
   test: {

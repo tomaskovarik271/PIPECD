@@ -77,11 +77,11 @@ function LeadsPage() {
     error: customFieldsError,
     getDefinitionsForEntity
   } = useOptimizedCustomFields({ 
-    entityTypes: useMemo(() => [CustomFieldEntityType.Lead], []) 
+    entityTypes: useMemo(() => ['LEAD'], []) 
   });
 
   const leadCustomFieldDefinitions = useMemo(() => {
-    return getDefinitionsForEntity(CustomFieldEntityType.Lead) || [];
+    return getDefinitionsForEntity('LEAD') || [];
   }, [getDefinitionsForEntity]);
 
   const { users: userList, loading: usersLoading, error: usersError, fetchUsers, hasFetched: hasFetchedUsers } = useUserListStore();

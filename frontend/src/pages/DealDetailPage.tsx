@@ -214,7 +214,7 @@ const DealDetailPage = () => {
       fetchDealById(dealId);
       const filter: GeneratedActivityFilterInput = { dealId: dealId };
       fetchActivities(filter);
-      fetchCustomFieldDefinitions(CustomFieldEntityType.Deal);
+      fetchCustomFieldDefinitions('DEAL');
       if (!usersHaveBeenFetched) {
         fetchUserList();
       }

@@ -226,6 +226,13 @@ export const resolvers = {
   WFMWorkflowTransition: WFMWorkflowResolvers.WFMWorkflowTransition,
   WFMProjectType: WFMProjectTypeResolvers.WFMProjectType,
   WFMProject,
+  // V2 Agent field resolvers
+  AgentConversation: {
+    ...agentV2Resolvers.AgentConversation,
+  },
+  AgentThought: {
+    ...agentV2Resolvers.AgentThought,
+  },
 
 }; 
 

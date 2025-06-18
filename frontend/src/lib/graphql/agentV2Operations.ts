@@ -1,115 +1,293 @@
+/**
+ * AI Agent V2 GraphQL Operations
+ * GraphQL queries and mutations for Claude Sonnet 4 extended thinking capabilities
+ */
+
 import { gql } from '@apollo/client';
 
-export const PROCESS_MESSAGE_V2 = gql`
-  mutation ProcessMessageV2($input: AgentV2Request!) {
-    processMessageV2(input: $input) {
-      success
-      message
-      data
-      toolCalls {
-        id
-        tool
-        parameters
-        reasoning
+// V2-specific types for frontend
+export interface AgentV2Message {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  thoughts?: AgentV2Thought[];
+  extendedThinking?: boolean;
+  thinkingBudget?: string;
+}
+
+export interface AgentV2Thought {
+  id: string;
+  conversationId: string;
+  type: 'REASONING' | 'QUESTION' | 'TOOL_CALL' | 'OBSERVATION' | 'PLAN';
+  content: string;
+  metadata: Record<string, any>;
+  timestamp: Date;
+  // V2 extended thinking fields
+  thinkingBudget?: string;
+  reasoning?: string;
+  strategy?: string;
+  concerns?: string;
+  nextSteps?: string;
+  reflectionData?: Record<string, any>;
+}
+
+export interface AgentV2Conversation {
+  id: string;
+  userId: string;
+  messages: AgentV2Message[];
+  plan?: any;
+  context: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
+  // V2 fields
+  agentVersion: string;
+  extendedThinkingEnabled: boolean;
+  thinkingBudget: string;
+}
+
+export interface SendAgentV2MessageInput {
+  conversationId?: string;
+  content: string;
+  enableExtendedThinking: boolean;
+  thinkingBudget: string;
+}
+
+export interface CreateAgentV2ConversationInput {
+  enableExtendedThinking: boolean;
+  thinkingBudget: string;
+  initialContext?: Record<string, any>;
+}
+
+// GraphQL Operations
+
+export const CREATE_AGENT_V2_CONVERSATION = gql`
+  mutation CreateAgentV2Conversation($input: CreateAgentV2ConversationInput!) {
+    createAgentV2Conversation(input: $input) {
+      id
+      userId
+      agentVersion
+      extendedThinkingEnabled
+      thinkingBudget
+      messages {
+        role
+        content
         timestamp
       }
-      toolResults {
-        success
-        message
-        data
-        error {
-          code
-          message
-          type
-          recoverable
-          suggestions
-        }
-        executionTime
-      }
-      reasoning {
-        step
-        type
-        description
-        confidence
-        evidence
-      }
-      suggestions {
-        id
-        type
-        title
-        description
-        confidence
-        impact
-        urgency
-        actionable
-      }
-      insights {
-        id
-        type
-        category
-        content
-        confidence
-        businessValue
-        actionable
-        relatedEntities
-      }
-      nextActions {
-        id
-        title
-        description
-        priority
-        estimatedTime
-        category
-        requiresInput
-      }
-      metadata {
-        agentVersion
-        processingTime
-        systemStateTimestamp
-        toolsUsed
-        confidenceScore
-        rateLimitStatus {
-          remaining
-          resetTime
-          burst
-        }
-        cacheStatus {
-          systemStateFromCache
-          rulesFromCache
-          searchResultsFromCache
-        }
-        sources {
-          type
-          name
-          version
-          confidence
-        }
-      }
-      error {
-        code
-        message
-        type
-        recoverable
-        suggestions
-      }
+      context
+      createdAt
+      updatedAt
     }
   }
 `;
 
-export const AGENT_V2_HEALTH_CHECK = gql`
-  query AgentV2HealthCheck {
-    agentV2HealthCheck {
-      status
-      components {
-        systemStateEncoder
-        pipeCDRulesEngine
-        semanticSearchEngine
-        toolRegistry
-        aiService
-        graphQLClient
+export const SEND_AGENT_V2_MESSAGE = gql`
+  mutation SendAgentV2Message($input: SendAgentV2MessageInput!) {
+    sendAgentV2Message(input: $input) {
+      conversation {
+        id
+        userId
+        agentVersion
+        extendedThinkingEnabled
+        thinkingBudget
+        messages {
+          role
+          content
+          timestamp
+        }
+        context
+        createdAt
+        updatedAt
       }
-      lastCheck
-      uptime
+      message {
+        role
+        content
+        timestamp
+      }
+      extendedThoughts {
+        id
+        conversationId
+        type
+        content
+        thinkingBudget
+        reasoning
+        strategy
+        concerns
+        nextSteps
+        reflectionData
+        metadata
+        timestamp
+      }
+      reflections {
+        id
+        conversationId
+        type
+        content
+        thinkingBudget
+        reasoning
+        strategy
+        concerns
+        nextSteps
+        reflectionData
+        metadata
+        timestamp
+      }
+      planModifications
+      thinkingTime
+      confidenceScore
+    }
+  }
+`;
+
+export const GET_AGENT_V2_CONVERSATIONS = gql`
+  query GetAgentV2Conversations($limit: Int, $offset: Int) {
+    agentV2Conversations(limit: $limit, offset: $offset) {
+      id
+      userId
+      agentVersion
+      extendedThinkingEnabled
+      thinkingBudget
+      messages {
+        role
+        content
+        timestamp
+      }
+      context
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_AGENT_V2_THOUGHTS = gql`
+  query GetAgentV2Thoughts($conversationId: ID!, $limit: Int) {
+    agentV2Thoughts(conversationId: $conversationId, limit: $limit) {
+      id
+      conversationId
+      type
+      content
+      thinkingBudget
+      reasoning
+      strategy
+      concerns
+      nextSteps
+      reflectionData
+      metadata
+      timestamp
+    }
+  }
+`;
+
+export const GET_AGENT_V2_THINKING_ANALYSIS = gql`
+  query GetAgentV2ThinkingAnalysis($conversationId: ID!) {
+    agentV2ThinkingAnalysis(conversationId: $conversationId) {
+      totalThoughts
+      reasoningDepth
+      strategicInsights
+      identifiedConcerns
+      recommendedActions
+      thinkingBudgetUsed
+    }
+  }
+`;
+
+// Streaming Operations
+
+export interface SendAgentV2MessageStreamInput {
+  conversationId?: string;
+  content: string;
+  enableExtendedThinking: boolean;
+  thinkingBudget: string;
+}
+
+export interface AgentV2StreamChunk {
+  type: 'CONTENT' | 'THINKING' | 'COMPLETE' | 'ERROR';
+  content?: string;
+  thinking?: AgentV2Thought;
+  conversationId: string;
+  complete?: any; // AgentV2Response
+  error?: string;
+}
+
+export const SEND_AGENT_V2_MESSAGE_STREAM = gql`
+  mutation SendAgentV2MessageStream($input: SendAgentV2MessageStreamInput!) {
+    sendAgentV2MessageStream(input: $input)
+  }
+`;
+
+export const AGENT_V2_MESSAGE_STREAM_SUBSCRIPTION = gql`
+  subscription AgentV2MessageStream($conversationId: ID!) {
+    agentV2MessageStream(conversationId: $conversationId) {
+      type
+      content
+      thinking {
+        id
+        conversationId
+        type
+        content
+        thinkingBudget
+        reasoning
+        strategy
+        concerns
+        nextSteps
+        reflectionData
+        metadata
+        timestamp
+      }
+      conversationId
+      complete {
+        conversation {
+          id
+          userId
+          agentVersion
+          extendedThinkingEnabled
+          thinkingBudget
+          messages {
+            role
+            content
+            timestamp
+          }
+          context
+          createdAt
+          updatedAt
+        }
+        message {
+          role
+          content
+          timestamp
+        }
+        extendedThoughts {
+          id
+          conversationId
+          type
+          content
+          thinkingBudget
+          reasoning
+          strategy
+          concerns
+          nextSteps
+          reflectionData
+          metadata
+          timestamp
+        }
+        reflections {
+          id
+          conversationId
+          type
+          content
+          thinkingBudget
+          reasoning
+          strategy
+          concerns
+          nextSteps
+          reflectionData
+          metadata
+          timestamp
+        }
+        planModifications
+        thinkingTime
+        confidenceScore
+      }
+      error
     }
   }
 `; 

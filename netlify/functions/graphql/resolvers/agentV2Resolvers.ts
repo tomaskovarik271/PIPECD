@@ -1,280 +1,295 @@
-import { ConversationContext, ToolCall, ToolResult } from '../../../../lib/aiAgentV2/types/system';
-import { loggers } from '../../../../lib/logger';
+import { GraphQLError } from 'graphql';
+import { supabase } from '../../../../lib/supabaseClient';
+import { AgentServiceV2 } from '../../../../lib/aiAgentV2/core/AgentServiceV2';
+import { 
+  GraphQLContext,
+  requireAuthentication,
+  processZodError 
+} from '../helpers';
+
+// Initialize V2 Agent Service
+const agentServiceV2 = new AgentServiceV2();
 
 export const agentV2Resolvers = {
   Query: {
-    agentV2HealthCheck: async () => {
+    // Get V2 conversations only
+    agentV2Conversations: async (_: any, { limit = 10, offset = 0 }: { limit?: number; offset?: number }, context: GraphQLContext) => {
+      const { userId } = requireAuthentication(context);
+
+      const action = 'fetching V2 conversations';
       try {
-        // Basic health check - V2 system is available
+        const { data, error } = await context.supabaseClient
+          .from('agent_conversations')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('agent_version', 'v2')
+          .order('updated_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (error) {
+          console.error('Error fetching V2 conversations:', error);
+          throw new GraphQLError('Failed to fetch conversations');
+        }
+
+        return data || [];
+      } catch (err) {
+        throw processZodError(err, action);
+      }
+    },
+
+    // Get extended thinking analysis for a conversation
+    agentV2ThinkingAnalysis: async (_: any, { conversationId }: { conversationId: string }, context: GraphQLContext) => {
+      const { userId } = requireAuthentication(context);
+
+      try {
+        // Verify conversation ownership and V2 status
+        const { data: conversation, error: convError } = await context.supabaseClient
+          .from('agent_conversations')
+          .select('id, agent_version, thinking_budget')
+          .eq('id', conversationId)
+          .eq('user_id', userId)
+          .eq('agent_version', 'v2')
+          .single();
+
+        if (convError || !conversation) {
+          throw new GraphQLError('V2 conversation not found');
+        }
+
+        // Get all thoughts for analysis
+        const { data: thoughts, error: thoughtsError } = await context.supabaseClient
+          .from('agent_thoughts')
+          .select('*')
+          .eq('conversation_id', conversationId)
+          .order('timestamp', { ascending: false });
+
+        if (thoughtsError) {
+          throw new GraphQLError('Failed to fetch thoughts for analysis');
+        }
+
+        // Analyze thinking patterns
+        const reasoningThoughts = thoughts?.filter(t => t.type === 'reasoning') || [];
+        const strategicInsights = thoughts?.filter(t => t.strategy).map(t => t.strategy).filter(Boolean) || [];
+        const identifiedConcerns = thoughts?.filter(t => t.concerns).map(t => t.concerns).filter(Boolean) || [];
+        const recommendedActions = thoughts?.filter(t => t.next_steps).map(t => t.next_steps).filter(Boolean) || [];
+
         return {
-          status: 'healthy',
-          components: {
-            systemStateEncoder: 'healthy',
-            pipeCDRulesEngine: 'healthy', 
-            semanticSearchEngine: 'healthy',
-            toolRegistry: 'healthy',
-            aiService: 'healthy',
-            graphQLClient: 'healthy'
-          },
-          lastCheck: new Date(),
-          uptime: Math.floor(process.uptime())
+          totalThoughts: thoughts?.length || 0,
+          reasoningDepth: reasoningThoughts.length / Math.max(thoughts?.length || 1, 1),
+          strategicInsights,
+          identifiedConcerns,
+          recommendedActions,
+          thinkingBudgetUsed: conversation.thinking_budget?.toUpperCase() || 'STANDARD'
         };
-      } catch (error) {
-        loggers.ai.error('Agent V2 health check failed:', error);
-        return {
-          status: 'error',
-          components: {
-            systemStateEncoder: 'error',
-            pipeCDRulesEngine: 'error',
-            semanticSearchEngine: 'error', 
-            toolRegistry: 'error',
-            aiService: 'error',
-            graphQLClient: 'error'
-          },
-          lastCheck: new Date(),
-          uptime: 0
-        };
+      } catch (err) {
+        console.error('Error in agentV2ThinkingAnalysis query:', err);
+        throw new GraphQLError('Failed to analyze thinking patterns');
+      }
+    },
+
+    // Get V2 thoughts with extended reasoning
+    agentV2Thoughts: async (_: any, { conversationId, limit = 50 }: { conversationId: string; limit?: number }, context: GraphQLContext) => {
+      const { userId } = requireAuthentication(context);
+
+      try {
+        // Verify conversation ownership
+        const { data: conversation, error: convError } = await context.supabaseClient
+          .from('agent_conversations')
+          .select('id')
+          .eq('id', conversationId)
+          .eq('user_id', userId)
+          .single();
+
+        if (convError || !conversation) {
+          throw new GraphQLError('Conversation not found');
+        }
+
+        const { data, error } = await context.supabaseClient
+          .from('agent_thoughts')
+          .select('*')
+          .eq('conversation_id', conversationId)
+          .order('timestamp', { ascending: false })
+          .limit(limit);
+
+        if (error) {
+          throw new GraphQLError('Failed to fetch V2 thoughts');
+        }
+
+        return data || [];
+      } catch (err) {
+        console.error('Error in agentV2Thoughts query:', err);
+        throw new GraphQLError('Failed to fetch V2 thoughts');
       }
     }
   },
 
   Mutation: {
-    processMessageV2: async (_parent: any, { input }: { input: any }, context: any) => {
-      const startTime = Date.now();
-      
+    // Send message with V2 extended thinking
+    sendAgentV2Message: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
+      const { userId } = requireAuthentication(context);
+
       try {
-        // Extract user from context (assuming JWT auth)
-        const userId = context?.currentUser?.id || 'anonymous-user';
-        const authToken = context?.token || '';
-        let userPermissions = context?.userPermissions || [];
-        
-        // Debug logging to see what permissions we have
-        loggers.ai.info(`[Agent V2] User context debug:`, {
+        // Process message with V2 Agent Service
+        const response = await agentServiceV2.processMessage({
+          conversationId: input.conversationId,
+          content: input.content,
+          enableExtendedThinking: input.enableExtendedThinking,
+          thinkingBudget: input.thinkingBudget.toLowerCase(),
           userId,
-          hasCurrentUser: !!context?.currentUser?.id,
-          userPermissionsCount: userPermissions.length,
-          userPermissions: userPermissions.slice(0, 10), // Log first 10 permissions
-          contextKeys: Object.keys(context || {})
+          supabaseClient: context.supabaseClient
         });
+
+        return response;
+      } catch (err) {
+        console.error('Error in sendAgentV2Message mutation:', err);
+        throw new GraphQLError('Failed to process V2 message');
+      }
+    },
+
+    // Send message with V2 streaming support
+    sendAgentV2MessageStream: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
+      const { userId } = requireAuthentication(context);
+
+      try {
+        // Generate unique session ID for this streaming request
+        const sessionId = `stream_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        // Development-only fallback: provide basic permissions for testing when no auth
-        if (!context?.currentUser?.id && process.env.NODE_ENV !== 'production') {
-          loggers.ai.warn('[Agent V2] Development mode: providing basic permissions for testing');
-          userPermissions = ['deal:read_any', 'deal:read_own', 'deal:create', 'organization:read_any', 'organization:create', 'person:read_any', 'person:create', 'activity:read_any', 'activity:read_own'];
-        } else if (!context?.currentUser?.id) {
-          loggers.ai.warn('[Agent V2] Processing request without authentication - using anonymous user');
-        }
-
-        loggers.ai.info(`[Agent V2] Processing message from user ${userId}:`, {
-          messageLength: input.message.length,
-          message: input.message.substring(0, 100) + '...',
-          environment: process.env.NODE_ENV || 'development'
+        // Start streaming processing asynchronously
+        // This allows the mutation to return immediately while streaming continues
+        process.nextTick(async () => {
+          try {
+            await agentServiceV2.processMessageStream({
+              conversationId: input.conversationId,
+              content: input.content,
+              enableExtendedThinking: input.enableExtendedThinking,
+              thinkingBudget: input.thinkingBudget.toLowerCase(),
+              userId,
+              supabaseClient: context.supabaseClient,
+              streaming: true
+            }, (chunk) => {
+                             // TODO: Implement proper pub/sub system for real-time streaming
+               // For now, streaming will work through the callback pattern
+               // In production, integrate with Redis or GraphQL subscriptions
+            });
+                     } catch (error) {
+             console.error('Streaming error:', error);
+             // TODO: Publish error to subscription system when implemented
+           }
         });
 
-        // Create execution context for AI agent
-        const executionContext = {
-          userId: userId,
-          sessionId: input.sessionId || `session-${Date.now()}`,
-          permissions: userPermissions,
-          authToken: authToken,
-          requestId: `req-${Date.now()}`,
-          toolCallId: `tool-${Date.now()}`,
-          systemState: {},
-          conversationHistory: input.conversationHistory || []
-        };
+        return sessionId;
+      } catch (err) {
+        console.error('Error in sendAgentV2MessageStream mutation:', err);
+        throw new GraphQLError('Failed to start V2 message streaming');
+      }
+    },
 
-        // Use the real AI Agent V2 service
-        try {
-          const { AgentService } = await import('../../../../lib/aiAgentV2/services/AgentService.js');
-          
-          // Initialize AgentService with authenticated Supabase client
-          const agentService = new AgentService(
-            context.supabaseClient,
-            process.env.ANTHROPIC_API_KEY!,
-            {
-              model: 'claude-3-5-sonnet-20241022',
-              temperature: 0.1,
-              maxTokens: 4000,
-              systemPromptStrategy: 'dynamic',
-              thinkingEnabled: true,
-              workflowOrchestration: true,
-              realTimeContext: true
-            }
-          );
-          
-          // Debug: Log exactly what we're passing to AgentService
-          const requestToSend = {
-            message: input.message,
-            userId: userId,
-            sessionId: executionContext.sessionId,
-            authToken: authToken,
-            permissions: userPermissions, // Pass the permissions directly
-            context: {
-              sessionId: executionContext.sessionId,
-              userId: userId,
-              messageHistory: executionContext.conversationHistory,
-              currentObjective: undefined,
-              systemState: undefined, // Let AgentService generate fresh system state
-              workflowState: undefined
-            }
-          };
-          
-          loggers.ai.info('[Agent V2] About to call AgentService with:', {
-            permissionCount: userPermissions.length,
-            systemStateSource: 'will be generated fresh by AgentService'
-          });
-          
-          // Process the message using Claude AI
-          const agentResponse = await agentService.processRequest(requestToSend);
+    // Create new V2 conversation with extended thinking enabled
+    createAgentV2Conversation: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
+      const { userId } = requireAuthentication(context);
 
-          const processingTime = Date.now() - startTime;
-          loggers.ai.info(`[Agent V2] V2 response generated in ${processingTime}ms`);
+      try {
+        const { data, error } = await context.supabaseClient
+          .from('agent_conversations')
+          .insert({
+            user_id: userId,
+            messages: [],
+            plan: null,
+            context: input.initialContext || {},
+            agent_version: 'v2',
+            extended_thinking_enabled: input.enableExtendedThinking,
+            thinking_budget: input.thinkingBudget?.toLowerCase() || 'standard'
+          })
+          .select()
+          .single();
 
-          // Return the AI-generated response
-          return {
-            success: agentResponse.success,
-            message: agentResponse.message,
-            data: agentResponse.data,
-            toolCalls: agentResponse.toolCalls || [],
-            toolResults: agentResponse.toolResults || [],
-            reasoning: agentResponse.reasoning || [],
-            suggestions: agentResponse.suggestions || [],
-            insights: agentResponse.insights || [],
-            nextActions: agentResponse.nextActions || [],
-            metadata: {
-              agentVersion: '2.0.0',
-              processingTime,
-              systemStateTimestamp: new Date(),
-              toolsUsed: (agentResponse.toolCalls || []).map((tc: any) => tc.tool),
-              confidenceScore: agentResponse.metadata?.confidenceScore || 0.9,
-              rateLimitStatus: {
-                remaining: 50,
-                resetTime: new Date(Date.now() + 60000),
-                burst: 5
-              },
-              cacheStatus: {
-                systemStateFromCache: false,
-                rulesFromCache: false,
-                searchResultsFromCache: false
-              },
-              sources: (agentResponse.toolCalls || []).map((tc: any) => ({
-                type: 'tool',
-                name: tc.tool,
-                version: '2.0.0',
-                confidence: 0.9
-              }))
-            },
-            error: agentResponse.error || null
-          };
-
-        } catch (error) {
-          loggers.ai.error('[Agent V2] AI Service error:', error);
-          
-          const processingTime = Date.now() - startTime;
-          return {
-            success: false,
-            message: 'I encountered an error while processing your request with Claude AI. Please try again.',
-            data: null,
-            toolCalls: [],
-            toolResults: [],
-            reasoning: [],
-            suggestions: [
-              {
-                id: `suggestion-${Date.now()}-1`,
-                type: 'action',
-                title: 'Try Again',
-                description: 'Please try your request again',
-                confidence: 0.8,
-                impact: 'medium',
-                urgency: 'medium',
-                actionable: true
-              },
-              {
-                id: `suggestion-${Date.now()}-2`,
-                type: 'format',
-                title: 'Check Request Format',
-                description: 'Verify your request format is correct',
-                confidence: 0.7,
-                impact: 'low',
-                urgency: 'low',
-                actionable: true
-              }
-            ],
-            insights: [],
-            nextActions: [],
-            metadata: {
-              agentVersion: '2.0.0',
-              processingTime,
-              systemStateTimestamp: new Date(),
-              toolsUsed: [],
-              confidenceScore: 0,
-              rateLimitStatus: {
-                remaining: 0,
-                resetTime: new Date(),
-                burst: 0
-              },
-              cacheStatus: {
-                systemStateFromCache: false,
-                rulesFromCache: false,
-                searchResultsFromCache: false
-              },
-              sources: []
-            },
-            error: {
-              code: 'AI_SERVICE_ERROR',
-              message: error instanceof Error ? error.message : 'AI service unavailable',
-              type: 'ai_service',
-              recoverable: true,
-              suggestions: ['Please try again', 'Check Claude API configuration']
-            }
-          };
+        if (error) {
+          console.error('Error creating V2 conversation:', error);
+          throw new GraphQLError('Failed to create V2 conversation');
         }
 
-      } catch (error) {
-        const processingTime = Date.now() - startTime;
-        loggers.ai.error('[Agent V2] Request processing failed:', {
-          error: error instanceof Error ? error.message : error,
-          stack: error instanceof Error ? error.stack : undefined,
-          inputMessage: input?.message?.substring(0, 100),
-          processingTime
-        });
+        return data;
+      } catch (err) {
+        console.error('Error in createAgentV2Conversation mutation:', err);
+        throw new GraphQLError('Failed to create V2 conversation');
+      }
+    },
 
-        return {
-          success: false,
-          message: 'I encountered an error while processing your request. Please try again.',
-          data: null,
-          toolCalls: [],
-          toolResults: [],
-          reasoning: [],
-          suggestions: [],
-          insights: [],
-          nextActions: [],
-          metadata: {
-            agentVersion: '2.0.0',
-            processingTime,
-            systemStateTimestamp: new Date(),
-            toolsUsed: [],
-            confidenceScore: 0,
-            rateLimitStatus: {
-              remaining: 0,
-              resetTime: new Date(),
-              burst: 0
-            },
-            cacheStatus: {
-              systemStateFromCache: false,
-              rulesFromCache: false,
-              searchResultsFromCache: false
-            },
-            sources: []
-          },
-          error: {
-            code: 'INTERNAL_ERROR',
-            message: error instanceof Error ? error.message : 'Unknown error occurred',
-            type: 'system',
-            recoverable: true,
-            suggestions: ['Please try again', 'Check your request format', 'Contact support if issue persists']
-          }
-        };
+    // Add V2 thoughts with extended reasoning data
+    addAgentV2Thoughts: async (_: any, { conversationId, thoughts }: { conversationId: string; thoughts: any[] }, context: GraphQLContext) => {
+      const { userId } = requireAuthentication(context);
+
+      try {
+        // Verify conversation ownership
+        const { data: conversation, error: convError } = await context.supabaseClient
+          .from('agent_conversations')
+          .select('id')
+          .eq('id', conversationId)
+          .eq('user_id', userId)
+          .single();
+
+        if (convError || !conversation) {
+          throw new GraphQLError('Conversation not found');
+        }
+
+        // Insert V2 thoughts with extended data
+        const thoughtsToInsert = thoughts.map(thought => ({
+          conversation_id: conversationId,
+          type: thought.type.toLowerCase(),
+          content: thought.content,
+          metadata: thought.reflectionData || {},
+          reasoning: thought.reasoning,
+          strategy: thought.strategy,
+          concerns: thought.concerns,
+          next_steps: thought.nextSteps,
+          thinking_budget: thought.thinkingBudget?.toLowerCase(),
+          reflection_data: thought.reflectionData || {}
+        }));
+
+        const { data, error } = await context.supabaseClient
+          .from('agent_thoughts')
+          .insert(thoughtsToInsert)
+          .select();
+
+        if (error) {
+          console.error('Error adding V2 thoughts:', error);
+          throw new GraphQLError('Failed to add V2 thoughts');
+        }
+
+        return data || [];
+      } catch (err) {
+        console.error('Error in addAgentV2Thoughts mutation:', err);
+        throw new GraphQLError('Failed to add V2 thoughts');
+      }
+    }
+  },
+
+  // Field resolvers for extended types
+  AgentConversation: {
+    userId: (conversation: any) => conversation.user_id,
+    agentVersion: (conversation: any) => conversation.agent_version || 'v1',
+    extendedThinkingEnabled: (conversation: any) => conversation.extended_thinking_enabled || false,
+    thinkingBudget: (conversation: any) => conversation.thinking_budget?.toUpperCase() || 'STANDARD',
+    createdAt: (conversation: any) => conversation.created_at,
+    updatedAt: (conversation: any) => conversation.updated_at
+  },
+
+  AgentThought: {
+    conversationId: (thought: any) => thought.conversationId || thought.conversation_id,
+    thinkingBudget: (thought: any) => thought.thinking_budget?.toUpperCase() || null,
+    reflectionData: (thought: any) => thought.reflection_data || {},
+    reasoning: (thought: any) => thought.reasoning || null,
+    strategy: (thought: any) => thought.strategy || null,
+    concerns: (thought: any) => thought.concerns || null,
+    nextSteps: (thought: any) => thought.next_steps || null
+  },
+
+  Subscription: {
+    // Subscribe to V2 streaming messages
+    agentV2MessageStream: {
+      // TODO: Implement subscription resolver for real-time streaming
+      // This would typically use GraphQL subscriptions with WebSockets
+      subscribe: () => {
+        throw new GraphQLError('Streaming subscriptions not yet implemented - use polling for now');
       }
     }
   }

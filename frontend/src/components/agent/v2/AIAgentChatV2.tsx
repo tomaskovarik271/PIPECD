@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   VStack,
@@ -6,145 +6,68 @@ import {
   Input,
   Button,
   Text,
-  Flex,
-  Spinner,
   Badge,
-  useColorModeValue,
-  IconButton,
-  Tooltip,
-  Divider,
+  Switch,
+  FormControl,
+  FormLabel,
+  Select,
+  Spinner,
   Alert,
-  AlertIcon,
-  Collapse,
-  useDisclosure
+  AlertIcon
 } from '@chakra-ui/react';
-import {
-  FiSend,
-  FiMic,
-  FiMicOff,
-  FiRefreshCw,
-  FiSettings,
-  FiZap,
-  FiEye,
-  FiEyeOff
-} from 'react-icons/fi';
 import { useThemeColors } from '../../../hooks/useThemeColors';
-import { MessageBubbleV2 } from './MessageBubbleV2';
-import { ToolExecutionPanel } from './ToolExecutionPanel';
-import { ConversationStarter } from './ConversationStarter';
-import { useAgentV2, AgentV2Message } from '../../../hooks/useAgentV2';
-import { useMutation } from '@apollo/client';
-import { PROCESS_MESSAGE_V2 } from '../../../lib/graphql/agentV2Operations';
+import { useAgentV2 } from '../../../hooks/useAgentV2';
+import type { AgentV2Message } from '../../../lib/graphql/agentV2Operations';
 
-interface Message {
-  id: string;
-  content: string;
-  sender: 'user' | 'assistant';
-  timestamp: Date;
-  toolCalls?: ToolCall[];
-  reasoning?: ReasoningStep[];
-  systemContext?: any;
-}
-
-interface ToolCall {
-  id: string;
-  tool: string;
-  parameters: Record<string, any>;
-  result?: any;
-  status: 'pending' | 'executing' | 'completed' | 'failed';
-  executionTime?: number;
-}
-
-interface ReasoningStep {
-  type: 'planning' | 'analysis' | 'decision' | 'validation' | 'synthesis';
-  content: string;
-  confidence: number;
-  evidence?: string[];
-}
-
-export const AIAgentChatV2: React.FC = () => {
+export function AIAgentChatV2() {
   const colors = useThemeColors();
   const [inputValue, setInputValue] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  
-  const { isOpen: showAdvanced, onToggle: toggleAdvanced } = useDisclosure();
-  
-  // Use the real V2 agent service
-  const { 
-    messages, 
-    isProcessing, 
-    sendMessage, 
-    clearMessages, 
-    healthStatus,
-    isHealthy
+  const [extendedThinking, setExtendedThinking] = useState(true);
+  const [thinkingBudget, setThinkingBudget] = useState('THINK');
+  const [useStreaming, setUseStreaming] = useState(true);
+
+  // V2 Agent hook
+  const {
+    currentConversation,
+    conversations,
+    thoughts,
+    isLoading,
+    isSendingMessage,
+    isStreaming,
+    streamingContent,
+    error,
+    createConversation,
+    sendMessage,
+    sendMessageStream,
+    setCurrentConversation,
+    clearError
   } = useAgentV2();
 
-  // Add direct GraphQL mutation for testing
-  const [testMutation] = useMutation(PROCESS_MESSAGE_V2);
-
-  const chatBg = useColorModeValue('gray.50', 'gray.900');
-  const inputBg = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
-
-  // Auto-scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // Focus input on mount
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || isProcessing) return;
+    if (!inputValue.trim() || isSendingMessage || isStreaming) return;
 
-    const messageContent = inputValue.trim();
+    const content = inputValue.trim();
     setInputValue('');
 
     try {
-      // Use the real V2 agent service
-      await sendMessage(messageContent, {
-        useAdvancedReasoning: showAdvanced,
-        maxToolCalls: 5,
-        thinkingDepth: 'standard',
-        responseStyle: 'professional'
-      });
+      if (useStreaming) {
+        await sendMessageStream({
+          conversationId: currentConversation?.id,
+          content,
+          enableExtendedThinking: extendedThinking,
+          thinkingBudget: thinkingBudget
+        });
+      } else {
+        await sendMessage({
+          conversationId: currentConversation?.id,
+          content,
+          enableExtendedThinking: extendedThinking,
+          thinkingBudget: thinkingBudget
+        });
+      }
     } catch (error) {
-      console.error('Error sending message to V2 agent:', error);
-      // Error handling is done in the useAgentV2 hook
-    }
-  };
-
-  // Add test function for direct GraphQL call
-  const testDirectGraphQL = async () => {
-    try {
-      console.log('Testing direct GraphQL call...');
-      const { data } = await testMutation({
-        variables: {
-          input: {
-            message: "Test direct GraphQL call",
-            conversationContext: {
-              userId: "test-user",
-              recentMessages: []
-            },
-            config: {
-              useAdvancedReasoning: true,
-              maxToolCalls: 5,
-              thinkingDepth: "standard",
-              responseStyle: "professional"
-            }
-          }
-        }
-      });
-      
-      console.log('Direct GraphQL response:', data);
-      alert(`Direct GraphQL Success: ${data?.processMessageV2?.success}`);
-    } catch (error) {
-      console.error('Direct GraphQL error:', error);
-      alert(`Direct GraphQL Error: ${error}`);
+      console.error('Error sending message:', error);
+      // Error is handled by the hook
     }
   };
 
@@ -155,219 +78,216 @@ export const AIAgentChatV2: React.FC = () => {
     }
   };
 
-  const clearConversation = () => {
-    clearMessages();
-    inputRef.current?.focus();
-  };
-
-  const toggleVoiceInput = () => {
-    setIsListening(!isListening);
-    // Voice input implementation would go here
-  };
-
-
-
   return (
-    <VStack h="full" spacing={0}>
-      {/* Chat Header */}
-      <HStack
-        w="full"
-        p={4}
-        borderBottom="1px"
-        borderColor={borderColor}
-        bg={inputBg}
-        justify="space-between"
+    <VStack spacing={4} height="100%" align="stretch">
+      {/* V2 Configuration Panel */}
+      <Box 
+        bg={colors.bg.elevated} 
+        p={4} 
+        borderRadius="md" 
+        border="1px solid" 
+        borderColor={colors.border.subtle}
       >
-        <HStack spacing={3}>
-          <Box
-            w={3}
-            h={3}
-            borderRadius="full"
-            bg="green.500"
-            shadow="0 0 8px green.500"
-          />
-          <Text fontWeight="medium" color={colors.text.primary}>
-            AI Agent V2
-          </Text>
-          <Badge colorScheme="blue" variant="subtle">
-            Claude Sonnet 4
+        <HStack spacing={6} wrap="wrap">
+          <FormControl display="flex" alignItems="center" width="auto">
+            <FormLabel htmlFor="extended-thinking" mb="0" color={colors.text.secondary}>
+              Extended Thinking:
+            </FormLabel>
+            <Switch
+              id="extended-thinking"
+              isChecked={extendedThinking}
+              onChange={(e) => setExtendedThinking(e.target.checked)}
+              colorScheme="blue"
+            />
+          </FormControl>
+
+          <FormControl display="flex" alignItems="center" width="auto">
+            <FormLabel htmlFor="streaming" mb="0" color={colors.text.secondary}>
+              Streaming:
+            </FormLabel>
+            <Switch
+              id="streaming"
+              isChecked={useStreaming}
+              onChange={(e) => setUseStreaming(e.target.checked)}
+              colorScheme="green"
+            />
+          </FormControl>
+
+          <FormControl width="200px">
+            <FormLabel color={colors.text.secondary} fontSize="sm">
+              Thinking Budget:
+            </FormLabel>
+            <Select
+              value={thinkingBudget}
+              onChange={(e) => setThinkingBudget(e.target.value)}
+              size="sm"
+              bg={colors.bg.input}
+            >
+              <option value="STANDARD">Standard</option>
+              <option value="THINK">Think</option>
+              <option value="THINK_HARD">Think Hard</option>
+              <option value="THINK_HARDER">Think Harder</option>
+              <option value="ULTRATHINK">Ultra Think</option>
+            </Select>
+          </FormControl>
+
+          <Badge colorScheme={useStreaming ? "green" : "blue"} variant="subtle">
+            {useStreaming ? "Streaming Enabled" : "V2 Standard"}
           </Badge>
         </HStack>
+      </Box>
 
-        <HStack spacing={2}>
-          <Tooltip label={showAdvanced ? "Hide Advanced" : "Show Advanced"}>
-            <IconButton
-              aria-label="Toggle advanced view"
-              icon={showAdvanced ? <FiEyeOff /> : <FiEye />}
-              size="sm"
-              variant="ghost"
-              onClick={toggleAdvanced}
-            />
-          </Tooltip>
-          <Tooltip label="Clear conversation">
-            <IconButton
-              aria-label="Clear conversation"
-              icon={<FiRefreshCw />}
-              size="sm"
-              variant="ghost"
-              onClick={clearConversation}
-            />
-          </Tooltip>
-          <Tooltip label="Settings">
-            <IconButton
-              aria-label="Settings"
-              icon={<FiSettings />}
-              size="sm"
-              variant="ghost"
-            />
-          </Tooltip>
-        </HStack>
-      </HStack>
-
-      {/* Advanced Panel */}
-      <Collapse in={showAdvanced} animateOpacity>
-        <Box w="full" bg={chatBg} borderBottom="1px" borderColor={borderColor}>
-          <Alert status="info" variant="subtle">
-            <AlertIcon />
-            <VStack align="start" spacing={1}>
-              <Text fontSize="sm" fontWeight="medium">
-                Advanced Mode: You can see tool execution details and reasoning steps
-              </Text>
-              <Text fontSize="xs" color={colors.text.secondary}>
-                This helps you understand how the AI agent processes your requests
-              </Text>
-            </VStack>
-          </Alert>
-        </Box>
-      </Collapse>
+      {/* Error Display */}
+      {error && (
+        <Alert status="error">
+          <AlertIcon />
+          {error}
+          <Button
+            size="sm"
+            ml="auto"
+            onClick={clearError}
+            variant="ghost"
+          >
+            Dismiss
+          </Button>
+        </Alert>
+      )}
 
       {/* Messages Area */}
       <Box
         flex="1"
-        w="full"
-        bg={chatBg}
+        bg={colors.bg.content}
+        borderRadius="md"
+        border="1px solid"
+        borderColor={colors.border.subtle}
+        p={4}
         overflowY="auto"
-        position="relative"
+        maxHeight="400px"
       >
-        {messages.length === 0 ? (
-          <ConversationStarter onSelectStarter={setInputValue} />
+        {!currentConversation || currentConversation.messages.length === 0 ? (
+          <Box textAlign="center" py={8}>
+            <Text color={colors.text.muted} fontSize="lg">
+              👋 Welcome to AI Agent V2
+            </Text>
+            <Text color={colors.text.muted} fontSize="sm" mt={2}>
+              Start a conversation to experience extended thinking capabilities
+            </Text>
+          </Box>
         ) : (
-          <VStack spacing={4} p={4} align="stretch">
-            {messages.map((message) => (
-              <MessageBubbleV2
-                key={message.id}
-                message={message}
-                showAdvanced={showAdvanced}
-              />
+          <VStack spacing={4} align="stretch">
+            {currentConversation.messages.map((message, index) => (
+              <Box
+                key={index}
+                alignSelf={message.role === 'user' ? 'flex-end' : 'flex-start'}
+                maxW="80%"
+                bg={message.role === 'user' ? colors.interactive.default : colors.bg.surface}
+                color={message.role === 'user' ? 'white' : colors.text.primary}
+                p={3}
+                borderRadius="lg"
+                border={message.role === 'assistant' ? '1px solid' : 'none'}
+                borderColor={colors.border.subtle}
+              >
+                <Text fontSize="sm" whiteSpace="pre-wrap">
+                  {message.content}
+                </Text>
+                <Text
+                  fontSize="xs"
+                  color={message.role === 'user' ? 'whiteAlpha.700' : colors.text.muted}
+                  mt={2}
+                >
+                  {new Date(message.timestamp).toLocaleTimeString()}
+                </Text>
+              </Box>
             ))}
             
-            {/* Loading indicator */}
-            {isProcessing && (
-              <HStack justify="center" py={4}>
-                <Spinner size="sm" color="blue.500" />
-                <Text fontSize="sm" color={colors.text.secondary}>
-                  AI is thinking...
+            {/* Streaming content indicator */}
+            {isStreaming && streamingContent && (
+              <Box
+                alignSelf="flex-start"
+                maxW="80%"
+                bg={colors.bg.surface}
+                color={colors.text.primary}
+                p={3}
+                borderRadius="lg"
+                border="1px solid"
+                borderColor={colors.border.subtle}
+                opacity={0.8}
+              >
+                <HStack spacing={2} mb={2}>
+                  <Spinner size="xs" color={colors.interactive.default} />
+                  <Text fontSize="xs" color={colors.text.muted}>
+                    Streaming response...
+                  </Text>
+                </HStack>
+                <Text fontSize="sm" whiteSpace="pre-wrap">
+                  {streamingContent}
                 </Text>
-              </HStack>
+              </Box>
             )}
-            
-            <div ref={messagesEndRef} />
           </VStack>
         )}
       </Box>
 
       {/* Input Area */}
-      <VStack
-        w="full"
-        p={4}
-        bg={inputBg}
-        borderTop="1px"
-        borderColor={borderColor}
-        spacing={3}
-      >
-        {/* Tool Execution Panel (when tools are running) */}
-        {isProcessing && (
-          <ToolExecutionPanel
-            currentTool="think"
-            progress={0.7}
-            estimatedTime="2s remaining"
-          />
+      <VStack spacing={3} align="stretch">
+        {!currentConversation && (
+          <Button
+            onClick={() => createConversation({
+              enableExtendedThinking: extendedThinking,
+              thinkingBudget: thinkingBudget,
+              initialContext: {}
+            })}
+            bg={colors.interactive.default}
+            color="white"
+            _hover={{ bg: colors.interactive.hover }}
+            isLoading={isLoading}
+            loadingText="Creating conversation..."
+          >
+            Start New Conversation
+          </Button>
         )}
-
-        <HStack w="full" spacing={3}>
+        
+        <HStack spacing={3}>
           <Input
-            ref={inputRef}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Ask me anything about your business data..."
-            bg={chatBg}
-            border="2px"
-            borderColor={borderColor}
-            _focus={{
-              borderColor: 'blue.500',
-              boxShadow: '0 0 0 1px blue.500'
-            }}
-            _hover={{
-              borderColor: 'blue.300'
-            }}
-            size="lg"
-            disabled={isProcessing}
+            placeholder="Ask me anything about your CRM data..."
+            bg={colors.bg.input}
+            border="1px solid"
+            borderColor={colors.border.input}
             flex="1"
+            disabled={isSendingMessage || isStreaming || !currentConversation}
           />
-          
-          <Tooltip label={isListening ? "Stop listening" : "Voice input"}>
-            <IconButton
-              aria-label="Voice input"
-              icon={isListening ? <FiMicOff /> : <FiMic />}
-              size="lg"
-              variant={isListening ? "solid" : "outline"}
-              colorScheme={isListening ? "red" : "blue"}
-              borderRadius="xl"
-              onClick={toggleVoiceInput}
-              disabled={isProcessing}
-            />
-          </Tooltip>
-          
           <Button
-            leftIcon={<FiSend />}
             onClick={handleSendMessage}
-            isLoading={isProcessing}
-            loadingText="Sending"
-            colorScheme="blue"
-            size="lg"
-            borderRadius="xl"
+            disabled={!inputValue.trim() || isSendingMessage || isStreaming || !currentConversation}
+            bg={colors.interactive.default}
+            color="white"
+            _hover={{ bg: colors.interactive.hover }}
+            _disabled={{ opacity: 0.5, cursor: 'not-allowed' }}
             minW="100px"
-            disabled={!inputValue.trim()}
-            _hover={{
-              transform: 'translateY(-1px)',
-              shadow: 'lg'
-            }}
-            transition="all 0.2s"
+            isLoading={isSendingMessage || isStreaming}
+            loadingText={isStreaming ? "Streaming..." : "Sending..."}
           >
-            Send
+          {isSendingMessage || isStreaming ? (
+            <Spinner size="sm" />
+          ) : useStreaming ? (
+            'Stream'
+          ) : (
+            'Send'
+          )}
           </Button>
         </HStack>
-
-        {/* Status indicators */}
-        <HStack w="full" justify="space-between" fontSize="xs" color={colors.text.secondary}>
-          <HStack spacing={4}>
-            <HStack spacing={1}>
-              <Box w={2} h={2} borderRadius="full" bg="green.500" />
-              <Text>Connected</Text>
-            </HStack>
-            <HStack spacing={1}>
-              <FiZap size={12} />
-              <Text>Fast mode</Text>
-            </HStack>
-            <Text>10 tools available</Text>
-          </HStack>
-          
-          <Text>
-            Press Enter to send, Shift+Enter for new line
-          </Text>
-        </HStack>
       </VStack>
+
+      {/* Phase 2 Status */}
+      <Alert status="info" borderRadius="md">
+        <AlertIcon />
+        <Text fontSize="sm">
+          V2 Streaming Ready: Real-time Claude Sonnet 4 responses with extended thinking capabilities.
+        </Text>
+      </Alert>
     </VStack>
   );
-}; 
+} 

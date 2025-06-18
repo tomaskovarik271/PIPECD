@@ -1,178 +1,261 @@
-import { useState, useCallback } from 'react';
+/**
+ * useAgentV2 Hook
+ * Custom hook for AI Agent V2 operations with Claude Sonnet 4 extended thinking
+ */
+
+import { useState, useCallback, useRef } from 'react';
 import { useMutation, useQuery } from '@apollo/client';
-import { PROCESS_MESSAGE_V2, AGENT_V2_HEALTH_CHECK } from '../lib/graphql/agentV2Operations';
+import {
+  CREATE_AGENT_V2_CONVERSATION,
+  SEND_AGENT_V2_MESSAGE,
+  SEND_AGENT_V2_MESSAGE_STREAM,
+  GET_AGENT_V2_CONVERSATIONS,
+  GET_AGENT_V2_THOUGHTS,
+  type AgentV2Conversation,
+  type AgentV2Message,
+  type AgentV2Thought,
+  type SendAgentV2MessageInput,
+  type SendAgentV2MessageStreamInput,
+  type CreateAgentV2ConversationInput,
+  type AgentV2StreamChunk,
+} from '../lib/graphql/agentV2Operations';
 
-export interface AgentV2Message {
-  id: string;
-  content: string;
-  sender: 'user' | 'assistant';
-  timestamp: Date;
-  toolCalls?: any[];
-  toolResults?: any[];
-  reasoning?: any[];
-  suggestions?: any[];
-  insights?: any[];
-  nextActions?: any[];
-  metadata?: any;
-  systemContext?: any;
+export interface UseAgentV2Return {
+  // State
+  currentConversation: AgentV2Conversation | null;
+  conversations: AgentV2Conversation[];
+  thoughts: AgentV2Thought[];
+  isLoading: boolean;
+  isSendingMessage: boolean;
+  isStreaming: boolean;
+  streamingContent: string;
+  error: string | null;
+  
+  // Actions
+  createConversation: (input: CreateAgentV2ConversationInput) => Promise<AgentV2Conversation>;
+  sendMessage: (input: SendAgentV2MessageInput) => Promise<void>;
+  sendMessageStream: (
+    input: SendAgentV2MessageStreamInput,
+    onChunk?: (chunk: AgentV2StreamChunk) => void
+  ) => Promise<void>;
+  setCurrentConversation: (conversation: AgentV2Conversation | null) => void;
+  clearError: () => void;
+  
+  // Data
+  refetchConversations: () => Promise<any>;
 }
 
-export interface AgentV2Config {
-  useAdvancedReasoning?: boolean;
-  maxToolCalls?: number;
-  thinkingDepth?: string;
-  responseStyle?: string;
-}
+export function useAgentV2(): UseAgentV2Return {
+  // Local state
+  const [currentConversation, setCurrentConversation] = useState<AgentV2Conversation | null>(null);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-export interface AgentV2Request {
-  message: string;
-  conversationContext?: {
-    conversationId?: string;
-    userId?: string;
-    recentMessages?: string[];
-    systemState?: string;
-  };
-  config?: AgentV2Config;
-}
-
-export const useAgentV2 = () => {
-  const [messages, setMessages] = useState<AgentV2Message[]>([]);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  // GraphQL mutations and queries
-  const [processMessageMutation] = useMutation(PROCESS_MESSAGE_V2);
-  const { data: healthData, loading: healthLoading, refetch: refetchHealth } = useQuery(AGENT_V2_HEALTH_CHECK, {
-    pollInterval: 30000, // Poll every 30 seconds
+  // GraphQL hooks
+  const [createConversationMutation] = useMutation(CREATE_AGENT_V2_CONVERSATION);
+  const [sendMessageMutation] = useMutation(SEND_AGENT_V2_MESSAGE);
+  const [sendMessageStreamMutation] = useMutation(SEND_AGENT_V2_MESSAGE_STREAM);
+  
+  const { 
+    data: conversationsData, 
+    loading: isLoadingConversations,
+    refetch: refetchConversations 
+  } = useQuery(GET_AGENT_V2_CONVERSATIONS, {
+    variables: { limit: 50, offset: 0 },
+    fetchPolicy: 'cache-and-network'
   });
 
-  const sendMessage = useCallback(async (
-    content: string, 
-    config: AgentV2Config = {},
-    conversationContext?: any
-  ): Promise<AgentV2Message> => {
-    setIsProcessing(true);
+  const { 
+    data: thoughtsData,
+    loading: isLoadingThoughts 
+  } = useQuery(GET_AGENT_V2_THOUGHTS, {
+    variables: { 
+      conversationId: currentConversation?.id || '',
+      limit: 100 
+    },
+    skip: !currentConversation?.id,
+    fetchPolicy: 'cache-and-network'
+  });
 
+  // Derived state
+  const conversations = conversationsData?.agentV2Conversations || [];
+  const thoughts = thoughtsData?.agentV2Thoughts || [];
+  const isLoading = isLoadingConversations || isLoadingThoughts;
+
+  // Actions
+  const createConversation = useCallback(async (input: CreateAgentV2ConversationInput): Promise<AgentV2Conversation> => {
     try {
-      // Add user message to state
-      const userMessage: AgentV2Message = {
-        id: `user-${Date.now()}`,
-        content,
-        sender: 'user',
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, userMessage]);
-
-      // Prepare request
-      const request: AgentV2Request = {
-        message: content,
-        conversationContext: {
-          conversationId: conversationContext?.conversationId,
-          userId: conversationContext?.userId || 'anonymous-user', // Required field - provide default
-          recentMessages: messages.slice(-5).map(m => m.content), // Last 5 messages for context
-          systemState: conversationContext?.systemState
-        },
-        config: {
-          useAdvancedReasoning: true,
-          maxToolCalls: 5,
-          thinkingDepth: 'standard',
-          responseStyle: 'professional',
-          ...config
-        }
-      };
-
-      // Send to V2 agent
-      const { data } = await processMessageMutation({
-        variables: { input: request }
+      setError(null);
+      const { data } = await createConversationMutation({
+        variables: { input }
       });
 
-      if (!data?.processMessageV2) {
-        throw new Error('No response from V2 agent');
+      if (!data?.createAgentV2Conversation) {
+        throw new Error('Failed to create conversation');
       }
 
-      const response = data.processMessageV2;
-
-      // Create assistant message
-      const assistantMessage: AgentV2Message = {
-        id: `assistant-${Date.now()}`,
-        content: response.message,
-        sender: 'assistant',
-        timestamp: new Date(),
-        toolCalls: response.toolCalls || [],
-        toolResults: response.toolResults || [],
-        reasoning: response.reasoning || [],
-        suggestions: response.suggestions || [],
-        insights: response.insights || [],
-        nextActions: response.nextActions || [],
-        metadata: response.metadata,
-        systemContext: response.data
+      const newConversation = {
+        ...data.createAgentV2Conversation,
+        createdAt: new Date(data.createAgentV2Conversation.createdAt),
+        updatedAt: new Date(data.createAgentV2Conversation.updatedAt),
+        messages: data.createAgentV2Conversation.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setCurrentConversation(newConversation);
       
-      return assistantMessage;
-
-    } catch (error) {
-      console.error('Error sending message to V2 agent:', error);
+      // Refetch conversations to update the list
+      await refetchConversations();
       
-      // Get more detailed error information
-      let errorMessage = 'Sorry, I encountered an error processing your request. Please try again.';
-      
-      if (error instanceof Error) {
-        console.error('Error details:', error.message);
-        if (error.message.includes('Network error')) {
-          errorMessage = 'Network error: Unable to connect to the AI agent. Please check your connection.';
-        } else if (error.message.includes('GraphQL error')) {
-          errorMessage = 'GraphQL error: There was an issue with the request format.';
-        } else {
-          errorMessage = `Error: ${error.message}`;
-        }
-      }
-      
-      // Create error message
-      const errorMsg: AgentV2Message = {
-        id: `error-${Date.now()}`,
-        content: errorMessage,
-        sender: 'assistant',
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, errorMsg]);
-      
-      throw error;
-    } finally {
-      setIsProcessing(false);
+      return newConversation;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create conversation';
+      setError(errorMessage);
+      throw err;
     }
-  }, [processMessageMutation, messages]);
+  }, [createConversationMutation, refetchConversations]);
 
-  const clearMessages = useCallback(() => {
-    setMessages([]);
+  const sendMessage = useCallback(async (input: SendAgentV2MessageInput): Promise<void> => {
+    try {
+      setError(null);
+      setIsSendingMessage(true);
+
+      // If no conversation exists, create one first
+      let conversationId = input.conversationId;
+      if (!conversationId && !currentConversation) {
+        const newConversation = await createConversation({
+          enableExtendedThinking: input.enableExtendedThinking,
+          thinkingBudget: input.thinkingBudget,
+          initialContext: {}
+        });
+        conversationId = newConversation.id;
+      } else if (!conversationId && currentConversation) {
+        conversationId = currentConversation.id;
+      }
+
+      const { data } = await sendMessageMutation({
+        variables: {
+          input: {
+            ...input,
+            conversationId
+          }
+        }
+      });
+
+      if (!data?.sendAgentV2Message) {
+        throw new Error('Failed to send message');
+      }
+
+      // Update current conversation with response
+      const updatedConversation = {
+        ...data.sendAgentV2Message.conversation,
+        createdAt: new Date(data.sendAgentV2Message.conversation.createdAt),
+        updatedAt: new Date(data.sendAgentV2Message.conversation.updatedAt),
+        messages: data.sendAgentV2Message.conversation.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
+      };
+
+      setCurrentConversation(updatedConversation);
+      
+      // Refetch conversations to update the list
+      await refetchConversations();
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsSendingMessage(false);
+    }
+  }, [sendMessageMutation, createConversation, currentConversation, refetchConversations]);
+
+  const sendMessageStream = useCallback(async (
+    input: SendAgentV2MessageStreamInput,
+    onChunk?: (chunk: AgentV2StreamChunk) => void
+  ): Promise<void> => {
+    try {
+      setError(null);
+      setIsStreaming(true);
+      setStreamingContent('');
+
+      // If no conversation exists, create one first
+      let conversationId = input.conversationId;
+      if (!conversationId && !currentConversation) {
+        const newConversation = await createConversation({
+          enableExtendedThinking: input.enableExtendedThinking,
+          thinkingBudget: input.thinkingBudget,
+          initialContext: {}
+        });
+        conversationId = newConversation.id;
+      } else if (!conversationId && currentConversation) {
+        conversationId = currentConversation.id;
+      }
+
+      // Start streaming mutation
+      const { data } = await sendMessageStreamMutation({
+        variables: {
+          input: {
+            ...input,
+            conversationId
+          }
+        }
+      });
+
+      if (!data?.sendAgentV2MessageStream) {
+        throw new Error('Failed to start message streaming');
+      }
+
+      // For now, since we don't have WebSocket subscriptions implemented,
+      // we'll simulate streaming by polling or use the regular mutation
+      // TODO: Implement proper WebSocket subscriptions for real-time streaming
+      
+      // Fallback to regular message sending for now
+      await sendMessage({
+        conversationId,
+        content: input.content,
+        enableExtendedThinking: input.enableExtendedThinking,
+        thinkingBudget: input.thinkingBudget
+      });
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send streaming message';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsStreaming(false);
+      setStreamingContent('');
+    }
+  }, [sendMessageStreamMutation, createConversation, currentConversation, sendMessage]);
+
+  const clearError = useCallback(() => {
+    setError(null);
   }, []);
-
-  const getHealthStatus = useCallback(() => {
-    return {
-      status: healthData?.agentV2HealthCheck?.status || 'unknown',
-      components: healthData?.agentV2HealthCheck?.components || {},
-      lastCheck: healthData?.agentV2HealthCheck?.lastCheck,
-      uptime: healthData?.agentV2HealthCheck?.uptime || 0,
-      loading: healthLoading
-    };
-  }, [healthData, healthLoading]);
 
   return {
     // State
-    messages,
-    isProcessing,
+    currentConversation,
+    conversations,
+    thoughts,
+    isLoading,
+    isSendingMessage,
+    isStreaming,
+    streamingContent,
+    error,
     
     // Actions
+    createConversation,
     sendMessage,
-    clearMessages,
+    sendMessageStream,
+    setCurrentConversation,
+    clearError,
     
-    // Health monitoring
-    healthStatus: getHealthStatus(),
-    refetchHealth,
-    
-    // Utils
-    isHealthy: healthData?.agentV2HealthCheck?.status === 'healthy'
+    // Data
+    refetchConversations
   };
-}; 
+} 

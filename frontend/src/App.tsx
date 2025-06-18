@@ -17,7 +17,7 @@ import ProfilePage from './pages/ProfilePage';
 import GoogleIntegrationPage from './pages/GoogleIntegrationPage';
 import GoogleOAuthCallback from './pages/GoogleOAuthCallback';
 import AgentPage from './pages/AgentPage';
-import AgentV2Page from './pages/AgentV2Page';
+import { AgentV2Page } from './pages/AgentV2Page';
 import CustomFieldsPage from './pages/admin/CustomFieldsPage';
 import WfmAdminPage from './pages/admin/WfmAdminPage';
 import WFMStatusesPage from './pages/admin/WFMStatusesPage';

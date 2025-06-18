@@ -1,151 +1,156 @@
-input AgentV2Request {
-  message: String!
-  conversationContext: ConversationContextInput
-  config: AgentV2ConfigInput
+# AI Agent V2 Schema Extensions for PipeCD
+# Extends existing agent.graphql with Claude Sonnet 4 extended thinking capabilities
+
+# ================================
+# V2 Enums (extend existing ThinkingBudget)
+# ================================
+
+# Note: ThinkingBudget enum already exists in agent.graphql
+# We're just using it for V2 extended thinking levels
+
+# ================================
+# V2 Extensions to Existing Types
+# ================================
+
+# Extend existing AgentConversation type for V2 features
+extend type AgentConversation {
+  agentVersion: String!
+  extendedThinkingEnabled: Boolean!
+  thinkingBudget: ThinkingBudget!
 }
 
-input ConversationContextInput {
-  conversationId: String
-  userId: String!
-  recentMessages: [String!]
-  systemState: String
+# Extend existing AgentThought type for V2 extended thinking
+extend type AgentThought {
+  thinkingBudget: ThinkingBudget
+  reflectionData: JSON!
+  reasoning: String
+  strategy: String
+  concerns: String
+  nextSteps: String
 }
 
-input AgentV2ConfigInput {
-  useAdvancedReasoning: Boolean
-  maxToolCalls: Int
-  thinkingDepth: String
-  responseStyle: String
+# ================================
+# V2-Specific Input Types
+# ================================
+
+input SendAgentV2MessageInput {
+  conversationId: ID
+  content: String!
+  enableExtendedThinking: Boolean!
+  thinkingBudget: ThinkingBudget!
 }
+
+input CreateAgentV2ConversationInput {
+  enableExtendedThinking: Boolean!
+  thinkingBudget: ThinkingBudget!
+  initialContext: JSON
+}
+
+input AgentV2ThoughtInput {
+  type: AgentThoughtType!
+  content: String!
+  reasoning: String
+  strategy: String
+  concerns: String
+  nextSteps: String
+  thinkingBudget: ThinkingBudget
+  reflectionData: JSON
+}
+
+# ================================
+# V2-Specific Response Types
+# ================================
 
 type AgentV2Response {
-  success: Boolean!
-  message: String!
-  data: JSON
-  toolCalls: [ToolCallV2!]
-  toolResults: [ToolResultV2!]
-  reasoning: [ReasoningStepV2!]
-  suggestions: [SuggestionV2!]
-  insights: [InsightV2!]
-  nextActions: [NextActionV2!]
-  metadata: AgentV2Metadata!
-  error: AgentV2Error
+  conversation: AgentConversation!
+  message: AgentMessage!
+  extendedThoughts: [AgentThought!]!
+  reflections: [AgentThought!]!
+  planModifications: [String!]!
+  thinkingTime: Float
+  confidenceScore: Float
 }
 
-type ToolCallV2 {
-  id: String!
-  tool: String!
-  parameters: JSON!
-  reasoning: String
-  timestamp: DateTime!
+type ExtendedThinkingAnalysis {
+  totalThoughts: Int!
+  reasoningDepth: Float!
+  strategicInsights: [String!]!
+  identifiedConcerns: [String!]!
+  recommendedActions: [String!]!
+  thinkingBudgetUsed: ThinkingBudget!
 }
 
-type ToolResultV2 {
-  success: Boolean!
-  message: String
-  data: JSON
-  error: AgentV2Error
-  executionTime: Int
+# ================================
+# V2 Streaming Types
+# ================================
+
+enum AgentV2StreamChunkType {
+  CONTENT
+  THINKING
+  COMPLETE
+  ERROR
 }
 
-type ReasoningStepV2 {
-  step: Int!
-  type: String!
-  description: String!
-  confidence: Float!
-  evidence: [String!]!
+type AgentV2StreamChunk {
+  type: AgentV2StreamChunkType!
+  content: String
+  thinking: AgentThought
+  conversationId: ID!
+  complete: AgentV2Response
+  error: String
 }
 
-type SuggestionV2 {
-  id: String!
-  type: String!
-  title: String!
-  description: String!
-  confidence: Float!
-  impact: String!
-  urgency: String!
-  actionable: Boolean!
-}
-
-type InsightV2 {
-  id: String!
-  type: String!
-  category: String!
+input SendAgentV2MessageStreamInput {
+  conversationId: ID
   content: String!
-  confidence: Float!
-  businessValue: String!
-  actionable: Boolean!
-  relatedEntities: [String!]!
+  enableExtendedThinking: Boolean!
+  thinkingBudget: ThinkingBudget!
 }
 
-type NextActionV2 {
-  id: String!
-  title: String!
-  description: String!
-  priority: String!
-  estimatedTime: String!
-  category: String!
-  requiresInput: Boolean!
+# ================================
+# V2 Queries
+# ================================
+
+extend type Query {
+  # Get V2 conversations only
+  agentV2Conversations(limit: Int = 10, offset: Int = 0): [AgentConversation!]!
+  
+  # Get extended thinking analysis for a conversation
+  agentV2ThinkingAnalysis(conversationId: ID!): ExtendedThinkingAnalysis!
+  
+  # Get V2 thoughts with extended reasoning
+  agentV2Thoughts(conversationId: ID!, limit: Int = 50): [AgentThought!]!
 }
 
-type AgentV2Metadata {
-  agentVersion: String!
-  processingTime: Int!
-  systemStateTimestamp: DateTime
-  toolsUsed: [String!]!
-  confidenceScore: Float!
-  rateLimitStatus: RateLimitStatusV2!
-  cacheStatus: CacheStatusV2!
-  sources: [DataSourceV2!]!
+# ================================
+# V2 Mutations
+# ================================
+
+extend type Mutation {
+  # Send message with V2 extended thinking
+  sendAgentV2Message(input: SendAgentV2MessageInput!): AgentV2Response!
+  
+  # Send message with V2 streaming support
+  sendAgentV2MessageStream(input: SendAgentV2MessageStreamInput!): String!
+  
+  # Create new V2 conversation with extended thinking enabled
+  createAgentV2Conversation(input: CreateAgentV2ConversationInput!): AgentConversation!
+  
+  # Add V2 thoughts with extended reasoning data
+  addAgentV2Thoughts(conversationId: ID!, thoughts: [AgentV2ThoughtInput!]!): [AgentThought!]!
 }
 
-type RateLimitStatusV2 {
-  remaining: Int!
-  resetTime: DateTime!
-  burst: Int!
-}
+# ================================
+# V2 Subscriptions
+# ================================
 
-type CacheStatusV2 {
-  systemStateFromCache: Boolean!
-  rulesFromCache: Boolean!
-  searchResultsFromCache: Boolean!
-}
-
-type DataSourceV2 {
-  type: String!
-  name: String!
-  version: String!
-  confidence: Float!
-}
-
-type AgentV2Error {
-  code: String
-  message: String
-  type: String
-  recoverable: Boolean
-  suggestions: [String!]
-}
-
-type AgentV2HealthCheck {
-  status: String!
-  components: AgentV2ComponentStatus!
-  lastCheck: DateTime!
-  uptime: Int!
-}
-
-type AgentV2ComponentStatus {
-  systemStateEncoder: String!
-  pipeCDRulesEngine: String!
-  semanticSearchEngine: String!
-  toolRegistry: String!
-  aiService: String!
-  graphQLClient: String!
-}
-
-type Query {
-  agentV2HealthCheck: AgentV2HealthCheck!
-}
-
-type Mutation {
-  processMessageV2(input: AgentV2Request!): AgentV2Response!
+extend type Subscription {
+  # Subscribe to V2 extended thinking updates
+  agentV2ThinkingUpdated(conversationId: ID!): [AgentThought!]!
+  
+  # Subscribe to V2 reflection events
+  agentV2ReflectionAdded(conversationId: ID!): AgentThought!
+  
+  # Subscribe to V2 streaming messages
+  agentV2MessageStream(conversationId: ID!): AgentV2StreamChunk!
 } 
