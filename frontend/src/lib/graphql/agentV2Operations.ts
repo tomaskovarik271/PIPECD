@@ -5,30 +5,12 @@
 
 import { gql } from '@apollo/client';
 
-// V2-specific types for frontend
+// Simplified V2 Interfaces (no thinking budget complexity)
+
 export interface AgentV2Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
-  thoughts?: AgentV2Thought[];
-  extendedThinking?: boolean;
-  thinkingBudget?: string;
-}
-
-export interface AgentV2Thought {
-  id: string;
-  conversationId: string;
-  type: 'REASONING' | 'QUESTION' | 'TOOL_CALL' | 'OBSERVATION' | 'PLAN';
-  content: string;
-  metadata: Record<string, any>;
-  timestamp: Date;
-  // V2 extended thinking fields
-  thinkingBudget?: string;
-  reasoning?: string;
-  strategy?: string;
-  concerns?: string;
-  nextSteps?: string;
-  reflectionData?: Record<string, any>;
 }
 
 export interface AgentV2Conversation {
@@ -39,10 +21,7 @@ export interface AgentV2Conversation {
   context: Record<string, any>;
   createdAt: Date;
   updatedAt: Date;
-  // V2 fields
   agentVersion: string;
-  extendedThinkingEnabled: boolean;
-  thinkingBudget: string;
 }
 
 export interface SendAgentV2MessageInput {
@@ -68,15 +47,10 @@ export interface ToolExecution {
 export interface AgentV2Response {
   conversation: AgentV2Conversation;
   message: AgentV2Message;
-  extendedThoughts: AgentV2Thought[];
-  reflections: AgentV2Thought[];
-  planModifications: string[];
-  thinkingTime?: number;
-  confidenceScore?: number;
   toolExecutions: ToolExecution[];
 }
 
-// GraphQL Operations
+// Simplified GraphQL Operations
 
 export const CREATE_AGENT_V2_CONVERSATION = gql`
   mutation CreateAgentV2Conversation($input: CreateAgentV2ConversationInput!) {
@@ -84,8 +58,6 @@ export const CREATE_AGENT_V2_CONVERSATION = gql`
       id
       userId
       agentVersion
-      extendedThinkingEnabled
-      thinkingBudget
       messages {
         role
         content
@@ -105,8 +77,6 @@ export const SEND_AGENT_V2_MESSAGE = gql`
         id
         userId
         agentVersion
-        extendedThinkingEnabled
-        thinkingBudget
         messages {
           role
           content
@@ -121,37 +91,6 @@ export const SEND_AGENT_V2_MESSAGE = gql`
         content
         timestamp
       }
-      extendedThoughts {
-        id
-        conversationId
-        type
-        content
-        thinkingBudget
-        reasoning
-        strategy
-        concerns
-        nextSteps
-        reflectionData
-        metadata
-        timestamp
-      }
-      reflections {
-        id
-        conversationId
-        type
-        content
-        thinkingBudget
-        reasoning
-        strategy
-        concerns
-        nextSteps
-        reflectionData
-        metadata
-        timestamp
-      }
-      planModifications
-      thinkingTime
-      confidenceScore
       toolExecutions {
         id
         name
@@ -172,8 +111,6 @@ export const GET_AGENT_V2_CONVERSATIONS = gql`
       id
       userId
       agentVersion
-      extendedThinkingEnabled
-      thinkingBudget
       messages {
         role
         content
@@ -186,38 +123,6 @@ export const GET_AGENT_V2_CONVERSATIONS = gql`
   }
 `;
 
-export const GET_AGENT_V2_THOUGHTS = gql`
-  query GetAgentV2Thoughts($conversationId: ID!, $limit: Int) {
-    agentV2Thoughts(conversationId: $conversationId, limit: $limit) {
-      id
-      conversationId
-      type
-      content
-      thinkingBudget
-      reasoning
-      strategy
-      concerns
-      nextSteps
-      reflectionData
-      metadata
-      timestamp
-    }
-  }
-`;
-
-export const GET_AGENT_V2_THINKING_ANALYSIS = gql`
-  query GetAgentV2ThinkingAnalysis($conversationId: ID!) {
-    agentV2ThinkingAnalysis(conversationId: $conversationId) {
-      totalThoughts
-      reasoningDepth
-      strategicInsights
-      identifiedConcerns
-      recommendedActions
-      thinkingBudgetUsed
-    }
-  }
-`;
-
 // Streaming Operations
 
 export interface SendAgentV2MessageStreamInput {
@@ -226,11 +131,10 @@ export interface SendAgentV2MessageStreamInput {
 }
 
 export interface AgentV2StreamChunk {
-  type: 'CONTENT' | 'THINKING' | 'COMPLETE' | 'ERROR';
+  type: 'CONTENT' | 'COMPLETE' | 'ERROR';
   content?: string;
-  thinking?: AgentV2Thought;
   conversationId: string;
-  complete?: any; // AgentV2Response
+  complete?: AgentV2Response;
   error?: string;
 }
 
@@ -245,28 +149,12 @@ export const AGENT_V2_MESSAGE_STREAM_SUBSCRIPTION = gql`
     agentV2MessageStream(conversationId: $conversationId) {
       type
       content
-      thinking {
-        id
-        conversationId
-        type
-        content
-        thinkingBudget
-        reasoning
-        strategy
-        concerns
-        nextSteps
-        reflectionData
-        metadata
-        timestamp
-      }
       conversationId
       complete {
         conversation {
           id
           userId
           agentVersion
-          extendedThinkingEnabled
-          thinkingBudget
           messages {
             role
             content
@@ -281,37 +169,6 @@ export const AGENT_V2_MESSAGE_STREAM_SUBSCRIPTION = gql`
           content
           timestamp
         }
-        extendedThoughts {
-          id
-          conversationId
-          type
-          content
-          thinkingBudget
-          reasoning
-          strategy
-          concerns
-          nextSteps
-          reflectionData
-          metadata
-          timestamp
-        }
-        reflections {
-          id
-          conversationId
-          type
-          content
-          thinkingBudget
-          reasoning
-          strategy
-          concerns
-          nextSteps
-          reflectionData
-          metadata
-          timestamp
-        }
-        planModifications
-        thinkingTime
-        confidenceScore
         toolExecutions {
           id
           name

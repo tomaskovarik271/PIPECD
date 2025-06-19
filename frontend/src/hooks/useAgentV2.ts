@@ -1,6 +1,6 @@
 /**
  * useAgentV2 Hook
- * Custom hook for AI Agent V2 operations with Claude Sonnet 4 extended thinking
+ * Custom hook for AI Agent V2 operations with Claude Sonnet 4 integration
  */
 
 import { useState, useCallback } from 'react';
@@ -9,12 +9,9 @@ import { useMutation, useQuery } from '@apollo/client';
 import {
   CREATE_AGENT_V2_CONVERSATION,
   SEND_AGENT_V2_MESSAGE,
-
   GET_AGENT_V2_CONVERSATIONS,
-  GET_AGENT_V2_THOUGHTS,
   type AgentV2Conversation,
   type AgentV2Message,
-  type AgentV2Thought,
   type SendAgentV2MessageInput,
   type SendAgentV2MessageStreamInput,
   type CreateAgentV2ConversationInput,
@@ -25,7 +22,6 @@ export interface UseAgentV2Return {
   // State
   currentConversation: AgentV2Conversation | null;
   conversations: AgentV2Conversation[];
-  thoughts: AgentV2Thought[];
   isLoading: boolean;
   isSendingMessage: boolean;
   isStreaming: boolean;
@@ -69,22 +65,9 @@ export function useAgentV2(): UseAgentV2Return {
     fetchPolicy: 'cache-and-network'
   });
 
-  const { 
-    data: thoughtsData,
-    loading: isLoadingThoughts 
-  } = useQuery(GET_AGENT_V2_THOUGHTS, {
-    variables: { 
-      conversationId: currentConversation?.id || '',
-      limit: 100 
-    },
-    skip: !currentConversation?.id,
-    fetchPolicy: 'cache-and-network'
-  });
-
   // Derived state
   const conversations = conversationsData?.agentV2Conversations || [];
-  const thoughts = thoughtsData?.agentV2Thoughts || [];
-  const isLoading = isLoadingConversations || isLoadingThoughts;
+  const isLoading = isLoadingConversations;
 
   // Actions
   const createConversation = useCallback(async (input: CreateAgentV2ConversationInput): Promise<AgentV2Conversation> => {
@@ -130,8 +113,6 @@ export function useAgentV2(): UseAgentV2Return {
       let conversationId = input.conversationId;
       if (!conversationId && !currentConversation) {
         const newConversation = await createConversation({
-          enableExtendedThinking: input.enableExtendedThinking,
-          thinkingBudget: input.thinkingBudget,
           initialContext: {}
         });
         conversationId = newConversation.id;
@@ -202,8 +183,6 @@ export function useAgentV2(): UseAgentV2Return {
       let conversationId = input.conversationId;
       if (!conversationId && !currentConversation) {
         const newConversation = await createConversation({
-          enableExtendedThinking: input.enableExtendedThinking,
-          thinkingBudget: input.thinkingBudget,
           initialContext: {}
         });
         conversationId = newConversation.id;
@@ -237,7 +216,7 @@ export function useAgentV2(): UseAgentV2Return {
       }
 
       const aiResponse = responseData.sendAgentV2Message.message.content;
-      const extendedThoughts = responseData.sendAgentV2Message.extendedThoughts || [];
+      const toolExecutions = responseData.sendAgentV2Message.toolExecutions || [];
       
       // Create a temporary conversation for streaming display
       const tempConversation = {
@@ -249,15 +228,13 @@ export function useAgentV2(): UseAgentV2Return {
           {
             role: 'user' as const,
             content: input.content,
-            timestamp: new Date(),
-            thoughts: []
+            timestamp: new Date()
           },
           // Assistant message (placeholder for streaming)
           {
             role: 'assistant' as const,
             content: '', // Will be updated as we stream
-            timestamp: new Date(),
-            thoughts: [] // Start with empty thoughts during streaming
+            timestamp: new Date()
           }
         ]
       };
@@ -268,22 +245,11 @@ export function useAgentV2(): UseAgentV2Return {
       // Now stream the response progressively with realistic timing
       let streamedContent = '';
       
-      // If we have thoughts, show thinking stage first
-      if (extendedThoughts.length > 0) {
+      // Show thinking stage if there are tool executions
+      if (toolExecutions.length > 0) {
         setStreamingStage('thinking');
-        setStreamingContent('🧠 Claude is thinking deeply about this...');
-        
-        // Stream thinking results
-        for (const thought of extendedThoughts) {
-          if (onChunk) {
-            onChunk({
-              type: 'THINKING',
-              thinking: thought,
-              conversationId: conversationId || 'unknown'
-            });
-          }
-          await new Promise(resolve => setTimeout(resolve, 1000)); // Show each thought
-        }
+        setStreamingContent('🧠 Claude is analyzing and executing tools...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         // Transition to response streaming
         setStreamingStage('continuation');
@@ -341,7 +307,6 @@ export function useAgentV2(): UseAgentV2Return {
             return {
               ...msg,
               timestamp: new Date(msg.timestamp),
-              thoughts: responseData.sendAgentV2Message.extendedThoughts || [],
               toolExecutions: responseData.sendAgentV2Message.toolExecutions || []
             };
           }
@@ -378,7 +343,6 @@ export function useAgentV2(): UseAgentV2Return {
     // State
     currentConversation,
     conversations,
-    thoughts,
     isLoading,
     isSendingMessage,
     isStreaming,

@@ -15,8 +15,6 @@
 # Extend existing AgentConversation type for V2 features
 extend type AgentConversation {
   agentVersion: String!
-  extendedThinkingEnabled: Boolean!
-  thinkingBudget: ThinkingBudget!
 }
 
 # Extend existing AgentThought type for V2 extended thinking
@@ -36,13 +34,9 @@ extend type AgentThought {
 input SendAgentV2MessageInput {
   conversationId: ID
   content: String!
-  enableExtendedThinking: Boolean!
-  thinkingBudget: ThinkingBudget!
 }
 
 input CreateAgentV2ConversationInput {
-  enableExtendedThinking: Boolean!
-  thinkingBudget: ThinkingBudget!
   initialContext: JSON
 }
 
@@ -120,8 +114,6 @@ type AgentV2StreamChunk {
 input SendAgentV2MessageStreamInput {
   conversationId: ID
   content: String!
-  enableExtendedThinking: Boolean!
-  thinkingBudget: ThinkingBudget!
 }
 
 # ================================
