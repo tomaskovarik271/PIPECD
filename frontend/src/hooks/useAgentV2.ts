@@ -272,6 +272,19 @@ export function useAgentV2(): UseAgentV2Return {
         setStreamingStage('thinking');
         setStreamingContent('🧠 Claude is thinking deeply about this...');
         
+        // Update the conversation to show thoughts during thinking stage
+        const conversationWithThoughts = {
+          ...tempConversation,
+          messages: [
+            tempConversation.messages[0], // User message
+            {
+              ...tempConversation.messages[1], // Assistant message
+              thoughts: extendedThoughts // Add thoughts during thinking stage
+            }
+          ]
+        };
+        setCurrentConversation(conversationWithThoughts);
+        
         // Stream thinking results
         for (const thought of extendedThoughts) {
           if (onChunk) {
