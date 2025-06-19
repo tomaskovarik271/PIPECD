@@ -14,7 +14,8 @@ import {
   useColorModeValue,
   Tooltip
 } from '@chakra-ui/react';
-import { ChevronDownIcon, ChevronRightIcon, SettingsIcon, TimeIcon, CheckCircleIcon, XCircleIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { FiSettings, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 
 interface ToolExecution {
   id: string;
@@ -90,7 +91,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
               minW="auto"
               h="auto"
             />
-            <SettingsIcon color={useColorModeValue('blue.500', 'blue.400')} />
+            <FiSettings size={20} color={useColorModeValue('blue.500', 'blue.400')} />
             <Text fontWeight="medium" fontSize="sm">
               Tool Executions ({toolExecutions.length})
             </Text>
@@ -135,9 +136,9 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                       onClick={() => toggleToolExpansion(tool.id)}
                     />
                     {tool.status === 'success' ? (
-                      <CheckCircleIcon color={successColor} />
+                      <FiCheckCircle size={20} color={successColor} />
                     ) : (
-                      <XCircleIcon color={errorColor} />
+                      <FiXCircle size={20} color={errorColor} />
                     )}
                     <VStack align="start" spacing={0}>
                       <Text fontWeight="semibold" fontSize="sm">
@@ -145,7 +146,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                       </Text>
                       <HStack spacing={2} fontSize="xs" color="gray.500">
                         <HStack spacing={1}>
-                          <TimeIcon />
+                          <FiClock />
                           <Text>{formatExecutionTime(tool.executionTime)}</Text>
                         </HStack>
                         <Text>•</Text>
