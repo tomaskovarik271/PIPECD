@@ -28,22 +28,8 @@ export function AgentV2Page() {
             AI Agent V2 - Extended Thinking
           </Heading>
           <Text color={colors.text.muted} fontSize="md">
-            Experience Claude Sonnet 4's extended thinking capabilities with transparent reasoning, 
-            adaptive planning, and business intelligence insights.
+            Claude Sonnet 4 with Think Tool for structured reasoning, strategic analysis, and business intelligence.
           </Text>
-          
-          {/* Phase 1 Notice */}
-          <Box 
-            bg={colors.interactive.default} 
-            color="white" 
-            px={4} 
-            py={2} 
-            borderRadius="md" 
-            fontSize="sm"
-          >
-            🚀 <strong>Phase 1:</strong> Basic V2 infrastructure with conversation management. 
-            Extended thinking integration coming in Phase 2.
-          </Box>
         </VStack>
 
         {/* V2 Agent Chat Interface */}

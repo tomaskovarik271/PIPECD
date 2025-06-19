@@ -8,6 +8,7 @@ import { useMutation, useQuery } from '@apollo/client';
 import {
   CREATE_AGENT_V2_CONVERSATION,
   SEND_AGENT_V2_MESSAGE,
+  SEND_AGENT_V2_MESSAGE_STREAM,
   GET_AGENT_V2_CONVERSATIONS,
   GET_AGENT_V2_THOUGHTS,
   type AgentV2Conversation,
@@ -28,6 +29,7 @@ export interface UseAgentV2Return {
   isSendingMessage: boolean;
   isStreaming: boolean;
   streamingContent: string;
+  streamingStage: 'initial' | 'thinking' | 'continuation' | 'complete';
   error: string | null;
   
   // Actions
@@ -50,6 +52,7 @@ export function useAgentV2(): UseAgentV2Return {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
+  const [streamingStage, setStreamingStage] = useState<'initial' | 'thinking' | 'continuation' | 'complete'>('initial');
   const [error, setError] = useState<string | null>(null);
 
   // GraphQL hooks
@@ -153,10 +156,20 @@ export function useAgentV2(): UseAgentV2Return {
         ...data.sendAgentV2Message.conversation,
         createdAt: new Date(data.sendAgentV2Message.conversation.createdAt),
         updatedAt: new Date(data.sendAgentV2Message.conversation.updatedAt),
-        messages: data.sendAgentV2Message.conversation.messages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))
+        messages: data.sendAgentV2Message.conversation.messages.map((msg: any, index: number) => {
+          // Attach extended thoughts to the assistant message (last message)
+          if (msg.role === 'assistant' && index === data.sendAgentV2Message.conversation.messages.length - 1) {
+            return {
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+              thoughts: data.sendAgentV2Message.extendedThoughts || []
+            };
+          }
+          return {
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          };
+        })
       };
 
       setCurrentConversation(updatedConversation);
@@ -181,6 +194,7 @@ export function useAgentV2(): UseAgentV2Return {
       setError(null);
       setIsStreaming(true);
       setStreamingContent('');
+      setStreamingStage('initial');
 
       // If no conversation exists, create one first
       let conversationId = input.conversationId;
@@ -213,8 +227,15 @@ export function useAgentV2(): UseAgentV2Return {
         setCurrentConversation(updatedConversation);
       }
 
-      // Get the AI response in the background
-      const { data } = await sendMessageMutation({
+      // Show initial thinking state
+      setStreamingStage('initial');
+      setStreamingContent('Claude is analyzing your question...');
+      
+      // Simulate initial delay to show we're processing
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Get the response from backend
+      const { data: responseData } = await sendMessageMutation({
         variables: {
           input: {
             ...input,
@@ -223,57 +244,96 @@ export function useAgentV2(): UseAgentV2Return {
         }
       });
 
-      if (!data?.sendAgentV2Message) {
-        throw new Error('Failed to send message');
+      if (!responseData?.sendAgentV2Message) {
+        throw new Error('Failed to get response');
       }
 
-      // Get the AI response content
-      const aiResponse = data.sendAgentV2Message.message.content;
+      const aiResponse = responseData.sendAgentV2Message.message.content;
+      const extendedThoughts = responseData.sendAgentV2Message.extendedThoughts || [];
       
-      // Simulate streaming by updating content character by character
+      // Now stream the response progressively with realistic timing
       let streamedContent = '';
-      const streamDelay = Math.max(10, Math.min(50, 1000 / aiResponse.length)); // Adaptive delay based on response length
       
-      for (let i = 0; i < aiResponse.length; i++) {
-        streamedContent += aiResponse[i];
+      // If we have thoughts, show thinking stage first
+      if (extendedThoughts.length > 0) {
+        setStreamingStage('thinking');
+        setStreamingContent('🧠 Claude is thinking deeply about this...');
+        
+        // Stream thinking results
+        for (const thought of extendedThoughts) {
+          if (onChunk) {
+            onChunk({
+              type: 'THINKING',
+              thinking: thought,
+              conversationId: conversationId || 'unknown'
+            });
+          }
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Show each thought
+        }
+        
+        // Transition to response streaming
+        setStreamingStage('continuation');
+        setStreamingContent('📝 Formulating comprehensive response...');
+        await new Promise(resolve => setTimeout(resolve, 600));
+      }
+      
+      // Stream the actual content
+      setStreamingStage('initial');
+      const words = aiResponse.split(' ');
+      const wordsPerChunk = Math.max(1, Math.floor(words.length / 30)); // Adaptive chunking
+      
+      for (let i = 0; i < words.length; i += wordsPerChunk) {
+        const chunk = words.slice(i, i + wordsPerChunk).join(' ') + (i + wordsPerChunk < words.length ? ' ' : '');
+        streamedContent += chunk;
         setStreamingContent(streamedContent);
         
-        // Call onChunk callback if provided
         if (onChunk) {
           onChunk({
             type: 'CONTENT',
-            content: aiResponse[i],
+            content: chunk,
             conversationId: conversationId || 'unknown'
           });
         }
         
-        // Add delay for streaming effect
-        await new Promise(resolve => setTimeout(resolve, streamDelay));
+        // Variable delay based on content length and position
+        const baseDelay = 150;
+        const variableDelay = Math.random() * 100; // Add some natural variation
+        await new Promise(resolve => setTimeout(resolve, baseDelay + variableDelay));
       }
 
-      // Stream complete - update the full conversation
+      // Complete the streaming
+      setStreamingStage('complete');
+      
+      // Update final conversation
       const finalConversation = {
-        ...data.sendAgentV2Message.conversation,
-        createdAt: new Date(data.sendAgentV2Message.conversation.createdAt),
-        updatedAt: new Date(data.sendAgentV2Message.conversation.updatedAt),
-        messages: data.sendAgentV2Message.conversation.messages.map((msg: any) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))
+        ...responseData.sendAgentV2Message.conversation,
+        createdAt: new Date(responseData.sendAgentV2Message.conversation.createdAt),
+        updatedAt: new Date(responseData.sendAgentV2Message.conversation.updatedAt),
+        messages: responseData.sendAgentV2Message.conversation.messages.map((msg: any, index: number) => {
+          if (msg.role === 'assistant' && index === responseData.sendAgentV2Message.conversation.messages.length - 1) {
+            return {
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+              thoughts: responseData.sendAgentV2Message.extendedThoughts || []
+            };
+          }
+          return {
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          };
+        })
       };
 
       setCurrentConversation(finalConversation);
       
-      // Call completion callback
       if (onChunk) {
         onChunk({
           type: 'COMPLETE',
           conversationId: conversationId || 'unknown',
-          complete: data.sendAgentV2Message
+          complete: responseData.sendAgentV2Message
         });
       }
       
-      // Refetch conversations to update the list
       await refetchConversations();
 
     } catch (err) {
@@ -283,6 +343,7 @@ export function useAgentV2(): UseAgentV2Return {
     } finally {
       setIsStreaming(false);
       setStreamingContent('');
+      setStreamingStage('complete');
     }
   }, [sendMessageMutation, createConversation, currentConversation, refetchConversations]);
 
@@ -299,6 +360,7 @@ export function useAgentV2(): UseAgentV2Return {
     isSendingMessage,
     isStreaming,
     streamingContent,
+    streamingStage,
     error,
     
     // Actions
