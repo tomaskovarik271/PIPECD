@@ -12,6 +12,7 @@ export interface AgentV2MessageInput {
   userId: string;
   supabaseClient?: SupabaseClient;
   streaming?: boolean;
+  accessToken?: string;
 }
 
 export interface AgentV2Response {
@@ -126,7 +127,8 @@ export class AgentServiceV2 {
           thinkingBudget: input.thinkingBudget
         },
         conversation.id,
-        client
+        conversation,
+        input.accessToken
       );
       
       const thinkingTime = (Date.now() - startTime) / 1000;
@@ -241,7 +243,8 @@ export class AgentServiceV2 {
         conversation,
         client,
         input.userId,
-        callback
+        callback,
+        input.accessToken
       );
 
     } catch (error) {
@@ -299,7 +302,8 @@ export class AgentServiceV2 {
     conversation: any,
     client: SupabaseClient,
     userId: string,
-    callback: StreamCallback
+    callback: StreamCallback,
+    accessToken?: string
   ): Promise<void> {
     try {
       const startTime = Date.now();
@@ -393,13 +397,17 @@ export class AgentServiceV2 {
             conversationId: conversationId
           });
 
-          // Get auth token from supabase client session (similar to V1 pattern)
-          let authToken;
-          try {
-            const { data: { session } } = await client.auth.getSession();
-            authToken = session?.access_token;
-          } catch (error) {
-            console.warn('Could not get auth token from session:', error);
+          // Use access token from parameter (preferred) or try to get from session
+          let authToken = accessToken;
+          let userId;
+          if (!authToken) {
+            try {
+              const { data: { session } } = await client.auth.getSession();
+              authToken = session?.access_token;
+              userId = session?.user?.id;
+            } catch (error) {
+              console.warn('Could not get auth token from session:', error);
+            }
           }
 
           const toolResult = await toolRegistry.executeTool(
@@ -619,7 +627,8 @@ export class AgentServiceV2 {
     conversationHistory: any[],
     config: { enableExtendedThinking: boolean; thinkingBudget: string },
     conversationId: string,
-    supabaseClient?: SupabaseClient
+    supabaseClient?: SupabaseClient,
+    accessToken?: string
   ) {
     try {
       // Build conversation messages for Claude
@@ -649,7 +658,7 @@ export class AgentServiceV2 {
         });
 
               // Process response and handle tool calls
-        return await this.processClaudeV2Response(response, config, conversationId, userMessage, messages, supabaseClient);
+        return await this.processClaudeV2Response(response, config, conversationId, userMessage, messages, supabaseClient, accessToken);
 
     } catch (error) {
       console.error('Claude V2 processing error:', error);
@@ -743,7 +752,8 @@ You are a sophisticated CRM assistant for PipeCD that can:
     conversationId: string, 
     userMessage: string, 
     originalMessages: Anthropic.Messages.MessageParam[], 
-    supabaseClient?: SupabaseClient
+    supabaseClient?: SupabaseClient,
+    accessToken?: string
   ) {
     let content = '';
     const extendedThoughts: any[] = [];
@@ -766,15 +776,17 @@ You are a sophisticated CRM assistant for PipeCD that can:
         try {
           const client = supabaseClient || supabase;
           
-          // Get auth token from supabase client session (similar to V1 pattern)
-          let authToken;
+          // Use access token from parameter (preferred) or try to get from session
+          let authToken = accessToken;
           let userId;
-          try {
-            const { data: { session } } = await client.auth.getSession();
-            authToken = session?.access_token;
-            userId = session?.user?.id;
-          } catch (error) {
-            console.warn('Could not get auth token from session:', error);
+          if (!authToken) {
+            try {
+              const { data: { session } } = await client.auth.getSession();
+              authToken = session?.access_token;
+              userId = session?.user?.id;
+            } catch (error) {
+              console.warn('Could not get auth token from session:', error);
+            }
           }
           
           const toolResult = await toolRegistry.executeTool(

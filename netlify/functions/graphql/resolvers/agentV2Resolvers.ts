@@ -125,7 +125,7 @@ export const agentV2Resolvers = {
   Mutation: {
     // Send message with V2 extended thinking
     sendAgentV2Message: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
-      const { userId } = requireAuthentication(context);
+      const { userId, accessToken } = requireAuthentication(context);
 
       try {
         // Process message with V2 Agent Service
@@ -135,7 +135,8 @@ export const agentV2Resolvers = {
           enableExtendedThinking: input.enableExtendedThinking,
           thinkingBudget: input.thinkingBudget.toLowerCase(),
           userId,
-          supabaseClient: context.supabaseClient
+          supabaseClient: context.supabaseClient,
+          accessToken: accessToken
         });
 
         return response;
