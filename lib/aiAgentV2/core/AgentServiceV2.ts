@@ -187,10 +187,12 @@ export class AgentServiceV2 {
         tools
       });
 
+      // STAGE 1: Stream initial Claude response and capture tool calls
       let fullContent = '';
       const extendedThoughts: any[] = [];
       const toolCalls: any[] = [];
       const toolExecutions: any[] = []; // Track tool executions for frontend display
+      const toolInputBuffers = new Map(); // Buffer for accumulating tool inputs
 
       // Process streaming chunks
       for await (const chunk of stream) {
@@ -206,13 +208,43 @@ export class AgentServiceV2 {
                 content: textChunk,
                 conversationId: conversationId
               });
+            } else if (chunk.delta.type === 'input_json_delta') {
+              // Accumulate tool input deltas
+              const blockIndex = chunk.index;
+              if (!toolInputBuffers.has(blockIndex)) {
+                toolInputBuffers.set(blockIndex, '');
+              }
+              toolInputBuffers.set(blockIndex, toolInputBuffers.get(blockIndex) + chunk.delta.partial_json);
             }
             break;
             
           case 'content_block_start':
             if (chunk.content_block.type === 'tool_use') {
               console.log('🔧 Tool use detected during streaming:', chunk.content_block.name);
-              toolCalls.push(chunk.content_block);
+              toolCalls.push({
+                id: chunk.content_block.id,
+                name: chunk.content_block.name,
+                input: chunk.content_block.input, // Initial input (might be partial)
+                index: chunk.index // Track block index for input accumulation
+              });
+            }
+            break;
+            
+          case 'content_block_stop':
+            // Finalize tool input if this was a tool block
+            if (chunk.index !== undefined && toolInputBuffers.has(chunk.index)) {
+              const finalInput = toolInputBuffers.get(chunk.index);
+              const toolCall = toolCalls.find(tc => tc.index === chunk.index);
+              if (toolCall && finalInput) {
+                try {
+                  toolCall.input = JSON.parse(finalInput);
+                  console.log('🔧 Finalized tool input for', toolCall.name, ':', JSON.stringify(toolCall.input, null, 2));
+                } catch (error) {
+                  console.warn('Failed to parse accumulated tool input:', error);
+                  // Keep the original input from content_block_start
+                }
+              }
+              toolInputBuffers.delete(chunk.index);
             }
             break;
             
@@ -343,6 +375,7 @@ export class AgentServiceV2 {
           // Process continuation stream - might include additional tool calls
           const continuationToolCalls: any[] = [];
           const continuationToolResultsMap = new Map();
+          const continuationToolInputBuffers = new Map(); // Buffer for accumulating continuation tool inputs
           
           for await (const chunk of continuationStream) {
             if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
@@ -354,13 +387,37 @@ export class AgentServiceV2 {
                 content: textChunk,
                 conversationId: conversationId
               });
+            } else if (chunk.type === 'content_block_delta' && chunk.delta.type === 'input_json_delta') {
+              // Accumulate continuation tool input deltas
+              const blockIndex = chunk.index;
+              if (!continuationToolInputBuffers.has(blockIndex)) {
+                continuationToolInputBuffers.set(blockIndex, '');
+              }
+              continuationToolInputBuffers.set(blockIndex, continuationToolInputBuffers.get(blockIndex) + chunk.delta.partial_json);
             } else if (chunk.type === 'content_block_start' && chunk.content_block.type === 'tool_use') {
               // Track additional tool calls in continuation
               continuationToolCalls.push({
                 id: chunk.content_block.id,
                 name: chunk.content_block.name,
-                input: chunk.content_block.input
+                input: chunk.content_block.input, // Initial input (might be partial)
+                index: chunk.index // Track block index for input accumulation
               });
+            } else if (chunk.type === 'content_block_stop') {
+              // Finalize continuation tool input if this was a tool block
+              if (chunk.index !== undefined && continuationToolInputBuffers.has(chunk.index)) {
+                const finalInput = continuationToolInputBuffers.get(chunk.index);
+                const toolCall = continuationToolCalls.find(tc => tc.index === chunk.index);
+                if (toolCall && finalInput) {
+                  try {
+                    toolCall.input = JSON.parse(finalInput);
+                    console.log('🔧 Finalized continuation tool input for', toolCall.name, ':', JSON.stringify(toolCall.input, null, 2));
+                  } catch (error) {
+                    console.warn('Failed to parse accumulated continuation tool input:', error);
+                    // Keep the original input from content_block_start
+                  }
+                }
+                continuationToolInputBuffers.delete(chunk.index);
+              }
             }
           }
           
