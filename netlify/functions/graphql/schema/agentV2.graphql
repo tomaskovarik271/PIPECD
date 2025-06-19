@@ -100,22 +100,6 @@ type AgentV2StreamChunk {
   error: String
 }
 
-type AgentV2StreamResponse {
-  sessionId: String!
-  conversationId: ID
-  message: String!
-}
-
-type AgentV2StreamChunkRow {
-  id: ID!
-  sessionId: String!
-  conversationId: ID
-  chunkType: AgentV2StreamChunkType!
-  content: String
-  thinkingData: JSON
-  timestamp: String!
-}
-
 input SendAgentV2MessageStreamInput {
   conversationId: ID
   content: String!
@@ -136,9 +120,6 @@ extend type Query {
   
   # Get V2 thoughts with extended reasoning
   agentV2Thoughts(conversationId: ID!, limit: Int = 50): [AgentThought!]!
-  
-  # Get streaming chunks for polling
-  agentV2StreamChunks(sessionId: String!): [AgentV2StreamChunkRow!]!
 }
 
 # ================================
@@ -150,7 +131,7 @@ extend type Mutation {
   sendAgentV2Message(input: SendAgentV2MessageInput!): AgentV2Response!
   
   # Send message with V2 streaming support
-  sendAgentV2MessageStream(input: SendAgentV2MessageStreamInput!): AgentV2StreamResponse!
+  sendAgentV2MessageStream(input: SendAgentV2MessageStreamInput!): String!
   
   # Create new V2 conversation with extended thinking enabled
   createAgentV2Conversation(input: CreateAgentV2ConversationInput!): AgentConversation!

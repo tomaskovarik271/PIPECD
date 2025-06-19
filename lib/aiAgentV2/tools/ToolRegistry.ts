@@ -4,6 +4,7 @@
  */
 
 import { ThinkTool } from './ThinkTool';
+import { SearchDealsTool } from './SearchDealsTool';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export interface ToolDefinition {
@@ -24,6 +25,11 @@ export class ToolRegistry {
     this.registerTool(
       ThinkTool.definition,
       (supabaseClient: SupabaseClient, conversationId: string) => new ThinkTool(supabaseClient, conversationId)
+    );
+    
+    this.registerTool(
+      SearchDealsTool.definition,
+      (supabaseClient: SupabaseClient, conversationId: string) => new SearchDealsTool(supabaseClient, conversationId)
     );
   }
 

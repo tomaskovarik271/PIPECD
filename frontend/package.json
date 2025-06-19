@@ -10,9 +10,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest",
-    "test:ui": "vitest --ui",
-    "clean:pwa": "find dist/ -name '*manifest*' -delete && find dist/ -name '*sw.*' -delete && find dist/ -name '*workbox*' -delete || true",
-    "build:clean": "npm run clean:pwa && npm run build && npm run clean:pwa"
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@apollo/client": "^3.8.7",

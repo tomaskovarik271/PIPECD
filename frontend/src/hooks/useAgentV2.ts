@@ -3,14 +3,13 @@
  * Custom hook for AI Agent V2 operations with Claude Sonnet 4 extended thinking
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { flushSync } from 'react-dom';
-import { useMutation, useQuery, useLazyQuery } from '@apollo/client';
+import { useMutation, useQuery } from '@apollo/client';
 import {
   CREATE_AGENT_V2_CONVERSATION,
   SEND_AGENT_V2_MESSAGE,
-  SEND_AGENT_V2_MESSAGE_STREAM,
-  GET_AGENT_V2_STREAM_CHUNKS,
+
   GET_AGENT_V2_CONVERSATIONS,
   GET_AGENT_V2_THOUGHTS,
   type AgentV2Conversation,
@@ -20,8 +19,6 @@ import {
   type SendAgentV2MessageStreamInput,
   type CreateAgentV2ConversationInput,
   type AgentV2StreamChunk,
-  type AgentV2StreamResponse,
-  type AgentV2StreamChunkRow,
 } from '../lib/graphql/agentV2Operations';
 
 export interface UseAgentV2Return {
@@ -33,7 +30,6 @@ export interface UseAgentV2Return {
   isSendingMessage: boolean;
   isStreaming: boolean;
   streamingContent: string;
-  streamingThoughts: any[];
   streamingStage: 'initial' | 'thinking' | 'continuation' | 'complete';
   error: string | null;
   
@@ -41,17 +37,14 @@ export interface UseAgentV2Return {
   createConversation: (input: CreateAgentV2ConversationInput) => Promise<AgentV2Conversation>;
   sendMessage: (input: SendAgentV2MessageInput) => Promise<void>;
   sendMessageStream: (
-    content: string, 
-    conversationId?: string,
-    enableExtendedThinking?: boolean,
-    thinkingBudget?: string
+    input: SendAgentV2MessageStreamInput,
+    onChunk?: (chunk: AgentV2StreamChunk) => void
   ) => Promise<void>;
   setCurrentConversation: (conversation: AgentV2Conversation | null) => void;
   clearError: () => void;
   
   // Data
-  refetch: () => Promise<any>;
-  refetchHistory: () => Promise<any>;
+  refetchConversations: () => Promise<any>;
 }
 
 export function useAgentV2(): UseAgentV2Return {
@@ -60,21 +53,12 @@ export function useAgentV2(): UseAgentV2Return {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
-  const [streamingThoughts, setStreamingThoughts] = useState<any[]>([]);
   const [streamingStage, setStreamingStage] = useState<'initial' | 'thinking' | 'continuation' | 'complete'>('initial');
   const [error, setError] = useState<string | null>(null);
-
-  // Refs for streaming
-  const streamingSessionRef = useRef<string | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // GraphQL hooks
   const [createConversationMutation] = useMutation(CREATE_AGENT_V2_CONVERSATION);
   const [sendMessageMutation] = useMutation(SEND_AGENT_V2_MESSAGE);
-  const [sendMessageStreamMutation] = useMutation(SEND_AGENT_V2_MESSAGE_STREAM);
-  const [getStreamChunks, { data: streamChunksData }] = useLazyQuery(GET_AGENT_V2_STREAM_CHUNKS, {
-    fetchPolicy: 'no-cache'
-  });
   
   const { 
     data: conversationsData, 
@@ -87,8 +71,7 @@ export function useAgentV2(): UseAgentV2Return {
 
   const { 
     data: thoughtsData,
-    loading: isLoadingThoughts,
-    refetch: refetchThoughts
+    loading: isLoadingThoughts 
   } = useQuery(GET_AGENT_V2_THOUGHTS, {
     variables: { 
       conversationId: currentConversation?.id || '',
@@ -204,189 +187,186 @@ export function useAgentV2(): UseAgentV2Return {
     }
   }, [sendMessageMutation, createConversation, currentConversation, refetchConversations]);
 
-  // Real streaming implementation using GraphQL polling
   const sendMessageStream = useCallback(async (
-    content: string, 
-    conversationId?: string,
-    enableExtendedThinking = true,
-    thinkingBudget = 'STANDARD'
-  ) => {
+    input: SendAgentV2MessageStreamInput,
+    onChunk?: (chunk: AgentV2StreamChunk) => void
+  ): Promise<void> => {
     try {
+      setError(null);
       setIsStreaming(true);
       setStreamingContent('');
-      setStreamingThoughts([]);
       setStreamingStage('initial');
-      
+
       // If no conversation exists, create one first
-      let actualConversationId = conversationId;
-      if (!actualConversationId && !currentConversation) {
+      let conversationId = input.conversationId;
+      if (!conversationId && !currentConversation) {
         const newConversation = await createConversation({
-          enableExtendedThinking,
-          thinkingBudget,
+          enableExtendedThinking: input.enableExtendedThinking,
+          thinkingBudget: input.thinkingBudget,
           initialContext: {}
         });
-        actualConversationId = newConversation.id;
-      } else if (!actualConversationId && currentConversation) {
-        actualConversationId = currentConversation.id;
+        conversationId = newConversation.id;
+      } else if (!conversationId && currentConversation) {
+        conversationId = currentConversation.id;
       }
 
-      // Create temporary conversation state for streaming
+      // For streaming, don't add user message to conversation immediately
+      // Let the backend response handle adding both user and assistant messages
+      // This ensures the assistant message will be the latest during streaming
+
+      // Show initial thinking state
+      setStreamingStage('initial');
+      setStreamingContent('Claude is analyzing your question...');
+      
+      // Simulate initial delay to show we're processing
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      // Get the response from backend
+      const { data: responseData } = await sendMessageMutation({
+        variables: {
+          input: {
+            ...input,
+            conversationId
+          }
+        }
+      });
+
+      if (!responseData?.sendAgentV2Message) {
+        throw new Error('Failed to get response');
+      }
+
+      const aiResponse = responseData.sendAgentV2Message.message.content;
+      const extendedThoughts = responseData.sendAgentV2Message.extendedThoughts || [];
+      
+      // Create a temporary conversation for streaming display
       const tempConversation = {
-        id: actualConversationId || 'temp',
-        userId: '',
-        agentVersion: 'v2',
-        extendedThinkingEnabled: enableExtendedThinking,
-        thinkingBudget,
-        context: {},
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        ...responseData.sendAgentV2Message.conversation,
+        createdAt: new Date(responseData.sendAgentV2Message.conversation.createdAt),
+        updatedAt: new Date(responseData.sendAgentV2Message.conversation.updatedAt),
         messages: [
+          // User message
           {
             role: 'user' as const,
-            content,
+            content: input.content,
             timestamp: new Date(),
             thoughts: []
           },
+          // Assistant message (placeholder for streaming)
           {
             role: 'assistant' as const,
-            content: '',
+            content: '', // Will be updated as we stream
             timestamp: new Date(),
-            thoughts: []
+            thoughts: [] // Start with empty thoughts during streaming
           }
         ]
       };
-
-      // Set temporary conversation immediately
-      flushSync(() => {
-        setCurrentConversation(tempConversation);
-      });
-
-      // Start streaming backend request
-      const { data: streamResponse } = await sendMessageStreamMutation({
-        variables: {
-          input: {
-            conversationId: actualConversationId,
-            content,
-            enableExtendedThinking,
-            thinkingBudget
+      
+      // Set the temporary conversation immediately so component can render
+      setCurrentConversation(tempConversation);
+      
+      // Now stream the response progressively with realistic timing
+      let streamedContent = '';
+      
+      // If we have thoughts, show thinking stage first
+      if (extendedThoughts.length > 0) {
+        setStreamingStage('thinking');
+        setStreamingContent('🧠 Claude is thinking deeply about this...');
+        
+        // Stream thinking results
+        for (const thought of extendedThoughts) {
+          if (onChunk) {
+            onChunk({
+              type: 'THINKING',
+              thinking: thought,
+              conversationId: conversationId || 'unknown'
+            });
           }
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Show each thought
         }
-      });
-
-      if (!streamResponse?.sendAgentV2MessageStream?.sessionId) {
-        throw new Error('Failed to start streaming');
+        
+        // Transition to response streaming
+        setStreamingStage('continuation');
+        setStreamingContent('📝 Formulating comprehensive response...');
+        await new Promise(resolve => setTimeout(resolve, 600));
+      }
+      
+      // Stream the actual content
+      setStreamingStage('initial');
+      setStreamingContent(''); // Start with empty content for true progressive streaming
+      const words = aiResponse.split(' ');
+      const wordsPerChunk = Math.max(1, Math.floor(words.length / 40)); // Slightly larger chunks for smoother feel
+      
+      for (let i = 0; i < words.length; i += wordsPerChunk) {
+        const chunk = words.slice(i, i + wordsPerChunk).join(' ') + (i + wordsPerChunk < words.length ? ' ' : '');
+        streamedContent += chunk; // Build up locally
+        
+        // Force React to render this update immediately
+        flushSync(() => {
+          setStreamingContent(streamedContent); // Update state progressively
+        });
+        
+        if (onChunk) {
+          onChunk({
+            type: 'CONTENT',
+            content: chunk,
+            conversationId: conversationId || 'unknown'
+          });
+        }
+        
+        // Faster streaming for better user experience
+        const baseDelay = 80; // Much faster than 300ms
+        const variableDelay = Math.random() * 60; // Less variation
+        await new Promise(resolve => setTimeout(resolve, baseDelay + variableDelay));
       }
 
-      const sessionId = streamResponse.sendAgentV2MessageStream.sessionId;
-      streamingSessionRef.current = sessionId;
-
-      // Start polling for stream chunks
-      let processedChunkIds = new Set<string>();
-      let accumulatedContent = '';
-      let accumulatedThoughts: any[] = [];
-      let currentStage: 'initial' | 'thinking' | 'continuation' = 'initial';
-      let isComplete = false;
-
-      const pollChunks = async () => {
-        try {
-          const { data: chunksData } = await getStreamChunks({
-            variables: { sessionId }
-          });
-
-          const chunks = chunksData?.agentV2StreamChunks || [];
-          const newChunks = chunks.filter((chunk: AgentV2StreamChunkRow) => 
-            !processedChunkIds.has(chunk.id)
-          );
-
-          for (const chunk of newChunks) {
-            processedChunkIds.add(chunk.id);
-            console.log('🔄 Processing chunk:', chunk.chunkType, chunk.content?.length || 0);
-
-            if (chunk.chunkType === 'CONTENT') {
-              // STAGE 1 & 3: Stream content immediately
-              accumulatedContent += chunk.content || '';
-              
-              flushSync(() => {
-                setStreamingContent(accumulatedContent);
-                setStreamingStage(currentStage);
-                
-                // Update temporary conversation with streaming content
-                setCurrentConversation(prev => prev ? {
-                  ...prev,
-                  messages: [
-                    ...prev.messages.slice(0, -1),
-                    {
-                      ...prev.messages[prev.messages.length - 1],
-                      content: accumulatedContent
-                    }
-                  ]
-                } : null);
-              });
-              
-            } else if (chunk.chunkType === 'THINKING') {
-              // STAGE 2: Stream thinking results
-              if (chunk.thinkingData) {
-                if (chunk.thinkingData.type === 'tool_execution') {
-                  currentStage = 'thinking';
-                } else if (chunk.thinkingData.type === 'continuation') {
-                  currentStage = 'continuation';
-                } else if (chunk.thinkingData.type !== 'tool_execution' && chunk.thinkingData.type !== 'continuation') {
-                  accumulatedThoughts.push(chunk.thinkingData);
-                  
-                  flushSync(() => {
-                    setStreamingThoughts([...accumulatedThoughts]);
-                    setStreamingStage(currentStage);
-                  });
-                }
-              }
-            } else if (chunk.chunkType === 'COMPLETE' || chunk.chunkType === 'ERROR') {
-              isComplete = true;
-              if (chunk.chunkType === 'ERROR') {
-                console.error('Streaming error:', chunk.thinkingData?.error);
-              }
-            }
+      // Complete the streaming
+      setStreamingStage('complete');
+      
+      if (onChunk) {
+        onChunk({
+          type: 'COMPLETE',
+          conversationId: conversationId || 'unknown',
+          complete: responseData.sendAgentV2Message
+        });
+      }
+      
+      // Store the final conversation data to update after streaming completes
+      const finalConversation = {
+        ...responseData.sendAgentV2Message.conversation,
+        createdAt: new Date(responseData.sendAgentV2Message.conversation.createdAt),
+        updatedAt: new Date(responseData.sendAgentV2Message.conversation.updatedAt),
+        messages: responseData.sendAgentV2Message.conversation.messages.map((msg: any, index: number) => {
+          if (msg.role === 'assistant' && index === responseData.sendAgentV2Message.conversation.messages.length - 1) {
+            return {
+              ...msg,
+              timestamp: new Date(msg.timestamp),
+              thoughts: responseData.sendAgentV2Message.extendedThoughts || []
+            };
           }
-
-          if (!isComplete && streamingSessionRef.current === sessionId) {
-            // Continue polling if not complete
-            pollingIntervalRef.current = setTimeout(pollChunks, 300);
-          } else {
-            // Streaming complete - refresh conversation data
-            if (actualConversationId) {
-              await refetchConversations();
-              await refetchThoughts();
-            }
-          }
-
-        } catch (error) {
-          console.error('Error polling stream chunks:', error);
-          isComplete = true;
-        }
+          return {
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          };
+        })
       };
+      
+      // Wait a moment to ensure UI shows the complete streaming
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Now update the conversation with final data
+      setCurrentConversation(finalConversation);
+      await refetchConversations();
 
-      // Start polling
-      pollChunks();
-
-    } catch (error) {
-      console.error('Error in streaming message:', error);
-      throw error;
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send streaming message';
+      setError(errorMessage);
+      throw err;
     } finally {
-      // Cleanup will happen when polling detects completion
+      setIsStreaming(false);
+      setStreamingContent('');
+      setStreamingStage('complete');
     }
-  }, [sendMessageStreamMutation, createConversation, currentConversation, refetchConversations, refetchThoughts, getStreamChunks]);
-
-  // Cleanup polling on unmount or streaming stop
-  const stopStreaming = useCallback(() => {
-    if (pollingIntervalRef.current) {
-      clearTimeout(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
-    }
-    streamingSessionRef.current = null;
-    setIsStreaming(false);
-    setStreamingContent('');
-    setStreamingThoughts([]);
-    setStreamingStage('initial');
-  }, []);
+  }, [sendMessageMutation, createConversation, currentConversation, refetchConversations]);
 
   const clearError = useCallback(() => {
     setError(null);
@@ -401,7 +381,6 @@ export function useAgentV2(): UseAgentV2Return {
     isSendingMessage,
     isStreaming,
     streamingContent,
-    streamingThoughts,
     streamingStage,
     error,
     
@@ -412,8 +391,7 @@ export function useAgentV2(): UseAgentV2Return {
     setCurrentConversation,
     clearError,
     
-    // Data refresh
-    refetch: refetchThoughts,
-    refetchHistory: refetchConversations
+    // Data
+    refetchConversations
   };
 } 

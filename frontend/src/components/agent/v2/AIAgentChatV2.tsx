@@ -14,8 +14,7 @@ import {
   Select,
   Spinner,
   Alert,
-  AlertIcon,
-  Avatar
+  AlertIcon
 } from '@chakra-ui/react';
 import ReactMarkdown from 'react-markdown';
 import { useThemeColors } from '../../../hooks/useThemeColors';
@@ -28,7 +27,6 @@ export function AIAgentChatV2() {
   const [extendedThinking, setExtendedThinking] = useState(true);
   const [thinkingBudget, setThinkingBudget] = useState('THINK');
   const [useStreaming, setUseStreaming] = useState(true); // Enhanced multi-stage streaming now available
-  const [error, setError] = useState<string | null>(null);
 
   // V2 Agent hook
   const {
@@ -39,9 +37,8 @@ export function AIAgentChatV2() {
     isSendingMessage,
     isStreaming,
     streamingContent,
-    streamingThoughts,
     streamingStage,
-    error: agentError,
+    error,
     createConversation,
     sendMessage,
     sendMessageStream,
@@ -54,7 +51,6 @@ export function AIAgentChatV2() {
 
     const content = inputValue.trim();
     setInputValue('');
-    setError(null);
 
     try {
       // Auto-create conversation if none exists
@@ -67,23 +63,23 @@ export function AIAgentChatV2() {
       }
 
       if (useStreaming) {
-        await sendMessageStream(
+        await sendMessageStream({
+          conversationId: currentConversation?.id,
           content,
-          currentConversation?.id,
-          extendedThinking,
-          thinkingBudget as 'MINIMAL' | 'STANDARD' | 'COMPREHENSIVE' | 'DEEP'
-        );
+          enableExtendedThinking: extendedThinking,
+          thinkingBudget: thinkingBudget
+        });
       } else {
         await sendMessage({
           conversationId: currentConversation?.id,
           content,
           enableExtendedThinking: extendedThinking,
-          thinkingBudget: thinkingBudget as 'MINIMAL' | 'STANDARD' | 'COMPREHENSIVE' | 'DEEP'
+          thinkingBudget: thinkingBudget
         });
       }
-    } catch (err) {
-      console.error('Error sending message:', err);
-      setError(err instanceof Error ? err.message : 'Failed to send message');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Error is handled by the hook
     }
   };
 
@@ -92,106 +88,6 @@ export function AIAgentChatV2() {
       e.preventDefault();
       handleSendMessage();
     }
-  };
-
-  // Render streaming message for current response
-  const renderStreamingMessage = () => {
-    if (!isStreaming) return null;
-
-    return (
-      <Box key="streaming-message" mb={4}>
-        <HStack mb={2}>
-          <Avatar size="sm" name="Claude V2" bg="purple.500" color="white" />
-          <Text fontWeight="medium" color={colors.text.primary}>Claude Sonnet 4</Text>
-          <Badge 
-            colorScheme={
-              streamingStage === 'initial' ? 'blue' : 
-              streamingStage === 'thinking' ? 'orange' : 
-              streamingStage === 'continuation' ? 'green' : 'gray'
-            }
-            size="sm"
-          >
-            {streamingStage === 'initial' && '📝 Responding'}
-            {streamingStage === 'thinking' && '🧠 Deep Thinking'}
-            {streamingStage === 'continuation' && '💭 Synthesizing'}
-          </Badge>
-        </HStack>
-        
-        <Box 
-          bg={colors.bg.content} 
-          p={4} 
-          rounded="lg" 
-          border="1px solid" 
-          borderColor={colors.border.subtle}
-        >
-          {/* Stream the actual response content */}
-          {streamingContent && (
-            <Box mb={streamingThoughts.length > 0 ? 4 : 0}>
-              <Text whiteSpace="pre-wrap">{streamingContent}</Text>
-              <Text as="span" opacity={0.7} animation="blink 1s infinite">|</Text>
-            </Box>
-          )}
-          
-          {/* Stream thinking results as they come */}
-          {streamingThoughts.length > 0 && (
-            <Box>
-              <Text fontSize="sm" fontWeight="medium" color={colors.text.primary} mb={2}>
-                🎯 Extended Thinking Process
-              </Text>
-              <VStack spacing={2} align="stretch">
-                {streamingThoughts.map((thought, index) => (
-                  <Box
-                    key={index}
-                    p={3}
-                    bg={colors.bg.elevated}
-                    border="1px solid"
-                    borderColor={colors.border.subtle}
-                    rounded="md"
-                  >
-                    <HStack justify="space-between" mb={2}>
-                      <Badge size="sm" colorScheme="purple">
-                        {thought.type?.toUpperCase() || 'REASONING'}
-                      </Badge>
-                      <Text fontSize="xs" opacity={0.7}>
-                        Stage: {streamingStage}
-                      </Text>
-                    </HStack>
-                    
-                    {thought.metadata?.acknowledgment && (
-                      <Text fontSize="sm" mb={2} fontStyle="italic" color={colors.text.secondary}>
-                        🎯 {thought.metadata.acknowledgment}
-                      </Text>
-                    )}
-                    
-                    <Text fontSize="sm" whiteSpace="pre-wrap">
-                      {thought.content}
-                    </Text>
-                    
-                    {thought.strategy && (
-                      <Text fontSize="sm" mt={2} p={2} bg={colors.bg.elevated} rounded="sm">
-                        <strong>Strategy:</strong> {thought.strategy}
-                      </Text>
-                    )}
-                    
-                    {thought.concerns && (
-                      <Text fontSize="sm" mt={2} p={2} bg={colors.bg.surface} rounded="sm">
-                        <strong>Concerns:</strong> {thought.concerns}
-                      </Text>
-                    )}
-                    
-                    {thought.nextSteps && (
-                      <Text fontSize="sm" mt={2} p={2} bg={colors.bg.elevated} rounded="sm">
-                        <strong>Next Steps:</strong> {thought.nextSteps}
-                      </Text>
-                    )}
-                  </Box>
-                ))}
-              </VStack>
-            </Box>
-          )}
-        </Box>
-      </Box>
-    );
   };
 
   return (
@@ -495,7 +391,7 @@ export function AIAgentChatV2() {
               </Box>
             ))}
             
-            {renderStreamingMessage()}
+
           </VStack>
         )}
       </Box>

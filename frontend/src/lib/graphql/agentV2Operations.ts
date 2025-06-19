@@ -208,43 +208,9 @@ export interface AgentV2StreamChunk {
   error?: string;
 }
 
-export interface AgentV2StreamResponse {
-  sessionId: string;
-  conversationId?: string;
-  message: string;
-}
-
-export interface AgentV2StreamChunkRow {
-  id: string;
-  sessionId: string;
-  conversationId?: string;
-  chunkType: 'CONTENT' | 'THINKING' | 'COMPLETE' | 'ERROR';
-  content?: string;
-  thinkingData?: any;
-  timestamp: string;
-}
-
 export const SEND_AGENT_V2_MESSAGE_STREAM = gql`
   mutation SendAgentV2MessageStream($input: SendAgentV2MessageStreamInput!) {
-    sendAgentV2MessageStream(input: $input) {
-      sessionId
-      conversationId
-      message
-    }
-  }
-`;
-
-export const GET_AGENT_V2_STREAM_CHUNKS = gql`
-  query GetAgentV2StreamChunks($sessionId: String!) {
-    agentV2StreamChunks(sessionId: $sessionId) {
-      id
-      sessionId
-      conversationId
-      chunkType
-      content
-      thinkingData
-      timestamp
-    }
+    sendAgentV2MessageStream(input: $input)
   }
 `;
 
