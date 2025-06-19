@@ -3,12 +3,13 @@
  * Custom hook for AI Agent V2 operations with Claude Sonnet 4 extended thinking
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { useMutation, useQuery } from '@apollo/client';
 import {
   CREATE_AGENT_V2_CONVERSATION,
   SEND_AGENT_V2_MESSAGE,
-  SEND_AGENT_V2_MESSAGE_STREAM,
+
   GET_AGENT_V2_CONVERSATIONS,
   GET_AGENT_V2_THOUGHTS,
   type AgentV2Conversation,
@@ -265,13 +266,30 @@ export function useAgentV2(): UseAgentV2Return {
       
       // Stream the actual content
       setStreamingStage('initial');
+      setStreamingContent(''); // Start with empty content for true progressive streaming
       const words = aiResponse.split(' ');
       const wordsPerChunk = Math.max(1, Math.floor(words.length / 30)); // Adaptive chunking
       
+      console.log('🔄 Starting content streaming:', {
+        totalWords: words.length,
+        wordsPerChunk,
+        totalChunks: Math.ceil(words.length / wordsPerChunk)
+      });
+      
       for (let i = 0; i < words.length; i += wordsPerChunk) {
         const chunk = words.slice(i, i + wordsPerChunk).join(' ') + (i + wordsPerChunk < words.length ? ' ' : '');
-        streamedContent += chunk;
-        setStreamingContent(streamedContent);
+        streamedContent += chunk; // Build up locally
+        
+        // Force React to render this update immediately
+        flushSync(() => {
+          setStreamingContent(streamedContent); // Update state progressively
+        });
+        
+        console.log(`📝 Streaming chunk ${Math.floor(i/wordsPerChunk) + 1}:`, {
+          chunkLength: chunk.length,
+          totalStreamedLength: streamedContent.length,
+          percentComplete: Math.round((streamedContent.length / aiResponse.length) * 100)
+        });
         
         if (onChunk) {
           onChunk({
@@ -281,9 +299,9 @@ export function useAgentV2(): UseAgentV2Return {
           });
         }
         
-        // Variable delay based on content length and position
-        const baseDelay = 150;
-        const variableDelay = Math.random() * 100; // Add some natural variation
+        // Longer delay to ensure UI has time to render each chunk
+        const baseDelay = 300; // Increased from 150ms
+        const variableDelay = Math.random() * 200; // Increased variation
         await new Promise(resolve => setTimeout(resolve, baseDelay + variableDelay));
       }
 
