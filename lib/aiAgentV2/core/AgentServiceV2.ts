@@ -359,6 +359,7 @@ export class AgentServiceV2 {
             
           case 'content_block_start':
             if (chunk.content_block.type === 'tool_use') {
+              console.log('🔧 Tool use detected during streaming:', chunk.content_block.name);
               toolCalls.push(chunk.content_block);
             }
             break;
@@ -386,6 +387,8 @@ export class AgentServiceV2 {
 
       // STAGE 2: Process tool calls and stream thinking results
       const toolResultsMap = new Map(); // Store actual tool results by tool ID
+      
+      console.log('🔄 STAGE 2: Processing tool calls, found:', toolCalls.length, 'tools');
       
       for (const toolCall of toolCalls) {
         try {
@@ -440,6 +443,7 @@ export class AgentServiceV2 {
 
       // STAGE 3: Get continuation response from Claude if tools were used
       let continuationContent = '';
+      console.log('🔄 STAGE 3: Checking for continuation, toolCalls.length:', toolCalls.length);
       if (toolCalls.length > 0) {
         try {
           callback({
@@ -806,6 +810,12 @@ You are a sophisticated CRM assistant for PipeCD that can:
             toolResults.push({
               tool_use_id: block.id,
               content: `Thinking completed. Strategy: ${thinkResult.strategy.substring(0, 100)}...`
+            });
+          } else {
+            // Add ALL other tool results for continuation (SearchDealsTool, etc.)
+            toolResults.push({
+              tool_use_id: block.id,
+              content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult)
             });
           }
           
