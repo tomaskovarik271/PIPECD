@@ -1,7 +1,6 @@
 import { supabase } from '../../supabaseClient';
 import Anthropic from '@anthropic-ai/sdk';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { ThinkTool, ThinkInput, ThinkResult } from '../tools/ThinkTool';
 import { toolRegistry } from '../tools/ToolRegistry';
 
 export interface AgentV2MessageInput {
@@ -36,16 +35,6 @@ export interface AgentV2StreamChunk {
 }
 
 export type StreamCallback = (chunk: AgentV2StreamChunk) => void;
-
-export interface ExtendedThinkingStep {
-  type: 'reasoning' | 'planning' | 'reflection' | 'concern' | 'strategy';
-  content: string;
-  reasoning?: string;
-  strategy?: string;
-  concerns?: string;
-  nextSteps?: string;
-  metadata: Record<string, any>;
-}
 
 export class AgentServiceV2 {
   private anthropic: Anthropic;
@@ -369,18 +358,7 @@ export class AgentServiceV2 {
             break;
             
           case 'message_start':
-            // Send thinking update if extended thinking is enabled
-            if (config.enableExtendedThinking) {
-              callback({
-                type: 'thinking',
-                thinking: {
-                  type: 'reasoning',
-                  content: `Starting extended thinking with ${config.thinkingBudget} budget...`,
-                  metadata: { thinkingBudget: config.thinkingBudget }
-                },
-                conversationId: conversationId
-              });
-            }
+            // Message started - no special handling needed
             break;
             
           case 'message_stop':
@@ -395,18 +373,8 @@ export class AgentServiceV2 {
       console.log('🔄 STAGE 2: Processing tool calls, found:', toolCalls.length, 'tools');
       
       for (const toolCall of toolCalls) {
+        const toolStartTime = Date.now();
         try {
-          // Send thinking start notification
-          callback({
-            type: 'thinking',
-            thinking: {
-              type: 'tool_execution',
-              content: `Executing ${toolCall.name} tool...`,
-              metadata: { toolName: toolCall.name, stage: 'executing' }
-            },
-            conversationId: conversationId
-          });
-
           // Use access token from parameter (preferred) or try to get from session
           let authToken = accessToken;
           let userIdForAuth = userId || 'anonymous'; // Use parameter userId with fallback
@@ -420,7 +388,6 @@ export class AgentServiceV2 {
             }
           }
 
-          const toolStartTime = Date.now();
           const toolResult = await toolRegistry.executeTool(
             toolCall.name,
             toolCall.input,
@@ -440,22 +407,30 @@ export class AgentServiceV2 {
             result: toolResult,
             executionTime: executionDuration,
             timestamp: new Date().toISOString(),
-            status: 'success'
+            status: 'SUCCESS'
           });
           
           // Store the actual tool result for continuation
           toolResultsMap.set(toolCall.id, toolResult);
         } catch (error) {
           console.error(`Error executing ${toolCall.name} tool:`, error);
-          callback({
-            type: 'thinking',
-            thinking: {
-              type: 'error',
-              content: `Error executing ${toolCall.name}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-              metadata: { toolName: toolCall.name, stage: 'error' }
-            },
-            conversationId: conversationId
+          
+          const toolEndTime = Date.now();
+          const executionDuration = toolEndTime - toolStartTime;
+          
+          // Capture failed tool execution metadata for frontend display
+          toolExecutions.push({
+            id: toolCall.id,
+            name: toolCall.name,
+            input: toolCall.input,
+            result: null,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            executionTime: executionDuration,
+            timestamp: new Date().toISOString(),
+            status: 'ERROR'
           });
+          
+          // Tool error is captured in toolExecutions - no need for special thinking callback
         }
       }
 
@@ -464,16 +439,6 @@ export class AgentServiceV2 {
       console.log('🔄 STAGE 3: Checking for continuation, toolCalls.length:', toolCalls.length);
       if (toolCalls.length > 0) {
         try {
-          callback({
-            type: 'thinking',
-            thinking: {
-              type: 'continuation',
-              content: 'Generating final response based on thinking results...',
-              metadata: { stage: 'continuation_start' }
-            },
-            conversationId: conversationId
-          });
-
           // Build tool results for continuation
           const toolResults = toolCalls.map(toolCall => ({
             type: 'tool_result' as const,
@@ -512,10 +477,14 @@ export class AgentServiceV2 {
             max_tokens: 4096,
             temperature: 0.7,
             system: systemPrompt,
-            messages: continuationMessages
+            messages: continuationMessages,
+            tools: config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined
           });
 
-          // Stream continuation response (STAGE 3)
+          // Process continuation stream - might include additional tool calls
+          const continuationToolCalls: any[] = [];
+          const continuationToolResultsMap = new Map();
+          
           for await (const chunk of continuationStream) {
             if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
               const textChunk = chunk.delta.text;
@@ -526,38 +495,148 @@ export class AgentServiceV2 {
                 content: textChunk,
                 conversationId: conversationId
               });
+            } else if (chunk.type === 'content_block_start' && chunk.content_block.type === 'tool_use') {
+              // Track additional tool calls in continuation
+              continuationToolCalls.push({
+                id: chunk.content_block.id,
+                name: chunk.content_block.name,
+                input: chunk.content_block.input
+              });
             }
           }
-        } catch (continuationError) {
-          console.error('Continuation streaming error:', continuationError);
-          callback({
-            type: 'thinking',
-            thinking: {
-              type: 'error',
-              content: 'Error generating continuation response',
-              metadata: { stage: 'continuation_error' }
-            },
-            conversationId: conversationId
-          });
+          
+          // Execute any additional tools from continuation (like search_deals after thinking)
+          if (continuationToolCalls.length > 0) {
+            console.log('🔄 Continuation had tools, executing them...', continuationToolCalls.map(t => t.name));
+            
+            for (const toolCall of continuationToolCalls) {
+              const toolStartTime = Date.now();
+              try {
+                const toolResult = await toolRegistry.executeTool(
+                  toolCall.name,
+                  toolCall.input,
+                  client,
+                  conversationId,
+                  accessToken,
+                  userId
+                );
+                
+                const toolEndTime = Date.now();
+                const executionDuration = toolEndTime - toolStartTime;
+                
+                // Add to tool executions for UI display
+                toolExecutions.push({
+                  id: toolCall.id,
+                  name: toolCall.name,
+                  input: toolCall.input,
+                  result: toolResult,
+                  executionTime: executionDuration,
+                  timestamp: new Date().toISOString(),
+                  status: 'SUCCESS'
+                });
+                
+                // Store result for final continuation
+                continuationToolResultsMap.set(toolCall.id, toolResult);
+                
+              } catch (error) {
+                console.error(`Error executing continuation tool ${toolCall.name}:`, error);
+                const toolEndTime = Date.now();
+                const executionDuration = toolEndTime - toolStartTime;
+                
+                toolExecutions.push({
+                  id: toolCall.id,
+                  name: toolCall.name,
+                  input: toolCall.input,
+                  result: null,
+                  error: error instanceof Error ? error.message : 'Unknown error',
+                  executionTime: executionDuration,
+                  timestamp: new Date().toISOString(),
+                  status: 'ERROR'
+                });
+                
+                continuationToolResultsMap.set(toolCall.id, { error: error instanceof Error ? error.message : 'Unknown error' });
+              }
+            }
+            
+            // Get final response after executing continuation tools
+            try {
+              console.log('🔄 Getting final response after continuation tools...');
+              
+              const finalMessages: Anthropic.Messages.MessageParam[] = [
+                ...messages,
+                {
+                  role: 'assistant' as const,
+                  content: [
+                    { type: 'text', text: fullContent },
+                    ...toolCalls.map(toolCall => ({
+                      type: 'tool_use' as const,
+                      id: toolCall.id,
+                      name: toolCall.name,
+                      input: toolCall.input
+                    }))
+                  ]
+                },
+                {
+                  role: 'user' as const,
+                  content: toolResults
+                },
+                {
+                  role: 'assistant' as const,
+                  content: [
+                    { type: 'text', text: continuationContent },
+                    ...continuationToolCalls.map(toolCall => ({
+                      type: 'tool_use' as const,
+                      id: toolCall.id,
+                      name: toolCall.name,
+                      input: toolCall.input
+                    }))
+                  ]
+                },
+                {
+                  role: 'user' as const,
+                  content: continuationToolCalls.map(toolCall => ({
+                    type: 'tool_result' as const,
+                    tool_use_id: toolCall.id,
+                    content: JSON.stringify(continuationToolResultsMap.get(toolCall.id) || { success: true })
+                  }))
+                }
+              ];
+              
+              const finalResponse = await this.anthropic.messages.create({
+                model: 'claude-3-5-sonnet-20241022',
+                max_tokens: 4096,
+                temperature: 0.7,
+                system: this.buildV2SystemPrompt(config),
+                messages: finalMessages,
+                tools: config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined
+              });
+              
+              // Stream final response
+              for await (const chunk of finalResponse.content) {
+                if (chunk.type === 'text') {
+                  const textChunk = chunk.text;
+                  continuationContent += textChunk;
+                  
+                  callback({
+                    type: 'content',
+                    content: textChunk,
+                    conversationId: conversationId
+                  });
+                }
+              }
+              
+              console.log('✅ Got final response after continuation tools');
+              
+            } catch (finalError) {
+              console.error('Error getting final continuation response:', finalError);
+            }
+          }
+        } catch (error) {
+          console.error('Continuation streaming error:', error);
         }
       }
 
       const thinkingTime = (Date.now() - startTime) / 1000;
-
-      // Generate extended thinking analysis after streaming completes
-      if (config.enableExtendedThinking) {
-        const thinkingAnalysis = this.analyzeResponseForThinking(fullContent + continuationContent, config.thinkingBudget, conversationId);
-        extendedThoughts.push(...thinkingAnalysis);
-        
-        // Send final thinking update
-        for (const thought of thinkingAnalysis) {
-          callback({
-            type: 'thinking',
-            thinking: thought,
-            conversationId: conversationId
-          });
-        }
-      }
 
       // Create assistant message with full content including continuation
       const finalContent = fullContent + continuationContent;
@@ -565,7 +644,8 @@ export class AgentServiceV2 {
         role: 'assistant',
         content: finalContent,
         timestamp: new Date().toISOString(),
-        thoughts: extendedThoughts
+        thoughts: [],
+        toolExecutions: toolExecutions
       };
 
       // Update conversation in database
@@ -598,11 +678,11 @@ export class AgentServiceV2 {
       const finalResponse: AgentV2Response = {
         conversation: updatedConversation || conversation,
         message: assistantMessage,
-        extendedThoughts,
-        reflections: extendedThoughts.filter(t => t.metadata?.type === 'reflection'),
-        planModifications: this.extractPlanModifications(extendedThoughts),
+        extendedThoughts: [], // No more special extendedThoughts - tools show in toolExecutions
+        reflections: [],
+        planModifications: [],
         thinkingTime,
-        confidenceScore: this.calculateConfidenceScore(fullContent, extendedThoughts),
+        confidenceScore: this.calculateConfidenceScore(finalContent, []),
         toolExecutions: toolExecutions
       };
 
@@ -695,32 +775,40 @@ ${JSON.stringify(tool, null, 2)}`).join('\n\n')}
 ## THINKING PROCESS
 When extended thinking is enabled, you have access to the "think" tool for complex analysis.
 
-### When to Use the Think Tool (OPTIONAL for most requests):
+### When to Use the Think Tool:
 - Complex business analysis requiring deep reasoning
 - Multi-step strategic planning
 - When you need to analyze multiple variables or trade-offs
 - Before making major strategic recommendations
-- When explicitly asked for detailed analysis
+- Pipeline performance questions requiring data analysis
 
-### When to Respond Directly (PREFERRED for simple requests):
+### When to Respond Directly:
 - General questions about your capabilities ("How can you help me?")
 - Simple informational requests
-- Basic CRM guidance
+- Basic CRM guidance that doesn't require data analysis
 - Quick clarifications or explanations
 
-### Think Tool Usage (Only for Complex Requests):
-For complex questions requiring deep analysis, you MAY use the think tool with these parameters:
-- acknowledgment: Brief statement of what the user is asking (e.g., "The user is asking about optimizing their sales pipeline..." NOT "You are looking to optimize...")
-- reasoning: Detailed analysis of the user's complex request (at least 2-3 sentences)
-- strategy: Strategic approach to addressing their needs (clear methodology)
-- concerns: Potential risks or limitations to consider (specific considerations)
-- next_steps: Specific actionable recommendations (concrete steps)
+### Think Tool Usage for Complex Analysis:
+For complex questions requiring analysis, use the think tool with these parameters:
+- acknowledgment: Brief statement of what the user is asking
+- reasoning: Detailed analysis of the user's request (at least 2-3 sentences)
+- strategy: Strategic approach including what data you'll need to analyze
+- concerns: Potential risks or limitations to consider
+- next_steps: Specific actionable recommendations including data gathering
 
-**IMPORTANT**: The think tool is for internal reasoning. After thinking, always provide a complete, helpful response to the user.
+**CRITICAL WORKFLOW**: After using the think tool for analytical questions:
+1. **ALWAYS** follow up by executing relevant business tools to gather data
+2. For pipeline questions: use search_deals to analyze current pipeline state
+3. For customer questions: use search tools to gather customer data
+4. For performance questions: gather relevant business metrics
+5. Then provide data-driven recommendations based on actual system data
 
-**CRITICAL**: When using the think tool, you MUST provide meaningful, detailed content for each parameter. Never use placeholder text like "No reasoning provided" - always provide substantive analysis.
+**Example Workflow for "How do I improve pipeline performance?":**
+1. Use think tool to analyze the question strategically
+2. Execute search_deals to get current pipeline data
+3. Analyze the data and provide specific recommendations
 
-**For simple questions like "How can you help me?", respond directly with your capabilities and examples.**
+The think tool is for planning your approach - you must then execute that plan with actual data gathering tools.
 ` : ''}
 
 ## YOUR ROLE
@@ -761,31 +849,22 @@ You are a sophisticated CRM assistant for PipeCD that can:
     userId?: string
   ) {
     let content = '';
-    const extendedThoughts: any[] = [];
     const toolResults: any[] = [];
     const toolExecutions: any[] = []; // Track tool executions for frontend display
-    
-    // Extract raw text content for parsing (before tool processing)
-    let rawContent = '';
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        rawContent += block.text + '\n';
-      }
-    }
     
     // Process each content block
     for (const block of response.content) {
       if (block.type === 'text') {
         content += block.text + '\n';
       } else if (block.type === 'tool_use') {
-        // Handle tool execution via registry
+        // Handle ALL tools uniformly through the registry
         const toolStartTime = Date.now();
         try {
           const client = supabaseClient || supabase;
           
           // Use access token from parameter (preferred) or try to get from session
           let authToken = accessToken;
-          let userIdForAuth = userId || 'anonymous'; // Use parameter userId with fallback
+          let userIdForAuth = userId || 'anonymous';
           if (!authToken) {
             try {
               const { data: { session } } = await client.auth.getSession();
@@ -816,7 +895,7 @@ You are a sophisticated CRM assistant for PipeCD that can:
             result: toolResult,
             executionTime: executionDuration,
             timestamp: new Date().toISOString(),
-            status: 'success'
+            status: 'SUCCESS'
           });
           
           // Store the actual tool result for continuation
@@ -825,35 +904,7 @@ You are a sophisticated CRM assistant for PipeCD that can:
             content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult)
           });
           
-          if (block.name === 'think') {
-            // Handle think tool results specifically
-            const thinkResult = toolResult as ThinkResult;
-            
-            // Always use the tool result as-is (no more fallback parsing)
-            extendedThoughts.push({
-              id: thinkResult.id,
-              conversationId: conversationId,
-              type: 'REASONING',
-              content: thinkResult.reasoning,
-              metadata: {
-                acknowledgment: thinkResult.acknowledgment,
-                strategy: thinkResult.strategy,
-                concerns: thinkResult.concerns,
-                nextSteps: thinkResult.nextSteps,
-                thinkingDepth: thinkResult.metadata.thinkingDepth,
-                strategicValue: thinkResult.metadata.strategicValue,
-                confidenceLevel: thinkResult.metadata.confidenceLevel,
-                toolType: 'think'
-              },
-              timestamp: thinkResult.timestamp
-            });
-            
-            // Add tool result to trigger continuation response from Claude
-            toolResults.push({
-              tool_use_id: block.id,
-              content: `Thinking completed. Strategy: ${thinkResult.strategy.substring(0, 100)}...`
-            });
-          }
+          // NO MORE SPECIAL HANDLING FOR ANY TOOL - ALL TOOLS ARE EQUAL
           
         } catch (error) {
           console.error(`Error executing ${block.name} tool:`, error);
@@ -871,7 +922,7 @@ You are a sophisticated CRM assistant for PipeCD that can:
             error: error instanceof Error ? error.message : 'Unknown error',
             executionTime: executionDuration,
             timestamp: new Date().toISOString(),
-            status: 'error'
+            status: 'ERROR'
           });
           
           // Add error result for continuation
@@ -889,7 +940,7 @@ You are a sophisticated CRM assistant for PipeCD that can:
         console.log('🔄 Tools were used, getting continuation response from Claude...');
         console.log('🔄 Tool results count:', toolResults.length);
         
-        // Build messages for continuation - need to include the original conversation history
+        // Build messages for continuation
         const continuationMessages: Anthropic.Messages.MessageParam[] = [
           ...originalMessages,
           {
@@ -912,50 +963,167 @@ You are a sophisticated CRM assistant for PipeCD that can:
           max_tokens: 4096,
           temperature: 0.7,
           system: this.buildV2SystemPrompt(config),
-          messages: continuationMessages
+          messages: continuationMessages,
+          tools: config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined
         });
         
         console.log('✅ Got continuation response from Claude');
         
-        // Add the continuation content
+        // Process the continuation response - it might contain additional tool calls!
+        const continuationToolResults: any[] = [];
+        const continuationToolExecutions: any[] = [];
+        
         for (const block of continuationResponse.content) {
           if (block.type === 'text') {
             content += block.text + '\n';
+          } else if (block.type === 'tool_use') {
+            // Handle additional tools in continuation (like search_deals after thinking)
+            const toolStartTime = Date.now();
+            try {
+              const client = supabaseClient || supabase;
+              
+              let authToken = accessToken;
+              let userIdForAuth = userId || 'anonymous';
+              if (!authToken) {
+                try {
+                  const { data: { session } } = await client.auth.getSession();
+                  authToken = session?.access_token;
+                  userIdForAuth = userId || session?.user?.id || 'anonymous';
+                } catch (error) {
+                  console.warn('Could not get auth token from session:', error);
+                }
+              }
+              
+              const toolResult = await toolRegistry.executeTool(
+                block.name,
+                block.input,
+                client,
+                conversationId,
+                authToken,
+                userIdForAuth
+              );
+              
+              const toolEndTime = Date.now();
+              const executionDuration = toolEndTime - toolStartTime;
+              
+              // Add to tool executions for UI display
+              continuationToolExecutions.push({
+                id: block.id,
+                name: block.name,
+                input: block.input,
+                result: toolResult,
+                executionTime: executionDuration,
+                timestamp: new Date().toISOString(),
+                status: 'SUCCESS'
+              });
+              
+              // Store result for potential second continuation
+              continuationToolResults.push({
+                tool_use_id: block.id,
+                content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult)
+              });
+              
+            } catch (error) {
+              console.error(`Error executing continuation tool ${block.name}:`, error);
+              const toolEndTime = Date.now();
+              const executionDuration = toolEndTime - toolStartTime;
+              
+              continuationToolExecutions.push({
+                id: block.id,
+                name: block.name,
+                input: block.input,
+                result: null,
+                error: error instanceof Error ? error.message : 'Unknown error',
+                executionTime: executionDuration,
+                timestamp: new Date().toISOString(),
+                status: 'ERROR'
+              });
+              
+              continuationToolResults.push({
+                tool_use_id: block.id,
+                content: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+              });
+            }
           }
         }
         
+        // Combine all tool executions for UI display
+        toolExecutions.push(...continuationToolExecutions);
+        
+        // If continuation had tools, we need another continuation for final response
+        if (continuationToolResults.length > 0) {
+          try {
+            console.log('🔄 Continuation had tools, getting final response...');
+            
+            const finalMessages: Anthropic.Messages.MessageParam[] = [
+              ...originalMessages,
+              {
+                role: 'assistant' as const,
+                content: response.content
+              },
+              {
+                role: 'user' as const,
+                content: toolResults.map(result => ({
+                  type: 'tool_result' as const,
+                  tool_use_id: result.tool_use_id,
+                  content: result.content
+                }))
+              },
+              {
+                role: 'assistant' as const,
+                content: continuationResponse.content
+              },
+              {
+                role: 'user' as const,
+                content: continuationToolResults.map(result => ({
+                  type: 'tool_result' as const,
+                  tool_use_id: result.tool_use_id,
+                  content: result.content
+                }))
+              }
+            ];
+            
+            const finalResponse = await this.anthropic.messages.create({
+              model: 'claude-3-5-sonnet-20241022',
+              max_tokens: 4096,
+              temperature: 0.7,
+              system: this.buildV2SystemPrompt(config),
+              messages: finalMessages,
+              tools: config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined
+            });
+            
+            console.log('✅ Got final response after continuation tools');
+            
+            // Add final response content
+            for (const block of finalResponse.content) {
+              if (block.type === 'text') {
+                content += block.text + '\n';
+              }
+            }
+            
+          } catch (error) {
+            console.error('Error getting final continuation response:', error);
+            content += `\n\nBased on the data analysis, I can provide specific recommendations for your pipeline.`;
+          }
+        }
+
       } catch (error) {
         console.error('Error getting continuation response:', error);
-        content += `\n\n*Continuing analysis after thinking...*\n\nBased on my analysis, I can provide you with comprehensive recommendations for optimizing your sales pipeline and improving conversion rates.`;
+        content += `\n\n*Continuing analysis...*\n\nBased on my analysis, I can provide comprehensive recommendations.`;
       }
     }
-    
-    // If extended thinking is enabled but no think tools were used, analyze the response
-    if (config.enableExtendedThinking && !extendedThoughts.some(t => t.metadata?.toolType === 'think')) {
-      const thinkingAnalysis = this.analyzeResponseForThinking(content, config.thinkingBudget, conversationId);
-      extendedThoughts.push(...thinkingAnalysis);
-    }
 
-    // Calculate confidence based on response quality and thinking depth
-    const confidenceScore = this.calculateConfidenceScore(content, extendedThoughts);
-
-    console.log('🧠 Extended thoughts generated:', extendedThoughts.length);
-    console.log('🧠 Extended thoughts data:', JSON.stringify(extendedThoughts, null, 2));
+    // Calculate confidence based on response quality
+    const confidenceScore = this.calculateConfidenceScore(content, []);
 
     return {
       content: content.trim(),
-      extendedThoughts,
-      reflections: extendedThoughts.filter(t => t.metadata?.type === 'reflection'),
-      planModifications: this.extractPlanModifications(extendedThoughts),
+      extendedThoughts: [], // No more special extendedThoughts - tools show in toolExecutions
+      reflections: [],
+      planModifications: [],
       confidenceScore,
       toolExecutions
     };
-  }
-
-  private analyzeResponseForThinking(content: string, thinkingBudget: string, conversationId: string): any[] {
-    // Don't create fallback thinking - this creates confusing "No reasoning provided" messages
-    // Let the UI handle the case where no actual thinking was performed
-    return [];
   }
 
   private calculateConfidenceScore(content: string, thoughts: any[]): number {
@@ -965,16 +1133,9 @@ You are a sophisticated CRM assistant for PipeCD that can:
     if (content.length > 200) score += 0.1;
     if (content.includes('analysis') || content.includes('recommend')) score += 0.1;
     
-    // Increase confidence based on extended thinking depth
+    // Increase confidence based on tool usage
     if (thoughts.length > 0) score += 0.1;
     
     return Math.min(score, 1.0);
   }
-
-  private extractPlanModifications(thoughts: any[]): string[] {
-    return thoughts
-      .filter(t => t.metadata?.nextSteps)
-      .map(t => t.metadata.nextSteps)
-      .filter(Boolean);
-  }
-} 
+}
