@@ -66,8 +66,13 @@ export class SearchDealsTool implements ToolExecutor {
     }
   };
 
-  async execute(input: SearchDealsInput): Promise<SearchDealsResult> {
+  async execute(input: SearchDealsInput, context?: { authToken?: string; userId?: string }): Promise<SearchDealsResult> {
     try {
+      // Check for authentication
+      if (!context?.authToken || !context?.userId) {
+        throw new Error('Authentication required - please log in to search deals');
+      }
+      
       // Use the EXACT same GraphQL query as the frontend for perfect consistency
       const GET_DEALS_QUERY = `
         query GetDeals {

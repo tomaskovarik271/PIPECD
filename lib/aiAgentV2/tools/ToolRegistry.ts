@@ -13,8 +13,15 @@ export interface ToolDefinition {
   input_schema: any;
 }
 
+export interface ToolExecutionContext {
+  authToken?: string;
+  userId?: string;
+  conversationId: string;
+  requestId?: string;
+}
+
 export interface ToolExecutor {
-  execute(input: any): Promise<any>;
+  execute(input: any, context: ToolExecutionContext): Promise<any>;
 }
 
 export class ToolRegistry {
@@ -49,15 +56,24 @@ export class ToolRegistry {
     toolName: string,
     input: any,
     supabaseClient: SupabaseClient,
-    conversationId: string
+    conversationId: string,
+    authToken?: string,
+    userId?: string
   ): Promise<any> {
     const executorFactory = this.executors.get(toolName);
     if (!executorFactory) {
       throw new Error(`Tool '${toolName}' not found in registry`);
     }
 
+    const context: ToolExecutionContext = {
+      authToken,
+      userId,
+      conversationId,
+      requestId: `v2-tool-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+    };
+
     const executor = executorFactory(supabaseClient, conversationId);
-    return await executor.execute(input);
+    return await executor.execute(input, context);
   }
 
   hasTool(toolName: string): boolean {

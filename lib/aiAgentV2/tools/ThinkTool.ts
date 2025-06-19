@@ -61,7 +61,7 @@ export class ThinkTool {
 
   constructor(private supabaseClient: any, private conversationId: string) {}
 
-  async execute(input: ThinkInput): Promise<ThinkResult> {
+  async execute(input: ThinkInput, context?: { authToken?: string; userId?: string }): Promise<ThinkResult> {
     try {
       console.log('🔧 ThinkTool received input:', JSON.stringify(input, null, 2));
       

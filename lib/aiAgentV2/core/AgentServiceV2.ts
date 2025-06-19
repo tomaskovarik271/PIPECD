@@ -393,11 +393,22 @@ export class AgentServiceV2 {
             conversationId: conversationId
           });
 
+          // Get auth token from supabase client session (similar to V1 pattern)
+          let authToken;
+          try {
+            const { data: { session } } = await client.auth.getSession();
+            authToken = session?.access_token;
+          } catch (error) {
+            console.warn('Could not get auth token from session:', error);
+          }
+
           const toolResult = await toolRegistry.executeTool(
             toolCall.name,
             toolCall.input,
             client,
-            conversationId
+            conversationId,
+            authToken,
+            userId
           );
           
           if (toolCall.name === 'think') {
@@ -716,14 +727,14 @@ You are a sophisticated CRM assistant for PipeCD that can:
 - ULTRATHINK: Use think tool extensively for maximum depth
 
 ## RESPONSE GUIDELINES
-- For simple questions, respond directly and helpfully
-- For complex analysis, consider using the think tool first
+- For simple queries (data lookups, straightforward questions), respond directly using available tools
+- For complex analysis requiring multiple steps or trade-offs, consider using the think tool
 - Be professional and business-focused
 - Provide actionable insights when possible
 - Use data-driven reasoning
 - Consider business context and implications
 
-**Remember**: Your goal is to be helpful and responsive. Use thinking tools when they add value, but don't let them slow down simple interactions.`;
+**Remember**: Your goal is to be helpful and responsive. Start with direct tool usage for simple requests. Use the think tool only when genuine analysis or strategy formulation would be valuable.`;
   }
 
   private async processClaudeV2Response(
@@ -754,11 +765,25 @@ You are a sophisticated CRM assistant for PipeCD that can:
         // Handle tool execution via registry
         try {
           const client = supabaseClient || supabase;
+          
+          // Get auth token from supabase client session (similar to V1 pattern)
+          let authToken;
+          let userId;
+          try {
+            const { data: { session } } = await client.auth.getSession();
+            authToken = session?.access_token;
+            userId = session?.user?.id;
+          } catch (error) {
+            console.warn('Could not get auth token from session:', error);
+          }
+          
           const toolResult = await toolRegistry.executeTool(
             block.name,
             block.input,
             client,
-            conversationId
+            conversationId,
+            authToken,
+            userId
           );
           
           if (block.name === 'think') {
