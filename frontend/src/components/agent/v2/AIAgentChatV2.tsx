@@ -335,11 +335,23 @@ export function AIAgentChatV2() {
                       )}
 
                       {/* Tool Executions - Show AFTER thinking process */}
-                      {message.role === 'assistant' && (message as any).toolExecutions && (message as any).toolExecutions.length > 0 && (
-                        <Box mt={4}>
-                          <ToolExecutionPanel toolExecutions={(message as any).toolExecutions} />
-                        </Box>
-                      )}
+                      {(() => {
+                        // Debug: Log message data to see if toolExecutions exist
+                        if (message.role === 'assistant') {
+                          console.log('🔍 Assistant message data:', {
+                            hasToolExecutions: !!(message as any).toolExecutions,
+                            toolExecutionsLength: (message as any).toolExecutions?.length || 0,
+                            toolExecutionsData: (message as any).toolExecutions,
+                            messageKeys: Object.keys(message)
+                          });
+                        }
+                        
+                        return message.role === 'assistant' && (message as any).toolExecutions && (message as any).toolExecutions.length > 0 && (
+                          <Box mt={4}>
+                            <ToolExecutionPanel toolExecutions={(message as any).toolExecutions} />
+                          </Box>
+                        );
+                      })()}
 
                       {/* Final Analysis - Show AFTER thinking process */}
                       {message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
