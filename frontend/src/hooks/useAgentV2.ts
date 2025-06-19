@@ -238,6 +238,32 @@ export function useAgentV2(): UseAgentV2Return {
       const aiResponse = responseData.sendAgentV2Message.message.content;
       const extendedThoughts = responseData.sendAgentV2Message.extendedThoughts || [];
       
+      // Create a temporary conversation for streaming display
+      const tempConversation = {
+        ...responseData.sendAgentV2Message.conversation,
+        createdAt: new Date(responseData.sendAgentV2Message.conversation.createdAt),
+        updatedAt: new Date(responseData.sendAgentV2Message.conversation.updatedAt),
+        messages: [
+          // User message
+          {
+            role: 'user' as const,
+            content: input.content,
+            timestamp: new Date(),
+            thoughts: []
+          },
+          // Assistant message (placeholder for streaming)
+          {
+            role: 'assistant' as const,
+            content: '', // Will be updated as we stream
+            timestamp: new Date(),
+            thoughts: extendedThoughts
+          }
+        ]
+      };
+      
+      // Set the temporary conversation immediately so component can render
+      setCurrentConversation(tempConversation);
+      
       // Now stream the response progressively with realistic timing
       let streamedContent = '';
       
@@ -283,6 +309,13 @@ export function useAgentV2(): UseAgentV2Return {
         // Force React to render this update immediately
         flushSync(() => {
           setStreamingContent(streamedContent); // Update state progressively
+        });
+        
+        // Debug: Log state immediately after update
+        console.log(`🎯 After flushSync ${Math.floor(i/wordsPerChunk) + 1}:`, {
+          currentStreamingContentLength: streamedContent.length,
+          isCurrentlyStreaming: true,
+          chunkNumber: Math.floor(i/wordsPerChunk) + 1
         });
         
         console.log(`📝 Streaming chunk ${Math.floor(i/wordsPerChunk) + 1}:`, {
