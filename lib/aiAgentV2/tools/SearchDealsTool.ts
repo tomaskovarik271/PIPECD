@@ -44,7 +44,7 @@ export class SearchDealsTool implements ToolExecutor {
         },
         assigned_to: { 
           type: 'string', 
-          description: 'User ID, email, or display name to filter deals assigned to specific person. Use when user asks about "my deals" or "John\'s deals". Examples: "user_123", "john.doe@company.com", "John Smith"'
+          description: 'User ID, email, or display name to filter deals assigned to specific person. Use "current_user" for deals assigned to the authenticated user. Examples: "current_user", "user_123", "john.doe@company.com", "John Smith"'
         },
         min_amount: { 
           type: 'number', 
@@ -104,12 +104,18 @@ export class SearchDealsTool implements ToolExecutor {
       }
 
       if (input.assigned_to) {
-        const assignedTo = input.assigned_to.toLowerCase();
+        // Handle special case of "current_user" - convert to actual user ID
+        let targetUserId = input.assigned_to;
+        if (input.assigned_to === "current_user" && context?.userId) {
+          targetUserId = context.userId;
+        }
+        
+        const assignedTo = targetUserId.toLowerCase();
         filteredDeals = filteredDeals.filter((deal: any) => 
-          deal.assignedToUser?.id === input.assigned_to ||
+          deal.assignedToUser?.id === targetUserId ||
           deal.assignedToUser?.email?.toLowerCase().includes(assignedTo) ||
           deal.assignedToUser?.display_name?.toLowerCase().includes(assignedTo) ||
-          deal.assigned_to_user_id === input.assigned_to
+          deal.assigned_to_user_id === targetUserId
         );
       }
 
