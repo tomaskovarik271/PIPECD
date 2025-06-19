@@ -195,23 +195,6 @@ export function AIAgentChatV2() {
                             index === currentConversation?.messages.length - 1;
                           const shouldShowStreamingContent = isStreaming && isLatestAssistantMessage && streamingContent;
                           
-                          // Debug logging
-                          if (message.role === 'assistant' && index === currentConversation?.messages.length - 1) {
-                            console.log('🔍 Streaming Debug:', {
-                              messageIndex: index,
-                              totalMessages: currentConversation?.messages.length,
-                              isLatestMessage: index === currentConversation?.messages.length - 1,
-                              isStreaming,
-                              isLatestAssistantMessage,
-                              hasStreamingContent: !!streamingContent,
-                              shouldShowStreamingContent,
-                              streamingContentLength: streamingContent?.length || 0,
-                              messageContentLength: message.content?.length || 0,
-                              streamingStage,
-                              messageRoles: currentConversation?.messages.map(m => m.role) || []
-                            });
-                          }
-                          
                           // Determine what content to show
                           const contentToShow = shouldShowStreamingContent ? streamingContent : message.content;
                           

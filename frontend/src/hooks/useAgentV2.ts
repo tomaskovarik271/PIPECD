@@ -256,7 +256,7 @@ export function useAgentV2(): UseAgentV2Return {
             role: 'assistant' as const,
             content: '', // Will be updated as we stream
             timestamp: new Date(),
-            thoughts: extendedThoughts
+            thoughts: [] // Start with empty thoughts during streaming
           }
         ]
       };
@@ -294,13 +294,7 @@ export function useAgentV2(): UseAgentV2Return {
       setStreamingStage('initial');
       setStreamingContent(''); // Start with empty content for true progressive streaming
       const words = aiResponse.split(' ');
-      const wordsPerChunk = Math.max(1, Math.floor(words.length / 30)); // Adaptive chunking
-      
-      console.log('🔄 Starting content streaming:', {
-        totalWords: words.length,
-        wordsPerChunk,
-        totalChunks: Math.ceil(words.length / wordsPerChunk)
-      });
+      const wordsPerChunk = Math.max(1, Math.floor(words.length / 40)); // Slightly larger chunks for smoother feel
       
       for (let i = 0; i < words.length; i += wordsPerChunk) {
         const chunk = words.slice(i, i + wordsPerChunk).join(' ') + (i + wordsPerChunk < words.length ? ' ' : '');
@@ -311,19 +305,6 @@ export function useAgentV2(): UseAgentV2Return {
           setStreamingContent(streamedContent); // Update state progressively
         });
         
-        // Debug: Log state immediately after update
-        console.log(`🎯 After flushSync ${Math.floor(i/wordsPerChunk) + 1}:`, {
-          currentStreamingContentLength: streamedContent.length,
-          isCurrentlyStreaming: true,
-          chunkNumber: Math.floor(i/wordsPerChunk) + 1
-        });
-        
-        console.log(`📝 Streaming chunk ${Math.floor(i/wordsPerChunk) + 1}:`, {
-          chunkLength: chunk.length,
-          totalStreamedLength: streamedContent.length,
-          percentComplete: Math.round((streamedContent.length / aiResponse.length) * 100)
-        });
-        
         if (onChunk) {
           onChunk({
             type: 'CONTENT',
@@ -332,9 +313,9 @@ export function useAgentV2(): UseAgentV2Return {
           });
         }
         
-        // Longer delay to ensure UI has time to render each chunk
-        const baseDelay = 300; // Increased from 150ms
-        const variableDelay = Math.random() * 200; // Increased variation
+        // Faster streaming for better user experience
+        const baseDelay = 80; // Much faster than 300ms
+        const variableDelay = Math.random() * 60; // Less variation
         await new Promise(resolve => setTimeout(resolve, baseDelay + variableDelay));
       }
 
