@@ -24,10 +24,6 @@ import {
   type AgentV2StreamChunkRow,
 } from '../lib/graphql/agentV2Operations';
 
-// Direct import of AgentServiceV2 for real streaming
-import { AgentServiceV2, type StreamCallback } from '../../../lib/aiAgentV2/core/AgentServiceV2';
-import { createClient } from '@supabase/supabase-js';
-
 export interface UseAgentV2Return {
   // State
   currentConversation: AgentV2Conversation | null;
@@ -106,9 +102,6 @@ export function useAgentV2(): UseAgentV2Return {
   const conversations = conversationsData?.agentV2Conversations || [];
   const thoughts = thoughtsData?.agentV2Thoughts || [];
   const isLoading = isLoadingConversations || isLoadingThoughts;
-
-  // Initialize AgentServiceV2 for direct streaming
-  const agentServiceV2 = new AgentServiceV2();
 
   // Actions
   const createConversation = useCallback(async (input: CreateAgentV2ConversationInput): Promise<AgentV2Conversation> => {
