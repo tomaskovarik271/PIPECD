@@ -304,7 +304,15 @@ export function useAgentV2(): UseAgentV2Return {
       // Complete the streaming
       setStreamingStage('complete');
       
-      // Update final conversation
+      if (onChunk) {
+        onChunk({
+          type: 'COMPLETE',
+          conversationId: conversationId || 'unknown',
+          complete: responseData.sendAgentV2Message
+        });
+      }
+      
+      // Store the final conversation data to update after streaming completes
       const finalConversation = {
         ...responseData.sendAgentV2Message.conversation,
         createdAt: new Date(responseData.sendAgentV2Message.conversation.createdAt),
@@ -323,17 +331,12 @@ export function useAgentV2(): UseAgentV2Return {
           };
         })
       };
-
+      
+      // Wait a moment to ensure UI shows the complete streaming
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Now update the conversation with final data
       setCurrentConversation(finalConversation);
-      
-      if (onChunk) {
-        onChunk({
-          type: 'COMPLETE',
-          conversationId: conversationId || 'unknown',
-          complete: responseData.sendAgentV2Message
-        });
-      }
-      
       await refetchConversations();
 
     } catch (err) {
