@@ -14,7 +14,7 @@ import {
   useColorModeValue,
   Tooltip
 } from '@chakra-ui/react';
-import { ChevronDownIcon, ChevronRightIcon, ToolIcon, TimeIcon, CheckCircleIcon, XCircleIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, ChevronRightIcon, SettingsIcon, TimeIcon, CheckCircleIcon, XCircleIcon } from '@chakra-ui/icons';
 
 interface ToolExecution {
   id: string;
@@ -90,7 +90,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
               minW="auto"
               h="auto"
             />
-            <ToolIcon color={useColorModeValue('blue.500', 'blue.400')} />
+            <SettingsIcon color={useColorModeValue('blue.500', 'blue.400')} />
             <Text fontWeight="medium" fontSize="sm">
               Tool Executions ({toolExecutions.length})
             </Text>
