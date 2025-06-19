@@ -128,7 +128,8 @@ export class AgentServiceV2 {
         },
         conversation.id,
         conversation,
-        input.accessToken
+        input.accessToken,
+        input.userId
       );
       
       const thinkingTime = (Date.now() - startTime) / 1000;
@@ -384,6 +385,8 @@ export class AgentServiceV2 {
       }
 
       // STAGE 2: Process tool calls and stream thinking results
+      const toolResultsMap = new Map(); // Store actual tool results by tool ID
+      
       for (const toolCall of toolCalls) {
         try {
           // Send thinking start notification
@@ -399,12 +402,12 @@ export class AgentServiceV2 {
 
           // Use access token from parameter (preferred) or try to get from session
           let authToken = accessToken;
-          let userId;
+          let userIdForAuth = userId || 'anonymous'; // Use parameter userId with fallback
           if (!authToken) {
             try {
               const { data: { session } } = await client.auth.getSession();
               authToken = session?.access_token;
-              userId = session?.user?.id;
+              userIdForAuth = userId || session?.user?.id || 'anonymous';
             } catch (error) {
               console.warn('Could not get auth token from session:', error);
             }
@@ -416,40 +419,11 @@ export class AgentServiceV2 {
             client,
             conversationId,
             authToken,
-            userId
+            userIdForAuth
           );
           
-          if (toolCall.name === 'think') {
-            // Handle think tool results specifically
-            const thinkResult = toolResult as ThinkResult;
-            
-            const thinkingData = {
-              id: thinkResult.id,
-              conversationId: conversationId,
-              type: 'REASONING',
-              content: thinkResult.reasoning,
-              metadata: {
-                acknowledgment: thinkResult.acknowledgment,
-                strategy: thinkResult.strategy,
-                concerns: thinkResult.concerns,
-                nextSteps: thinkResult.nextSteps,
-                thinkingDepth: thinkResult.metadata.thinkingDepth,
-                strategicValue: thinkResult.metadata.strategicValue,
-                confidenceLevel: thinkResult.metadata.confidenceLevel,
-                toolType: 'think'
-              },
-              timestamp: thinkResult.timestamp
-            };
-            
-            extendedThoughts.push(thinkingData);
-            
-            // STAGE 2: Stream thinking results immediately
-            callback({
-              type: 'thinking',
-              thinking: thinkingData,
-              conversationId: conversationId
-            });
-          }
+          // Store the actual tool result for continuation
+          toolResultsMap.set(toolCall.id, toolResult);
         } catch (error) {
           console.error(`Error executing ${toolCall.name} tool:`, error);
           callback({
@@ -482,8 +456,13 @@ export class AgentServiceV2 {
           const toolResults = toolCalls.map(toolCall => ({
             type: 'tool_result' as const,
             tool_use_id: toolCall.id,
-            content: JSON.stringify({ success: true, stage: 'completed' })
+            content: JSON.stringify(toolResultsMap.get(toolCall.id) || { success: true, stage: 'completed' })
           }));
+          
+          console.log('🔄 Tool results being passed to Claude:', toolResults.map(r => ({ 
+            id: r.tool_use_id, 
+            contentPreview: r.content.substring(0, 100) + '...' 
+          })));
 
           // Request continuation from Claude with tool results
           const continuationMessages: Anthropic.Messages.MessageParam[] = [
@@ -628,7 +607,8 @@ export class AgentServiceV2 {
     config: { enableExtendedThinking: boolean; thinkingBudget: string },
     conversationId: string,
     supabaseClient?: SupabaseClient,
-    accessToken?: string
+    accessToken?: string,
+    userId?: string
   ) {
     try {
       // Build conversation messages for Claude
@@ -658,7 +638,7 @@ export class AgentServiceV2 {
         });
 
               // Process response and handle tool calls
-        return await this.processClaudeV2Response(response, config, conversationId, userMessage, messages, supabaseClient, accessToken);
+        return await this.processClaudeV2Response(response, config, conversationId, userMessage, messages, supabaseClient, accessToken, userId);
 
     } catch (error) {
       console.error('Claude V2 processing error:', error);
@@ -753,7 +733,8 @@ You are a sophisticated CRM assistant for PipeCD that can:
     userMessage: string, 
     originalMessages: Anthropic.Messages.MessageParam[], 
     supabaseClient?: SupabaseClient,
-    accessToken?: string
+    accessToken?: string,
+    userId?: string
   ) {
     let content = '';
     const extendedThoughts: any[] = [];
@@ -778,12 +759,12 @@ You are a sophisticated CRM assistant for PipeCD that can:
           
           // Use access token from parameter (preferred) or try to get from session
           let authToken = accessToken;
-          let userId;
+          let userIdForAuth = userId || 'anonymous'; // Use parameter userId with fallback
           if (!authToken) {
             try {
               const { data: { session } } = await client.auth.getSession();
               authToken = session?.access_token;
-              userId = session?.user?.id;
+              userIdForAuth = userId || session?.user?.id || 'anonymous';
             } catch (error) {
               console.warn('Could not get auth token from session:', error);
             }
@@ -795,7 +776,7 @@ You are a sophisticated CRM assistant for PipeCD that can:
             client,
             conversationId,
             authToken,
-            userId
+            userIdForAuth
           );
           
           if (block.name === 'think') {

@@ -3,6 +3,8 @@
  * Enables Claude Sonnet 4 to perform structured reasoning and reflection
  */
 
+import { ToolExecutionContext } from './ToolRegistry';
+
 export interface ThinkInput {
   acknowledgment?: string;
   reasoning: string;
@@ -61,7 +63,7 @@ export class ThinkTool {
 
   constructor(private supabaseClient: any, private conversationId: string) {}
 
-  async execute(input: ThinkInput, context?: { authToken?: string; userId?: string }): Promise<ThinkResult> {
+  async execute(input: ThinkInput, context?: ToolExecutionContext): Promise<ThinkResult> {
     try {
       console.log('🔧 ThinkTool received input:', JSON.stringify(input, null, 2));
       

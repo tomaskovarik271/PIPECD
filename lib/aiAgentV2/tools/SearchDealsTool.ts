@@ -1,10 +1,11 @@
 /**
  * Search Deals Tool for AI Agent V2
- * Uses the EXACT SAME GraphQL query as the frontend for perfect consistency
+ * Uses existing dealService for data access instead of circular GraphQL calls
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { ToolDefinition, ToolExecutor } from './ToolRegistry';
+import { ToolDefinition, ToolExecutor, ToolExecutionContext } from './ToolRegistry';
+import { dealService } from '../../dealService';
 
 export interface SearchDealsInput {
   search_term?: string;
@@ -66,93 +67,20 @@ export class SearchDealsTool implements ToolExecutor {
     }
   };
 
-  async execute(input: SearchDealsInput, context?: { authToken?: string; userId?: string }): Promise<SearchDealsResult> {
+  async execute(input: SearchDealsInput, context?: ToolExecutionContext): Promise<SearchDealsResult> {
     try {
       // Check for authentication
       if (!context?.authToken || !context?.userId) {
         throw new Error('Authentication required - please log in to search deals');
       }
       
-      // Use the EXACT same GraphQL query as the frontend for perfect consistency
-      const GET_DEALS_QUERY = `
-        query GetDeals {
-          deals {
-            id
-            name
-            amount
-            currency
-            probability
-            weighted_amount
-            expected_close_date
-            created_at
-            updated_at
-            priority
-            deal_type
-            description
-            source
-            wfm_project_id
-            person_id
-            organization_id
-            assigned_to_user_id
-            person {
-              id
-              first_name
-              last_name
-              email
-              phone
-            }
-            organization {
-              id
-              name
-              website
-              industry
-            }
-            assignedToUser {
-              id
-              display_name
-              email
-            }
-            customFieldValues {
-              id
-              value
-              definition_id
-            }
-            activities {
-              id
-              subject
-              type
-              status
-              due_date
-              completed_at
-            }
-            currentWfmStep {
-              id
-              name
-              order_index
-            }
-            currentWfmStatus {
-              id
-              name
-              is_final
-              is_success
-            }
-          }
-        }
-      `;
+      // Use existing dealService to get deals data directly (avoids circular GraphQL calls)
+      console.log('🔍 SearchDealsTool: Calling dealService.getDeals for user:', context.userId);
+      const deals = await dealService.getDeals(context.userId, context.authToken);
+      console.log('🔍 SearchDealsTool: Got deals from service:', deals?.length || 0, 'deals');
 
-      // Execute GraphQL query using Supabase Edge Function
-      const { data, error } = await this.supabaseClient.functions.invoke('graphql', {
-        body: {
-          query: GET_DEALS_QUERY,
-          variables: {}
-        }
-      });
-
-      if (error) {
-        throw new Error(`GraphQL Error: ${error.message}`);
-      }
-
-      if (!data?.data?.deals) {
+      if (!deals || deals.length === 0) {
+        console.log('🔍 SearchDealsTool: No deals found, returning empty result');
         return {
           deals: [],
           total_count: 0,
@@ -161,7 +89,7 @@ export class SearchDealsTool implements ToolExecutor {
         };
       }
 
-      let filteredDeals = data.data.deals;
+      let filteredDeals = deals;
 
       // Apply search filters
       if (input.search_term) {
@@ -212,6 +140,9 @@ export class SearchDealsTool implements ToolExecutor {
 
       // Format results for Claude
       const message = this.formatDealsMessage(filteredDeals, totalCount, input);
+      
+      console.log('🔍 SearchDealsTool: Returning result with', filteredDeals.length, 'deals');
+      console.log('🔍 SearchDealsTool: Message length:', message.length, 'characters');
 
       return {
         deals: filteredDeals,
