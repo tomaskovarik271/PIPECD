@@ -209,23 +209,9 @@ export function useAgentV2(): UseAgentV2Return {
         conversationId = currentConversation.id;
       }
 
-      // Add user message to conversation immediately
-      if (currentConversation) {
-        const userMessage = {
-          role: 'user' as const,
-          content: input.content,
-          timestamp: new Date(),
-          thoughts: []
-        };
-        
-        const updatedConversation = {
-          ...currentConversation,
-          messages: [...currentConversation.messages, userMessage],
-          updatedAt: new Date()
-        };
-        
-        setCurrentConversation(updatedConversation);
-      }
+      // For streaming, don't add user message to conversation immediately
+      // Let the backend response handle adding both user and assistant messages
+      // This ensures the assistant message will be the latest during streaming
 
       // Show initial thinking state
       setStreamingStage('initial');
