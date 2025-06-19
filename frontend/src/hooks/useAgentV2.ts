@@ -163,7 +163,8 @@ export function useAgentV2(): UseAgentV2Return {
             return {
               ...msg,
               timestamp: new Date(msg.timestamp),
-              thoughts: data.sendAgentV2Message.extendedThoughts || []
+              thoughts: data.sendAgentV2Message.extendedThoughts || [],
+              toolExecutions: data.sendAgentV2Message.toolExecutions || []
             };
           }
           return {
@@ -340,7 +341,8 @@ export function useAgentV2(): UseAgentV2Return {
             return {
               ...msg,
               timestamp: new Date(msg.timestamp),
-              thoughts: responseData.sendAgentV2Message.extendedThoughts || []
+              thoughts: responseData.sendAgentV2Message.extendedThoughts || [],
+              toolExecutions: responseData.sendAgentV2Message.toolExecutions || []
             };
           }
           return {

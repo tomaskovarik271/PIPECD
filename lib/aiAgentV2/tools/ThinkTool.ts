@@ -70,7 +70,22 @@ export class ThinkTool {
       // Validate input
       if (!input) {
         console.log('❌ ThinkTool: No input provided');
-        throw new Error('ThinkInput is required');
+        // Return a default result instead of throwing
+        return {
+          id: `think_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: 'thinking',
+          acknowledgment: 'No input provided',
+          reasoning: 'No reasoning available',
+          strategy: 'No strategy available',
+          concerns: 'Input validation failed',
+          nextSteps: 'Please provide valid input',
+          timestamp: new Date().toISOString(),
+          metadata: {
+            thinkingDepth: 'shallow',
+            strategicValue: 1,
+            confidenceLevel: 0.1
+          }
+        };
       }
       
       // Ensure required fields are present with defaults
@@ -111,13 +126,34 @@ export class ThinkTool {
       };
 
       // Save thinking to agent_thoughts table
-      await this.saveThinkingToDatabase(thinkResult);
+      try {
+        await this.saveThinkingToDatabase(thinkResult);
+      } catch (dbError) {
+        console.warn('⚠️ ThinkTool: Database save failed, continuing without persistence:', dbError);
+        // Continue execution even if database save fails
+      }
 
+      console.log('✅ ThinkTool: Successfully completed execution');
       return thinkResult;
 
     } catch (error) {
       console.error('Error in ThinkTool execution:', error);
-      throw new Error(`Think tool failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // Return a minimal result instead of throwing an error
+      return {
+        id: `think_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: 'thinking',
+        acknowledgment: 'Error occurred during thinking',
+        reasoning: `Tool encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        strategy: 'Fallback to basic analysis approach',
+        concerns: 'Tool execution failed but continuing with available information',
+        nextSteps: 'Review and retry analysis if needed',
+        timestamp: new Date().toISOString(),
+        metadata: {
+          thinkingDepth: 'shallow',
+          strategicValue: 2,
+          confidenceLevel: 0.3
+        }
+      };
     }
   }
 
@@ -192,6 +228,12 @@ export class ThinkTool {
 
   private async saveThinkingToDatabase(thinkResult: ThinkResult): Promise<void> {
     try {
+      // Validate that we have a working Supabase client
+      if (!this.supabaseClient || typeof this.supabaseClient.from !== 'function') {
+        console.warn('⚠️ ThinkTool: Supabase client not available, skipping database save');
+        return; // Gracefully skip database save if client isn't available
+      }
+
       const { error } = await this.supabaseClient
         .from('agent_thoughts')
         .insert({
@@ -222,12 +264,17 @@ export class ThinkTool {
 
       if (error) {
         console.error('Error saving thinking to database:', error);
-        throw new Error('Failed to save thinking to database');
+        // Don't throw error here - allow tool to continue even if DB save fails
+        console.warn('⚠️ ThinkTool: Database save failed, continuing without persistence');
+        return;
       }
+
+      console.log('✅ ThinkTool: Successfully saved thinking to database');
 
     } catch (error) {
       console.error('Database save error in ThinkTool:', error);
-      throw error;
+      // Don't throw error here - allow tool to continue even if DB save fails
+      console.warn('⚠️ ThinkTool: Database save failed, continuing without persistence');
     }
   }
 } 

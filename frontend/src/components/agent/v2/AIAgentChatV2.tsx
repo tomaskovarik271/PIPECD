@@ -25,8 +25,6 @@ import ToolExecutionPanel from './ToolExecutionPanel';
 export function AIAgentChatV2() {
   const colors = useThemeColors();
   const [inputValue, setInputValue] = useState('');
-  const [extendedThinking, setExtendedThinking] = useState(true);
-  const [thinkingBudget, setThinkingBudget] = useState('THINK');
   const [useStreaming, setUseStreaming] = useState(true); // Enhanced multi-stage streaming now available
 
   // V2 Agent hook
@@ -57,8 +55,6 @@ export function AIAgentChatV2() {
       // Auto-create conversation if none exists
       if (!currentConversation) {
         await createConversation({
-          enableExtendedThinking: extendedThinking,
-          thinkingBudget: thinkingBudget,
           initialContext: {}
         });
       }
@@ -66,16 +62,12 @@ export function AIAgentChatV2() {
       if (useStreaming) {
         await sendMessageStream({
           conversationId: currentConversation?.id,
-          content,
-          enableExtendedThinking: extendedThinking,
-          thinkingBudget: thinkingBudget
+          content
         });
       } else {
         await sendMessage({
           conversationId: currentConversation?.id,
-          content,
-          enableExtendedThinking: extendedThinking,
-          thinkingBudget: thinkingBudget
+          content
         });
       }
     } catch (error) {
@@ -335,23 +327,11 @@ export function AIAgentChatV2() {
                       )}
 
                       {/* Tool Executions - Show AFTER thinking process */}
-                      {(() => {
-                        // Debug: Log message data to see if toolExecutions exist
-                        if (message.role === 'assistant') {
-                          console.log('🔍 Assistant message data:', {
-                            hasToolExecutions: !!(message as any).toolExecutions,
-                            toolExecutionsLength: (message as any).toolExecutions?.length || 0,
-                            toolExecutionsData: (message as any).toolExecutions,
-                            messageKeys: Object.keys(message)
-                          });
-                        }
-                        
-                        return message.role === 'assistant' && (message as any).toolExecutions && (message as any).toolExecutions.length > 0 && (
-                          <Box mt={4}>
-                            <ToolExecutionPanel toolExecutions={(message as any).toolExecutions} />
-                          </Box>
-                        );
-                      })()}
+                      {message.role === 'assistant' && (message as any).toolExecutions && (message as any).toolExecutions.length > 0 && (
+                        <Box mt={4}>
+                          <ToolExecutionPanel toolExecutions={(message as any).toolExecutions} />
+                        </Box>
+                      )}
 
                       {/* Final Analysis - Show AFTER thinking process */}
                       {message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
@@ -428,37 +408,6 @@ export function AIAgentChatV2() {
             {/* Controls Bar */}
             <HStack spacing={4} w="full" justify="space-between" fontSize="xs">
               <HStack spacing={3}>
-                <HStack spacing={2}>
-                  <Text color={colors.text.secondary}>Thinking:</Text>
-                  <Select
-                    value={thinkingBudget}
-                    onChange={(e) => setThinkingBudget(e.target.value)}
-                    size="xs"
-                    bg={colors.bg.input}
-                    borderColor={colors.border.input}
-                    color={colors.text.primary}
-                    fontSize="xs"
-                    width="100px"
-                    variant="filled"
-                  >
-                    <option value="STANDARD">Standard</option>
-                    <option value="THINK">Think</option>
-                    <option value="THINK_HARD">Think Hard</option>
-                    <option value="THINK_HARDER">Think Harder</option>
-                    <option value="ULTRATHINK">Ultra Think</option>
-                  </Select>
-                </HStack>
-                
-                <HStack spacing={2}>
-                  <Switch
-                    isChecked={extendedThinking}
-                    onChange={(e) => setExtendedThinking(e.target.checked)}
-                    colorScheme="blue"
-                    size="sm"
-                  />
-                  <Text color={colors.text.secondary}>Extended</Text>
-                </HStack>
-                
                 <HStack spacing={2}>
                   <Switch
                     isChecked={useStreaming}

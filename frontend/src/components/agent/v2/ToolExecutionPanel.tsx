@@ -25,7 +25,7 @@ interface ToolExecution {
   error?: string;
   executionTime: number;
   timestamp: string;
-  status: 'success' | 'error';
+  status: 'SUCCESS' | 'ERROR';
 }
 
 interface ToolExecutionPanelProps {
@@ -35,6 +35,20 @@ interface ToolExecutionPanelProps {
 const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
+
+  // Debug logging to see what data we're receiving
+  console.log('🔍 ToolExecutionPanel received:', toolExecutions);
+  toolExecutions.forEach((tool, index) => {
+    console.log(`🔍 Tool ${index}:`, {
+      name: tool.name,
+      status: tool.status,
+      hasResult: !!tool.result,
+      resultType: typeof tool.result,
+      result: tool.result,
+      hasError: !!tool.error,
+      error: tool.error
+    });
+  });
 
   const bgColor = useColorModeValue('gray.50', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
@@ -99,7 +113,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
               {toolExecutions.map((tool) => (
                 <Badge 
                   key={tool.id}
-                  colorScheme={tool.status === 'success' ? 'green' : 'red'}
+                  colorScheme={tool.status === 'SUCCESS' ? 'green' : 'red'}
                   variant="subtle"
                   fontSize="xs"
                 >
@@ -135,7 +149,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                       size="xs"
                       onClick={() => toggleToolExpansion(tool.id)}
                     />
-                    {tool.status === 'success' ? (
+                    {tool.status === 'SUCCESS' ? (
                       <FiCheckCircle size={20} color={successColor} />
                     ) : (
                       <FiXCircle size={20} color={errorColor} />
@@ -155,7 +169,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                     </VStack>
                   </HStack>
                   <Badge 
-                    colorScheme={tool.status === 'success' ? 'green' : 'red'}
+                    colorScheme={tool.status === 'SUCCESS' ? 'green' : 'red'}
                     variant="solid"
                     fontSize="xs"
                   >
@@ -194,7 +208,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                       {/* Result or Error */}
                       <Box>
                         <Text fontWeight="medium" fontSize="sm" mb={2}>
-                          {tool.status === 'success' ? 'Result:' : 'Error:'}
+                          {tool.status === 'SUCCESS' ? 'Result:' : 'Error:'}
                         </Text>
                         <Code 
                           display="block" 
@@ -202,9 +216,9 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                           p={2} 
                           fontSize="xs"
                           bg={useColorModeValue('white', 'gray.800')}
-                          color={tool.status === 'error' ? errorColor : undefined}
+                          color={tool.status === 'ERROR' ? errorColor : undefined}
                         >
-                          {tool.status === 'success' 
+                          {tool.status === 'SUCCESS' 
                             ? (typeof tool.result === 'string' 
                                 ? tool.result 
                                 : JSON.stringify(tool.result, null, 2))

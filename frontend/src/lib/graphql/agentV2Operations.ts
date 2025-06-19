@@ -48,14 +48,32 @@ export interface AgentV2Conversation {
 export interface SendAgentV2MessageInput {
   conversationId?: string;
   content: string;
-  enableExtendedThinking: boolean;
-  thinkingBudget: string;
 }
 
 export interface CreateAgentV2ConversationInput {
-  enableExtendedThinking: boolean;
-  thinkingBudget: string;
   initialContext?: Record<string, any>;
+}
+
+export interface ToolExecution {
+  id: string;
+  name: string;
+  input: any;
+  result?: any;
+  error?: string;
+  executionTime: number;
+  timestamp: string;
+  status: 'SUCCESS' | 'ERROR';
+}
+
+export interface AgentV2Response {
+  conversation: AgentV2Conversation;
+  message: AgentV2Message;
+  extendedThoughts: AgentV2Thought[];
+  reflections: AgentV2Thought[];
+  planModifications: string[];
+  thinkingTime?: number;
+  confidenceScore?: number;
+  toolExecutions: ToolExecution[];
 }
 
 // GraphQL Operations
@@ -134,6 +152,16 @@ export const SEND_AGENT_V2_MESSAGE = gql`
       planModifications
       thinkingTime
       confidenceScore
+      toolExecutions {
+        id
+        name
+        input
+        result
+        error
+        executionTime
+        timestamp
+        status
+      }
     }
   }
 `;
@@ -195,8 +223,6 @@ export const GET_AGENT_V2_THINKING_ANALYSIS = gql`
 export interface SendAgentV2MessageStreamInput {
   conversationId?: string;
   content: string;
-  enableExtendedThinking: boolean;
-  thinkingBudget: string;
 }
 
 export interface AgentV2StreamChunk {
@@ -286,6 +312,16 @@ export const AGENT_V2_MESSAGE_STREAM_SUBSCRIPTION = gql`
         planModifications
         thinkingTime
         confidenceScore
+        toolExecutions {
+          id
+          name
+          input
+          result
+          error
+          executionTime
+          timestamp
+          status
+        }
       }
       error
     }

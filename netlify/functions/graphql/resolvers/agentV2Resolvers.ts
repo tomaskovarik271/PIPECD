@@ -132,8 +132,6 @@ export const agentV2Resolvers = {
         const response = await agentServiceV2.processMessage({
           conversationId: input.conversationId,
           content: input.content,
-          enableExtendedThinking: input.enableExtendedThinking,
-          thinkingBudget: input.thinkingBudget.toLowerCase(),
           userId,
           supabaseClient: context.supabaseClient,
           accessToken: accessToken
@@ -161,11 +159,8 @@ export const agentV2Resolvers = {
             await agentServiceV2.processMessageStream({
               conversationId: input.conversationId,
               content: input.content,
-              enableExtendedThinking: input.enableExtendedThinking,
-              thinkingBudget: input.thinkingBudget.toLowerCase(),
               userId,
-              supabaseClient: context.supabaseClient,
-              streaming: true
+              supabaseClient: context.supabaseClient
             }, (chunk) => {
                              // TODO: Implement proper pub/sub system for real-time streaming
                // For now, streaming will work through the callback pattern
@@ -196,9 +191,7 @@ export const agentV2Resolvers = {
             messages: [],
             plan: null,
             context: input.initialContext || {},
-            agent_version: 'v2',
-            extended_thinking_enabled: input.enableExtendedThinking,
-            thinking_budget: input.thinkingBudget?.toLowerCase() || 'standard'
+            agent_version: 'v2'
           })
           .select()
           .single();

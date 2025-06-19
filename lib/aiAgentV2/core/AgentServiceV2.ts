@@ -6,29 +6,20 @@ import { toolRegistry } from '../tools/ToolRegistry';
 export interface AgentV2MessageInput {
   conversationId?: string;
   content: string;
-  enableExtendedThinking: boolean;
-  thinkingBudget: string;
   userId: string;
   supabaseClient?: SupabaseClient;
-  streaming?: boolean;
   accessToken?: string;
 }
 
 export interface AgentV2Response {
   conversation: any;
   message: any;
-  extendedThoughts: any[];
-  reflections: any[];
-  planModifications: string[];
-  thinkingTime?: number;
-  confidenceScore?: number;
   toolExecutions?: any[];
 }
 
 export interface AgentV2StreamChunk {
-  type: 'content' | 'thinking' | 'complete' | 'error';
+  type: 'content' | 'complete' | 'error';
   content?: string;
-  thinking?: any;
   conversationId: string;
   complete?: AgentV2Response;
   error?: string;
@@ -54,127 +45,8 @@ export class AgentServiceV2 {
   }
 
   async processMessage(input: AgentV2MessageInput): Promise<AgentV2Response> {
-    if (input.streaming) {
-      throw new Error('Use processMessageStream for streaming responses');
-    }
-    try {
-      // Use authenticated supabase client if provided, fallback to global client
-      const client = input.supabaseClient || supabase;
-      
-      // Phase 1: Basic implementation - create or get conversation
-      let conversation;
-      
-      if (input.conversationId) {
-        // Get existing conversation
-        const { data, error } = await client
-          .from('agent_conversations')
-          .select('*')
-          .eq('id', input.conversationId)
-          .eq('user_id', input.userId)
-          .eq('agent_version', 'v2')
-          .single();
-
-        if (error || !data) {
-          throw new Error('V2 conversation not found');
-        }
-        conversation = data;
-      } else {
-        // Create new V2 conversation
-        const { data, error } = await client
-          .from('agent_conversations')
-          .insert({
-            user_id: input.userId,
-            messages: [],
-            plan: null,
-            context: {
-              agentConfig: {
-                enableExtendedThinking: input.enableExtendedThinking,
-                thinkingBudget: input.thinkingBudget
-              }
-            },
-            agent_version: 'v2',
-            extended_thinking_enabled: input.enableExtendedThinking,
-            thinking_budget: input.thinkingBudget
-          })
-          .select()
-          .single();
-
-        if (error || !data) {
-          throw new Error('Failed to create V2 conversation');
-        }
-        conversation = data;
-      }
-
-      // Phase 2: Claude Sonnet 4 Extended Thinking Integration
-      const startTime = Date.now();
-      
-      // Generate response using Claude Sonnet 4 with extended thinking
-      const claudeResponse = await this.generateExtendedThinkingResponse(
-        input.content,
-        conversation.messages || [],
-        {
-          enableExtendedThinking: input.enableExtendedThinking,
-          thinkingBudget: input.thinkingBudget
-        },
-        conversation.id,
-        conversation,
-        input.accessToken,
-        input.userId
-      );
-      
-      const thinkingTime = (Date.now() - startTime) / 1000;
-      
-      const assistantMessage = {
-        role: 'assistant',
-        content: claudeResponse.content,
-        timestamp: new Date().toISOString(),
-        thoughts: claudeResponse.extendedThoughts,
-        toolExecutions: claudeResponse.toolExecutions || []
-      };
-
-      // Add user message and assistant response to conversation
-      const updatedMessages = [
-        ...(conversation.messages || []),
-        {
-          role: 'user',
-          content: input.content,
-          timestamp: new Date().toISOString(),
-          thoughts: []
-        },
-        assistantMessage
-      ];
-
-      // Update conversation with new messages
-      const { data: updatedConversation, error: updateError } = await client
-        .from('agent_conversations')
-        .update({ 
-          messages: updatedMessages,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', conversation.id)
-        .select()
-        .single();
-
-      if (updateError) {
-        throw new Error('Failed to update conversation');
-      }
-
-      // Phase 2: Return enriched response structure with extended thinking
-      return {
-        conversation: updatedConversation,
-        message: assistantMessage,
-        extendedThoughts: claudeResponse.extendedThoughts,
-        reflections: claudeResponse.reflections || [],
-        planModifications: claudeResponse.planModifications || [],
-        thinkingTime: thinkingTime,
-        confidenceScore: claudeResponse.confidenceScore || 0.8,
-        toolExecutions: claudeResponse.toolExecutions || []
-      };
-
-    } catch (error) {
-      console.error('Error in AgentServiceV2.processMessage:', error);
-      throw new Error(`V2 Agent processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    // Non-streaming mode removed - use processMessageStream instead
+    throw new Error('Non-streaming mode removed. Use processMessageStream instead.');
   }
 
   async processMessageStream(input: AgentV2MessageInput, callback: StreamCallback): Promise<void> {
@@ -199,21 +71,15 @@ export class AgentServiceV2 {
         }
         conversation = data;
       } else {
+        // Create new V2 conversation
         const { data, error } = await client
           .from('agent_conversations')
           .insert({
             user_id: input.userId,
             messages: [],
             plan: null,
-            context: {
-              agentConfig: {
-                enableExtendedThinking: input.enableExtendedThinking,
-                thinkingBudget: input.thinkingBudget
-              }
-            },
-            agent_version: 'v2',
-            extended_thinking_enabled: input.enableExtendedThinking,
-            thinking_budget: input.thinkingBudget
+            context: {},
+            agent_version: 'v2'
           })
           .select()
           .single();
@@ -228,10 +94,6 @@ export class AgentServiceV2 {
       await this.generateStreamingResponse(
         input.content,
         conversation.messages || [],
-        {
-          enableExtendedThinking: input.enableExtendedThinking,
-          thinkingBudget: input.thinkingBudget
-        },
         conversation.id,
         conversation,
         client,
@@ -290,7 +152,6 @@ export class AgentServiceV2 {
   private async generateStreamingResponse(
     userMessage: string,
     conversationHistory: any[],
-    config: { enableExtendedThinking: boolean; thinkingBudget: string },
     conversationId: string,
     conversation: any,
     client: SupabaseClient,
@@ -313,11 +174,9 @@ export class AgentServiceV2 {
         }
       ];
 
-      // Enhanced system prompt for V2 extended thinking
-      const systemPrompt = this.buildV2SystemPrompt(config);
-
       // Claude Sonnet 4 streaming request with tool support
-      const tools = config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined;
+      const tools = toolRegistry.getToolDefinitions();
+      const systemPrompt = this.buildV2SystemPrompt();
       
       const stream = await this.anthropic.messages.stream({
         model: 'claude-3-5-sonnet-20241022',
@@ -478,7 +337,7 @@ export class AgentServiceV2 {
             temperature: 0.7,
             system: systemPrompt,
             messages: continuationMessages,
-            tools: config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined
+            tools: toolRegistry.getToolDefinitions()
           });
 
           // Process continuation stream - might include additional tool calls
@@ -606,9 +465,9 @@ export class AgentServiceV2 {
                 model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 4096,
                 temperature: 0.7,
-                system: this.buildV2SystemPrompt(config),
+                system: systemPrompt,
                 messages: finalMessages,
-                tools: config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined
+                tools: toolRegistry.getToolDefinitions()
               });
               
               // Stream final response
@@ -678,11 +537,6 @@ export class AgentServiceV2 {
       const finalResponse: AgentV2Response = {
         conversation: updatedConversation || conversation,
         message: assistantMessage,
-        extendedThoughts: [], // No more special extendedThoughts - tools show in toolExecutions
-        reflections: [],
-        planModifications: [],
-        thinkingTime,
-        confidenceScore: this.calculateConfidenceScore(finalContent, []),
         toolExecutions: toolExecutions
       };
 
@@ -713,67 +567,23 @@ export class AgentServiceV2 {
     accessToken?: string,
     userId?: string
   ) {
-    try {
-      // Build conversation messages for Claude
-      const messages: Anthropic.Messages.MessageParam[] = [
-        ...conversationHistory.map(msg => ({
-          role: msg.role === 'user' ? 'user' as const : 'assistant' as const,
-          content: msg.content
-        })),
-        {
-          role: 'user' as const,
-          content: userMessage
-        }
-      ];
-
-      // Enhanced system prompt for V2 extended thinking
-      const systemPrompt = this.buildV2SystemPrompt(config);
-
-              // Claude Sonnet 4 request with extended thinking and tool support
-        const tools = config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined;
-        const response = await this.anthropic.messages.create({
-          model: 'claude-3-5-sonnet-20241022', // Latest Claude Sonnet model
-          max_tokens: 4096,
-          temperature: 0.7,
-          system: systemPrompt,
-          messages,
-          tools
-        });
-
-              // Process response and handle tool calls
-        return await this.processClaudeV2Response(response, config, conversationId, userMessage, messages, supabaseClient, accessToken, userId);
-
-    } catch (error) {
-      console.error('Claude V2 processing error:', error);
-      
-      // Fallback response if Claude fails
-      return {
-        content: `I apologize, but I'm experiencing technical difficulties with my extended thinking capabilities. Please try again in a moment.\n\nError: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        extendedThoughts: [],
-        reflections: [],
-        planModifications: [],
-        confidenceScore: 0.3,
-        toolExecutions: []
-      };
-    }
+    // Removed - non-streaming mode no longer supported
+    throw new Error('Non-streaming mode removed');
   }
 
-  private buildV2SystemPrompt(config: { enableExtendedThinking: boolean; thinkingBudget: string }): string {
+  private buildV2SystemPrompt(): string {
+    // Simplified system prompt - thinking budget no longer used
     const availableTools = toolRegistry.getToolDefinitions();
     
-    return `You are Claude Sonnet 4, an advanced AI assistant with extended thinking capabilities for PipeCD CRM.
+    return `You are Claude Sonnet 4, an advanced AI assistant for PipeCD CRM.
 
-## EXTENDED THINKING MODE: ${config.enableExtendedThinking ? 'ENABLED' : 'DISABLED'}
-## THINKING BUDGET: ${config.thinkingBudget.toUpperCase()}
-
-${config.enableExtendedThinking ? `
 ## AVAILABLE TOOLS
 
 ${availableTools.map(tool => `### ${tool.name}
 ${JSON.stringify(tool, null, 2)}`).join('\n\n')}
 
 ## THINKING PROCESS
-When extended thinking is enabled, you have access to the "think" tool for complex analysis.
+You have access to the "think" tool for complex analysis.
 
 ### When to Use the Think Tool:
 - Complex business analysis requiring deep reasoning
@@ -788,28 +598,12 @@ When extended thinking is enabled, you have access to the "think" tool for compl
 - Basic CRM guidance that doesn't require data analysis
 - Quick clarifications or explanations
 
-### Think Tool Usage for Complex Analysis:
-For complex questions requiring analysis, use the think tool with these parameters:
-- acknowledgment: Brief statement of what the user is asking
-- reasoning: Detailed analysis of the user's request (at least 2-3 sentences)
-- strategy: Strategic approach including what data you'll need to analyze
-- concerns: Potential risks or limitations to consider
-- next_steps: Specific actionable recommendations including data gathering
-
 **CRITICAL WORKFLOW**: After using the think tool for analytical questions:
 1. **ALWAYS** follow up by executing relevant business tools to gather data
 2. For pipeline questions: use search_deals to analyze current pipeline state
 3. For customer questions: use search tools to gather customer data
 4. For performance questions: gather relevant business metrics
 5. Then provide data-driven recommendations based on actual system data
-
-**Example Workflow for "How do I improve pipeline performance?":**
-1. Use think tool to analyze the question strategically
-2. Execute search_deals to get current pipeline data
-3. Analyze the data and provide specific recommendations
-
-The think tool is for planning your approach - you must then execute that plan with actual data gathering tools.
-` : ''}
 
 ## YOUR ROLE
 You are a sophisticated CRM assistant for PipeCD that can:
@@ -819,13 +613,6 @@ You are a sophisticated CRM assistant for PipeCD that can:
 - Offer data-driven recommendations
 - Answer questions about CRM best practices
 - Guide users through PipeCD features and workflows
-
-## THINKING BUDGET LEVELS
-- STANDARD: Quick, efficient responses
-- THINK: Use think tool for moderately complex requests
-- THINK_HARD: Use think tool for most substantive analysis
-- THINK_HARDER: Use think tool for comprehensive evaluation
-- ULTRATHINK: Use think tool extensively for maximum depth
 
 ## RESPONSE GUIDELINES
 - For simple queries (data lookups, straightforward questions), respond directly using available tools
@@ -848,294 +635,12 @@ You are a sophisticated CRM assistant for PipeCD that can:
     accessToken?: string,
     userId?: string
   ) {
-    let content = '';
-    const toolResults: any[] = [];
-    const toolExecutions: any[] = []; // Track tool executions for frontend display
-    
-    // Process each content block
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        content += block.text + '\n';
-      } else if (block.type === 'tool_use') {
-        // Handle ALL tools uniformly through the registry
-        const toolStartTime = Date.now();
-        try {
-          const client = supabaseClient || supabase;
-          
-          // Use access token from parameter (preferred) or try to get from session
-          let authToken = accessToken;
-          let userIdForAuth = userId || 'anonymous';
-          if (!authToken) {
-            try {
-              const { data: { session } } = await client.auth.getSession();
-              authToken = session?.access_token;
-              userIdForAuth = userId || session?.user?.id || 'anonymous';
-            } catch (error) {
-              console.warn('Could not get auth token from session:', error);
-            }
-          }
-          
-          const toolResult = await toolRegistry.executeTool(
-            block.name,
-            block.input,
-            client,
-            conversationId,
-            authToken,
-            userIdForAuth
-          );
-          
-          const toolEndTime = Date.now();
-          const executionDuration = toolEndTime - toolStartTime;
-          
-          // Capture tool execution metadata for frontend display
-          toolExecutions.push({
-            id: block.id,
-            name: block.name,
-            input: block.input,
-            result: toolResult,
-            executionTime: executionDuration,
-            timestamp: new Date().toISOString(),
-            status: 'SUCCESS'
-          });
-          
-          // Store the actual tool result for continuation
-          toolResults.push({
-            tool_use_id: block.id,
-            content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult)
-          });
-          
-          // NO MORE SPECIAL HANDLING FOR ANY TOOL - ALL TOOLS ARE EQUAL
-          
-        } catch (error) {
-          console.error(`Error executing ${block.name} tool:`, error);
-          content += `\n\n*Note: ${block.name} tool encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}*\n\n`;
-          
-          const toolEndTime = Date.now();
-          const executionDuration = toolEndTime - toolStartTime;
-          
-          // Capture failed tool execution metadata
-          toolExecutions.push({
-            id: block.id,
-            name: block.name,
-            input: block.input,
-            result: null,
-            error: error instanceof Error ? error.message : 'Unknown error',
-            executionTime: executionDuration,
-            timestamp: new Date().toISOString(),
-            status: 'ERROR'
-          });
-          
-          // Add error result for continuation
-          toolResults.push({
-            tool_use_id: block.id,
-            content: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-          });
-        }
-      }
-    }
-    
-    // If tools were used, we need to continue the conversation to get Claude's final response
-    if (toolResults.length > 0) {
-      try {
-        console.log('🔄 Tools were used, getting continuation response from Claude...');
-        console.log('🔄 Tool results count:', toolResults.length);
-        
-        // Build messages for continuation
-        const continuationMessages: Anthropic.Messages.MessageParam[] = [
-          ...originalMessages,
-          {
-            role: 'assistant' as const,
-            content: response.content
-          },
-          {
-            role: 'user' as const,
-            content: toolResults.map(result => ({
-              type: 'tool_result' as const,
-              tool_use_id: result.tool_use_id,
-              content: result.content
-            }))
-          }
-        ];
-        
-        // Get Claude's continuation after tool execution
-        const continuationResponse = await this.anthropic.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
-          max_tokens: 4096,
-          temperature: 0.7,
-          system: this.buildV2SystemPrompt(config),
-          messages: continuationMessages,
-          tools: config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined
-        });
-        
-        console.log('✅ Got continuation response from Claude');
-        
-        // Process the continuation response - it might contain additional tool calls!
-        const continuationToolResults: any[] = [];
-        const continuationToolExecutions: any[] = [];
-        
-        for (const block of continuationResponse.content) {
-          if (block.type === 'text') {
-            content += block.text + '\n';
-          } else if (block.type === 'tool_use') {
-            // Handle additional tools in continuation (like search_deals after thinking)
-            const toolStartTime = Date.now();
-            try {
-              const client = supabaseClient || supabase;
-              
-              let authToken = accessToken;
-              let userIdForAuth = userId || 'anonymous';
-              if (!authToken) {
-                try {
-                  const { data: { session } } = await client.auth.getSession();
-                  authToken = session?.access_token;
-                  userIdForAuth = userId || session?.user?.id || 'anonymous';
-                } catch (error) {
-                  console.warn('Could not get auth token from session:', error);
-                }
-              }
-              
-              const toolResult = await toolRegistry.executeTool(
-                block.name,
-                block.input,
-                client,
-                conversationId,
-                authToken,
-                userIdForAuth
-              );
-              
-              const toolEndTime = Date.now();
-              const executionDuration = toolEndTime - toolStartTime;
-              
-              // Add to tool executions for UI display
-              continuationToolExecutions.push({
-                id: block.id,
-                name: block.name,
-                input: block.input,
-                result: toolResult,
-                executionTime: executionDuration,
-                timestamp: new Date().toISOString(),
-                status: 'SUCCESS'
-              });
-              
-              // Store result for potential second continuation
-              continuationToolResults.push({
-                tool_use_id: block.id,
-                content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult)
-              });
-              
-            } catch (error) {
-              console.error(`Error executing continuation tool ${block.name}:`, error);
-              const toolEndTime = Date.now();
-              const executionDuration = toolEndTime - toolStartTime;
-              
-              continuationToolExecutions.push({
-                id: block.id,
-                name: block.name,
-                input: block.input,
-                result: null,
-                error: error instanceof Error ? error.message : 'Unknown error',
-                executionTime: executionDuration,
-                timestamp: new Date().toISOString(),
-                status: 'ERROR'
-              });
-              
-              continuationToolResults.push({
-                tool_use_id: block.id,
-                content: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-              });
-            }
-          }
-        }
-        
-        // Combine all tool executions for UI display
-        toolExecutions.push(...continuationToolExecutions);
-        
-        // If continuation had tools, we need another continuation for final response
-        if (continuationToolResults.length > 0) {
-          try {
-            console.log('🔄 Continuation had tools, getting final response...');
-            
-            const finalMessages: Anthropic.Messages.MessageParam[] = [
-              ...originalMessages,
-              {
-                role: 'assistant' as const,
-                content: response.content
-              },
-              {
-                role: 'user' as const,
-                content: toolResults.map(result => ({
-                  type: 'tool_result' as const,
-                  tool_use_id: result.tool_use_id,
-                  content: result.content
-                }))
-              },
-              {
-                role: 'assistant' as const,
-                content: continuationResponse.content
-              },
-              {
-                role: 'user' as const,
-                content: continuationToolResults.map(result => ({
-                  type: 'tool_result' as const,
-                  tool_use_id: result.tool_use_id,
-                  content: result.content
-                }))
-              }
-            ];
-            
-            const finalResponse = await this.anthropic.messages.create({
-              model: 'claude-3-5-sonnet-20241022',
-              max_tokens: 4096,
-              temperature: 0.7,
-              system: this.buildV2SystemPrompt(config),
-              messages: finalMessages,
-              tools: config.enableExtendedThinking ? toolRegistry.getToolDefinitions() : undefined
-            });
-            
-            console.log('✅ Got final response after continuation tools');
-            
-            // Add final response content
-            for (const block of finalResponse.content) {
-              if (block.type === 'text') {
-                content += block.text + '\n';
-              }
-            }
-            
-          } catch (error) {
-            console.error('Error getting final continuation response:', error);
-            content += `\n\nBased on the data analysis, I can provide specific recommendations for your pipeline.`;
-          }
-        }
-
-      } catch (error) {
-        console.error('Error getting continuation response:', error);
-        content += `\n\n*Continuing analysis...*\n\nBased on my analysis, I can provide comprehensive recommendations.`;
-      }
-    }
-
-    // Calculate confidence based on response quality
-    const confidenceScore = this.calculateConfidenceScore(content, []);
-
-    return {
-      content: content.trim(),
-      extendedThoughts: [], // No more special extendedThoughts - tools show in toolExecutions
-      reflections: [],
-      planModifications: [],
-      confidenceScore,
-      toolExecutions
-    };
+    // Removed - non-streaming mode no longer supported
+    throw new Error('Non-streaming mode removed');
   }
 
   private calculateConfidenceScore(content: string, thoughts: any[]): number {
-    let score = 0.7; // Base confidence
-    
-    // Increase confidence based on content quality
-    if (content.length > 200) score += 0.1;
-    if (content.includes('analysis') || content.includes('recommend')) score += 0.1;
-    
-    // Increase confidence based on tool usage
-    if (thoughts.length > 0) score += 0.1;
-    
-    return Math.min(score, 1.0);
+    // Removed - confidence scoring no longer used
+    return 0.8;
   }
 }

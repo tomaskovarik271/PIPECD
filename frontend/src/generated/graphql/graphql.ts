@@ -204,6 +204,7 @@ export type AgentV2Response = {
   planModifications: Array<Scalars['String']['output']>;
   reflections: Array<AgentThought>;
   thinkingTime?: Maybe<Scalars['Float']['output']>;
+  toolExecutions: Array<ToolExecution>;
 };
 
 export type AgentV2StreamChunk = {
@@ -2654,6 +2655,22 @@ export type ToolDiscoveryResponse = {
   error?: Maybe<Scalars['String']['output']>;
   tools: Array<Scalars['JSON']['output']>;
 };
+
+export type ToolExecution = {
+  __typename?: 'ToolExecution';
+  error?: Maybe<Scalars['String']['output']>;
+  executionTime: Scalars['Int']['output'];
+  id: Scalars['ID']['output'];
+  input: Scalars['JSON']['output'];
+  name: Scalars['String']['output'];
+  result?: Maybe<Scalars['JSON']['output']>;
+  status: ToolExecutionStatus;
+  timestamp: Scalars['String']['output'];
+};
+
+export type ToolExecutionStatus =
+  | 'ERROR'
+  | 'SUCCESS';
 
 export type UpdateActivityInput = {
   assigned_to_user_id?: InputMaybe<Scalars['ID']['input']>;
