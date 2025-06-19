@@ -123,21 +123,32 @@ export const agentV2Resolvers = {
   },
 
   Mutation: {
-    // Send message with V2 (simplified - no thinking budget)
+    // Send message with V2 (streaming-only now)
     sendAgentV2Message: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
       const { userId, accessToken } = requireAuthentication(context);
 
       try {
-        // Process message with V2 Agent Service
-        const response = await agentServiceV2.processMessage({
+        // Use streaming mode but collect the final result
+        let finalResponse: any = null;
+        
+        await agentServiceV2.processMessageStream({
           conversationId: input.conversationId,
           content: input.content,
           userId,
           supabaseClient: context.supabaseClient,
           accessToken: accessToken
+        }, (chunk) => {
+          // Collect the final response when streaming completes
+          if (chunk.type === 'complete' && chunk.complete) {
+            finalResponse = chunk.complete;
+          }
         });
 
-        return response;
+        if (!finalResponse) {
+          throw new Error('Failed to get final response from streaming');
+        }
+
+        return finalResponse;
       } catch (err) {
         console.error('Error in sendAgentV2Message mutation:', err);
         throw new GraphQLError('Failed to process V2 message');
