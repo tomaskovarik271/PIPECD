@@ -23,6 +23,7 @@ export interface AgentV2Response {
   planModifications: string[];
   thinkingTime?: number;
   confidenceScore?: number;
+  toolExecutions?: any[];
 }
 
 export interface AgentV2StreamChunk {
@@ -138,7 +139,8 @@ export class AgentServiceV2 {
         role: 'assistant',
         content: claudeResponse.content,
         timestamp: new Date().toISOString(),
-        thoughts: claudeResponse.extendedThoughts
+        thoughts: claudeResponse.extendedThoughts,
+        toolExecutions: claudeResponse.toolExecutions || []
       };
 
       // Add user message and assistant response to conversation
@@ -176,7 +178,8 @@ export class AgentServiceV2 {
         reflections: claudeResponse.reflections || [],
         planModifications: claudeResponse.planModifications || [],
         thinkingTime: thinkingTime,
-        confidenceScore: claudeResponse.confidenceScore || 0.8
+        confidenceScore: claudeResponse.confidenceScore || 0.8,
+        toolExecutions: claudeResponse.toolExecutions || []
       };
 
     } catch (error) {
@@ -339,6 +342,7 @@ export class AgentServiceV2 {
       let fullContent = '';
       const extendedThoughts: any[] = [];
       const toolCalls: any[] = [];
+      const toolExecutions: any[] = []; // Track tool executions for frontend display
 
       // Process streaming chunks
       for await (const chunk of stream) {
@@ -416,6 +420,7 @@ export class AgentServiceV2 {
             }
           }
 
+          const toolStartTime = Date.now();
           const toolResult = await toolRegistry.executeTool(
             toolCall.name,
             toolCall.input,
@@ -424,6 +429,19 @@ export class AgentServiceV2 {
             authToken,
             userIdForAuth
           );
+          const toolEndTime = Date.now();
+          const executionDuration = toolEndTime - toolStartTime;
+          
+          // Capture tool execution metadata for frontend display
+          toolExecutions.push({
+            id: toolCall.id,
+            name: toolCall.name,
+            input: toolCall.input,
+            result: toolResult,
+            executionTime: executionDuration,
+            timestamp: new Date().toISOString(),
+            status: 'success'
+          });
           
           // Store the actual tool result for continuation
           toolResultsMap.set(toolCall.id, toolResult);
@@ -584,7 +602,8 @@ export class AgentServiceV2 {
         reflections: extendedThoughts.filter(t => t.metadata?.type === 'reflection'),
         planModifications: this.extractPlanModifications(extendedThoughts),
         thinkingTime,
-        confidenceScore: this.calculateConfidenceScore(fullContent, extendedThoughts)
+        confidenceScore: this.calculateConfidenceScore(fullContent, extendedThoughts),
+        toolExecutions: toolExecutions
       };
 
       callback({
@@ -653,7 +672,8 @@ export class AgentServiceV2 {
         extendedThoughts: [],
         reflections: [],
         planModifications: [],
-        confidenceScore: 0.3
+        confidenceScore: 0.3,
+        toolExecutions: []
       };
     }
   }
@@ -743,6 +763,7 @@ You are a sophisticated CRM assistant for PipeCD that can:
     let content = '';
     const extendedThoughts: any[] = [];
     const toolResults: any[] = [];
+    const toolExecutions: any[] = []; // Track tool executions for frontend display
     
     // Extract raw text content for parsing (before tool processing)
     let rawContent = '';
@@ -758,6 +779,7 @@ You are a sophisticated CRM assistant for PipeCD that can:
         content += block.text + '\n';
       } else if (block.type === 'tool_use') {
         // Handle tool execution via registry
+        const toolStartTime = Date.now();
         try {
           const client = supabaseClient || supabase;
           
@@ -782,6 +804,26 @@ You are a sophisticated CRM assistant for PipeCD that can:
             authToken,
             userIdForAuth
           );
+          
+          const toolEndTime = Date.now();
+          const executionDuration = toolEndTime - toolStartTime;
+          
+          // Capture tool execution metadata for frontend display
+          toolExecutions.push({
+            id: block.id,
+            name: block.name,
+            input: block.input,
+            result: toolResult,
+            executionTime: executionDuration,
+            timestamp: new Date().toISOString(),
+            status: 'success'
+          });
+          
+          // Store the actual tool result for continuation
+          toolResults.push({
+            tool_use_id: block.id,
+            content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult)
+          });
           
           if (block.name === 'think') {
             // Handle think tool results specifically
@@ -811,17 +853,26 @@ You are a sophisticated CRM assistant for PipeCD that can:
               tool_use_id: block.id,
               content: `Thinking completed. Strategy: ${thinkResult.strategy.substring(0, 100)}...`
             });
-          } else {
-            // Add ALL other tool results for continuation (SearchDealsTool, etc.)
-            toolResults.push({
-              tool_use_id: block.id,
-              content: typeof toolResult === 'string' ? toolResult : JSON.stringify(toolResult)
-            });
           }
           
         } catch (error) {
           console.error(`Error executing ${block.name} tool:`, error);
           content += `\n\n*Note: ${block.name} tool encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}*\n\n`;
+          
+          const toolEndTime = Date.now();
+          const executionDuration = toolEndTime - toolStartTime;
+          
+          // Capture failed tool execution metadata
+          toolExecutions.push({
+            id: block.id,
+            name: block.name,
+            input: block.input,
+            result: null,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            executionTime: executionDuration,
+            timestamp: new Date().toISOString(),
+            status: 'error'
+          });
           
           // Add error result for continuation
           toolResults.push({
@@ -896,7 +947,8 @@ You are a sophisticated CRM assistant for PipeCD that can:
       extendedThoughts,
       reflections: extendedThoughts.filter(t => t.metadata?.type === 'reflection'),
       planModifications: this.extractPlanModifications(extendedThoughts),
-      confidenceScore
+      confidenceScore,
+      toolExecutions
     };
   }
 

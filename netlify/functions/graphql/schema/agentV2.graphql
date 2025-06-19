@@ -61,6 +61,22 @@ input AgentV2ThoughtInput {
 # V2-Specific Response Types
 # ================================
 
+type ToolExecution {
+  id: ID!
+  name: String!
+  input: JSON!
+  result: JSON
+  error: String
+  executionTime: Int!
+  timestamp: String!
+  status: ToolExecutionStatus!
+}
+
+enum ToolExecutionStatus {
+  SUCCESS
+  ERROR
+}
+
 type AgentV2Response {
   conversation: AgentConversation!
   message: AgentMessage!
@@ -69,6 +85,7 @@ type AgentV2Response {
   planModifications: [String!]!
   thinkingTime: Float
   confidenceScore: Float
+  toolExecutions: [ToolExecution!]!
 }
 
 type ExtendedThinkingAnalysis {

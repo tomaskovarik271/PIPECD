@@ -20,6 +20,7 @@ import ReactMarkdown from 'react-markdown';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import { useAgentV2 } from '../../../hooks/useAgentV2';
 import type { AgentV2Message } from '../../../lib/graphql/agentV2Operations';
+import ToolExecutionPanel from './ToolExecutionPanel';
 
 export function AIAgentChatV2() {
   const colors = useThemeColors();
@@ -330,6 +331,13 @@ export function AIAgentChatV2() {
                               ))}
                             </VStack>
                           </Box>
+                        </Box>
+                      )}
+
+                      {/* Tool Executions - Show AFTER thinking process */}
+                      {message.role === 'assistant' && (message as any).toolExecutions && (message as any).toolExecutions.length > 0 && (
+                        <Box mt={4}>
+                          <ToolExecutionPanel toolExecutions={(message as any).toolExecutions} />
                         </Box>
                       )}
 
