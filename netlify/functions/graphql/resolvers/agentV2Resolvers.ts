@@ -123,7 +123,7 @@ export const agentV2Resolvers = {
   },
 
   Mutation: {
-    // Send message with V2 extended thinking
+    // Send message with V2 (simplified - no thinking budget)
     sendAgentV2Message: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
       const { userId, accessToken } = requireAuthentication(context);
 
@@ -162,14 +162,14 @@ export const agentV2Resolvers = {
               userId,
               supabaseClient: context.supabaseClient
             }, (chunk) => {
-                             // TODO: Implement proper pub/sub system for real-time streaming
-               // For now, streaming will work through the callback pattern
-               // In production, integrate with Redis or GraphQL subscriptions
+              // TODO: Implement proper pub/sub system for real-time streaming
+              // For now, streaming will work through the callback pattern
+              // In production, integrate with Redis or GraphQL subscriptions
             });
-                     } catch (error) {
-             console.error('Streaming error:', error);
-             // TODO: Publish error to subscription system when implemented
-           }
+          } catch (error) {
+            console.error('Streaming error:', error);
+            // TODO: Publish error to subscription system when implemented
+          }
         });
 
         return sessionId;
@@ -179,7 +179,7 @@ export const agentV2Resolvers = {
       }
     },
 
-    // Create new V2 conversation with extended thinking enabled
+    // Create new V2 conversation (simplified)
     createAgentV2Conversation: async (_: any, { input }: { input: any }, context: GraphQLContext) => {
       const { userId } = requireAuthentication(context);
 
@@ -257,12 +257,10 @@ export const agentV2Resolvers = {
     }
   },
 
-  // Field resolvers for extended types
+  // Simplified field resolvers
   AgentConversation: {
     userId: (conversation: any) => conversation.user_id,
     agentVersion: (conversation: any) => conversation.agent_version || 'v1',
-    extendedThinkingEnabled: (conversation: any) => conversation.extended_thinking_enabled || false,
-    thinkingBudget: (conversation: any) => conversation.thinking_budget?.toUpperCase() || 'STANDARD',
     createdAt: (conversation: any) => conversation.created_at,
     updatedAt: (conversation: any) => conversation.updated_at
   },
