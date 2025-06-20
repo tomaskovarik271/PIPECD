@@ -192,7 +192,7 @@ export class SearchDealsTool implements ToolExecutor {
       const stage = deal.currentWfmStep?.name || deal.currentWfmStatus?.name || 'No stage';
       const closeDate = deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : 'No close date';
 
-      message += `\n${index + 1}. **${deal.name}**\n`;
+      message += `\n${index + 1}. **${deal.name}** (ID: ${deal.id})\n`;
       message += `   • Value: ${amount}${currency}\n`;
       message += `   • Organization: ${organization}\n`;
       message += `   • Assigned to: ${assignee}\n`;

@@ -8,6 +8,9 @@ import { SearchDealsTool } from './SearchDealsTool';
 import { CreateDealTool } from './CreateDealTool';
 import { CreateOrganizationTool } from './CreateOrganizationTool';
 import { CreatePersonTool } from './CreatePersonTool';
+import { UpdateDealTool } from './UpdateDealTool';
+import { UpdatePersonTool } from './UpdatePersonTool';
+import { UpdateOrganizationTool } from './UpdateOrganizationTool';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SimpleCognitiveEngine, SimpleToolEnhancer } from '../core/SimpleCognitiveEngine';
 
@@ -59,6 +62,21 @@ export class ToolRegistry {
     this.registerTool(
       CreatePersonTool.definition,
       (supabaseClient: SupabaseClient, conversationId: string) => new CreatePersonTool()
+    );
+
+    this.registerTool(
+      UpdateDealTool.definition,
+      (supabaseClient: SupabaseClient, conversationId: string) => new UpdateDealTool()
+    );
+
+    this.registerTool(
+      UpdatePersonTool.definition,
+      (supabaseClient: SupabaseClient, conversationId: string) => new UpdatePersonTool()
+    );
+
+    this.registerTool(
+      UpdateOrganizationTool.definition,
+      (supabaseClient: SupabaseClient, conversationId: string) => new UpdateOrganizationTool()
     );
   }
 
@@ -118,7 +136,7 @@ export class ToolRegistry {
   }): Promise<any[]> {
     const definitions = [];
     
-    for (const [name, toolDefinition] of this.tools) {
+    for (const [name, toolDefinition] of Array.from(this.tools.entries())) {
       try {
         // Check if this tool needs smart enhancement
         if (this.needsSmartEnhancement(toolDefinition)) {
