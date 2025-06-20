@@ -527,7 +527,10 @@ export class AgentServiceV2 {
                 tools: toolRegistry.getToolDefinitions()
               });
               
-              // Stream final response
+              // Stream final response and detect additional tool calls
+              const finalToolCalls: any[] = [];
+              const finalToolInputBuffers = new Map();
+              
               for await (const chunk of finalResponseStream) {
                 if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
                   const textChunk = chunk.delta.text;
@@ -538,6 +541,104 @@ export class AgentServiceV2 {
                     content: textChunk,
                     conversationId: conversationId
                   });
+                } else if (chunk.type === 'content_block_delta' && chunk.delta.type === 'input_json_delta') {
+                  // Accumulate final tool input deltas
+                  const blockIndex = chunk.index;
+                  if (!finalToolInputBuffers.has(blockIndex)) {
+                    finalToolInputBuffers.set(blockIndex, '');
+                  }
+                  finalToolInputBuffers.set(blockIndex, finalToolInputBuffers.get(blockIndex) + chunk.delta.partial_json);
+                } else if (chunk.type === 'content_block_start' && chunk.content_block.type === 'tool_use') {
+                  // Track final tool calls
+                  finalToolCalls.push({
+                    id: chunk.content_block.id,
+                    name: chunk.content_block.name,
+                    input: chunk.content_block.input,
+                    index: chunk.index
+                  });
+                } else if (chunk.type === 'content_block_stop') {
+                  // Finalize final tool input if this was a tool block
+                  if (chunk.index !== undefined && finalToolInputBuffers.has(chunk.index)) {
+                    const finalInput = finalToolInputBuffers.get(chunk.index);
+                    const toolCall = finalToolCalls.find(tc => tc.index === chunk.index);
+                    if (toolCall && finalInput) {
+                      try {
+                        toolCall.input = JSON.parse(finalInput);
+                        console.log('🔧 Finalized final tool input for', toolCall.name, ':', JSON.stringify(toolCall.input, null, 2));
+                      } catch (error) {
+                        console.warn('Failed to parse accumulated final tool input:', error);
+                      }
+                    }
+                    finalToolInputBuffers.delete(chunk.index);
+                  }
+                }
+              }
+              
+              // Execute any final tool calls (like update_deal after search_deals)
+              if (finalToolCalls.length > 0) {
+                console.log('🔧 Final response had additional tools, executing them...', finalToolCalls.map(t => t.name));
+                
+                for (const toolCall of finalToolCalls) {
+                  const toolStartTime = Date.now();
+                  try {
+                    const toolResult = await toolRegistry.executeTool(
+                      toolCall.name,
+                      toolCall.input,
+                      client,
+                      conversationId,
+                      accessToken,
+                      userId
+                    );
+                    
+                    const toolEndTime = Date.now();
+                    const executionDuration = toolEndTime - toolStartTime;
+                    
+                    // Add to tool executions for UI display
+                    toolExecutions.push({
+                      id: toolCall.id,
+                      name: toolCall.name,
+                      input: toolCall.input,
+                      result: toolResult,
+                      executionTime: executionDuration,
+                      timestamp: new Date().toISOString(),
+                      status: 'SUCCESS'
+                    });
+                    
+                    // Stream the tool result as content for immediate user feedback
+                    const toolResultMessage = `\n\n🔧 **${toolCall.name} executed successfully**\n${JSON.stringify(toolResult, null, 2)}`;
+                    continuationContent += toolResultMessage;
+                    
+                    callback({
+                      type: 'content',
+                      content: toolResultMessage,
+                      conversationId: conversationId
+                    });
+                    
+                  } catch (error) {
+                    console.error(`Error executing final tool ${toolCall.name}:`, error);
+                    const toolEndTime = Date.now();
+                    const executionDuration = toolEndTime - toolStartTime;
+                    
+                    toolExecutions.push({
+                      id: toolCall.id,
+                      name: toolCall.name,
+                      input: toolCall.input,
+                      result: null,
+                      error: error instanceof Error ? error.message : 'Unknown error',
+                      executionTime: executionDuration,
+                      timestamp: new Date().toISOString(),
+                      status: 'ERROR'
+                    });
+                    
+                    const errorMessage = `\n\n❌ **${toolCall.name} failed**: ${error instanceof Error ? error.message : 'Unknown error'}`;
+                    continuationContent += errorMessage;
+                    
+                    callback({
+                      type: 'content',
+                      content: errorMessage,
+                      conversationId: conversationId
+                    });
+                  }
                 }
               }
               
