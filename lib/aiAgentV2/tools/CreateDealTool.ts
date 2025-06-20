@@ -160,9 +160,9 @@ export class CreateDealTool implements ToolExecutor {
       .from('organizations')
       .insert({
         name: organizationName,
-        industry: 'Technology', // Default industry
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        address: null,
+        notes: `Created automatically during deal creation`,
+        user_id: context.userId
       })
       .select('*')
       .single();
