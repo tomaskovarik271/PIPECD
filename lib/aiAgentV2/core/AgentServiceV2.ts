@@ -518,7 +518,7 @@ export class AgentServiceV2 {
                 }
               ];
               
-              const finalResponse = await this.anthropic.messages.create({
+              const finalResponseStream = await this.anthropic.messages.stream({
                 model: 'claude-3-5-sonnet-20241022',
                 max_tokens: 4096,
                 temperature: 0.7,
@@ -528,9 +528,9 @@ export class AgentServiceV2 {
               });
               
               // Stream final response
-              for await (const chunk of finalResponse.content) {
-                if (chunk.type === 'text') {
-                  const textChunk = chunk.text;
+              for await (const chunk of finalResponseStream) {
+                if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+                  const textChunk = chunk.delta.text;
                   continuationContent += textChunk;
                   
                   callback({
@@ -545,6 +545,16 @@ export class AgentServiceV2 {
               
             } catch (finalError) {
               console.error('Error getting final continuation response:', finalError);
+              // If final response fails, we still have the tool execution results
+              // Just send a simple completion message
+              const fallbackMessage = '\n\n✅ Tool execution completed successfully.';
+              continuationContent += fallbackMessage;
+              
+              callback({
+                type: 'content',
+                content: fallbackMessage,
+                conversationId: conversationId
+              });
             }
           }
         } catch (error) {
