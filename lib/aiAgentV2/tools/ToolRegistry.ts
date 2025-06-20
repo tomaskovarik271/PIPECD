@@ -6,6 +6,8 @@
 import { ThinkTool } from './ThinkTool';
 import { SearchDealsTool } from './SearchDealsTool';
 import { CreateDealTool } from './CreateDealTool';
+import { CreateOrganizationTool } from './CreateOrganizationTool';
+import { CreatePersonTool } from './CreatePersonTool';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { SimpleCognitiveEngine, SimpleToolEnhancer } from '../core/SimpleCognitiveEngine';
 
@@ -47,6 +49,16 @@ export class ToolRegistry {
     this.registerTool(
       CreateDealTool.definition,
       (supabaseClient: SupabaseClient, conversationId: string) => new CreateDealTool(supabaseClient, conversationId)
+    );
+
+    this.registerTool(
+      CreateOrganizationTool.definition,
+      (supabaseClient: SupabaseClient, conversationId: string) => new CreateOrganizationTool()
+    );
+
+    this.registerTool(
+      CreatePersonTool.definition,
+      (supabaseClient: SupabaseClient, conversationId: string) => new CreatePersonTool()
     );
   }
 
