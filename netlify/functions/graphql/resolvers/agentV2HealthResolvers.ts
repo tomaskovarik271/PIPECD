@@ -5,19 +5,19 @@
 
 import { AgentServiceV2 } from '../../../../lib/aiAgentV2/core/AgentServiceV2';
 import { supabase } from '../../../../lib/supabaseClient';
-import { validateAuth } from '../helpers';
+import { requireAuthentication, GraphQLContext } from '../helpers';
 
 export const agentV2HealthResolvers = {
   Query: {
     /**
      * Get comprehensive AI Agent V2 system health status
      */
-    getAgentV2Health: async (_: any, __: any, context: any) => {
+    getAgentV2Health: async (_: any, __: any, context: GraphQLContext) => {
       try {
-        const { userId, supabaseClient } = await validateAuth(context);
+        const { userId } = requireAuthentication(context);
         
         // Check if user has admin permissions
-        const { data: userProfile, error: userError } = await supabaseClient
+        const { data: userProfile, error: userError } = await context.supabaseClient
           .from('user_profiles')
           .select('permissions')
           .eq('id', userId)
@@ -29,7 +29,7 @@ export const agentV2HealthResolvers = {
 
         // Get health status from AgentServiceV2
         const agentService = new AgentServiceV2();
-        const healthStatus = await agentService.getSystemHealth(supabaseClient);
+        const healthStatus = await agentService.getSystemHealth(context.supabaseClient);
 
         return healthStatus;
       } catch (error) {
@@ -41,12 +41,12 @@ export const agentV2HealthResolvers = {
     /**
      * Get detailed performance metrics for AI Agent V2
      */
-    getAgentV2PerformanceMetrics: async (_: any, __: any, context: any) => {
+    getAgentV2PerformanceMetrics: async (_: any, __: any, context: GraphQLContext) => {
       try {
-        const { userId, supabaseClient } = await validateAuth(context);
+        const { userId } = requireAuthentication(context);
         
         // Check if user has admin permissions
-        const { data: userProfile, error: userError } = await supabaseClient
+        const { data: userProfile, error: userError } = await context.supabaseClient
           .from('user_profiles')
           .select('permissions')
           .eq('id', userId)
@@ -58,7 +58,7 @@ export const agentV2HealthResolvers = {
 
         // Get performance metrics from AgentServiceV2
         const agentService = new AgentServiceV2();
-        const performanceMetrics = await agentService.getPerformanceMetrics(supabaseClient);
+        const performanceMetrics = await agentService.getPerformanceMetrics(context.supabaseClient);
 
         return performanceMetrics;
       } catch (error) {
