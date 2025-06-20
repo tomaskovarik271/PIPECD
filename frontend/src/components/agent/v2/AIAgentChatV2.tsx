@@ -13,7 +13,8 @@ import {
   IconButton,
   Tooltip,
   Collapse,
-  Flex
+  Flex,
+  Switch
 } from '@chakra-ui/react';
 import { ChevronRightIcon, TimeIcon } from '@chakra-ui/icons';
 import { FiMessageSquare, FiClock, FiTrash2 } from 'react-icons/fi';
@@ -27,6 +28,7 @@ export function AIAgentChatV2() {
   const colors = useThemeColors();
   const [inputValue, setInputValue] = useState('');
   const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
+  const [useStreaming, setUseStreaming] = useState(true);
 
   // V2 Agent hook
   const {
@@ -59,11 +61,19 @@ export function AIAgentChatV2() {
         });
       }
 
-      // Always use streaming mode for better UX
-      await sendMessageStream({
-        conversationId: currentConversation?.id,
-        content
-      });
+      // Use streaming based on toggle setting
+      if (useStreaming) {
+        await sendMessageStream({
+          conversationId: currentConversation?.id,
+          content
+        });
+      } else {
+        // For non-streaming, we still use the stream method but handle differently in UI
+        await sendMessageStream({
+          conversationId: currentConversation?.id,
+          content
+        });
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       // Error is handled by the hook
@@ -152,6 +162,18 @@ export function AIAgentChatV2() {
                   onClick={toggleHistoryPanel}
                 />
               </Tooltip>
+              
+              {/* Streaming Toggle */}
+              <HStack spacing={2} px={2}>
+                <Text fontSize="xs" color={colors.text.secondary}>Streaming:</Text>
+                <Switch
+                  isChecked={useStreaming}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUseStreaming(e.target.checked)}
+                  size="sm"
+                  colorScheme="blue"
+                />
+              </HStack>
+              
               <Tooltip label="Start New Chat">
                 <Button
                   leftIcon={<FiMessageSquare size={16} />}
@@ -276,31 +298,22 @@ export function AIAgentChatV2() {
                             // Determine what content to show
                             const contentToShow = shouldShowStreamingContent ? streamingContent : message.content;
                             
-                            // Show opening statement for messages with thinking (but show more than just first line)
-                            if (message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
-                                message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think')) {
-                              // Show the opening lines before the detailed analysis
-                              const lines = contentToShow.split('\n');
-                              const analysisStart = lines.findIndex(line => 
-                                line.includes('### ') || 
-                                line.includes('## ') ||
-                                line.includes('**Current Pipeline Status**') ||
-                                line.includes('**Key Performance') ||
-                                line.match(/^\d+\./) || // Numbered lists
-                                line.includes('Pipeline') && line.includes('Analysis')
-                              );
-                              
-                              // If we find a detailed analysis section, show content up to that point
-                              // Otherwise show first few lines (up to 3)
-                              const contentToShowLines = analysisStart > 0 ? 
-                                lines.slice(0, analysisStart) : 
-                                lines.slice(0, 3);
-                              
-                              return (
-                                <ReactMarkdown>
-                                  {contentToShowLines.join('\n')}
-                                </ReactMarkdown>
-                              );
+                            // If streaming is disabled or message has thinking, show full content
+                            if (!useStreaming || (message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
+                                message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think'))) {
+                              // Show opening statement only (for thinking messages) 
+                              if (message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
+                                  message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think')) {
+                                const lines = contentToShow.split('\n');
+                                const firstLine = lines[0] || '';
+                                return (
+                                  <ReactMarkdown>
+                                    {firstLine}
+                                  </ReactMarkdown>
+                                );
+                              } else {
+                                return <ReactMarkdown>{contentToShow}</ReactMarkdown>;
+                              }
                             } else {
                               return <ReactMarkdown>{contentToShow}</ReactMarkdown>;
                             }
