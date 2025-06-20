@@ -19,7 +19,7 @@ import {
   ArrowBackIcon, // For toggle
   ArrowForwardIcon // For toggle
 } from '@chakra-ui/icons'; // Use appropriate icons
-import { FiCpu } from 'react-icons/fi'; // Import AI/robot icon
+import { FiCpu, FiActivity } from 'react-icons/fi'; // Import AI/robot icon and health monitoring icon
 
 
 // Comment out direct imports if moving logos to public directory
@@ -45,6 +45,7 @@ const NAV_ITEMS = [
 const ADMIN_NAV_ITEMS = [
   { path: '/agent', label: 'AI Assistant', icon: <FiCpu size={16} />, permission: 'app_settings:manage' }, // Require admin role for AI Assistant
   { path: '/agent-v2', label: 'AI Assistant V2', icon: <FiCpu size={16} />, permission: 'app_settings:manage' }, // V2 Agent with extended thinking
+  { path: '/admin/agent-health', label: 'Agent Health', icon: <FiActivity size={16} />, permission: 'app_settings:manage' }, // Agent V2 Health Monitoring
   
   { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon />, permission: 'custom_fields:manage_definitions' },
   { path: '/admin/user-roles', label: 'User Roles', icon: <SettingsIcon />, permission: 'app_settings:manage' },
