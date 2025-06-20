@@ -9,6 +9,8 @@ import { dealService } from '../../dealService';
 import type { DealInput } from '../../generated/graphql';
 
 export class CreateDealTool implements ToolExecutor {
+  private workflowSteps: Array<{step: string, status: string, timestamp: string, details?: any}> = [];
+
   // Static definition - this is what gets enhanced by CognitiveContextEngine
   static definition: ToolDefinition = {
     name: 'create_deal',
@@ -53,22 +55,44 @@ export class CreateDealTool implements ToolExecutor {
     private conversationId: string
   ) {}
 
+  /**
+   * 📝 Add workflow step for transparency
+   */
+  private addWorkflowStep(step: string, status: string, details: string, data?: any): void {
+    this.workflowSteps.push({
+      step,
+      status,
+      timestamp: new Date().toISOString(),
+      details,
+      ...(data && { data })
+    });
+  }
+
   async execute(input: any, context: ToolExecutionContext): Promise<any> {
     try {
       console.log('🚀 CreateDealTool executing with input:', JSON.stringify(input, null, 2));
+      
+      // Initialize workflow tracking
+      this.workflowSteps = [];
+      this.addWorkflowStep('initialize', 'completed', `Starting deal creation for "${input.organization_name}"`);
 
       // 1. Find or create organization
+      this.addWorkflowStep('organization_lookup', 'in_progress', `Searching for organization: "${input.organization_name}"`);
       const organization = await this.findOrCreateOrganization(input.organization_name, context);
       
       // 2. Get "Sales Deal" project type (required for WFM integration)
+      this.addWorkflowStep('project_type_lookup', 'in_progress', 'Getting Sales Deal project type for WFM integration');
       const salesDealProjectType = await this.getSalesDealProjectType();
       
       if (!salesDealProjectType) {
+        this.addWorkflowStep('project_type_lookup', 'failed', 'Sales Deal project type not found');
         throw new Error('Sales Deal project type not found. Please contact administrator.');
       }
+      this.addWorkflowStep('project_type_lookup', 'completed', `Found Sales Deal project type (ID: ${salesDealProjectType.id})`);
       
       // 3. Generate deal name if not provided
       const dealName = input.name || this.generateDealName(input.organization_name, input.project_description);
+      this.addWorkflowStep('deal_preparation', 'completed', `Prepared deal: "${dealName}" with ${input.currency || 'EUR'} ${input.amount.toLocaleString()}`);
       
       // 4. Set default currency if not provided
       const currency = input.currency || 'EUR';
@@ -91,9 +115,15 @@ export class CreateDealTool implements ToolExecutor {
         throw new Error('Authentication token required for deal creation');
       }
 
+      this.addWorkflowStep('deal_creation', 'in_progress', `Creating deal in CRM system with WFM project setup`);
       const createdDeal = await dealService.createDeal(context.userId!, dealInput, context.authToken);
 
       console.log('✅ Deal created successfully with WFM project:', createdDeal.wfm_project_id);
+      this.addWorkflowStep('deal_creation', 'completed', `Successfully created deal with WFM project integration`, { 
+        deal_id: createdDeal.id,
+        wfm_project_id: createdDeal.wfm_project_id,
+        project_id: createdDeal.project_id
+      });
 
       return {
         success: true,
@@ -107,7 +137,8 @@ export class CreateDealTool implements ToolExecutor {
           project_id: createdDeal.project_id,
           kanban_ready: !!createdDeal.wfm_project_id,
           created_at: createdDeal.created_at
-        }
+        },
+        workflow_steps: this.workflowSteps
       };
 
     } catch (error) {
@@ -137,42 +168,48 @@ export class CreateDealTool implements ToolExecutor {
       console.warn('Search error:', searchError);
     }
 
-    // If we found exact or close matches, use the first one
-    if (existingOrgs && existingOrgs.length > 0) {
-      const exactMatch = existingOrgs.find(org => 
-        org.name.toLowerCase() === organizationName.toLowerCase()
-      );
-      
-      if (exactMatch) {
-        console.log(`✅ Found exact match: ${exactMatch.name} (ID: ${exactMatch.id})`);
-        return exactMatch;
+          // If we found exact or close matches, use the first one
+      if (existingOrgs && existingOrgs.length > 0) {
+        const exactMatch = existingOrgs.find(org => 
+          org.name.toLowerCase() === organizationName.toLowerCase()
+        );
+        
+        if (exactMatch) {
+          console.log(`✅ Found exact match: ${exactMatch.name} (ID: ${exactMatch.id})`);
+          this.addWorkflowStep('organization_lookup', 'completed', `Found existing organization: "${exactMatch.name}"`, { organization_id: exactMatch.id });
+          return exactMatch;
+        }
+        
+        // Use first close match
+        const closeMatch = existingOrgs[0];
+        console.log(`📍 Using close match: ${closeMatch.name} (ID: ${closeMatch.id})`);
+        this.addWorkflowStep('organization_lookup', 'completed', `Found similar organization: "${closeMatch.name}" (using as match for "${organizationName}")`, { organization_id: closeMatch.id });
+        return closeMatch;
       }
+
+          // Create new organization if none found
+      console.log(`🆕 Creating new organization: "${organizationName}"`);
+      this.addWorkflowStep('organization_creation', 'in_progress', `Creating new organization: "${organizationName}"`);
       
-      // Use first close match
-      const closeMatch = existingOrgs[0];
-      console.log(`📍 Using close match: ${closeMatch.name} (ID: ${closeMatch.id})`);
-      return closeMatch;
-    }
+      const { data: newOrg, error: createError } = await this.supabaseClient
+        .from('organizations')
+        .insert({
+          name: organizationName,
+          address: null,
+          notes: `Created automatically during deal creation`,
+          user_id: context.userId
+        })
+        .select('*')
+        .single();
 
-    // Create new organization if none found
-    console.log(`🆕 Creating new organization: "${organizationName}"`);
-    const { data: newOrg, error: createError } = await this.supabaseClient
-      .from('organizations')
-      .insert({
-        name: organizationName,
-        address: null,
-        notes: `Created automatically during deal creation`,
-        user_id: context.userId
-      })
-      .select('*')
-      .single();
+      if (createError) {
+        this.addWorkflowStep('organization_creation', 'failed', `Failed to create organization: ${createError.message}`);
+        throw new Error(`Failed to create organization: ${createError.message}`);
+      }
 
-    if (createError) {
-      throw new Error(`Failed to create organization: ${createError.message}`);
-    }
-
-    console.log(`✅ Created new organization: ${newOrg.name} (ID: ${newOrg.id})`);
-    return newOrg;
+      console.log(`✅ Created new organization: ${newOrg.name} (ID: ${newOrg.id})`);
+      this.addWorkflowStep('organization_creation', 'completed', `Successfully created new organization: "${newOrg.name}"`, { organization_id: newOrg.id });
+      return newOrg;
   }
 
   /**
