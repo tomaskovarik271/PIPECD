@@ -17,13 +17,7 @@ export const agentV2HealthResolvers = {
         const { userId } = requireAuthentication(context);
         
         // Check if user has admin permissions
-        const { data: userProfile, error: userError } = await context.supabaseClient
-          .from('user_profiles')
-          .select('permissions')
-          .eq('id', userId)
-          .single();
-
-        if (userError || !userProfile?.permissions?.includes('app_settings:manage')) {
+        if (!context.userPermissions?.includes('app_settings:manage')) {
           throw new Error('Access denied: Admin permissions required for health monitoring');
         }
 
@@ -46,13 +40,7 @@ export const agentV2HealthResolvers = {
         const { userId } = requireAuthentication(context);
         
         // Check if user has admin permissions
-        const { data: userProfile, error: userError } = await context.supabaseClient
-          .from('user_profiles')
-          .select('permissions')
-          .eq('id', userId)
-          .single();
-
-        if (userError || !userProfile?.permissions?.includes('app_settings:manage')) {
+        if (!context.userPermissions?.includes('app_settings:manage')) {
           throw new Error('Access denied: Admin permissions required for performance metrics');
         }
 
