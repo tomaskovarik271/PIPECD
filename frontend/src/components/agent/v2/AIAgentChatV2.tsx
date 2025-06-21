@@ -3,18 +3,22 @@ import {
   Box,
   VStack,
   HStack,
+  Input,
   Textarea,
   Button,
   Text,
   Badge,
+  Switch,
+  FormControl,
+  FormLabel,
+  Select,
   Spinner,
   Alert,
   AlertIcon,
   IconButton,
   Tooltip,
   Collapse,
-  Flex,
-  Switch
+  Flex
 } from '@chakra-ui/react';
 import { ChevronRightIcon, TimeIcon } from '@chakra-ui/icons';
 import { FiMessageSquare, FiClock, FiTrash2 } from 'react-icons/fi';
@@ -27,8 +31,8 @@ import ToolExecutionPanel from './ToolExecutionPanel';
 export function AIAgentChatV2() {
   const colors = useThemeColors();
   const [inputValue, setInputValue] = useState('');
+  const [useStreaming, setUseStreaming] = useState(true); // Enhanced multi-stage streaming now available
   const [isHistoryPanelOpen, setIsHistoryPanelOpen] = useState(false);
-  const [useStreaming, setUseStreaming] = useState(true);
 
   // V2 Agent hook
   const {
@@ -41,6 +45,7 @@ export function AIAgentChatV2() {
     streamingStage,
     error,
     createConversation,
+    sendMessage,
     sendMessageStream,
     setCurrentConversation,
     clearError,
@@ -61,15 +66,13 @@ export function AIAgentChatV2() {
         });
       }
 
-      // Use streaming based on toggle setting
       if (useStreaming) {
         await sendMessageStream({
           conversationId: currentConversation?.id,
           content
         });
       } else {
-        // For non-streaming, we still use the stream method but handle differently in UI
-        await sendMessageStream({
+        await sendMessage({
           conversationId: currentConversation?.id,
           content
         });
@@ -162,18 +165,6 @@ export function AIAgentChatV2() {
                   onClick={toggleHistoryPanel}
                 />
               </Tooltip>
-              
-              {/* Streaming Toggle */}
-              <HStack spacing={2} px={2}>
-                <Text fontSize="xs" color={colors.text.secondary}>Streaming:</Text>
-                <Switch
-                  isChecked={useStreaming}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUseStreaming(e.target.checked)}
-                  size="sm"
-                  colorScheme="blue"
-                />
-              </HStack>
-              
               <Tooltip label="Start New Chat">
                 <Button
                   leftIcon={<FiMessageSquare size={16} />}
@@ -298,22 +289,14 @@ export function AIAgentChatV2() {
                             // Determine what content to show
                             const contentToShow = shouldShowStreamingContent ? streamingContent : message.content;
                             
-                            // If streaming is disabled or message has thinking, show full content
-                            if (!useStreaming || (message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
-                                message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think'))) {
-                              // Show opening statement only (for thinking messages) 
-                              if (message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
-                                  message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think')) {
-                                const lines = contentToShow.split('\n');
-                                const firstLine = lines[0] || '';
-                                return (
-                                  <ReactMarkdown>
-                                    {firstLine}
-                                  </ReactMarkdown>
-                                );
-                              } else {
-                                return <ReactMarkdown>{contentToShow}</ReactMarkdown>;
-                              }
+                            // Show opening statement for messages with thinking
+                            if (message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
+                                message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think')) {
+                              return (
+                                <ReactMarkdown>
+                                  {contentToShow.split('\n').slice(0, 1).join('\n')}
+                                </ReactMarkdown>
+                              );
                             } else {
                               return <ReactMarkdown>{contentToShow}</ReactMarkdown>;
                             }
@@ -453,14 +436,11 @@ export function AIAgentChatV2() {
                          message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think') && (() => {
                           const lines = message.content.split('\n');
                           const analysisStart = lines.findIndex(line => 
-                            line.includes('### ') || 
-                            line.includes('## ') ||
-                            line.includes('**Current Pipeline Status**') ||
-                            line.includes('**Key Performance') ||
-                            line.match(/^\d+\./) || // Numbered lists
-                            line.includes('Pipeline') && line.includes('Analysis') ||
                             line.includes('Based on') || 
                             line.includes('Here are') ||
+                            line.includes('analysis') ||
+                            line.match(/^\d+\./) || // Numbered lists
+                            line.includes('Pipeline') ||
                             line.includes('Audit') ||
                             line.includes('Implement') ||
                             line.includes('Strategy') ||
@@ -526,6 +506,18 @@ export function AIAgentChatV2() {
               {/* Controls Bar */}
               <HStack spacing={4} w="full" justify="space-between" fontSize="xs">
                 <HStack spacing={3}>
+                  <HStack spacing={2}>
+                    <Switch
+                      isChecked={useStreaming}
+                      onChange={(e) => setUseStreaming(e.target.checked)}
+                      colorScheme="green"
+                      size="sm"
+                    />
+                    <Text color={useStreaming ? colors.text.secondary : colors.text.muted} fontSize="xs">
+                      {useStreaming ? 'Multi-Stage Streaming' : 'Standard Response'}
+                    </Text>
+                  </HStack>
+                  
                   {/* Start New Chat Button */}
                   {currentConversation && (
                     <Button
@@ -544,7 +536,7 @@ export function AIAgentChatV2() {
                 </HStack>
                 
                 <Text color={colors.text.muted} fontSize="xs">
-                  Claude Sonnet 4 with Multi-Stage Streaming
+                  Claude Sonnet 4 with Think Tool
                 </Text>
               </HStack>
               
@@ -579,21 +571,23 @@ export function AIAgentChatV2() {
                 <Button
                   onClick={handleSendMessage}
                   disabled={!inputValue.trim() || isSendingMessage || isStreaming}
-                  bg={colors.status.success}
+                  bg={useStreaming ? colors.status.success : colors.interactive.default}
                   color="white"
-                  _hover={{ bg: colors.status.success, opacity: 0.8 }}
+                  _hover={{ bg: useStreaming ? colors.status.success : colors.interactive.hover, opacity: useStreaming ? 0.8 : 1 }}
                   _disabled={{ opacity: 0.5, cursor: "not-allowed" }}
                   borderRadius="lg"
                   w="50px"
                   h="50px"
                   minW="50px"
                   isLoading={isSendingMessage || isStreaming}
-                  title="Send with Multi-Stage Streaming"
+                  title={useStreaming ? 'Send with Multi-Stage Streaming' : 'Send Standard Message'}
                 >
                   {isSendingMessage || isStreaming ? (
                     <Spinner size="sm" />
-                  ) : (
+                  ) : useStreaming ? (
                     '⚡'
+                  ) : (
+                    '↗'
                   )}
                 </Button>
               </HStack>

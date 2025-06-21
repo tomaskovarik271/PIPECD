@@ -2,7 +2,6 @@ import { supabase } from '../../supabaseClient';
 import Anthropic from '@anthropic-ai/sdk';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { toolRegistry } from '../tools/ToolRegistry';
-import { getHardeningService, SecurityContext } from './HardeningService';
 
 export interface AgentV2MessageInput {
   conversationId?: string;
@@ -43,85 +42,6 @@ export class AgentServiceV2 {
     });
     
     console.log('AgentServiceV2 initialized with Claude Sonnet 4 integration');
-  }
-
-  // ================================
-  // Hardened Tool Execution
-  // ================================
-
-  private async executeToolWithHardening(
-    toolName: string,
-    toolInput: any,
-    client: SupabaseClient,
-    conversationId: string,
-    authToken: string | undefined,
-    userId: string
-  ): Promise<any> {
-    const hardeningService = getHardeningService(client);
-    
-    try {
-      // Get user permissions for security context
-      const { data: userProfile } = await client
-        .from('user_profiles')
-        .select('permissions')
-        .eq('id', userId)
-        .single();
-
-      const securityContext: SecurityContext = {
-        userId,
-        permissions: userProfile?.permissions || [],
-        accessToken: authToken
-      };
-
-      // 1. Input validation and sanitization
-      const validation = await hardeningService.validateToolInput(toolName, toolInput, securityContext);
-      
-      if (!validation.isValid) {
-        console.error(`🚫 Tool validation failed for ${toolName}:`, validation.errors);
-        throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
-      }
-
-      if (validation.warnings.length > 0) {
-        console.warn(`⚠️ Tool validation warnings for ${toolName}:`, validation.warnings);
-      }
-
-      // Use sanitized input if available
-      const sanitizedInput = validation.sanitizedInput || toolInput;
-
-      // 2. Execute tool with retry and circuit breaker
-      const result = await hardeningService.executeWithRetryAndCircuitBreaker(
-        toolName,
-        async () => {
-          return await toolRegistry.executeTool(
-            toolName,
-            sanitizedInput,
-            client,
-            conversationId,
-            authToken,
-            userId
-          );
-        },
-        securityContext
-      );
-
-      console.log(`✅ Tool ${toolName} executed successfully with hardening`);
-      return result;
-
-    } catch (error) {
-      console.error(`❌ Hardened tool execution failed for ${toolName}:`, error);
-      
-      // Return user-friendly error instead of throwing
-      return {
-        success: false,
-        message: `Tool execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        metadata: {
-          toolName,
-          userId,
-          timestamp: new Date().toISOString(),
-          error: error instanceof Error ? error.message : 'Unknown error'
-        }
-      };
-    }
   }
 
   async processMessage(input: AgentV2MessageInput): Promise<AgentV2Response> {
@@ -359,7 +279,7 @@ export class AgentServiceV2 {
             }
           }
 
-          const toolResult = await this.executeToolWithHardening(
+          const toolResult = await toolRegistry.executeTool(
             toolCall.name,
             toolCall.input,
             client,
@@ -411,11 +331,18 @@ export class AgentServiceV2 {
       if (toolCalls.length > 0) {
         try {
           // Build tool results for continuation
-          const toolResults = toolCalls.map(toolCall => ({
-            type: 'tool_result' as const,
-            tool_use_id: toolCall.id,
-            content: JSON.stringify(toolResultsMap.get(toolCall.id) || { success: true, stage: 'completed' })
-          }));
+          const toolResults = toolCalls.map(toolCall => {
+            const toolResult = toolResultsMap.get(toolCall.id);
+            if (!toolResult) {
+              console.warn(`⚠️ Missing tool result for ${toolCall.name} (ID: ${toolCall.id})`);
+              console.warn('Available tool result IDs:', Array.from(toolResultsMap.keys()));
+            }
+            return {
+              type: 'tool_result' as const,
+              tool_use_id: toolCall.id,
+              content: JSON.stringify(toolResult || { error: 'Tool result not found' })
+            };
+          });
           
           console.log('🔄 Tool results being passed to Claude:', toolResults.map(r => ({ 
             id: r.tool_use_id, 
@@ -508,7 +435,7 @@ export class AgentServiceV2 {
             for (const toolCall of continuationToolCalls) {
               const toolStartTime = Date.now();
               try {
-                const toolResult = await this.executeToolWithHardening(
+                const toolResult = await toolRegistry.executeTool(
                   toolCall.name,
                   toolCall.input,
                   client,
@@ -661,7 +588,7 @@ export class AgentServiceV2 {
                 for (const toolCall of finalToolCalls) {
                   const toolStartTime = Date.now();
                   try {
-                    const toolResult = await this.executeToolWithHardening(
+                    const toolResult = await toolRegistry.executeTool(
                       toolCall.name,
                       toolCall.input,
                       client,
@@ -684,15 +611,8 @@ export class AgentServiceV2 {
                       status: 'SUCCESS'
                     });
                     
-                    // Stream the tool result as content for immediate user feedback
-                    const toolResultMessage = `\n\n🔧 **${toolCall.name} executed successfully**\n${JSON.stringify(toolResult, null, 2)}`;
-                    continuationContent += toolResultMessage;
-                    
-                    callback({
-                      type: 'content',
-                      content: toolResultMessage,
-                      conversationId: conversationId
-                    });
+                    // Log tool execution for development but don't stream verbose results to user
+                    console.log(`🔧 Tool ${toolCall.name} executed successfully in ${executionDuration}ms`);
                     
                   } catch (error) {
                     console.error(`Error executing final tool ${toolCall.name}:`, error);
@@ -710,14 +630,8 @@ export class AgentServiceV2 {
                       status: 'ERROR'
                     });
                     
-                    const errorMessage = `\n\n❌ **${toolCall.name} failed**: ${error instanceof Error ? error.message : 'Unknown error'}`;
-                    continuationContent += errorMessage;
-                    
-                    callback({
-                      type: 'content',
-                      content: errorMessage,
-                      conversationId: conversationId
-                    });
+                    // Log tool error for development but don't stream to user content
+                    console.error(`❌ Tool ${toolCall.name} failed in ${executionDuration}ms:`, error);
                   }
                 }
               }
@@ -727,15 +641,7 @@ export class AgentServiceV2 {
             } catch (finalError) {
               console.error('Error getting final continuation response:', finalError);
               // If final response fails, we still have the tool execution results
-              // Just send a simple completion message
-              const fallbackMessage = '\n\n✅ Tool execution completed successfully.';
-              continuationContent += fallbackMessage;
-              
-              callback({
-                type: 'content',
-                content: fallbackMessage,
-                conversationId: conversationId
-              });
+              // No need to stream completion message as tools will be visible in Tool Execution Panel
             }
           }
         } catch (error) {
@@ -851,7 +757,13 @@ You have access to the "think" tool for complex analysis.
 2. For pipeline questions: use search_deals to analyze current pipeline state
 3. For customer questions: use search tools to gather customer data
 4. For performance questions: gather relevant business metrics
-5. Then provide data-driven recommendations based on actual system data
+5. **MOST IMPORTANT**: After tools complete, provide a comprehensive analysis that includes:
+   - Clear interpretation of the data you gathered
+   - Specific insights based on the tool results
+   - Actionable recommendations with reasoning
+   - Strategic next steps for the user
+
+**NEVER** stop after tool execution - you must always follow up with detailed analysis of what the tools revealed.
 
 ## YOUR ROLE
 You are a sophisticated CRM assistant for PipeCD that can:
@@ -870,7 +782,18 @@ You are a sophisticated CRM assistant for PipeCD that can:
 - Use data-driven reasoning
 - Consider business context and implications
 
-**Remember**: Your goal is to be helpful and responsive. Start with direct tool usage for simple requests. Use the think tool only when genuine analysis or strategy formulation would be valuable.`;
+**RESPONSE STRUCTURE FOR ANALYTICAL QUESTIONS:**
+1. Brief acknowledgment of the question
+2. Use think tool if complex analysis is needed
+3. Execute relevant data-gathering tools (search_deals, etc.)
+4. **PROVIDE COMPREHENSIVE ANALYSIS** - This is the most important part:
+   - Summarize key findings from the data
+   - Identify patterns, trends, or issues
+   - Offer specific, actionable recommendations
+   - Explain the reasoning behind your suggestions
+   - Suggest concrete next steps
+
+**Remember**: Never end with just tool execution. The user wants insights and recommendations, not just raw data. Always complete the analytical cycle with thoughtful conclusions.`;
   }
 
   private async processClaudeV2Response(
@@ -888,221 +811,7 @@ You are a sophisticated CRM assistant for PipeCD that can:
   }
 
   private calculateConfidenceScore(content: string, thoughts: any[]): number {
-    // Simple confidence calculation based on content length and thought depth
-    const baseScore = Math.min(content.length / 100, 1.0); // Up to 1.0 for 100+ chars
-    const thoughtBonus = Math.min(thoughts.length * 0.1, 0.5); // Up to 0.5 for 5+ thoughts
-    return Math.min(baseScore + thoughtBonus, 1.0);
-  }
-
-  // ================================
-  // Health Monitoring & Diagnostics
-  // ================================
-
-  async getSystemHealth(supabaseClient?: SupabaseClient): Promise<{
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    agent: {
-      version: string;
-      status: string;
-      lastActivity: string;
-    };
-    hardening: any;
-    database: {
-      status: string;
-      latency: number;
-    };
-    recommendations: string[];
-  }> {
-    const client = supabaseClient || supabase;
-    const hardeningService = getHardeningService(client);
-    
-    try {
-      // Get hardening health report
-      const hardeningHealth = await hardeningService.generateHealthReport();
-      
-      // Test database connectivity
-      const dbStartTime = Date.now();
-      const { data: dbTest } = await client
-        .from('agent_conversations')
-        .select('count', { count: 'exact', head: true })
-        .limit(1);
-      const dbLatency = Date.now() - dbStartTime;
-      
-      // Get last activity
-      const { data: lastConversation } = await client
-        .from('agent_conversations')
-        .select('updated_at')
-        .eq('agent_version', 'v2')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      const recommendations: string[] = [...hardeningHealth.recommendations];
-      
-      // Add system-specific recommendations
-      if (dbLatency > 1000) {
-        recommendations.push('Database latency is high - consider optimization');
-      }
-      
-      if (!lastConversation || new Date(lastConversation.updated_at).getTime() < Date.now() - 24 * 60 * 60 * 1000) {
-        recommendations.push('No recent V2 agent activity - check system usage');
-      }
-
-      // Determine overall status
-      let status: 'healthy' | 'degraded' | 'unhealthy';
-      if (hardeningHealth.overallHealth === 'healthy' && dbLatency < 500) {
-        status = 'healthy';
-      } else if (hardeningHealth.overallHealth === 'degraded' || dbLatency < 1000) {
-        status = 'degraded';
-      } else {
-        status = 'unhealthy';
-      }
-
-      return {
-        status,
-        agent: {
-          version: 'v2',
-          status: 'operational',
-          lastActivity: lastConversation?.updated_at || 'never'
-        },
-        hardening: {
-          ...hardeningHealth,
-          circuitBreakers: hardeningService.getCircuitBreakerStatus(),
-          rateLimits: hardeningService.getRateLimitStatus()
-        },
-        database: {
-          status: dbLatency < 1000 ? 'healthy' : 'degraded',
-          latency: dbLatency
-        },
-        recommendations
-      };
-
-    } catch (error) {
-      console.error('Health check failed:', error);
-      return {
-        status: 'unhealthy',
-        agent: {
-          version: 'v2',
-          status: 'error',
-          lastActivity: 'unknown'
-        },
-        hardening: {
-          overallHealth: 'unhealthy',
-          metrics: {
-            totalExecutions: 0,
-            successRate: 0,
-            averageExecutionTime: 0,
-            circuitBreakersOpen: 0,
-            rateLimitViolations: 0
-          },
-          recommendations: ['System health check failed - investigate immediately']
-        },
-        database: {
-          status: 'unknown',
-          latency: -1
-        },
-        recommendations: [
-          'Critical: Health monitoring system failure',
-          'Investigate database connectivity',
-          'Check AI agent service status'
-        ]
-      };
-    }
-  }
-
-  async getPerformanceMetrics(supabaseClient?: SupabaseClient): Promise<{
-    toolMetrics: any[];
-    conversationMetrics: {
-      totalConversations: number;
-      activeConversations: number;
-      averageResponseTime: number;
-    };
-    errorAnalysis: {
-      commonErrors: Array<{ error: string; count: number }>;
-      errorRate: number;
-    };
-  }> {
-    const client = supabaseClient || supabase;
-    const hardeningService = getHardeningService(client);
-    
-    try {
-      // Get hardening performance metrics
-      const performanceMetrics = hardeningService.getPerformanceMetrics();
-      
-      // Analyze tool performance
-      const toolMetrics = performanceMetrics.reduce((acc: any[], metric) => {
-        const existing = acc.find(t => t.toolName === metric.toolName);
-        if (existing) {
-          existing.executions++;
-          existing.totalTime += metric.executionTime;
-          existing.averageTime = existing.totalTime / existing.executions;
-          existing.successRate = (existing.successes / existing.executions) * 100;
-          if (metric.success) existing.successes++;
-        } else {
-          acc.push({
-            toolName: metric.toolName,
-            executions: 1,
-            successes: metric.success ? 1 : 0,
-            totalTime: metric.executionTime,
-            averageTime: metric.executionTime,
-            successRate: metric.success ? 100 : 0
-          });
-        }
-        return acc;
-      }, []);
-
-      // Get conversation metrics
-      const { data: conversations } = await client
-        .from('agent_conversations')
-        .select('id, created_at, updated_at, messages')
-        .eq('agent_version', 'v2')
-        .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()); // Last 24 hours
-
-      const conversationMetrics = {
-        totalConversations: conversations?.length || 0,
-        activeConversations: conversations?.filter(c => 
-          new Date(c.updated_at).getTime() > Date.now() - 60 * 60 * 1000 // Last hour
-        ).length || 0,
-        averageResponseTime: 0 // TODO: Calculate from performance metrics
-      };
-
-      // Error analysis
-      const failedMetrics = performanceMetrics.filter(m => !m.success);
-      const errorCounts = failedMetrics.reduce((acc: any, metric) => {
-        const error = 'Tool execution failed'; // Simplified - could extract actual error types
-        acc[error] = (acc[error] || 0) + 1;
-        return acc;
-      }, {});
-
-      const errorAnalysis = {
-        commonErrors: Object.entries(errorCounts).map(([error, count]) => ({ 
-          error, 
-          count: count as number 
-        })),
-        errorRate: performanceMetrics.length > 0 
-          ? (failedMetrics.length / performanceMetrics.length) * 100 
-          : 0
-      };
-
-      return {
-        toolMetrics,
-        conversationMetrics,
-        errorAnalysis
-      };
-
-    } catch (error) {
-      console.error('Performance metrics collection failed:', error);
-      return {
-        toolMetrics: [],
-        conversationMetrics: {
-          totalConversations: 0,
-          activeConversations: 0,
-          averageResponseTime: 0
-        },
-        errorAnalysis: {
-          commonErrors: [],
-          errorRate: 0
-        }
-      };
-    }
+    // Removed - confidence scoring no longer used
+    return 0.8;
   }
 }

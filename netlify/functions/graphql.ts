@@ -41,7 +41,6 @@ import { WFMWorkflowStep as WFMWorkflowStepResolver } from './graphql/resolvers/
 // Import Agent Resolvers
 import { agentQueries, agentMutations } from './graphql/resolvers/agentResolvers';
 import { agentV2Resolvers } from './graphql/resolvers/agentV2Resolvers';
-import { agentV2HealthResolvers } from './graphql/resolvers/agentV2HealthResolvers';
 
 // Import Relationship Resolvers
 
@@ -116,7 +115,6 @@ const loadTypeDefs = (): string => {
     'activityReminders.graphql',
     'agent.graphql',
     'agentV2.graphql',
-    'agentV2Health.graphql',
     'appSettings.graphql',
     'base.graphql', 
     'currency.graphql',
@@ -180,7 +178,6 @@ export const resolvers = {
     ...WFMProjectTypeResolvers.Query,
     ...agentQueries,
     ...agentV2Resolvers.Query,
-    ...agentV2HealthResolvers.Query,
 
     ...smartStickerQueries,
     ...emailQueries,

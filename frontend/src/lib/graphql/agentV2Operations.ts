@@ -11,6 +11,8 @@ export interface AgentV2Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
+  thoughts?: any[];
+  toolExecutions?: ToolExecution[];
 }
 
 export interface AgentV2Conversation {

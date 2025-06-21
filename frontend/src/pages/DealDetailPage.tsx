@@ -339,6 +339,8 @@ const DealDetailPage = () => {
      (currentDeal.user_id === currentUserId || currentDeal.assigned_to_user_id === currentUserId))
   );
 
+
+
   // Handle custom field updates
   const handleCustomFieldUpdate = async (fieldId: string, value: any) => {
     if (!currentDeal?.id) return;

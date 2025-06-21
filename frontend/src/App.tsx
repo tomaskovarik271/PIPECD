@@ -25,7 +25,7 @@ import WFMWorkflowsPage from './pages/admin/WFMWorkflowsPage';
 import WFMProjectTypesPage from './pages/admin/WFMProjectTypesPage';
 import GoogleDriveSettingsPage from './pages/admin/GoogleDriveSettingsPage';
 import { UserRoleManagementPage } from './pages/admin/UserRoleManagementPage';
-import { AgentHealthPage } from './pages/admin/AgentHealthPage';
+
 
 import { 
   Box, 
@@ -88,7 +88,6 @@ function AppContent() {
             <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
             <Route path="/admin/google-drive" element={<GoogleDriveSettingsPage />} />
             <Route path="/admin/user-roles" element={<UserRoleManagementPage />} />
-            <Route path="/admin/agent-health" element={<AgentHealthPage />} />
             <Route path="/admin/wfm" element={<WfmAdminPage />}>
               <Route index element={<WFMStatusesPage />} />
               <Route path="statuses" element={<WFMStatusesPage />} />
