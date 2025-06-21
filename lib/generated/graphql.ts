@@ -128,6 +128,7 @@ export type AgentConfigInput = {
 
 export type AgentConversation = {
   __typename?: "AgentConversation";
+  agentVersion: Scalars["String"]["output"];
   context: Scalars["JSON"]["output"];
   createdAt: Scalars["DateTime"]["output"];
   id: Scalars["ID"]["output"];
@@ -187,10 +188,16 @@ export enum AgentStepStatus {
 
 export type AgentThought = {
   __typename?: "AgentThought";
+  concerns?: Maybe<Scalars["String"]["output"]>;
   content: Scalars["String"]["output"];
   conversationId: Scalars["ID"]["output"];
   id: Scalars["ID"]["output"];
   metadata: Scalars["JSON"]["output"];
+  nextSteps?: Maybe<Scalars["String"]["output"]>;
+  reasoning?: Maybe<Scalars["String"]["output"]>;
+  reflectionData: Scalars["JSON"]["output"];
+  strategy?: Maybe<Scalars["String"]["output"]>;
+  thinkingBudget?: Maybe<ThinkingBudget>;
   timestamp: Scalars["DateTime"]["output"];
   type: AgentThoughtType;
 };
@@ -208,6 +215,46 @@ export enum AgentThoughtType {
   Reasoning = "REASONING",
   ToolCall = "TOOL_CALL",
 }
+
+export type AgentV2Response = {
+  __typename?: "AgentV2Response";
+  confidenceScore?: Maybe<Scalars["Float"]["output"]>;
+  conversation: AgentConversation;
+  extendedThoughts: Array<AgentThought>;
+  message: AgentMessage;
+  planModifications: Array<Scalars["String"]["output"]>;
+  reflections: Array<AgentThought>;
+  thinkingTime?: Maybe<Scalars["Float"]["output"]>;
+  toolExecutions: Array<ToolExecution>;
+};
+
+export type AgentV2StreamChunk = {
+  __typename?: "AgentV2StreamChunk";
+  complete?: Maybe<AgentV2Response>;
+  content?: Maybe<Scalars["String"]["output"]>;
+  conversationId: Scalars["ID"]["output"];
+  error?: Maybe<Scalars["String"]["output"]>;
+  thinking?: Maybe<AgentThought>;
+  type: AgentV2StreamChunkType;
+};
+
+export enum AgentV2StreamChunkType {
+  Complete = "COMPLETE",
+  Content = "CONTENT",
+  Error = "ERROR",
+  Thinking = "THINKING",
+}
+
+export type AgentV2ThoughtInput = {
+  concerns?: InputMaybe<Scalars["String"]["input"]>;
+  content: Scalars["String"]["input"];
+  nextSteps?: InputMaybe<Scalars["String"]["input"]>;
+  reasoning?: InputMaybe<Scalars["String"]["input"]>;
+  reflectionData?: InputMaybe<Scalars["JSON"]["input"]>;
+  strategy?: InputMaybe<Scalars["String"]["input"]>;
+  thinkingBudget?: InputMaybe<ThinkingBudget>;
+  type: AgentThoughtType;
+};
 
 export type AppSetting = {
   __typename?: "AppSetting";
@@ -310,6 +357,10 @@ export type CreateActivityInput = {
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   subject: Scalars["String"]["input"];
   type: ActivityType;
+};
+
+export type CreateAgentV2ConversationInput = {
+  initialContext?: InputMaybe<Scalars["JSON"]["input"]>;
 };
 
 export type CreateContactFromEmailInput = {
@@ -967,6 +1018,16 @@ export type ExchangeRate = {
   updatedAt: Scalars["String"]["output"];
 };
 
+export type ExtendedThinkingAnalysis = {
+  __typename?: "ExtendedThinkingAnalysis";
+  identifiedConcerns: Array<Scalars["String"]["output"]>;
+  reasoningDepth: Scalars["Float"]["output"];
+  recommendedActions: Array<Scalars["String"]["output"]>;
+  strategicInsights: Array<Scalars["String"]["output"]>;
+  thinkingBudgetUsed: ThinkingBudget;
+  totalThoughts: Scalars["Int"]["output"];
+};
+
 export type GenerateTaskContentInput = {
   emailId: Scalars["String"]["input"];
   threadId?: InputMaybe<Scalars["String"]["input"]>;
@@ -1151,6 +1212,7 @@ export type LeadsStats = {
 export type Mutation = {
   __typename?: "Mutation";
   addAgentThoughts: Array<AgentThought>;
+  addAgentV2Thoughts: Array<AgentThought>;
   addDealParticipant: DealParticipant;
   archiveThread: Scalars["Boolean"]["output"];
   assignUserRole: User;
@@ -1165,6 +1227,7 @@ export type Mutation = {
   copyDriveFile: DriveFile;
   createActivity: Activity;
   createAgentConversation: AgentConversation;
+  createAgentV2Conversation: AgentConversation;
   createContactFromEmail: Person;
   createCurrency: Currency;
   createCustomFieldDefinition: CustomFieldDefinition;
@@ -1216,6 +1279,8 @@ export type Mutation = {
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
   scheduleActivityReminder: ActivityReminder;
   sendAgentMessage: AgentResponse;
+  sendAgentV2Message: AgentV2Response;
+  sendAgentV2MessageStream: Scalars["String"]["output"];
   setExchangeRate: ExchangeRate;
   shareDriveFolder: Scalars["Boolean"]["output"];
   syncGmailEmails: Array<Email>;
@@ -1258,6 +1323,11 @@ export type Mutation = {
 export type MutationAddAgentThoughtsArgs = {
   conversationId: Scalars["ID"]["input"];
   thoughts: Array<AgentThoughtInput>;
+};
+
+export type MutationAddAgentV2ThoughtsArgs = {
+  conversationId: Scalars["ID"]["input"];
+  thoughts: Array<AgentV2ThoughtInput>;
 };
 
 export type MutationAddDealParticipantArgs = {
@@ -1321,6 +1391,10 @@ export type MutationCreateActivityArgs = {
 
 export type MutationCreateAgentConversationArgs = {
   config?: InputMaybe<AgentConfigInput>;
+};
+
+export type MutationCreateAgentV2ConversationArgs = {
+  input: CreateAgentV2ConversationInput;
 };
 
 export type MutationCreateContactFromEmailArgs = {
@@ -1525,6 +1599,14 @@ export type MutationScheduleActivityReminderArgs = {
 
 export type MutationSendAgentMessageArgs = {
   input: SendMessageInput;
+};
+
+export type MutationSendAgentV2MessageArgs = {
+  input: SendAgentV2MessageInput;
+};
+
+export type MutationSendAgentV2MessageStreamArgs = {
+  input: SendAgentV2MessageStreamInput;
 };
 
 export type MutationSetExchangeRateArgs = {
@@ -1851,10 +1933,14 @@ export type Query = {
   agentConversation?: Maybe<AgentConversation>;
   agentConversations: Array<AgentConversation>;
   agentThoughts: Array<AgentThought>;
+  agentV2Conversations: Array<AgentConversation>;
+  agentV2ThinkingAnalysis: ExtendedThinkingAnalysis;
+  agentV2Thoughts: Array<AgentThought>;
   /** Get a specific app setting by key */
   appSetting?: Maybe<AppSetting>;
   /** Get all app settings (admin only for private settings) */
   appSettings: Array<AppSetting>;
+  assignableUsers: Array<User>;
   currencies: Array<Currency>;
   currency?: Maybe<Currency>;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
@@ -1953,6 +2039,20 @@ export type QueryAgentConversationsArgs = {
 };
 
 export type QueryAgentThoughtsArgs = {
+  conversationId: Scalars["ID"]["input"];
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryAgentV2ConversationsArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryAgentV2ThinkingAnalysisArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export type QueryAgentV2ThoughtsArgs = {
   conversationId: Scalars["ID"]["input"];
   limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
@@ -2200,6 +2300,16 @@ export type Role = {
   name: Scalars["String"]["output"];
 };
 
+export type SendAgentV2MessageInput = {
+  content: Scalars["String"]["input"];
+  conversationId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type SendAgentV2MessageStreamInput = {
+  content: Scalars["String"]["input"];
+  conversationId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
 export type SendMessageInput = {
   config?: InputMaybe<AgentConfigInput>;
   content: Scalars["String"]["input"];
@@ -2357,6 +2467,9 @@ export type Subscription = {
   agentConversationUpdated: AgentConversation;
   agentPlanUpdated: AgentPlan;
   agentThoughtsAdded: Array<AgentThought>;
+  agentV2MessageStream: AgentV2StreamChunk;
+  agentV2ReflectionAdded: AgentThought;
+  agentV2ThinkingUpdated: Array<AgentThought>;
   notificationAdded: Notification;
   notificationUpdated: Notification;
 };
@@ -2370,6 +2483,18 @@ export type SubscriptionAgentPlanUpdatedArgs = {
 };
 
 export type SubscriptionAgentThoughtsAddedArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionAgentV2MessageStreamArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionAgentV2ReflectionAddedArgs = {
+  conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionAgentV2ThinkingUpdatedArgs = {
   conversationId: Scalars["ID"]["input"];
 };
 
@@ -2394,6 +2519,23 @@ export type ToolDiscoveryResponse = {
   error?: Maybe<Scalars["String"]["output"]>;
   tools: Array<Scalars["JSON"]["output"]>;
 };
+
+export type ToolExecution = {
+  __typename?: "ToolExecution";
+  error?: Maybe<Scalars["String"]["output"]>;
+  executionTime: Scalars["Int"]["output"];
+  id: Scalars["ID"]["output"];
+  input: Scalars["JSON"]["output"];
+  name: Scalars["String"]["output"];
+  result?: Maybe<Scalars["JSON"]["output"]>;
+  status: ToolExecutionStatus;
+  timestamp: Scalars["String"]["output"];
+};
+
+export enum ToolExecutionStatus {
+  Error = "ERROR",
+  Success = "SUCCESS",
+}
 
 export type UpdateActivityInput = {
   assigned_to_user_id?: InputMaybe<Scalars["ID"]["input"]>;
@@ -2780,6 +2922,10 @@ export type ResolversTypes = {
   AgentThought: ResolverTypeWrapper<AgentThought>;
   AgentThoughtInput: AgentThoughtInput;
   AgentThoughtType: AgentThoughtType;
+  AgentV2Response: ResolverTypeWrapper<AgentV2Response>;
+  AgentV2StreamChunk: ResolverTypeWrapper<AgentV2StreamChunk>;
+  AgentV2StreamChunkType: AgentV2StreamChunkType;
+  AgentV2ThoughtInput: AgentV2ThoughtInput;
   AppSetting: ResolverTypeWrapper<AppSetting>;
   AttachDocumentInput: AttachDocumentInput;
   AttachDocumentToNoteInput: AttachDocumentToNoteInput;
@@ -2792,6 +2938,7 @@ export type ResolversTypes = {
   ConversionResult: ResolverTypeWrapper<ConversionResult>;
   ConvertedEntities: ResolverTypeWrapper<ConvertedEntities>;
   CreateActivityInput: CreateActivityInput;
+  CreateAgentV2ConversationInput: CreateAgentV2ConversationInput;
   CreateContactFromEmailInput: CreateContactFromEmailInput;
   CreateCurrencyInput: CreateCurrencyInput;
   CreateDealFolderInput: CreateDealFolderInput;
@@ -2856,6 +3003,7 @@ export type ResolversTypes = {
   EmailThreadsFilterInput: EmailThreadsFilterInput;
   EntityType: EntityType;
   ExchangeRate: ResolverTypeWrapper<ExchangeRate>;
+  ExtendedThinkingAnalysis: ResolverTypeWrapper<ExtendedThinkingAnalysis>;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
   GenerateTaskContentInput: GenerateTaskContentInput;
   GoogleDriveConfig: ResolverTypeWrapper<GoogleDriveConfig>;
@@ -2892,6 +3040,8 @@ export type ResolversTypes = {
   Query: ResolverTypeWrapper<{}>;
   ReminderType: ReminderType;
   Role: ResolverTypeWrapper<Role>;
+  SendAgentV2MessageInput: SendAgentV2MessageInput;
+  SendAgentV2MessageStreamInput: SendAgentV2MessageStreamInput;
   SendMessageInput: SendMessageInput;
   SetExchangeRateInput: SetExchangeRateInput;
   SharedDrive: ResolverTypeWrapper<SharedDrive>;
@@ -2912,6 +3062,8 @@ export type ResolversTypes = {
   Subscription: ResolverTypeWrapper<{}>;
   ThinkingBudget: ThinkingBudget;
   ToolDiscoveryResponse: ResolverTypeWrapper<ToolDiscoveryResponse>;
+  ToolExecution: ResolverTypeWrapper<ToolExecution>;
+  ToolExecutionStatus: ToolExecutionStatus;
   UpdateActivityInput: UpdateActivityInput;
   UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateConversationInput: UpdateConversationInput;
@@ -2957,6 +3109,9 @@ export type ResolversParentTypes = {
   AgentResponse: AgentResponse;
   AgentThought: AgentThought;
   AgentThoughtInput: AgentThoughtInput;
+  AgentV2Response: AgentV2Response;
+  AgentV2StreamChunk: AgentV2StreamChunk;
+  AgentV2ThoughtInput: AgentV2ThoughtInput;
   AppSetting: AppSetting;
   AttachDocumentInput: AttachDocumentInput;
   AttachDocumentToNoteInput: AttachDocumentToNoteInput;
@@ -2967,6 +3122,7 @@ export type ResolversParentTypes = {
   ConversionResult: ConversionResult;
   ConvertedEntities: ConvertedEntities;
   CreateActivityInput: CreateActivityInput;
+  CreateAgentV2ConversationInput: CreateAgentV2ConversationInput;
   CreateContactFromEmailInput: CreateContactFromEmailInput;
   CreateCurrencyInput: CreateCurrencyInput;
   CreateDealFolderInput: CreateDealFolderInput;
@@ -3023,6 +3179,7 @@ export type ResolversParentTypes = {
   EmailThreadConnection: EmailThreadConnection;
   EmailThreadsFilterInput: EmailThreadsFilterInput;
   ExchangeRate: ExchangeRate;
+  ExtendedThinkingAnalysis: ExtendedThinkingAnalysis;
   Float: Scalars["Float"]["output"];
   GenerateTaskContentInput: GenerateTaskContentInput;
   GoogleDriveConfig: GoogleDriveConfig;
@@ -3055,6 +3212,8 @@ export type ResolversParentTypes = {
   PinEmailInput: PinEmailInput;
   Query: {};
   Role: Role;
+  SendAgentV2MessageInput: SendAgentV2MessageInput;
+  SendAgentV2MessageStreamInput: SendAgentV2MessageStreamInput;
   SendMessageInput: SendMessageInput;
   SetExchangeRateInput: SetExchangeRateInput;
   SharedDrive: SharedDrive;
@@ -3070,6 +3229,7 @@ export type ResolversParentTypes = {
   String: Scalars["String"]["output"];
   Subscription: {};
   ToolDiscoveryResponse: ToolDiscoveryResponse;
+  ToolExecution: ToolExecution;
   UpdateActivityInput: UpdateActivityInput;
   UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateConversationInput: UpdateConversationInput;
@@ -3238,6 +3398,7 @@ export type AgentConversationResolvers<
   ParentType extends
     ResolversParentTypes["AgentConversation"] = ResolversParentTypes["AgentConversation"],
 > = {
+  agentVersion?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   context?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
   createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
@@ -3327,12 +3488,100 @@ export type AgentThoughtResolvers<
   ParentType extends
     ResolversParentTypes["AgentThought"] = ResolversParentTypes["AgentThought"],
 > = {
+  concerns?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   content?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   conversationId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   metadata?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  nextSteps?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  reasoning?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  reflectionData?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  strategy?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  thinkingBudget?: Resolver<
+    Maybe<ResolversTypes["ThinkingBudget"]>,
+    ParentType,
+    ContextType
+  >;
   timestamp?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   type?: Resolver<ResolversTypes["AgentThoughtType"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgentV2ResponseResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AgentV2Response"] = ResolversParentTypes["AgentV2Response"],
+> = {
+  confidenceScore?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  conversation?: Resolver<
+    ResolversTypes["AgentConversation"],
+    ParentType,
+    ContextType
+  >;
+  extendedThoughts?: Resolver<
+    Array<ResolversTypes["AgentThought"]>,
+    ParentType,
+    ContextType
+  >;
+  message?: Resolver<ResolversTypes["AgentMessage"], ParentType, ContextType>;
+  planModifications?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  reflections?: Resolver<
+    Array<ResolversTypes["AgentThought"]>,
+    ParentType,
+    ContextType
+  >;
+  thinkingTime?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  toolExecutions?: Resolver<
+    Array<ResolversTypes["ToolExecution"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AgentV2StreamChunkResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AgentV2StreamChunk"] = ResolversParentTypes["AgentV2StreamChunk"],
+> = {
+  complete?: Resolver<
+    Maybe<ResolversTypes["AgentV2Response"]>,
+    ParentType,
+    ContextType
+  >;
+  content?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  conversationId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  error?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  thinking?: Resolver<
+    Maybe<ResolversTypes["AgentThought"]>,
+    ParentType,
+    ContextType
+  >;
+  type?: Resolver<
+    ResolversTypes["AgentV2StreamChunkType"],
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4237,6 +4486,36 @@ export type ExchangeRateResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type ExtendedThinkingAnalysisResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["ExtendedThinkingAnalysis"] = ResolversParentTypes["ExtendedThinkingAnalysis"],
+> = {
+  identifiedConcerns?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  reasoningDepth?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  recommendedActions?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  strategicInsights?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  thinkingBudgetUsed?: Resolver<
+    ResolversTypes["ThinkingBudget"],
+    ParentType,
+    ContextType
+  >;
+  totalThoughts?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type GoogleDriveConfigResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -4563,6 +4842,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationAddAgentThoughtsArgs, "conversationId" | "thoughts">
   >;
+  addAgentV2Thoughts?: Resolver<
+    Array<ResolversTypes["AgentThought"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationAddAgentV2ThoughtsArgs, "conversationId" | "thoughts">
+  >;
   addDealParticipant?: Resolver<
     ResolversTypes["DealParticipant"],
     ParentType,
@@ -4649,6 +4934,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     Partial<MutationCreateAgentConversationArgs>
+  >;
+  createAgentV2Conversation?: Resolver<
+    ResolversTypes["AgentConversation"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateAgentV2ConversationArgs, "input">
   >;
   createContactFromEmail?: Resolver<
     ResolversTypes["Person"],
@@ -4956,6 +5247,18 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationSendAgentMessageArgs, "input">
+  >;
+  sendAgentV2Message?: Resolver<
+    ResolversTypes["AgentV2Response"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationSendAgentV2MessageArgs, "input">
+  >;
+  sendAgentV2MessageStream?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationSendAgentV2MessageStreamArgs, "input">
   >;
   setExchangeRate?: Resolver<
     ResolversTypes["ExchangeRate"],
@@ -5397,6 +5700,24 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryAgentThoughtsArgs, "conversationId" | "limit">
   >;
+  agentV2Conversations?: Resolver<
+    Array<ResolversTypes["AgentConversation"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryAgentV2ConversationsArgs, "limit" | "offset">
+  >;
+  agentV2ThinkingAnalysis?: Resolver<
+    ResolversTypes["ExtendedThinkingAnalysis"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryAgentV2ThinkingAnalysisArgs, "conversationId">
+  >;
+  agentV2Thoughts?: Resolver<
+    Array<ResolversTypes["AgentThought"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryAgentV2ThoughtsArgs, "conversationId" | "limit">
+  >;
   appSetting?: Resolver<
     Maybe<ResolversTypes["AppSetting"]>,
     ParentType,
@@ -5405,6 +5726,11 @@ export type QueryResolvers<
   >;
   appSettings?: Resolver<
     Array<ResolversTypes["AppSetting"]>,
+    ParentType,
+    ContextType
+  >;
+  assignableUsers?: Resolver<
+    Array<ResolversTypes["User"]>,
     ParentType,
     ContextType
   >;
@@ -6050,6 +6376,27 @@ export type SubscriptionResolvers<
     ContextType,
     RequireFields<SubscriptionAgentThoughtsAddedArgs, "conversationId">
   >;
+  agentV2MessageStream?: SubscriptionResolver<
+    ResolversTypes["AgentV2StreamChunk"],
+    "agentV2MessageStream",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionAgentV2MessageStreamArgs, "conversationId">
+  >;
+  agentV2ReflectionAdded?: SubscriptionResolver<
+    ResolversTypes["AgentThought"],
+    "agentV2ReflectionAdded",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionAgentV2ReflectionAddedArgs, "conversationId">
+  >;
+  agentV2ThinkingUpdated?: SubscriptionResolver<
+    Array<ResolversTypes["AgentThought"]>,
+    "agentV2ThinkingUpdated",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionAgentV2ThinkingUpdatedArgs, "conversationId">
+  >;
   notificationAdded?: SubscriptionResolver<
     ResolversTypes["Notification"],
     "notificationAdded",
@@ -6073,6 +6420,26 @@ export type ToolDiscoveryResponseResolvers<
 > = {
   error?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   tools?: Resolver<Array<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ToolExecutionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["ToolExecution"] = ResolversParentTypes["ToolExecution"],
+> = {
+  error?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  executionTime?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  input?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  result?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  status?: Resolver<
+    ResolversTypes["ToolExecutionStatus"],
+    ParentType,
+    ContextType
+  >;
+  timestamp?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -6397,6 +6764,8 @@ export type Resolvers<ContextType = GraphQLContext> = {
   AgentPlanStep?: AgentPlanStepResolvers<ContextType>;
   AgentResponse?: AgentResponseResolvers<ContextType>;
   AgentThought?: AgentThoughtResolvers<ContextType>;
+  AgentV2Response?: AgentV2ResponseResolvers<ContextType>;
+  AgentV2StreamChunk?: AgentV2StreamChunkResolvers<ContextType>;
   AppSetting?: AppSettingResolvers<ContextType>;
   ConversionResult?: ConversionResultResolvers<ContextType>;
   ConvertedEntities?: ConvertedEntitiesResolvers<ContextType>;
@@ -6432,6 +6801,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   EmailThread?: EmailThreadResolvers<ContextType>;
   EmailThreadConnection?: EmailThreadConnectionResolvers<ContextType>;
   ExchangeRate?: ExchangeRateResolvers<ContextType>;
+  ExtendedThinkingAnalysis?: ExtendedThinkingAnalysisResolvers<ContextType>;
   GoogleDriveConfig?: GoogleDriveConfigResolvers<ContextType>;
   GoogleIntegrationStatus?: GoogleIntegrationStatusResolvers<ContextType>;
   GoogleTokenData?: GoogleTokenDataResolvers<ContextType>;
@@ -6458,6 +6828,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   StickerConnection?: StickerConnectionResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
   ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;
+  ToolExecution?: ToolExecutionResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   UserCurrencyPreferences?: UserCurrencyPreferencesResolvers<ContextType>;
   UserReminderPreferences?: UserReminderPreferencesResolvers<ContextType>;

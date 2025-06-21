@@ -16,6 +16,7 @@ type Role {
 
 extend type Query {
   users: [User!]!
+  assignableUsers: [User!]!  # Users that can be assigned to deals - requires deal assignment permissions
   roles: [Role!]!
 }
 
