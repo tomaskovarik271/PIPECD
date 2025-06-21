@@ -179,29 +179,38 @@ export type Database = {
       }
       agent_conversations: {
         Row: {
+          agent_version: string | null
           context: Json
           created_at: string
+          extended_thinking_enabled: boolean | null
           id: string
           messages: Json
           plan: Json | null
+          thinking_budget: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          agent_version?: string | null
           context?: Json
           created_at?: string
+          extended_thinking_enabled?: boolean | null
           id?: string
           messages?: Json
           plan?: Json | null
+          thinking_budget?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          agent_version?: string | null
           context?: Json
           created_at?: string
+          extended_thinking_enabled?: boolean | null
           id?: string
           messages?: Json
           plan?: Json | null
+          thinking_budget?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -209,26 +218,44 @@ export type Database = {
       }
       agent_thoughts: {
         Row: {
+          concerns: string | null
           content: string
           conversation_id: string
           id: string
           metadata: Json
+          next_steps: string | null
+          reasoning: string | null
+          reflection_data: Json | null
+          strategy: string | null
+          thinking_budget: string | null
           timestamp: string
           type: string
         }
         Insert: {
+          concerns?: string | null
           content: string
           conversation_id: string
           id?: string
           metadata?: Json
+          next_steps?: string | null
+          reasoning?: string | null
+          reflection_data?: Json | null
+          strategy?: string | null
+          thinking_budget?: string | null
           timestamp?: string
           type: string
         }
         Update: {
+          concerns?: string | null
           content?: string
           conversation_id?: string
           id?: string
           metadata?: Json
+          next_steps?: string | null
+          reasoning?: string | null
+          reflection_data?: Json | null
+          strategy?: string | null
+          thinking_budget?: string | null
           timestamp?: string
           type?: string
         }
@@ -272,6 +299,54 @@ export type Database = {
           setting_type?: string | null
           setting_value?: Json | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      conversion_history: {
+        Row: {
+          conversion_data: Json | null
+          conversion_reason: string | null
+          conversion_type: string
+          converted_at: string | null
+          converted_by_user_id: string | null
+          created_at: string | null
+          id: string
+          source_entity_id: string
+          source_entity_type: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at: string | null
+          wfm_transition_plan: Json | null
+        }
+        Insert: {
+          conversion_data?: Json | null
+          conversion_reason?: string | null
+          conversion_type: string
+          converted_at?: string | null
+          converted_by_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          source_entity_id: string
+          source_entity_type: string
+          target_entity_id: string
+          target_entity_type: string
+          updated_at?: string | null
+          wfm_transition_plan?: Json | null
+        }
+        Update: {
+          conversion_data?: Json | null
+          conversion_reason?: string | null
+          conversion_type?: string
+          converted_at?: string | null
+          converted_by_user_id?: string | null
+          created_at?: string | null
+          id?: string
+          source_entity_id?: string
+          source_entity_type?: string
+          target_entity_id?: string
+          target_entity_type?: string
+          updated_at?: string | null
+          wfm_transition_plan?: Json | null
         }
         Relationships: []
       }
@@ -586,6 +661,8 @@ export type Database = {
           amount_usd: number | null
           assigned_to_user_id: string | null
           conversion_date: string | null
+          conversion_reason: string | null
+          converted_to_lead_id: string | null
           created_at: string
           currency: string | null
           custom_field_values: Json | null
@@ -608,6 +685,8 @@ export type Database = {
           amount_usd?: number | null
           assigned_to_user_id?: string | null
           conversion_date?: string | null
+          conversion_reason?: string | null
+          converted_to_lead_id?: string | null
           created_at?: string
           currency?: string | null
           custom_field_values?: Json | null
@@ -630,6 +709,8 @@ export type Database = {
           amount_usd?: number | null
           assigned_to_user_id?: string | null
           conversion_date?: string | null
+          conversion_reason?: string | null
+          converted_to_lead_id?: string | null
           created_at?: string
           currency?: string | null
           custom_field_values?: Json | null
@@ -648,6 +729,13 @@ export type Database = {
           wfm_project_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "deals_converted_to_lead_id_fkey"
+            columns: ["converted_to_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "deals_currency_fkey"
             columns: ["currency"]
@@ -1035,6 +1123,7 @@ export type Database = {
           contact_name: string | null
           contact_phone: string | null
           conversion_date: string | null
+          conversion_reason: string | null
           converted_at: string | null
           converted_by_user_id: string | null
           converted_to_deal_id: string | null
@@ -1054,6 +1143,8 @@ export type Database = {
           lead_score: number | null
           lead_score_factors: Json | null
           name: string
+          original_deal_id: string | null
+          reactivation_target_date: string | null
           source: string | null
           updated_at: string | null
           user_id: string
@@ -1069,6 +1160,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           conversion_date?: string | null
+          conversion_reason?: string | null
           converted_at?: string | null
           converted_by_user_id?: string | null
           converted_to_deal_id?: string | null
@@ -1088,6 +1180,8 @@ export type Database = {
           lead_score?: number | null
           lead_score_factors?: Json | null
           name: string
+          original_deal_id?: string | null
+          reactivation_target_date?: string | null
           source?: string | null
           updated_at?: string | null
           user_id: string
@@ -1103,6 +1197,7 @@ export type Database = {
           contact_name?: string | null
           contact_phone?: string | null
           conversion_date?: string | null
+          conversion_reason?: string | null
           converted_at?: string | null
           converted_by_user_id?: string | null
           converted_to_deal_id?: string | null
@@ -1122,6 +1217,8 @@ export type Database = {
           lead_score?: number | null
           lead_score_factors?: Json | null
           name?: string
+          original_deal_id?: string | null
+          reactivation_target_date?: string | null
           source?: string | null
           updated_at?: string | null
           user_id?: string
@@ -1155,6 +1252,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "currencies"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "leads_original_deal_id_fkey"
+            columns: ["original_deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "leads_wfm_project_id_fkey"
@@ -1435,6 +1539,66 @@ export type Database = {
             columns: ["default_workflow_id"]
             isOneToOne: false
             referencedRelation: "workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reactivation_plans: {
+        Row: {
+          assigned_to_user_id: string | null
+          created_at: string | null
+          created_by_user_id: string | null
+          follow_up_activities: Json | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          original_deal_id: string | null
+          reactivation_strategy: string | null
+          status: string | null
+          target_reactivation_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          follow_up_activities?: Json | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          original_deal_id?: string | null
+          reactivation_strategy?: string | null
+          status?: string | null
+          target_reactivation_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          created_at?: string | null
+          created_by_user_id?: string | null
+          follow_up_activities?: Json | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          original_deal_id?: string | null
+          reactivation_strategy?: string | null
+          status?: string | null
+          target_reactivation_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reactivation_plans_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reactivation_plans_original_deal_id_fkey"
+            columns: ["original_deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
             referencedColumns: ["id"]
           },
         ]

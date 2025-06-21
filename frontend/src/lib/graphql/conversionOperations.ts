@@ -1,0 +1,234 @@
+import { gql } from '@apollo/client';
+
+// Fragments
+export const CONVERSION_EVENT_FIELDS = gql`
+  fragment ConversionEventFields on ConversionEvent {
+    id
+    createdAt
+    sourceType
+    targetType
+    sourceId
+    targetId
+    sourceName
+    targetName
+    reason
+    notes
+    preservedActivities
+    createdConversionActivity
+    performedBy {
+      id
+      first_name
+      last_name
+      email
+    }
+    metadata
+  }
+`;
+
+export const CONVERSION_VALIDATION_FIELDS = gql`
+  fragment ConversionValidationFields on ConversionValidation {
+    isValid
+    canProceed
+    errors
+    warnings
+    statusValidation {
+      currentStatus
+      allowedStatuses
+      canConvert
+      reason
+    }
+  }
+`;
+
+export const CONVERSION_RESULT_FIELDS = gql`
+  fragment ConversionResultFields on ConversionResult {
+    success
+    conversionId
+    message
+    sourceEntity {
+      id
+      type
+      name
+      status
+    }
+    targetEntity {
+      id
+      type
+      name
+      status
+    }
+    createdEntities {
+      id
+      type
+      name
+    }
+    preservedActivities {
+      id
+      subject
+      type
+    }
+  }
+`;
+
+// Queries
+
+export const VALIDATE_CONVERSION = gql`
+  ${CONVERSION_VALIDATION_FIELDS}
+  query ValidateConversion($input: ValidateConversionInput!) {
+    validateConversion(input: $input) {
+      ...ConversionValidationFields
+    }
+  }
+`;
+
+export const GET_CONVERSION_HISTORY = gql`
+  ${CONVERSION_EVENT_FIELDS}
+  query GetConversionHistory($entityType: String!, $entityId: ID!) {
+    getConversionHistory(entityType: $entityType, entityId: $entityId) {
+      ...ConversionEventFields
+    }
+  }
+`;
+
+export const GET_CONVERSION_STATISTICS = gql`
+  query GetConversionStatistics($timeframe: String) {
+    getConversionStatistics(timeframe: $timeframe) {
+      totalConversions
+      leadToDealConversions
+      dealToLeadConversions
+      conversionRate
+      averageConversionTime
+      topReasons {
+        reason
+        count
+        percentage
+      }
+      monthlyTrends {
+        month
+        leadToDeal
+        dealToLead
+        total
+      }
+    }
+  }
+`;
+
+// Mutations
+
+export const CONVERT_LEAD_TO_DEAL = gql`
+  ${CONVERSION_RESULT_FIELDS}
+  mutation ConvertLeadToDeal($id: ID!, $input: ConvertLeadInput!) {
+    convertLeadToDeal(id: $id, input: $input) {
+      ...ConversionResultFields
+    }
+  }
+`;
+
+export const CONVERT_DEAL_TO_LEAD = gql`
+  ${CONVERSION_RESULT_FIELDS}
+  mutation ConvertDealToLead($id: ID!, $input: ConvertDealInput!) {
+    convertDealToLead(id: $id, input: $input) {
+      ...ConversionResultFields
+    }
+  }
+`;
+
+export const BULK_CONVERT_LEADS = gql`
+  ${CONVERSION_RESULT_FIELDS}
+  mutation BulkConvertLeads($input: BulkConvertLeadsInput!) {
+    bulkConvertLeads(input: $input) {
+      results {
+        ...ConversionResultFields
+      }
+      summary {
+        totalProcessed
+        successCount
+        errorCount
+        errors {
+          leadId
+          leadName
+          error
+        }
+      }
+    }
+  }
+`;
+
+// Subscription for real-time conversion updates
+export const CONVERSION_UPDATES = gql`
+  ${CONVERSION_EVENT_FIELDS}
+  subscription ConversionUpdates($entityType: String, $entityId: ID) {
+    conversionUpdates(entityType: $entityType, entityId: $entityId) {
+      ...ConversionEventFields
+    }
+  }
+`;
+
+// Input type definitions (for TypeScript)
+export interface ValidateConversionInput {
+  sourceType: 'lead' | 'deal';
+  sourceId: string;
+  targetType: 'lead' | 'deal';
+  options?: {
+    preserveActivities?: boolean;
+    archiveSource?: boolean;
+  };
+}
+
+export interface ConvertLeadInput {
+  preserveActivities?: boolean;
+  createConversionActivity?: boolean;
+  notes?: string;
+  dealData: {
+    name: string;
+    amount?: number;
+    currency?: string;
+    expected_close_date?: string;
+    owner_id?: string;
+  };
+  personData?: {
+    first_name: string;
+    last_name: string;
+    email?: string;
+    phone?: string;
+  };
+  organizationData?: {
+    name: string;
+    address?: string;
+    notes?: string;
+  };
+}
+
+export interface ConvertDealInput {
+  preserveActivities?: boolean;
+  createConversionActivity?: boolean;
+  archiveDeal?: boolean;
+  conversionReason: string;
+  notes?: string;
+  leadData: {
+    name: string;
+    contact_name?: string;
+    contact_email?: string;
+    contact_phone?: string;
+    company_name?: string;
+    estimated_value?: number;
+    estimated_close_date?: string;
+    source?: string;
+    description?: string;
+  };
+}
+
+export interface BulkConvertLeadsInput {
+  leadIds: string[];
+  defaultOptions: {
+    preserveActivities?: boolean;
+    createConversionActivity?: boolean;
+    owner_id?: string;
+  };
+  individualConfigurations?: Array<{
+    leadId: string;
+    dealData?: Partial<ConvertLeadInput['dealData']>;
+    personData?: ConvertLeadInput['personData'];
+    organizationData?: ConvertLeadInput['organizationData'];
+  }>;
+} 

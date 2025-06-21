@@ -1,0 +1,206 @@
+# Bi-Directional Lead-Deal Conversion System GraphQL Schema
+
+# Enums
+enum ConversionType {
+  LEAD_TO_DEAL
+  DEAL_TO_LEAD
+}
+
+enum ConversionReason {
+  # Forward conversion reasons
+  QUALIFIED
+  HOT_LEAD
+  DEMO_SCHEDULED
+  
+  # Backwards conversion reasons  
+  COOLING
+  TIMELINE_EXTENDED
+  BUDGET_CONSTRAINTS
+  STAKEHOLDER_CHANGE
+  COMPETITIVE_LOSS
+  REQUIREMENTS_CHANGE
+  RELATIONSHIP_RESET
+}
+
+enum ReactivationStrategy {
+  NURTURING
+  DIRECT_OUTREACH
+  CONTENT_MARKETING
+  RELATIONSHIP_BUILDING
+  COMPETITIVE_ANALYSIS
+  BUDGET_FOLLOW_UP
+}
+
+enum ReactivationPlanStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  PAUSED
+}
+
+# Types
+type ConversionHistory {
+  id: ID!
+  conversionType: ConversionType!
+  sourceEntityType: String!
+  sourceEntityId: ID!
+  targetEntityType: String!
+  targetEntityId: ID!
+  conversionReason: ConversionReason
+  conversionData: JSON
+  wfmTransitionPlan: JSON
+  convertedByUser: User
+  convertedAt: DateTime!
+  createdAt: DateTime!
+}
+
+type ReactivationPlan {
+  id: ID!
+  lead: Lead!
+  originalDeal: Deal
+  reactivationStrategy: ReactivationStrategy!
+  targetReactivationDate: Date
+  followUpActivities: JSON
+  assignedToUser: User
+  status: ReactivationPlanStatus!
+  notes: String
+  createdByUser: User
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# Input Types
+input LeadConversionInput {
+  preserveActivities: Boolean = true
+  createConversionActivity: Boolean = true
+  notes: String
+  dealData: DealConversionData
+  personData: PersonConversionData
+  organizationData: OrganizationConversionData
+  wfmProjectTypeId: ID
+  targetWfmStepId: ID
+}
+
+input DealConversionData {
+  name: String
+  amount: Float
+  currency: String
+  expected_close_date: DateTime
+  deal_specific_probability: Float
+}
+
+input PersonConversionData {
+  first_name: String
+  last_name: String
+  email: String
+  phone: String
+}
+
+input OrganizationConversionData {
+  name: String
+  address: String
+  notes: String
+}
+
+input DealToLeadConversionInput {
+  preserveActivities: Boolean = true
+  createConversionActivity: Boolean = true
+  notes: String
+  conversionReason: ConversionReason!
+  leadData: LeadConversionData
+  reactivationPlan: ReactivationPlanInput
+}
+
+input LeadConversionData {
+  name: String
+  source: String
+  description: String
+  estimatedValue: Float
+  estimatedCloseDate: DateTime
+  leadScore: Int
+}
+
+input ReactivationPlanInput {
+  reactivationStrategy: ReactivationStrategy!
+  targetReactivationDate: Date
+  followUpActivities: JSON
+  assignedToUserId: ID
+  notes: String
+}
+
+# Result Types
+type LeadConversionResult {
+  success: Boolean!
+  conversionId: ID!
+  message: String!
+  errors: [String!]
+  deal: Deal
+  person: Person
+  organization: Organization
+  wfmProject: WFMProject
+  conversionHistory: ConversionHistory
+}
+
+type DealToLeadConversionResult {
+  success: Boolean!
+  conversionId: ID!
+  message: String!
+  errors: [String!]
+  lead: Lead
+  reactivationPlan: ReactivationPlan
+  conversionHistory: ConversionHistory
+}
+
+type ConversionValidationResult {
+  isValid: Boolean!
+  canProceed: Boolean!
+  errors: [String!]
+  warnings: [String!]
+  sourceEntity: JSON
+}
+
+# Enhanced existing types to include conversion fields
+extend type Lead {
+  originalDeal: Deal
+  conversionReason: String
+  reactivationTargetDate: Date
+  reactivationPlan: ReactivationPlan
+  conversionHistory: [ConversionHistory!]!
+}
+
+extend type Deal {
+  convertedToLead: Lead
+  conversionReason: String
+  conversionHistory: [ConversionHistory!]!
+}
+
+# Queries
+extend type Query {
+  # Conversion history
+  conversionHistory(entityType: String!, entityId: ID!): [ConversionHistory!]!
+  conversionHistoryById(id: ID!): ConversionHistory
+  
+  # Reactivation plans
+  reactivationPlans(status: ReactivationPlanStatus, assignedToUserId: ID): [ReactivationPlan!]!
+  reactivationPlan(id: ID!): ReactivationPlan
+  
+  # Validation
+  validateConversion(sourceType: String!, sourceId: ID!, targetType: String!): ConversionValidationResult!
+}
+
+# Mutations
+extend type Mutation {
+  # Forward conversion: Lead → Deal
+  convertLead(id: ID!, input: LeadConversionInput!): LeadConversionResult!
+  
+  # Backwards conversion: Deal → Lead
+  convertDealToLead(id: ID!, input: DealToLeadConversionInput!): DealToLeadConversionResult!
+  
+  # Reactivation plan management
+  createReactivationPlan(leadId: ID!, input: ReactivationPlanInput!): ReactivationPlan!
+  updateReactivationPlan(id: ID!, input: ReactivationPlanInput!): ReactivationPlan!
+  deleteReactivationPlan(id: ID!): Boolean!
+  
+  # Bulk operations
+  bulkConvertLeads(ids: [ID!]!, input: LeadConversionInput!): [LeadConversionResult!]!
+} 
