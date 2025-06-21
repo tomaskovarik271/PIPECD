@@ -18,7 +18,12 @@ import {
   HStack,
   Text,
   Divider,
+  Box,
+  Badge,
+  Flex,
+  Icon,
 } from '@chakra-ui/react';
+import { FiUser, FiHome, FiMail, FiPhone } from 'react-icons/fi';
 import { useLeadsStore, LeadInput } from '../stores/useLeadsStore';
 import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
@@ -28,14 +33,28 @@ import {
   processCustomFieldsForSubmission 
 } from '../lib/utils/customFieldProcessing';
 import { useWFMConfigStore } from '../stores/useWFMConfigStore';
+import { useThemeColors } from '../hooks/useThemeColors';
+import { useDebounce } from '../lib/utils/useDebounce';
+import { usePeopleStore } from '../stores/usePeopleStore';
+import { useOrganizationsStore } from '../stores/useOrganizationsStore';
+import { duplicateDetectionService, type SimilarPersonResult, type SimilarOrganizationResult } from '../lib/services/duplicateDetectionService';
 
 interface CreateLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// Smart suggestion interfaces (using the service types)
+interface PersonSuggestion extends SimilarPersonResult {}
+interface OrganizationSuggestion extends SimilarOrganizationResult {
+  address?: string;
+}
+
 const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) => {
+  const colors = useThemeColors();
   const { createLead } = useLeadsStore();
+  const { people } = usePeopleStore();
+  const { organizations } = useOrganizationsStore();
   const { 
     leadQualificationWorkflowId, 
     isLoadingLeadQualificationWorkflowId,
@@ -58,6 +77,14 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
   const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Smart suggestions state
+  const [contactSuggestions, setContactSuggestions] = useState<PersonSuggestion[]>([]);
+  const [companySuggestions, setCompanySuggestions] = useState<OrganizationSuggestion[]>([]);
+  const [showContactSuggestions, setShowContactSuggestions] = useState(false);
+  const [showCompanySuggestions, setShowCompanySuggestions] = useState(false);
+  const [selectedContactSuggestion, setSelectedContactSuggestion] = useState<PersonSuggestion | null>(null);
+  const [selectedCompanySuggestion, setSelectedCompanySuggestion] = useState<OrganizationSuggestion | null>(null);
+
   // Use optimized custom fields hook
   const { 
     getDefinitionsForEntity 
@@ -77,6 +104,49 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
     }
   }, [leadQualificationWorkflowId, isLoadingLeadQualificationWorkflowId, fetchLeadQualificationWorkflowId]);
 
+  // Smart contact suggestions using real service
+  const debouncedContactSearch = useDebounce(async (searchTerm: string) => {
+    if (searchTerm.length < 2) {
+      setContactSuggestions([]);
+      setShowContactSuggestions(false);
+      return;
+    }
+
+    try {
+      const suggestions = await duplicateDetectionService.findSimilarPeople(searchTerm, people);
+      setContactSuggestions(suggestions);
+      setShowContactSuggestions(suggestions.length > 0);
+    } catch (error) {
+      console.error('Error finding similar people:', error);
+      setContactSuggestions([]);
+      setShowContactSuggestions(false);
+    }
+  }, 300);
+
+  // Smart company suggestions using real service
+  const debouncedCompanySearch = useDebounce(async (searchTerm: string) => {
+    if (searchTerm.length < 2) {
+      setCompanySuggestions([]);
+      setShowCompanySuggestions(false);
+      return;
+    }
+
+          try {
+        const suggestions = await duplicateDetectionService.findSimilarOrganizations(searchTerm);
+        // Add address field for compatibility
+        const enhancedSuggestions = suggestions.map(org => ({
+          ...org,
+          address: organizations.find(o => o.id === org.id)?.address || undefined,
+        }));
+        setCompanySuggestions(enhancedSuggestions);
+        setShowCompanySuggestions(enhancedSuggestions.length > 0);
+      } catch (error) {
+        console.error('Error finding similar organizations:', error);
+        setCompanySuggestions([]);
+        setShowCompanySuggestions(false);
+      }
+  }, 300);
+
   // Initialize form when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -90,9 +160,13 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
         contactPhone: '',
         companyName: '',
         estimatedValue: undefined,
-        wfmProjectTypeId: 'AUTO_DEFAULT_LEAD_QUALIFICATION', // Use auto-default like deals
+        wfmProjectTypeId: 'AUTO_DEFAULT_LEAD_QUALIFICATION',
       });
       setIsSubmitting(false);
+      setSelectedContactSuggestion(null);
+      setSelectedCompanySuggestion(null);
+      setShowContactSuggestions(false);
+      setShowCompanySuggestions(false);
 
       // Initialize custom fields
       const initialCustomValues = initializeCustomFieldValues(activeLeadCustomFields);
@@ -105,10 +179,39 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
       ...prev,
       [field]: value
     }));
+
+    // Trigger smart suggestions
+    if (field === 'contactName' && typeof value === 'string') {
+      debouncedContactSearch(value);
+    }
+    if (field === 'companyName' && typeof value === 'string') {
+      debouncedCompanySearch(value);
+    }
   };
 
   const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[]) => {
     setCustomFieldFormValues(prev => ({ ...prev, [fieldName]: value }));
+  };
+
+  const handleSelectContactSuggestion = (suggestion: PersonSuggestion) => {
+    setSelectedContactSuggestion(suggestion);
+    setFormData(prev => ({
+      ...prev,
+      contactName: suggestion.name,
+      contactEmail: suggestion.email || prev.contactEmail,
+      contactPhone: suggestion.phone || prev.contactPhone,
+      companyName: suggestion.organization || prev.companyName,
+    }));
+    setShowContactSuggestions(false);
+  };
+
+  const handleSelectCompanySuggestion = (suggestion: OrganizationSuggestion) => {
+    setSelectedCompanySuggestion(suggestion);
+    setFormData(prev => ({
+      ...prev,
+      companyName: suggestion.name,
+    }));
+    setShowCompanySuggestions(false);
   };
 
   const handleSubmit = async () => {
@@ -135,7 +238,7 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
         contactPhone: formData.contactPhone || undefined,
         companyName: formData.companyName || undefined,
         estimatedValue: formData.estimatedValue || undefined,
-        wfmProjectTypeId: 'AUTO_DEFAULT_LEAD_QUALIFICATION', // Use auto-default like deals
+        wfmProjectTypeId: 'AUTO_DEFAULT_LEAD_QUALIFICATION',
       };
 
       // Process custom fields using utility
@@ -150,7 +253,9 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
       if (result) {
         toast({
           title: 'Lead Created',
-          description: 'The lead has been successfully created.',
+          description: selectedContactSuggestion || selectedCompanySuggestion 
+            ? 'Lead created with smart entity linking.' 
+            : 'The lead has been successfully created.',
           status: 'success',
           duration: 3000,
           isClosable: true,
@@ -215,30 +320,148 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
             </FormControl>
 
             <HStack spacing={4} width="100%">
-              <FormControl>
-                <FormLabel>Contact Name</FormLabel>
+              <FormControl position="relative">
+                <FormLabel>
+                  <Flex align="center" gap={2}>
+                    <Icon as={FiUser} />
+                    Contact Name
+                    {selectedContactSuggestion && (
+                      <Badge colorScheme="blue" size="sm">Smart Linked</Badge>
+                    )}
+                  </Flex>
+                </FormLabel>
                 <Input
                   value={formData.contactName || ''}
                   onChange={(e) => handleInputChange('contactName', e.target.value)}
                   placeholder="Contact person name"
                   isDisabled={isSubmitting}
                 />
+                
+                {/* Contact Suggestions Dropdown */}
+                {showContactSuggestions && contactSuggestions.length > 0 && (
+                  <Box
+                    position="absolute"
+                    top="100%"
+                    left={0}
+                    right={0}
+                    zIndex={1000}
+                    bg={colors.bg.card}
+                    border="1px solid"
+                    borderColor={colors.border.default}
+                    borderRadius="md"
+                    boxShadow="lg"
+                    maxH="200px"
+                    overflowY="auto"
+                    mt={1}
+                  >
+                    {contactSuggestions.map((suggestion) => (
+                      <Box
+                        key={suggestion.id}
+                        p={3}
+                        cursor="pointer"
+                        _hover={{ bg: colors.interactive.hover }}
+                        onClick={() => handleSelectContactSuggestion(suggestion)}
+                        borderBottom="1px solid"
+                        borderColor={colors.border.default}
+                        _last={{ border: 'none' }}
+                      >
+                        <Flex align="center" gap={2}>
+                          <Icon as={FiUser} color={colors.text.accent} />
+                          <Box flex={1}>
+                            <Text fontWeight="semibold" fontSize="sm">
+                              {suggestion.name}
+                            </Text>
+                            {suggestion.email && (
+                              <Text fontSize="xs" color={colors.text.secondary}>
+                                {suggestion.email}
+                              </Text>
+                            )}
+                            {suggestion.organization && (
+                              <Text fontSize="xs" color={colors.text.secondary}>
+                                at {suggestion.organization}
+                              </Text>
+                            )}
+                          </Box>
+                        </Flex>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
               </FormControl>
 
-              <FormControl>
-                <FormLabel>Company Name</FormLabel>
+              <FormControl position="relative">
+                <FormLabel>
+                  <Flex align="center" gap={2}>
+                    <Icon as={FiHome} />
+                    Company Name
+                    {selectedCompanySuggestion && (
+                      <Badge colorScheme="green" size="sm">Smart Linked</Badge>
+                    )}
+                  </Flex>
+                </FormLabel>
                 <Input
                   value={formData.companyName || ''}
                   onChange={(e) => handleInputChange('companyName', e.target.value)}
                   placeholder="Company name"
                   isDisabled={isSubmitting}
                 />
+                
+                {/* Company Suggestions Dropdown */}
+                {showCompanySuggestions && companySuggestions.length > 0 && (
+                  <Box
+                    position="absolute"
+                    top="100%"
+                    left={0}
+                    right={0}
+                    zIndex={1000}
+                    bg={colors.bg.card}
+                    border="1px solid"
+                    borderColor={colors.border.default}
+                    borderRadius="md"
+                    boxShadow="lg"
+                    maxH="200px"
+                    overflowY="auto"
+                    mt={1}
+                  >
+                    {companySuggestions.map((suggestion) => (
+                      <Box
+                        key={suggestion.id}
+                        p={3}
+                        cursor="pointer"
+                        _hover={{ bg: colors.interactive.hover }}
+                        onClick={() => handleSelectCompanySuggestion(suggestion)}
+                        borderBottom="1px solid"
+                        borderColor={colors.border.default}
+                        _last={{ border: 'none' }}
+                      >
+                        <Flex align="center" gap={2}>
+                          <Icon as={FiHome} color={colors.text.accent} />
+                          <Box flex={1}>
+                            <Text fontWeight="semibold" fontSize="sm">
+                              {suggestion.name}
+                            </Text>
+                            {suggestion.address && (
+                              <Text fontSize="xs" color={colors.text.secondary}>
+                                {suggestion.address}
+                              </Text>
+                            )}
+                          </Box>
+                        </Flex>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
               </FormControl>
             </HStack>
 
             <HStack spacing={4} width="100%">
               <FormControl>
-                <FormLabel>Contact Email</FormLabel>
+                <FormLabel>
+                  <Flex align="center" gap={2}>
+                    <Icon as={FiMail} />
+                    Contact Email
+                  </Flex>
+                </FormLabel>
                 <Input
                   type="email"
                   value={formData.contactEmail || ''}
@@ -249,7 +472,12 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
               </FormControl>
 
               <FormControl>
-                <FormLabel>Contact Phone</FormLabel>
+                <FormLabel>
+                  <Flex align="center" gap={2}>
+                    <Icon as={FiPhone} />
+                    Contact Phone
+                  </Flex>
+                </FormLabel>
                 <Input
                   value={formData.contactPhone || ''}
                   onChange={(e) => handleInputChange('contactPhone', e.target.value)}
@@ -299,6 +527,35 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
                 isDisabled={isSubmitting}
               />
             </FormControl>
+
+            {/* Smart Linking Summary */}
+            {(selectedContactSuggestion || selectedCompanySuggestion) && (
+              <Box
+                p={3}
+                bg={colors.bg.card}
+                borderRadius="md"
+                border="1px solid"
+                borderColor={colors.border.default}
+                width="100%"
+              >
+                <Text fontSize="sm" fontWeight="semibold" mb={2} color={colors.text.accent}>
+                  Smart Entity Linking Active
+                </Text>
+                {selectedContactSuggestion && (
+                  <Text fontSize="xs" color={colors.text.secondary}>
+                    • Contact linked to existing person: {selectedContactSuggestion.name}
+                  </Text>
+                )}
+                {selectedCompanySuggestion && (
+                  <Text fontSize="xs" color={colors.text.secondary}>
+                    • Company linked to existing organization: {selectedCompanySuggestion.name}
+                  </Text>
+                )}
+                <Text fontSize="xs" color={colors.text.secondary} mt={1}>
+                  This will help with future lead conversion and duplicate prevention.
+                </Text>
+              </Box>
+            )}
           </VStack>
         </ModalBody>
 

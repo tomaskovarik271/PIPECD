@@ -1850,25 +1850,31 @@ export type Organization = {
   customFieldValues: Array<CustomFieldValue>;
   deals: Array<Deal>;
   id: Scalars["ID"]["output"];
+  industry?: Maybe<Scalars["String"]["output"]>;
   name: Scalars["String"]["output"];
   notes?: Maybe<Scalars["String"]["output"]>;
   people?: Maybe<Array<Person>>;
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
+  website?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type OrganizationInput = {
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  industry?: InputMaybe<Scalars["String"]["input"]>;
   name: Scalars["String"]["input"];
   notes?: InputMaybe<Scalars["String"]["input"]>;
+  website?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type OrganizationUpdateInput = {
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  industry?: InputMaybe<Scalars["String"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
+  website?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 /** Defines the Person type and related queries/mutations. */
@@ -5587,6 +5593,7 @@ export type OrganizationResolvers<
   >;
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  industry?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   notes?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   people?: Resolver<
@@ -5596,6 +5603,7 @@ export type OrganizationResolvers<
   >;
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  website?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 

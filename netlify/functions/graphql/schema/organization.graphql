@@ -9,6 +9,8 @@ type Organization {
     user_id: ID!
     name: String!
     address: String
+    industry: String
+    website: String
     notes: String
     people: [Person!] # People belonging to this organization
     deals: [Deal!]! # List of associated deals
@@ -19,6 +21,8 @@ type Organization {
 input OrganizationInput {
     name: String!
     address: String
+    industry: String
+    website: String
     notes: String
     customFields: [CustomFieldValueInput!] # ADDED
 }
@@ -26,6 +30,8 @@ input OrganizationInput {
 input OrganizationUpdateInput {
     name: String
     address: String
+    industry: String
+    website: String
     notes: String
     customFields: [CustomFieldValueInput!] # ADDED
 } 

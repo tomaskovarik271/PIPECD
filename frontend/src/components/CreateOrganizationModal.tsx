@@ -16,11 +16,14 @@ import {
   FormErrorMessage,
   Alert, 
   AlertIcon,
+  AlertTitle,
   Spinner,
   useToast,
   Box,
-  Text
+  Text,
+  HStack
 } from '@chakra-ui/react';
+import { FiUser } from 'react-icons/fi';
 import { useOrganizationsStore } from '../stores/useOrganizationsStore';
 import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
 import { CustomFieldRenderer } from './common/CustomFieldRenderer';
@@ -30,6 +33,8 @@ import {
 } from '../lib/utils/customFieldProcessing';
 import type { OrganizationInput } from '../generated/graphql/graphql';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
+import { useDebounce } from '../lib/utils/useDebounce';
+import { duplicateDetectionService, type SimilarOrganizationResult } from '../lib/services/duplicateDetectionService';
 
 interface CreateOrganizationModalProps {
   isOpen: boolean;
@@ -45,6 +50,11 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
   const [customFieldData, setCustomFieldData] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  
+  // Duplicate detection state
+  const [duplicates, setDuplicates] = useState<SimilarOrganizationResult[]>([]);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const [showDuplicates, setShowDuplicates] = useState(false);
   
   const toast = useToast();
 
@@ -70,6 +80,26 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
       .sort((a, b) => a.displayOrder - b.displayOrder);
   }, [getDefinitionsForEntity]);
 
+  // Debounced duplicate checking
+  const debouncedDuplicateCheck = useDebounce(async (organizationName: string) => {
+    if (organizationName.length < 3) {
+      setDuplicates([]);
+      setShowDuplicates(false);
+      return;
+    }
+
+    setIsCheckingDuplicates(true);
+    try {
+      const similar = await duplicateDetectionService.findSimilarOrganizations(organizationName);
+      setDuplicates(similar);
+      setShowDuplicates(similar.length > 0);
+    } catch (error) {
+      console.error('Error checking duplicates:', error);
+    } finally {
+      setIsCheckingDuplicates(false);
+    }
+  }, 500);
+
   // Initialize form when modal opens
   useEffect(() => {
     if (isOpen) {
@@ -79,6 +109,11 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
       setNotes('');
       setLocalError(null);
       setIsLoading(false);
+      
+      // Reset duplicate detection
+      setDuplicates([]);
+      setShowDuplicates(false);
+      setIsCheckingDuplicates(false);
 
       // Initialize custom fields
       const initialCustomData = initializeCustomFieldValues(organizationCustomFieldDefinitions);
@@ -86,8 +121,26 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
     }
   }, [isOpen, organizationCustomFieldDefinitions]);
 
+  // Run duplicate check when name changes
+  useEffect(() => {
+    debouncedDuplicateCheck(name);
+  }, [name, debouncedDuplicateCheck]);
+
   const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[]) => {
     setCustomFieldData(prev => ({ ...prev, [fieldName]: value }));
+  };
+
+  const handleSelectExisting = (organization: SimilarOrganizationResult) => {
+    // Close modal and notify parent that an existing organization was selected
+    toast({
+      title: 'Existing Organization Selected',
+      description: `Selected existing organization: ${organization.name}`,
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    });
+    onClose();
+    onOrganizationCreated(); // Refresh the list
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -167,13 +220,50 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
           <VStack spacing={4} align="stretch">
             <FormControl isRequired isInvalid={!!localError && localError.includes('name')}>
               <FormLabel>Organization Name</FormLabel>
-              <Input 
-                value={name} 
-                onChange={(e) => setName(e.target.value)} 
-                placeholder="Enter organization name" 
-              />
+              <HStack>
+                <Input 
+                  value={name} 
+                  onChange={(e) => setName(e.target.value)} 
+                  placeholder="Enter organization name" 
+                />
+                {isCheckingDuplicates && <Spinner size="sm" />}
+              </HStack>
               {!!localError && localError.includes('name') && <FormErrorMessage>{localError}</FormErrorMessage>}
             </FormControl>
+
+            {/* Duplicate Suggestions */}
+            {showDuplicates && (
+              <Alert status="info" size="sm" borderRadius="md">
+                <AlertIcon />
+                <Box flex={1}>
+                  <AlertTitle fontSize="sm">Similar organizations found:</AlertTitle>
+                  <VStack align="start" mt={2} spacing={1}>
+                    {duplicates.map(org => (
+                      <Button
+                        key={org.id}
+                        variant="ghost"
+                        size="xs"
+                        leftIcon={<FiUser />}
+                        onClick={() => handleSelectExisting(org)}
+                        color="blue.600"
+                        _hover={{ bg: 'blue.50' }}
+                      >
+                        {org.suggestion}
+                      </Button>
+                    ))}
+                    <Button
+                      variant="ghost"
+                      size="xs"
+                      onClick={() => setShowDuplicates(false)}
+                      color="gray.600"
+                      _hover={{ bg: 'gray.50' }}
+                    >
+                      Create new organization anyway
+                    </Button>
+                  </VStack>
+                </Box>
+              </Alert>
+            )}
 
             <FormControl>
               <FormLabel>Address</FormLabel>

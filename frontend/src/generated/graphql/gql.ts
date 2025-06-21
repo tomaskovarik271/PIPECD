@@ -14,6 +14,10 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  query FindSimilarOrganizations($name: String!, $excludeId: ID) {\n    findSimilarOrganizations(name: $name, exclude_id: $excludeId) {\n      organization_id\n      name\n      similarity_score\n    }\n  }\n": typeof types.FindSimilarOrganizationsDocument,
+    "\n  query GetIntelligentNotifications($limit: Int, $offset: Int) {\n    intelligentNotifications(limit: $limit, offset: $offset) {\n      id\n      title\n      content\n      notification_type\n      urgency_level\n      relevance_score\n      suggested_actions\n      is_read\n      created_at\n      organization {\n        id\n        name\n      }\n    }\n  }\n": typeof types.GetIntelligentNotificationsDocument,
+    "\n  query GetOrganizationIntelligence($organizationId: ID!) {\n    organizationIntelligence(organization_id: $organizationId) {\n      id\n      enrichment_data\n      health_score\n      last_enriched\n      risk_factors\n      opportunities\n      competitive_intelligence\n      confidence_score\n      data_sources\n    }\n  }\n": typeof types.GetOrganizationIntelligenceDocument,
+    "\n  query GetAccountAssignments {\n    myAccountAssignments {\n      id\n      organization_id\n      assignment_reason\n      confidence_score\n      assignment_type\n      assigned_at\n    }\n  }\n": typeof types.GetAccountAssignmentsDocument,
     "\n  query GetAgentThoughts($conversationId: ID!, $limit: Int) {\n    agentThoughts(conversationId: $conversationId, limit: $limit) {\n      id\n      conversationId\n      type\n      content\n      metadata\n      timestamp\n    }\n  }\n": typeof types.GetAgentThoughtsDocument,
     "\n  query GetMyNotifications($limit: Int, $offset: Int) {\n    myNotifications(limit: $limit, offset: $offset) {\n      notifications {\n        id\n        userId\n        title\n        message\n        notificationType\n        isRead\n        readAt\n        entityType\n        entityId\n        actionUrl\n        metadata\n        priority\n        expiresAt\n        createdAt\n        updatedAt\n      }\n      totalCount\n      unreadCount\n    }\n  }\n": typeof types.GetMyNotificationsDocument,
     "\n  query GetUnreadNotificationCount {\n    unreadNotificationCount\n  }\n": typeof types.GetUnreadNotificationCountDocument,
@@ -57,6 +61,10 @@ type Documents = {
     "\n  mutation RemoveUserRole($userId: ID!, $roleName: String!) {\n    removeUserRole(userId: $userId, roleName: $roleName) {\n      id\n      email\n      roles {\n        id\n        name\n        description\n      }\n    }\n  }\n": typeof types.RemoveUserRoleDocument,
 };
 const documents: Documents = {
+    "\n  query FindSimilarOrganizations($name: String!, $excludeId: ID) {\n    findSimilarOrganizations(name: $name, exclude_id: $excludeId) {\n      organization_id\n      name\n      similarity_score\n    }\n  }\n": types.FindSimilarOrganizationsDocument,
+    "\n  query GetIntelligentNotifications($limit: Int, $offset: Int) {\n    intelligentNotifications(limit: $limit, offset: $offset) {\n      id\n      title\n      content\n      notification_type\n      urgency_level\n      relevance_score\n      suggested_actions\n      is_read\n      created_at\n      organization {\n        id\n        name\n      }\n    }\n  }\n": types.GetIntelligentNotificationsDocument,
+    "\n  query GetOrganizationIntelligence($organizationId: ID!) {\n    organizationIntelligence(organization_id: $organizationId) {\n      id\n      enrichment_data\n      health_score\n      last_enriched\n      risk_factors\n      opportunities\n      competitive_intelligence\n      confidence_score\n      data_sources\n    }\n  }\n": types.GetOrganizationIntelligenceDocument,
+    "\n  query GetAccountAssignments {\n    myAccountAssignments {\n      id\n      organization_id\n      assignment_reason\n      confidence_score\n      assignment_type\n      assigned_at\n    }\n  }\n": types.GetAccountAssignmentsDocument,
     "\n  query GetAgentThoughts($conversationId: ID!, $limit: Int) {\n    agentThoughts(conversationId: $conversationId, limit: $limit) {\n      id\n      conversationId\n      type\n      content\n      metadata\n      timestamp\n    }\n  }\n": types.GetAgentThoughtsDocument,
     "\n  query GetMyNotifications($limit: Int, $offset: Int) {\n    myNotifications(limit: $limit, offset: $offset) {\n      notifications {\n        id\n        userId\n        title\n        message\n        notificationType\n        isRead\n        readAt\n        entityType\n        entityId\n        actionUrl\n        metadata\n        priority\n        expiresAt\n        createdAt\n        updatedAt\n      }\n      totalCount\n      unreadCount\n    }\n  }\n": types.GetMyNotificationsDocument,
     "\n  query GetUnreadNotificationCount {\n    unreadNotificationCount\n  }\n": types.GetUnreadNotificationCountDocument,
@@ -114,6 +122,22 @@ const documents: Documents = {
  */
 export function graphql(source: string): unknown;
 
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query FindSimilarOrganizations($name: String!, $excludeId: ID) {\n    findSimilarOrganizations(name: $name, exclude_id: $excludeId) {\n      organization_id\n      name\n      similarity_score\n    }\n  }\n"): (typeof documents)["\n  query FindSimilarOrganizations($name: String!, $excludeId: ID) {\n    findSimilarOrganizations(name: $name, exclude_id: $excludeId) {\n      organization_id\n      name\n      similarity_score\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetIntelligentNotifications($limit: Int, $offset: Int) {\n    intelligentNotifications(limit: $limit, offset: $offset) {\n      id\n      title\n      content\n      notification_type\n      urgency_level\n      relevance_score\n      suggested_actions\n      is_read\n      created_at\n      organization {\n        id\n        name\n      }\n    }\n  }\n"): (typeof documents)["\n  query GetIntelligentNotifications($limit: Int, $offset: Int) {\n    intelligentNotifications(limit: $limit, offset: $offset) {\n      id\n      title\n      content\n      notification_type\n      urgency_level\n      relevance_score\n      suggested_actions\n      is_read\n      created_at\n      organization {\n        id\n        name\n      }\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetOrganizationIntelligence($organizationId: ID!) {\n    organizationIntelligence(organization_id: $organizationId) {\n      id\n      enrichment_data\n      health_score\n      last_enriched\n      risk_factors\n      opportunities\n      competitive_intelligence\n      confidence_score\n      data_sources\n    }\n  }\n"): (typeof documents)["\n  query GetOrganizationIntelligence($organizationId: ID!) {\n    organizationIntelligence(organization_id: $organizationId) {\n      id\n      enrichment_data\n      health_score\n      last_enriched\n      risk_factors\n      opportunities\n      competitive_intelligence\n      confidence_score\n      data_sources\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetAccountAssignments {\n    myAccountAssignments {\n      id\n      organization_id\n      assignment_reason\n      confidence_score\n      assignment_type\n      assigned_at\n    }\n  }\n"): (typeof documents)["\n  query GetAccountAssignments {\n    myAccountAssignments {\n      id\n      organization_id\n      assignment_reason\n      confidence_score\n      assignment_type\n      assigned_at\n    }\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

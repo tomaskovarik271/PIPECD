@@ -1841,25 +1841,31 @@ export type Organization = {
   customFieldValues: Array<CustomFieldValue>;
   deals: Array<Deal>;
   id: Scalars["ID"]["output"];
+  industry?: Maybe<Scalars["String"]["output"]>;
   name: Scalars["String"]["output"];
   notes?: Maybe<Scalars["String"]["output"]>;
   people?: Maybe<Array<Person>>;
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
+  website?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type OrganizationInput = {
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  industry?: InputMaybe<Scalars["String"]["input"]>;
   name: Scalars["String"]["input"];
   notes?: InputMaybe<Scalars["String"]["input"]>;
+  website?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type OrganizationUpdateInput = {
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
+  industry?: InputMaybe<Scalars["String"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
+  website?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 /** Defines the Person type and related queries/mutations. */
@@ -4551,6 +4557,44 @@ export type UpdateDocumentAttachmentCategoryMutation = {
   };
 };
 
+export type GetAssignableUsersQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetAssignableUsersQuery = {
+  __typename?: "Query";
+  assignableUsers: Array<{
+    __typename?: "User";
+    id: string;
+    display_name?: string | null;
+    email: string;
+    avatar_url?: string | null;
+    roles: Array<{
+      __typename?: "Role";
+      id: string;
+      name: string;
+      description: string;
+    }>;
+  }>;
+};
+
+export type GetUserListQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetUserListQuery = {
+  __typename?: "Query";
+  users: Array<{
+    __typename?: "User";
+    id: string;
+    display_name?: string | null;
+    email: string;
+    avatar_url?: string | null;
+    roles: Array<{
+      __typename?: "Role";
+      id: string;
+      name: string;
+      description: string;
+    }>;
+  }>;
+};
+
 export type GetMeQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetMeQuery = {
@@ -5116,6 +5160,21 @@ export type UpdateWfmWorkflowTransitionMutation = {
       };
     };
   };
+};
+
+export type GetOrganizationsForSimilarityQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetOrganizationsForSimilarityQuery = {
+  __typename?: "Query";
+  organizations: Array<{
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    address?: string | null;
+    notes?: string | null;
+  }>;
 };
 
 export type GetExchangeRatesQueryVariables = Exact<{ [key: string]: never }>;
@@ -6884,25 +6943,6 @@ export type DeletePersonMutationVariables = Exact<{
 export type DeletePersonMutation = {
   __typename?: "Mutation";
   deletePerson?: boolean | null;
-};
-
-export type GetUserListQueryVariables = Exact<{ [key: string]: never }>;
-
-export type GetUserListQuery = {
-  __typename?: "Query";
-  users: Array<{
-    __typename?: "User";
-    id: string;
-    display_name?: string | null;
-    email: string;
-    avatar_url?: string | null;
-    roles: Array<{
-      __typename?: "Role";
-      id: string;
-      name: string;
-      description: string;
-    }>;
-  }>;
 };
 
 export type GetWfmProjectTypeByNameForConfigQueryVariables = Exact<{

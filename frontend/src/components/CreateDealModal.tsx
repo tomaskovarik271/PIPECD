@@ -22,7 +22,10 @@ import {
   useToast,
   Text,
   Box,
+  HStack,
+  Divider,
 } from '@chakra-ui/react';
+import { FiPlus } from 'react-icons/fi';
 import { usePeopleStore } from '../stores/usePeopleStore';
 import { useDealsStore, DealInput } from '../stores/useDealsStore';
 import { useWFMProjectTypeStore, WfmProjectType } from '../stores/useWFMProjectTypeStore';
@@ -36,6 +39,10 @@ import {
 } from '../lib/utils/customFieldProcessing';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
 import { DealAmountInput } from './currency/CurrencyInput';
+import InlineOrganizationForm from './common/InlineOrganizationForm';
+import InlinePersonForm from './common/InlinePersonForm';
+import SearchableSelect, { SearchableSelectOption } from './common/SearchableSelect';
+import { useThemeColors } from '../hooks/useThemeColors';
 
 interface CreateDealModalProps {
   isOpen: boolean;
@@ -47,6 +54,8 @@ interface CreateDealModalProps {
 const DEFAULT_SALES_PROJECT_TYPE_NAME = "Sales Deal";
 
 function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProps) {
+  const colors = useThemeColors();
+  
   // Form state
   const [name, setName] = useState('');
   const [selectedWFMProjectTypeId, setSelectedWFMProjectTypeId] = useState<string>('');
@@ -60,6 +69,10 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Inline creation states
+  const [showInlineOrgForm, setShowInlineOrgForm] = useState(false);
+  const [showInlinePersonForm, setShowInlinePersonForm] = useState(false);
 
   // Store hooks
   const { 
@@ -113,6 +126,8 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       setExpectedCloseDate('');
       setAssignedToUserId(null);
       setIsLoading(false);
+      setShowInlineOrgForm(false);
+      setShowInlinePersonForm(false);
 
       // Fetch data
       fetchPeople(); 
@@ -141,6 +156,112 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[]) => {
     setCustomFieldFormValues(prev => ({ ...prev, [fieldName]: value }));
   };
+
+  // Handle organization selection including CREATE_NEW option
+  const handleOrganizationChange = (value: string) => {
+    if (value === 'CREATE_NEW') {
+      setShowInlineOrgForm(true);
+      setOrganizationId('');
+    } else {
+      setOrganizationId(value);
+      setShowInlineOrgForm(false);
+    }
+  };
+
+  // Handle create new organization
+  const handleCreateNewOrganization = () => {
+    setShowInlineOrgForm(true);
+    setOrganizationId('');
+  };
+
+  // Handle person selection including CREATE_NEW option
+  const handlePersonChange = (value: string) => {
+    if (value === 'CREATE_NEW') {
+      setShowInlinePersonForm(true);
+      setPersonId('');
+    } else {
+      setPersonId(value);
+      setShowInlinePersonForm(false);
+    }
+  };
+
+  // Handle create new person
+  const handleCreateNewPerson = () => {
+    setShowInlinePersonForm(true);
+    setPersonId('');
+  };
+
+  // Handle successful organization creation
+  const handleOrganizationCreated = (newOrganization: any) => {
+    setOrganizationId(newOrganization.id);
+    setShowInlineOrgForm(false);
+    // Refresh organizations list
+    fetchOrganizations();
+  };
+
+  // Handle successful person creation
+  const handlePersonCreated = (newPerson: any) => {
+    setPersonId(newPerson.id);
+    setShowInlinePersonForm(false);
+    // Refresh people list
+    fetchPeople();
+  };
+
+  // Convert organizations to SearchableSelect options
+  const organizationOptions: SearchableSelectOption[] = useMemo(() => {
+    return organizations.map(org => ({
+      value: org.id,
+      label: (org.name ?? 'Unnamed Organization') as string,
+    }));
+  }, [organizations]);
+
+  // Convert people to SearchableSelect options with organization context and smart sorting
+  const peopleOptions: SearchableSelectOption[] = useMemo(() => {
+    const mappedPeople = people.map(person => {
+      const personName = [person.first_name, person.last_name].filter(Boolean).join(' ') || person.email || 'Unnamed Person';
+      
+      // Add organization context if person has an organization
+      let label = personName;
+      let organizationName = '';
+      let isFromSelectedOrg = false;
+      
+      if (person.organization?.name) {
+        organizationName = person.organization.name;
+        label = `${personName} (${organizationName})`;
+        isFromSelectedOrg = person.organization.id === organizationId;
+      } else if (person.organization_id && organizations.length > 0) {
+        // Fallback: find organization by ID if organization object not populated
+        const org = organizations.find(o => o.id === person.organization_id);
+        if (org?.name) {
+          organizationName = org.name;
+          label = `${personName} (${organizationName})`;
+          isFromSelectedOrg = org.id === organizationId;
+        }
+      } else {
+        // No organization
+        label = `${personName} (No organization)`;
+      }
+
+      return {
+        value: person.id,
+        label: label as string,
+        isFromSelectedOrg,
+        organizationName,
+        personName,
+      };
+    });
+
+    // Sort: people from selected organization first, then alphabetically
+    return mappedPeople
+      .sort((a, b) => {
+        // First, prioritize people from selected organization
+        if (a.isFromSelectedOrg && !b.isFromSelectedOrg) return -1;
+        if (!a.isFromSelectedOrg && b.isFromSelectedOrg) return 1;
+        
+        // Then sort alphabetically by person name
+        return a.personName.localeCompare(b.personName);
+      });
+  }, [people, organizations, organizationId]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -275,28 +396,59 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
               {!!error && error.includes('Probability') && <FormErrorMessage>{error}</FormErrorMessage>}
             </FormControl>
 
-            <FormControl>
-              <FormLabel>Person</FormLabel>
-              <Select placeholder="Select person (optional)" value={personId} onChange={(e) => setPersonId(e.target.value)} isDisabled={peopleLoading}>
-                {people.map((person) => (
-                  <option key={person.id} value={person.id}>
-                    {[person.first_name, person.last_name].filter(Boolean).join(' ') || person.email}
-                  </option>
-                ))}
-              </Select>
-              {peopleLoading && <Spinner size="sm" />}
-              {peopleError && <Text color="red.500" fontSize="sm">Error: {peopleError}</Text>}
-            </FormControl>
-
+            {/* Enhanced Organization Selection */}
             <FormControl>
               <FormLabel>Organization</FormLabel>
-              <Select placeholder="Select organization (optional)" value={organizationId} onChange={(e) => setOrganizationId(e.target.value)} isDisabled={organizationsLoading}>
-                {organizations.map((org) => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
-                ))}
-              </Select>
-              {organizationsLoading && <Spinner size="sm" />}
-              {organizationsError && <Text color="red.500" fontSize="sm">Error: {organizationsError}</Text>}
+              <SearchableSelect
+                options={organizationOptions}
+                value={organizationId || ''}
+                onChange={handleOrganizationChange}
+                placeholder="Select organization (optional)"
+                isLoading={organizationsLoading}
+                error={organizationsError || undefined}
+                isDisabled={organizationsLoading}
+                allowCreate={true}
+                createLabel="Create New Organization"
+                onCreateNew={handleCreateNewOrganization}
+              />
+              
+              {/* Inline Organization Creation */}
+              {showInlineOrgForm && (
+                <Box mt={3}>
+                  <InlineOrganizationForm
+                    onCreated={handleOrganizationCreated}
+                    onCancel={() => setShowInlineOrgForm(false)}
+                  />
+                </Box>
+              )}
+            </FormControl>
+
+            {/* Enhanced Person Selection */}
+            <FormControl>
+              <FormLabel>Person</FormLabel>
+              <SearchableSelect
+                options={peopleOptions}
+                value={personId || ''}
+                onChange={handlePersonChange}
+                placeholder="Select person (optional)"
+                isLoading={peopleLoading}
+                error={peopleError || undefined}
+                isDisabled={peopleLoading}
+                allowCreate={true}
+                createLabel="Create New Person"
+                onCreateNew={handleCreateNewPerson}
+              />
+              
+              {/* Inline Person Creation */}
+              {showInlinePersonForm && (
+                <Box mt={3}>
+                  <InlinePersonForm
+                    onCreated={handlePersonCreated}
+                    onCancel={() => setShowInlinePersonForm(false)}
+                    prefilledOrganizationId={organizationId}
+                  />
+                </Box>
+              )}
             </FormControl>
             
             <FormControl id="assignedToUserId">
