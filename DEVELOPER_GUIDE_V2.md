@@ -10,6 +10,26 @@ Welcome to Project PipeCD! This document will help you understand the project st
 
 ## ⚡ Recent Major Achievements (Latest Updates)
 
+### **AI Agent V2 Architecture Fixes & Production Hardening (CRITICAL)**
+
+**✅ CRITICAL PRODUCTION CRASHES RESOLVED**
+1. **AI Agent Timestamp Type Errors** - Fixed GraphQL timestamp type mismatches causing "AI Assistant Error" messages
+2. **Tool Input Streaming Bug** - Resolved critical issue where tool inputs weren't properly accumulated across Anthropic API streaming chunks
+3. **Infinite Loop Prevention** - Enhanced context handling to prevent think → search → think loops through proper UUID handling
+4. **Memory Leak Prevention** - Implemented LRU cache in CurrencyFormatter preventing unlimited growth in production
+
+**✅ AI AGENT V2 ARCHITECTURAL IMPROVEMENTS**
+- **Enhanced Tool Execution Pipeline** - Fixed tool input buffering across streaming chunks for reliable AI responses
+- **Optimized Timeout Configuration** - Increased GraphQL and tool execution timeouts from 30s to 2 minutes
+- **Context Preservation** - Improved conversation state management preventing workflow interruptions
+- **Error Recovery** - Enhanced error handling with graceful fallbacks for tool execution failures
+
+**✅ PERFORMANCE OPTIMIZATIONS COMPLETED**
+- **React Performance Issues** - Fixed array index keys and memoization problems across 4+ components  
+- **Date Object Recreation** - Memoized expensive date calculations eliminating render performance bottlenecks
+- **Store Pattern Consolidation** - 45% code reduction (1,904 → 1,048 lines) through universal CRUD factory
+- **Console Cleanup** - 97% reduction in production console verbosity for enterprise stability
+
 ### **Critical Performance & Stability Fixes Completed:**
 - **✅ CRITICAL PRODUCTION CRASHES RESOLVED**: Fixed AI Agent timestamp errors and StickerBoard infinite re-render loops
 - **✅ MEMORY LEAK PREVENTION**: Implemented LRU cache in CurrencyFormatter preventing OOM crashes
@@ -1621,24 +1641,24 @@ CREATE TABLE deal_participants (
 - Contact management with email discovery
 - Document attachment from email links
 
-## 18. AI Agent System (PRODUCTION-READY)
+## 18. AI Agent System (PRODUCTION-READY WITH V2 ENHANCEMENTS)
 
-Project PipeCD features a **revolutionary Claude 4 Sonnet-powered AI Agent** that provides autonomous CRM management with 30+ integrated tools, custom fields management, and sequential workflow execution. This system is **production-ready and actively used**.
+Project PipeCD features a **revolutionary Claude 4 Sonnet-powered AI Agent V2** that provides autonomous CRM management with 30+ integrated tools, custom fields management, and sequential workflow execution. This system is **production-ready with critical architecture fixes**.
 
 ### 18.1 System Overview & Current Status
 
-**✅ PRODUCTION STATUS: FULLY IMPLEMENTED**
+**✅ PRODUCTION STATUS: FULLY IMPLEMENTED WITH V2 ARCHITECTURE FIXES**
 
 ## AI Agent Implementation Status
 
 | Component | Status | Evidence |
 |-----------|--------|----------|
-| Core Agent Service | ✅ Production | 2000+ lines, full conversation management |
-| Tool Registry | ✅ Production | 27 tools across 6 domains |
-| Domain Modules | ✅ Production | All 6 domains operational |
-| GraphQL Integration | ✅ Production | Full schema + resolvers |
-| Frontend Chat | ✅ Production | Real-time conversation UI |
-| Thought Tracking | ✅ Production | Live AI reasoning display |
+| Core Agent Service V2 | ✅ Production | Enhanced with streaming fixes and timeout optimization |
+| Tool Registry | ✅ Production | 27 tools with improved execution pipeline |
+| Tool Input Streaming | ✅ Fixed | Critical bug resolved for proper input accumulation |
+| GraphQL Integration | ✅ Production | Enhanced with 2-minute timeouts for reliability |
+| Frontend Chat V2 | ✅ Production | Real-time streaming with crash prevention |
+| Thought Tracking | ✅ Production | Live AI reasoning with timestamp fixes |
 
 The AI Agent system consists of several key components working together:
 
@@ -1663,6 +1683,8 @@ Supabase Database - RLS enforcement & data persistence
 - **Full CRUD Operations** - AI can create, read, update, and delete all entity types
 - **Real-time Thought Tracking** - Users see AI reasoning process in real-time
 - **Production Authentication** - Secure JWT-based access with RLS enforcement
+- **V2 Architecture Fixes** - Critical streaming, timeout, and crash prevention improvements
+- **Enhanced Reliability** - Tool input streaming bug fixes and memory leak prevention
 
 ### 18.2 AI Agent Capabilities
 

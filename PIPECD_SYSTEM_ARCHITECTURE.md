@@ -35,23 +35,25 @@
 
 PipeCD is a **modern, AI-first CRM platform** built with enterprise-grade architecture principles. It combines traditional CRM functionality with revolutionary AI capabilities through a fully serverless, type-safe, and scalable architecture enhanced with **MCP-inspired self-documenting tools** and **enterprise-grade performance optimizations**.
 
-**🔄 Central to PipeCD's architecture are five core systems:**
-- **AI Agent System**: Claude 4 Sonnet with MCP-inspired tool registry for autonomous CRM management
+**🔄 Central to PipeCD's architecture are six core systems:**
+- **AI Agent V2 System**: Claude 4 Sonnet with enhanced streaming, timeout optimization, and crash prevention
 - **Work Flow Management (WFM)**: Generic workflow engine that powers all business processes  
 - **Event-Driven Automation**: Inngest + Activities system that automates tasks and workflows
 - **Activity Reminders System**: Enterprise-grade notification infrastructure with email, in-app, and push capabilities
 - **Google Workspace Integration**: Enterprise document management with OAuth 2.0, Google Drive folders, and Gmail/Calendar foundation
-- **Performance Optimization Engine**: Enterprise-grade stability with memory leak prevention and performance monitoring
+- **Performance Optimization Engine**: Enterprise-grade stability with memory leak prevention and 45% code reduction
 
 ### **🌟 Core Value Propositions**
 
-- **🤖 AI-First Design**: Revolutionary Claude 4 Sonnet integration with 27 specialized tools using MCP-inspired architecture
-- **🚨 Production Stability**: Critical crash prevention with AI agent timestamp fixes and infinite loop resolution
+- **🤖 AI-First Design**: Revolutionary Claude 4 Sonnet V2 integration with 27 specialized tools using MCP-inspired architecture
+- **🚨 Production Stability**: Critical crash prevention with AI agent timestamp fixes, streaming bug resolution, and infinite loop prevention
 - **💾 Memory Optimization**: LRU caching and memory leak prevention for enterprise-grade stability
 - **⚡ Performance Engineering**: 45% code reduction through pattern consolidation and universal factories
 - **📉 72% System Prompt Reduction**: Self-documenting tools with rich metadata eliminate prompt bloat
 - **🔄 Zero Infinite Loops**: Enhanced context and UUID handling prevent AI workflow loops
 - **⏱️ Reliable Performance**: 2-minute timeouts and optimized tool execution for consistent AI responses
+- **🛠️ Tool Input Streaming**: Fixed critical Anthropic API streaming chunk accumulation for reliable tool execution
+- **🔧 Enhanced Error Recovery**: Graceful fallbacks and improved error handling throughout the AI pipeline
 - **🔄 Generic Workflow Engine**: WFM system powers all business processes with unlimited flexibility
 - ⚡ **Event-Driven Automation**: Inngest + Activities create intelligent, scalable automation workflows
 - 🔔 **Enterprise Notifications**: Comprehensive activity reminder system with email, in-app, and push notifications
@@ -169,26 +171,35 @@ const useDealsStore = () => {
 
 ---
 
-## 🤖 AI Agent System - MCP-Inspired Architecture
+## 🤖 AI Agent V2 System - Enhanced MCP-Inspired Architecture
 
-### **🎯 Revolutionary AI Architecture**
+### **🎯 Revolutionary AI Architecture with V2 Improvements**
 
-PipeCD's AI Agent System represents a breakthrough in CRM AI integration, featuring **Model Context Protocol (MCP) inspired architecture** that achieves dramatic improvements in performance, maintainability, and scalability.
+PipeCD's AI Agent V2 System represents a breakthrough in CRM AI integration, featuring **Model Context Protocol (MCP) inspired architecture** with critical production fixes that achieve dramatic improvements in performance, reliability, and scalability.
 
-#### **🏗️ AI Agent Architecture**
+#### **🏗️ AI Agent V2 Architecture**
 
 ```
-🤖 AI Agent System (MCP-Inspired)
-├── 🧠 AgentService: Main orchestration (2000+ lines)
-├── 🔮 AIService: Claude 4 Sonnet integration
-├── 🛠️ ToolRegistry: Enhanced with MCP patterns
+🤖 AI Agent V2 System (Enhanced MCP-Inspired)
+├── 🧠 AgentServiceV2: Enhanced orchestration with streaming fixes
+├── 🔮 AIService: Claude 4 Sonnet integration with timeout optimization
+├── 🛠️ ToolRegistry: Enhanced with MCP patterns and improved execution
 ├── 📚 Tool Documentation: Self-documenting with rich metadata
-├── 🔄 ToolExecutor: Enhanced timeout and error handling
-├── 🎯 Domain Modules: 6 specialized domains
-└── 🔗 GraphQL Integration: Optimized for AI operations
+├── 🔄 ToolExecutor: Enhanced timeout, error handling, and input streaming
+├── 🎯 Domain Modules: 6 specialized domains with crash prevention
+├── 🔗 GraphQL Integration: Optimized for AI operations with 2-minute timeouts
+└── 🛡️ Error Recovery: Graceful fallbacks and enhanced reliability
 ```
 
-#### **🚀 MCP-Inspired Improvements Achieved**
+#### **🚀 V2 Architecture Improvements Achieved**
+
+**Critical Production Fixes:**
+- **Tool Input Streaming Bug**: Fixed Anthropic API streaming chunk accumulation preventing tool execution failures
+- **Timestamp Type Errors**: Resolved GraphQL timestamp type mismatches causing "AI Assistant Error" messages  
+- **Infinite Loop Prevention**: Enhanced context handling to prevent think → search → think loops
+- **Memory Leak Prevention**: Implemented LRU cache in CurrencyFormatter preventing OOM crashes
+- **Timeout Optimization**: Increased GraphQL and tool execution timeouts from 30s to 2 minutes
+- **Error Recovery**: Enhanced error handling with graceful fallbacks throughout the AI pipeline
 
 **System Prompt Reduction: 72%**
 - **Before**: 302-line system prompt with hardcoded tool documentation
