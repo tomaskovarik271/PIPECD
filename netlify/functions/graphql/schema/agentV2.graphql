@@ -1,0 +1,165 @@
+# AI Agent V2 Schema Extensions for PipeCD
+# Extends existing agent.graphql with Claude Sonnet 4 extended thinking capabilities
+
+# ================================
+# V2 Enums (extend existing ThinkingBudget)
+# ================================
+
+# Note: ThinkingBudget enum already exists in agent.graphql
+# We're just using it for V2 extended thinking levels
+
+# ================================
+# V2 Extensions to Existing Types
+# ================================
+
+# Extend existing AgentConversation type for V2 features
+extend type AgentConversation {
+  agentVersion: String!
+}
+
+# Extend existing AgentThought type for V2 extended thinking
+extend type AgentThought {
+  thinkingBudget: ThinkingBudget
+  reflectionData: JSON!
+  reasoning: String
+  strategy: String
+  concerns: String
+  nextSteps: String
+}
+
+# ================================
+# V2-Specific Input Types
+# ================================
+
+input SendAgentV2MessageInput {
+  conversationId: ID
+  content: String!
+}
+
+input CreateAgentV2ConversationInput {
+  initialContext: JSON
+}
+
+input AgentV2ThoughtInput {
+  type: AgentThoughtType!
+  content: String!
+  reasoning: String
+  strategy: String
+  concerns: String
+  nextSteps: String
+  thinkingBudget: ThinkingBudget
+  reflectionData: JSON
+}
+
+# ================================
+# V2-Specific Response Types
+# ================================
+
+type ToolExecution {
+  id: ID!
+  name: String!
+  input: JSON!
+  result: JSON
+  error: String
+  executionTime: Int!
+  timestamp: String!
+  status: ToolExecutionStatus!
+}
+
+enum ToolExecutionStatus {
+  SUCCESS
+  ERROR
+}
+
+type AgentV2Response {
+  conversation: AgentConversation!
+  message: AgentMessage!
+  extendedThoughts: [AgentThought!]!
+  reflections: [AgentThought!]!
+  planModifications: [String!]!
+  thinkingTime: Float
+  confidenceScore: Float
+  toolExecutions: [ToolExecution!]!
+}
+
+type ExtendedThinkingAnalysis {
+  totalThoughts: Int!
+  reasoningDepth: Float!
+  strategicInsights: [String!]!
+  identifiedConcerns: [String!]!
+  recommendedActions: [String!]!
+  thinkingBudgetUsed: ThinkingBudget!
+}
+
+# ================================
+# V2 Streaming Types
+# ================================
+
+enum AgentV2StreamChunkType {
+  CONTENT
+  THINKING
+  COMPLETE
+  ERROR
+}
+
+type AgentV2StreamChunk {
+  type: AgentV2StreamChunkType!
+  content: String
+  thinking: AgentThought
+  conversationId: ID!
+  complete: AgentV2Response
+  error: String
+}
+
+input SendAgentV2MessageStreamInput {
+  conversationId: ID
+  content: String!
+}
+
+# ================================
+# V2 Queries
+# ================================
+
+extend type Query {
+  # Get V2 conversations only
+  agentV2Conversations(limit: Int = 10, offset: Int = 0): [AgentConversation!]!
+  
+  # Get extended thinking analysis for a conversation
+  agentV2ThinkingAnalysis(conversationId: ID!): ExtendedThinkingAnalysis!
+  
+  # Get V2 thoughts with extended reasoning
+  agentV2Thoughts(conversationId: ID!, limit: Int = 50): [AgentThought!]!
+}
+
+# ================================
+# V2 Mutations
+# ================================
+
+extend type Mutation {
+  # Send message with V2 extended thinking
+  sendAgentV2Message(input: SendAgentV2MessageInput!): AgentV2Response!
+  
+  # Send message with V2 streaming support
+  sendAgentV2MessageStream(input: SendAgentV2MessageStreamInput!): String!
+  
+  # Create new V2 conversation with extended thinking enabled
+  createAgentV2Conversation(input: CreateAgentV2ConversationInput!): AgentConversation!
+  
+  # Add V2 thoughts with extended reasoning data
+  addAgentV2Thoughts(conversationId: ID!, thoughts: [AgentV2ThoughtInput!]!): [AgentThought!]!
+}
+
+# ================================
+# V2 Subscriptions
+# ================================
+
+extend type Subscription {
+  # Subscribe to V2 extended thinking updates
+  agentV2ThinkingUpdated(conversationId: ID!): [AgentThought!]!
+  
+  # Subscribe to V2 reflection events
+  agentV2ReflectionAdded(conversationId: ID!): AgentThought!
+  
+  # Subscribe to V2 streaming messages
+  agentV2MessageStream(conversationId: ID!): AgentV2StreamChunk!
+} 

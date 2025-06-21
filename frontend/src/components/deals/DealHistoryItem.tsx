@@ -5,6 +5,7 @@ import { useAppStore, DealWithHistory } from '../../stores/useAppStore'; // Adde
 import { useUserListStore, UserListItem } from '../../stores/useUserListStore'; // ADDED
 import { CustomFieldDefinition, Person, Organization, WfmStatus } from '../../generated/graphql/graphql'; // For typing, changed Stage to WfmStatus
 import { useEffect } from 'react'; // ADDED
+import { useThemeColors } from '../../hooks/useThemeColors'; // ADDED
 
 interface DealHistoryItemProps {
   entry: DealHistoryEntryDisplayItem;
@@ -28,6 +29,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
   // Access currentDeal which contains the current deal's stage, person, org, and CF definitions
   const currentDeal = useAppStore((state) => state.currentDeal);
   const { users, fetchUsers, hasFetched: usersHaveBeenFetched } = useUserListStore(); // ADDED
+  const colors = useThemeColors(); // ADDED
 
   // ADDED: Fetch users if not already fetched
   useEffect(() => {
@@ -388,8 +390,8 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
       borderWidth="1px" 
       borderRadius="md" 
       p={4} 
-      bg={{ base: 'white', _dark: 'gray.700' }} 
-      borderColor={{ base: 'gray.200', _dark: 'gray.600' }} 
+      bg={colors.bg.surface} 
+      borderColor={colors.border.default} 
       shadow="sm"
     >
       <HStack spacing={3} align="start">
@@ -397,11 +399,11 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
         <VStack align="start" spacing={1} flex={1}>
           <HStack justifyContent="space-between" w="full">
             <Text fontWeight="bold" fontSize="sm">{userName}</Text>
-            <Text fontSize="xs" color={{ base: 'gray.500', _dark: 'gray.400' }}>
+            <Text fontSize="xs" color={colors.text.muted}>
               {format(parseISO(entry.createdAt), 'MMM d, yyyy, h:mm a')} 
             </Text>
           </HStack>
-          <Text fontSize="sm" color={{ base: 'gray.700', _dark: 'gray.200' }}>
+          <Text fontSize="sm" color={colors.text.secondary}>
             {eventDescription}
           </Text>
           {entry.changes && (

@@ -44,6 +44,7 @@ const NAV_ITEMS = [
 
 const ADMIN_NAV_ITEMS = [
   { path: '/agent', label: 'AI Assistant', icon: <FiCpu size={16} />, permission: 'app_settings:manage' }, // Require admin role for AI Assistant
+  { path: '/agent-v2', label: 'AI Assistant V2', icon: <FiCpu size={16} />, permission: 'app_settings:manage' }, // V2 Agent with extended thinking
   
   { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon />, permission: 'custom_fields:manage_definitions' },
   { path: '/admin/user-roles', label: 'User Roles', icon: <SettingsIcon />, permission: 'app_settings:manage' },

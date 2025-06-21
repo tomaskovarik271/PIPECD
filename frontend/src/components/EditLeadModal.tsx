@@ -48,12 +48,12 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({ isOpen, onClose, lead }) 
     error: customFieldsError,
     getDefinitionsForEntity 
   } = useOptimizedCustomFields({ 
-    entityTypes: useMemo(() => [CustomFieldEntityType.Lead], []) 
+    entityTypes: useMemo(() => ['LEAD'], []) 
   });
 
   // Get active lead custom field definitions
   const activeLeadCustomFields = useMemo(() => {
-    return getDefinitionsForEntity(CustomFieldEntityType.Lead).filter(def => def.isActive);
+    return getDefinitionsForEntity('LEAD').filter(def => def.isActive);
   }, [getDefinitionsForEntity]);
 
   // Initialize form data when lead changes

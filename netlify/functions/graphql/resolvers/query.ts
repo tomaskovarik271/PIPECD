@@ -412,7 +412,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
       return wfmProjectTypeService.getById(args.id, context);
     },
 
-    // Resolver for fetching all users
+    // Resolver for fetching all users (admin only - for user management)
     users: async (_parent, _args, context: GraphQLContext): Promise<GraphQLUser[]> => {
       requireAuthentication(context); // Ensure user is logged in
       
@@ -437,6 +437,43 @@ export const Query: QueryResolvers<GraphQLContext> = {
 
       return data
         .filter(profile => profile.email != null) // Filter out profiles with null email
+        .map(profile => ({
+          id: profile.user_id, // Map user_id to id for GraphQL User type
+          email: profile.email!, // Now safe due to the filter
+          display_name: profile.display_name,
+          avatar_url: profile.avatar_url,
+          roles: [] // Roles will be resolved by the User.roles resolver
+        })) as GraphQLUser[]; // Cast to GraphQLUser[] as User type in resolver can be more generic
+    },
+
+    // Resolver for fetching assignable users (for deal assignment - requires deal assignment permissions)
+    assignableUsers: async (_parent, _args, context: GraphQLContext): Promise<GraphQLUser[]> => {
+      requireAuthentication(context); // Ensure user is logged in
+      
+      // Check if user has deal assignment permissions (either assign_own or assign_any)
+      const canAssignOwn = context.userPermissions?.includes('deal:assign_own') || false;
+      const canAssignAny = context.userPermissions?.includes('deal:assign_any') || false;
+      
+      if (!canAssignOwn && !canAssignAny) {
+        throw new GraphQLError('Forbidden: You need deal assignment permissions to view assignable users', { extensions: { code: 'FORBIDDEN' } });
+      }
+      
+      if (!supabaseAdmin) {
+        console.error('Error fetching assignable users: supabaseAdmin client is not available. Check SUPABASE_SERVICE_ROLE_KEY.');
+        throw new GraphQLError('Could not fetch assignable users due to server configuration error.', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+
+      const { data, error } = await supabaseAdmin
+        .from('user_profiles')
+        .select('user_id, email, display_name, avatar_url');
+
+      if (error) {
+        console.error('Error fetching assignable users:', error);
+        throw new GraphQLError('Could not fetch assignable users', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
+      }
+
+      return data
+        .filter(profile => profile.email != null && profile.email !== 'system@automation.cz') // Filter out profiles with null email and system user
         .map(profile => ({
           id: profile.user_id, // Map user_id to id for GraphQL User type
           email: profile.email!, // Now safe due to the filter

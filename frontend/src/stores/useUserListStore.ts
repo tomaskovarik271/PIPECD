@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { gql } from 'graphql-request';
 import { gqlClient } from '../lib/graphqlClient';
 import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
+import { GET_ASSIGNABLE_USERS_QUERY } from '../lib/graphql/userOperations';
 import type { User as GraphQLUser, Maybe } from '../generated/graphql/graphql'; // Use User from generated types
 
 // Simplified User type for the list, matching what we fetch
@@ -17,21 +17,7 @@ export interface UserListItem {
   }>;
 }
 
-const GET_USER_LIST_QUERY = gql`
-  query GetUserList {
-    users {
-      id
-      display_name
-      email
-      avatar_url
-      roles {
-        id
-        name
-        description
-      }
-    }
-  }
-`;
+// Query moved to userOperations.ts
 
 interface UserListState {
   users: UserListItem[];
@@ -55,15 +41,15 @@ export const useUserListStore = create<UserListState>((set, get) => ({
     }
     set({ loading: true, error: null });
     try {
-      // Use GraphQLUser[] for the response type as 'users' query returns array of User
-      type GetUserListResponse = { users: GraphQLUser[] }; 
-      const response = await gqlClient.request<GetUserListResponse>(GET_USER_LIST_QUERY);
+      // Use GraphQLUser[] for the response type as 'assignableUsers' query returns array of User
+      type GetAssignableUsersResponse = { assignableUsers: GraphQLUser[] }; 
+      const response = await gqlClient.request<GetAssignableUsersResponse>(GET_ASSIGNABLE_USERS_QUERY);
       
       // Map to UserListItem, ensuring display_name is handled correctly (it's Maybe<string>)
       // Filter out System Automation user from assignment lists (used for system automations only)
-      const userListItems: UserListItem[] = response.users
-        .filter(user => user.email !== 'system@automation.cz')
-        .map(user => ({
+      const userListItems: UserListItem[] = response.assignableUsers
+        .filter((user: GraphQLUser) => user.email !== 'system@automation.cz')
+        .map((user: GraphQLUser) => ({
           id: user.id,
           display_name: user.display_name, // This is already Maybe<String>
           email: user.email,

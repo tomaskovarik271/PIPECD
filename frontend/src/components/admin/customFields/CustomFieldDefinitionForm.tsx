@@ -54,7 +54,7 @@ const CustomFieldDefinitionForm: React.FC<CustomFieldDefinitionFormProps> = ({
       entityType: entityType,
       isRequired: initialValues?.isRequired ?? false,
       displayOrder: initialValues?.displayOrder ?? 0,
-      fieldType: initialValues?.fieldType || CustomFieldType.Text,
+      fieldType: initialValues?.fieldType || 'TEXT',
       dropdownOptions: initialValues?.dropdownOptions || [],
     },
   });
@@ -72,7 +72,7 @@ const CustomFieldDefinitionForm: React.FC<CustomFieldDefinitionFormProps> = ({
       entityType: entityType,
       isRequired: initialValues?.isRequired ?? false,
       displayOrder: initialValues?.displayOrder ?? 0,
-      fieldType: initialValues?.fieldType || CustomFieldType.Text,
+      fieldType: initialValues?.fieldType || 'TEXT',
       dropdownOptions: initialValues?.dropdownOptions || [],
     };
     reset(defaultVals);
@@ -88,7 +88,7 @@ const CustomFieldDefinitionForm: React.FC<CustomFieldDefinitionFormProps> = ({
       fieldType: values.fieldType,
       isRequired: values.isRequired,
       displayOrder: values.displayOrder,
-      dropdownOptions: (values.fieldType === CustomFieldType.Dropdown || values.fieldType === CustomFieldType.MultiSelect) && values.dropdownOptions && values.dropdownOptions.length > 0 
+      dropdownOptions: (values.fieldType === 'DROPDOWN' || values.fieldType === 'MULTI_SELECT') && values.dropdownOptions && values.dropdownOptions.length > 0 
         ? values.dropdownOptions 
         : null,
     };
@@ -130,10 +130,10 @@ const CustomFieldDefinitionForm: React.FC<CustomFieldDefinitionFormProps> = ({
             name="fieldType"
             control={control}
             rules={{ required: 'Field Type is required' }}
-            defaultValue={CustomFieldType.Text}
+            defaultValue={'TEXT'}
             render={({ field }) => (
               <Select {...field} id="fieldType" isDisabled={isEditMode}>
-                {Object.values(CustomFieldType).map((type) => (
+                {['TEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'DROPDOWN', 'MULTI_SELECT', 'TEXT_AREA'].map((type) => (
                   <option key={type} value={type}>
                     {type}
                   </option>
@@ -144,7 +144,7 @@ const CustomFieldDefinitionForm: React.FC<CustomFieldDefinitionFormProps> = ({
           <FormErrorMessage>{errors.fieldType?.message}</FormErrorMessage>
         </FormControl>
 
-        {(fieldTypeWatch === CustomFieldType.Dropdown || fieldTypeWatch === CustomFieldType.MultiSelect) && (
+        {(fieldTypeWatch === 'DROPDOWN' || fieldTypeWatch === 'MULTI_SELECT') && (
           <Box borderWidth="1px" borderRadius="md" p={4}>
             <HStack justifyContent="space-between" mb={2}>
                 <FormLabel mb={0}>Dropdown Options</FormLabel>

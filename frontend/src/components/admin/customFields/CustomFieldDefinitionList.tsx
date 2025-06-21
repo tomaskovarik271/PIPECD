@@ -29,7 +29,7 @@ import CustomFieldDefinitionForm from './CustomFieldDefinitionForm';
 
 const CustomFieldDefinitionList: React.FC = () => {
   const [selectedEntityType, setSelectedEntityType] = React.useState<CustomFieldEntityType>(
-    CustomFieldEntityType.Deal
+    'DEAL'
   );
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -96,10 +96,10 @@ const CustomFieldDefinitionList: React.FC = () => {
 
   const getEntityTypeName = (entityType: CustomFieldEntityType): string => {
     switch (entityType) {
-      case CustomFieldEntityType.Deal: return 'Deals';
-      case CustomFieldEntityType.Person: return 'People';
-      case CustomFieldEntityType.Organization: return 'Organizations';
-      case CustomFieldEntityType.Lead: return 'Leads';
+      case 'DEAL': return 'Deals';
+      case 'PERSON': return 'People';
+      case 'ORGANIZATION': return 'Organizations';
+      case 'LEAD': return 'Leads';
       default: return '';
     }
   };
@@ -117,10 +117,10 @@ const CustomFieldDefinitionList: React.FC = () => {
             width="200px"
             isDisabled={loading || isSubmitting}
           >
-            <option value={CustomFieldEntityType.Deal}>Deals</option>
-            <option value={CustomFieldEntityType.Person}>People</option>
-            <option value={CustomFieldEntityType.Organization}>Organizations</option>
-            <option value={CustomFieldEntityType.Lead}>Leads</option>
+            <option value="DEAL">Deals</option>
+            <option value="PERSON">People</option>
+            <option value="ORGANIZATION">Organizations</option>
+            <option value="LEAD">Leads</option>
           </Select>
         </HStack>
         <Button 

@@ -214,7 +214,7 @@ const DealDetailPage = () => {
       fetchDealById(dealId);
       const filter: GeneratedActivityFilterInput = { dealId: dealId };
       fetchActivities(filter);
-      fetchCustomFieldDefinitions(CustomFieldEntityType.Deal);
+      fetchCustomFieldDefinitions('DEAL');
       if (!usersHaveBeenFetched) {
         fetchUserList();
       }
@@ -338,6 +338,8 @@ const DealDetailPage = () => {
     (userPermissions?.includes('deal:update_own') && 
      (currentDeal.user_id === currentUserId || currentDeal.assigned_to_user_id === currentUserId))
   );
+
+
 
   // Handle custom field updates
   const handleCustomFieldUpdate = async (fieldId: string, value: any) => {

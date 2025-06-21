@@ -17,6 +17,7 @@ import ProfilePage from './pages/ProfilePage';
 import GoogleIntegrationPage from './pages/GoogleIntegrationPage';
 import GoogleOAuthCallback from './pages/GoogleOAuthCallback';
 import AgentPage from './pages/AgentPage';
+import { AgentV2Page } from './pages/AgentV2Page';
 import CustomFieldsPage from './pages/admin/CustomFieldsPage';
 import WfmAdminPage from './pages/admin/WfmAdminPage';
 import WFMStatusesPage from './pages/admin/WFMStatusesPage';
@@ -80,6 +81,7 @@ function AppContent() {
             <Route path="/activities" element={<ActivitiesPage />} />
             <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
             <Route path="/agent" element={<AgentPage />} />
+            <Route path="/agent-v2" element={<AgentV2Page />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/google-integration" element={<GoogleIntegrationPage />} />
             <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />

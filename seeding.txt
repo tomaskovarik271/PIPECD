@@ -68,7 +68,8 @@ INSERT INTO public.user_roles (user_id, role_id)
 VALUES
     ('your_new_user_id_here', (SELECT id FROM public.roles WHERE name = 'admin'));
 
-
+supabase migration up --local
+supabase db push --linked
 
 ############
 

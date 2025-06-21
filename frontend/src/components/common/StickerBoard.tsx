@@ -121,13 +121,19 @@ interface StickerData {
 // Debounce utility
 const useDebounce = (callback: Function, delay: number) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const callbackRef = useRef(callback);
+  
+  // Update callback ref on every render
+  useEffect(() => {
+    callbackRef.current = callback;
+  });
   
   return useCallback((...args: any[]) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    timeoutRef.current = setTimeout(() => callback(...args), delay);
-  }, [callback, delay]);
+    timeoutRef.current = setTimeout(() => callbackRef.current(...args), delay);
+  }, [delay]); // Only depend on delay, not callback
 };
 
 const iconMap = {

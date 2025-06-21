@@ -37,7 +37,7 @@ The system utilizes a serverless architecture based on:
 *   **Authentication:** Supabase Auth (Email/Password, GitHub configured)
 *   **User Profile Management:** Users can manage their display name and avatar URL, stored in a dedicated `user_profiles` table with RLS. Profile information is integrated into features like Deal History.
 *   **Async Tasks:** Inngest (`netlify/functions/inngest.ts`)
-*   **Testing:** Vitest (Unit/Integration), Playwright (E2E)
+*   **Testing:** Vitest (Unit/Integration), Playwright (E2E), Permission Tests
 *   **Hosting/Deployment:** Netlify (`netlify.toml`)
 
 **Current Status (As of WFM Implementation for Sales Deals & First Automation):**
@@ -363,12 +363,27 @@ npm test
 # E2E tests  
 npm run test:e2e
 
+# Permission tests (GraphQL resolver permissions)
+npm run test:permissions
+
 # Watch mode for development
 npm run test:watch
 
 # View E2E test reports
 npm run test:e2e:report
 ```
+
+### Permission Testing
+
+The project includes specialized permission tests to verify GraphQL resolver access control:
+
+- **`npm run test:permissions`** - Tests the `assignableUsers` query permissions
+- Verifies that admin users can access user lists for assignment
+- Confirms member users can access user lists for deal assignment (critical fix)
+- Ensures read-only users cannot access user assignment functionality
+- Located at: `scripts/test-assignable-users-permissions.js`
+
+This test was created to verify the fix for the critical issue where member users couldn't access user lists when creating/editing deals for assignment purposes.
 
 ## 📖 Documentation
 

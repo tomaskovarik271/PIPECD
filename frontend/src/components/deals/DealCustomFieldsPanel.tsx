@@ -66,20 +66,20 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
         // Get current value for the field
         let currentValue: any = null;
         switch (definition.fieldType) {
-          case CustomFieldType.Text:
+          case 'TEXT':
             currentValue = cfv.stringValue || '';
             break;
-          case CustomFieldType.Number:
+          case 'NUMBER':
             currentValue = cfv.numberValue || '';
             break;
-          case CustomFieldType.Boolean:
+          case 'BOOLEAN':
             currentValue = cfv.booleanValue || false;
             break;
-          case CustomFieldType.Date:
+          case 'DATE':
             currentValue = cfv.dateValue || '';
             break;
-          case CustomFieldType.Dropdown:
-          case CustomFieldType.MultiSelect:
+          case 'DROPDOWN':
+          case 'MULTI_SELECT':
             currentValue = cfv.selectedOptionValues || [];
             break;
           default:
@@ -89,7 +89,7 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
         // Format display value
         let displayValue: string | React.ReactNode = '-';
         switch (definition.fieldType) {
-          case CustomFieldType.Text:
+          case 'TEXT':
             displayValue = cfv.stringValue || '-';
             if (cfv.stringValue && (cfv.stringValue.startsWith('http://') || cfv.stringValue.startsWith('https://'))) {
               const linkDetails = getLinkDisplayDetails(cfv.stringValue);
@@ -107,17 +107,17 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
               }
             }
             break;
-          case CustomFieldType.Number:
+          case 'NUMBER':
             displayValue = cfv.numberValue?.toString() || '-';
             break;
-          case CustomFieldType.Boolean:
+          case 'BOOLEAN':
             displayValue = cfv.booleanValue ? 'Yes' : 'No';
             break;
-          case CustomFieldType.Date:
+          case 'DATE':
             displayValue = cfv.dateValue ? new Date(cfv.dateValue).toLocaleDateString() : '-';
             break;
-          case CustomFieldType.Dropdown:
-          case CustomFieldType.MultiSelect:
+          case 'DROPDOWN':
+          case 'MULTI_SELECT':
             if (cfv.selectedOptionValues && cfv.selectedOptionValues.length > 0) {
               const selectedLabels = cfv.selectedOptionValues.map(val => {
                 const opt = definition.dropdownOptions?.find(o => o.value === val);

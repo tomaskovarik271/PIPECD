@@ -15,7 +15,8 @@ const config: CodegenConfig = {
         strictScalars: true, // Makes scalars strict, useful for custom scalars if you define them
         useTypeImports: true, // Uses `import type` for generated types
         scalars: { // Add this section to map custom scalars
-          DateTime: 'string' // Map the GraphQL DateTime scalar to TypeScript string
+          DateTime: 'string', // Map the GraphQL DateTime scalar to TypeScript string
+          JSON: 'Record<string, any>' // Map the GraphQL JSON scalar to TypeScript object
         }
       },
       plugins: [] // No additional plugins needed if client-preset handles everything

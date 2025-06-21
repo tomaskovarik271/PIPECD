@@ -81,12 +81,12 @@ function OrganizationsPage() {
 
   useEffect(() => {
     fetchOrganizations();
-    fetchCustomFieldDefinitions(CustomFieldEntityType.Organization);
+    fetchCustomFieldDefinitions('ORGANIZATION');
   }, [fetchOrganizations, fetchCustomFieldDefinitions]);
 
   // Get organization-specific custom field definitions
   const organizationCustomFieldDefinitions = useMemo(() => {
-    return customFieldDefinitions.filter((def: GQLCustomFieldDefinition) => def.entityType === CustomFieldEntityType.Organization);
+    return customFieldDefinitions.filter((def: GQLCustomFieldDefinition) => def.entityType === 'ORGANIZATION');
   }, [customFieldDefinitions]);
 
   // Memoize custom field value renderer to prevent expensive re-calculations
