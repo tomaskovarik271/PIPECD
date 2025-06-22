@@ -1,10 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import {
   Box,
-  Button,
   Center,
   Flex,
-  Heading,
   Icon,
   Link,
   Text,
@@ -15,7 +13,7 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, InfoIcon, EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
-import { CustomFieldDefinition, CustomFieldType, CustomFieldValue } from '../../generated/graphql/graphql';
+import { CustomFieldDefinition, CustomFieldValue } from '../../generated/graphql/graphql';
 import { CustomFieldRenderer } from '../common/CustomFieldRenderer';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
@@ -36,7 +34,7 @@ interface DealCustomFieldsPanelProps {
 export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
   customFieldDefinitions,
   customFieldValues,
-  dealId,
+  dealId: _dealId,
   onUpdate,
   getLinkDisplayDetails,
 }) => {

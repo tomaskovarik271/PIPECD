@@ -40,19 +40,15 @@ import {
   FormControl,
   FormLabel,
   Textarea,
-  Grid,
-  GridItem,
 } from '@chakra-ui/react';
 import {
   SearchIcon,
-  AddIcon,
   AttachmentIcon,
   DownloadIcon,
   ExternalLinkIcon,
-  ViewIcon,
   DeleteIcon,
 } from '@chakra-ui/icons';
-import { FiFile, FiFolder, FiMoreVertical, FiUpload, FiRefreshCw, FiExternalLink } from 'react-icons/fi';
+import { FiFile, FiFolder, FiMoreVertical, FiRefreshCw, FiExternalLink } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 // Types
