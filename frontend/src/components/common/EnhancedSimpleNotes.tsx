@@ -22,19 +22,14 @@ import {
   ModalCloseButton,
   Flex,
   Select,
-  Textarea,
 } from '@chakra-ui/react';
 import {
   FiPlus,
   FiEdit3,
   FiTrash2,
   FiBookmark,
-  FiMoreVertical,
   FiSend,
-  FiX,
-  FiNavigation,
   FiClock,
-  FiUser,
   FiMail,
   FiPaperclip,
   FiFileText,
@@ -43,7 +38,7 @@ import DOMPurify from 'dompurify';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useSmartStickers } from '../../hooks/useSmartStickers';
 import { useNoteAttachments } from '../../hooks/useNoteAttachments';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { RichTextEditor } from './RichTextEditor';
 import { DocumentAttachmentModal } from './DocumentAttachmentModal';
 

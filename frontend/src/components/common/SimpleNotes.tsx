@@ -35,10 +35,7 @@ import {
   FiBookmark,
   FiMoreVertical,
   FiSend,
-  FiX,
-  FiNavigation,
   FiClock,
-  FiUser,
   FiLink,
   FiImage,
 } from 'react-icons/fi';

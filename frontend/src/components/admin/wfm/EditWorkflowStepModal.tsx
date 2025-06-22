@@ -15,14 +15,12 @@ import { WfmWorkflowStep, UpdateWfmWorkflowStepInput } from '../../../generated/
 interface EditWorkflowStepModalProps {
   isOpen: boolean;
   onClose: () => void;
-  workflowId: string; // Needed for refetching after update
   step: WfmWorkflowStep;
 }
 
 const EditWorkflowStepModal: React.FC<EditWorkflowStepModalProps> = ({
   isOpen,
   onClose,
-  workflowId: _workflowId,
   step,
 }) => {
   const toast = useToast();
