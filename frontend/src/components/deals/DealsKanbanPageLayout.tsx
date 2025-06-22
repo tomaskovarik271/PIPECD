@@ -1,7 +1,6 @@
 import React, { useMemo, useCallback } from 'react';
 import {
   Box,
-  VStack,
   Button,
   Menu,
   MenuButton,
@@ -9,10 +8,6 @@ import {
   MenuOptionGroup,
   MenuItemOption,
   HStack,
-  Tag,
-  TagLabel,
-  TagCloseButton,
-  Text,
   Select,
 } from '@chakra-ui/react';
 import { ChevronDownIcon } from '@chakra-ui/icons';
@@ -55,14 +50,14 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
   selectedAssignedUserIds,
   setSelectedAssignedUserIds,
   userList,
-  usersLoading,
+  usersLoading: _usersLoading,
   userPermissions,
   dealsViewMode, 
   setDealsViewMode,
   searchTerm,
   onSearchChange,
   kanbanCompactMode,
-  setKanbanCompactMode,
+  setKanbanCompactMode: _setKanbanCompactMode,
 }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
