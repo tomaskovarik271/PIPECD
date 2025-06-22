@@ -349,7 +349,7 @@ const OrganizationDetailPage = () => {
         templateColumns="1fr 450px" 
         templateRows="1fr" 
         gap={0} 
-        h="full" 
+        h="full"  
         w="full" 
         maxW="100%" 
         bg={colors.bg.surface}
@@ -1097,7 +1097,7 @@ const OrganizationDetailPage = () => {
                         <Text fontSize="sm" color={colors.text.muted}>
                           {(currentOrganization as any).accountManager.email}
                         </Text>
-                      </VStack>
+          </VStack>
                     </HStack>
                   ) : (
                     <VStack align="start" spacing={2}>
@@ -1146,7 +1146,7 @@ const OrganizationDetailPage = () => {
                       <Text fontSize="sm" color={colors.text.muted}>Pipeline Value</Text>
                       <Text fontSize="lg" fontWeight="semibold" color={colors.status.success}>
                         €{((currentOrganization as any).totalDealValue || 0).toLocaleString()}
-                      </Text>
+               </Text>
                     </HStack>
                     <HStack justify="space-between">
                       <Text fontSize="sm" color={colors.text.muted}>Active Deals</Text>
@@ -1170,12 +1170,12 @@ const OrganizationDetailPage = () => {
                       </Text>
                     </HStack>
                   </VStack>
-                </Box>
+             </Box>
 
 
           </VStack>
         )}
-          </Box>
+      </Box>
         </GridItem>
       </Grid>
 

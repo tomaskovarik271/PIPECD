@@ -1,32 +1,33 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { supabase } from './lib/supabase'; 
 import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
-import DealsPage from './pages/DealsPage';
-import LeadsPage from './pages/LeadsPage';
-import LeadDetailPage from './pages/LeadDetailPage';
-import PeoplePage from './pages/PeoplePage';
-import PersonDetailPage from './pages/PersonDetailPage';
-import OrganizationsPage from './pages/OrganizationsPage'; 
-import OrganizationDetailPage from './pages/OrganizationDetailPage';
-import ActivitiesPage from './pages/ActivitiesPage';
-import ActivityDetailPage from './pages/ActivityDetailPage';
-import DealDetailPage from './pages/DealDetailPage';
-import ProfilePage from './pages/ProfilePage';
-import GoogleIntegrationPage from './pages/GoogleIntegrationPage';
-import GoogleOAuthCallback from './pages/GoogleOAuthCallback';
-import AgentPage from './pages/AgentPage';
-import { AgentV2Page } from './pages/AgentV2Page';
-import CustomFieldsPage from './pages/admin/CustomFieldsPage';
-import WfmAdminPage from './pages/admin/WfmAdminPage';
-import WFMStatusesPage from './pages/admin/WFMStatusesPage';
-import WFMWorkflowsPage from './pages/admin/WFMWorkflowsPage';
-import WFMProjectTypesPage from './pages/admin/WFMProjectTypesPage';
-import GoogleDriveSettingsPage from './pages/admin/GoogleDriveSettingsPage';
-import { UserRoleManagementPage } from './pages/admin/UserRoleManagementPage';
-import MyAccountsPage from './pages/MyAccountsPage';
 
+// Lazy load all page components for better performance
+const DealsPage = lazy(() => import('./pages/DealsPage'));
+const LeadsPage = lazy(() => import('./pages/LeadsPage'));
+const LeadDetailPage = lazy(() => import('./pages/LeadDetailPage'));
+const PeoplePage = lazy(() => import('./pages/PeoplePage'));
+const PersonDetailPage = lazy(() => import('./pages/PersonDetailPage'));
+const OrganizationsPage = lazy(() => import('./pages/OrganizationsPage'));
+const OrganizationDetailPage = lazy(() => import('./pages/OrganizationDetailPage'));
+const ActivitiesPage = lazy(() => import('./pages/ActivitiesPage'));
+const ActivityDetailPage = lazy(() => import('./pages/ActivityDetailPage'));
+const DealDetailPage = lazy(() => import('./pages/DealDetailPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const GoogleIntegrationPage = lazy(() => import('./pages/GoogleIntegrationPage'));
+const GoogleOAuthCallback = lazy(() => import('./pages/GoogleOAuthCallback'));
+const AgentPage = lazy(() => import('./pages/AgentPage'));
+const AgentV2Page = lazy(() => import('./pages/AgentV2Page').then(module => ({ default: module.AgentV2Page })));
+const CustomFieldsPage = lazy(() => import('./pages/admin/CustomFieldsPage'));
+const WfmAdminPage = lazy(() => import('./pages/admin/WfmAdminPage'));
+const WFMStatusesPage = lazy(() => import('./pages/admin/WFMStatusesPage'));
+const WFMWorkflowsPage = lazy(() => import('./pages/admin/WFMWorkflowsPage'));
+const WFMProjectTypesPage = lazy(() => import('./pages/admin/WFMProjectTypesPage'));
+const GoogleDriveSettingsPage = lazy(() => import('./pages/admin/GoogleDriveSettingsPage'));
+const UserRoleManagementPage = lazy(() => import('./pages/admin/UserRoleManagementPage').then(module => ({ default: module.UserRoleManagementPage })));
+const MyAccountsPage = lazy(() => import('./pages/MyAccountsPage'));
 
 import { 
   Box, 
@@ -35,11 +36,27 @@ import {
   useToast,
   VStack,
   Spinner,
+  Center,
+  Text,
 } from '@chakra-ui/react';
 import { useAppStore } from './stores/useAppStore';
 import { useWFMConfigStore } from './stores/useWFMConfigStore';
 import Sidebar from './components/layout/Sidebar';
 import { useThemeColors } from './hooks/useThemeColors';
+
+// Loading component for lazy-loaded routes
+function PageLoader() {
+  const colors = useThemeColors();
+  
+  return (
+    <Center h="200px" w="100%">
+      <VStack spacing={4}>
+        <Spinner size="lg" color={colors.interactive.default} thickness="3px" />
+        <Text color={colors.text.secondary} fontSize="sm">Loading...</Text>
+      </VStack>
+    </Center>
+  );
+}
 
 function AppContent() {
   const isSidebarCollapsed = useAppStore((state) => state.isSidebarCollapsed);
@@ -68,36 +85,38 @@ function AppContent() {
           bg={colors.bg.app}
           transition="margin-left 0.2s ease-in-out"
         >
-          <Routes>
-            <Route path="/" element={<Navigate to="/deals" replace />} />
-            <Route path="/people" element={<PeoplePage />} />
-            <Route path="/people/:personId" element={<PersonDetailPage />} />
-            <Route path="/deals" element={<DealsPage />} />
-            <Route path="/deals/:dealId" element={<DealDetailPage />} />
-            <Route path="/leads" element={<LeadsPage />} />
-            <Route path="/leads/:leadId" element={<LeadDetailPage />} />
-            <Route path="/organizations" element={<OrganizationsPage />} />
-            <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
-            
-            <Route path="/activities" element={<ActivitiesPage />} />
-            <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
-            <Route path="/agent" element={<AgentPage />} />
-            <Route path="/agent-v2" element={<AgentV2Page />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/my-accounts" element={<MyAccountsPage />} />
-            <Route path="/google-integration" element={<GoogleIntegrationPage />} />
-            <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
-            <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
-            <Route path="/admin/google-drive" element={<GoogleDriveSettingsPage />} />
-            <Route path="/admin/user-roles" element={<UserRoleManagementPage />} />
-            <Route path="/admin/wfm" element={<WfmAdminPage />}>
-              <Route index element={<WFMStatusesPage />} />
-              <Route path="statuses" element={<WFMStatusesPage />} />
-              <Route path="workflows" element={<WFMWorkflowsPage />} />
-              <Route path="project-types" element={<WFMProjectTypesPage />} />
-            </Route>
-            <Route path="*" element={<Heading size="lg" p={6} color={colors.text.primary}>404 Not Found</Heading>} />
-          </Routes>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route path="/" element={<Navigate to="/deals" replace />} />
+              <Route path="/people" element={<PeoplePage />} />
+              <Route path="/people/:personId" element={<PersonDetailPage />} />
+              <Route path="/deals" element={<DealsPage />} />
+              <Route path="/deals/:dealId" element={<DealDetailPage />} />
+              <Route path="/leads" element={<LeadsPage />} />
+              <Route path="/leads/:leadId" element={<LeadDetailPage />} />
+              <Route path="/organizations" element={<OrganizationsPage />} />
+              <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
+              
+              <Route path="/activities" element={<ActivitiesPage />} />
+              <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
+              <Route path="/agent" element={<AgentPage />} />
+              <Route path="/agent-v2" element={<AgentV2Page />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/my-accounts" element={<MyAccountsPage />} />
+              <Route path="/google-integration" element={<GoogleIntegrationPage />} />
+              <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
+              <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
+              <Route path="/admin/google-drive" element={<GoogleDriveSettingsPage />} />
+              <Route path="/admin/user-roles" element={<UserRoleManagementPage />} />
+              <Route path="/admin/wfm" element={<WfmAdminPage />}>
+                <Route index element={<WFMStatusesPage />} />
+                <Route path="statuses" element={<WFMStatusesPage />} />
+                <Route path="workflows" element={<WFMWorkflowsPage />} />
+                <Route path="project-types" element={<WFMProjectTypesPage />} />
+              </Route>
+              <Route path="*" element={<Heading size="lg" p={6} color={colors.text.primary}>404 Not Found</Heading>} />
+            </Routes>
+          </Suspense>
         </Box>
       </Flex>
     </Box>

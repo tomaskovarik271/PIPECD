@@ -46,6 +46,7 @@ import {
   FiPaperclip,
   FiFileText,
 } from 'react-icons/fi';
+import DOMPurify from 'dompurify';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useSmartStickers } from '../../hooks/useSmartStickers';
 import { useNoteAttachments } from '../../hooks/useNoteAttachments';
@@ -175,6 +176,25 @@ const NOTE_TEMPLATES: NoteTemplate[] = [
     category: 'Follow-up',
   },
 ];
+
+// Secure HTML sanitization configuration
+const sanitizeHtml = (html: string): string => {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'p', 'br', 'strong', 'em', 'b', 'i', 'u', 
+      'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'blockquote', 'code', 'pre', 'a', 'div', 'span'
+    ],
+    ALLOWED_ATTR: ['href', 'target'],
+    ALLOW_DATA_ATTR: false,
+    ALLOW_UNKNOWN_PROTOCOLS: false,
+    SANITIZE_DOM: true,
+    FORCE_BODY: false,
+    RETURN_DOM: false,
+    RETURN_DOM_FRAGMENT: false,
+    RETURN_TRUSTED_TYPE: false
+  });
+};
 
 export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
   entityType,
@@ -693,7 +713,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
                     lineHeight="1.6"
                     mb={4}
                     fontWeight="400"
-                    dangerouslySetInnerHTML={{ __html: note.content }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(note.content) }}
                     sx={{
                       'h1, h2, h3, h4, h5, h6': {
                         fontWeight: 'bold',
@@ -887,7 +907,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
                     fontSize="xs"
                     color={colors.text.secondary}
                     dangerouslySetInnerHTML={{ 
-                      __html: NOTE_TEMPLATES.find(t => t.id === selectedTemplate)?.content || '' 
+                      __html: sanitizeHtml(NOTE_TEMPLATES.find(t => t.id === selectedTemplate)?.content || '')
                     }}
                     sx={{
                       'h3': { fontSize: 'sm', fontWeight: 'bold', mb: 1 },

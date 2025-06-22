@@ -17,9 +17,44 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        // Prevent problematic chunks
-        manualChunks: undefined,
-        // Block service worker and manifest files
+        // Enable code splitting with manual chunks for better performance
+        manualChunks: {
+          // Core React libraries
+          vendor: ['react', 'react-dom'],
+          
+          // GraphQL and data fetching
+          apollo: ['@apollo/client', '@tanstack/react-query'],
+          
+          // UI Libraries (Material-UI)
+          'ui-core': ['@mui/material', '@mui/lab'],
+          'ui-icons': ['@mui/icons-material'],
+          
+          // Rich text editors
+          'editor-tiptap': [
+            '@tiptap/react', 
+            '@tiptap/starter-kit', 
+            '@tiptap/extension-bold', 
+            '@tiptap/extension-italic', 
+            '@tiptap/extension-link'
+          ],
+          
+          // Form and validation
+          forms: ['react-hook-form', '@hookform/resolvers'],
+          
+          // Routing and navigation
+          routing: ['react-router-dom'],
+          
+          // Utilities (only include packages that exist)
+          utils: ['date-fns', 'immer', 'zustand'],
+          
+          // Drag and drop
+          dnd: ['@hello-pangea/dnd'],
+          
+          // Supabase
+          supabase: ['@supabase/supabase-js', '@supabase/auth-ui-react', '@supabase/auth-ui-shared']
+        },
+        
+        // Optimize asset naming for better caching
         assetFileNames: (assetInfo) => {
           const name = assetInfo.name || '';
           // Block any PWA-related files
@@ -27,19 +62,34 @@ export default defineConfig({
             return 'blocked/[name].[ext]';
           }
           return 'assets/[name]-[hash].[ext]';
-        }
+        },
+        
+        // Optimize chunk naming
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js'
       },
+      
+      // Only block actual service worker imports, not legitimate libraries
       external: (id) => {
-        // Block workbox and service worker imports
-        return id.includes('workbox') || id.includes('sw.js') || id.includes('service-worker');
+        return id.includes('sw.js') || id.includes('service-worker.js');
       }
-    }
+    },
+    
+    // Performance optimizations
+    target: 'es2020',
+    minify: 'esbuild',
+    sourcemap: false,
+    
+    // Chunk size warnings
+    chunkSizeWarningLimit: 500, // 500KB warning limit
   },
+  
   // Completely disable worker support
   worker: {
     format: 'es',
     plugins: () => []
   },
+  
   // Block service workers in development
   server: {
     headers: {
@@ -47,6 +97,7 @@ export default defineConfig({
       'Cache-Control': 'no-cache, no-store, must-revalidate'
     }
   },
+  
   test: {
     globals: true, // Use Vitest globals (describe, it, expect) without importing
     environment: 'jsdom', // Simulate browser environment

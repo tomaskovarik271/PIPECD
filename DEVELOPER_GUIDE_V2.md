@@ -269,13 +269,13 @@ PipeCD is built on a modern, scalable architecture designed for enterprise-grade
 
 ### **3.2 Local Development Setup**
 
-```bash
+        ```bash
 # Clone the repository
 git clone <repository-url>
 cd PIPECD
 
 # Install dependencies
-npm install
+   npm install
 cd frontend && npm install && cd ..
 
 # Set up environment variables
