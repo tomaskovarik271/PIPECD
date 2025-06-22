@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { gqlClient } from '../../lib/graphqlClient';
 import {
   GET_DEAL_DOCUMENTS,
@@ -128,9 +128,9 @@ const DealDocumentsPanel: React.FC<DealDocumentsPanelProps> = ({ dealId, dealNam
   useEffect(() => {
     loadDealFolder();
     loadDealDocuments();
-  }, [dealId]);
+  }, [dealId, loadDealFolder, loadDealDocuments]);
 
-  const loadDealFolder = async () => {
+  const loadDealFolder = useCallback(async () => {
     try {
       const response = await gqlClient.request(GET_DEAL_FOLDER, { dealId });
       const folder = response.getDealFolder;
@@ -145,9 +145,9 @@ const DealDocumentsPanel: React.FC<DealDocumentsPanelProps> = ({ dealId, dealNam
     } catch (error) {
       console.error('Error loading deal folder:', error);
     }
-  };
+  }, [dealId]);
 
-  const loadDealDocuments = async () => {
+  const loadDealDocuments = useCallback(async () => {
     setLoading(true);
     try {
       const response = await gqlClient.request(GET_DEAL_DOCUMENTS, { dealId });
@@ -168,7 +168,7 @@ const DealDocumentsPanel: React.FC<DealDocumentsPanelProps> = ({ dealId, dealNam
     } finally {
       setLoading(false);
     }
-  };
+  }, [dealId]);
 
   const loadImportFiles = async () => {
     setImportLoading(true);
