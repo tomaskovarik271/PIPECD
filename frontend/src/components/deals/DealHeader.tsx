@@ -11,7 +11,6 @@ import {
   Box,
   Icon,
   Button,
-  Divider,
 } from '@chakra-ui/react';
 import { Link as RouterLink } from 'react-router-dom';
 import { CheckIcon, TimeIcon, WarningIcon, CalendarIcon } from '@chakra-ui/icons';
@@ -62,7 +61,7 @@ interface DealHeaderProps {
   }>;
 }
 
-export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing, setIsEditing, onCreateActivity, dealActivities = [] }) => {
+export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEditing, setIsEditing: _setIsEditing, onCreateActivity, dealActivities = [] }) => {
   const colors = useThemeColors();
   const [workflowSteps, setWorkflowSteps] = useState<any[]>([]);
   const [isLoadingSteps, setIsLoadingSteps] = useState(false);

@@ -1,8 +1,8 @@
 import { Box, Text, VStack, HStack, Avatar, UnorderedList, ListItem, Code } from '@chakra-ui/react';
 import { format, parseISO } from 'date-fns';
 import { DealHistoryEntryDisplayItem } from './DealHistoryList'; // Import the type
-import { useAppStore, DealWithHistory } from '../../stores/useAppStore'; // Added store import and DealWithHistory
-import { useUserListStore, UserListItem } from '../../stores/useUserListStore'; // ADDED
+import { useAppStore } from '../../stores/useAppStore'; // Added store import
+import { useUserListStore } from '../../stores/useUserListStore'; // ADDED
 import { CustomFieldDefinition, Person, Organization, WfmStatus } from '../../generated/graphql/graphql'; // For typing, changed Stage to WfmStatus
 import { useEffect } from 'react'; // ADDED
 import { useThemeColors } from '../../hooks/useThemeColors'; // ADDED
