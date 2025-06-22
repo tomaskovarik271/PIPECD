@@ -7,14 +7,12 @@ import {
   Checkbox,
   RadioGroup,
   Radio,
-  Stack,
   Badge,
   Button,
   Wrap,
   WrapItem,
   IconButton,
   Divider,
-  SimpleGrid,
   Collapse,
   useDisclosure,
 } from '@chakra-ui/react';
@@ -76,7 +74,7 @@ const iconMap = {
 export const StickerFilters: React.FC<StickerFiltersProps> = ({
   filters,
   onFiltersChange,
-  entityType,
+  entityType: _entityType,
   categories = [],
 }) => {
   const colors = useThemeColors();

@@ -33,7 +33,7 @@ import {
   useToast,
   FormHelperText,
 } from '@chakra-ui/react';
-import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { AddIcon } from '@chakra-ui/icons';
 import { 
   FiStar,
   FiClock,
@@ -172,7 +172,7 @@ export const StickerCreateModal: React.FC<StickerCreateModalProps> = ({
       });
       
       onClose();
-    } catch (error) {
+    } catch {
       toast({
         title: 'Error creating sticker',
         description: 'Please try again',
