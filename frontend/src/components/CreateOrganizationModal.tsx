@@ -21,7 +21,8 @@ import {
   useToast,
   Box,
   Text,
-  HStack
+  HStack,
+  Select
 } from '@chakra-ui/react';
 import { FiUser } from 'react-icons/fi';
 import { useOrganizationsStore } from '../stores/useOrganizationsStore';
@@ -33,6 +34,7 @@ import {
 } from '../lib/utils/customFieldProcessing';
 import type { OrganizationInput } from '../generated/graphql/graphql';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
+import { useQuery, gql } from '@apollo/client';
 import { useDebounce } from '../lib/utils/useDebounce';
 import { duplicateDetectionService, type SimilarOrganizationResult } from '../lib/services/duplicateDetectionService';
 
@@ -47,6 +49,7 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [accountManagerId, setAccountManagerId] = useState('');
   const [customFieldData, setCustomFieldData] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
@@ -63,6 +66,20 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
     createOrganization: createOrganizationAction, 
     organizationsError: storeError, 
   } = useOrganizationsStore();
+
+  // Get assignable users for account manager selection
+  const GET_ASSIGNABLE_USERS_QUERY = gql`
+    query GetAssignableUsersForCreateOrg {
+      assignableUsers {
+        id
+        display_name
+        email
+        avatar_url
+      }
+    }
+  `;
+  
+  const { data: usersData, loading: usersLoading } = useQuery(GET_ASSIGNABLE_USERS_QUERY);
 
   // Use optimized custom fields hook
   const {
@@ -107,6 +124,7 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
       setName('');
       setAddress('');
       setNotes('');
+      setAccountManagerId('');
       setLocalError(null);
       setIsLoading(false);
       
@@ -159,6 +177,7 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
         name: name.trim(),
         address: address.trim() || undefined,
         notes: notes.trim() || undefined,
+        account_manager_id: accountManagerId || undefined,
       };
 
       // Process custom fields using utility
@@ -281,6 +300,23 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
                 onChange={(e) => setNotes(e.target.value)} 
                 placeholder="Enter any notes about the organization (optional)"
               />
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Account Manager</FormLabel>
+              <Select 
+                placeholder="Select account manager (optional)"
+                value={accountManagerId}
+                onChange={(e) => setAccountManagerId(e.target.value)}
+                isDisabled={usersLoading}
+              >
+                {usersData?.assignableUsers?.map((user: any) => (
+                  <option key={user.id} value={user.id}>
+                    {user.display_name || user.email}
+                  </option>
+                ))}
+              </Select>
+              {usersLoading && <Text fontSize="sm" color="gray.500">Loading users...</Text>}
             </FormControl>
 
             {/* Custom Fields Section */}

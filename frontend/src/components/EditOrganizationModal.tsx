@@ -19,7 +19,8 @@ import {
   Spinner,
   useToast,
   Box,
-  Text
+  Text,
+  Select
 } from '@chakra-ui/react';
 import { useOrganizationsStore, Organization, OrganizationInput } from '../stores/useOrganizationsStore';
 import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
@@ -29,6 +30,7 @@ import {
   processCustomFieldsForSubmission 
 } from '../lib/utils/customFieldProcessing';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
+import { useQuery, gql } from '@apollo/client';
 
 interface EditOrganizationModalProps {
   isOpen: boolean;
@@ -42,6 +44,7 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
   const [name, setName] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+  const [accountManagerId, setAccountManagerId] = useState('');
   const [customFieldData, setCustomFieldData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +56,20 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
     updateOrganization: updateOrganizationAction, 
     organizationsError: storeError, 
   } = useOrganizationsStore();
+
+  // Get assignable users for account manager selection
+  const GET_ASSIGNABLE_USERS_QUERY = gql`
+    query GetAssignableUsersForEditOrg {
+      assignableUsers {
+        id
+        display_name
+        email
+        avatar_url
+      }
+    }
+  `;
+  
+  const { data: usersData, loading: usersLoading } = useQuery(GET_ASSIGNABLE_USERS_QUERY);
 
   // Use optimized custom fields hook
   const {
@@ -76,6 +93,12 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
       setName(organization.name || '');
       setAddress(organization.address || '');
       setNotes(organization.notes || '');
+      // Use accountManager.id if available, otherwise fall back to account_manager_id
+      setAccountManagerId(
+        (organization as any).accountManager?.id || 
+        (organization as any).account_manager_id || 
+        ''
+      );
       setError(null);
       setIsLoading(false);
 
@@ -90,6 +113,7 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
       setName('');
       setAddress('');
       setNotes('');
+      setAccountManagerId('');
       setCustomFieldData({});
       setError(null);
       setIsLoading(false);
@@ -121,6 +145,7 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
         name: name.trim(),
         address: address.trim() || undefined,
         notes: notes.trim() || undefined,
+        account_manager_id: accountManagerId || undefined,
       };
 
       // Process custom fields using utility
@@ -206,6 +231,23 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
                 onChange={(e) => setNotes(e.target.value)} 
                 placeholder="Enter any notes about the organization (optional)"
               />
+            </FormControl>
+
+            <FormControl>
+              <FormLabel>Account Manager</FormLabel>
+              <Select 
+                placeholder="Select account manager (optional)"
+                value={accountManagerId}
+                onChange={(e) => setAccountManagerId(e.target.value)}
+                isDisabled={usersLoading}
+              >
+                {usersData?.assignableUsers?.map((user: any) => (
+                  <option key={user.id} value={user.id}>
+                    {user.display_name || user.email}
+                  </option>
+                ))}
+              </Select>
+              {usersLoading && <Text fontSize="sm" color="gray.500">Loading users...</Text>}
             </FormControl>
 
             {/* Custom Fields Section */}

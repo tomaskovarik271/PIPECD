@@ -4,6 +4,7 @@ import { supabase, supabaseAdmin } from '../../../../lib/supabaseClient';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 import { dealService } from '../../../../lib/dealService';
+import { accountManagementQueries } from './organization';
 
 import * as userProfileService from '../../../../lib/userProfileService';
 import {
@@ -164,6 +165,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
             address: o.address,
             notes: o.notes,
             db_custom_field_values: (o as any).custom_field_values,
+            account_manager_id: (o as any).account_manager_id,
          })) as any; 
        } catch (e) {
           throw processZodError(e, 'fetching organizations list');
@@ -184,6 +186,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
             address: o.address,
             notes: o.notes,
             db_custom_field_values: (o as any).custom_field_values,
+            account_manager_id: (o as any).account_manager_id,
           } as any; 
        } catch (e) {
            throw processZodError(e, 'fetching organization by ID');
@@ -564,6 +567,9 @@ export const Query: QueryResolvers<GraphQLContext> = {
 
     // Enhanced: Deal participant queries
     ...dealParticipantQueries,
+
+    // Account Management queries
+    ...accountManagementQueries,
 
     // Note: Activity reminder queries will be added after GraphQL schema is updated and types are regenerated
 }; 

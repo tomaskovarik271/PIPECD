@@ -40,6 +40,8 @@ interface CreateActivityFormProps {
   onSuccess?: () => void; // Optional callback on successful creation
   initialDealId?: string; 
   initialDealName?: string; // ADDED: To display the name of the pre-linked deal
+  initialOrganizationId?: string;
+  initialOrganizationName?: string; // ADDED: To display the name of the pre-linked organization
 }
 
 // Use the store's CreateActivityInput for form values
@@ -48,7 +50,7 @@ type FormValues = CreateActivityInput;
 // Define type for link selection (keeping for backwards compatibility with existing logic)
 type LinkType = 'deal' | 'person' | 'organization' | 'none';
 
-function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName }: CreateActivityFormProps) {
+function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName, initialOrganizationId, initialOrganizationName }: CreateActivityFormProps) {
   // Actions and state from useActivitiesStore
   const { createActivity, activitiesError, activitiesLoading } = useActivitiesStore();
 
@@ -82,19 +84,21 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
           assigned_to_user_id: null,
           deal_id: initialDealId || null, 
           person_id: null,
-          organization_id: null,
+          organization_id: initialOrganizationId || null,
       }
   });
 
   // State for the selected link type
-  const [selectedLinkType, setSelectedLinkType] = useState<LinkType>(initialDealId ? 'deal' : 'none');
+  const [selectedLinkType, setSelectedLinkType] = useState<LinkType>(
+    initialDealId ? 'deal' : initialOrganizationId ? 'organization' : 'none'
+  );
   const [showDealDropdown, setShowDealDropdown] = useState(!!initialDealId);
   const [showPersonDropdown, setShowPersonDropdown] = useState(false);
-  const [showOrganizationDropdown, setShowOrganizationDropdown] = useState(false); 
+  const [showOrganizationDropdown, setShowOrganizationDropdown] = useState(!!initialOrganizationId); 
 
-  // Fetch related entities (only if not pre-linking via initialDealId)
+  // Fetch related entities (only if not pre-linking via initialDealId or initialOrganizationId)
   useEffect(() => {
-    if (!initialDealId) {
+    if (!initialDealId && !initialOrganizationId) {
       fetchDeals(); 
       fetchPeople();
       fetchOrganizations();
@@ -103,20 +107,23 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
     if (!hasFetchedUsers) {
       fetchUsers();
     }
-  }, [fetchDeals, fetchPeople, fetchOrganizations, initialDealId, fetchUsers, hasFetchedUsers]);
+  }, [fetchDeals, fetchPeople, fetchOrganizations, initialDealId, initialOrganizationId, fetchUsers, hasFetchedUsers]);
   
-  // If initialDealId is provided, ensure the form value for deal_id is set.
+  // If initialDealId or initialOrganizationId is provided, ensure the form values are set.
   useEffect(() => {
     if (initialDealId) {
       setValue('deal_id', initialDealId);
       setSelectedLinkType('deal'); 
+    } else if (initialOrganizationId) {
+      setValue('organization_id', initialOrganizationId);
+      setSelectedLinkType('organization');
     }
-  }, [initialDealId, setValue]);
+  }, [initialDealId, initialOrganizationId, setValue]);
 
 
-  // Clear other link IDs when radio selection changes (Only if not initialDealId context)
+  // Clear other link IDs when radio selection changes (Only if not initialDealId or initialOrganizationId context)
   const handleLinkTypeChange = (nextValue: string) => {
-      if (initialDealId) return; // Don't allow changing link type if pre-set
+      if (initialDealId || initialOrganizationId) return; // Don't allow changing link type if pre-set
 
       const linkType = nextValue as LinkType;
       setSelectedLinkType(linkType);
@@ -306,7 +313,14 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
           </FormControl>
         )}
 
-        {!initialDealId && (
+        {initialOrganizationId && initialOrganizationName && (
+          <FormControl mt={2}>
+            <FormLabel>Linked To</FormLabel>
+            <Text fontWeight="bold">Organization: {initialOrganizationName}</Text>
+          </FormControl>
+        )}
+
+        {!initialDealId && !initialOrganizationId && (
           <FormControl isInvalid={!!errors.deal_id || !!errors.person_id || !!errors.organization_id}>
             <FormLabel>Link To (Select One or More)</FormLabel>
             {isLoadingLinks && <Spinner size="sm" />}

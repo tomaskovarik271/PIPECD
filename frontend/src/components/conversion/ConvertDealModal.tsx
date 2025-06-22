@@ -37,8 +37,8 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { gql, useMutation } from '@apollo/client';
 
 // GraphQL mutation for deal conversion
-const CONVERT_DEAL_TO_LEAD = gql`
-  mutation ConvertDealToLead($id: ID!, $input: DealToLeadConversionInput!) {
+const CONVERT_DEAL_TO_LEAD_MODAL = gql`
+  mutation ConvertDealToLeadModal($id: ID!, $input: DealToLeadConversionInput!) {
     convertDealToLead(id: $id, input: $input) {
       success
       message
@@ -143,22 +143,7 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
   const { isOpen: showAdvanced, onToggle: toggleAdvanced } = useDisclosure();
 
   // GraphQL mutation
-  const [convertDealMutation] = useMutation(gql`
-    mutation ConvertDealToLead($id: ID!, $input: DealToLeadConversionInput!) {
-      convertDealToLead(id: $id, input: $input) {
-        success
-        message
-        conversionId
-        lead {
-          id
-          name
-          estimated_value
-          contact_name
-          company_name
-        }
-      }
-    }
-  `);
+  const [convertDealMutation] = useMutation(CONVERT_DEAL_TO_LEAD_MODAL);
 
   // Form state
   const [isLoading, setIsLoading] = useState(false);

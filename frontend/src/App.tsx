@@ -25,6 +25,7 @@ import WFMWorkflowsPage from './pages/admin/WFMWorkflowsPage';
 import WFMProjectTypesPage from './pages/admin/WFMProjectTypesPage';
 import GoogleDriveSettingsPage from './pages/admin/GoogleDriveSettingsPage';
 import { UserRoleManagementPage } from './pages/admin/UserRoleManagementPage';
+import MyAccountsPage from './pages/MyAccountsPage';
 
 
 import { 
@@ -83,6 +84,7 @@ function AppContent() {
             <Route path="/agent" element={<AgentPage />} />
             <Route path="/agent-v2" element={<AgentV2Page />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/my-accounts" element={<MyAccountsPage />} />
             <Route path="/google-integration" element={<GoogleIntegrationPage />} />
             <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
             <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />

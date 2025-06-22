@@ -39,6 +39,14 @@ export type AiGeneratedTaskContent = {
   suggestedDueDate?: Maybe<Scalars["String"]["output"]>;
 };
 
+export type AccountPortfolioStats = {
+  __typename?: "AccountPortfolioStats";
+  accountsNeedingAttention: Scalars["Int"]["output"];
+  activeDealCount: Scalars["Int"]["output"];
+  totalAccounts: Scalars["Int"]["output"];
+  totalDealValue: Scalars["Float"]["output"];
+};
+
 export type Activity = {
   __typename?: "Activity";
   assignedToUser?: Maybe<User>;
@@ -318,6 +326,42 @@ export enum ContactScopeType {
   SelectedRoles = "SELECTED_ROLES",
 }
 
+export type ConversionHistory = {
+  __typename?: "ConversionHistory";
+  conversionData?: Maybe<Scalars["JSON"]["output"]>;
+  conversionReason?: Maybe<ConversionReason>;
+  conversionType: ConversionType;
+  convertedAt: Scalars["DateTime"]["output"];
+  convertedByUser?: Maybe<User>;
+  createdAt: Scalars["DateTime"]["output"];
+  id: Scalars["ID"]["output"];
+  sourceEntityId: Scalars["ID"]["output"];
+  sourceEntityType: Scalars["String"]["output"];
+  targetEntityId: Scalars["ID"]["output"];
+  targetEntityType: Scalars["String"]["output"];
+  wfmTransitionPlan?: Maybe<Scalars["JSON"]["output"]>;
+};
+
+export enum ConversionReason {
+  BudgetConstraints = "BUDGET_CONSTRAINTS",
+  CompetitiveLoss = "COMPETITIVE_LOSS",
+  Cooling = "COOLING",
+  DemoScheduled = "DEMO_SCHEDULED",
+  HotLead = "HOT_LEAD",
+  Qualified = "QUALIFIED",
+  RelationshipReset = "RELATIONSHIP_RESET",
+  RequirementsChange = "REQUIREMENTS_CHANGE",
+  StakeholderChange = "STAKEHOLDER_CHANGE",
+  TimelineExtended = "TIMELINE_EXTENDED",
+  Budget = "budget",
+  Competition = "competition",
+  Nurture = "nurture",
+  Other = "other",
+  Requirements = "requirements",
+  Timing = "timing",
+  Unqualified = "unqualified",
+}
+
 export type ConversionResult = {
   __typename?: "ConversionResult";
   convertedAmount: Scalars["Float"]["output"];
@@ -328,6 +372,20 @@ export type ConversionResult = {
   formattedOriginal: Scalars["String"]["output"];
   originalAmount: Scalars["Float"]["output"];
   originalCurrency: Scalars["String"]["output"];
+};
+
+export enum ConversionType {
+  DealToLead = "DEAL_TO_LEAD",
+  LeadToDeal = "LEAD_TO_DEAL",
+}
+
+export type ConversionValidationResult = {
+  __typename?: "ConversionValidationResult";
+  canProceed: Scalars["Boolean"]["output"];
+  errors?: Maybe<Array<Scalars["String"]["output"]>>;
+  isValid: Scalars["Boolean"]["output"];
+  sourceEntity?: Maybe<Scalars["JSON"]["output"]>;
+  warnings?: Maybe<Array<Scalars["String"]["output"]>>;
 };
 
 export type ConvertedEntities = {
@@ -588,6 +646,9 @@ export type Deal = {
   amount_usd?: Maybe<Scalars["Float"]["output"]>;
   assignedToUser?: Maybe<User>;
   assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
+  conversionHistory: Array<ConversionHistory>;
+  conversionReason?: Maybe<Scalars["String"]["output"]>;
+  convertedToLead?: Maybe<Lead>;
   createdBy: User;
   created_at: Scalars["DateTime"]["output"];
   currency?: Maybe<Scalars["String"]["output"]>;
@@ -693,6 +754,27 @@ export type DealSubfolders = {
   presentations?: Maybe<DriveFolder>;
   proposals?: Maybe<DriveFolder>;
   technical?: Maybe<DriveFolder>;
+};
+
+export type DealToLeadConversionInput = {
+  archiveDeal?: InputMaybe<Scalars["Boolean"]["input"]>;
+  conversionReason: ConversionReason;
+  createConversionActivity?: InputMaybe<Scalars["Boolean"]["input"]>;
+  leadData?: InputMaybe<LeadConversionData>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  preserveActivities?: InputMaybe<Scalars["Boolean"]["input"]>;
+  reactivationPlan?: InputMaybe<ReactivationPlanInput>;
+};
+
+export type DealToLeadConversionResult = {
+  __typename?: "DealToLeadConversionResult";
+  conversionHistory?: Maybe<ConversionHistory>;
+  conversionId: Scalars["ID"]["output"];
+  errors?: Maybe<Array<Scalars["String"]["output"]>>;
+  lead?: Maybe<Lead>;
+  message: Scalars["String"]["output"];
+  reactivationPlan?: Maybe<ReactivationPlan>;
+  success: Scalars["Boolean"]["output"];
 };
 
 export type DealUpdateInput = {
@@ -1070,6 +1152,8 @@ export type Lead = {
   contact_email?: Maybe<Scalars["String"]["output"]>;
   contact_name?: Maybe<Scalars["String"]["output"]>;
   contact_phone?: Maybe<Scalars["String"]["output"]>;
+  conversionHistory: Array<ConversionHistory>;
+  conversionReason?: Maybe<Scalars["String"]["output"]>;
   converted_at?: Maybe<Scalars["DateTime"]["output"]>;
   converted_by_user?: Maybe<User>;
   converted_by_user_id?: Maybe<Scalars["ID"]["output"]>;
@@ -1098,8 +1182,11 @@ export type Lead = {
   lead_score: Scalars["Int"]["output"];
   lead_score_factors?: Maybe<Scalars["JSON"]["output"]>;
   name: Scalars["String"]["output"];
+  originalDeal?: Maybe<Deal>;
   qualificationLevel: Scalars["Float"]["output"];
   qualificationStatus: Scalars["String"]["output"];
+  reactivationPlan?: Maybe<ReactivationPlan>;
+  reactivationTargetDate?: Maybe<Scalars["DateTime"]["output"]>;
   source?: Maybe<Scalars["String"]["output"]>;
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
@@ -1110,6 +1197,21 @@ export type Lead = {
 export type LeadHistoryArgs = {
   limit?: InputMaybe<Scalars["Int"]["input"]>;
   offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type LeadConversionData = {
+  company_name?: InputMaybe<Scalars["String"]["input"]>;
+  contact_email?: InputMaybe<Scalars["String"]["input"]>;
+  contact_name?: InputMaybe<Scalars["String"]["input"]>;
+  contact_phone?: InputMaybe<Scalars["String"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  estimatedCloseDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  estimatedValue?: InputMaybe<Scalars["Float"]["input"]>;
+  estimated_close_date?: InputMaybe<Scalars["DateTime"]["input"]>;
+  estimated_value?: InputMaybe<Scalars["Float"]["input"]>;
+  leadScore?: InputMaybe<Scalars["Int"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  source?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type LeadConversionInput = {
@@ -1206,14 +1308,17 @@ export type Mutation = {
   addAgentV2Thoughts: Array<AgentThought>;
   addDealParticipant: DealParticipant;
   archiveThread: Scalars["Boolean"]["output"];
+  assignAccountManager: Organization;
   assignUserRole: User;
   attachDocumentToDeal: DealDocumentAttachment;
   attachDocumentToNoteAndDeal: DualAttachmentResponse;
   attachFileToDeal: DealDocumentAttachment;
+  bulkConvertLeads: Array<LeadConversionResult>;
   cancelActivityReminder: Scalars["Boolean"]["output"];
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
   convertCurrency: ConversionResult;
+  convertDealToLead: DealToLeadConversionResult;
   convertLead: LeadConversionResult;
   copyDriveFile: DriveFile;
   createActivity: Activity;
@@ -1230,6 +1335,7 @@ export type Mutation = {
   createNotification: Notification;
   createOrganization: Organization;
   createPerson: Person;
+  createReactivationPlan: ReactivationPlan;
   createSticker: SmartSticker;
   createTaskFromEmail: Activity;
   createWFMProjectType: WfmProjectType;
@@ -1246,6 +1352,7 @@ export type Mutation = {
   deleteNotification: Scalars["Boolean"]["output"];
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
+  deleteReactivationPlan: Scalars["Boolean"]["output"];
   deleteSticker: Scalars["Boolean"]["output"];
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
@@ -1263,6 +1370,7 @@ export type Mutation = {
   pinEmail: EmailPin;
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
+  removeAccountManager: Organization;
   removeDealParticipant: Scalars["Boolean"]["output"];
   removeDocumentAttachment: Scalars["Boolean"]["output"];
   removeNoteDocumentAttachment: Scalars["Boolean"]["output"];
@@ -1296,6 +1404,7 @@ export type Mutation = {
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
   updateRatesFromECB: CurrencyOperationResult;
+  updateReactivationPlan: ReactivationPlan;
   updateSticker: SmartSticker;
   updateStickerTags: SmartSticker;
   updateUserCurrencyPreferences: UserCurrencyPreferences;
@@ -1329,6 +1438,11 @@ export type MutationArchiveThreadArgs = {
   threadId: Scalars["String"]["input"];
 };
 
+export type MutationAssignAccountManagerArgs = {
+  organizationId: Scalars["ID"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
 export type MutationAssignUserRoleArgs = {
   roleName: Scalars["String"]["input"];
   userId: Scalars["ID"]["input"];
@@ -1344,6 +1458,11 @@ export type MutationAttachDocumentToNoteAndDealArgs = {
 
 export type MutationAttachFileToDealArgs = {
   input: AttachFileInput;
+};
+
+export type MutationBulkConvertLeadsArgs = {
+  ids: Array<Scalars["ID"]["input"]>;
+  input: LeadConversionInput;
 };
 
 export type MutationCancelActivityReminderArgs = {
@@ -1363,6 +1482,11 @@ export type MutationConvertCurrencyArgs = {
   effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
   fromCurrency: Scalars["String"]["input"];
   toCurrency: Scalars["String"]["input"];
+};
+
+export type MutationConvertDealToLeadArgs = {
+  id: Scalars["ID"]["input"];
+  input: DealToLeadConversionInput;
 };
 
 export type MutationConvertLeadArgs = {
@@ -1432,6 +1556,11 @@ export type MutationCreatePersonArgs = {
   input: PersonInput;
 };
 
+export type MutationCreateReactivationPlanArgs = {
+  input: ReactivationPlanInput;
+  leadId: Scalars["ID"]["input"];
+};
+
 export type MutationCreateStickerArgs = {
   input: CreateStickerInput;
 };
@@ -1493,6 +1622,10 @@ export type MutationDeleteOrganizationArgs = {
 };
 
 export type MutationDeletePersonArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteReactivationPlanArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -1562,6 +1695,10 @@ export type MutationReactivateCustomFieldDefinitionArgs = {
 
 export type MutationRecalculateLeadScoreArgs = {
   leadId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveAccountManagerArgs = {
+  organizationId: Scalars["ID"]["input"];
 };
 
 export type MutationRemoveDealParticipantArgs = {
@@ -1707,6 +1844,11 @@ export type MutationUpdatePersonArgs = {
   input: PersonInput;
 };
 
+export type MutationUpdateReactivationPlanArgs = {
+  id: Scalars["ID"]["input"];
+  input: ReactivationPlanInput;
+};
+
 export type MutationUpdateStickerArgs = {
   input: UpdateStickerInput;
 };
@@ -1835,6 +1977,9 @@ export enum NotificationType {
 /** Defines the Organization type and related queries/mutations. */
 export type Organization = {
   __typename?: "Organization";
+  accountManager?: Maybe<User>;
+  account_manager_id?: Maybe<Scalars["ID"]["output"]>;
+  activeDealCount?: Maybe<Scalars["Int"]["output"]>;
   activities: Array<Activity>;
   address?: Maybe<Scalars["String"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
@@ -1842,15 +1987,18 @@ export type Organization = {
   deals: Array<Deal>;
   id: Scalars["ID"]["output"];
   industry?: Maybe<Scalars["String"]["output"]>;
+  lastActivity?: Maybe<Activity>;
   name: Scalars["String"]["output"];
   notes?: Maybe<Scalars["String"]["output"]>;
   people?: Maybe<Array<Person>>;
+  totalDealValue?: Maybe<Scalars["Float"]["output"]>;
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
   website?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type OrganizationInput = {
+  account_manager_id?: InputMaybe<Scalars["ID"]["input"]>;
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   industry?: InputMaybe<Scalars["String"]["input"]>;
@@ -1860,6 +2008,7 @@ export type OrganizationInput = {
 };
 
 export type OrganizationUpdateInput = {
+  account_manager_id?: InputMaybe<Scalars["ID"]["input"]>;
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   industry?: InputMaybe<Scalars["String"]["input"]>;
@@ -1938,6 +2087,8 @@ export type Query = {
   /** Get all app settings (admin only for private settings) */
   appSettings: Array<AppSetting>;
   assignableUsers: Array<User>;
+  conversionHistory: Array<ConversionHistory>;
+  conversionHistoryById?: Maybe<ConversionHistory>;
   currencies: Array<Currency>;
   currency?: Maybe<Currency>;
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
@@ -1986,6 +2137,8 @@ export type Query = {
   leads: Array<Lead>;
   leadsStats: LeadsStats;
   me?: Maybe<User>;
+  myAccountPortfolioStats: AccountPortfolioStats;
+  myAccounts: Array<Organization>;
   myNotifications: NotificationSummary;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
   myReminderPreferences?: Maybe<UserReminderPreferences>;
@@ -1995,6 +2148,8 @@ export type Query = {
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
+  reactivationPlan?: Maybe<ReactivationPlan>;
+  reactivationPlans: Array<ReactivationPlan>;
   roles: Array<Role>;
   searchDriveFiles: DriveFileConnection;
   searchEmails: Array<Email>;
@@ -2005,6 +2160,7 @@ export type Query = {
   unreadNotificationCount: Scalars["Int"]["output"];
   userCurrencyPreferences?: Maybe<UserCurrencyPreferences>;
   users: Array<User>;
+  validateConversion: ConversionValidationResult;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
   wfmProjectTypes: Array<WfmProjectType>;
@@ -2056,6 +2212,15 @@ export type QueryAgentV2ThoughtsArgs = {
 
 export type QueryAppSettingArgs = {
   settingKey: Scalars["String"]["input"];
+};
+
+export type QueryConversionHistoryArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: Scalars["String"]["input"];
+};
+
+export type QueryConversionHistoryByIdArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type QueryCurrencyArgs = {
@@ -2224,6 +2389,15 @@ export type QueryPersonArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type QueryReactivationPlanArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryReactivationPlansArgs = {
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  status?: InputMaybe<ReactivationPlanStatus>;
+};
+
 export type QuerySearchDriveFilesArgs = {
   query: Scalars["String"]["input"];
 };
@@ -2255,6 +2429,12 @@ export type QueryUserCurrencyPreferencesArgs = {
   userId: Scalars["ID"]["input"];
 };
 
+export type QueryValidateConversionArgs = {
+  sourceId: Scalars["ID"]["input"];
+  sourceType: Scalars["String"]["input"];
+  targetType: Scalars["String"]["input"];
+};
+
 export type QueryWfmProjectTypeArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2282,6 +2462,46 @@ export type QueryWfmWorkflowArgs = {
 export type QueryWfmWorkflowsArgs = {
   isArchived?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
+
+export type ReactivationPlan = {
+  __typename?: "ReactivationPlan";
+  assignedToUser?: Maybe<User>;
+  createdAt: Scalars["DateTime"]["output"];
+  createdByUser?: Maybe<User>;
+  followUpActivities?: Maybe<Scalars["JSON"]["output"]>;
+  id: Scalars["ID"]["output"];
+  lead: Lead;
+  notes?: Maybe<Scalars["String"]["output"]>;
+  originalDeal?: Maybe<Deal>;
+  reactivationStrategy: ReactivationStrategy;
+  status: ReactivationPlanStatus;
+  targetReactivationDate?: Maybe<Scalars["DateTime"]["output"]>;
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type ReactivationPlanInput = {
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  followUpActivities?: InputMaybe<Scalars["JSON"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  reactivationStrategy: ReactivationStrategy;
+  targetReactivationDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+};
+
+export enum ReactivationPlanStatus {
+  Active = "ACTIVE",
+  Cancelled = "CANCELLED",
+  Completed = "COMPLETED",
+  Paused = "PAUSED",
+}
+
+export enum ReactivationStrategy {
+  BudgetFollowUp = "BUDGET_FOLLOW_UP",
+  CompetitiveAnalysis = "COMPETITIVE_ANALYSIS",
+  ContentMarketing = "CONTENT_MARKETING",
+  DirectOutreach = "DIRECT_OUTREACH",
+  Nurturing = "NURTURING",
+  RelationshipBuilding = "RELATIONSHIP_BUILDING",
+}
 
 /** Activity Reminders and Notifications GraphQL Schema */
 export enum ReminderType {
@@ -2795,6 +3015,51 @@ export type WfmWorkflowTransitionMutationResponse = {
   transitionId?: Maybe<Scalars["ID"]["output"]>;
 };
 
+export type GetAssignableUsersForCreateOrgQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetAssignableUsersForCreateOrgQuery = {
+  __typename?: "Query";
+  assignableUsers: Array<{
+    __typename?: "User";
+    id: string;
+    display_name?: string | null;
+    email: string;
+    avatar_url?: string | null;
+  }>;
+};
+
+export type GetAssignableUsersForEditOrgQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetAssignableUsersForEditOrgQuery = {
+  __typename?: "Query";
+  assignableUsers: Array<{
+    __typename?: "User";
+    id: string;
+    display_name?: string | null;
+    email: string;
+    avatar_url?: string | null;
+  }>;
+};
+
+export type GetAssignableUsersForAccountMgmtQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetAssignableUsersForAccountMgmtQuery = {
+  __typename?: "Query";
+  assignableUsers: Array<{
+    __typename?: "User";
+    id: string;
+    display_name?: string | null;
+    email: string;
+    avatar_url?: string | null;
+  }>;
+};
+
 export type GetAgentThoughtsQueryVariables = Exact<{
   conversationId: Scalars["ID"]["input"];
   limit?: InputMaybe<Scalars["Int"]["input"]>;
@@ -2884,6 +3149,75 @@ export type DeleteNotificationMutationVariables = Exact<{
 export type DeleteNotificationMutation = {
   __typename?: "Mutation";
   deleteNotification: boolean;
+};
+
+export type ConvertDealToLeadModalMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: DealToLeadConversionInput;
+}>;
+
+export type ConvertDealToLeadModalMutation = {
+  __typename?: "Mutation";
+  convertDealToLead: {
+    __typename?: "DealToLeadConversionResult";
+    success: boolean;
+    message: string;
+    conversionId: string;
+    lead?: {
+      __typename?: "Lead";
+      id: string;
+      name: string;
+      estimated_value?: number | null;
+      contact_name?: string | null;
+      company_name?: string | null;
+    } | null;
+  };
+};
+
+export type ConvertLeadMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: LeadConversionInput;
+}>;
+
+export type ConvertLeadMutation = {
+  __typename?: "Mutation";
+  convertLead: {
+    __typename?: "LeadConversionResult";
+    leadId: string;
+    convertedEntities: {
+      __typename?: "ConvertedEntities";
+      person?: {
+        __typename?: "Person";
+        id: string;
+        first_name?: string | null;
+        last_name?: string | null;
+        email?: string | null;
+      } | null;
+      organization?: {
+        __typename?: "Organization";
+        id: string;
+        name: string;
+      } | null;
+      deal?: {
+        __typename?: "Deal";
+        id: string;
+        name: string;
+        amount?: number | null;
+        currency?: string | null;
+      } | null;
+    };
+  };
+};
+
+export type GetProjectTypesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetProjectTypesQuery = {
+  __typename?: "Query";
+  wfmProjectTypes: Array<{
+    __typename?: "WFMProjectType";
+    id: string;
+    name: string;
+  }>;
 };
 
 export type CreateContactFromEmailMutationVariables = Exact<{
@@ -3638,6 +3972,156 @@ export type MoveStickersBulkMutation = {
     positionY: number;
     updatedAt: string;
   }>;
+};
+
+export type GetMyAccountsQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetMyAccountsQuery = {
+  __typename?: "Query";
+  myAccounts: Array<{
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    address?: string | null;
+    industry?: string | null;
+    website?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    account_manager_id?: string | null;
+    totalDealValue?: number | null;
+    activeDealCount?: number | null;
+    accountManager?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+    lastActivity?: {
+      __typename?: "Activity";
+      id: string;
+      subject: string;
+      type: ActivityType;
+      due_date?: string | null;
+      created_at: string;
+    } | null;
+    customFieldValues: Array<{
+      __typename?: "CustomFieldValue";
+      stringValue?: string | null;
+      numberValue?: number | null;
+      booleanValue?: boolean | null;
+      dateValue?: string | null;
+      selectedOptionValues?: Array<string> | null;
+      definition: {
+        __typename?: "CustomFieldDefinition";
+        id: string;
+        fieldName: string;
+        fieldLabel: string;
+        fieldType: CustomFieldType;
+        dropdownOptions?: Array<{
+          __typename?: "CustomFieldOption";
+          value: string;
+          label: string;
+        }> | null;
+      };
+    }>;
+  }>;
+};
+
+export type GetMyAccountPortfolioStatsQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetMyAccountPortfolioStatsQuery = {
+  __typename?: "Query";
+  myAccountPortfolioStats: {
+    __typename?: "AccountPortfolioStats";
+    totalAccounts: number;
+    totalDealValue: number;
+    activeDealCount: number;
+    accountsNeedingAttention: number;
+  };
+};
+
+export type AssignAccountManagerMutationVariables = Exact<{
+  organizationId: Scalars["ID"]["input"];
+  userId: Scalars["ID"]["input"];
+}>;
+
+export type AssignAccountManagerMutation = {
+  __typename?: "Mutation";
+  assignAccountManager: {
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    account_manager_id?: string | null;
+    accountManager?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+  };
+};
+
+export type RemoveAccountManagerMutationVariables = Exact<{
+  organizationId: Scalars["ID"]["input"];
+}>;
+
+export type RemoveAccountManagerMutation = {
+  __typename?: "Mutation";
+  removeAccountManager: {
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    account_manager_id?: string | null;
+    accountManager?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+  };
+};
+
+export type GetOrganizationWithAccountManagerQueryVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type GetOrganizationWithAccountManagerQuery = {
+  __typename?: "Query";
+  organization?: {
+    __typename?: "Organization";
+    id: string;
+    name: string;
+    address?: string | null;
+    industry?: string | null;
+    website?: string | null;
+    notes?: string | null;
+    created_at: string;
+    updated_at: string;
+    account_manager_id?: string | null;
+    totalDealValue?: number | null;
+    activeDealCount?: number | null;
+    accountManager?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
+    lastActivity?: {
+      __typename?: "Activity";
+      id: string;
+      subject: string;
+      type: ActivityType;
+      due_date?: string | null;
+      created_at: string;
+    } | null;
+  } | null;
 };
 
 export type CreateAgentV2ConversationMutationVariables = Exact<{
@@ -6591,6 +7075,14 @@ export type GetOrganizationsQuery = {
     notes?: string | null;
     created_at: string;
     updated_at: string;
+    account_manager_id?: string | null;
+    accountManager?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
     customFieldValues: Array<{
       __typename?: "CustomFieldValue";
       stringValue?: string | null;
@@ -6631,6 +7123,14 @@ export type GetOrganizationByIdQuery = {
     notes?: string | null;
     created_at: string;
     updated_at: string;
+    account_manager_id?: string | null;
+    accountManager?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
     customFieldValues: Array<{
       __typename?: "CustomFieldValue";
       stringValue?: string | null;
@@ -6671,6 +7171,14 @@ export type CreateOrganizationMutation = {
     notes?: string | null;
     created_at: string;
     updated_at: string;
+    account_manager_id?: string | null;
+    accountManager?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
     customFieldValues: Array<{
       __typename?: "CustomFieldValue";
       stringValue?: string | null;
@@ -6712,6 +7220,14 @@ export type UpdateOrganizationMutation = {
     notes?: string | null;
     created_at: string;
     updated_at: string;
+    account_manager_id?: string | null;
+    accountManager?: {
+      __typename?: "User";
+      id: string;
+      display_name?: string | null;
+      email: string;
+      avatar_url?: string | null;
+    } | null;
     customFieldValues: Array<{
       __typename?: "CustomFieldValue";
       stringValue?: string | null;

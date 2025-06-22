@@ -50,6 +50,13 @@ const GET_ORGANIZATIONS_QUERY = gql`
       notes
       created_at
       updated_at
+      account_manager_id
+      accountManager {
+        id
+        display_name
+        email
+        avatar_url
+      }
       # user_id might be present if returned by resolver
       customFieldValues {
         ...CustomFieldValuesData
@@ -69,11 +76,34 @@ const GET_ORGANIZATION_BY_ID_QUERY = gql`
       notes
       created_at
       updated_at
-      # Example of other fields that might be useful for a detail page:
-      # website
-      # industry
-      # people { id first_name last_name email }
-      # deals { id name }
+      account_manager_id
+      industry
+      website
+      accountManager {
+        id
+        display_name
+        email
+        avatar_url
+      }
+      totalDealValue
+      activeDealCount
+      lastActivity {
+        id
+        subject
+        type
+        due_date
+        created_at
+      }
+      people {
+        id
+        first_name
+        last_name
+        email
+        phone
+        notes
+        created_at
+        updated_at
+      }
       customFieldValues {
         ...CustomFieldValuesData
       }
@@ -91,6 +121,13 @@ const CREATE_ORGANIZATION_MUTATION = gql`
       notes
       created_at
       updated_at
+      account_manager_id
+      accountManager {
+        id
+        display_name
+        email
+        avatar_url
+      }
       customFieldValues {
         ...CustomFieldValuesData
       }
@@ -108,6 +145,13 @@ const UPDATE_ORGANIZATION_MUTATION = gql`
       notes
       created_at
       updated_at
+      account_manager_id
+      accountManager {
+        id
+        display_name
+        email
+        avatar_url
+      }
       customFieldValues {
         ...CustomFieldValuesData
       }

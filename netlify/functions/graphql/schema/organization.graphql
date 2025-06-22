@@ -12,10 +12,16 @@ type Organization {
     industry: String
     website: String
     notes: String
+    account_manager_id: ID # Account manager user ID
+    accountManager: User # Account manager user object
     people: [Person!] # People belonging to this organization
     deals: [Deal!]! # List of associated deals
     activities: [Activity!]! # ADDED list of related activities
     customFieldValues: [CustomFieldValue!]! # ADDED
+    # Account management statistics
+    totalDealValue: Float # Total value of all deals for this organization
+    activeDealCount: Int # Number of active deals
+    lastActivity: Activity # Most recent activity
 }
 
 input OrganizationInput {
@@ -24,6 +30,7 @@ input OrganizationInput {
     industry: String
     website: String
     notes: String
+    account_manager_id: ID # Account manager assignment
     customFields: [CustomFieldValueInput!] # ADDED
 }
 
@@ -33,5 +40,28 @@ input OrganizationUpdateInput {
     industry: String
     website: String
     notes: String
+    account_manager_id: ID # Account manager assignment
     customFields: [CustomFieldValueInput!] # ADDED
+}
+
+# Account Management specific types and queries
+type AccountPortfolioStats {
+    totalAccounts: Int!
+    totalDealValue: Float!
+    activeDealCount: Int!
+    accountsNeedingAttention: Int!
+}
+
+extend type Query {
+    # Get organizations managed by the current user
+    myAccounts: [Organization!]!
+    # Get account portfolio statistics for current user
+    myAccountPortfolioStats: AccountPortfolioStats!
+}
+
+extend type Mutation {
+    # Assign account manager to organization
+    assignAccountManager(organizationId: ID!, userId: ID!): Organization!
+    # Remove account manager from organization
+    removeAccountManager(organizationId: ID!): Organization!
 } 

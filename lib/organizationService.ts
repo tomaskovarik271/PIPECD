@@ -25,7 +25,7 @@ export const organizationService = {
     const supabase = getAuthenticatedClient(accessToken); 
     const { data, error } = await supabase
       .from('organizations')
-      .select('*, custom_field_values') // Ensure custom_field_values is selected
+      .select('*, custom_field_values, account_manager_id') // Include account_manager_id
       .order('name', { ascending: true });
 
     handleSupabaseError(error, 'fetching organizations'); 
@@ -38,7 +38,7 @@ export const organizationService = {
     const supabase = getAuthenticatedClient(accessToken); 
     const { data, error } = await supabase
       .from('organizations')
-      .select('*, custom_field_values') // Ensure custom_field_values is selected
+      .select('*, custom_field_values, account_manager_id') // Include account_manager_id
       .eq('id', id) 
       .single();
 
@@ -74,7 +74,7 @@ export const organizationService = {
     const { data, error } = await supabase
       .from('organizations')
       .insert(orgDataToInsert) 
-      .select('*, custom_field_values') // Ensure custom_field_values is selected on return
+      .select('*, custom_field_values, account_manager_id') // Include account_manager_id on return
       .single();
 
     handleSupabaseError(error, 'creating organization'); 
@@ -114,7 +114,7 @@ export const organizationService = {
       .from('organizations')
       .update(orgDataToUpdate) 
       .eq('id', id) 
-      .select('*, custom_field_values') // Ensure custom_field_values is selected on return
+      .select('*, custom_field_values, account_manager_id') // Include account_manager_id on return
       .single();
 
     if (error && error.code === 'PGRST116') { 

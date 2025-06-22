@@ -5,7 +5,7 @@ import { inngest } from '../../../../../lib/inngestClient';
 import { organizationService } from '../../../../../lib/organizationService';
 import type { MutationResolvers } from '../../../../../lib/generated/graphql';
 
-export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'createOrganization' | 'updateOrganization' | 'deleteOrganization'> = {
+export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'createOrganization' | 'updateOrganization' | 'deleteOrganization' | 'assignAccountManager' | 'removeAccountManager'> = {
     createOrganization: async (_parent, args, context) => {
       // console.log('[Mutation.createOrganization] received input:', args.input);
       const action = 'creating organization';
@@ -108,6 +108,71 @@ export const organizationMutations: Pick<MutationResolvers<GraphQLContext>, 'cre
           return success;
       } catch (error) {
           throw processZodError(error, action);
+      }
+    },
+
+    // Account Management Mutations
+    assignAccountManager: async (_parent, args, context) => {
+      const action = 'assigning account manager';
+      try {
+        requireAuthentication(context);
+        const accessToken = getAccessToken(context)!;
+        
+        // Check permissions
+        if (!context.userPermissions?.includes('organization:assign_account_manager')) {
+          throw new GraphQLError('Insufficient permissions to assign account manager', { 
+            extensions: { code: 'FORBIDDEN' } 
+          });
+        }
+        
+        const { getAuthenticatedClient } = require('../../../../../lib/serviceUtils');
+        const supabase = getAuthenticatedClient(accessToken);
+        
+        const { data, error } = await supabase
+          .from('organizations')
+          .update({ account_manager_id: args.userId })
+          .eq('id', args.organizationId)
+          .select('*')
+          .single();
+        
+        if (error) throw error;
+        if (!data) throw new GraphQLError('Organization not found', { extensions: { code: 'NOT_FOUND' } });
+        
+        return data;
+      } catch (error) {
+        throw processZodError(error, action);
+      }
+    },
+
+    removeAccountManager: async (_parent, args, context) => {
+      const action = 'removing account manager';
+      try {
+        requireAuthentication(context);
+        const accessToken = getAccessToken(context)!;
+        
+        // Check permissions
+        if (!context.userPermissions?.includes('organization:assign_account_manager')) {
+          throw new GraphQLError('Insufficient permissions to remove account manager', { 
+            extensions: { code: 'FORBIDDEN' } 
+          });
+        }
+        
+        const { getAuthenticatedClient } = require('../../../../../lib/serviceUtils');
+        const supabase = getAuthenticatedClient(accessToken);
+        
+        const { data, error } = await supabase
+          .from('organizations')
+          .update({ account_manager_id: null })
+          .eq('id', args.organizationId)
+          .select('*')
+          .single();
+        
+        if (error) throw error;
+        if (!data) throw new GraphQLError('Organization not found', { extensions: { code: 'NOT_FOUND' } });
+        
+        return data;
+      } catch (error) {
+        throw processZodError(error, action);
       }
     },
 }; 

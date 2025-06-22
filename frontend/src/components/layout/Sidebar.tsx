@@ -40,6 +40,7 @@ const NAV_ITEMS = [
   { path: '/people', label: 'Contacts', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
   { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
+  { path: '/my-accounts', label: 'My Accounts', icon: <AtSignIcon />, permission: 'organization:view_account_portfolio' },
 ];
 
 const ADMIN_NAV_ITEMS = [
@@ -122,6 +123,16 @@ function Sidebar() {
     permission.endsWith(':delete_any') ||
     permission.endsWith(':create_any')
   ) || false;
+
+  // Filter main nav items based on permissions
+  const visibleNavItems = NAV_ITEMS.filter(item => {
+    // Check if user has the required permission for this item
+    if (item.permission) {
+      return userPermissions?.includes(item.permission);
+    }
+    // Items without specific permissions are visible to all
+    return true;
+  });
 
   // Filter admin nav items based on permissions
   const visibleAdminNavItems = ADMIN_NAV_ITEMS.filter(item => {
@@ -229,7 +240,7 @@ function Sidebar() {
       
         {/* Navigation Items */}
         <Box flex="1" py={4}>
-          {NAV_ITEMS.map((item) => (
+          {visibleNavItems.map((item) => (
             <RouterNavLink key={item.path} to={item.path} end={true}> 
               {({ isActive }) => (
                   <Tooltip label={isSidebarCollapsed ? item.label : undefined} placement="right" isDisabled={!isSidebarCollapsed}>

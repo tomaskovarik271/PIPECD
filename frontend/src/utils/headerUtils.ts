@@ -11,10 +11,10 @@ interface HeaderDimensions {
 }
 
 export const getHeaderDimensions = (hasStatistics: boolean = false): HeaderDimensions => {
-  const baseHeight = hasStatistics ? '150px' : '80px';
+  const baseHeight = hasStatistics ? '200px' : '80px'; // Further increased height for statistics
   return {
     height: baseHeight,
-    paddingTop: `calc(${baseHeight} + 24px)`, // Add extra spacing
+    paddingTop: `calc(${baseHeight} + 40px)`, // Add even more spacing
     paddingX: '32px'
   };
 };

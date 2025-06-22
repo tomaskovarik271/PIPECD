@@ -178,11 +178,6 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
 
   const onSubmit: SubmitHandler<FormValues> = async (values) => {
     try {
-      if (!values.deal_id && !values.person_id && !values.organization_id) {
-        toast({ title: 'Link Required', description: 'Please link the activity to a Deal, Person, or Organization.', status: 'warning', duration: 4000, isClosable: true });
-        return;
-      }
-
       const submissionData: UpdateActivityInput = {
           // Ensure all fields from UpdateActivityInput are present or explicitly null
           type: values.type || activity.type, // Fallback to original if not in form
@@ -191,9 +186,10 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
           notes: values.notes || null,
           is_done: values.is_done === undefined ? activity.is_done : values.is_done, // Handle boolean carefully
           assigned_to_user_id: values.assigned_to_user_id || null,
-          deal_id: values.deal_id || null,
-          person_id: values.person_id || null,
-          organization_id: values.organization_id || null,
+          // Keep original entity links - don't allow changing them
+          deal_id: activity.deal_id || null,
+          person_id: activity.person_id || null,
+          organization_id: activity.organization_id || null,
       };
       
       // Remove fields that weren't actually changed to avoid sending them as null
@@ -330,92 +326,27 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
           <FormErrorMessage>{errors.due_date?.message as string}</FormErrorMessage>
         </FormControl>
         
-        <FormControl isInvalid={!!errors.deal_id || !!errors.person_id || !!errors.organization_id}>
-            <FormLabel>Link To (Select One or More)</FormLabel>
-            {isLoadingLinks && <Spinner size="sm" />}
-            
-            {!isLoadingLinks && (
-              <VStack align="stretch" spacing={3}>
-                {/* Deal Selection */}
-                <Box>
-                  <Checkbox 
-                    onChange={(e) => {
-                      if (!e.target.checked) setValue('deal_id', null);
-                    }}
-                    isChecked={!!watch('deal_id')}
-                  >
-                    Link to Deal
-                  </Checkbox>
-                  {!!watch('deal_id') && (
-                    <Select 
-                      id='deal_id' 
-                      placeholder='Select Deal' 
-                      {...register('deal_id')} 
-                      mt={2}
-                      defaultValue={activity.deal_id || undefined}
-                    >
-                      {deals.map((deal: Deal) => (
-                        <option key={deal.id} value={deal.id}>{deal.name}</option>
-                      ))}
-                    </Select>
-                  )}
-                </Box>
-
-                {/* Person Selection */}
-                <Box>
-                  <Checkbox 
-                    onChange={(e) => {
-                      if (!e.target.checked) setValue('person_id', null);
-                    }}
-                    isChecked={!!watch('person_id')}
-                  >
-                    Link to Person
-                  </Checkbox>
-                  {!!watch('person_id') && (
-                    <Select 
-                      id='person_id' 
-                      placeholder='Select Person' 
-                      {...register('person_id')} 
-                      mt={2}
-                      defaultValue={activity.person_id || undefined}
-                    >
-                      {people.map((person: Person) => (
-                        <option key={person.id} value={person.id}>{person.first_name} {person.last_name}</option>
-                      ))}
-                    </Select>
-                  )}
-                </Box>
-
-                {/* Organization Selection */}
-                <Box>
-                  <Checkbox 
-                    onChange={(e) => {
-                      if (!e.target.checked) setValue('organization_id', null);
-                    }}
-                    isChecked={!!watch('organization_id')}
-                  >
-                    Link to Organization
-                  </Checkbox>
-                  {!!watch('organization_id') && (
-                    <Select 
-                      id='organization_id' 
-                      placeholder='Select Organization' 
-                      {...register('organization_id')} 
-                      mt={2}
-                      defaultValue={activity.organization_id || undefined}
-                    >
-                      {organizations.map((org: Organization) => (
-                        <option key={org.id} value={org.id}>{org.name}</option>
-                      ))}
-                    </Select>
-                  )}
-                </Box>
-              </VStack>
+        {/* Show linked entity as read-only */}
+        <FormControl>
+          <FormLabel>Linked To</FormLabel>
+          <Box p={3} bg="gray.50" borderRadius="md" borderWidth="1px" borderColor="gray.200">
+            {activity.deal && (
+              <Text fontWeight="medium">Deal: {activity.deal.name}</Text>
             )}
-            
-            {(errors.deal_id || errors.person_id || errors.organization_id) && 
-                <FormErrorMessage>Please select at least one entity to link to.</FormErrorMessage> }
-          </FormControl>
+            {activity.person && (
+              <Text fontWeight="medium">Person: {activity.person.first_name} {activity.person.last_name}</Text>
+            )}
+            {activity.organization && (
+              <Text fontWeight="medium">Organization: {activity.organization.name}</Text>
+            )}
+            {!activity.deal && !activity.person && !activity.organization && (
+              <Text color="gray.500" fontStyle="italic">No entity linked</Text>
+            )}
+          </Box>
+          <Text fontSize="sm" color="gray.500" mt={1}>
+            Entity links cannot be changed when editing activities
+          </Text>
+        </FormControl>
         
         <FormControl isInvalid={!!errors.notes}>
           <FormLabel htmlFor='notes'>Notes</FormLabel>

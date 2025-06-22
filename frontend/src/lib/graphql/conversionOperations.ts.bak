@@ -231,4 +231,11 @@ export interface BulkConvertLeadsInput {
     personData?: ConvertLeadInput['personData'];
     organizationData?: ConvertLeadInput['organizationData'];
   }>;
-} 
+}
+
+// Temporary placeholder to fix codegen
+export const PLACEHOLDER_CONVERSION_QUERY = `
+  query PlaceholderConversion {
+    __typename
+  }
+`; 
