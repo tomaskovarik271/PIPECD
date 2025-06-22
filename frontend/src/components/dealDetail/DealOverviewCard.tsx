@@ -9,8 +9,7 @@ import {
 } from '@chakra-ui/react';
 import { InlineEditableField } from '../common/InlineEditableField';
 import type { Deal } from '../../stores/useDealsStore';
-import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
-import { DealAmount } from '../currency/CurrencyDisplay';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
 interface DealOverviewCardProps {
@@ -25,7 +24,6 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
   userList = []
 }) => {
   const colors = useThemeColors();
-  const styles = useThemeStyles();
 
   // Deal object inspection (debug info available)
 

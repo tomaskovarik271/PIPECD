@@ -20,8 +20,6 @@ import {
   FiMoreVertical,
   FiEdit3,
   FiTrash2,
-  FiUser,
-  FiCalendar,
   FiAlertTriangle,
   FiStar,
   FiClock,
