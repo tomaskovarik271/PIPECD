@@ -41,7 +41,7 @@ import {
 } from 'react-icons/fi';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useSmartStickers } from '../../hooks/useSmartStickers';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 
 interface SimpleNotesProps {
   entityType: 'DEAL' | 'PERSON' | 'ORGANIZATION' | 'LEAD';
@@ -77,7 +77,6 @@ export const SimpleNotes: React.FC<SimpleNotesProps> = ({
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const colors = useThemeColors();
-  const styles = useThemeStyles();
   const toast = useToast();
   
   const { isOpen: isDeleteModalOpen, onOpen: openDeleteModal, onClose: closeDeleteModal } = useDisclosure();
@@ -92,7 +91,6 @@ export const SimpleNotes: React.FC<SimpleNotesProps> = ({
     updateSticker,
     deleteSticker,
     togglePin,
-    refetch,
   } = useSmartStickers(entityType, entityId);
 
   // Transform stickers to notes (only show text-based stickers as notes)
@@ -182,7 +180,7 @@ export const SimpleNotes: React.FC<SimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to add note',
         description: 'Please try again',
@@ -232,7 +230,7 @@ export const SimpleNotes: React.FC<SimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to update note',
         description: 'Please try again',
@@ -255,7 +253,7 @@ export const SimpleNotes: React.FC<SimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to delete note',
         description: 'Please try again',
@@ -279,7 +277,7 @@ export const SimpleNotes: React.FC<SimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to pin note',
         description: 'Please try again',
