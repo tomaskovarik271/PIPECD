@@ -4,6 +4,8 @@ import { GraphQLContext } from '../types';
 import { 
   convertLeadToDeal,
   LeadToDealConversionInput,
+  convertDealToLead,
+  DealToLeadConversionInput,
   getConversionHistory,
   validateConversion
 } from '../../../../lib/conversionService';
@@ -25,6 +27,7 @@ interface GraphQLConversionHistory {
 }
 
 interface GraphQLLeadConversionInput {
+  targetType?: string;
   preserveActivities?: boolean;
   createConversionActivity?: boolean;
   notes?: string;
@@ -34,6 +37,7 @@ interface GraphQLLeadConversionInput {
     currency?: string;
     expected_close_date?: string;
     deal_specific_probability?: number;
+    wfmProjectTypeId?: string;
   };
   personData?: {
     first_name?: string;
@@ -46,7 +50,6 @@ interface GraphQLLeadConversionInput {
     address?: string;
     notes?: string;
   };
-  wfmProjectTypeId?: string;
   targetWfmStepId?: string;
 }
 
@@ -178,7 +181,8 @@ export const conversionResolvers = {
         const accessToken = getAccessToken(context)!;
 
         // Check permissions
-        const canConvertLead = context.userPermissions?.includes('lead:update_any') || 
+        const canConvertLead = context.userPermissions?.includes('lead:convert') ||
+                              context.userPermissions?.includes('lead:update_any') || 
                               context.userPermissions?.includes('lead:update_own');
         
         if (!canConvertLead) {
@@ -196,7 +200,7 @@ export const conversionResolvers = {
           dealData: args.input.dealData,
           personData: args.input.personData,
           organizationData: args.input.organizationData,
-          wfmProjectTypeId: args.input.wfmProjectTypeId,
+          wfmProjectTypeId: args.input.dealData?.wfmProjectTypeId,
           targetWfmStepId: args.input.targetWfmStepId
         };
 
@@ -207,15 +211,19 @@ export const conversionResolvers = {
           accessToken
         );
 
+        if (!result.success) {
+          throw new GraphQLError(result.message || 'Conversion failed', {
+            extensions: { code: 'CONVERSION_FAILED', errors: result.errors }
+          });
+        }
+
         // Fetch created entities for response
-        let deal = null;
         let person = null;
         let organization = null;
-        let wfmProject = null;
-        let conversionHistory = null;
+        let deal = null;
 
-        if (result.success && result.dealId) {
-          // Fetch deal
+        // Fetch deal
+        if (result.dealId) {
           const { data: dealData } = await context.supabaseClient
             .from('deals')
             .select('*')
@@ -223,65 +231,51 @@ export const conversionResolvers = {
             .single();
           
           if (dealData) {
-            deal = {
-              id: dealData.id,
-              name: dealData.name,
-              amount: dealData.amount,
-              currency: dealData.currency,
-              expected_close_date: dealData.expected_close_date,
-              created_at: dealData.created_at,
-              updated_at: dealData.updated_at,
-              user_id: dealData.user_id,
-              person_id: dealData.person_id,
-              organization_id: dealData.organization_id,
-              wfm_project_id: dealData.wfm_project_id,
-              assigned_to_user_id: dealData.assigned_to_user_id,
-              deal_specific_probability: dealData.deal_specific_probability,
-              project_id: dealData.project_id
-            };
-          }
-
-          // Fetch conversion history
-          if (result.conversionId) {
-            const { data: historyData } = await context.supabaseClient
-              .from('conversion_history')
-              .select('*')
-              .eq('id', result.conversionId)
-              .single();
-
-            if (historyData) {
-              conversionHistory = {
-                id: historyData.id,
-                conversionType: historyData.conversion_type,
-                sourceEntityType: historyData.source_entity_type,
-                sourceEntityId: historyData.source_entity_id,
-                targetEntityType: historyData.target_entity_type,
-                targetEntityId: historyData.target_entity_id,
-                conversionReason: historyData.conversion_reason,
-                conversionData: historyData.conversion_data,
-                wfmTransitionPlan: historyData.wfm_transition_plan,
-                convertedByUserId: historyData.converted_by_user_id,
-                convertedAt: historyData.converted_at,
-                createdAt: historyData.created_at
-              };
-            }
+            deal = dealData;
           }
         }
 
+        // Fetch person
+        if (result.personId) {
+          const { data: personData } = await context.supabaseClient
+            .from('people')
+            .select('*')
+            .eq('id', result.personId)
+            .single();
+          
+          if (personData) {
+            person = personData;
+          }
+        }
+
+        // Fetch organization
+        if (result.organizationId) {
+          const { data: orgData } = await context.supabaseClient
+            .from('organizations')
+            .select('*')
+            .eq('id', result.organizationId)
+            .single();
+          
+          if (orgData) {
+            organization = orgData;
+          }
+        }
+
+        // Return in the correct LeadConversionResult format
         return {
-          success: result.success,
-          conversionId: result.conversionId,
-          message: result.message,
-          errors: result.errors || [],
-          deal,
-          person,
-          organization,
-          wfmProject,
-          conversionHistory
+          leadId: args.id,
+          convertedEntities: {
+            person,
+            organization,
+            deal
+          }
         };
 
       } catch (error) {
         console.error('Error converting lead to deal:', error);
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
         throw new GraphQLError('Failed to convert lead to deal', {
           extensions: { code: 'INTERNAL_SERVER_ERROR' }
         });
@@ -291,12 +285,83 @@ export const conversionResolvers = {
     // Placeholder for backwards conversion (Phase 2)
     convertDealToLead: async (
       _parent: any,
-      args: any,
+      args: { id: string; input: any },
       context: GraphQLContext
     ) => {
-      throw new GraphQLError('Deal to lead conversion not yet implemented', {
-        extensions: { code: 'NOT_IMPLEMENTED' }
-      });
+      try {
+        requireAuthentication(context);
+        const userId = context.currentUser!.id;
+        const accessToken = getAccessToken(context)!;
+
+        // Check permissions
+        const canConvertDeal = context.userPermissions?.includes('deal:convert') ||
+                              context.userPermissions?.includes('deal:update_any') || 
+                              context.userPermissions?.includes('deal:update_own');
+        
+        if (!canConvertDeal) {
+          throw new GraphQLError('Insufficient permissions to convert deals', {
+            extensions: { code: 'FORBIDDEN' }
+          });
+        }
+
+        // Convert GraphQL input to service input
+        const conversionInput: DealToLeadConversionInput = {
+          dealId: args.id,
+          preserveActivities: args.input.preserveActivities,
+          createConversionActivity: args.input.createConversionActivity,
+          notes: args.input.notes,
+          conversionReason: args.input.conversionReason,
+          leadData: args.input.leadData,
+          archiveDeal: args.input.archiveDeal
+        };
+
+        const result = await convertDealToLead(
+          conversionInput,
+          userId,
+          context.supabaseClient,
+          accessToken
+        );
+
+        if (!result.success) {
+          throw new GraphQLError(result.message || 'Conversion failed', {
+            extensions: { code: 'CONVERSION_FAILED', errors: result.errors }
+          });
+        }
+
+        // Fetch created lead for response
+        let lead = null;
+        if (result.leadId) {
+          const { data: leadData } = await context.supabaseClient
+            .from('leads')
+            .select('*')
+            .eq('id', result.leadId)
+            .single();
+          
+          if (leadData) {
+            lead = leadData;
+          }
+        }
+
+        // Return in the correct DealToLeadConversionResult format
+        return {
+          success: result.success,
+          conversionId: result.conversionId,
+          message: result.message,
+          errors: result.errors || [],
+          lead,
+          reactivationPlan: null, // TODO: Implement reactivation plans
+          conversionHistory: null // TODO: Fetch conversion history
+        };
+
+      } catch (error) {
+        console.error('Error converting deal to lead:', error);
+        if (error instanceof GraphQLError) {
+          throw error;
+        }
+        throw new GraphQLError('Failed to convert deal to lead', {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' }
+        });
+      }
     }
   },
 

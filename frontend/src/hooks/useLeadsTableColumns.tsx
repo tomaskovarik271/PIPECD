@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Badge, IconButton, HStack, Text, VStack, Spinner, Link, Icon } from '@chakra-ui/react';
-import { StarIcon, EditIcon, DeleteIcon, ExternalLinkIcon, ViewIcon } from '@chakra-ui/icons';
+import { StarIcon, EditIcon, DeleteIcon, ExternalLinkIcon, ViewIcon, ArrowForwardIcon } from '@chakra-ui/icons';
 import { Link as RouterLink } from 'react-router-dom';
 import type { ColumnDefinition } from '../components/common/SortableTable';
 import type { Lead } from '../stores/useLeadsStore';
@@ -9,11 +9,13 @@ import { formatDate } from '../lib/utils/formatters';
 import { CurrencyFormatter } from '../../../lib/utils/currencyFormatter';
 import { getLinkDisplayDetails } from '../lib/utils/linkUtils';
 import { useThemeColors } from '../hooks/useThemeColors';
+import { ConvertedLeadActions } from '../components/leads/ConvertedLeadActions';
 
 interface UseLeadsTableColumnsProps {
   leadCustomFieldDefinitions: CustomFieldDefinition[];
   handleEditClick: (lead: Lead) => void;
   handleDeleteClick: (leadId: string) => void;
+  handleConvertClick?: (lead: Lead) => void;
   userPermissions: string[];
   currentUserId?: string;
   activeDeletingLeadId?: string | null;
@@ -29,6 +31,7 @@ export function useLeadsTableColumns({
   leadCustomFieldDefinitions,
   handleEditClick,
   handleDeleteClick,
+  handleConvertClick,
   userPermissions,
   currentUserId,
   activeDeletingLeadId,
@@ -255,7 +258,15 @@ export function useLeadsTableColumns({
     header: 'Actions',
     isSortable: false,
     renderCell: (lead: Lead) => {
-      // Temporary fix: always show actions for development
+      // Check if lead is converted
+      const isConverted = !!lead.converted_at;
+      
+      // For converted leads, show the special converted actions
+      if (isConverted) {
+        return <ConvertedLeadActions lead={lead} />;
+      }
+
+      // For non-converted leads, show regular actions
       const canEdit = true; // userPermissions.includes('lead.update_own') || userPermissions.includes('lead.update_any');
       const canDelete = true; // userPermissions.includes('lead.delete_own') || userPermissions.includes('lead.delete_any');
 
@@ -282,6 +293,18 @@ export function useLeadsTableColumns({
             aria-label="View lead details"
             icon={<ViewIcon />}
           />
+          {handleConvertClick && (
+            <IconButton
+              size="sm"
+              variant="ghost"
+              colorScheme="green"
+              aria-label="Convert to Deal"
+              icon={<ArrowForwardIcon />}
+              onClick={() => handleConvertClick(lead)}
+              isDisabled={isDeleting}
+              title="Convert to Deal"
+            />
+          )}
           {showEdit && (
             <IconButton
               size="sm"
@@ -307,7 +330,7 @@ export function useLeadsTableColumns({
         </HStack>
       );
     },
-  }), [userPermissions, currentUserId, activeDeletingLeadId, handleEditClick, handleDeleteClick]);
+  }), [userPermissions, currentUserId, activeDeletingLeadId, handleEditClick, handleDeleteClick, handleConvertClick]);
 
   return {
     standardColumns,

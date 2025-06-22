@@ -7,6 +7,7 @@ interface UseFilteredDealsProps {
   currentUserId?: string;
   selectedAssignedUserIds: string[];
   searchTerm?: string;
+  includeFinalSteps?: boolean;
 }
 
 export function useFilteredDeals({
@@ -15,11 +16,20 @@ export function useFilteredDeals({
   currentUserId,
   selectedAssignedUserIds,
   searchTerm,
+  includeFinalSteps = false,
 }: UseFilteredDealsProps): Deal[] {
   return useMemo(() => {
     let filtered = deals;
+    
+    // BASE FILTER: Exclude deals with final steps (like "Converted to Lead") unless explicitly requested
+    if (!includeFinalSteps) {
+      filtered = filtered.filter(deal => 
+        !deal.currentWfmStep?.isFinalStep
+      );
+    }
+    
     if (activeQuickFilterKey && activeQuickFilterKey !== 'all') {
-      filtered = deals.filter(deal => {
+      filtered = filtered.filter(deal => {
         switch (activeQuickFilterKey) {
           case 'myOpen':
             return deal.user_id === currentUserId && deal.currentWfmStep && !deal.currentWfmStep.isFinalStep;
@@ -53,5 +63,5 @@ export function useFilteredDeals({
       );
     }
     return filtered;
-  }, [deals, activeQuickFilterKey, currentUserId, selectedAssignedUserIds, searchTerm]);
+  }, [deals, activeQuickFilterKey, currentUserId, selectedAssignedUserIds, searchTerm, includeFinalSteps]);
 } 

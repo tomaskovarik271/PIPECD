@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'; // Added React import for JSX
 import { Link as RouterLink } from 'react-router-dom';
 import { HStack, IconButton, Text, Link, Icon, Tag } from '@chakra-ui/react';
-import { ViewIcon, EditIcon, DeleteIcon } from '@chakra-ui/icons';
+import { ViewIcon, EditIcon, DeleteIcon, ArrowBackIcon } from '@chakra-ui/icons';
 
 import type { ColumnDefinition } from '../components/common/SortableTable';
 import type { Deal } from '../stores/useDealsStore';
@@ -15,6 +15,7 @@ interface UseDealsTableColumnsProps {
   dealCustomFieldDefinitions: GQLCustomFieldDefinition[];
   handleEditClick: (deal: Deal) => void;
   handleDeleteClick: (dealId: string) => void;
+  handleConvertClick?: (deal: Deal) => void;
   userPermissions: string[] | null | undefined;
   currentUserId: string | null | undefined;
   activeDeletingDealId: string | null | undefined;
@@ -31,6 +32,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
     dealCustomFieldDefinitions,
     handleEditClick,
     handleDeleteClick,
+    handleConvertClick,
     userPermissions,
     currentUserId,
     activeDeletingDealId,
@@ -137,6 +139,17 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
       renderCell: (deal: Deal) => (
         <HStack spacing={2}>
           <IconButton as={RouterLink} to={`/deals/${deal.id}`} aria-label="View deal" icon={<ViewIcon />} size="sm" variant="ghost" />
+          {handleConvertClick && (
+            <IconButton
+              aria-label="Convert to Lead"
+              icon={<ArrowBackIcon />}
+              size="sm"
+              variant="ghost"
+              colorScheme="orange"
+              onClick={() => handleConvertClick(deal)}
+              title="Convert to Lead"
+            />
+          )}
           <IconButton
             aria-label="Edit deal"
             icon={<EditIcon />}
@@ -159,7 +172,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
       ),
       isSortable: false,
     };
-  }, [handleEditClick, handleDeleteClick, userPermissions, currentUserId, activeDeletingDealId]);
+  }, [handleEditClick, handleDeleteClick, handleConvertClick, userPermissions, currentUserId, activeDeletingDealId]);
 
   const customFieldColumns = useMemo((): ColumnDefinition<Deal>[] => {
     if (!dealCustomFieldDefinitions) return []; // Guard clause

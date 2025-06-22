@@ -58,7 +58,7 @@ export async function planWFMTransition(
         .select(`
           *,
           projectType:project_types(*),
-          currentStep:wfm_workflow_steps(*)
+          currentStep:workflow_steps(*)
         `)
         .eq('id', input.sourceEntity.wfm_project_id)
         .single();
@@ -75,7 +75,7 @@ export async function planWFMTransition(
         // Find "Converted" step for source workflow
         if (sourceWorkflowId) {
           const { data: convertedStep } = await supabase
-            .from('wfm_workflow_steps')
+            .from('workflow_steps')
             .select('id')
             .eq('workflow_id', sourceWorkflowId)
             .ilike('name', '%converted%')
@@ -146,7 +146,7 @@ export async function planWFMTransition(
 
     // 5. Get initial step as fallback
     const { data: initialStep } = await supabase
-      .from('wfm_workflow_steps')
+      .from('workflow_steps')
       .select('id')
       .eq('workflow_id', targetWorkflowId)
       .eq('is_initial_step', true)
@@ -252,7 +252,7 @@ async function mapIntelligentStep(
   try {
     // Get all steps for target workflow
     const { data: workflowSteps } = await supabase
-      .from('wfm_workflow_steps')
+      .from('workflow_steps')
       .select('*')
       .eq('workflow_id', targetWorkflowId)
       .order('step_order');
@@ -315,7 +315,7 @@ async function mapIntelligentStep(
     console.error('Error in intelligent step mapping:', error);
     // Return first step as ultimate fallback
     const { data: fallbackStep } = await supabase
-      .from('wfm_workflow_steps')
+      .from('workflow_steps')
       .select('id')
       .eq('workflow_id', targetWorkflowId)
       .eq('is_initial_step', true)

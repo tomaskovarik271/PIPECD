@@ -11,6 +11,7 @@ import {
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
+import { ConvertDealModal } from '../components/conversion/ConvertDealModal';
 import { SettingsIcon, ViewIcon as PageViewIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 import { useDealsStore, Deal } from '../stores/useDealsStore';
@@ -70,6 +71,10 @@ function DealsPage() {
 
   const [dealIdPendingConfirmation, setDealIdPendingConfirmation] = useState<string | null>(null);
 
+  // Conversion modal state
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [dealToConvert, setDealToConvert] = useState<Deal | null>(null);
+
   const {
     dealCustomFieldDefinitions,
     customFieldsLoading,
@@ -109,6 +114,29 @@ function DealsPage() {
     loadPageData();
   }, [fetchDeals, fetchUsers, hasFetchedUsers]);
 
+  // Conversion handlers - defined early to avoid hoisting issues
+  const handleConvertClick = useCallback((deal: Deal) => {
+    setDealToConvert(deal);
+    setIsConvertModalOpen(true);
+  }, []);
+
+  const closeConvertModal = useCallback(() => {
+    setIsConvertModalOpen(false);
+    setDealToConvert(null);
+  }, []);
+
+  const handleConversionComplete = useCallback((result: any) => {
+    toast({
+      title: 'Conversion Successful!',
+      description: `Deal "${dealToConvert?.name}" has been converted to a lead.`,
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    });
+    fetchDeals(); // Refresh the deals list
+    closeConvertModal();
+  }, [dealToConvert, toast, fetchDeals, closeConvertModal]);
+
   const { standardColumns, actionsColumn, customFieldColumns } = useDealsTableColumns({
     dealCustomFieldDefinitions,
     handleEditClick: openEditModal,
@@ -116,6 +144,7 @@ function DealsPage() {
       setDealIdPendingConfirmation(dealId);
       openConfirmDeleteModal();
     },
+    handleConvertClick,
     userPermissions,
     currentUserId,
     activeDeletingDealId,
@@ -199,10 +228,15 @@ function DealsPage() {
   }, [displayedDeals]);
 
   const winRate = useMemo(() => {
-    const closedDeals = displayedDeals.filter(d => d.currentWfmStep?.isFinalStep);
+    // Get all deals including final steps for win rate calculation
+    const allDeals = deals; // Use original deals array, not filtered
+    const closedDeals = allDeals.filter(d => 
+      d.currentWfmStep?.isFinalStep && 
+      !d.currentWfmStep?.status?.name?.toLowerCase().includes('converted') // Exclude converted deals
+    );
     const wonDeals = closedDeals.filter(d => d.currentWfmStep?.status?.name?.toLowerCase().includes('won'));
     return closedDeals.length > 0 ? Math.round((wonDeals.length / closedDeals.length) * 100) : 0;
-  }, [displayedDeals]);
+  }, [deals]);
 
   const statistics = [
     {
@@ -440,6 +474,15 @@ function DealsPage() {
             closeColumnSelectorModal();
           }}
           onReset={() => resetTableToDefaults(TABLE_KEY, defaultVisibleColumnKeys)}
+        />
+      )}
+
+      {isConvertModalOpen && dealToConvert && (
+        <ConvertDealModal
+          isOpen={isConvertModalOpen}
+          onClose={closeConvertModal}
+          onConversionComplete={handleConversionComplete}
+          deal={dealToConvert}
         />
       )}
     </>

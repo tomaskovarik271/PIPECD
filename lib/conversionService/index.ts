@@ -5,11 +5,12 @@ export {
   type LeadToDealConversionResult,
 } from './forwardConversion';
 
+// Backward conversion
 export {
   convertDealToLead,
   type DealToLeadConversionInput,
   type DealToLeadConversionResult,
-} from './backwardsConversion';
+} from './backwardConversion';
 
 export {
   validateConversion,
@@ -20,6 +21,7 @@ export {
   recordConversionHistory,
   getConversionHistory,
   type ConversionHistoryEntry,
+  type RecordConversionHistoryInput,
 } from './conversionHistory';
 
 export {

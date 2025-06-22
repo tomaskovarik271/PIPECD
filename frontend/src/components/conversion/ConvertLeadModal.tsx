@@ -31,8 +31,10 @@ import {
   Collapse,
   useDisclosure
 } from '@chakra-ui/react';
-import { FiArrowRight, FiUser, FiBuilding, FiTrendingUp, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowRight, FiUser, FiHome, FiTrendingUp, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useMutation, useApolloClient } from '@apollo/client';
+import { gql } from '@apollo/client';
 
 // Types
 interface Lead {
@@ -85,10 +87,41 @@ interface ConversionPreview {
   };
 }
 
+// GraphQL mutation for lead conversion
+const CONVERT_LEAD = gql`
+  mutation ConvertLead($id: ID!, $input: LeadConversionInput!) {
+    convertLead(id: $id, input: $input) {
+      leadId
+      convertedEntities {
+        person {
+          id
+          first_name
+          last_name
+          email
+        }
+        organization {
+          id
+          name
+        }
+        deal {
+          id
+          name
+          amount
+          currency
+        }
+      }
+    }
+  }
+`;
+
 export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }: ConvertLeadModalProps) {
   const colors = useThemeColors();
   const toast = useToast();
   const { isOpen: showAdvanced, onToggle: toggleAdvanced } = useDisclosure();
+  const apolloClient = useApolloClient();
+
+  // GraphQL mutation
+  const [convertLeadMutation] = useMutation(CONVERT_LEAD);
 
   // Form state
   const [isLoading, setIsLoading] = useState(false);
@@ -97,7 +130,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
   const [preview, setPreview] = useState<ConversionPreview | null>(null);
 
   // Conversion options
-  const [preserveActivities, setPreserveActivities] = useState(true);
+  const [preserveActivities, setPreserveActivities] = useState(false);
   const [createConversionActivity, setCreateConversionActivity] = useState(true);
   const [notes, setNotes] = useState('');
 
@@ -224,61 +257,105 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
 
     setIsLoading(true);
     try {
-      // TODO: Call GraphQL conversion mutation
-      // const result = await convertLeadMutation({
-      //   id: lead.id,
-      //   input: {
-      //     preserveActivities,
-      //     createConversionActivity,
-      //     notes,
-      //     dealData: {
-      //       name: dealName,
-      //       amount: dealAmount,
-      //       currency: dealCurrency,
-      //       expected_close_date: dealCloseDate
-      //     },
-      //     personData: preview?.willCreatePerson ? {
-      //       first_name: personFirstName,
-      //       last_name: personLastName,
-      //       email: personEmail,
-      //       phone: personPhone
-      //     } : undefined,
-      //     organizationData: preview?.willCreateOrganization ? {
-      //       name: orgName,
-      //       address: orgAddress,
-      //       notes: orgNotes
-      //     } : undefined
-      //   }
-      // });
+      // First, get the "Sales Deal" project type ID dynamically
+      const projectTypesQuery = gql`
+        query GetProjectTypes {
+          wfmProjectTypes {
+            id
+            name
+          }
+        }
+      `;
+      
+      const projectTypesResult = await apolloClient.query({
+        query: projectTypesQuery
+      });
+      
+      const projectTypes = projectTypesResult.data?.wfmProjectTypes || [];
+      const salesDealProjectType = projectTypes.find((pt: any) => pt.name === 'Sales Deal');
+      
+      if (!salesDealProjectType) {
+        throw new Error('Sales Deal project type not found. Please ensure the project type exists.');
+      }
 
-      // Mock successful conversion
-      const mockResult = {
-        success: true,
-        conversionId: 'conv_123',
-        message: `Successfully converted lead "${lead.name}" to deal`,
-        deal: { id: 'deal_123', name: dealName },
-        person: preview?.willCreatePerson ? { id: 'person_123', first_name: personFirstName } : null,
-        organization: preview?.willCreateOrganization ? { id: 'org_123', name: orgName } : null
+      // Prepare conversion input with the correct project type ID
+      const conversionInput: any = {
+        targetType: 'DEAL',
+        preserveActivities,
+        createConversionActivity,
+        dealData: {
+          name: dealName || lead.name,
+          amount: dealAmount || lead.estimated_value || 0,
+          currency: dealCurrency,
+          expected_close_date: dealCloseDate || lead.estimated_close_date,
+          wfmProjectTypeId: salesDealProjectType.id
+        }
       };
 
-      toast({
-        title: 'Conversion Successful!',
-        description: mockResult.message,
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
+      // Add person data if needed
+      if (preview?.willCreatePerson && (personFirstName || personLastName || personEmail)) {
+        conversionInput.personData = {
+          first_name: personFirstName || '',
+          last_name: personLastName || '',
+          email: personEmail || '',
+          phone: personPhone || ''
+        };
+      }
+
+      // Add organization data if needed  
+      if (preview?.willCreateOrganization && orgName) {
+        conversionInput.organizationData = {
+          name: orgName,
+          address: orgAddress,
+          notes: orgNotes
+        };
+      }
+
+      // Execute the conversion
+      console.log('🔄 Executing lead conversion with input:', conversionInput);
+      const result = await convertLeadMutation({
+        variables: {
+          id: lead.id,
+          input: conversionInput
+        }
       });
 
-      onConversionComplete(mockResult);
-      onClose();
+      console.log('✅ Conversion mutation result:', result);
 
-    } catch (error) {
-      console.error('Conversion error:', error);
+      if (result.data?.convertLead) {
+        console.log('✅ Conversion successful, result data:', result.data.convertLead);
+        toast({
+          title: 'Conversion Successful',
+          description: `Lead "${lead.name}" has been converted to a deal successfully.`,
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+
+        // Call the completion callback
+        if (onConversionComplete) {
+          onConversionComplete(result.data.convertLead);
+        }
+
+        // Close the modal
+        onClose();
+      } else {
+        console.error('❌ No conversion result returned:', result);
+        throw new Error('Conversion failed - no result returned');
+      }
+    } catch (error: any) {
+      console.error('❌ Conversion error details:', {
+        error,
+        message: error.message,
+        graphQLErrors: error.graphQLErrors,
+        networkError: error.networkError,
+        extraInfo: error.extraInfo
+      });
       toast({
         title: 'Conversion Failed',
-        description: 'An error occurred during conversion. Please try again.',
+        description: error.message || 'Failed to convert lead to deal. Please try again.',
         status: 'error',
-        duration: 5000,
+        duration: 7000,
         isClosable: true,
       });
     } finally {
@@ -288,7 +365,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
 
   const resetForm = () => {
     setNotes('');
-    setPreserveActivities(true);
+    setPreserveActivities(false);
     setCreateConversionActivity(true);
     setValidation(null);
     setPreview(null);
@@ -308,7 +385,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
       <ModalContent maxW="900px">
         <ModalHeader>
           <HStack spacing={3}>
-            <Icon as={FiTrendingUp} color={colors.accent.primary} />
+            <Icon as={FiTrendingUp} color={colors.text.accent} />
             <Text>Convert Lead to Deal</Text>
             <Icon as={FiArrowRight} color={colors.text.muted} />
             <Badge colorScheme="green" variant="subtle">
@@ -321,7 +398,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
         <ModalBody>
           <VStack spacing={6} align="stretch">
             {/* Lead Summary */}
-            <Box p={4} bg={colors.background.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
+            <Box p={4} bg={colors.bg.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
               <HStack justify="space-between" mb={3}>
                 <Text fontWeight="semibold" color={colors.text.primary}>
                   Converting Lead: {lead.name}
@@ -341,7 +418,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
                 )}
                 {lead.company_name && (
                   <HStack>
-                    <Icon as={FiBuilding} />
+                    <Icon as={FiHome} />
                     <Text>{lead.company_name}</Text>
                   </HStack>
                 )}
@@ -353,7 +430,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
 
             {/* Validation Status */}
             {isValidating ? (
-              <HStack p={4} bg={colors.background.elevated} borderRadius="md">
+              <HStack p={4} bg={colors.bg.elevated} borderRadius="md">
                 <Spinner size="sm" />
                 <Text color={colors.text.muted}>Validating conversion...</Text>
               </HStack>
@@ -403,13 +480,13 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
 
             {/* Conversion Preview */}
             {preview && (
-              <Box p={4} bg={colors.background.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
+              <Box p={4} bg={colors.bg.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
                 <Text fontWeight="semibold" mb={3} color={colors.text.primary}>
                   Conversion Preview
                 </Text>
                 <VStack spacing={3} align="stretch">
                   <HStack>
-                    <Icon as={FiTrendingUp} color={colors.accent.primary} />
+                    <Icon as={FiTrendingUp} color={colors.text.accent} />
                     <Text>
                       <strong>Deal:</strong> {preview.dealData.name} 
                       {preview.dealData.amount > 0 && ` (${preview.dealData.currency} ${preview.dealData.amount.toLocaleString()})`}
@@ -418,7 +495,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
                   
                   {preview.willCreatePerson && preview.personData && (
                     <HStack>
-                      <Icon as={FiUser} color={colors.accent.secondary} />
+                      <Icon as={FiUser} color={colors.status.info} />
                       <Text>
                         <strong>New Person:</strong> {preview.personData.first_name} {preview.personData.last_name}
                         {preview.personData.email && ` (${preview.personData.email})`}
@@ -428,7 +505,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
                   
                   {preview.willCreateOrganization && preview.organizationData && (
                     <HStack>
-                      <Icon as={FiBuilding} color={colors.accent.tertiary} />
+                      <Icon as={FiHome} color={colors.status.success} />
                       <Text>
                         <strong>New Organization:</strong> {preview.organizationData.name}
                       </Text>

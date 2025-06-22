@@ -20,6 +20,15 @@ enum ConversionReason {
   COMPETITIVE_LOSS
   REQUIREMENTS_CHANGE
   RELATIONSHIP_RESET
+  
+  # Frontend compatibility values (lowercase)
+  unqualified
+  timing
+  budget
+  competition
+  requirements
+  nurture
+  other
 }
 
 enum ReactivationStrategy {
@@ -59,7 +68,7 @@ type ReactivationPlan {
   lead: Lead!
   originalDeal: Deal
   reactivationStrategy: ReactivationStrategy!
-  targetReactivationDate: Date
+  targetReactivationDate: DateTime
   followUpActivities: JSON
   assignedToUser: User
   status: ReactivationPlanStatus!
@@ -69,42 +78,11 @@ type ReactivationPlan {
   updatedAt: DateTime!
 }
 
-# Input Types
-input LeadConversionInput {
-  preserveActivities: Boolean = true
-  createConversionActivity: Boolean = true
-  notes: String
-  dealData: DealConversionData
-  personData: PersonConversionData
-  organizationData: OrganizationConversionData
-  wfmProjectTypeId: ID
-  targetWfmStepId: ID
-}
-
-input DealConversionData {
-  name: String
-  amount: Float
-  currency: String
-  expected_close_date: DateTime
-  deal_specific_probability: Float
-}
-
-input PersonConversionData {
-  first_name: String
-  last_name: String
-  email: String
-  phone: String
-}
-
-input OrganizationConversionData {
-  name: String
-  address: String
-  notes: String
-}
-
+# Input Types for backwards conversion only (forward conversion uses existing lead.graphql types)
 input DealToLeadConversionInput {
   preserveActivities: Boolean = true
   createConversionActivity: Boolean = true
+  archiveDeal: Boolean = true
   notes: String
   conversionReason: ConversionReason!
   leadData: LeadConversionData
@@ -113,8 +91,14 @@ input DealToLeadConversionInput {
 
 input LeadConversionData {
   name: String
+  contact_name: String
+  contact_email: String
+  contact_phone: String
+  company_name: String
   source: String
   description: String
+  estimated_value: Float
+  estimated_close_date: DateTime
   estimatedValue: Float
   estimatedCloseDate: DateTime
   leadScore: Int
@@ -122,25 +106,13 @@ input LeadConversionData {
 
 input ReactivationPlanInput {
   reactivationStrategy: ReactivationStrategy!
-  targetReactivationDate: Date
+  targetReactivationDate: DateTime
   followUpActivities: JSON
   assignedToUserId: ID
   notes: String
 }
 
 # Result Types
-type LeadConversionResult {
-  success: Boolean!
-  conversionId: ID!
-  message: String!
-  errors: [String!]
-  deal: Deal
-  person: Person
-  organization: Organization
-  wfmProject: WFMProject
-  conversionHistory: ConversionHistory
-}
-
 type DealToLeadConversionResult {
   success: Boolean!
   conversionId: ID!
@@ -163,7 +135,7 @@ type ConversionValidationResult {
 extend type Lead {
   originalDeal: Deal
   conversionReason: String
-  reactivationTargetDate: Date
+  reactivationTargetDate: DateTime
   reactivationPlan: ReactivationPlan
   conversionHistory: [ConversionHistory!]!
 }
@@ -190,8 +162,7 @@ extend type Query {
 
 # Mutations
 extend type Mutation {
-  # Forward conversion: Lead → Deal
-  convertLead(id: ID!, input: LeadConversionInput!): LeadConversionResult!
+  # Note: convertLead is already defined in lead.graphql
   
   # Backwards conversion: Deal → Lead
   convertDealToLead(id: ID!, input: DealToLeadConversionInput!): DealToLeadConversionResult!

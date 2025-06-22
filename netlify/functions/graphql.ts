@@ -75,7 +75,8 @@ import { activityReminderMutations } from './graphql/resolvers/mutations/activit
 // Import Currency Resolvers
 import { currencyResolvers } from './graphql/resolvers/currency';
 
-
+// Import Conversion Resolvers
+import { conversionResolvers } from './graphql/resolvers/conversionResolvers';
 
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
@@ -117,6 +118,7 @@ const loadTypeDefs = (): string => {
     'agentV2.graphql',
     'appSettings.graphql',
     'base.graphql', 
+    'conversion.graphql',
     'currency.graphql',
     'customFields.graphql', 
     'deal.graphql',
@@ -178,7 +180,7 @@ export const resolvers = {
     ...WFMProjectTypeResolvers.Query,
     ...agentQueries,
     ...agentV2Resolvers.Query,
-
+    ...conversionResolvers.Query,
     ...smartStickerQueries,
     ...emailQueries,
     ...driveQueries,
@@ -196,7 +198,7 @@ export const resolvers = {
     ...WFMProjectTypeResolvers.Mutation,
     ...agentMutations,
     ...agentV2Resolvers.Mutation,
-
+    ...conversionResolvers.Mutation,
     ...smartStickerMutations,
     ...emailMutations,
     ...driveMutations,

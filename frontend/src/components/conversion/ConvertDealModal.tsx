@@ -32,8 +32,27 @@ import {
   useDisclosure,
   Select
 } from '@chakra-ui/react';
-import { FiArrowLeft, FiUser, FiBuilding, FiTrendingDown, FiAlertTriangle, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiUser, FiHome, FiTrendingDown, FiAlertTriangle, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { gql, useMutation } from '@apollo/client';
+
+// GraphQL mutation for deal conversion
+const CONVERT_DEAL_TO_LEAD = gql`
+  mutation ConvertDealToLead($id: ID!, $input: DealToLeadConversionInput!) {
+    convertDealToLead(id: $id, input: $input) {
+      success
+      message
+      conversionId
+      lead {
+        id
+        name
+        estimated_value
+        contact_name
+        company_name
+      }
+    }
+  }
+`;
 
 // Types
 interface Deal {
@@ -122,6 +141,24 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
   const colors = useThemeColors();
   const toast = useToast();
   const { isOpen: showAdvanced, onToggle: toggleAdvanced } = useDisclosure();
+
+  // GraphQL mutation
+  const [convertDealMutation] = useMutation(gql`
+    mutation ConvertDealToLead($id: ID!, $input: DealToLeadConversionInput!) {
+      convertDealToLead(id: $id, input: $input) {
+        success
+        message
+        conversionId
+        lead {
+          id
+          name
+          estimated_value
+          contact_name
+          company_name
+        }
+      }
+    }
+  `);
 
   // Form state
   const [isLoading, setIsLoading] = useState(false);
@@ -259,60 +296,74 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
   };
 
   const handleConvert = async () => {
-    if (!deal || !validation?.canProceed) return;
+    if (!deal || !validation?.canProceed || !conversionReason) return;
 
     setIsLoading(true);
     try {
-      // TODO: Call GraphQL conversion mutation
-      // const result = await convertDealMutation({
-      //   id: deal.id,
-      //   input: {
-      //     preserveActivities,
-      //     createConversionActivity,
-      //     archiveDeal,
-      //     conversionReason,
-      //     notes,
-      //     leadData: {
-      //       name: leadName,
-      //       contact_name: contactName,
-      //       contact_email: contactEmail,
-      //       contact_phone: contactPhone,
-      //       company_name: companyName,
-      //       estimated_value: estimatedValue,
-      //       estimated_close_date: estimatedCloseDate,
-      //       source: leadSource,
-      //       description: leadDescription
-      //     }
-      //   }
-      // });
-
-      // Mock successful conversion
-      const mockResult = {
-        success: true,
-        conversionId: 'conv_456',
-        message: `Successfully converted deal "${deal.name}" to lead`,
-        lead: { id: 'lead_123', name: leadName },
-        archivedDeal: archiveDeal ? { id: deal.id, name: deal.name, status: 'archived' } : null
+      // Prepare conversion input
+      const conversionInput = {
+        preserveActivities,
+        createConversionActivity,
+        archiveDeal,
+        conversionReason,
+        notes,
+        leadData: {
+          name: leadName || deal.name,
+          contact_name: contactName || '',
+          contact_email: contactEmail || '',
+          contact_phone: contactPhone || '',
+          company_name: companyName || '',
+          estimated_value: estimatedValue || deal.amount || 0,
+          estimated_close_date: estimatedCloseDate || deal.expected_close_date,
+          source: leadSource || 'deal_conversion',
+          description: leadDescription || `Converted from deal: ${deal.name}`
+        }
       };
 
-      toast({
-        title: 'Conversion Successful!',
-        description: mockResult.message,
-        status: 'success',
-        duration: 5000,
-        isClosable: true,
+      console.log('🔄 Executing deal conversion with input:', conversionInput);
+
+      // Execute the conversion using the GraphQL mutation
+      const result = await convertDealMutation({
+        variables: {
+          id: deal.id,
+          input: conversionInput
+        }
       });
 
-      onConversionComplete(mockResult);
-      onClose();
+      console.log('✅ Deal conversion mutation result:', result);
 
-    } catch (error) {
-      console.error('Conversion error:', error);
+      if (result.data?.convertDealToLead) {
+        const conversionResult = result.data.convertDealToLead;
+        console.log('✅ Deal conversion successful, result data:', conversionResult);
+        
+        toast({
+          title: 'Conversion Successful!',
+          description: conversionResult.message || `Deal "${deal.name}" has been converted to a lead successfully.`,
+          status: 'success',
+          duration: 5000,
+          isClosable: true,
+        });
+
+        onConversionComplete(conversionResult);
+        onClose();
+      } else {
+        console.error('❌ No conversion result returned:', result);
+        throw new Error('Conversion failed - no result returned');
+      }
+
+    } catch (error: any) {
+      console.error('❌ Deal conversion error details:', {
+        error,
+        message: error.message,
+        graphQLErrors: error.graphQLErrors,
+        networkError: error.networkError,
+        extraInfo: error.extraInfo
+      });
       toast({
         title: 'Conversion Failed',
-        description: 'An error occurred during conversion. Please try again.',
+        description: error.message || 'Failed to convert deal to lead. Please try again.',
         status: 'error',
-        duration: 5000,
+        duration: 7000,
         isClosable: true,
       });
     } finally {
@@ -355,7 +406,7 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
       <ModalContent maxW="900px">
         <ModalHeader>
           <HStack spacing={3}>
-            <Icon as={FiTrendingDown} color={colors.accent.secondary} />
+            <Icon as={FiTrendingDown} color={colors.text.accent} />
             <Text>Convert Deal to Lead</Text>
             <Icon as={FiArrowLeft} color={colors.text.muted} />
             <Badge colorScheme="orange" variant="subtle">
@@ -368,7 +419,7 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
         <ModalBody>
           <VStack spacing={6} align="stretch">
             {/* Deal Summary */}
-            <Box p={4} bg={colors.background.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
+            <Box p={4} bg={colors.bg.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
               <HStack justify="space-between" mb={3}>
                 <Text fontWeight="semibold" color={colors.text.primary}>
                   Converting Deal: {deal.name}
@@ -391,7 +442,7 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
                 )}
                 {deal.organization && (
                   <HStack>
-                    <Icon as={FiBuilding} />
+                    <Icon as={FiHome} />
                     <Text>{deal.organization.name}</Text>
                   </HStack>
                 )}
@@ -419,7 +470,7 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
 
             {/* Validation Status */}
             {isValidating ? (
-              <HStack p={4} bg={colors.background.elevated} borderRadius="md">
+              <HStack p={4} bg={colors.bg.elevated} borderRadius="md">
                 <Spinner size="sm" />
                 <Text color={colors.text.muted}>Validating conversion...</Text>
               </HStack>
@@ -458,7 +509,7 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
                 )}
 
                 {validation.statusValidation && (
-                  <Box p={4} bg={colors.background.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
+                  <Box p={4} bg={colors.bg.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
                     <Text fontWeight="semibold" mb={2} color={colors.text.primary}>
                       WFM Status Check
                     </Text>
@@ -499,13 +550,13 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
 
             {/* Conversion Preview */}
             {preview && (
-              <Box p={4} bg={colors.background.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
+              <Box p={4} bg={colors.bg.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
                 <Text fontWeight="semibold" mb={3} color={colors.text.primary}>
                   Conversion Preview
                 </Text>
                 <VStack spacing={3} align="stretch">
                   <HStack>
-                    <Icon as={FiTrendingDown} color={colors.accent.secondary} />
+                    <Icon as={FiTrendingDown} color={colors.text.accent} />
                     <Text>
                       <strong>Lead:</strong> {preview.leadData.name}
                       {preview.leadData.estimated_value > 0 && ` (${preview.leadData.estimated_value.toLocaleString()})`}
@@ -514,7 +565,7 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
                   
                   {preview.leadData.contact_name && (
                     <HStack>
-                      <Icon as={FiUser} color={colors.accent.primary} />
+                      <Icon as={FiUser} color={colors.text.accent} />
                       <Text>
                         <strong>Contact:</strong> {preview.leadData.contact_name}
                         {preview.leadData.contact_email && ` (${preview.leadData.contact_email})`}
@@ -524,7 +575,7 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
                   
                   {preview.leadData.company_name && (
                     <HStack>
-                      <Icon as={FiBuilding} color={colors.accent.tertiary} />
+                      <Icon as={FiHome} color={colors.text.accent} />
                       <Text>
                         <strong>Company:</strong> {preview.leadData.company_name}
                       </Text>

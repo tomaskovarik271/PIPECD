@@ -3,11 +3,10 @@ import { Database } from '../database.types';
 import { BaseConversionInput, BaseConversionResult, ConversionType } from './index';
 import { validateConversion } from './conversionValidation';
 import { recordConversionHistory } from './conversionHistory';
-import { planWFMTransition, executeWFMTransition } from './wfmTransitionManager';
 import { dealService } from '../dealService';
 import { personService } from '../personService';
 import { organizationService } from '../organizationService';
-import { leadService } from '../leadService';
+import { leadService, updateLead } from '../leadService';
 
 export interface LeadToDealConversionInput extends BaseConversionInput {
   leadId: string;
@@ -17,6 +16,7 @@ export interface LeadToDealConversionInput extends BaseConversionInput {
     currency?: string;
     expected_close_date?: string;
     deal_specific_probability?: number;
+    wfmProjectTypeId?: string;
   };
   personData?: {
     first_name?: string;
@@ -83,13 +83,11 @@ export async function convertLeadToDeal(
       try {
         // Check if person already exists by email
         if (lead.contact_email) {
-          const existingPersons = await personService.getPersons({
-            search: lead.contact_email,
-            limit: 1
-          }, userId, accessToken);
+          const existingPersons = await personService.getPeople(userId, accessToken);
+          const personWithMatchingEmail = existingPersons.find(p => p.email === lead.contact_email);
           
-          if (existingPersons.length > 0) {
-            personId = existingPersons[0].id;
+          if (personWithMatchingEmail) {
+            personId = personWithMatchingEmail.id;
             console.log(`Found existing person: ${personId}`);
           }
         }
@@ -106,7 +104,7 @@ export async function convertLeadToDeal(
             customFields: []
           };
 
-          const createdPerson = await personService.createPerson(personData, userId, accessToken);
+          const createdPerson = await personService.createPerson(userId, personData, accessToken);
           personId = createdPerson.id;
           console.log(`Created new person: ${personId}`);
         }
@@ -120,13 +118,11 @@ export async function convertLeadToDeal(
     if (lead.company_name) {
       try {
         // Check if organization already exists by name
-        const existingOrgs = await organizationService.getOrganizations({
-          search: lead.company_name,
-          limit: 1
-        }, userId, accessToken);
+        const existingOrgs = await organizationService.getOrganizations(userId, accessToken);
+        const orgWithMatchingName = existingOrgs.find(org => org.name === lead.company_name);
 
-        if (existingOrgs.length > 0) {
-          organizationId = existingOrgs[0].id;
+        if (orgWithMatchingName) {
+          organizationId = orgWithMatchingName.id;
           console.log(`Found existing organization: ${organizationId}`);
         } else {
           // Create new organization
@@ -137,16 +133,16 @@ export async function convertLeadToDeal(
             customFields: []
           };
 
-          const createdOrg = await organizationService.createOrganization(orgData, userId, accessToken);
+          const createdOrg = await organizationService.createOrganization(userId, orgData, accessToken);
           organizationId = createdOrg.id;
           console.log(`Created new organization: ${organizationId}`);
         }
 
         // Link person to organization if both exist
         if (personId && organizationId) {
-          await personService.updatePerson(personId, {
+          await personService.updatePerson(userId, personId, {
             organization_id: organizationId
-          }, userId, accessToken);
+          }, accessToken);
           console.log(`Linked person ${personId} to organization ${organizationId}`);
         }
       } catch (error) {
@@ -155,15 +151,13 @@ export async function convertLeadToDeal(
       }
     }
 
-    // 3. WFM Transition Planning
-    const wfmTransitionPlan = await planWFMTransition({
-      sourceType: 'lead',
-      sourceEntity: lead,
-      targetType: 'deal',
-      targetWfmProjectTypeId: input.wfmProjectTypeId,
-      targetWfmStepId: input.targetWfmStepId,
-      supabase
-    });
+    // 3. Simplified WFM handling - just pass the project type ID
+    // The deal creation service will automatically create the WFM project and set the initial step
+    const wfmProjectTypeId = input.dealData?.wfmProjectTypeId || input.wfmProjectTypeId;
+    
+    if (!wfmProjectTypeId) {
+      throw new Error('wfmProjectTypeId is required for deal creation');
+    }
 
     // 4. Create Deal
     const dealData = {
@@ -174,23 +168,15 @@ export async function convertLeadToDeal(
       person_id: personId,
       organization_id: organizationId,
       deal_specific_probability: input.dealData?.deal_specific_probability,
-      wfmProjectTypeId: wfmTransitionPlan.targetProjectTypeId,
+      wfmProjectTypeId: wfmProjectTypeId,
       assignedToUserId: lead.assigned_to_user_id || userId,
       customFields: []
     };
 
-    const createdDeal = await dealService.createDeal(dealData, userId, accessToken);
+    const createdDeal = await dealService.createDeal(userId, dealData, accessToken);
     console.log(`Created deal: ${createdDeal.id}`);
 
-    // 5. Execute WFM Transition
-    const wfmResult = await executeWFMTransition({
-      ...wfmTransitionPlan,
-      targetEntityId: createdDeal.id,
-      userId,
-      supabase
-    });
-
-    // 6. Data Migration Phase
+    // 5. Data Migration Phase
     if (input.preserveActivities !== false) {
       // Transfer activities from lead to deal
       try {
@@ -219,32 +205,57 @@ export async function convertLeadToDeal(
       }
     }
 
-    // 7. Update Lead Status
-    await leadService.updateLead(input.leadId, {
+    // 6. Update Lead Status and WFM Status
+    await updateLead(userId, input.leadId, {
       converted_at: new Date().toISOString(),
       converted_to_deal_id: createdDeal.id,
       converted_to_person_id: personId,
       converted_to_organization_id: organizationId,
       converted_by_user_id: userId
-    }, userId, accessToken);
+    }, accessToken);
 
-    // Move lead to "Converted" WFM step if available
-    if (lead.wfm_project_id && wfmTransitionPlan.sourceConvertedStepId) {
-      try {
-        await leadService.updateLeadWFMProgress(
-          input.leadId,
-          wfmTransitionPlan.sourceConvertedStepId,
-          userId,
-          accessToken
-        );
-        console.log(`Moved lead to converted status`);
-      } catch (error) {
-        console.error('Error updating lead WFM status:', error);
-        // Non-blocking error
+    // Update Lead WFM Status to "Converted to Deal"
+    let leadStatusUpdated = false;
+    try {
+      // Get the "Converted to Deal" status ID
+      const { data: convertedStatus } = await supabase
+        .from('statuses')
+        .select('id')
+        .eq('name', 'Converted to Deal')
+        .single();
+
+      if (convertedStatus) {
+        // Get the workflow step for this status in the lead's workflow
+        const { data: workflowStep } = await supabase
+          .from('workflow_steps')
+          .select('id')
+          .eq('status_id', convertedStatus.id)
+          .single();
+
+        if (workflowStep) {
+          // Update the lead's WFM project to the "Converted to Deal" status
+          const { error: updateError } = await supabase
+            .from('wfm_projects')
+            .update({
+              current_step_id: workflowStep.id,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', lead.wfm_project_id);
+
+          if (!updateError) {
+            leadStatusUpdated = true;
+            console.log(`Updated lead WFM status to "Converted to Deal"`);
+          } else {
+            console.error('Error updating lead WFM status:', updateError);
+          }
+        }
       }
+    } catch (error) {
+      console.error('Error updating lead status to converted:', error);
+      // Continue - status update failure shouldn't block conversion
     }
 
-    // 8. Record Conversion History
+    // 7. Record Conversion History
     const conversionId = await recordConversionHistory({
       conversionType: ConversionType.LEAD_TO_DEAL,
       sourceEntityType: 'lead',
@@ -256,14 +267,15 @@ export async function convertLeadToDeal(
         personCreated: !!personId,
         organizationCreated: !!organizationId,
         activitiesTransferred: input.preserveActivities !== false,
-        wfmTransitionExecuted: wfmResult.success
+        leadStatusUpdated,
+        wfmTransitionExecuted: true // Deal creation handles WFM automatically
       },
-      wfmTransitionPlan,
+      wfmTransitionPlan: null, // Not using complex transition planning
       convertedByUserId: userId,
       supabase
     });
 
-    // 9. Create Conversion Activity
+    // 8. Create Conversion Activity
     if (input.createConversionActivity !== false) {
       try {
         await supabase
@@ -295,7 +307,7 @@ export async function convertLeadToDeal(
       personId,
       organizationId,
       wfmProjectId: createdDeal.wfm_project_id,
-      wfmTransitionPlan
+      wfmTransitionPlan: null // Not using complex transition planning
     };
 
   } catch (error) {

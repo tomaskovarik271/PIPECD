@@ -117,8 +117,8 @@ export const GET_CONVERSION_STATISTICS = gql`
 
 export const CONVERT_LEAD_TO_DEAL = gql`
   ${CONVERSION_RESULT_FIELDS}
-  mutation ConvertLeadToDeal($id: ID!, $input: ConvertLeadInput!) {
-    convertLeadToDeal(id: $id, input: $input) {
+  mutation ConvertLeadToDeal($id: ID!, $input: LeadConversionInput!) {
+    convertLead(id: $id, input: $input) {
       ...ConversionResultFields
     }
   }
@@ -176,15 +176,15 @@ export interface ValidateConversionInput {
 }
 
 export interface ConvertLeadInput {
+  targetType: 'DEAL';
   preserveActivities?: boolean;
   createConversionActivity?: boolean;
-  notes?: string;
   dealData: {
     name: string;
     amount?: number;
     currency?: string;
     expected_close_date?: string;
-    owner_id?: string;
+    wfmProjectTypeId: string;
   };
   personData?: {
     first_name: string;

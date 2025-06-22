@@ -33,6 +33,7 @@ import { useLeadTheme } from '../hooks/useLeadTheme';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
 import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
+import { ConvertLeadModal } from '../components/conversion/ConvertLeadModal';
 
 function LeadsPage() {
   const navigate = useNavigate();
@@ -70,6 +71,32 @@ function LeadsPage() {
 
   const [leadIdPendingConfirmation, setLeadIdPendingConfirmation] = useState<string | null>(null);
   const [activeDeletingLeadId, setActiveDeletingLeadId] = useState<string | null>(null);
+
+  // Conversion modal state
+  const [isConvertModalOpen, setIsConvertModalOpen] = useState(false);
+  const [leadToConvert, setLeadToConvert] = useState<Lead | null>(null);
+
+  const openConvertModal = (lead: Lead) => {
+    setLeadToConvert(lead);
+    setIsConvertModalOpen(true);
+  };
+
+  const closeConvertModal = () => {
+    setIsConvertModalOpen(false);
+    setLeadToConvert(null);
+  };
+
+  const handleConversionComplete = (result: any) => {
+    console.log('Conversion completed:', result);
+    toast({
+      title: 'Lead Converted Successfully',
+      description: 'The lead has been converted to a deal.',
+      status: 'success',
+      duration: 5000,
+      isClosable: true,
+    });
+    closeConvertModal();
+  };
 
   // Use optimized custom fields hook
   const { 
@@ -121,6 +148,7 @@ function LeadsPage() {
       setLeadIdPendingConfirmation(leadId);
       openConfirmDeleteModal();
     },
+    handleConvertClick: openConvertModal,
     userPermissions: userPermissions || [],
     currentUserId,
     activeDeletingLeadId,
@@ -294,6 +322,16 @@ function LeadsPage() {
             lead={leadToEdit}
           />
         )}
+        
+        {/* Conversion Modal */}
+        {leadToConvert && (
+          <ConvertLeadModal
+            isOpen={isConvertModalOpen}
+            onClose={closeConvertModal}
+            lead={leadToConvert}
+            onConversionComplete={handleConversionComplete}
+          />
+        )}
 
         {/* Delete Confirmation Dialog */}
         <ConfirmationDialog
@@ -399,6 +437,16 @@ function LeadsPage() {
           isOpen={isEditModalOpen}
           onClose={closeEditModal}
           lead={leadToEdit}
+        />
+      )}
+      
+      {/* Conversion Modal */}
+      {leadToConvert && (
+        <ConvertLeadModal
+          isOpen={isConvertModalOpen}
+          onClose={closeConvertModal}
+          lead={leadToConvert}
+          onConversionComplete={handleConversionComplete}
         />
       )}
 
