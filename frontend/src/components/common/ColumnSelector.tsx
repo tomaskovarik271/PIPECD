@@ -77,10 +77,9 @@ function ColumnSelector<T>({
 
   const handleReset = () => {
     setSelectedKeys(new Set(defaultVisibleColumnKeys));
-    // Intentionally not calling onApply here, user must explicitly apply reset
-    // Or, if direct reset is preferred: 
-    // onReset(); 
-    // onClose(); 
+    // Call the onReset callback to notify parent component
+    onReset();
+    onClose();
   };
 
   const filteredColumns = allAvailableColumns.filter(col => 

@@ -11,8 +11,7 @@ import {
   CardBody,
   Code,
   Divider,
-  useColorModeValue,
-  Tooltip
+  useColorModeValue
 } from '@chakra-ui/react';
 import { ChevronDownIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { FiSettings, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
