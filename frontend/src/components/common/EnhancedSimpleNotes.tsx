@@ -11,7 +11,6 @@ import {
   Spinner,
   Alert,
   AlertIcon,
-  MenuItem,
   Tooltip,
   useDisclosure,
   Modal,
@@ -21,9 +20,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
-  Input,
   Flex,
-  Avatar,
   Select,
   Textarea,
 } from '@chakra-ui/react';

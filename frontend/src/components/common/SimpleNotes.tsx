@@ -26,10 +26,7 @@ import {
   ModalBody,
   ModalFooter,
   ModalCloseButton,
-  Input,
   Flex,
-  Avatar,
-  Link,
 } from '@chakra-ui/react';
 import {
   FiPlus,

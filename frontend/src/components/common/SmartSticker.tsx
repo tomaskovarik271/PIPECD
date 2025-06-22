@@ -14,15 +14,12 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
-  useDisclosure,
 } from '@chakra-ui/react';
 import { 
   FiNavigation,
   FiMoreVertical,
   FiEdit3,
   FiTrash2,
-  FiCopy,
-  FiTag,
   FiUser,
   FiCalendar,
   FiAlertTriangle,
