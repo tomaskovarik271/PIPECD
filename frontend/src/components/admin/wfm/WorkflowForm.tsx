@@ -13,7 +13,7 @@ import {
   Switch,
   // FormHelperText,
 } from '@chakra-ui/react';
-import type { WfmWorkflow, CreateWfmWorkflowInput, UpdateWfmWorkflowInput } from '../../../generated/graphql/graphql';
+import type { WfmWorkflow } from '../../../generated/graphql/graphql';
 
 const workflowSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be 100 characters or less'),

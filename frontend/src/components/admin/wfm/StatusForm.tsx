@@ -1,7 +1,6 @@
 import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import {
-  Box,
   Button,
   FormControl,
   FormLabel,
@@ -13,7 +12,7 @@ import {
   Checkbox,
   // Consider a color picker component later if desired
 } from '@chakra-ui/react';
-import { CreateWfmStatusInput, UpdateWfmStatusInput, WfmStatus } from '../../../generated/graphql/graphql';
+import { CreateWfmStatusInput, WfmStatus } from '../../../generated/graphql/graphql';
 
 // The form can handle data for both creating and updating.
 // For updates, 'isArchived' might be included.

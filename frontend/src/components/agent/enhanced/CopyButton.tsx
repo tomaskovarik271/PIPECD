@@ -46,7 +46,7 @@ export const CopyButton: React.FC<CopyButtonProps> = ({
 
       // Reset the icon after 2 seconds
       setTimeout(() => setIsCopied(false), 2000);
-    } catch (error) {
+    } catch {
       toast({
         title: 'Copy failed',
         description: 'Unable to copy to clipboard',
