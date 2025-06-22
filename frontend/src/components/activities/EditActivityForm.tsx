@@ -13,8 +13,6 @@ import {
   useToast,
   Alert,
   AlertIcon,
-  RadioGroup,
-  Radio,
   HStack,
   Box,
   Spinner,
@@ -26,9 +24,9 @@ import {
     ActivityType, 
     Activity 
 } from '../../stores/useActivitiesStore';
-import { useDealsStore, Deal } from '../../stores/useDealsStore';
-import { usePeopleStore, Person } from '../../stores/usePeopleStore';
-import { useOrganizationsStore, Organization } from '../../stores/useOrganizationsStore';
+import { useDealsStore } from '../../stores/useDealsStore';
+import { usePeopleStore } from '../../stores/usePeopleStore';
+import { useOrganizationsStore } from '../../stores/useOrganizationsStore';
 import { useUserListStore } from '../../stores/useUserListStore';
 
 // Define Activity Types matching GraphQL Enum

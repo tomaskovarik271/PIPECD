@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -15,8 +15,6 @@ import {
   Input,
   Textarea,
   VStack,
-  HStack,
-  Switch,
 } from '@chakra-ui/react';
 import { useWFMStatusStore } from '../../../stores/useWFMStatusStore';
 import { CreateWfmStatusInput } from '../../../generated/graphql/graphql';
