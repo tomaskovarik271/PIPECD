@@ -17,11 +17,11 @@ import {
   Flex
 } from '@chakra-ui/react';
 import { ChevronRightIcon, TimeIcon } from '@chakra-ui/icons';
-import { FiMessageSquare, FiClock, FiTrash2 } from 'react-icons/fi';
+import { FiMessageSquare, FiClock } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import { useAgentV2 } from '../../../hooks/useAgentV2';
-import type { AgentV2Message, AgentV2Conversation } from '../../../lib/graphql/agentV2Operations';
+import type { AgentV2Conversation } from '../../../lib/graphql/agentV2Operations';
 import ToolExecutionPanel from './ToolExecutionPanel';
 
 export function AIAgentChatV2() {

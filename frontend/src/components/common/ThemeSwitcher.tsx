@@ -1,7 +1,7 @@
 import React from 'react';
 import { useThemeStore, ThemeMode } from '../../stores/useThemeStore';
 import { IconButton, useColorMode, Menu, MenuButton, MenuList, MenuItem, Text } from '@chakra-ui/react';
-import { SunIcon, MoonIcon, ChevronDownIcon, StarIcon } from '@chakra-ui/icons';
+import { SunIcon, MoonIcon, ChevronDownIcon } from '@chakra-ui/icons';
 import { availableThemes } from '../../theme'; // Import availableThemes
 
 const ThemeSwitcher: React.FC = () => {
