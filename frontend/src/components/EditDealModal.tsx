@@ -26,7 +26,7 @@ import {
 import { usePeopleStore } from '../stores/usePeopleStore';
 import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { useOrganizationsStore } from '../stores/useOrganizationsStore';
-import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
+
 import { useUserAssignment } from '../hooks/useUserAssignment';
 import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
 import { CustomFieldRenderer } from './common/CustomFieldRenderer';
@@ -35,7 +35,6 @@ import {
   processCustomFieldsForSubmission 
 } from '../lib/utils/customFieldProcessing';
 import type { 
-  CustomFieldDefinition, 
   DealUpdateInput,
   CustomFieldEntityType
 } from '../generated/graphql/graphql';
@@ -71,7 +70,6 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   
   // Use optimized custom fields hook
   const { 
-    definitions, 
     loading: customFieldsLoading, 
     error: customFieldsError,
     getDefinitionsForEntity 
