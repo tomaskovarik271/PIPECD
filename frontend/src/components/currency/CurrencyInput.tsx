@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   HStack,
-  VStack,
   Input,
   Select,
   FormControl,

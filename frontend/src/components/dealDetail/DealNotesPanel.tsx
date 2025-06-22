@@ -15,7 +15,6 @@ import {
 import { FiEdit3, FiGrid, FiInfo } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useThemeStore } from '../../stores/useThemeStore';
-import { SimpleNotes } from '../common/SimpleNotes';
 import { EnhancedSimpleNotes } from '../common/EnhancedSimpleNotes';
 import { StickerBoard } from '../common/StickerBoard';
 
@@ -37,18 +36,6 @@ export const DealNotesPanel: React.FC<DealNotesPanelProps> = ({
   
   const colors = useThemeColors();
   const currentThemeName = useThemeStore((state) => state.currentTheme);
-  
-  // Helper function for theme-specific accent colors
-  const getAccentColor = () => {
-    switch (currentThemeName) {
-      case 'industrialMetal':
-        return 'rgba(255, 170, 0, 0.6)'; // Hazard yellow for industrial only
-      case 'lightModern':
-        return '#6366f1'; // Indigo for light modern
-      default:
-        return '#667eea'; // Blue for modern dark
-    }
-  };
 
   const handleTabChange = (index: number) => {
     setActiveTab(index);

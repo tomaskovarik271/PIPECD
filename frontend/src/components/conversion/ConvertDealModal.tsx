@@ -32,7 +32,7 @@ import {
   useDisclosure,
   Select
 } from '@chakra-ui/react';
-import { FiArrowLeft, FiUser, FiHome, FiTrendingDown, FiAlertTriangle, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiArrowLeft, FiUser, FiHome, FiTrendingDown, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { gql, useMutation } from '@apollo/client';
 

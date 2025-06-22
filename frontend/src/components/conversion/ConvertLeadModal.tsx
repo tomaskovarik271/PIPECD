@@ -31,7 +31,7 @@ import {
   Collapse,
   useDisclosure
 } from '@chakra-ui/react';
-import { FiArrowRight, FiUser, FiHome, FiTrendingUp, FiAlertTriangle, FiCheckCircle } from 'react-icons/fi';
+import { FiArrowRight, FiUser, FiHome, FiTrendingUp, FiCheckCircle } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useMutation, useApolloClient } from '@apollo/client';
 import { gql } from '@apollo/client';
