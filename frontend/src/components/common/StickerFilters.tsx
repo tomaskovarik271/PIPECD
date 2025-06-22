@@ -78,7 +78,6 @@ export const StickerFilters: React.FC<StickerFiltersProps> = ({
   categories = [],
 }) => {
   const colors = useThemeColors();
-  const styles = useThemeStyles();
   
   const { isOpen: isCategoriesOpen, onToggle: toggleCategories } = useDisclosure({ defaultIsOpen: true });
   const { isOpen: isStatusOpen, onToggle: toggleStatus } = useDisclosure({ defaultIsOpen: true });
