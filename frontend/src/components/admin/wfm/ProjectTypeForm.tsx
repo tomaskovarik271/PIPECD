@@ -16,7 +16,7 @@ import {
   Spinner,
   Text,
 } from '@chakra-ui/react';
-import type { WfmProjectType, WfmWorkflow, CreateWfmProjectTypeInput, UpdateWfmProjectTypeInput } from '../../../generated/graphql/graphql';
+import type { WfmProjectType, UpdateWfmProjectTypeInput } from '../../../generated/graphql/graphql';
 import { useWFMProjectTypeStore } from '../../../stores/useWFMProjectTypeStore'; // To fetch available workflows
 
 const projectTypeSchema = z.object({
