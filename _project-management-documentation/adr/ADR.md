@@ -6,9 +6,9 @@
 
 This document outlines the architectural decisions for building a custom Customer Relationship Management (CRM) system intended to replace Pipedrive. The system aims to be scalable, maintainable, secure, and ready for future expansion into adjacent business domains (e.g., Accounting, Logistics), aligning with Domain-Driven Design (DDD) principles. 
 
-**🚀 CURRENT STATUS: PRODUCTION-READY CRM WITH AI V2 ENHANCEMENTS & ENTERPRISE STABILITY**
+**🚀 CURRENT STATUS: PRODUCTION-READY ENTERPRISE CRM WITH REVOLUTIONARY AI & ACCOUNT MANAGEMENT**
 
-The system has achieved **full production readiness** with revolutionary AI V2 capabilities featuring critical architecture fixes, comprehensive lead management, enterprise notification infrastructure, complete Gmail integration with email management features, and event-driven automation. This ADR reflects the current implemented state with latest V2 improvements and proven architectural decisions.
+The system has achieved **full production readiness** with revolutionary AI V2 capabilities featuring critical architecture fixes, comprehensive lead management, enterprise notification infrastructure, complete Gmail integration with email management features, event-driven automation, **ACCOUNT MANAGEMENT SYSTEM**, **ORGANIZATION DETAIL PAGE REDESIGN**, **BI-DIRECTIONAL LEAD-DEAL CONVERSION**, **INTELLIGENT DUPLICATE DETECTION**, and **ENHANCED EMAIL-TO-TASK WITH CLAUDE 3 HAIKU**. This ADR reflects the current implemented state with latest enterprise enhancements and proven architectural decisions.
 
 ## 2. Goal
 
@@ -170,21 +170,28 @@ sequenceDiagram
 |  19 | **Document Management**                 | Files, proposals, e-signature, attachment storage.   | ✅ **PRODUCTION** (Google Drive + Note Attachments) | ✅ **IMPLEMENTED** - Google Drive document management with categorization, deal-centric folders, and complete note attachment system with dual attachment capabilities |
 |  20 | **Reporting & Insights**                | Dashboards, metrics, goals, forecasts.               | ⬜ **FUTURE** (Analytics expansion)          | ⬜ **PLANNED** - AI Agent provides foundation for intelligent reporting |
 |  21 | **Multi-Currency System**               | **🆕 INTERNATIONAL** Complete currency support with 42 currencies, exchange rates, intelligent display modes | ✅ **PRODUCTION** (Complete international support) | ✅ **BREAKTHROUGH** - 42 world currencies, high-precision conversion, user preferences, mixed/converted display modes, entity integration |
-|  22 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ **FUTURE** (Integration expansion)        | ⬜ **PLANNED** - GraphQL API ready for external integrations |
+|  22 | **Account Management System**           | **🆕 ENTERPRISE** Portfolio management, account manager assignments, pipeline tracking, activity monitoring | ✅ **PRODUCTION** (Complete account management) | ✅ **BREAKTHROUGH** - My Accounts dashboard, bulk assignment, portfolio analytics, activity indicators, RBAC integration |
+|  23 | **Bi-Directional Lead-Deal Conversion** | **🆕 REVOLUTIONARY** Seamless lead ↔ deal transformations with complete data preservation and audit trails | ✅ **PRODUCTION** (Complete conversion system) | ✅ **BREAKTHROUGH** - Forward/backward conversion, history tracking, bulk operations, validation engine, WFM integration |
+|  24 | **Intelligent Duplicate Detection**     | **🆕 PRODUCTION** Real-time similarity detection across all entities with AI integration and user confirmation | ✅ **PRODUCTION** (Complete duplicate prevention) | ✅ **BREAKTHROUGH** - Multi-algorithm approach, AI tool integration, similarity scoring, batch processing, user choice workflows |
+|  25 | **Integration Gateway**                 | Third-party connectors, webhooks, API management.    | ⬜ **FUTURE** (Integration expansion)        | ⬜ **PLANNED** - GraphQL API ready for external integrations |
 
 *Legend: ✅ Production Ready & Operational · 🟡 In Development · ⬜ Future Planned*
 
 **🎯 PRODUCTION ACHIEVEMENT SUMMARY:**
-- **13 of 21 modules** fully implemented and operational in production
+- **16 of 24 modules** fully implemented and operational in production
 - **Core CRM functionality** complete with AI-powered enhancements
-- **Enterprise Notification Infrastructure** with multi-channel delivery and user preference management
+- **Enterprise Account Management** with portfolio dashboards, manager assignments, and analytics
+- **Bi-Directional Conversion System** enabling seamless lead ↔ deal transformations
+- **Intelligent Duplicate Detection** with real-time similarity scoring and AI integration
+- **Enhanced Email-to-Task** with Claude 3 Haiku AI and user confirmation workflows
+- **Enterprise Notification Infrastructure** with multi-channel delivery and user preference management  
 - **Revolutionary Visual Collaboration** with Smart Stickers dual-mode interface
 - **Revolutionary Relationship Intelligence** with D3.js network visualization
 - **Document Attachment to Notes** with full Google Drive browser integration and dual attachment system
 - **Multi-Currency System** with 42 world currencies, intelligent display modes, and high-precision conversion
 - **Event-driven automation** successfully handling background workflows
 - **Security and performance** validated in production environment
-- **Extensible architecture** proven through successful AI Agent, Leads, Smart Stickers, Relationship Intelligence, Activity Reminders, and Document Attachment additions
+- **Extensible architecture** proven through successful AI Agent, Leads, Account Management, Conversion System, Duplicate Detection, Smart Stickers, Relationship Intelligence, Activity Reminders, and Document Attachment additions
 
 ## 5. Key Technology Choices & Rationale (PRODUCTION VALIDATED)
 
