@@ -29,7 +29,7 @@ import {
   Collapse,
   Flex,
 } from '@chakra-ui/react';
-import { SettingsIcon, TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon, ChevronLeftIcon, ChevronRightIcon } from '@chakra-ui/icons';
+import { TimeIcon, DeleteIcon, ChevronDownIcon, ChevronUpIcon, ChevronRightIcon } from '@chakra-ui/icons';
 import { FiSend, FiUser, FiCpu, FiActivity, FiMessageSquare, FiClock, FiTool, FiEye, FiZap, FiTarget } from 'react-icons/fi';
 
 import { useNavigate } from 'react-router-dom';
@@ -289,15 +289,13 @@ export const AIAgentChat: React.FC = () => {
   const navigate = useNavigate();
   
   // Modal for conversation history (keeping for potential future use)
-  const { isOpen: isHistoryOpen, onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
+  const { onOpen: onHistoryOpen, onClose: onHistoryClose } = useDisclosure();
   
   // UI theme
   const bgColor = useColorModeValue('gray.50', 'gray.900');
   const cardBg = useColorModeValue('white', 'gray.800');
   const userMessageBg = useColorModeValue('blue.500', 'blue.600');
   const assistantMessageBg = useColorModeValue('gray.100', 'gray.700');
-  const reasoningBg = useColorModeValue('gray.50', 'gray.700');
-  const reasoningColor = useColorModeValue('gray.800', 'gray.200');
   
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
