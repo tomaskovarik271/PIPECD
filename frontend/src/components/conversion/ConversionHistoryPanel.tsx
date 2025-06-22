@@ -13,13 +13,11 @@ import {
   Alert,
   AlertIcon,
   Divider,
-  Tooltip,
   Link
 } from '@chakra-ui/react';
 import {
   FiArrowRight,
   FiArrowLeft,
-  FiClock,
   FiUser,
   FiChevronDown,
   FiChevronRight,
@@ -161,16 +159,7 @@ export function ConversionHistoryPanel({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+
 
   const getConversionIcon = (sourceType: string, targetType: string) => {
     if (sourceType === 'lead' && targetType === 'deal') {
@@ -293,7 +282,13 @@ function ConversionEventCard({ conversion, colors }: ConversionEventCardProps) {
               {conversionLabel}
             </Badge>
             <Text fontSize="sm" color={colors.text.muted}>
-              {formatDate(conversion.createdAt)}
+              {new Date(conversion.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
             </Text>
           </HStack>
           
