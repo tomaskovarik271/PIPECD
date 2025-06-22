@@ -19,7 +19,6 @@ import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 import {
   CustomFieldDefinitionInput,
   CustomFieldEntityType,
-  CustomFieldType,
   CustomFieldOptionInput,
 } from '../../../generated/graphql/graphql';
 

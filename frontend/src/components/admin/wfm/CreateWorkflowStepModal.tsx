@@ -120,10 +120,9 @@ const CreateWorkflowStepModal: React.FC<CreateWorkflowStepModalProps> = ({ isOpe
         // Error message is set in the store, WFMWorkflowsPage will toast it.
         // toast({ title: 'Failed to create step', description: useWFMWorkflowStore.getState().error || 'An unknown error occurred', status: 'error', duration: 5000 });
       }
-    } catch (e: any) {
+    } catch {
       // This catch is if the store action itself throws before setting the store error.
       // Typically, the store action handles setting its own error state.
-      // toast({ title: 'Submission Error', description: e.message || 'Failed to submit form.', status: 'error', duration: 5000 });
       // Error is already set in the store and toasted by WFMWorkflowsPage
     }
   };
@@ -149,7 +148,6 @@ const CreateWorkflowStepModal: React.FC<CreateWorkflowStepModalProps> = ({ isOpe
                     onBlur={field.onBlur}
                     name={field.name}
                     ref={field.ref}
-                    isLoading={statusesLoading}
                   >
                     {availableStatuses.map((status: WfmStatus) => (
                       <option key={status.id} value={status.id}>

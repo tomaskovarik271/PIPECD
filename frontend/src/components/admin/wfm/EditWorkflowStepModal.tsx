@@ -22,7 +22,7 @@ interface EditWorkflowStepModalProps {
 const EditWorkflowStepModal: React.FC<EditWorkflowStepModalProps> = ({
   isOpen,
   onClose,
-  workflowId,
+  workflowId: _workflowId,
   step,
 }) => {
   const toast = useToast();

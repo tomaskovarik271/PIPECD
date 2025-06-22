@@ -2,7 +2,6 @@ import React, { Component, ReactNode } from 'react';
 import {
   Box,
   Heading,
-  Text,
   Button,
   VStack,
   Alert,
