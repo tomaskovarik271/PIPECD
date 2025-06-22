@@ -16,7 +16,7 @@ import {
   Spinner,
   Text,
 } from '@chakra-ui/react';
-import type { WfmProjectType, UpdateWfmProjectTypeInput } from '../../../generated/graphql/graphql';
+import type { WfmProjectType } from '../../../generated/graphql/graphql';
 import { useWFMProjectTypeStore } from '../../../stores/useWFMProjectTypeStore'; // To fetch available workflows
 
 const projectTypeSchema = z.object({
@@ -51,7 +51,6 @@ const ProjectTypeForm: React.FC<ProjectTypeFormProps> = ({ onSubmit, onCancel, i
     control,
     handleSubmit,
     formState: { errors, isDirty },
-    watch,
   } = useForm<ProjectTypeFormData>({
     resolver: zodResolver(projectTypeSchema),
     defaultValues: {
@@ -62,8 +61,6 @@ const ProjectTypeForm: React.FC<ProjectTypeFormProps> = ({ onSubmit, onCancel, i
       isArchived: initialData?.isArchived || false,
     },
   });
-
-  const watchedWorkflowId = watch('defaultWorkflowId');
 
   const handleFormSubmit = async (data: ProjectTypeFormData) => {
     const submissionData = {

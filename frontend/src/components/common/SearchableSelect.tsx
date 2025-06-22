@@ -12,7 +12,6 @@ import {
   HStack,
   Icon,
   Flex,
-  useColorModeValue,
 } from '@chakra-ui/react';
 import { FiChevronDown, FiPlus, FiSearch } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
