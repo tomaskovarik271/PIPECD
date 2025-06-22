@@ -22,10 +22,7 @@ import {
   useToast,
   Text,
   Box,
-  HStack,
-  Divider,
 } from '@chakra-ui/react';
-import { FiPlus } from 'react-icons/fi';
 import { usePeopleStore } from '../stores/usePeopleStore';
 import { useDealsStore, DealInput } from '../stores/useDealsStore';
 import { useWFMProjectTypeStore, WfmProjectType } from '../stores/useWFMProjectTypeStore';
@@ -42,7 +39,6 @@ import { DealAmountInput } from './currency/CurrencyInput';
 import InlineOrganizationForm from './common/InlineOrganizationForm';
 import InlinePersonForm from './common/InlinePersonForm';
 import SearchableSelect, { SearchableSelectOption } from './common/SearchableSelect';
-import { useThemeColors } from '../hooks/useThemeColors';
 
 interface CreateDealModalProps {
   isOpen: boolean;
@@ -54,8 +50,6 @@ interface CreateDealModalProps {
 const DEFAULT_SALES_PROJECT_TYPE_NAME = "Sales Deal";
 
 function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProps) {
-  const colors = useThemeColors();
-  
   // Form state
   const [name, setName] = useState('');
   const [selectedWFMProjectTypeId, setSelectedWFMProjectTypeId] = useState<string>('');

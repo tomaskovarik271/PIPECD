@@ -45,7 +45,7 @@ interface CreateLeadModalProps {
 }
 
 // Smart suggestion interfaces (using the service types)
-interface PersonSuggestion extends SimilarPersonResult {}
+type PersonSuggestion = SimilarPersonResult;
 interface OrganizationSuggestion extends SimilarOrganizationResult {
   address?: string;
 }

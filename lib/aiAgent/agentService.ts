@@ -537,7 +537,7 @@ export class AgentService {
     const maxIterations = 5; // Prevent infinite loops
 
     // Build an updated conversation history that includes tool results from this workflow
-    let updatedConversationHistory = [...conversationHistory];
+    const updatedConversationHistory = [...conversationHistory];
 
     while (remainingTools.length > 0 && iterationCount < maxIterations) {
       iterationCount++;

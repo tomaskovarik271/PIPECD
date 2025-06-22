@@ -595,7 +595,7 @@ class GoogleDriveService {
   ): Promise<DriveFile[]> {
     const drive = await this.getDriveClient(userId, accessToken);
     
-    let q = `name contains '${searchQuery}' and trashed = false`;
+    const q = `name contains '${searchQuery}' and trashed = false`;
     
     const searchParams: any = {
       q,
