@@ -20,7 +20,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useWFMWorkflowStore } from '../../../stores/useWFMWorkflowStore';
-import { WfmWorkflowStep, CreateWfmWorkflowTransitionInput } from '../../../generated/graphql/graphql';
+import { WfmWorkflowStep } from '../../../generated/graphql/graphql';
 
 // Zod schema for validation
 const transitionSchema = z.object({
