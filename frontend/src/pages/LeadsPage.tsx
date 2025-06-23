@@ -86,7 +86,7 @@ function LeadsPage() {
     setLeadToConvert(null);
   };
 
-  const handleConversionComplete = (result: any) => {
+  const handleConversionComplete = (result: unknown) => {
     console.log('Conversion completed:', result);
     toast({
       title: 'Lead Converted Successfully',
