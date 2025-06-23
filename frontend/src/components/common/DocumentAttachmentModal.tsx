@@ -95,6 +95,26 @@ interface DriveFolder {
   modifiedTime: string;
 }
 
+interface SharedDrivesResponse {
+  getSharedDrives: SharedDrive[];
+}
+
+interface SharedDriveFilesResponse {
+  getSharedDriveFiles: DriveFile[];
+}
+
+interface SharedDriveFoldersResponse {
+  getSharedDriveFolders: DriveFolder[];
+}
+
+interface SearchFilesResponse {
+  searchSharedDriveFiles: DriveFile[];
+}
+
+interface RecentFilesResponse {
+  getRecentSharedDriveFiles: DriveFile[];
+}
+
 interface DocumentAttachmentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -346,7 +366,7 @@ const DocumentBrowserForSelection: React.FC<DocumentBrowserForSelectionProps> = 
 
   const loadSharedDrives = async () => {
     try {
-      const response = await gqlClient.request(GET_SHARED_DRIVES);
+      const response = await gqlClient.request<SharedDrivesResponse>(GET_SHARED_DRIVES);
       setSharedDrives(response.getSharedDrives);
       
       // Auto-select first drive if available
@@ -371,11 +391,11 @@ const DocumentBrowserForSelection: React.FC<DocumentBrowserForSelectionProps> = 
     setLoading(true);
     try {
       const [filesResponse, foldersResponse] = await Promise.all([
-        gqlClient.request(GET_SHARED_DRIVE_FILES, {
+        gqlClient.request<SharedDriveFilesResponse>(GET_SHARED_DRIVE_FILES, {
           sharedDriveId: selectedDrive.id,
           folderId: currentFolderId,
         }),
-        gqlClient.request(GET_SHARED_DRIVE_FOLDERS, {
+        gqlClient.request<SharedDriveFoldersResponse>(GET_SHARED_DRIVE_FOLDERS, {
           sharedDriveId: selectedDrive.id,
           parentFolderId: currentFolderId,
         }),
@@ -399,7 +419,7 @@ const DocumentBrowserForSelection: React.FC<DocumentBrowserForSelectionProps> = 
 
   const loadRecentFiles = async () => {
     try {
-      const response = await gqlClient.request(GET_RECENT_SHARED_DRIVE_FILES, { limit: 20 });
+      const response = await gqlClient.request<RecentFilesResponse>(GET_RECENT_SHARED_DRIVE_FILES, { limit: 20 });
       setRecentFiles(response.getRecentSharedDriveFiles);
     } catch (error) {
       console.error('Error loading recent files:', error);
@@ -411,7 +431,7 @@ const DocumentBrowserForSelection: React.FC<DocumentBrowserForSelectionProps> = 
     
     setLoading(true);
     try {
-      const response = await gqlClient.request(SEARCH_SHARED_DRIVE_FILES, {
+      const response = await gqlClient.request<SearchFilesResponse>(SEARCH_SHARED_DRIVE_FILES, {
         query: searchQuery,
         sharedDriveId: selectedDrive?.id,
       });
