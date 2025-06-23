@@ -4,7 +4,6 @@ import {
   Flex,
   Heading,
   HStack,
-  VStack,
   InputGroup,
   InputLeftElement,
   Input,
@@ -15,8 +14,8 @@ import {
   StatNumber,
   StatGroup,
 } from '@chakra-ui/react';
-import { SearchIcon, ViewIcon, HamburgerIcon, CalendarIcon } from '@chakra-ui/icons';
-import { TbLayoutGrid, TbLayoutColumns } from 'react-icons/tb';
+import { SearchIcon, HamburgerIcon, CalendarIcon } from '@chakra-ui/icons';
+import { TbLayoutGrid } from 'react-icons/tb';
 import { useAppStore } from '../../stores/useAppStore';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { NotificationCenter } from '../common/NotificationCenter';

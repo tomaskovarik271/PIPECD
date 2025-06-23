@@ -1,4 +1,4 @@
-import { VStack, Link as ChakraLink, Text, Box, Button, Flex, useStyleConfig, SystemStyleObject, Image, useColorModeValue, IconButton, Tooltip } from '@chakra-ui/react';
+import { VStack, Text, Box, Button, Flex, Image, IconButton, Tooltip } from '@chakra-ui/react';
 import { NavLink as RouterNavLink } from 'react-router-dom';
 import { useAppStore } from '../../stores/useAppStore';
 import ThemeSwitcher from '../common/ThemeSwitcher';
@@ -8,7 +8,6 @@ import {
   AtSignIcon,        // Organizations (Placeholder)
   CheckCircleIcon,   // Deals (Represents closing deal?)
   CalendarIcon,      // Activities (Represents scheduling?)
-  ArrowRightIcon,    // Pipelines (Represents flow?)
   StarIcon, // Added for Leads
   // StarIcon, // Placeholder for People
   // LockIcon, // Placeholder for Organizations

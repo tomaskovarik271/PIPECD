@@ -56,7 +56,7 @@ const LeadsKanbanPageLayout: React.FC<LeadsKanbanPageLayoutProps> = ({
   searchTerm,
   onSearchChange,
   kanbanCompactMode,
-  setKanbanCompactMode,
+  setKanbanCompactMode: _setKanbanCompactMode,
 }) => {
   const colors = useThemeColors();
   const leadTheme = useLeadTheme();
