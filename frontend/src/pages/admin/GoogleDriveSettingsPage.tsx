@@ -96,7 +96,7 @@ const GoogleDriveSettingsPage: React.FC = () => {
         folderName: 'PipeCD Deals', // Mock folder name
       };
       setFolderValidation(mockValidation);
-    } catch (error) {
+    } catch (_error) {
       setFolderValidation({
         isValid: false,
         error: 'Unable to access folder. Please check the folder ID and permissions.',
