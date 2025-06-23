@@ -32,7 +32,7 @@ import {
   FiNavigation,
   FiEyeOff,
 } from 'react-icons/fi';
-import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface StickerCategory {
   id: string;

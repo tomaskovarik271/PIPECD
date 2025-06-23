@@ -161,35 +161,7 @@ export function ConversionHistoryPanel({
 
 
 
-  const getConversionIcon = (sourceType: string, targetType: string) => {
-    if (sourceType === 'lead' && targetType === 'deal') {
-      return FiArrowRight;
-    }
-    if (sourceType === 'deal' && targetType === 'lead') {
-      return FiArrowLeft;
-    }
-    return FiRefreshCw;
-  };
 
-  const getConversionBadgeColor = (sourceType: string, targetType: string) => {
-    if (sourceType === 'lead' && targetType === 'deal') {
-      return 'green';
-    }
-    if (sourceType === 'deal' && targetType === 'lead') {
-      return 'orange';
-    }
-    return 'blue';
-  };
-
-  const getConversionLabel = (sourceType: string, targetType: string) => {
-    if (sourceType === 'lead' && targetType === 'deal') {
-      return 'Lead → Deal';
-    }
-    if (sourceType === 'deal' && targetType === 'lead') {
-      return 'Deal → Lead';
-    }
-    return 'Conversion';
-  };
 
   if (isLoading) {
     return (

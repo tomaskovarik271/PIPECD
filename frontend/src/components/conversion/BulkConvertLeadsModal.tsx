@@ -17,7 +17,6 @@ import {
   Text,
   Badge,
   useToast,
-  Spinner,
   Icon,
   Progress,
   Table,
@@ -31,7 +30,6 @@ import {
   Textarea
 } from '@chakra-ui/react';
 import { 
-  FiTrendingUp, 
   FiCheckCircle, 
   FiXCircle, 
   FiAlertTriangle,
@@ -98,7 +96,7 @@ export function BulkConvertLeadsModal({
 }: BulkConvertLeadsModalProps) {
   const colors = useThemeColors();
   const toast = useToast();
-  const { bulkConvertLeads, isConverting } = useConversions();
+  const { bulkConvertLeads } = useConversions();
 
   // Form state
   const [leadConfigs, setLeadConfigs] = useState<LeadConversionConfig[]>([]);

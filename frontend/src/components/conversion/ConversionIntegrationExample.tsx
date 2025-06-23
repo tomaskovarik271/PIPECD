@@ -292,7 +292,7 @@ export function ConversionIntegrationExample() {
                 <VStack spacing={2} align="stretch">
                   {selectedLeads.map(lead => {
                     const canConvert = ConversionHelpers.canConvertLeadToDeal(lead);
-                    const recommendation = ConversionHelpers.getConversionRecommendation(lead, 'lead');
+                    ConversionHelpers.getConversionRecommendation(lead, 'lead');
                     
                     return (
                       <HStack 

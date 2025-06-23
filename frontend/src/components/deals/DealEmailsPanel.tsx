@@ -450,6 +450,10 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   const [selectedEmailForNote, setSelectedEmailForNote] = useState<any>(null);
   const [isCreateContactModalOpen, setIsCreateContactModalOpen] = useState(false);
   const [selectedEmailForContact, setSelectedEmailForContact] = useState<any>(null);
+  const [emailData, setEmailData] = useState<any>(null);
+  const [selectedContactsForFilter, setSelectedContactsForFilter] = useState<string[]>([]);
+  const [emailScopeFilter, setEmailScopeFilter] = useState<'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES'>('PRIMARY');
+  const [shouldShowContactFilter] = useState(false);
 
   // Update filter when primaryContactEmail changes
   useEffect(() => {

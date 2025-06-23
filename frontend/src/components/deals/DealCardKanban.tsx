@@ -11,8 +11,8 @@ import {
 } from '@chakra-ui/react';
 import { Deal } from '../../stores/useDealsStore';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { useNavigate } from 'react-router-dom';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { TimeIcon, ExternalLinkIcon, EditIcon, ViewIcon as EyeIcon } from '@chakra-ui/icons';
 import { differenceInDays, formatDistanceToNowStrict, isPast, format } from 'date-fns';
 import { useAppStore } from '../../stores/useAppStore';
@@ -63,7 +63,6 @@ const formatDealAmount = (deal: Deal, displayMode: 'mixed' | 'converted', baseCu
 
 const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index }) => {
   const colors = useThemeColors();
-  const styles = useThemeStyles();
   const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
   const navigate = useNavigate();
 
