@@ -87,7 +87,6 @@ function CreateActivityForm({ onClose, onSuccess, initialDealId, initialDealName
   });
 
   // State for the selected link type
-  const [_selectedLinkType, setSelectedLinkType] = useState<LinkType>(
   const [selectedLinkType, setSelectedLinkType] = useState<LinkType>(
     initialDealId ? 'deal' : initialOrganizationId ? 'organization' : 'none'
   );
