@@ -97,8 +97,8 @@ function PeoplePage() {
         ]);
         
         setPersonCustomFieldDefinitions(customFieldDefs);
-      } catch (error) {
-        console.error('Error loading people page data:', error);
+      } catch (_error) {
+        console.error('Error loading people page data:', _error);
         setPersonCustomFieldDefinitions([]);
       } finally {
         setCustomFieldsLoading(false);

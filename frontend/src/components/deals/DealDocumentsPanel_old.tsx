@@ -381,7 +381,7 @@ const DealDocumentsPanel: React.FC<DealDocumentsPanelProps> = ({ dealId, dealNam
       setAvailableFolders([]);
       onCreateFolderClose();
       checkDealFolder();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error creating folder',
         description: 'Failed to create deal folder in Google Drive',
@@ -391,6 +391,8 @@ const DealDocumentsPanel: React.FC<DealDocumentsPanelProps> = ({ dealId, dealNam
       });
     } finally {
       setFolderCreationLoading(false);
+      onAttachModalClose();
+      loadDealDocuments();
     }
   };
 
@@ -419,7 +421,7 @@ const DealDocumentsPanel: React.FC<DealDocumentsPanelProps> = ({ dealId, dealNam
       setAttachNotes('');
       onAttachModalClose();
       loadDealDocuments();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error attaching file',
         description: 'Failed to attach file to deal',
@@ -445,7 +447,7 @@ const DealDocumentsPanel: React.FC<DealDocumentsPanelProps> = ({ dealId, dealNam
       });
       
       loadDealDocuments();
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Error removing document',
         description: 'Failed to remove document from deal',

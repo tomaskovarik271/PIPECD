@@ -241,7 +241,7 @@ const getKanbanCompactModeFromLocalStorage = (): boolean => {
   try {
     const isCompact = localStorage.getItem('leadsKanbanCompactMode');
     return isCompact === 'true';
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 };
