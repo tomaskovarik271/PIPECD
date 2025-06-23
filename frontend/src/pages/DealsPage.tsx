@@ -124,7 +124,7 @@ function DealsPage() {
     setDealToConvert(null);
   }, []);
 
-  const handleConversionComplete = useCallback((_result: any) => {
+  const handleConversionComplete = useCallback((_result: unknown) => {
     toast({
       title: 'Conversion Successful!',
       description: `Deal "${dealToConvert?.name}" has been converted to a lead.`,

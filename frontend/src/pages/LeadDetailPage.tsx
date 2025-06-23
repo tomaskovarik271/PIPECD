@@ -54,6 +54,15 @@ import { EntityType } from '../generated/graphql/graphql';
 import EditLeadModal from '../components/EditLeadModal';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 
+interface StickerCategory {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  isSystem: boolean;
+  displayOrder: number;
+}
+
 // GraphQL query for lead details
 const GET_LEAD_DETAILS_QUERY = gql`
   query GetLeadDetails($id: ID!) {
@@ -110,8 +119,6 @@ const formatDate = (dateString?: string | null) => {
   return new Date(dateString).toLocaleDateString();
 };
 
-
-
 const LeadDetailPage = () => {
   const { leadId } = useParams<{ leadId: string }>();
   const navigate = useNavigate();
@@ -123,7 +130,7 @@ const LeadDetailPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [stickerCategories, setStickerCategories] = useState<any[]>([]);
+  const [stickerCategories, setStickerCategories] = useState<StickerCategory[]>([]);
 
   // Inline editing states
   const [isEditingContactName, setIsEditingContactName] = useState(false);
@@ -183,7 +190,7 @@ const LeadDetailPage = () => {
   useEffect(() => {
     const fetchStickerCategories = async () => {
       try {
-        const response = await gqlClient.request<{ getStickerCategories: any[] }>(GET_STICKER_CATEGORIES_FOR_LEAD_QUERY);
+        const response = await gqlClient.request<{ getStickerCategories: StickerCategory[] }>(GET_STICKER_CATEGORIES_FOR_LEAD_QUERY);
         setStickerCategories(response.getStickerCategories || []);
       } catch (err) {
         console.error('Error fetching sticker categories:', err);

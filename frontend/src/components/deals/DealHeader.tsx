@@ -47,6 +47,18 @@ const GET_DEAL_WORKFLOW_STEPS = gql`
   }
 `;
 
+interface WorkflowStep {
+  id: string;
+  stepOrder: number;
+  isInitialStep: boolean;
+  isFinalStep: boolean;
+  status: {
+    id: string;
+    name: string;
+    color: string;
+  };
+}
+
 interface DealHeaderProps {
   deal: Deal;
   isEditing?: boolean;
@@ -63,7 +75,7 @@ interface DealHeaderProps {
 
 export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEditing, setIsEditing: _setIsEditing, onCreateActivity, dealActivities = [] }) => {
   const colors = useThemeColors();
-  const [workflowSteps, setWorkflowSteps] = useState<any[]>([]);
+  const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [isLoadingSteps, setIsLoadingSteps] = useState(false);
   
   // Fetch workflow steps when component mounts
@@ -82,7 +94,7 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEdit
         if (response.deal?.wfmProject?.workflow?.steps) {
           const steps = response.deal.wfmProject.workflow.steps;
           // Sort by stepOrder to ensure correct sequence
-          steps.sort((a: any, b: any) => a.stepOrder - b.stepOrder);
+          steps.sort((a: WorkflowStep, b: WorkflowStep) => a.stepOrder - b.stepOrder);
           setWorkflowSteps(steps);
         } else {
           setWorkflowSteps([]);

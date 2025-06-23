@@ -39,7 +39,7 @@ const ProfilePage: React.FC = () => {
     try {
       const response = await gqlClient.request<{ me: User | null }>(GET_ME_QUERY);
       setUser(response.me);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error fetching profile:', err);
       let errorMessage = 'Could not load your profile data.';
       if (isGraphQLErrorWithMessage(err)) {
