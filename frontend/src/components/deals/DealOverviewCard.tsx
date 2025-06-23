@@ -16,9 +16,15 @@ import { EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
 import { Deal } from '../../stores/useDealsStore';
 import { useAppStore } from '../../stores/useAppStore';
 
+interface DealUpdateFields {
+  amount?: number;
+  expected_close_date?: string | null;
+  assignedToUserId?: string | null;
+}
+
 interface DealOverviewCardProps {
   deal: Deal;
-  onUpdate: (dealId: string, updates: any) => Promise<void>;
+  onUpdate: (dealId: string, updates: DealUpdateFields) => Promise<void>;
   onRefresh: () => void;
   userList: Array<{ id: string; display_name?: string; email: string; avatar_url?: string }>;
   effectiveProbabilityDisplay: {
