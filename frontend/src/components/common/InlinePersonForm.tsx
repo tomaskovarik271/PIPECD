@@ -20,10 +20,16 @@ import { usePeopleStore } from '../../stores/usePeopleStore';
 import { useOrganizationsStore } from '../../stores/useOrganizationsStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useDebounce } from '../../lib/utils/useDebounce';
-import { duplicateDetectionService, type SimilarOrganizationResult } from '../../lib/services/duplicateDetectionService';
+import { duplicateDetectionService } from '../../lib/services/duplicateDetectionService';
+import type { Person, Organization } from '../../generated/graphql/graphql';
+
+interface SimilarOrganizationResult {
+  id: string;
+  suggestion: string;
+}
 
 interface InlinePersonFormProps {
-  onCreated: (person: any) => void;
+  onCreated: (person: Person) => void;
   onCancel: () => void;
   prefilledOrganizationId?: string;
 }
@@ -93,7 +99,7 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSelectSuggestedOrg = (organization: any) => {
+  const handleSelectSuggestedOrg = (organization: Organization) => {
     setFormData(prev => ({ ...prev, organization_id: organization.id }));
     setShowSuggestions(false);
   };
@@ -211,7 +217,7 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
                     variant="ghost"
                     size="xs"
                     leftIcon={<FiUser />}
-                    onClick={() => handleSelectSuggestedOrg(org)}
+                    onClick={() => handleSelectSuggestedOrg(org as Organization)}
                     color={colors.text.primary}
                   >
                     {org.suggestion}

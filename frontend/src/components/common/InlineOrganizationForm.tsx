@@ -24,11 +24,11 @@ import {
   initializeCustomFieldValues,
   processCustomFieldsForSubmission 
 } from '../../lib/utils/customFieldProcessing';
-import { CustomFieldEntityType } from '../../generated/graphql/graphql';
+import { CustomFieldEntityType, Organization } from '../../generated/graphql/graphql';
 import { duplicateDetectionService, type SimilarOrganizationResult } from '../../lib/services/duplicateDetectionService';
 
 interface InlineOrganizationFormProps {
-  onCreated: (organization: any) => void;
+  onCreated: (organization: Organization) => void;
   onCancel: () => void;
   onDuplicatesFound?: (duplicates: SimilarOrganizationResult[]) => void;
 }
@@ -112,7 +112,7 @@ const InlineOrganizationForm: React.FC<InlineOrganizationFormProps> = ({
     setCustomFieldFormValues(prev => ({ ...prev, [fieldName]: value }));
   };
 
-  const handleSelectExisting = (organization: any) => {
+  const handleSelectExisting = (organization: Organization) => {
     onCreated(organization);
   };
 

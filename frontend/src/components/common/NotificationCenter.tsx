@@ -96,7 +96,7 @@ interface NotificationData {
   entityType?: string;
   entityId?: string;
   actionUrl?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   priority: string;
   expiresAt?: string;
   createdAt: string;

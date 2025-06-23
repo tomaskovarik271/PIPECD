@@ -165,10 +165,12 @@ export const DocumentAttachmentModal: React.FC<DocumentAttachmentModalProps> = (
       }
       
       handleClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error attaching document:', error);
       
-      const errorMessage = error?.response?.errors?.[0]?.message || 'Failed to attach document';
+      const errorMessage = error instanceof Error && 'response' in error 
+        ? (error as any)?.response?.errors?.[0]?.message || 'Failed to attach document'
+        : 'Failed to attach document';
       toast({
         title: 'Attachment failed',
         description: errorMessage,
