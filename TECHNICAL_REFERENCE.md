@@ -11,7 +11,7 @@
 - **leads**: Prospect management with qualification scoring
 - **activities**: Task/event management with reminders
 
-### 1.2 Advanced Systems
+### 1.2 Systems
 - **WFM Tables**: wfm_workflows, wfm_statuses, wfm_steps, wfm_projects
 - **Custom Fields**: custom_field_definitions, custom_field_values
 - **Multi-Currency**: currencies, exchange_rates, user_currency_preferences
@@ -27,8 +27,8 @@
 - `personService.ts`: Contact management
 - `activityService.ts`: Task/event management
 
-### 2.2 Advanced Services
-- `aiAgentV2/`: Enhanced AI with Claude Sonnet 4
+### 2.2 Services
+- `aiAgentV2/`: AI with Claude Sonnet 4
 - `conversionService/`: Bi-directional lead-deal conversion
 - `activityReminderService/`: Multi-channel notifications
 - `services/currencyService.ts`: Currency management
@@ -42,7 +42,7 @@
 
 ### 3.1 Schema Files (26 total)
 - Core entities: deal.graphql, lead.graphql, organization.graphql, person.graphql
-- Advanced systems: conversion.graphql, currency.graphql, agentV2.graphql
+- Systems: conversion.graphql, currency.graphql, agentV2.graphql
 - Integrations: googleDrive.graphql, emails.graphql
 
 ### 3.2 Resolver Organization
@@ -144,13 +144,13 @@ export class ExampleTool implements ToolExecutor {
 - Bulk conversion operations
 - Complete audit trail
 
-### 9.3 Intelligent Duplicate Detection
+### 9.3 Duplicate Detection
 - Real-time similarity scoring
 - Multi-algorithm approach (Levenshtein, fuzzy matching)
 - User confirmation workflows
 - AI tool integration
 
-### 9.4 Enhanced Email-to-Task
+### 9.4 Email-to-Task
 - Claude 3 Haiku AI integration
 - Two-step confirmation process
 - Professional template system
@@ -169,8 +169,8 @@ export class ExampleTool implements ToolExecutor {
 - Backend services: 25+ modules
 - GraphQL operations: 500+ types and operations  
 - Frontend components: 100+ components
-- Database tables: 50+ with comprehensive migrations
-- AI tools: 30+ specialized tools
+- Database tables: 50+ with migrations
+- AI tools: 30+ tools
 
 ---
 
