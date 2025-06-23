@@ -122,12 +122,14 @@ const DealsKanbanView: React.FC<DealsKanbanViewProps> = ({ deals, isCompact = fa
         throw new Error('Update operation failed silently or did not return an updated deal.');
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       let displayMessage = 'Could not update deal WFM step.';
       // Check for GraphQL error structure from graphql-request client
-      if (error.response && error.response.errors && error.response.errors[0] && error.response.errors[0].message) {
-        displayMessage = error.response.errors[0].message;
-      } else if (error.message) {
+      if (error && typeof error === 'object' && 'response' in error && 
+          (error as any).response && (error as any).response.errors && 
+          (error as any).response.errors[0] && (error as any).response.errors[0].message) {
+        displayMessage = (error as any).response.errors[0].message;
+      } else if (error instanceof Error && error.message) {
         displayMessage = error.message;
       }
       // Log the full error for debugging, but show cleaner message to user

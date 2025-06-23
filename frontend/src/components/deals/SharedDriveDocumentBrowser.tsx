@@ -128,6 +128,14 @@ interface SharedDriveDocumentBrowserProps {
   onDocumentCountChange?: (count: number) => void;
 }
 
+interface GraphQLResponse<T> {
+  [key: string]: T;
+}
+
+interface DealDocumentAttachmentsResponse {
+  getDealDocumentAttachments: DealDocumentAttachment[];
+}
+
 const DOCUMENT_CATEGORIES = [
   { value: 'proposal', label: 'Proposal', color: 'blue' },
   { value: 'contract', label: 'Contract', color: 'green' },
@@ -244,7 +252,7 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
 
   const loadDealAttachments = async () => {
     try {
-      const response: any = await gqlClient.request(GET_DEAL_DOCUMENT_ATTACHMENTS, { dealId });
+      const response: GraphQLResponse<DealDocumentAttachment[]> = await gqlClient.request(GET_DEAL_DOCUMENT_ATTACHMENTS, { dealId });
       const attachments = response.getDealDocumentAttachments;
       setAttachments(attachments);
       // Notify parent component of document count
@@ -332,10 +340,19 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
       
       loadDealAttachments(); // Refresh attachments list (will trigger count update)
       onAttachModalClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error attaching document:', error);
       
-      const errorMessage = error?.response?.errors?.[0]?.message || 'Failed to attach document';
+      let errorMessage = 'Failed to attach document';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const graphQLError = error as any;
+        if (graphQLError.response?.errors?.[0]?.message) {
+          errorMessage = graphQLError.response.errors[0].message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: 'Attachment failed',
         description: errorMessage,
