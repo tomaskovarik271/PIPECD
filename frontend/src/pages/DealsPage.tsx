@@ -32,7 +32,6 @@ import { useUserListStore } from '../stores/useUserListStore';
 import { useFilteredDeals } from '../hooks/useFilteredDeals';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { usePageLayoutStyles } from '../utils/headerUtils';
-import { CustomFieldEntityType } from '../generated/graphql/graphql';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 
 function DealsPage() {
@@ -125,7 +124,7 @@ function DealsPage() {
     setDealToConvert(null);
   }, []);
 
-  const handleConversionComplete = useCallback((result: any) => {
+  const handleConversionComplete = useCallback((_result: any) => {
     toast({
       title: 'Conversion Successful!',
       description: `Deal "${dealToConvert?.name}" has been converted to a lead.`,
@@ -304,7 +303,7 @@ function DealsPage() {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
         kanbanCompactMode={isCompactMode}
-        setKanbanCompactMode={(isCompact: boolean) => {
+        setKanbanCompactMode={(_isCompact: boolean) => {
           // Always stay in compact mode - no toggle functionality
           setDealsViewMode('kanban-compact');
         }}
