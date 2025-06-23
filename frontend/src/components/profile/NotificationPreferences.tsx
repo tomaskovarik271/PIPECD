@@ -154,12 +154,12 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
         } else {
           console.log('[NotificationPreferences] No preferences found, using defaults');
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error('[NotificationPreferences] Error loading notification preferences:', err);
         console.error('[NotificationPreferences] Load error details:', {
-          message: err.message,
-          response: err.response,
-          stack: err.stack
+          message: err instanceof Error ? err.message : 'Unknown error',
+          response: err && typeof err === 'object' && 'response' in err ? (err as any).response : undefined,
+          stack: err instanceof Error ? err.stack : undefined
         });
         
         let errorMessage = 'Failed to load notification preferences.';
@@ -241,12 +241,12 @@ export const NotificationPreferences: React.FC<NotificationPreferencesProps> = (
         console.error('[NotificationPreferences] API returned null response');
         throw new Error('API returned null response');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NotificationPreferences] Error saving notification preferences:', err);
       console.error('[NotificationPreferences] Error details:', {
-        message: err.message,
-        response: err.response,
-        stack: err.stack
+        message: err instanceof Error ? err.message : 'Unknown error',
+        response: err && typeof err === 'object' && 'response' in err ? (err as any).response : undefined,
+        stack: err instanceof Error ? err.stack : undefined
       });
       
       let errorMessage = 'Failed to save preferences. Please try again.';

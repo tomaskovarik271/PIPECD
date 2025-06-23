@@ -21,6 +21,13 @@ import { useAppStore } from '../../stores/useAppStore';
 import { TbCurrencyDollar, TbWorld } from 'react-icons/tb';
 import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
+interface QuickFilter {
+  key: string;
+  label: string;
+  value?: string | number;
+  count?: number;
+}
+
 interface DealsKanbanPageLayoutProps {
   displayedDeals: Deal[];
   pageIsLoading: boolean;
@@ -28,7 +35,7 @@ interface DealsKanbanPageLayoutProps {
   handleCreateDealClick: () => void;
   activeQuickFilterKey: string | null;
   setActiveQuickFilterKey: (key: string | null) => void;
-  availableQuickFilters: any[];
+  availableQuickFilters: QuickFilter[];
   selectedAssignedUserIds: string[];
   setSelectedAssignedUserIds: (userIds: string[]) => void;
   userList: UserListItem[];
