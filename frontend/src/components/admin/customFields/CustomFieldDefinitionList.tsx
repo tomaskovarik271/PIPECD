@@ -21,7 +21,7 @@ import {
 } from '@chakra-ui/react';
 import { AddIcon } from '@chakra-ui/icons';
 import { useCustomFieldDefinitionStore } from '../../../stores/useCustomFieldDefinitionStore';
-import { CustomFieldEntityType } from '../../../generated/graphql/graphql';
+import { CustomFieldEntityType, CustomFieldDefinition } from '../../../generated/graphql/graphql';
 import { useCustomFieldDefinitionActions } from '../../../hooks/useCustomFieldDefinitionActions';
 import { CustomFieldDefinitionsTable } from './CustomFieldDefinitionsTable';
 import { DefinitionActionConfirmDialog } from './DefinitionActionConfirmDialog';
@@ -63,12 +63,12 @@ const CustomFieldDefinitionList: React.FC = () => {
     onOpen();
   };
 
-  const handleEditClick = (definition: any) => {
+  const handleEditClick = (definition: CustomFieldDefinition) => {
     handleOpenEditModal(definition);
     onOpen();
   };
 
-  const handleFormSubmitWrapper = async (submissionInput: any) => {
+  const handleFormSubmitWrapper = async (submissionInput: CustomFieldDefinition) => {
     const success = await handleFormSubmit(submissionInput);
     if (success) {
       onClose();

@@ -38,6 +38,13 @@ const GET_ASSIGNABLE_USERS_QUERY = gql`
   }
 `;
 
+interface User {
+  id: string;
+  display_name?: string;
+  email: string;
+  avatar_url?: string;
+}
+
 interface AccountManagerAssignmentModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -88,7 +95,7 @@ const AccountManagerAssignmentModal: React.FC<AccountManagerAssignmentModalProps
         },
       });
 
-      const selectedUser = users.find((u: any) => u.id === selectedUserId);
+      const selectedUser = users.find((u: User) => u.id === selectedUserId);
       toast({
         title: 'Account Manager Assigned',
         description: `${selectedUser?.display_name || selectedUser?.email} has been assigned to ${organization.name}`,
@@ -99,10 +106,10 @@ const AccountManagerAssignmentModal: React.FC<AccountManagerAssignmentModalProps
 
       onAssignmentComplete();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Assignment Failed',
-        description: error.message || 'Failed to assign account manager',
+        description: error instanceof Error ? error.message : 'Failed to assign account manager',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -133,10 +140,10 @@ const AccountManagerAssignmentModal: React.FC<AccountManagerAssignmentModalProps
 
       onAssignmentComplete();
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Removal Failed',
-        description: error.message || 'Failed to remove account manager',
+        description: error instanceof Error ? error.message : 'Failed to remove account manager',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -216,7 +223,7 @@ const AccountManagerAssignmentModal: React.FC<AccountManagerAssignmentModalProps
                   bg={colors.bg.input}
                   borderColor={colors.border.input}
                 >
-                  {users.map((user: any) => (
+                  {users.map((user: User) => (
                     <option key={user.id} value={user.id}>
                       {user.display_name || user.email}
                     </option>
