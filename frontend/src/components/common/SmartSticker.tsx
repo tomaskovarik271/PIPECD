@@ -39,6 +39,16 @@ interface StickerCategory {
   icon?: string;
 }
 
+interface StickerUpdate {
+  id: string;
+  title?: string;
+  content?: string;
+  color?: string;
+  priority?: 'NORMAL' | 'HIGH' | 'URGENT';
+  tags?: string[];
+  category?: StickerCategory;
+}
+
 interface SmartStickerData {
   id: string;
   title: string;
@@ -61,7 +71,7 @@ interface SmartStickerData {
 
 interface SmartStickerProps {
   sticker: SmartStickerData;
-  onUpdate: (updates: any) => void;
+  onUpdate: (updates: StickerUpdate) => void;
   onDelete: (id: string) => void;
   onTogglePin: (id: string) => void;
   onSelect: (selected: boolean) => void;
@@ -149,6 +159,11 @@ export const SmartSticker: React.FC<SmartStickerProps> = ({
     return IconComponent || null;
   };
 
+  const getValidColorScheme = (color: string): string => {
+    const validSchemes = ['gray', 'red', 'orange', 'yellow', 'green', 'teal', 'blue', 'cyan', 'purple', 'pink'];
+    return validSchemes.includes(color) ? color : 'blue';
+  };
+
   if (layout === 'list') {
     return (
       <Box
@@ -172,7 +187,7 @@ export const SmartSticker: React.FC<SmartStickerProps> = ({
             <HStack spacing={2} mb={3}>
               {sticker.category && (
                 <Badge
-                  colorScheme={sticker.category.color as any}
+                  colorScheme={getValidColorScheme(sticker.category.color)}
                   variant="subtle"
                   px={3}
                   py={1}
