@@ -106,7 +106,7 @@ const ProfileEditForm: React.FC<ProfileEditFormProps> = ({ user, onUpdateSuccess
       } else {
         throw new Error('Failed to update profile: No data returned');
       }
-    } catch (error: any) { // Type error as any for broader catch
+    } catch (error: unknown) { // Type error as unknown for proper typing
       console.error('Error updating profile:', error);
       let errorMessage = 'Could not update your profile.';
       if (isGraphQLErrorWithMessage(error)) {
