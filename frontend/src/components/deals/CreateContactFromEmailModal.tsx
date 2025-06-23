@@ -45,10 +45,25 @@ const GET_ORGANIZATIONS = gql`
   }
 `;
 
+interface EmailMessage {
+  id: string;
+  from: string;
+  subject: string;
+  content?: string;
+  date?: string;
+}
+
+interface Organization {
+  id: string;
+  name: string;
+  website?: string;
+  address?: string;
+}
+
 interface CreateContactFromEmailModalProps {
   isOpen: boolean;
   onClose: () => void;
-  emailMessage: any;
+  emailMessage: EmailMessage;
   dealId: string;
 }
 
@@ -266,7 +281,7 @@ const CreateContactFromEmailModal: React.FC<CreateContactFromEmailModalProps> = 
                   bg={colors.bg.input}
                   borderColor={colors.border.input}
                 >
-                  {organizationsData?.organizations?.map((org: any) => (
+                  {organizationsData?.organizations?.map((org: Organization) => (
                     <option key={org.id} value={org.id}>
                       {org.name}
                     </option>

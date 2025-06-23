@@ -22,6 +22,12 @@ import {
 import { useCurrencyPreferences, useCurrency } from '../../hooks/useCurrency';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
+interface Currency {
+  code: string;
+  name: string;
+  symbol: string;
+}
+
 export const CurrencyPreferences: React.FC = () => {
   const colors = useThemeColors();
   const toast = useToast();
@@ -118,7 +124,7 @@ export const CurrencyPreferences: React.FC = () => {
               _hover={{ borderColor: colors.border.default }}
               _focus={{ borderColor: colors.interactive.default }}
             >
-              {currencies.map((currency: any) => (
+              {currencies.map((currency: Currency) => (
                 <option key={currency.code} value={currency.code}>
                   {currency.code} - {currency.name} ({currency.symbol})
                 </option>
@@ -139,7 +145,7 @@ export const CurrencyPreferences: React.FC = () => {
               _hover={{ borderColor: colors.border.default }}
               _focus={{ borderColor: colors.interactive.default }}
             >
-              {currencies.map((currency: any) => (
+              {currencies.map((currency: Currency) => (
                 <option key={currency.code} value={currency.code}>
                   {currency.code} - {currency.name} ({currency.symbol})
                 </option>

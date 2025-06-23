@@ -12,9 +12,16 @@ import type { Deal } from '../../stores/useDealsStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
+interface DealUpdateFields {
+  amount?: string | number | null;
+  expected_close_date?: string | number | null;
+  deal_specific_probability?: string | number | null;
+  assigned_to_user_id?: string | number | null;
+}
+
 interface DealOverviewCardProps {
   deal: Deal;
-  onUpdateDeal: (dealId: string, updates: Record<string, any>) => Promise<void>;
+  onUpdateDeal: (dealId: string, updates: DealUpdateFields) => Promise<void>;
   userList?: Array<{ id: string; display_name?: string; email: string }>;
 }
 
