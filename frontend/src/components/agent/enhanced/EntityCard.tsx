@@ -18,7 +18,34 @@ import {
 import { FiUser, FiHome, FiDollarSign, FiActivity } from 'react-icons/fi';
 import { ActionButton } from './ActionButton';
 import { CopyButton } from './CopyButton';
-import type { EntityCardProps } from './types';
+import { SuggestedAction } from './types';
+
+interface EntityMetadata {
+  status?: string;
+  stage?: string;
+  organizationId?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  industry?: string;
+  size?: string;
+  [key: string]: unknown;
+}
+
+interface Entity {
+  id: string;
+  type: string;
+  name?: string;
+  amount?: number;
+  organizationName?: string;
+  metadata?: EntityMetadata;
+}
+
+interface EntityCardProps {
+  entity: Entity;
+  actions?: SuggestedAction[];
+  onAction?: (action: SuggestedAction) => void;
+  compact?: boolean;
+}
 
 // Icon mapping for entity types
 const getEntityIcon = (type: string) => {
@@ -43,7 +70,7 @@ const getEntityColorScheme = (type: string) => {
 };
 
 // Helper function to get deal status from stage or metadata
-const getDealStatus = (entity: any) => {
+const getDealStatus = (entity: Entity) => {
   // First try to get status field (the actual status from deals table)
   if (entity.metadata?.status && entity.metadata.status !== null) {
     return entity.metadata.status;
@@ -58,7 +85,7 @@ const getDealStatus = (entity: any) => {
 };
 
 // Helper function to format display name
-const getDisplayName = (entity: any) => {
+const getDisplayName = (entity: Entity) => {
   if (entity.name && entity.name !== 'Unnamed' && !entity.name.startsWith('Deal ')) {
     return entity.name;
   }
@@ -77,7 +104,7 @@ const getDisplayName = (entity: any) => {
 };
 
 // Helper function to get relevant metadata (filter out unhelpful fields)
-const getRelevantMetadata = (entity: any, compact: boolean) => {
+const getRelevantMetadata = (entity: Entity, compact: boolean) => {
   if (!entity.metadata) return [];
   
   const metadata = { ...entity.metadata };
@@ -89,7 +116,7 @@ const getRelevantMetadata = (entity: any, compact: boolean) => {
   delete metadata.updatedAt; // Too verbose for cards
   
   // Rename/format fields for better display
-  const displayMetadata: Record<string, any> = {};
+  const displayMetadata: Record<string, unknown> = {};
   
   if (metadata.industry) {
     displayMetadata.Industry = metadata.industry;

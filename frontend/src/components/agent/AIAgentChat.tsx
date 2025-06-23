@@ -312,7 +312,7 @@ export const AIAgentChat: React.FC = () => {
       });
       
       if (data?.agentThoughts) {
-        setRealTimeThoughts(data.agentThoughts.map((thought: any) => ({
+        setRealTimeThoughts(data.agentThoughts.map((thought: AgentThought) => ({
           ...thought,
           timestamp: new Date(thought.timestamp),
         })));

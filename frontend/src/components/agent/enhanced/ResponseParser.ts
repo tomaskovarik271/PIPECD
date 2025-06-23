@@ -10,11 +10,33 @@ import type {
   EnhancedResponseData 
 } from './types';
 
+interface ThoughtData {
+  type?: string;
+  rawData?: unknown;
+  metadata?: {
+    rawData?: unknown;
+    toolName?: string;
+  };
+}
+
+interface OrganizationData {
+  id: string;
+  name: string;
+  industry?: string;
+  size?: string;
+  created_at?: string;
+  custom_field_values?: {
+    organization_industry?: string;
+  };
+  amount?: undefined; // To distinguish from deals
+  deal_specific_probability?: undefined; // To distinguish from deals
+}
+
 export class ResponseParser {
   /**
    * Parse AI response content to extract entities and actionable data
    */
-  static parseResponse(content: string, thoughts?: any[]): EnhancedResponseData {
+  static parseResponse(content: string, thoughts?: ThoughtData[]): EnhancedResponseData {
     const entities = this.detectEntities(content, thoughts);
     const actionableData = this.extractActionableData(content);
     const suggestedActions = this.generateSuggestedActions(entities, content);
@@ -30,9 +52,9 @@ export class ResponseParser {
   /**
    * Detect entities mentioned in the content
    */
-  private static detectEntities(content: string, thoughts?: any[]): DetectedEntity[] {
+  private static detectEntities(content: string, thoughts?: ThoughtData[]): DetectedEntity[] {
     const entities: DetectedEntity[] = [];
-    const organizationMap = new Map<string, any>(); // Map organization IDs to their data
+    const organizationMap = new Map<string, OrganizationData>(); // Map organization IDs to their data
     const entityMap = new Map<string, DetectedEntity>(); // Map to prevent duplicate entities
 
     // Parse deal entities from tool results in thoughts
