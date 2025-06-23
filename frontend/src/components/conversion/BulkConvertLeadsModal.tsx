@@ -54,11 +54,31 @@ interface Lead {
   description?: string;
 }
 
+interface BulkConversionResult {
+  summary: {
+    totalProcessed: number;
+    successCount: number;
+    errorCount: number;
+  };
+  results: Array<{
+    sourceEntity: {
+      id: string;
+      name: string;
+    };
+    targetEntity?: {
+      id: string;
+      name: string;
+    };
+    success: boolean;
+    error?: string;
+  }>;
+}
+
 interface BulkConvertLeadsModalProps {
   isOpen: boolean;
   onClose: () => void;
   leads: Lead[];
-  onConversionComplete: (results: any) => void;
+  onConversionComplete: (results: BulkConversionResult) => void;
 }
 
 interface LeadConversionConfig {
@@ -237,12 +257,12 @@ export function BulkConvertLeadsModal({
           completed: result.summary.totalProcessed,
           succeeded: result.summary.successCount,
           failed: result.summary.errorCount,
-          results: result.results.map((r: any) => ({
+          results: result.results.map((r: BulkConversionResult['results'][0]) => ({
             leadId: r.sourceEntity.id,
             leadName: r.sourceEntity.name,
             success: r.success,
             error: r.success ? undefined : 'Conversion failed',
-            dealId: r.success ? r.targetEntity.id : undefined
+            dealId: r.success ? r.targetEntity?.id : undefined
           }))
         } : null);
 

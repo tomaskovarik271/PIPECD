@@ -46,10 +46,28 @@ const GENERATE_TASK_CONTENT = gql`
   }
 `;
 
+interface TaskData {
+  subject: string;
+  description: string;
+  dueDate: string;
+  useWholeThread: boolean;
+  threadId: string | null;
+  assigneeId: string;
+}
+
+interface AIGeneratedTaskContent {
+  subject: string;
+  description: string;
+  suggestedDueDate?: string;
+  confidence?: number;
+  emailScope: string;
+  sourceContent: string;
+}
+
 interface EnhancedCreateTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateTask: (data: any) => void;
+  onCreateTask: (data: TaskData) => void;
   selectedEmailId: string | null;
   selectedThreadId: string | null;
 }
@@ -63,7 +81,7 @@ const EnhancedCreateTaskModal: React.FC<EnhancedCreateTaskModalProps> = ({
 }) => {
   const [step, setStep] = useState<'configure' | 'confirm'>('configure');
   const [useWholeThread, setUseWholeThread] = useState(false);
-  const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [generatedContent, setGeneratedContent] = useState<AIGeneratedTaskContent | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [formData, setFormData] = useState({
     subject: '',
