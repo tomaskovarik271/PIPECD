@@ -55,7 +55,6 @@ function SortableTable<T extends { id: string }>({
 }: SortableTableProps<T>) {
   
   const colors = useThemeColors();
-  const styles = useThemeStyles();
 
   const [sortConfig, setSortConfig] = useState<SortConfig>({ 
       key: initialSortKey,

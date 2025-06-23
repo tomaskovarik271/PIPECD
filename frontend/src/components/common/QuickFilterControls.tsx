@@ -19,7 +19,6 @@ const QuickFilterControls: React.FC<QuickFilterControlsProps> = ({
   onSelectFilter,
 }) => {
   const colors = useThemeColors();
-  const styles = useThemeStyles();
 
   // Ensure "All" or a default filter is conceptually part of how filters are managed,
   // even if not explicitly in availableFilters prop.

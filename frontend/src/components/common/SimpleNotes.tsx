@@ -39,7 +39,7 @@ import {
   FiLink,
   FiImage,
 } from 'react-icons/fi';
-import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSmartStickers } from '../../hooks/useSmartStickers';
 import { formatDistanceToNow } from 'date-fns';
 

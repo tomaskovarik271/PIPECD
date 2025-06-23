@@ -18,12 +18,9 @@ import {
   AlertIcon,
   useToast,
   Tag,
-  Link,
 } from '@chakra-ui/react';
 import { 
-  AddIcon,
   SearchIcon,
-  ViewIcon,
   EditIcon,
   DeleteIcon,
 } from '@chakra-ui/icons';
@@ -34,11 +31,6 @@ import {
   FiMaximize2,
   FiMinimize2,
   FiPlus,
-  FiMoreVertical,
-  FiRefreshCw,
-  FiTrash,
-  FiCopy,
-  FiMove,
   FiSettings,
   FiNavigation,
   FiEyeOff,
@@ -163,7 +155,6 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
     createSticker,
     updateSticker,
     deleteSticker,
-    moveStickersBulk,
     togglePin,
     filters,
     setFilters,
@@ -725,7 +716,7 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
                   onDragStop={(e, data) => {
                     handleStickerMove(sticker.id, { x: data.x, y: data.y });
                   }}
-                  onResizeStop={(e, direction, ref, delta, position) => {
+                  onResizeStop={(_e, _direction, ref, _delta, _position) => {
                     handleStickerResize(sticker.id, {
                       width: parseInt(ref.style.width),
                       height: parseInt(ref.style.height),

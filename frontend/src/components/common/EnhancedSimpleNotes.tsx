@@ -199,7 +199,6 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
   
   const colors = useThemeColors();
-  const styles = useThemeStyles();
   const toast = useToast();
   
   const { isOpen: isDeleteModalOpen, onOpen: openDeleteModal, onClose: closeDeleteModal } = useDisclosure();
@@ -230,7 +229,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
 
   // Fetch attachments for all notes
   const noteIds = filteredStickers.map(sticker => sticker.id);
-  const { attachmentsData, loading: attachmentsLoading, error: attachmentsError, refetchAttachments } = useNoteAttachments(noteIds);
+  const { attachmentsData, refetchAttachments } = useNoteAttachments(noteIds);
 
   // Transform stickers to notes with attachments
   const notes: Note[] = filteredStickers
@@ -317,7 +316,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to add note',
         description: 'Please try again',
@@ -347,7 +346,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to update note',
         description: 'Please try again',
@@ -370,7 +369,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to delete note',
         description: 'Please try again',
@@ -394,7 +393,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Failed to pin note',
         description: 'Please try again',
@@ -460,7 +459,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
     openAttachModal();
   };
 
-  const handleMention = (query: string) => {
+  const handleMention = (_query: string) => {
     toast({
       title: 'Team Mentions',
       description: 'Team member mentions coming soon!',
