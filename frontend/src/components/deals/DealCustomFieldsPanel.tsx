@@ -13,15 +13,29 @@ import {
   Spinner,
 } from '@chakra-ui/react';
 import { ExternalLinkIcon, InfoIcon, EditIcon, CheckIcon, CloseIcon } from '@chakra-ui/icons';
-import { CustomFieldDefinition, CustomFieldValue } from '../../generated/graphql/graphql';
+import { CustomFieldDefinition, CustomFieldValue } from '../../stores/useDealsStore';
 import { CustomFieldRenderer } from '../common/CustomFieldRenderer';
 import { useThemeColors } from '../../hooks/useThemeColors';
+
+// Types
+interface CustomFieldData {
+  value: string | number | boolean | string[];
+}
+
+interface ProcessedCustomField {
+  id: string;
+  label: string;
+  fieldName: string;
+  definition: CustomFieldDefinition;
+  currentValue: string | number | boolean | string[];
+  displayValue: string | React.ReactNode;
+}
 
 interface DealCustomFieldsPanelProps {
   customFieldDefinitions: CustomFieldDefinition[];
   customFieldValues: CustomFieldValue[];
   dealId: string;
-  onUpdate?: (fieldId: string, value: any) => Promise<void>;
+  onUpdate?: (fieldId: string, value: CustomFieldData['value']) => Promise<void>;
   getLinkDisplayDetails: (str: string | null | undefined) => {
     isUrl: boolean;
     displayText: string;
@@ -41,7 +55,7 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
   const colors = useThemeColors();
   const toast = useToast();
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState<any>(null);
+  const [editValue, setEditValue] = useState<CustomFieldData['value']>(null);
   const [saving, setSaving] = useState(false);
 
   const hasCustomFields = customFieldDefinitions && customFieldValues && customFieldValues.length > 0;
@@ -62,7 +76,7 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
         if (!definition) return null;
 
         // Get current value for the field
-        let currentValue: any = null;
+        let currentValue: CustomFieldData['value'] = null;
         switch (definition.fieldType) {
           case 'TEXT':
             currentValue = cfv.stringValue || '';
@@ -142,12 +156,12 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
       .filter(Boolean);
   }, [customFieldDefinitions, customFieldValues, hasCustomFields, getLinkDisplayDetails, colors.text.link]);
 
-  const handleEditClick = useCallback((field: any) => {
+  const handleEditClick = useCallback((field: ProcessedCustomField) => {
     setEditingFieldId(field.id);
     setEditValue(field.currentValue);
   }, []);
 
-  const handleSave = useCallback(async (field: any) => {
+  const handleSave = useCallback(async (field: ProcessedCustomField) => {
     if (!onUpdate) return;
     
     setSaving(true);

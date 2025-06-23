@@ -52,6 +52,16 @@ import { FiFile, FiFolder, FiMoreVertical, FiRefreshCw, FiExternalLink } from 'r
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 // Types
+interface GraphQLDealDocument {
+  id: string;
+  fileName: string;
+  category?: string;
+  attachedAt: string;
+  attachedBy: string;
+  googleFileId: string;
+  fileUrl: string;
+}
+
 interface DriveFile {
   id: string;
   name: string;
@@ -151,7 +161,7 @@ const DealDocumentsPanel: React.FC<DealDocumentsPanelProps> = ({ dealId, dealNam
     setLoading(true);
     try {
       const response = await gqlClient.request(GET_DEAL_DOCUMENTS, { dealId });
-      const documents = response.getDealDocuments.map((doc: any) => ({
+      const documents = response.getDealDocuments.map((doc: GraphQLDealDocument) => ({
         id: doc.id,
         fileName: doc.fileName,
         category: doc.category?.toLowerCase() || 'other',

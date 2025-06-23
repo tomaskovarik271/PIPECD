@@ -17,6 +17,11 @@ import { useAppStore } from '../../stores/useAppStore';
 import { ActivityIndicator } from '../common/ActivityIndicator';
 import { analyzeDealActivities } from '../../utils/activityIndicators';
 
+// Extended Deal type that includes project_id which may be present on some deals
+interface DealWithProjectId extends Deal {
+  project_id?: string | number;
+}
+
 // Simple exchange rates for demo (in production, this would come from the database)
 const EXCHANGE_RATES: Record<string, Record<string, number>> = {
   'USD': { 'EUR': 0.85, 'GBP': 0.75, 'CHF': 0.92, 'USD': 1.0 },
@@ -57,7 +62,7 @@ const formatDealAmount = (deal: Deal, displayMode: 'mixed' | 'converted', baseCu
 };
 
 interface DealCardKanbanCompactProps {
-  deal: Deal;
+  deal: DealWithProjectId;
   index: number;
 }
 
@@ -174,7 +179,7 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
             <Text fontSize="xs" color={colors.text.muted} noOfLines={1} flex={1} minWidth={0}>
               {deal.organization?.name || 'No org'}
             </Text>
-            {(deal as any).project_id && (
+            {deal.project_id && (
               <Text 
                 fontSize="xs" 
                 color={colors.text.link}
@@ -185,7 +190,7 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
                 py={0.5}
                 borderRadius="sm"
               >
-                #{(deal as any).project_id}
+                #{deal.project_id}
               </Text>
             )}
           </HStack>
