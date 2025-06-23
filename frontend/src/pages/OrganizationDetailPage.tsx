@@ -65,6 +65,7 @@ import EditActivityForm from '../components/activities/EditActivityForm';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
+import { StickerBoard } from '../components/common/StickerBoard';
 
 const getActivityTypeIcon = (type?: GQLActivityType | null) => {
   switch (type) {
@@ -461,6 +462,14 @@ const OrganizationDetailPage = () => {
                       </Tab>
                       <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                         Information
+                      </Tab>
+                      <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                        <HStack spacing={2}>
+                          <Text>Notes</Text>
+                          <Badge colorScheme="yellow" variant="solid" borderRadius="full" fontSize="xs">
+                            0
+                          </Badge>
+                        </HStack>
                       </Tab>
                     </TabList>
                     
@@ -1011,6 +1020,21 @@ const OrganizationDetailPage = () => {
                 </HStack>
               </VStack>
             </Box>
+                        </VStack>
+                      </TabPanel>
+                      
+                      {/* Notes Tab Panel */}
+                      <TabPanel h="full" p={6} overflow="auto">
+                        <VStack spacing={4} align="stretch">
+                          <Text fontSize="lg" fontWeight="semibold" color={colors.text.primary}>
+                            Organization Notes & Stickers
+                          </Text>
+                          <Box>
+                            <StickerBoard 
+                              entityType="ORGANIZATION" 
+                              entityId={currentOrganization.id} 
+                            />
+                          </Box>
                         </VStack>
                       </TabPanel>
                     </TabPanels>

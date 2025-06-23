@@ -21,6 +21,12 @@ import {
   Grid,
   GridItem,
   Input,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel,
+  Badge,
 } from '@chakra-ui/react';
 import { EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
@@ -234,335 +240,350 @@ const PersonDetailPage = () => {
               </Heading>
             </Box>
 
-            <Grid templateColumns="repeat(auto-fit, minmax(400px, 1fr))" gap={6}>
-              {/* Person Details Card */}
-              <GridItem>
-                <Box 
+            {/* Tabs Content */}
+            <Box 
+              bg={colors.bg.elevated}
+              borderRadius="xl" 
+              borderWidth="1px" 
+              borderColor={colors.border.default}
+              minH="400px"
+            >
+              <Tabs variant="line" colorScheme="blue" size="md">
+                <TabList 
+                  px={6} 
+                  borderBottomColor={colors.border.default}
                   bg={colors.bg.elevated}
-                  p={6} 
-                  borderRadius="xl" 
-                  borderWidth="1px" 
-                  borderColor={colors.border.default}
-                  h="fit-content"
                 >
-                  <Heading 
-                    size="md" 
-                    mb={5} 
-                    color={colors.text.primary}
-                  >
+                  <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                     Contact Information
-                  </Heading>
-                  <VStack spacing={4} align="stretch">
-                    {/* First Name Field */}
-                    <HStack justifyContent="space-between" alignItems="center">
-                      <Text fontSize="sm" color={colors.text.muted}>First Name</Text>
-                      {!isEditingFirstName ? (
-                        <HStack spacing={2}>
-                          <Text 
-                            fontSize="md" 
-                            fontWeight="medium" 
-                            color={colors.text.secondary}
-                          >
-                            {currentPerson.first_name || '-'}
-                          </Text>
-                          <IconButton 
-                            icon={<EditIcon />} 
-                            size="xs" 
-                            variant="ghost" 
-                            aria-label="Edit First Name" 
-                            onClick={() => {
-                              setIsEditingFirstName(true);
-                              setNewFirstName(currentPerson.first_name || '');
-                            }}
-                            color={colors.text.muted}
-                            _hover={{color: colors.text.link}}
-                            isDisabled={!canEditPerson}
-                          />
-                        </HStack>
-                      ) : (
-                        <HStack spacing={2} flex={1} justifyContent="flex-end">
-                          <Input 
-                            value={newFirstName} 
-                            onChange={(e) => setNewFirstName(e.target.value)} 
-                            placeholder="Enter first name" 
-                            size="sm" 
-                            w="160px"
-                            bg={colors.bg.input}
-                            borderColor={colors.border.default}
-                            _hover={{borderColor: colors.border.emphasis}}
-                            _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
-                          />
-                          <IconButton 
-                            icon={<CheckIcon />} 
-                            size="xs" 
-                            colorScheme="green" 
-                            aria-label="Save First Name" 
-                            onClick={handleFirstNameUpdate}
-                          />
-                          <IconButton 
-                            icon={<SmallCloseIcon />} 
-                            size="xs" 
-                            variant="ghost" 
-                            aria-label="Cancel Edit" 
-                            onClick={() => setIsEditingFirstName(false)}
-                            color={colors.text.muted}
-                          />
-                        </HStack>
-                      )}
+                  </Tab>
+                  <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <HStack spacing={2}>
+                      <Text>Notes</Text>
+                      <Badge colorScheme="yellow" variant="solid" borderRadius="full" fontSize="xs">
+                        0
+                      </Badge>
                     </HStack>
-
-                    {/* Last Name Field */}
-                    <HStack justifyContent="space-between" alignItems="center">
-                      <Text fontSize="sm" color={colors.text.muted}>Last Name</Text>
-                      {!isEditingLastName ? (
-                        <HStack spacing={2}>
-                          <Text 
-                            fontSize="md" 
-                            fontWeight="medium" 
-                            color={colors.text.secondary}
-                          >
-                            {currentPerson.last_name || '-'}
-                          </Text>
-                          <IconButton 
-                            icon={<EditIcon />} 
-                            size="xs" 
-                            variant="ghost" 
-                            aria-label="Edit Last Name" 
-                            onClick={() => {
-                              setIsEditingLastName(true);
-                              setNewLastName(currentPerson.last_name || '');
-                            }}
-                            color={colors.text.muted}
-                            _hover={{color: colors.text.link}}
-                            isDisabled={!canEditPerson}
-                          />
-                        </HStack>
-                      ) : (
-                        <HStack spacing={2} flex={1} justifyContent="flex-end">
-                          <Input 
-                            value={newLastName} 
-                            onChange={(e) => setNewLastName(e.target.value)} 
-                            placeholder="Enter last name" 
-                            size="sm" 
-                            w="160px"
-                            bg={colors.bg.input}
-                            borderColor={colors.border.default}
-                            _hover={{borderColor: colors.border.emphasis}}
-                            _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
-                          />
-                          <IconButton 
-                            icon={<CheckIcon />} 
-                            size="xs" 
-                            colorScheme="green" 
-                            aria-label="Save Last Name" 
-                            onClick={handleLastNameUpdate}
-                          />
-                          <IconButton 
-                            icon={<SmallCloseIcon />} 
-                            size="xs" 
-                            variant="ghost" 
-                            aria-label="Cancel Edit" 
-                            onClick={() => setIsEditingLastName(false)}
-                            color={colors.text.muted}
-                          />
-                        </HStack>
-                      )}
-                    </HStack>
-
-                    {/* Email Field */}
-                    <HStack justifyContent="space-between" alignItems="center">
-                      <HStack spacing={2}>
-                        <EmailIcon color={colors.text.muted} />
-                        <Text fontSize="sm" color={colors.text.muted}>Email</Text>
-                      </HStack>
-                      {!isEditingEmail ? (
-                        <HStack spacing={2}>
-                          <Text 
-                            fontSize="md" 
-                            fontWeight="medium" 
-                            color={colors.text.secondary}
-                          >
-                            {currentPerson.email || '-'}
-                          </Text>
-                          <IconButton 
-                            icon={<EditIcon />} 
-                            size="xs" 
-                            variant="ghost" 
-                            aria-label="Edit Email" 
-                            onClick={() => {
-                              setIsEditingEmail(true);
-                              setNewEmail(currentPerson.email || '');
-                            }}
-                            color={colors.text.muted}
-                            _hover={{color: colors.text.link}}
-                            isDisabled={!canEditPerson}
-                          />
-                        </HStack>
-                      ) : (
-                        <HStack spacing={2} flex={1} justifyContent="flex-end">
-                          <Input 
-                            value={newEmail} 
-                            onChange={(e) => setNewEmail(e.target.value)} 
-                            placeholder="Enter email" 
-                            size="sm" 
-                            w="200px"
-                            bg={colors.bg.input}
-                            borderColor={colors.border.default}
-                            _hover={{borderColor: colors.border.emphasis}}
-                            _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
-                          />
-                          <IconButton 
-                            icon={<CheckIcon />} 
-                            size="xs" 
-                            colorScheme="green" 
-                            aria-label="Save Email" 
-                            onClick={handleEmailUpdate}
-                          />
-                          <IconButton 
-                            icon={<SmallCloseIcon />} 
-                            size="xs" 
-                            variant="ghost" 
-                            aria-label="Cancel Edit" 
-                            onClick={() => setIsEditingEmail(false)}
-                            color={colors.text.muted}
-                          />
-                        </HStack>
-                      )}
-                    </HStack>
-
-                    {/* Phone Field */}
-                    <HStack justifyContent="space-between" alignItems="center">
-                      <HStack spacing={2}>
-                        <PhoneIcon color={colors.text.muted} />
-                        <Text fontSize="sm" color={colors.text.muted}>Phone</Text>
-                      </HStack>
-                      {!isEditingPhone ? (
-                        <HStack spacing={2}>
-                          <Text 
-                            fontSize="md" 
-                            fontWeight="medium" 
-                            color={colors.text.secondary}
-                          >
-                            {currentPerson.phone || '-'}
-                          </Text>
-                          <IconButton 
-                            icon={<EditIcon />} 
-                            size="xs" 
-                            variant="ghost" 
-                            aria-label="Edit Phone" 
-                            onClick={() => {
-                              setIsEditingPhone(true);
-                              setNewPhone(currentPerson.phone || '');
-                            }}
-                            color={colors.text.muted}
-                            _hover={{color: colors.text.link}}
-                            isDisabled={!canEditPerson}
-                          />
-                        </HStack>
-                      ) : (
-                        <HStack spacing={2} flex={1} justifyContent="flex-end">
-                          <Input 
-                            value={newPhone} 
-                            onChange={(e) => setNewPhone(e.target.value)} 
-                            placeholder="Enter phone" 
-                            size="sm" 
-                            w="160px"
-                            bg={colors.bg.input}
-                            borderColor={colors.border.default}
-                            _hover={{borderColor: colors.border.emphasis}}
-                            _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
-                          />
-                          <IconButton 
-                            icon={<CheckIcon />} 
-                            size="xs" 
-                            colorScheme="green" 
-                            aria-label="Save Phone" 
-                            onClick={handlePhoneUpdate}
-                          />
-                          <IconButton 
-                            icon={<SmallCloseIcon />} 
-                            size="xs" 
-                            variant="ghost" 
-                            aria-label="Cancel Edit" 
-                            onClick={() => setIsEditingPhone(false)}
-                            color={colors.text.muted}
-                          />
-                        </HStack>
-                      )}
-                    </HStack>
-
-                    {/* Notes Field */}
-                    <HStack justifyContent="space-between" alignItems="flex-start">
-                      <HStack spacing={2}>
-                        <InfoOutlineIcon color={colors.text.muted} />
-                        <Text fontSize="sm" color={colors.text.muted}>Notes</Text>
-                      </HStack>
-                      <Text 
-                        fontSize="md" 
-                        fontWeight="medium" 
-                        color={colors.text.secondary}
-                        textAlign="right"
-                        maxW="300px"
-                        wordBreak="break-word"
+                  </Tab>
+                </TabList>
+                
+                <TabPanels>
+                  {/* Contact Information Tab */}
+                  <TabPanel p={6}>
+                    <VStack spacing={6} align="stretch">
+                      <Heading 
+                        size="md" 
+                        color={colors.text.primary}
                       >
-                        {currentPerson.notes || '-'}
-                      </Text>
-                    </HStack>
+                        Contact Information
+                      </Heading>
+                      <VStack spacing={4} align="stretch">
+                        {/* First Name Field */}
+                        <HStack justifyContent="space-between" alignItems="center">
+                          <Text fontSize="sm" color={colors.text.muted}>First Name</Text>
+                          {!isEditingFirstName ? (
+                            <HStack spacing={2}>
+                              <Text 
+                                fontSize="md" 
+                                fontWeight="medium" 
+                                color={colors.text.secondary}
+                              >
+                                {currentPerson.first_name || '-'}
+                              </Text>
+                              <IconButton 
+                                icon={<EditIcon />} 
+                                size="xs" 
+                                variant="ghost" 
+                                aria-label="Edit First Name" 
+                                onClick={() => {
+                                  setIsEditingFirstName(true);
+                                  setNewFirstName(currentPerson.first_name || '');
+                                }}
+                                color={colors.text.muted}
+                                _hover={{color: colors.text.link}}
+                                isDisabled={!canEditPerson}
+                              />
+                            </HStack>
+                          ) : (
+                            <HStack spacing={2} flex={1} justifyContent="flex-end">
+                              <Input 
+                                value={newFirstName} 
+                                onChange={(e) => setNewFirstName(e.target.value)} 
+                                placeholder="Enter first name" 
+                                size="sm" 
+                                w="160px"
+                                bg={colors.bg.input}
+                                borderColor={colors.border.default}
+                                _hover={{borderColor: colors.border.emphasis}}
+                                _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                              />
+                              <IconButton 
+                                icon={<CheckIcon />} 
+                                size="xs" 
+                                colorScheme="green" 
+                                aria-label="Save First Name" 
+                                onClick={handleFirstNameUpdate}
+                              />
+                              <IconButton 
+                                icon={<SmallCloseIcon />} 
+                                size="xs" 
+                                variant="ghost" 
+                                aria-label="Cancel Edit" 
+                                onClick={() => setIsEditingFirstName(false)}
+                                color={colors.text.muted}
+                              />
+                            </HStack>
+                          )}
+                        </HStack>
 
-                    {/* Timestamps */}
-                    <HStack justifyContent="space-between" alignItems="center">
-                      <HStack spacing={2}>
-                        <TimeIcon color={colors.text.muted} />
-                        <Text fontSize="sm" color={colors.text.muted}>Created</Text>
-                      </HStack>
-                      <Text 
-                        fontSize="sm" 
-                        color={colors.text.secondary}
+                        {/* Last Name Field */}
+                        <HStack justifyContent="space-between" alignItems="center">
+                          <Text fontSize="sm" color={colors.text.muted}>Last Name</Text>
+                          {!isEditingLastName ? (
+                            <HStack spacing={2}>
+                              <Text 
+                                fontSize="md" 
+                                fontWeight="medium" 
+                                color={colors.text.secondary}
+                              >
+                                {currentPerson.last_name || '-'}
+                              </Text>
+                              <IconButton 
+                                icon={<EditIcon />} 
+                                size="xs" 
+                                variant="ghost" 
+                                aria-label="Edit Last Name" 
+                                onClick={() => {
+                                  setIsEditingLastName(true);
+                                  setNewLastName(currentPerson.last_name || '');
+                                }}
+                                color={colors.text.muted}
+                                _hover={{color: colors.text.link}}
+                                isDisabled={!canEditPerson}
+                              />
+                            </HStack>
+                          ) : (
+                            <HStack spacing={2} flex={1} justifyContent="flex-end">
+                              <Input 
+                                value={newLastName} 
+                                onChange={(e) => setNewLastName(e.target.value)} 
+                                placeholder="Enter last name" 
+                                size="sm" 
+                                w="160px"
+                                bg={colors.bg.input}
+                                borderColor={colors.border.default}
+                                _hover={{borderColor: colors.border.emphasis}}
+                                _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                              />
+                              <IconButton 
+                                icon={<CheckIcon />} 
+                                size="xs" 
+                                colorScheme="green" 
+                                aria-label="Save Last Name" 
+                                onClick={handleLastNameUpdate}
+                              />
+                              <IconButton 
+                                icon={<SmallCloseIcon />} 
+                                size="xs" 
+                                variant="ghost" 
+                                aria-label="Cancel Edit" 
+                                onClick={() => setIsEditingLastName(false)}
+                                color={colors.text.muted}
+                              />
+                            </HStack>
+                          )}
+                        </HStack>
+
+                        {/* Email Field */}
+                        <HStack justifyContent="space-between" alignItems="center">
+                          <HStack spacing={2}>
+                            <EmailIcon color={colors.text.muted} />
+                            <Text fontSize="sm" color={colors.text.muted}>Email</Text>
+                          </HStack>
+                          {!isEditingEmail ? (
+                            <HStack spacing={2}>
+                              <Text 
+                                fontSize="md" 
+                                fontWeight="medium" 
+                                color={colors.text.secondary}
+                              >
+                                {currentPerson.email || '-'}
+                              </Text>
+                              <IconButton 
+                                icon={<EditIcon />} 
+                                size="xs" 
+                                variant="ghost" 
+                                aria-label="Edit Email" 
+                                onClick={() => {
+                                  setIsEditingEmail(true);
+                                  setNewEmail(currentPerson.email || '');
+                                }}
+                                color={colors.text.muted}
+                                _hover={{color: colors.text.link}}
+                                isDisabled={!canEditPerson}
+                              />
+                            </HStack>
+                          ) : (
+                            <HStack spacing={2} flex={1} justifyContent="flex-end">
+                              <Input 
+                                value={newEmail} 
+                                onChange={(e) => setNewEmail(e.target.value)} 
+                                placeholder="Enter email" 
+                                size="sm" 
+                                w="200px"
+                                bg={colors.bg.input}
+                                borderColor={colors.border.default}
+                                _hover={{borderColor: colors.border.emphasis}}
+                                _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                              />
+                              <IconButton 
+                                icon={<CheckIcon />} 
+                                size="xs" 
+                                colorScheme="green" 
+                                aria-label="Save Email" 
+                                onClick={handleEmailUpdate}
+                              />
+                              <IconButton 
+                                icon={<SmallCloseIcon />} 
+                                size="xs" 
+                                variant="ghost" 
+                                aria-label="Cancel Edit" 
+                                onClick={() => setIsEditingEmail(false)}
+                                color={colors.text.muted}
+                              />
+                            </HStack>
+                          )}
+                        </HStack>
+
+                        {/* Phone Field */}
+                        <HStack justifyContent="space-between" alignItems="center">
+                          <HStack spacing={2}>
+                            <PhoneIcon color={colors.text.muted} />
+                            <Text fontSize="sm" color={colors.text.muted}>Phone</Text>
+                          </HStack>
+                          {!isEditingPhone ? (
+                            <HStack spacing={2}>
+                              <Text 
+                                fontSize="md" 
+                                fontWeight="medium" 
+                                color={colors.text.secondary}
+                              >
+                                {currentPerson.phone || '-'}
+                              </Text>
+                              <IconButton 
+                                icon={<EditIcon />} 
+                                size="xs" 
+                                variant="ghost" 
+                                aria-label="Edit Phone" 
+                                onClick={() => {
+                                  setIsEditingPhone(true);
+                                  setNewPhone(currentPerson.phone || '');
+                                }}
+                                color={colors.text.muted}
+                                _hover={{color: colors.text.link}}
+                                isDisabled={!canEditPerson}
+                              />
+                            </HStack>
+                          ) : (
+                            <HStack spacing={2} flex={1} justifyContent="flex-end">
+                              <Input 
+                                value={newPhone} 
+                                onChange={(e) => setNewPhone(e.target.value)} 
+                                placeholder="Enter phone" 
+                                size="sm" 
+                                w="160px"
+                                bg={colors.bg.input}
+                                borderColor={colors.border.default}
+                                _hover={{borderColor: colors.border.emphasis}}
+                                _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                              />
+                              <IconButton 
+                                icon={<CheckIcon />} 
+                                size="xs" 
+                                colorScheme="green" 
+                                aria-label="Save Phone" 
+                                onClick={handlePhoneUpdate}
+                              />
+                              <IconButton 
+                                icon={<SmallCloseIcon />} 
+                                size="xs" 
+                                variant="ghost" 
+                                aria-label="Cancel Edit" 
+                                onClick={() => setIsEditingPhone(false)}
+                                color={colors.text.muted}
+                              />
+                            </HStack>
+                          )}
+                        </HStack>
+
+                        {/* Notes Field */}
+                        <HStack justifyContent="space-between" alignItems="flex-start">
+                          <HStack spacing={2}>
+                            <InfoOutlineIcon color={colors.text.muted} />
+                            <Text fontSize="sm" color={colors.text.muted}>Notes</Text>
+                          </HStack>
+                          <Text 
+                            fontSize="md" 
+                            fontWeight="medium" 
+                            color={colors.text.secondary}
+                            textAlign="right"
+                            maxW="300px"
+                            wordBreak="break-word"
+                          >
+                            {currentPerson.notes || '-'}
+                          </Text>
+                        </HStack>
+
+                        {/* Timestamps */}
+                        <HStack justifyContent="space-between" alignItems="center">
+                          <HStack spacing={2}>
+                            <TimeIcon color={colors.text.muted} />
+                            <Text fontSize="sm" color={colors.text.muted}>Created</Text>
+                          </HStack>
+                          <Text 
+                            fontSize="sm" 
+                            color={colors.text.secondary}
+                          >
+                            {formatDate(currentPerson.created_at)}
+                          </Text>
+                        </HStack>
+
+                        <HStack justifyContent="space-between" alignItems="center">
+                          <HStack spacing={2}>
+                            <TimeIcon color={colors.text.muted} />
+                            <Text fontSize="sm" color={colors.text.muted}>Updated</Text>
+                          </HStack>
+                          <Text 
+                            fontSize="sm" 
+                            color={colors.text.secondary}
+                          >
+                            {formatDate(currentPerson.updated_at)}
+                          </Text>
+                        </HStack>
+                      </VStack>
+                    </VStack>
+                  </TabPanel>
+
+                  {/* Notes/Stickers Tab */}
+                  <TabPanel p={6}>
+                    <VStack spacing={4} align="stretch">
+                      <Heading 
+                        size="md" 
+                        color={colors.text.primary}
                       >
-                        {formatDate(currentPerson.created_at)}
-                      </Text>
-                    </HStack>
-
-                    <HStack justifyContent="space-between" alignItems="center">
-                      <HStack spacing={2}>
-                        <TimeIcon color={colors.text.muted} />
-                        <Text fontSize="sm" color={colors.text.muted}>Updated</Text>
-                      </HStack>
-                      <Text 
-                        fontSize="sm" 
-                        color={colors.text.secondary}
-                      >
-                        {formatDate(currentPerson.updated_at)}
-                      </Text>
-                    </HStack>
-                  </VStack>
-                </Box>
-              </GridItem>
-
-              {/* Notes/Stickers Card */}
-              <GridItem>
-                <Box 
-                  bg={colors.bg.elevated}
-                  p={6} 
-                  borderRadius="xl" 
-                  borderWidth="1px" 
-                  borderColor={colors.border.default}
-                  h="fit-content"
-                >
-                  <Heading 
-                    size="md" 
-                    mb={5} 
-                    color={colors.text.primary}
-                  >
-                    Notes & Stickers
-                  </Heading>
-                  <StickerBoard 
-                    entityType="PERSON" 
-                    entityId={currentPerson.id} 
-                  />
-                </Box>
-              </GridItem>
-            </Grid>
+                        Notes & Stickers
+                      </Heading>
+                      <Box>
+                        <StickerBoard 
+                          entityType="PERSON" 
+                          entityId={currentPerson.id} 
+                        />
+                      </Box>
+                    </VStack>
+                  </TabPanel>
+                </TabPanels>
+              </Tabs>
+            </Box>
           </VStack>
         )}
       </Box>
