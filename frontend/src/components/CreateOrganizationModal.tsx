@@ -32,7 +32,7 @@ import {
   initializeCustomFieldValues,
   processCustomFieldsForSubmission 
 } from '../lib/utils/customFieldProcessing';
-import type { OrganizationInput } from '../generated/graphql/graphql';
+import type { OrganizationInput, User } from '../generated/graphql/graphql';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
 import { useQuery, gql } from '@apollo/client';
 import { useDebounce } from '../lib/utils/useDebounce';
@@ -310,7 +310,7 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
                 onChange={(e) => setAccountManagerId(e.target.value)}
                 isDisabled={usersLoading}
               >
-                {usersData?.assignableUsers?.map((user: any) => (
+                {usersData?.assignableUsers?.map((user: User) => (
                   <option key={user.id} value={user.id}>
                     {user.display_name || user.email}
                   </option>

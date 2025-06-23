@@ -46,7 +46,7 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
     customFields: [],
   });
 
-  const [customFieldData, setCustomFieldData] = useState<Record<string, any>>({});
+  const [customFieldData, setCustomFieldData] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
@@ -87,10 +87,10 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
     }
   };
 
-  const handleCustomFieldChange = (fieldName: string, value: any, type: GQLCustomFieldType) => {
+  const handleCustomFieldChange = (fieldName: string, value: unknown, type: GQLCustomFieldType) => {
     setCustomFieldData(prev => ({
       ...prev,
-      [fieldName]: type === 'BOOLEAN' ? (value as React.ChangeEvent<HTMLInputElement>).target.checked : value,
+      [fieldName]: type === 'BOOLEAN' ? (value as React.ChangeEvent<HTMLInputElement>).target.checked : value as string | number | boolean | string[],
     }));
   };
 

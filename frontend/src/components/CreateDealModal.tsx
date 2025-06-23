@@ -23,10 +23,10 @@ import {
   Text,
   Box,
 } from '@chakra-ui/react';
-import { usePeopleStore } from '../stores/usePeopleStore';
+import { usePeopleStore, Person } from '../stores/usePeopleStore';
 import { useDealsStore, DealInput } from '../stores/useDealsStore';
 import { useWFMProjectTypeStore, WfmProjectType } from '../stores/useWFMProjectTypeStore';
-import { useOrganizationsStore } from '../stores/useOrganizationsStore';
+import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
 import { useUserListStore } from '../stores/useUserListStore';
 import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
 import { CustomFieldRenderer } from './common/CustomFieldRenderer';
@@ -186,7 +186,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   };
 
   // Handle successful organization creation
-  const handleOrganizationCreated = (newOrganization: any) => {
+  const handleOrganizationCreated = (newOrganization: Organization) => {
     setOrganizationId(newOrganization.id);
     setShowInlineOrgForm(false);
     // Refresh organizations list
@@ -194,7 +194,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   };
 
   // Handle successful person creation
-  const handlePersonCreated = (newPerson: any) => {
+  const handlePersonCreated = (newPerson: Person) => {
     setPersonId(newPerson.id);
     setShowInlinePersonForm(false);
     // Refresh people list
