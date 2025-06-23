@@ -32,6 +32,17 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../stores/useAppStore';
 import ActivitiesCalendarView from '../activities/ActivitiesCalendarView';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { getActivityIndicator } from '../../utils/activityIndicators';
+import { usePermissions } from '../../hooks/usePermissions';
+import { useUserStore } from '../../stores/useUserStore';
+
+interface BadgeProps {
+  children?: React.ReactNode;
+  colorScheme?: string;
+  variant?: string;
+  fontSize?: string;
+  size?: string;
+}
 
 interface DealActivitiesPanelProps {
   activities: Activity[];
@@ -139,7 +150,7 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
     return { overdue, dueToday, upcoming, noDueDate, completed };
   }, [sortedActivities]);
 
-  const renderActivityCard = (activity: Activity, showBadge = false, badgeProps: any = {}) => {
+  const renderActivityCard = (activity: Activity, showBadge = false, badgeProps: BadgeProps = {}) => {
     const dueDate = activity.due_date ? new Date(activity.due_date) : null;
     const now = new Date();
     const isOverdue = dueDate && dueDate < now && !activity.is_done;
@@ -296,7 +307,7 @@ export const DealActivitiesPanel: React.FC<DealActivitiesPanelProps> = ({
     );
   };
 
-  const renderActivitySection = (title: string, activities: Activity[], badgeProps: any = {}, emptyMessage = '') => {
+  const renderActivitySection = (title: string, activities: Activity[], badgeProps: BadgeProps = {}, emptyMessage = '') => {
     if (activities.length === 0) return null;
 
     return (
