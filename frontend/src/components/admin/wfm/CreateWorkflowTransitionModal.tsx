@@ -91,10 +91,10 @@ const CreateWorkflowTransitionModal: React.FC<CreateWorkflowTransitionModalProps
         isClosable: true,
       });
       onClose();
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast({
         title: 'Error Creating Transition',
-        description: e.message || 'An unknown error occurred',
+        description: e instanceof Error ? e.message : 'An unknown error occurred',
         status: 'error',
         duration: 5000,
         isClosable: true,

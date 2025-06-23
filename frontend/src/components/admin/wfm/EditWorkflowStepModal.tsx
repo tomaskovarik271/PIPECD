@@ -38,7 +38,7 @@ const EditWorkflowStepModal: React.FC<EditWorkflowStepModalProps> = ({
       const baseMetadata = typeof step.metadata === 'object' && step.metadata !== null ? { ...step.metadata } : {};
 
       // Prepare metadata, always including name and description
-      const metadataUpdate: any = {
+      const metadataUpdate: Record<string, unknown> = {
         ...baseMetadata,
         name: data.name,
         description: data.description,
@@ -74,10 +74,10 @@ const EditWorkflowStepModal: React.FC<EditWorkflowStepModalProps> = ({
         isClosable: true,
       });
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: 'Error Updating Step',
-        description: error.message || 'Could not update the workflow step.',
+        description: error instanceof Error ? error.message : 'Could not update the workflow step.',
         status: 'error',
         duration: 5000,
         isClosable: true,

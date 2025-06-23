@@ -149,10 +149,10 @@ const EditWorkflowStepsModal: React.FC<EditWorkflowStepsModalProps> = ({
         });
         onDeleteStepClose();
         setSelectedStep(null);
-      } catch (e: any) {
+      } catch (e: unknown) {
         toast({ 
           title: 'Error Deleting Step', 
-          description: e.message, 
+          description: e instanceof Error ? e.message : 'An unknown error occurred', 
           status: 'error', 
           duration: 5000, 
           isClosable: true 
@@ -178,10 +178,10 @@ const EditWorkflowStepsModal: React.FC<EditWorkflowStepsModalProps> = ({
         });
         onDeleteTransitionClose();
         setSelectedTransitionId(null);
-      } catch (e: any) {
+      } catch (e: unknown) {
         toast({
           title: 'Error Deleting Transition',
-          description: e.message,
+          description: e instanceof Error ? e.message : 'An unknown error occurred',
           status: 'error',
           duration: 5000,
           isClosable: true,
@@ -367,4 +367,4 @@ const EditWorkflowStepsModal: React.FC<EditWorkflowStepsModalProps> = ({
   );
 };
 
-export default EditWorkflowStepsModal; 
+export default EditWorkflowStepsModal;

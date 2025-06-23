@@ -89,11 +89,11 @@ const EditWorkflowTransitionModal: React.FC<EditWorkflowTransitionModalProps> = 
         isClosable: true,
       });
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to update transition:', error);
       toast({
         title: 'Update Failed',
-        description: error.message || 'Could not update the transition name.',
+        description: error instanceof Error ? error.message : 'Could not update the transition name.',
         status: 'error',
         duration: 5000,
         isClosable: true,
