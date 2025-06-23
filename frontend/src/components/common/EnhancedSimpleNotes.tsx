@@ -52,6 +52,15 @@ interface EnhancedSimpleNotesProps {
   className?: string;
 }
 
+interface NoteAttachment {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileSize?: number;
+  mimeType?: string;
+  createdAt?: string;
+}
+
 interface Note {
   id: string;
   title: string;
@@ -245,7 +254,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         createdByUserId: sticker.createdByUserId,
         mentions: sticker.mentions,
         tags: sticker.tags,
-        attachments: noteAttachments.map((attachment: any) => ({
+        attachments: noteAttachments.map((attachment: NoteAttachment) => ({
           id: attachment.id,
           name: attachment.fileName,
           url: attachment.fileUrl,

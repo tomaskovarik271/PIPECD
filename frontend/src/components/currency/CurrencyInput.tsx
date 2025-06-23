@@ -22,6 +22,12 @@ import { useCurrency } from '../../hooks/useCurrency';
 // Types
 // ================================
 
+interface CurrencyOption {
+  value: string;
+  label: string;
+  symbol: string;
+}
+
 interface CurrencyInputProps {
   value?: number;
   currency?: string;
@@ -87,7 +93,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
 
   const allCurrencyOptions = getCurrencyOptions();
   const currencyOptions = allowedCurrencies 
-    ? allCurrencyOptions.filter((option: any) => allowedCurrencies.includes(option.value))
+    ? allCurrencyOptions.filter((option: CurrencyOption) => allowedCurrencies.includes(option.value))
     : allCurrencyOptions;
   const currentSymbol = getCurrencySymbol(currency);
 
@@ -178,7 +184,7 @@ export const CurrencyInput: React.FC<CurrencyInputProps> = ({
         width="120px"
         flexShrink={0}
       >
-        {currencyOptions.map((option: any) => (
+        {currencyOptions.map((option: CurrencyOption) => (
           <option key={option.value} value={option.value}>
             {option.value}
           </option>
