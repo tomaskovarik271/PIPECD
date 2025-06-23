@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Heading, Text, VStack, Flex, Spacer } from '@chakra-ui/react';
+import { Box, Heading, Text, VStack, Flex } from '@chakra-ui/react';
 import type { WfmWorkflowStep } from '../../generated/graphql/graphql';
 import { Deal } from '../../stores/useDealsStore';
 import { Droppable, DroppableProvided, DroppableStateSnapshot } from '@hello-pangea/dnd';
@@ -70,7 +70,7 @@ interface KanbanStepColumnProps {
   isCompact?: boolean;
 }
 
-const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, deals, weightedAmountSum, index, isCompact = false }) => {
+const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, deals, weightedAmountSum: _weightedAmountSum, index: _index, isCompact = false }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
   const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();

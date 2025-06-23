@@ -1,12 +1,10 @@
 import React from 'react';
 import {
-  Box,
   Button,
   ButtonGroup,
   HStack,
-  Heading,
 } from '@chakra-ui/react';
-import { SettingsIcon, ViewIcon } from '@chakra-ui/icons'; // Assuming ViewIcon for empty state, adjust if needed
+import { SettingsIcon } from '@chakra-ui/icons';
 import ListPageLayout from '../layout/ListPageLayout';
 import SortableTable, { ColumnDefinition } from '../common/SortableTable';
 import QuickFilterControls, { QuickFilter } from '../common/QuickFilterControls';

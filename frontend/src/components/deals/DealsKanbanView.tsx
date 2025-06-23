@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { Box, Heading, Spinner, Alert, AlertIcon, VStack, Text, Flex, useToast, useColorModeValue, useTheme } from '@chakra-ui/react';
 import { useDealsStore, Deal } from '../../stores/useDealsStore';
-import { useWFMWorkflowStore, WfmWorkflowWithDetails } from '../../stores/useWFMWorkflowStore';
+import { useWFMWorkflowStore } from '../../stores/useWFMWorkflowStore';
 import { useWFMConfigStore } from '../../stores/useWFMConfigStore';
 import type { WfmWorkflowStep } from '../../generated/graphql/graphql';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
