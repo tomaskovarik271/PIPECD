@@ -31,6 +31,7 @@ import {
 } from '../lib/utils/customFieldProcessing';
 import { CustomFieldEntityType } from '../generated/graphql/graphql';
 import { useQuery, gql } from '@apollo/client';
+import { UserListItem } from '../stores/useUserListStore';
 
 interface EditOrganizationModalProps {
   isOpen: boolean;
@@ -45,7 +46,7 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [accountManagerId, setAccountManagerId] = useState('');
-  const [customFieldData, setCustomFieldData] = useState<Record<string, any>>({});
+  const [customFieldData, setCustomFieldData] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -95,8 +96,8 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
       setNotes(organization.notes || '');
       // Use accountManager.id if available, otherwise fall back to account_manager_id
       setAccountManagerId(
-        (organization as any).accountManager?.id || 
-        (organization as any).account_manager_id || 
+        (organization as Organization & { accountManager?: { id: string }; account_manager_id?: string }).accountManager?.id || 
+        (organization as Organization & { accountManager?: { id: string }; account_manager_id?: string }).account_manager_id || 
         ''
       );
       setError(null);
@@ -120,7 +121,7 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
     }
   }, [isOpen, organization, organizationCustomFieldDefinitions]);
 
-  const handleCustomFieldChange = (fieldName: string, value: any) => {
+  const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[]) => {
     setCustomFieldData(prev => ({ ...prev, [fieldName]: value }));
   };
 
@@ -241,7 +242,7 @@ function EditOrganizationModal({ isOpen, onClose, onOrganizationUpdated, organiz
                 onChange={(e) => setAccountManagerId(e.target.value)}
                 isDisabled={usersLoading}
               >
-                {usersData?.assignableUsers?.map((user: any) => (
+                {usersData?.assignableUsers?.map((user: UserListItem) => (
                   <option key={user.id} value={user.id}>
                     {user.display_name || user.email}
                   </option>

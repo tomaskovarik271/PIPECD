@@ -45,7 +45,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
     organization_id: person.organization_id,
     customFields: [],
   });
-  const [customFieldData, setCustomFieldData] = useState<Record<string, any>>({});
+  const [customFieldData, setCustomFieldData] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
@@ -81,7 +81,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
   // Initialize custom field data from person
   useEffect(() => {
     if (person.customFieldValues && personCustomFieldDefinitions.length > 0) {
-      const initializedData: Record<string, any> = {};
+      const initializedData: Record<string, string | number | boolean | string[]> = {};
       
       personCustomFieldDefinitions.forEach(def => {
         const existingValue = person.customFieldValues?.find(cfv => cfv.definition.id === def.id);
@@ -144,7 +144,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
     }
   };
 
-  const handleCustomFieldChange = (fieldName: string, value: any, type: GQLCustomFieldType) => {
+  const handleCustomFieldChange = (fieldName: string, value: string | React.ChangeEvent<HTMLInputElement>, type: GQLCustomFieldType) => {
     setCustomFieldData(prev => ({
       ...prev,
       [fieldName]: type === 'BOOLEAN' ? (value as React.ChangeEvent<HTMLInputElement>).target.checked : value,

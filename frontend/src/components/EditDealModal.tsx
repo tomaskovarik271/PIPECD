@@ -59,7 +59,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
   const [dealSpecificProbability, setDealSpecificProbability] = useState<string>('');
   const [expectedCloseDate, setExpectedCloseDate] = useState<string>('');
   const [assignedToUserId, setAssignedToUserId] = useState<string | null>(null);
-  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, any>>({});
+  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -144,7 +144,7 @@ function EditDealModal({ isOpen, onClose, onDealUpdated, deal }: EditDealModalPr
     }
   }, [deal, activeDealCustomFields]);
 
-  const handleCustomFieldChange = (fieldName: string, value: any) => {
+  const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[]) => {
     setCustomFieldFormValues(prev => ({ ...prev, [fieldName]: value }));
   };
 

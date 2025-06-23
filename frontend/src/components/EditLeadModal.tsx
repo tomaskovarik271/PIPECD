@@ -39,7 +39,7 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({ isOpen, onClose, lead }) 
   const toast = useToast();
   
   const [formData, setFormData] = useState<Partial<LeadUpdateInput>>({});
-  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, any>>({});
+  const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Use optimized custom fields hook
@@ -88,7 +88,7 @@ const EditLeadModal: React.FC<EditLeadModalProps> = ({ isOpen, onClose, lead }) 
     }));
   };
 
-  const handleCustomFieldChange = (fieldName: string, value: any) => {
+  const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[]) => {
     setCustomFieldFormValues(prev => ({ ...prev, [fieldName]: value }));
   };
 
