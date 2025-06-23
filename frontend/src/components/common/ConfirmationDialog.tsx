@@ -18,7 +18,7 @@ interface ConfirmationDialogProps {
   confirmButtonText?: string;
   cancelButtonText?: string;
   confirmButtonColor?: string;
-  leastDestructiveRef?: React.RefObject<any>;
+  leastDestructiveRef?: React.RefObject<HTMLButtonElement>;
   isConfirmLoading?: boolean;
 }
 

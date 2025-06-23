@@ -7,11 +7,27 @@ import { gql } from '@apollo/client';
 
 // Simplified V2 Interfaces (no thinking budget complexity)
 
+export interface AgentV2Thought {
+  type?: string;
+  content: string;
+  metadata?: {
+    toolType?: string;
+    thinkingDepth?: string;
+    confidenceLevel?: number;
+    acknowledgment?: string;
+    strategy?: string;
+    concerns?: string;
+    nextSteps?: string;
+    reasoning?: string;
+    toolName?: string;
+  };
+}
+
 export interface AgentV2Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: Date;
-  thoughts?: any[];
+  thoughts?: AgentV2Thought[];
   toolExecutions?: ToolExecution[];
 }
 
@@ -19,8 +35,8 @@ export interface AgentV2Conversation {
   id: string;
   userId: string;
   messages: AgentV2Message[];
-  plan?: any;
-  context: Record<string, any>;
+  plan?: Record<string, unknown>;
+  context: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
   agentVersion: string;
@@ -32,14 +48,14 @@ export interface SendAgentV2MessageInput {
 }
 
 export interface CreateAgentV2ConversationInput {
-  initialContext?: Record<string, any>;
+  initialContext?: Record<string, unknown>;
 }
 
 export interface ToolExecution {
   id: string;
   name: string;
-  input: any;
-  result?: any;
+  input: Record<string, unknown>;
+  result?: Record<string, unknown>;
   error?: string;
   executionTime: number;
   timestamp: string;

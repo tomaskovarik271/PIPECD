@@ -19,8 +19,8 @@ import { FiSettings, FiClock, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 interface ToolExecution {
   id: string;
   name: string;
-  input: any;
-  result?: any;
+  input: Record<string, unknown>;
+  result?: Record<string, unknown>;
   error?: string;
   executionTime: number;
   timestamp: string;

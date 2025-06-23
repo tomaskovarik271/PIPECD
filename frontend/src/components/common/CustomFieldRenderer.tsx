@@ -15,10 +15,12 @@ import {
 } from '@chakra-ui/react';
 import type { CustomFieldDefinition, CustomFieldType } from '../../generated/graphql/graphql';
 
+type CustomFieldValue = string | number | boolean | string[] | null | undefined;
+
 interface CustomFieldRendererProps {
   definition: CustomFieldDefinition;
-  value: any;
-  onChange: (value: any) => void;
+  value: CustomFieldValue;
+  onChange: (value: CustomFieldValue) => void;
   isRequired?: boolean;
   isDisabled?: boolean;
 }

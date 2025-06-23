@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Box,
   VStack,
@@ -14,14 +14,22 @@ import {
   IconButton,
   Tooltip,
   Collapse,
-  Flex
+  Flex,
+  Avatar,
+  Divider,
+  Card,
+  CardBody,
 } from '@chakra-ui/react';
 import { ChevronRightIcon, TimeIcon } from '@chakra-ui/icons';
 import { FiMessageSquare, FiClock } from 'react-icons/fi';
 import ReactMarkdown from 'react-markdown';
 import { useThemeColors } from '../../../hooks/useThemeColors';
 import { useAgentV2 } from '../../../hooks/useAgentV2';
-import type { AgentV2Conversation } from '../../../lib/graphql/agentV2Operations';
+import {
+  AgentV2Conversation,
+  AgentV2Message,
+  AgentV2Thought,
+} from '../../../lib/graphql/agentV2Operations';
 import ToolExecutionPanel from './ToolExecutionPanel';
 
 export function AIAgentChatV2() {
@@ -102,11 +110,11 @@ export function AIAgentChatV2() {
 
   // Get first few words of conversation for preview
   const getConversationPreview = (conversation: AgentV2Conversation): string => {
-    const firstUserMessage = conversation.messages.find(msg => msg.role === 'user');
-    if (!firstUserMessage) return 'New conversation';
-    return firstUserMessage.content.length > 50 
-      ? firstUserMessage.content.substring(0, 50) + '...'
-      : firstUserMessage.content;
+    const userMessages = conversation.messages.filter((msg: AgentV2Message) => msg.role === 'user');
+    if (userMessages.length === 0) return 'New conversation';
+    
+    const firstMessage = userMessages[0].content;
+    return firstMessage.length > 50 ? `${firstMessage.substring(0, 50)}...` : firstMessage;
   };
 
   // Format relative time
@@ -287,7 +295,7 @@ export function AIAgentChatV2() {
                             
                             // Show opening statement for messages with thinking
                             if (message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
-                                message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think')) {
+                                message.thoughts.some((thought: AgentV2Thought) => thought.metadata?.toolType === 'think')) {
                               return (
                                 <ReactMarkdown>
                                   {contentToShow.split('\n').slice(0, 1).join('\n')}
@@ -314,7 +322,7 @@ export function AIAgentChatV2() {
 
                         {/* Thinking Process - Show BEFORE final analysis */}
                         {message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
-                         message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think' || 
+                         message.thoughts.some((thought: AgentV2Thought) => thought.metadata?.toolType === 'think' || 
                            (thought.metadata?.reasoning && thought.metadata.reasoning !== 'No reasoning provided')) && (
                           <Box mt={4}>
                             {/* Add a visual indicator above thinking */}
@@ -332,7 +340,7 @@ export function AIAgentChatV2() {
                                 💭 Thinking Process
                               </Text>
                               <VStack spacing={3} align="stretch">
-                                {message.thoughts.map((thought: any, thoughtIndex: number) => (
+                                {message.thoughts.map((thought: AgentV2Thought, thoughtIndex: number) => (
                                   <Box
                                     key={thoughtIndex}
                                     bg={colors.bg.elevated}
@@ -421,15 +429,15 @@ export function AIAgentChatV2() {
                         )}
 
                         {/* Tool Executions - Show AFTER thinking process */}
-                        {message.role === 'assistant' && (message as any).toolExecutions && (message as any).toolExecutions.length > 0 && (
+                        {message.role === 'assistant' && (message as AgentV2Message).toolExecutions && (message as AgentV2Message).toolExecutions!.length > 0 && (
                           <Box mt={4}>
-                            <ToolExecutionPanel toolExecutions={(message as any).toolExecutions} />
+                            <ToolExecutionPanel toolExecutions={(message as AgentV2Message).toolExecutions!} />
                           </Box>
                         )}
 
                         {/* Final Analysis - Show AFTER thinking process */}
                         {message.role === 'assistant' && message.thoughts && message.thoughts.length > 0 && 
-                         message.thoughts.some((thought: any) => thought.metadata?.toolType === 'think') && (() => {
+                         message.thoughts?.some((thought: AgentV2Thought) => thought.metadata?.toolType === 'think') && (() => {
                           const lines = message.content.split('\n');
                           const analysisStart = lines.findIndex(line => 
                             line.includes('Based on') || 

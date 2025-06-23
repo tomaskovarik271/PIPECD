@@ -10,7 +10,7 @@ export interface DetectedEntity {
   amount?: number;
   organizationName?: string;
   contactName?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ActionableData {
@@ -27,7 +27,7 @@ export interface SuggestedAction {
   variant?: 'primary' | 'secondary' | 'outline';
   action: 'navigate' | 'copy' | 'create' | 'edit' | 'view' | 'call';
   target?: string;
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
   disabled?: boolean;
   tooltip?: string;
 }
@@ -39,9 +39,18 @@ export interface EnhancedResponseData {
   hasEnhancements: boolean;
 }
 
+export interface ThoughtData {
+  type?: string;
+  rawData?: unknown;
+  metadata?: {
+    rawData?: unknown;
+    toolName?: string;
+  };
+}
+
 export interface ResponseEnhancementProps {
   content: string;
-  thoughts?: any[];
+  thoughts?: ThoughtData[];
   onAction?: (action: SuggestedAction) => void;
   className?: string;
 }
