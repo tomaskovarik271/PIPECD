@@ -60,7 +60,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
   
   const allDefinitions = useCustomFieldDefinitionStore(state => state.definitions);
   const definitionsLoading = useCustomFieldDefinitionStore(state => state.loading);
-  const definitionsError = useCustomFieldDefinitionStore(state => state.error);
+  const _definitionsError = useCustomFieldDefinitionStore(state => state.error);
   const fetchDefinitions = useCustomFieldDefinitionStore(state => state.fetchCustomFieldDefinitions);
   
   const [localError, setLocalError] = useState<string | null>(null);

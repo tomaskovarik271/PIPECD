@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   VStack,
@@ -15,10 +15,6 @@ import {
   Tooltip,
   Collapse,
   Flex,
-  Avatar,
-  Divider,
-  Card,
-  CardBody,
 } from '@chakra-ui/react';
 import { ChevronRightIcon, TimeIcon } from '@chakra-ui/icons';
 import { FiMessageSquare, FiClock } from 'react-icons/fi';

@@ -72,7 +72,7 @@ const WFMProjectTypesPage: React.FC = () => {
       toast({ title: 'Project Type created', status: 'success', duration: 3000, isClosable: true });
       onCreateClose();
       fetchWFMProjectTypes();
-    } catch (e: any) {
+    } catch (e: unknown) {
       // Error already toasted by useEffect or store handling if it sets state.error
       // If store re-throws without setting state.error, this toast would be a fallback.
       // toast({ title: 'Failed to create project type', description: e?.message || 'Unknown error', status: 'error', duration: 5000, isClosable: true });

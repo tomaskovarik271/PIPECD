@@ -52,7 +52,7 @@ type LinkType = 'deal' | 'person' | 'organization' | 'none';
 
 function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProps) {
   // Memoize today's date to prevent Date object creation in renders
-  const todayDateString = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const _todayDateString = useMemo(() => new Date().toISOString().split('T')[0], []);
   
   // Actions and state from useActivitiesStore
   const { updateActivity, activitiesError, activitiesLoading } = useActivitiesStore();
@@ -166,7 +166,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
     if (organizations.length === 0 && !organizationsLoading) fetchOrganizations();
   }, [fetchDeals, fetchPeople, fetchOrganizations, deals, people, organizations, dealsLoading, peopleLoading, organizationsLoading]);
 
-  const handleLinkTypeChange = (nextValue: string) => {
+  const _handleLinkTypeChange = (nextValue: string) => {
     const linkType = nextValue as LinkType;
     setSelectedLinkType(linkType);
     if (linkType !== 'deal') setValue('deal_id', null);
@@ -211,7 +211,7 @@ function EditActivityForm({ activity, onClose, onSuccess }: EditActivityFormProp
     }
   };
 
-  const isLoadingLinks = dealsLoading || peopleLoading || organizationsLoading;
+  const _isLoadingLinks = dealsLoading || peopleLoading || organizationsLoading;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)}>

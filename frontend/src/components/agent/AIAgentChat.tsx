@@ -385,12 +385,12 @@ export const AIAgentChat: React.FC = () => {
       
       // If no conversation exists, create one first
       let conversationId = localCurrentConversation?.id;
-      let workingConversation = localCurrentConversation;
+      let _workingConversation = localCurrentConversation;
       
       if (!conversationId) {
         const newConversation = await store.createConversation();
         conversationId = newConversation.id;
-        workingConversation = newConversation;
+        _workingConversation = newConversation;
         setLocalCurrentConversation(newConversation);
       }
       

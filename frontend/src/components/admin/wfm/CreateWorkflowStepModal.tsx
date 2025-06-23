@@ -42,7 +42,7 @@ const CreateWorkflowStepModal: React.FC<CreateWorkflowStepModalProps> = ({ isOpe
   const {
     statuses: availableStatuses,
     fetchWFMStatuses,
-    loading: statusesLoading,
+    loading: _statusesLoading,
     error: statusesError,
   } = useWFMStatusStore();
   

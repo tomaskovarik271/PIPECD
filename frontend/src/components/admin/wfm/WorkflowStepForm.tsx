@@ -57,7 +57,7 @@ const WorkflowStepForm: React.FC<WorkflowStepFormProps> = ({
     handleSubmit,
     formState: { errors },
     reset,
-    watch
+    watch: _watch
   } = useForm<WorkflowStepFormData>({
     resolver: zodResolver(workflowStepSchema),
     defaultValues: {
