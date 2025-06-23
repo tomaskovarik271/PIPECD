@@ -99,8 +99,19 @@ interface StickerData {
   entityId: string;
 }
 
+// Interface for creating new sticker
+interface CreateStickerData {
+  title: string;
+  content?: string;
+  color?: string;
+  priority?: 'NORMAL' | 'HIGH' | 'URGENT';
+  tags?: string[];
+  categoryId?: string;
+  isPrivate?: boolean;
+}
+
 // Debounce utility
-const useDebounce = (callback: Function, delay: number) => {
+const useDebounce = <T extends unknown[]>(callback: (...args: T) => void, delay: number) => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const callbackRef = useRef(callback);
   
@@ -109,7 +120,7 @@ const useDebounce = (callback: Function, delay: number) => {
     callbackRef.current = callback;
   });
   
-  return useCallback((...args: any[]) => {
+  return useCallback((...args: T) => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
@@ -434,7 +445,7 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
   }, [debouncedUpdateSize]);
 
   // Handle create new sticker
-  const handleCreateSticker = useCallback((data: any) => {
+  const handleCreateSticker = useCallback((data: CreateStickerData) => {
     // Calculate empty space directly from stickers data (more stable than layouts state)
     const occupiedAreas = stickers.map(sticker => ({
       x: sticker.positionX,

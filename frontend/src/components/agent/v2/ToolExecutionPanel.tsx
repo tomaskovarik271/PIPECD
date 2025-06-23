@@ -35,10 +35,22 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set());
 
-  // Debug logging to see what data we're receiving
-  console.log('🔍 ToolExecutionPanel received:', toolExecutions);
+  // Move all color mode hooks to top level - REQUIRED by React hooks rules
+  const bgColor = useColorModeValue('gray.50', 'gray.700');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const successColor = useColorModeValue('green.500', 'green.400');
+  const errorColor = useColorModeValue('red.500', 'red.400');
+  const hoverBg = useColorModeValue('gray.100', 'gray.600');
+  const toolBg = useColorModeValue('white', 'gray.800');
+  const detailsBg = useColorModeValue('gray.50', 'gray.900');
+  const codeBg = useColorModeValue('white', 'gray.800');
+  const settingsColor = useColorModeValue('blue.500', 'blue.400');
+
+  // Debug logging
+  console.log('ToolExecutionPanel - toolExecutions:', toolExecutions);
   toolExecutions.forEach((tool, index) => {
-    console.log(`🔍 Tool ${index}:`, {
+    console.log(`Tool ${index}:`, {
+      id: tool.id,
       name: tool.name,
       status: tool.status,
       hasResult: !!tool.result,
@@ -48,11 +60,6 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
       error: tool.error
     });
   });
-
-  const bgColor = useColorModeValue('gray.50', 'gray.700');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const successColor = useColorModeValue('green.500', 'green.400');
-  const errorColor = useColorModeValue('red.500', 'red.400');
 
   const toggleToolExpansion = (toolId: string) => {
     const newExpanded = new Set(expandedTools);
@@ -75,11 +82,6 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
     return new Date(timestamp).toLocaleTimeString();
   };
 
-  const truncateText = (text: string, maxLength: number = 100) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
-
   if (!toolExecutions || toolExecutions.length === 0) {
     return null;
   }
@@ -91,7 +93,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
           cursor="pointer" 
           onClick={() => setIsExpanded(!isExpanded)}
           justify="space-between"
-          _hover={{ bg: useColorModeValue('gray.100', 'gray.600') }}
+          _hover={{ bg: hoverBg }}
           p={2}
           borderRadius="md"
         >
@@ -104,7 +106,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
               minW="auto"
               h="auto"
             />
-            <FiSettings size={20} color={useColorModeValue('blue.500', 'blue.400')} />
+            <FiSettings size={20} color={settingsColor} />
             <Text fontWeight="medium" fontSize="sm">
               Tool Executions ({toolExecutions.length})
             </Text>
@@ -135,7 +137,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                 <HStack 
                   justify="space-between" 
                   p={3} 
-                  bg={useColorModeValue('white', 'gray.800')}
+                  bg={toolBg}
                   borderRadius="md"
                   border="1px"
                   borderColor={borderColor}
@@ -180,7 +182,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                   <Box 
                     mt={2} 
                     p={3} 
-                    bg={useColorModeValue('gray.50', 'gray.900')}
+                    bg={detailsBg}
                     borderRadius="md"
                     border="1px"
                     borderColor={borderColor}
@@ -196,7 +198,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                           whiteSpace="pre-wrap" 
                           p={2} 
                           fontSize="xs"
-                          bg={useColorModeValue('white', 'gray.800')}
+                          bg={codeBg}
                         >
                           {JSON.stringify(tool.input, null, 2)}
                         </Code>
@@ -214,7 +216,7 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                           whiteSpace="pre-wrap" 
                           p={2} 
                           fontSize="xs"
-                          bg={useColorModeValue('white', 'gray.800')}
+                          bg={codeBg}
                           color={tool.status === 'ERROR' ? errorColor : undefined}
                         >
                           {tool.status === 'SUCCESS' 

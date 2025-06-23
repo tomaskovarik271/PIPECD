@@ -160,7 +160,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
         setNotifications(response.myNotifications.notifications);
         setUnreadCount(response.myNotifications.unreadCount);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NotificationCenter] Error loading notifications:', err);
       let errorMessage = 'Failed to load notifications.';
       
@@ -181,7 +181,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
     try {
       const response = await gqlClient.request<GetUnreadCountResponse>(GET_UNREAD_COUNT);
       setUnreadCount(response.unreadNotificationCount);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NotificationCenter] Error loading unread count:', err);
     }
   };
@@ -225,7 +225,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
           isClosable: true,
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NotificationCenter] Error marking notification as read:', err);
       let errorMessage = 'Failed to mark notification as read';
       
@@ -260,7 +260,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
           isClosable: true,
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NotificationCenter] Error marking all notifications as read:', err);
       let errorMessage = 'Failed to mark all notifications as read';
       
@@ -299,7 +299,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
           isClosable: true,
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[NotificationCenter] Error deleting notification:', err);
       let errorMessage = 'Failed to delete notification';
       
