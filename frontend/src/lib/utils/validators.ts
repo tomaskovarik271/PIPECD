@@ -20,7 +20,7 @@ export class Validators {
     try {
       new URL(str);
       return str.startsWith('http://') || str.startsWith('https://');
-    } catch (_) {
+    } catch (_error) {
       return false;
     }
   }

@@ -22,7 +22,7 @@ export const formatDate = (dateString: string | null | undefined): string => {
   if (!dateString) return '-';
   try {
     return dateFormatter.format(new Date(dateString));
-  } catch (error) {
+  } catch (_error) {
     console.warn('Invalid date string:', dateString);
     return '-';
   }
@@ -32,7 +32,7 @@ export const formatDateTime = (dateString: string | null | undefined): string =>
   if (!dateString) return '-';
   try {
     return dateTimeFormatter.format(new Date(dateString));
-  } catch (error) {
+  } catch (_error) {
     console.warn('Invalid date string:', dateString);
     return '-';
   }

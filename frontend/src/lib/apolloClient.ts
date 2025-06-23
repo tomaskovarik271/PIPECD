@@ -2,7 +2,6 @@ import {
   ApolloClient,
   InMemoryCache,
   HttpLink,
-  ApolloLink,
   from, // Use 'from' to combine links
 } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
@@ -34,7 +33,7 @@ const authLink = setContext(async (_, { headers }) => {
   };
 });
 
-const errorLink = onError(({ graphQLErrors, networkError, operation, forward }) => {
+const errorLink = onError(({ graphQLErrors, networkError, operation: _operation, forward: _forward }) => {
   if (graphQLErrors) {
     graphQLErrors.forEach(({ message, locations, path, extensions }) => {
       console.error(

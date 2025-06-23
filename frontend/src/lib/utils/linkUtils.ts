@@ -57,7 +57,7 @@ export const getLinkDisplayDetails = (str: string | null | undefined): LinkDispl
       fullUrl: str, 
       isKnownService: false 
     };
-  } catch (_) {
+  } catch (_error) {
     return { isUrl: false, displayText: str };
   }
 };
@@ -66,7 +66,7 @@ export const isUrl = (str: string): boolean => {
   try {
     new URL(str);
     return str.startsWith('http://') || str.startsWith('https://');
-  } catch (_) {
+  } catch (_error) {
     return false;
   }
 }; 
