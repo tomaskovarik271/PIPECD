@@ -7,7 +7,6 @@ import {
   Alert,
   AlertIcon,
   VStack,
-  Spacer,
   HStack,
   Box,
 } from '@chakra-ui/react';
