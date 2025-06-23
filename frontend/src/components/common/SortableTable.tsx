@@ -9,7 +9,7 @@ import {
   TableContainer,
 } from '@chakra-ui/react';
 import { TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
-import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 // Generic Column Definition
 export interface ColumnDefinition<T> {

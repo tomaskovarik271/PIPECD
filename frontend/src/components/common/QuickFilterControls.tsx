@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, HStack } from '@chakra-ui/react';
-import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 
 export interface QuickFilter {
   key: string;

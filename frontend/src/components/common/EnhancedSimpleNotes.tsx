@@ -35,7 +35,7 @@ import {
   FiFileText,
 } from 'react-icons/fi';
 import DOMPurify from 'dompurify';
-import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
+import { useThemeColors } from '../../hooks/useThemeColors';
 import { useSmartStickers } from '../../hooks/useSmartStickers';
 import { useNoteAttachments } from '../../hooks/useNoteAttachments';
 import { formatDistanceToNow } from 'date-fns';
@@ -316,7 +316,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (_error) {
+    } catch {
       toast({
         title: 'Failed to add note',
         description: 'Please try again',
@@ -346,7 +346,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (_error) {
+    } catch {
       toast({
         title: 'Failed to update note',
         description: 'Please try again',
@@ -369,7 +369,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (_error) {
+    } catch {
       toast({
         title: 'Failed to delete note',
         description: 'Please try again',
@@ -393,7 +393,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         duration: 2000,
         isClosable: true,
       });
-    } catch (_error) {
+    } catch {
       toast({
         title: 'Failed to pin note',
         description: 'Please try again',
@@ -459,7 +459,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
     openAttachModal();
   };
 
-  const handleMention = (_query: string) => {
+  const handleMention = () => {
     toast({
       title: 'Team Mentions',
       description: 'Team member mentions coming soon!',
