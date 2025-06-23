@@ -11,7 +11,6 @@ import {
   SEND_AGENT_V2_MESSAGE,
   GET_AGENT_V2_CONVERSATIONS,
   type AgentV2Conversation,
-  type AgentV2Message,
   type SendAgentV2MessageInput,
   type SendAgentV2MessageStreamInput,
   type CreateAgentV2ConversationInput,

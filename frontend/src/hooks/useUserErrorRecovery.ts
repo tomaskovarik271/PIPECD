@@ -36,7 +36,7 @@ export const useUserErrorRecovery = () => {
         });
         
         return true; // Indicates recovery was attempted
-      } catch (refreshError) {
+      } catch (_refreshError) {
         toast({
           title: 'Failed to Update User List',
           description: 'Please refresh the page manually.',
@@ -62,7 +62,7 @@ export const useUserErrorRecovery = () => {
         duration: 2000,
         isClosable: true,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: 'Refresh Failed',
         description: 'Could not refresh user list. Please try reloading the page.',

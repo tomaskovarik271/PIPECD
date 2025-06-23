@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Badge, IconButton, HStack, Text, VStack, Spinner, Link, Icon } from '@chakra-ui/react';
-import { StarIcon, EditIcon, DeleteIcon, ExternalLinkIcon, ViewIcon, ArrowForwardIcon } from '@chakra-ui/icons';
+import { StarIcon, EditIcon, DeleteIcon, ViewIcon, ArrowForwardIcon } from '@chakra-ui/icons';
 import { Link as RouterLink } from 'react-router-dom';
 import type { ColumnDefinition } from '../components/common/SortableTable';
 import type { Lead } from '../stores/useLeadsStore';

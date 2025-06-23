@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, gql } from '@apollo/client';
 
 // UUID validation helper
@@ -153,26 +153,6 @@ interface StickerCategory {
   icon?: string;
   isSystem: boolean;
   displayOrder: number;
-}
-
-interface SmartStickerData {
-  id: string;
-  title: string;
-  content?: string;
-  category?: StickerCategory;
-  positionX: number;
-  positionY: number;
-  width: number;
-  height: number;
-  color: string;
-  isPinned: boolean;
-  isPrivate: boolean;
-  priority: 'NORMAL' | 'HIGH' | 'URGENT';
-  mentions: string[];
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  createdByUserId: string;
 }
 
 interface StickerFilters {
