@@ -1,8 +1,6 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { 
   Box, 
-  Grid, 
-  GridItem, 
   Spinner, 
   Text, 
   Alert, 
@@ -37,7 +35,6 @@ import {
   HStack,
   Link,
   Heading,
-  Tag,
   Badge,
   IconButton,
   Input,
@@ -46,7 +43,7 @@ import {
   Collapse,
 } from '@chakra-ui/react';
 import { Link as RouterLink, useParams, useNavigate } from 'react-router-dom';
-import { ArrowBackIcon, WarningIcon, InfoIcon, EmailIcon, CalendarIcon, EditIcon, CheckIcon, SmallCloseIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
+import { WarningIcon, InfoIcon, EmailIcon, CalendarIcon, EditIcon, CheckIcon, SmallCloseIcon, ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons';
 import { FaClipboardList, FaPhone } from 'react-icons/fa';
 
 // Store imports
@@ -63,24 +60,17 @@ import CreateActivityForm from '../components/activities/CreateActivityForm';
 import EditActivityForm from '../components/activities/EditActivityForm';
 import EditDealModal from '../components/EditDealModal';
 import { DealHeader } from '../components/deals/DealHeader';
-import { DealOverviewCard } from '../components/deals/DealOverviewCard';
 import { DealActivitiesPanel } from '../components/deals/DealActivitiesPanel';
 import { DealCustomFieldsPanel } from '../components/deals/DealCustomFieldsPanel';
 import { DealHistoryPanel } from '../components/deals/DealHistoryPanel';
-import { DealOverviewPanel } from '../components/deals/DealOverviewPanel';
 import { DealOrganizationContactsPanel } from '../components/deals/DealOrganizationContactsPanel';
 import DealEmailsPanel from '../components/deals/DealEmailsPanel';
-import DealDocumentsPanel from '../components/deals/DealDocumentsPanel';
 import { SharedDriveDocumentBrowser } from '../components/deals/SharedDriveDocumentBrowser';
 import { DealNotesPanel } from '../components/dealDetail/DealNotesPanel';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 
 // Type imports
-import { CustomFieldEntityType } from '../generated/graphql/graphql';
-import { 
-  initializeCustomFieldValuesFromEntity, 
-} from '../lib/utils/customFieldProcessing';
 
 interface LinkDisplayDetails {
   isUrl: boolean;
@@ -103,7 +93,7 @@ const getLinkDisplayDetails = (str: string | null | undefined): LinkDisplayDetai
       if (url.pathname.includes('/presentation/') || url.pathname.includes('/drawings/')) return { isUrl: true, displayText: 'Google Slides/Drawing', fullUrl: str, isKnownService: true };
     }
     return { isUrl: true, displayText: str, fullUrl: str, isKnownService: false };
-  } catch (_) {
+  } catch (_error) {
     return { isUrl: false, displayText: str };
   }
 };

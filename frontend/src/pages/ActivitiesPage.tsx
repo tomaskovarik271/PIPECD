@@ -34,9 +34,6 @@ import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
-import { useOrganizationsStore } from '../stores/useOrganizationsStore';
-import { usePeopleStore } from '../stores/usePeopleStore';
-import { useDealsStore } from '../stores/useDealsStore';
 
 // --- Helper Functions (copied from ActivityListItem) ---
 const formatDateTime = (isoString: string | null | undefined): string => {
