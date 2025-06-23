@@ -87,11 +87,20 @@ interface Deal {
   };
 }
 
+interface ConversionResult {
+  success: boolean;
+  newLeadId: string;
+  message?: string;
+  preservedActivities: boolean;
+  createdConversionActivity: boolean;
+  archivedDeal: boolean;
+}
+
 interface ConvertDealModalProps {
   isOpen: boolean;
   onClose: () => void;
   deal: Deal | null;
-  onConversionComplete: (result: any) => void;
+  onConversionComplete: (result: ConversionResult) => void;
 }
 
 interface ConversionValidation {
@@ -336,17 +345,17 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
         throw new Error('Conversion failed - no result returned');
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Deal conversion error details:', {
         error,
-        message: error.message,
-        graphQLErrors: error.graphQLErrors,
-        networkError: error.networkError,
-        extraInfo: error.extraInfo
+        message: error instanceof Error ? error.message : 'Unknown error',
+        graphQLErrors: (error as { graphQLErrors?: unknown[] })?.graphQLErrors,
+        networkError: (error as { networkError?: unknown })?.networkError,
+        extraInfo: (error as { extraInfo?: unknown })?.extraInfo
       });
       toast({
         title: 'Conversion Failed',
-        description: error.message || 'Failed to convert deal to lead. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to convert deal to lead. Please try again.',
         status: 'error',
         duration: 7000,
         isClosable: true,

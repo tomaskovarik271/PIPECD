@@ -25,6 +25,58 @@ import {
   ConversionHelpers
 } from './index';
 
+// Types
+interface ConversionResult {
+  success: boolean;
+  newEntityId: string;
+  newEntityType: 'lead' | 'deal';
+  message?: string;
+  preservedActivities?: boolean;
+  createdConversionActivity?: boolean;
+}
+
+interface LeadData {
+  id: string;
+  name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_phone?: string;
+  company_name: string;
+  estimated_value?: number;
+  estimated_close_date?: string;
+  lead_score: number;
+  source?: string;
+  description?: string;
+}
+
+interface DealData {
+  id: string;
+  name: string;
+  amount?: number;
+  currency?: string;
+  expected_close_date?: string;
+  person?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone?: string;
+  };
+  organization?: {
+    id: string;
+    name: string;
+  };
+  currentWfmStep?: {
+    id: string;
+    name: string;
+    status: {
+      id: string;
+      name: string;
+      color: string;
+    };
+  };
+}
+
 // Example usage component showing how to integrate conversion functionality
 export function ConversionIntegrationExample() {
   const colors = useThemeColors();
@@ -111,7 +163,7 @@ export function ConversionIntegrationExample() {
   const leadConversion = useLeadConversion(selectedLead.id);
   const dealConversion = useDealConversion(selectedDeal.id);
 
-  const handleConversionComplete = (result: any) => {
+  const handleConversionComplete = (result: ConversionResult) => {
     console.log('Conversion completed:', result);
     // Here you would typically:
     // 1. Refresh data
@@ -401,7 +453,7 @@ export function ConversionIntegrationExample() {
 }
 
 // Example of how to add conversion buttons to existing pages
-export function LeadDetailPageConversionButton({ lead }: { lead: any }) {
+export function LeadDetailPageConversionButton({ lead }: { lead: LeadData }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const canConvert = ConversionHelpers.canConvertLeadToDeal(lead);
   const recommendation = ConversionHelpers.getConversionRecommendation(lead, 'lead');
@@ -432,7 +484,7 @@ export function LeadDetailPageConversionButton({ lead }: { lead: any }) {
   );
 }
 
-export function DealDetailPageConversionButton({ deal }: { deal: any }) {
+export function DealDetailPageConversionButton({ deal }: { deal: DealData }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const canConvert = ConversionHelpers.canConvertDealToLead(deal);
   const recommendation = ConversionHelpers.getConversionRecommendation(deal, 'deal');

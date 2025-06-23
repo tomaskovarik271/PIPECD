@@ -225,7 +225,7 @@ export function ConversionHistoryPanel({
 
 interface ConversionEventCardProps {
   conversion: ConversionEvent;
-  colors: any;
+  colors: ReturnType<typeof useThemeColors>;
 }
 
 function ConversionEventCard({ conversion, colors }: ConversionEventCardProps) {

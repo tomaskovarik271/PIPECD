@@ -51,11 +51,28 @@ interface Lead {
   description?: string;
 }
 
+interface ConversionResult {
+  success: boolean;
+  newDealId: string;
+  newPersonId?: string;
+  newOrganizationId?: string;
+  message?: string;
+  preservedActivities: boolean;
+  createdConversionActivity: boolean;
+}
+
+interface ProjectType {
+  id: string;
+  name: string;
+  description?: string;
+  isDefault?: boolean;
+}
+
 interface ConvertLeadModalProps {
   isOpen: boolean;
   onClose: () => void;
   lead: Lead | null;
-  onConversionComplete: (result: any) => void;
+  onConversionComplete: (result: ConversionResult) => void;
 }
 
 interface ConversionValidation {
@@ -84,6 +101,30 @@ interface ConversionPreview {
     amount: number;
     currency: string;
     expected_close_date?: string;
+  };
+}
+
+interface ConversionInput {
+  targetType: string;
+  preserveActivities: boolean;
+  createConversionActivity: boolean;
+  dealData: {
+    name: string;
+    amount: number;
+    currency: string;
+    expected_close_date?: string;
+    wfmProjectTypeId: string;
+  };
+  personData?: {
+    first_name: string;
+    last_name: string;
+    email: string;
+    phone: string;
+  };
+  organizationData?: {
+    name: string;
+    address?: string;
+    notes?: string;
   };
 }
 
@@ -272,14 +313,14 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
       });
       
       const projectTypes = projectTypesResult.data?.wfmProjectTypes || [];
-      const salesDealProjectType = projectTypes.find((pt: any) => pt.name === 'Sales Deal');
+      const salesDealProjectType = projectTypes.find((pt: ProjectType) => pt.name === 'Sales Deal');
       
       if (!salesDealProjectType) {
         throw new Error('Sales Deal project type not found. Please ensure the project type exists.');
       }
 
       // Prepare conversion input with the correct project type ID
-      const conversionInput: any = {
+      const conversionInput: ConversionInput = {
         targetType: 'DEAL',
         preserveActivities,
         createConversionActivity,
@@ -343,17 +384,17 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
         console.error('❌ No conversion result returned:', result);
         throw new Error('Conversion failed - no result returned');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Conversion error details:', {
         error,
-        message: error.message,
-        graphQLErrors: error.graphQLErrors,
-        networkError: error.networkError,
-        extraInfo: error.extraInfo
+        message: error instanceof Error ? error.message : 'Unknown error',
+        graphQLErrors: (error as { graphQLErrors?: unknown[] })?.graphQLErrors,
+        networkError: (error as { networkError?: unknown })?.networkError,
+        extraInfo: (error as { extraInfo?: unknown })?.extraInfo
       });
       toast({
         title: 'Conversion Failed',
-        description: error.message || 'Failed to convert lead to deal. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to convert lead to deal. Please try again.',
         status: 'error',
         duration: 7000,
         isClosable: true,
