@@ -1,3 +1,4 @@
+import React from 'react';
 import { Box, Text, VStack, HStack, Avatar, UnorderedList, ListItem, Code } from '@chakra-ui/react';
 import { format, parseISO } from 'date-fns';
 import { DealHistoryEntryDisplayItem } from './DealHistoryList'; // Import the type
@@ -6,6 +7,16 @@ import { useUserListStore } from '../../stores/useUserListStore'; // ADDED
 import { CustomFieldDefinition, Person, Organization, WfmStatus } from '../../generated/graphql/graphql'; // For typing, changed Stage to WfmStatus
 import { useEffect } from 'react'; // ADDED
 import { useThemeColors } from '../../hooks/useThemeColors'; // ADDED
+
+interface CustomFieldValue {
+  oldValue?: unknown;
+  newValue?: unknown;
+}
+
+interface HistoryChanges {
+  [key: string]: unknown;
+  custom_field_values?: Record<string, unknown | CustomFieldValue>;
+}
 
 interface DealHistoryItemProps {
   entry: DealHistoryEntryDisplayItem;
@@ -59,7 +70,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
   };
   const availableCustomFieldDefinitions = getCustomFieldDefinitionsFromCurrentDeal();
 
-  const formatSingleCustomFieldValue = (definitionId: string, value: any): string => {
+  const formatSingleCustomFieldValue = (definitionId: string, value: unknown): string => {
     if (value === null || value === undefined) return 'Not set';
     
     const definition = availableCustomFieldDefinitions.find(def => def.id === definitionId);
@@ -111,7 +122,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
     }
   };
   
-  const formatHistoryFieldValue = (field: string, value: any): string => {
+  const formatHistoryFieldValue = (field: string, value: unknown): string => {
     if (value === null || value === undefined) return 'Not set';
     
     // Handle object values that shouldn't be displayed as [object Object]
@@ -166,7 +177,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
   };
 
   // Helper function to render changes
-  const renderChanges = (eventType: string, changes: any): JSX.Element | string => {
+  const renderChanges = (eventType: string, changes: HistoryChanges): JSX.Element | string => {
     if (eventType === 'DEAL_DELETED') {
       return 'This deal was deleted.';
     }
@@ -198,7 +209,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
       return 'No specific changes logged.';
     }
 
-    const renderListItem = (key: string, displayKey: string, value: any, oldValue?: any) => {
+    const renderListItem = (key: string, displayKey: string, value: unknown, oldValue?: unknown) => {
        if (key === 'custom_field_values') {
         // Special rendering for custom_field_values object
         if (typeof value === 'object' && value !== null) {
@@ -400,7 +411,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
           <HStack justifyContent="space-between" w="full">
             <Text fontWeight="bold" fontSize="sm">{userName}</Text>
             <Text fontSize="xs" color={colors.text.muted}>
-              {format(parseISO(entry.createdAt), 'MMM d, yyyy, h:mm a')} 
+              {format(parseISO(entry.createdAt), 'MMM d, yyyy • h:mm a')} 
             </Text>
           </HStack>
           <Text fontSize="sm" color={colors.text.secondary}>

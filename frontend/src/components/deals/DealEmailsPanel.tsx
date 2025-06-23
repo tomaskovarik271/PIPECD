@@ -267,11 +267,72 @@ interface EmailFilter {
   showPinnedOnly: boolean;
 }
 
+interface EmailMessage {
+  id: string;
+  subject: string;
+  body: string;
+  from: string;
+  to: string[];
+  cc?: string[];
+  timestamp: string;
+  isRead: boolean;
+  threadId: string;
+  attachments?: Array<{
+    id: string;
+    fileName: string;
+    size: number;
+    mimeType: string;
+    downloadUrl?: string;
+  }>;
+}
+
+interface EmailComposeData {
+  to: string[];
+  cc: string[];
+  subject: string;
+  body: string;
+}
+
+interface EmailTaskData {
+  subject: string;
+  description: string;
+  dueDate: string;
+  assigneeId?: string;
+  threadId?: string | null;
+  useWholeThread?: boolean;
+}
+
+interface EmailThread {
+  id: string;
+  subject: string;
+  participants: string[];
+  messageCount: number;
+  lastMessageDate: string;
+  isUnread: boolean;
+  hasAttachments: boolean;
+  latestMessage: EmailMessage;
+}
+
+interface EmailPin {
+  id: string;
+  emailId: string;
+  threadId: string;
+  userId: string;
+  createdAt: string;
+}
+
+interface EmailAttachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+}
+
 // Compose Email Modal Component
 const ComposeEmailModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onSend: (data: any) => void;
+  onSend: (data: EmailComposeData) => void;
   defaultTo?: string;
   defaultSubject?: string;
 }> = ({ isOpen, onClose, onSend, defaultTo, defaultSubject }) => {
@@ -354,7 +415,7 @@ const ComposeEmailModal: React.FC<{
 const EmailToNoteModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  emailMessage: any;
+  emailMessage: EmailMessage;
   dealId: string;
 }> = ({ isOpen, onClose, emailMessage, dealId }) => {
   const [noteContent, setNoteContent] = useState('');
@@ -447,10 +508,10 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [selectedEmailForTask, setSelectedEmailForTask] = useState<string | null>(null);
   const [isConvertToNoteModalOpen, setIsConvertToNoteModalOpen] = useState(false);
-  const [selectedEmailForNote, setSelectedEmailForNote] = useState<any>(null);
+  const [selectedEmailForNote, setSelectedEmailForNote] = useState<EmailMessage | null>(null);
   const [isCreateContactModalOpen, setIsCreateContactModalOpen] = useState(false);
-  const [selectedEmailForContact, setSelectedEmailForContact] = useState<any>(null);
-  const [emailData, setEmailData] = useState<any>(null);
+  const [selectedEmailForContact, setSelectedEmailForContact] = useState<EmailMessage | null>(null);
+  const [emailData, setEmailData] = useState<EmailMessage | null>(null);
   const [selectedContactsForFilter, setSelectedContactsForFilter] = useState<string[]>([]);
   const [emailScopeFilter, setEmailScopeFilter] = useState<'PRIMARY' | 'ALL' | 'CUSTOM' | 'SELECTED_ROLES'>('PRIMARY');
 
@@ -616,21 +677,21 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
     markThreadAsRead({ variables: { threadId } });
   };
 
-  const handleComposeEmail = (emailData: any) => {
+  const handleComposeEmail = (emailData: EmailComposeData) => {
     composeEmail({
       variables: {
         input: {
-          to: [primaryContactEmail],
-          subject: `Re: ${dealName}`,
+          to: emailData.to,
+          cc: emailData.cc,
+          subject: emailData.subject,
           body: emailData.body,
           dealId,
-          ...emailData,
         },
       },
     });
   };
 
-  const handleCreateTask = (taskData: any) => {
+  const handleCreateTask = (taskData: EmailTaskData) => {
     if (!selectedEmailForTask) return;
     
     createTaskFromEmail({
@@ -649,17 +710,17 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
     });
   };
 
-  const handleConvertToNote = (emailMessage: any) => {
+  const handleConvertToNote = (emailMessage: EmailMessage) => {
     setSelectedEmailForNote(emailMessage);
     setIsConvertToNoteModalOpen(true);
   };
 
-  const handleCreateContact = (emailMessage: any) => {
+  const handleCreateContact = (emailMessage: EmailMessage) => {
     setSelectedEmailForContact(emailMessage);
     setIsCreateContactModalOpen(true);
   };
 
-  const handlePinEmail = (emailMessage: any) => {
+  const handlePinEmail = (emailMessage: EmailMessage) => {
     pinEmail({
       variables: {
         input: {
@@ -685,13 +746,13 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   // Helper function to get pin ID for unpinning
   const getPinId = (emailId: string, threadId: string) => {
     if (!pinnedEmailsData?.getPinnedEmails) return null;
-    const pin = pinnedEmailsData.getPinnedEmails.find((pin: any) => 
+    const pin = pinnedEmailsData.getPinnedEmails.find((pin: EmailPin) => 
       pin.emailId === emailId || pin.threadId === threadId
     );
     return pin?.id || null;
   };
 
-  const handlePinToggle = (emailMessage: any) => {
+  const handlePinToggle = (emailMessage: EmailMessage) => {
     const isPinned = isEmailPinned(emailMessage.id, emailMessage.threadId);
     
     if (isPinned) {
@@ -748,7 +809,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   // Helper function to check if an email/thread is pinned
   const isEmailPinned = (emailId: string, threadId: string) => {
     if (!pinnedEmailsData?.getPinnedEmails) return false;
-    return pinnedEmailsData.getPinnedEmails.some((pin: any) => 
+    return pinnedEmailsData.getPinnedEmails.some((pin: EmailPin) => 
       pin.emailId === emailId || pin.threadId === threadId
     );
   };
@@ -1052,14 +1113,14 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
               </Box>
             ) : (
               threadsData?.getEmailThreads.threads
-                .filter((thread: any) => {
+                .filter((thread: EmailThread) => {
                   // Apply pinned filter if active
                   if (filter.showPinnedOnly) {
                     return isEmailPinned(thread.latestMessage?.id, thread.id);
                   }
                   return true;
                 })
-                .map((thread: any) => (
+                .map((thread: EmailThread) => (
                   <Box
                     key={thread.id}
                     p={3}
@@ -1327,7 +1388,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                             <Text fontSize="sm" fontWeight="medium" color={colors.text.primary}>
                               Attachments:
                             </Text>
-                            {threadData.getEmailThread.latestMessage.attachments.map((attachment: any) => (
+                            {threadData.getEmailThread.latestMessage.attachments.map((attachment: EmailAttachment) => (
                               <HStack key={attachment.id} spacing={2}>
                                 <Icon as={FiPaperclip} w={4} h={4} color={colors.text.secondary} />
                                 <Text fontSize="sm" color={colors.text.secondary}>
@@ -1386,26 +1447,24 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
       />
 
       {/* Convert to Note Modal */}
-      <EmailToNoteModal
-        isOpen={isConvertToNoteModalOpen}
-        onClose={() => {
-          setIsConvertToNoteModalOpen(false);
-          setSelectedEmailForNote(null);
-        }}
-        emailMessage={selectedEmailForNote}
-        dealId={dealId}
-      />
+      {selectedEmailForNote && (
+        <EmailToNoteModal
+          isOpen={isConvertToNoteModalOpen}
+          onClose={() => setIsConvertToNoteModalOpen(false)}
+          emailMessage={selectedEmailForNote}
+          dealId={dealId}
+        />
+      )}
 
       {/* Create Contact Modal */}
-      <CreateContactFromEmailModal
-        isOpen={isCreateContactModalOpen}
-        onClose={() => {
-          setIsCreateContactModalOpen(false);
-          setSelectedEmailForContact(null);
-        }}
-        emailMessage={selectedEmailForContact}
-        dealId={dealId}
-      />
+      {selectedEmailForContact && (
+        <CreateContactFromEmailModal
+          isOpen={isCreateContactModalOpen}
+          onClose={() => setIsCreateContactModalOpen(false)}
+          emailMessage={selectedEmailForContact}
+          dealId={dealId}
+        />
+      )}
     </Box>
   );
 };
