@@ -180,29 +180,7 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
     }
   },
 
-  lastActivity: async (parent: { id: string }, _args: unknown, context: GraphQLContext) => {
-    requireAuthentication(context);
-    const accessToken = getAccessToken(context);
-    if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
-    
-    const supabase = getAuthenticatedClient(accessToken);
-    
-    try {
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .eq('organization_id', parent.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-      return data || null;
-    } catch (error) {
-      console.error('Error fetching last activity:', error);
-      return null;
-    }
-  },
+  // lastActivity resolver removed - using Google Calendar integration instead
 
   customFieldValues: async (parent: { id: string; db_custom_field_values?: Record<string, any> | null }, _args: unknown, context: GraphQLContext): Promise<CustomFieldValue[]> => {
     requireAuthentication(context);
@@ -360,19 +338,9 @@ export const accountManagementQueries: Partial<QueryResolvers<GraphQLContext>> =
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
-      // First get organization IDs that have recent activities
-      let recentActivityOrgIds: Set<string> = new Set();
-      if (organizationIds.length > 0) {
-        const { data: recentActivities } = await supabase
-          .from('activities')
-          .select('organization_id')
-          .in('organization_id', organizationIds)
-          .gte('created_at', thirtyDaysAgo.toISOString());
-
-        recentActivityOrgIds = new Set(recentActivities?.map(a => a.organization_id).filter(Boolean) || []);
-      }
-      
-      const accountsNeedingAttention = organizationIds.filter(id => !recentActivityOrgIds.has(id)).length;
+      // Activity-based account attention calculation removed
+      // TODO: Replace with Google Calendar integration for tracking engagement
+      const accountsNeedingAttention = 0; // Placeholder until Google Calendar integration
 
       return {
         totalAccounts: totalAccounts || 0,

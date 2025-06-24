@@ -15,7 +15,7 @@ type Person { # Renamed from Contact
   organization_id: ID # Foreign key
   organization: Organization # Associated organization
   deals: [Deal!] # Associated deals 
-  activities: [Activity!]! # ADDED list of related activities
+  # activities removed - using Google Calendar integration instead
   customFieldValues: [CustomFieldValue!]! # ADDED
 }
 

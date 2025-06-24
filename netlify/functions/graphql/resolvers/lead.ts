@@ -4,7 +4,7 @@ import { GraphQLContext, requireAuthentication, getAccessToken } from '../helper
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 import { dealService } from '../../../../lib/dealService';
-import { activityService } from '../../../../lib/activityService';
+// Activity service removed - using Google Calendar integration instead
 import type {
     LeadResolvers,
     Person,
@@ -13,7 +13,7 @@ import type {
     Lead as GraphQLLeadParent,
     CustomFieldValue as GraphQLCustomFieldValue,
     CustomFieldDefinition as GraphQLCustomFieldDefinition,
-    Activity as GraphQLActivity,
+    // Activity type removed - using Google Calendar integration instead
     WfmProject,
     WfmWorkflowStep,
     WfmStatus,
@@ -104,34 +104,7 @@ export const Lead: LeadResolvers<GraphQLContext> = {
         return null;
       }
     },
-    activities: async (parent: GraphQLLeadParent, _args: any, context: GraphQLContext): Promise<GraphQLActivity[]> => {
-      if (!parent.id) {
-        console.error('Lead ID missing in parent object for activities resolver.');
-        return [];
-      }
-      requireAuthentication(context);
-      const accessToken = getAccessToken(context)!;
-      const currentUserId = context.currentUser!.id;
-      try {
-        const activitiesFromService = await activityService.getActivities(currentUserId, accessToken, { leadId: parent.id });
-        return activitiesFromService.map((activity): GraphQLActivity => {
-          const mappedActivity: GraphQLActivity = {
-            ...activity,
-            user: activity.user,
-            deal: activity.deal,
-            person: activity.person,
-            organization: activity.organization,
-            created_at: new Date(activity.created_at),
-            updated_at: new Date(activity.updated_at),
-            due_date: activity.due_date ? new Date(activity.due_date) : null,
-          };
-          return mappedActivity;
-        });
-      } catch (error) {
-        console.error(`Error fetching activities for lead ${parent.id}:`, error);
-        return [];
-      }
-    },
+    // activities resolver removed - using Google Calendar integration instead
     customFieldValues: async (parent: GraphQLLeadParent & { db_custom_field_values?: Record<string, any> }, _args: any, context: GraphQLContext): Promise<GraphQLCustomFieldValue[]> => {
       requireAuthentication(context);
       const accessToken = getAccessToken(context)!;

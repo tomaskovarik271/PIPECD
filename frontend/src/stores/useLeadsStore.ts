@@ -42,15 +42,7 @@ const CUSTOM_FIELD_VALUE_FIELDS_FRAGMENT = gql`
       }
 `;
 
-const ACTIVITY_SUMMARY_FIELDS_FRAGMENT = gql`
-  fragment ActivitySummaryFields on Activity {
-        id
-        type
-        subject
-        due_date
-        is_done
-      }
-`;
+// Activity fragment removed - using Google Calendar integration instead
 
 const WFM_STEP_FIELDS_FRAGMENT = gql`
   fragment WfmStepFields on WFMWorkflowStep {
@@ -117,7 +109,7 @@ const LEAD_CORE_FIELDS_FRAGMENT = gql`
 const GET_LEADS_QUERY = gql`
   ${USER_PROFILE_FIELDS_FRAGMENT}
   ${CUSTOM_FIELD_VALUE_FIELDS_FRAGMENT}
-  ${ACTIVITY_SUMMARY_FIELDS_FRAGMENT}
+  # Activity fragment removed - using Google Calendar integration instead
   ${WFM_STEP_FIELDS_FRAGMENT}
   ${WFM_STATUS_FIELDS_FRAGMENT}
   ${LEAD_CORE_FIELDS_FRAGMENT}
@@ -128,9 +120,7 @@ const GET_LEADS_QUERY = gql`
       assignedToUser {
         ...UserProfileFields
       }
-      activities {
-        ...ActivitySummaryFields
-      }
+      # activities removed - using Google Calendar integration instead
       currentWfmStep {
         ...WfmStepFields
       }

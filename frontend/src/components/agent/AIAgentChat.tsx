@@ -37,7 +37,7 @@ import { useAgentStore } from '../../stores/useAgentStore';
 import type { AgentMessage, AgentConversation, AgentThought } from '../../stores/useAgentStore';
 import { gql } from '@apollo/client';
 import { apolloClient } from '../../lib/apolloClient';
-import { NotificationCenter } from '../common/NotificationCenter';
+// NotificationCenter removed - using Google Calendar integration instead
 // Enhanced AI Agent Components
 import { EnhancedResponse } from './enhanced';
 import type { SuggestedAction } from './enhanced';
@@ -673,7 +673,7 @@ export const AIAgentChat: React.FC = () => {
             </HStack>
             
             <HStack spacing={2}>
-              <NotificationCenter />
+              {/* NotificationCenter removed - using Google Calendar integration instead */}
               <Tooltip label={isHistoryPanelOpen ? "Hide Chat History" : "Show Chat History"}>
                 <IconButton
                   icon={isHistoryPanelOpen ? <ChevronRightIcon /> : <TimeIcon />}

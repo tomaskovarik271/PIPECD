@@ -37,10 +37,7 @@ const OrganizationDetailPage = () => {
   // Inline editing states
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState('');
-  const [isEditingIndustry, setIsEditingIndustry] = useState(false);
-  const [newIndustry, setNewIndustry] = useState('');
-  const [isEditingWebsite, setIsEditingWebsite] = useState(false);
-  const [newWebsite, setNewWebsite] = useState('');
+  // Industry and website fields removed - industry is now a custom field
 
   const fetchOrganizationById = useOrganizationsStore((state) => state.fetchOrganizationById); // Assuming this exists or will be added
   const updateOrganization = useOrganizationsStore((state) => state.updateOrganization);
@@ -81,29 +78,7 @@ const OrganizationDetailPage = () => {
     }
   };
 
-  const handleIndustryUpdate = async () => {
-    if (!currentOrganization || !organizationId) return;
-    try {
-      await updateOrganization(organizationId, { industry: newIndustry } as any);
-      toast({ title: 'Industry Updated', status: 'success', duration: 2000, isClosable: true });
-      setIsEditingIndustry(false);
-      fetchOrganizationById(organizationId);
-    } catch (e) {
-      toast({ title: 'Error Updating Industry', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
-    }
-  };
-
-  const handleWebsiteUpdate = async () => {
-    if (!currentOrganization || !organizationId) return;
-    try {
-      await updateOrganization(organizationId, { website: newWebsite } as any);
-      toast({ title: 'Website Updated', status: 'success', duration: 2000, isClosable: true });
-      setIsEditingWebsite(false);
-      fetchOrganizationById(organizationId);
-    } catch (e) {
-      toast({ title: 'Error Updating Website', description: (e as Error).message, status: 'error', duration: 3000, isClosable: true });
-    }
-  };
+  // Industry and website update handlers removed - industry is now a custom field
 
   // NEW: Single unified layout that works with all themes
   return (
@@ -278,122 +253,7 @@ const OrganizationDetailPage = () => {
                   )}
                 </HStack>
 
-                {/* Industry Field */}
-                <HStack justifyContent="space-between" alignItems="center">
-                  <Text fontSize="sm" color={colors.text.muted}>Industry</Text>
-                  {!isEditingIndustry ? (
-                    <HStack spacing={2}>
-                      <Text 
-                        fontSize="md" 
-                        fontWeight="medium" 
-                        color={colors.text.secondary}
-                      >
-                        {(currentOrganization as any).industry || '-'}
-                      </Text>
-                      <IconButton 
-                        icon={<EditIcon />} 
-                        size="xs" 
-                        variant="ghost" 
-                        aria-label="Edit Industry" 
-                        onClick={() => {
-                          setIsEditingIndustry(true);
-                          setNewIndustry((currentOrganization as any).industry || '');
-                        }}
-                        color={colors.text.muted}
-                        _hover={{color: colors.text.link}}
-                        isDisabled={!canEditOrganization}
-                      />
-                    </HStack>
-                  ) : (
-                    <HStack spacing={2} flex={1} justifyContent="flex-end">
-                      <Input 
-                        value={newIndustry} 
-                        onChange={(e) => setNewIndustry(e.target.value)} 
-                        placeholder="Enter industry" 
-                        size="sm" 
-                        w="250px"
-                        bg={colors.bg.input}
-                        borderColor={colors.border.default}
-                        _hover={{borderColor: colors.border.emphasis}}
-                        _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
-                      />
-                      <IconButton 
-                        icon={<CheckIcon />} 
-                        size="xs" 
-                        colorScheme="green" 
-                        aria-label="Save Industry" 
-                        onClick={handleIndustryUpdate}
-                      />
-                      <IconButton 
-                        icon={<SmallCloseIcon />} 
-                        size="xs" 
-                        variant="ghost" 
-                        colorScheme="red" 
-                        aria-label="Cancel Edit Industry" 
-                        onClick={() => setIsEditingIndustry(false)}
-                      />
-                    </HStack>
-                  )}
-                </HStack>
-
-                {/* Website Field */}
-                <HStack justifyContent="space-between" alignItems="center">
-                  <Text fontSize="sm" color={colors.text.muted}>Website</Text>
-                  {!isEditingWebsite ? (
-                    <HStack spacing={2}>
-                      <Text 
-                        fontSize="md" 
-                        fontWeight="medium" 
-                        color={colors.text.link}
-                      >
-                        {(currentOrganization as any).website || '-'}
-                      </Text>
-                      <IconButton 
-                        icon={<EditIcon />} 
-                        size="xs" 
-                        variant="ghost" 
-                        aria-label="Edit Website" 
-                        onClick={() => {
-                          setIsEditingWebsite(true);
-                          setNewWebsite((currentOrganization as any).website || '');
-                        }}
-                        color={colors.text.muted}
-                        _hover={{color: colors.text.link}}
-                        isDisabled={!canEditOrganization}
-                      />
-                    </HStack>
-                  ) : (
-                    <HStack spacing={2} flex={1} justifyContent="flex-end">
-                      <Input 
-                        type="url"
-                        value={newWebsite} 
-                        onChange={(e) => setNewWebsite(e.target.value)} 
-                        placeholder="Enter website URL" 
-                        size="sm" 
-                        w="300px"
-                        bg={colors.bg.input}
-                        borderColor={colors.border.default}
-                        _hover={{borderColor: colors.border.emphasis}}
-                        _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
-                      />
-                      <IconButton 
-                        icon={<CheckIcon />} 
-                        size="xs" 
-                        colorScheme="green" 
-                        aria-label="Save Website" 
-                        onClick={handleWebsiteUpdate}
-                      />
-                      <IconButton 
-                        icon={<SmallCloseIcon />} 
-                        size="xs" 
-                        variant="ghost" 
-                        colorScheme="red" 
-                        aria-label="Cancel Edit Website" 
-                        onClick={() => setIsEditingWebsite(false)}
-                      />
-                    </HStack>
-                  )}
-                </HStack>
+                {/* Industry and Website fields removed - Industry is now handled as a custom field */}
               </VStack>
             </Box>
             {/* More cards for related deals, people, etc. can be added here */}

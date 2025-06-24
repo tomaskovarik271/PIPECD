@@ -16,7 +16,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { CheckIcon, TimeIcon, WarningIcon, CalendarIcon } from '@chakra-ui/icons';
 import { Deal } from '../../stores/useDealsStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { NotificationCenter } from '../common/NotificationCenter';
+// NotificationCenter removed - using Google Calendar integration instead
 import { gql } from 'graphql-request';
 import { gqlClient } from '../../lib/graphqlClient';
 
@@ -296,7 +296,7 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEdit
             </Text>
           )}
           <HStack spacing={2}>
-            <NotificationCenter />
+            {/* NotificationCenter removed - using Google Calendar integration instead */}
             {onCreateActivity && (
               <Button 
                 size="sm" 

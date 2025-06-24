@@ -117,16 +117,7 @@ input EmailAttachmentInput {
   mimeType: String!
 }
 
-input CreateTaskFromEmailInput {
-  emailId: String!
-  threadId: String
-  useWholeThread: Boolean # If true, use entire thread; if false, use just the message
-  subject: String!
-  description: String
-  dueDate: String
-  assigneeId: String
-  dealId: String
-}
+# CreateTaskFromEmailInput removed - using Google Calendar integration instead
 
 # Email pinning types
 type EmailPin {
@@ -213,7 +204,7 @@ extend type Mutation {
   markThreadAsRead(threadId: String!): Boolean!
   markThreadAsUnread(threadId: String!): Boolean!
   archiveThread(threadId: String!): Boolean!
-  createTaskFromEmail(input: CreateTaskFromEmailInput!): Activity!
+  # createTaskFromEmail removed - using Google Calendar integration instead
   generateTaskContentFromEmail(input: GenerateTaskContentInput!): AIGeneratedTaskContent!
   linkEmailToDeal(emailId: String!, dealId: String!): Boolean!
   

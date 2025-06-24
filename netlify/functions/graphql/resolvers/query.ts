@@ -571,5 +571,5 @@ export const Query: QueryResolvers<GraphQLContext> = {
     // Account Management queries
     ...accountManagementQueries,
 
-    // Note: Activity reminder queries will be added after GraphQL schema is updated and types are regenerated
+    // Activity system removed - using Google Calendar integration instead
 }; 

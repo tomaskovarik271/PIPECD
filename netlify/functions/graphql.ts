@@ -20,11 +20,7 @@ import { Person } from './graphql/resolvers/person';
 import { Deal } from './graphql/resolvers/deal';
 import { Lead } from './graphql/resolvers/lead';
 import { Organization } from './graphql/resolvers/organization';
-import {
-  Activity,
-  Query as ActivityQuery,
-  Mutation as ActivityMutation
-} from './graphql/resolvers/activity';
+// Activity resolvers removed - using Google Calendar integration instead
 import { DealHistoryEntry } from './graphql/resolvers/history';
 import {
   queryResolvers as CustomFieldQueryResolvers,
@@ -68,9 +64,7 @@ import { appSettingsMutations } from './graphql/resolvers/mutations/appSettingsM
 // Import User Resolvers
 import { User as UserResolver, userMutations } from './graphql/resolvers/user';
 
-// Import Activity Reminder Resolvers
-import { activityReminderQueries } from './graphql/resolvers/queries/activityReminderQueries';
-import { activityReminderMutations } from './graphql/resolvers/mutations/activityReminderMutations';
+// Activity reminder resolvers removed - using Google Calendar integration instead
 
 // Import Currency Resolvers
 import { currencyResolvers } from './graphql/resolvers/currency';
@@ -112,8 +106,7 @@ const loadTypeDefs = (): string => {
   // Start by commenting out half, then a quarter, etc. (binary search).
   // Example: load only a few critical files to see if the base schema works.
   const filesToLoad = [
-    'activity.graphql', 
-    'activityReminders.graphql',
+    // Activity schema files removed - using Google Calendar integration instead
     'agent.graphql',
     'agentV2.graphql',
     'appSettings.graphql',
@@ -173,7 +166,7 @@ export type { GraphQLContext };
 export const resolvers = {
   Query: {
     ...BaseQuery,
-    ...ActivityQuery,
+    // Activity resolvers removed - using Google Calendar integration instead
     ...CustomFieldQueryResolvers,
     ...WFMStatusResolvers.Query,
     ...WFMWorkflowResolvers.Query,
@@ -186,12 +179,12 @@ export const resolvers = {
     ...driveQueries,
     ...sharedDriveQueries,
     ...appSettingsQueries,
-    ...activityReminderQueries,
+    // Activity reminder resolvers removed - using Google Calendar integration instead
     ...currencyResolvers.Query,
   },
   Mutation: {
     ...BaseMutation,
-    ...ActivityMutation,
+    // Activity resolvers removed - using Google Calendar integration instead
     ...CustomFieldMutationResolvers,
     ...WFMStatusResolvers.Mutation,
     ...WFMWorkflowResolvers.Mutation,
@@ -205,7 +198,7 @@ export const resolvers = {
     ...sharedDriveMutations,
     ...appSettingsMutations,
     ...userMutations,
-    ...activityReminderMutations,
+    // Activity reminder resolvers removed - using Google Calendar integration instead
     ...currencyResolvers.Mutation,
   },
   Person,
@@ -218,7 +211,7 @@ export const resolvers = {
     ...currencyResolvers.Lead,
   },
   Organization,
-  Activity,
+  // Activity resolver removed - using Google Calendar integration instead
   DealHistoryEntry,
   User: UserResolver,
   CurrencyAmount: currencyResolvers.CurrencyAmount,

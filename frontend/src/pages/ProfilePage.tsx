@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Heading, Button, VStack, useToast, Spinner, Text, Flex, IconButton, HStack } from '@chakra-ui/react';
 import { EditIcon, CloseIcon } from '@chakra-ui/icons';
-import { NotificationCenter } from '../components/common/NotificationCenter';
+// NotificationCenter removed - using Google Calendar integration instead
 import { gql } from 'graphql-request';
 import { gqlClient } from '../lib/graphqlClient';
 import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
 import type { User } from '../generated/graphql/graphql';
 import ProfileView from '../components/profile/ProfileView';
 import ProfileEditForm from '../components/profile/ProfileEditForm';
-import { NotificationPreferences } from '../components/profile/NotificationPreferences';
+// NotificationPreferences removed - using Google Calendar integration instead
 
 // Define the query string directly for graphql-request
 const GET_ME_QUERY = gql`
@@ -113,7 +113,7 @@ const ProfilePage: React.FC = () => {
           
           <HStack spacing={3}>
             {/* Notification Center */}
-            <NotificationCenter />
+            {/* NotificationCenter removed - using Google Calendar integration instead */}
             
             {user && !isEditing && (
               <IconButton
@@ -144,10 +144,7 @@ const ProfilePage: React.FC = () => {
           <>
             <ProfileView user={user} isLoading={loading} />
             
-            {/* Activity Reminder Preferences */}
-            <Box mt={8}>
-              <NotificationPreferences />
-            </Box>
+            {/* Activity Reminder Preferences removed - using Google Calendar integration instead */}
           </>
         )}
       </VStack>

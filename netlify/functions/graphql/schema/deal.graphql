@@ -13,7 +13,7 @@ type Deal {
   person: Person
   organization_id: ID
   organization: Organization
-  activities: [Activity!]!
+  # activities removed - using Google Calendar integration instead
   deal_specific_probability: Float # Nullable, if null, use probability from WFM step
   weighted_amount: Float # Calculated: amount * (deal_specific_probability || wfm_step_probability)
   history(limit: Int, offset: Int): [DealHistoryEntry!]

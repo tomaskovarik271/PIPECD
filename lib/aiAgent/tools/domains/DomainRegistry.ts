@@ -15,7 +15,7 @@ import { DealsModule } from './DealsModule';
 import { LeadsModule } from './LeadsModule';
 import { OrganizationsModule } from './OrganizationsModule';
 import { ContactsModule } from './ContactsModule';
-import { ActivitiesModule } from './ActivitiesModule';
+// ActivitiesModule removed - using Google Calendar integration instead
 
 
 export interface DomainModule {
@@ -31,7 +31,7 @@ export class DomainRegistry {
   private leadsModule: LeadsModule;
   private organizationsModule: OrganizationsModule;
   private contactsModule: ContactsModule;
-  private activitiesModule: ActivitiesModule;
+  // ActivitiesModule removed - using Google Calendar integration instead
 
   constructor(graphqlClient: GraphQLClient) {
     this.graphqlClient = graphqlClient;
@@ -41,7 +41,7 @@ export class DomainRegistry {
     this.leadsModule = new LeadsModule(graphqlClient);
     this.organizationsModule = new OrganizationsModule();
     this.contactsModule = new ContactsModule();
-    this.activitiesModule = new ActivitiesModule();
+    // ActivitiesModule removed - using Google Calendar integration instead
     
     // Register domain mappings
     this.registerDomains();
@@ -86,14 +86,7 @@ export class DomainRegistry {
       update_contact: this.contactsModule.updateContact.bind(this.contactsModule),
     });
 
-    // Activities domain
-    this.domains.set('activities', {
-      search_activities: this.activitiesModule.searchActivities.bind(this.activitiesModule),
-      get_activity_details: this.activitiesModule.getActivityDetails.bind(this.activitiesModule),
-      create_activity: this.activitiesModule.createActivity.bind(this.activitiesModule),
-      update_activity: this.activitiesModule.updateActivity.bind(this.activitiesModule),
-      complete_activity: this.activitiesModule.completeActivity.bind(this.activitiesModule),
-    });
+    // Activities domain removed - using Google Calendar integration instead
 
 
   }
@@ -122,10 +115,7 @@ export class DomainRegistry {
       return 'contacts';
     }
     
-    // Activity tools
-    if (['search_activities', 'get_activity_details', 'create_activity', 'update_activity', 'complete_activity'].includes(toolName)) {
-      return 'activities';
-    }
+    // Activity tools removed - using Google Calendar integration instead
 
 
 

@@ -18,7 +18,7 @@ import { SearchIcon, HamburgerIcon, CalendarIcon } from '@chakra-ui/icons';
 import { TbLayoutGrid } from 'react-icons/tb';
 import { useAppStore } from '../../stores/useAppStore';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
-import { NotificationCenter } from '../common/NotificationCenter';
+// NotificationCenter removed - using Google Calendar integration instead
 
 interface PageStatistic {
   label: string;
@@ -170,8 +170,7 @@ const UnifiedPageHeader: React.FC<UnifiedPageHeaderProps> = ({
             </HStack>
           )}
           
-          {/* Notification Center */}
-          <NotificationCenter />
+          {/* Notification Center removed - using Google Calendar integration instead */}
           
           {/* Secondary actions */}
           {secondaryActions}

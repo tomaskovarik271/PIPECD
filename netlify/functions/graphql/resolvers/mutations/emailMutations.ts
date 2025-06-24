@@ -214,63 +214,7 @@ export const emailMutations: MutationResolvers<GraphQLContext> = {
     }
   },
 
-  createTaskFromEmail: async (_, { input }, context) => {
-    const { userId, accessToken } = requireAuthentication(context);
-    const { supabaseClient } = context;
-
-    try {
-      // Get the email message to extract context
-      const emailMessage = await emailService.getEmailMessage(userId, accessToken, input.emailId);
-      if (!emailMessage) {
-        throw new Error('Email not found');
-      }
-
-      // Get email thread if needed for context
-      let emailThread = null;
-      if (input.useWholeThread && input.threadId) {
-        emailThread = await emailService.getEmailThread(userId, accessToken, input.threadId);
-      }
-
-      // Generate intelligent task content using Claude 3 Haiku
-      const generatedContent = await generateTaskContentFromEmail(
-        emailMessage, 
-        emailThread, 
-        input.useWholeThread || false
-      );
-
-      // Use user input if provided, otherwise use AI-generated content
-      const taskSubject = input.subject || generatedContent.subject;
-      const taskDescription = input.description || generatedContent.description;
-
-      // Create activity/task in the database
-      const { data: activityData, error: activityError } = await supabaseClient
-        .from('activities')
-        .insert({
-          subject: taskSubject,
-          notes: taskDescription,
-          type: 'TASK',
-          deal_id: input.dealId,
-          assigned_to_user_id: input.assigneeId || userId,
-          due_date: input.dueDate || generatedContent.suggestedDueDate,
-          is_done: false,
-          user_id: userId,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (activityError) {
-        console.error('Error creating task from email:', activityError);
-        throw new Error('Failed to create task');
-      }
-
-      return activityData;
-    } catch (error) {
-      console.error('Error creating task from email:', error);
-      throw new Error('Failed to create task from email');
-    }
-  },
+  // createTaskFromEmail removed - using Google Calendar integration instead
 
   generateTaskContentFromEmail: async (_, { input }, context) => {
     const { userId, accessToken } = requireAuthentication(context);

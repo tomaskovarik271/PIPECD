@@ -38,7 +38,7 @@ const NAV_ITEMS = [
   { path: '/leads', label: 'Leads', icon: <StarIcon /> },
   { path: '/people', label: 'Contacts', icon: <InfoOutlineIcon /> },
   { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
-  { path: '/activities', label: 'Activities', icon: <CalendarIcon /> },
+  // Activities removed - using Google Calendar integration instead
   { path: '/my-accounts', label: 'My Accounts', icon: <AtSignIcon />, permission: 'organization:view_account_portfolio' },
 ];
 

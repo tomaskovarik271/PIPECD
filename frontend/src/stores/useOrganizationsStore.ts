@@ -77,8 +77,6 @@ const GET_ORGANIZATION_BY_ID_QUERY = gql`
       created_at
       updated_at
       account_manager_id
-      industry
-      website
       accountManager {
         id
         display_name

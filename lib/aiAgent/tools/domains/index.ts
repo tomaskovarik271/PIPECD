@@ -12,5 +12,5 @@ export type { DomainModule } from './DomainRegistry';
 export { DealsModule } from './DealsModule';
 export { OrganizationsModule } from './OrganizationsModule';
 export { ContactsModule } from './ContactsModule';
-export { ActivitiesModule } from './ActivitiesModule';
+// ActivitiesModule removed - using Google Calendar integration instead
 export { PipelineModule } from './PipelineModule'; 

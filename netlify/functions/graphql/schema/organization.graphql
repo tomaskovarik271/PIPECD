@@ -9,26 +9,22 @@ type Organization {
     user_id: ID!
     name: String!
     address: String
-    industry: String
-    website: String
     notes: String
     account_manager_id: ID # Account manager user ID
     accountManager: User # Account manager user object
     people: [Person!] # People belonging to this organization
     deals: [Deal!]! # List of associated deals
-    activities: [Activity!]! # ADDED list of related activities
+    # activities removed - using Google Calendar integration instead
     customFieldValues: [CustomFieldValue!]! # ADDED
     # Account management statistics
     totalDealValue: Float # Total value of all deals for this organization
     activeDealCount: Int # Number of active deals
-    lastActivity: Activity # Most recent activity
+    # lastActivity removed - using Google Calendar integration instead
 }
 
 input OrganizationInput {
     name: String!
     address: String
-    industry: String
-    website: String
     notes: String
     account_manager_id: ID # Account manager assignment
     customFields: [CustomFieldValueInput!] # ADDED
@@ -37,8 +33,6 @@ input OrganizationInput {
 input OrganizationUpdateInput {
     name: String
     address: String
-    industry: String
-    website: String
     notes: String
     account_manager_id: ID # Account manager assignment
     customFields: [CustomFieldValueInput!] # ADDED

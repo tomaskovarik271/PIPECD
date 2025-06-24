@@ -12,8 +12,7 @@ const PeoplePage = lazy(() => import('./pages/PeoplePage'));
 const PersonDetailPage = lazy(() => import('./pages/PersonDetailPage'));
 const OrganizationsPage = lazy(() => import('./pages/OrganizationsPage'));
 const OrganizationDetailPage = lazy(() => import('./pages/OrganizationDetailPage'));
-const ActivitiesPage = lazy(() => import('./pages/ActivitiesPage'));
-const ActivityDetailPage = lazy(() => import('./pages/ActivityDetailPage'));
+// Activities pages removed - using Google Calendar integration instead
 const DealDetailPage = lazy(() => import('./pages/DealDetailPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const GoogleIntegrationPage = lazy(() => import('./pages/GoogleIntegrationPage'));
@@ -97,8 +96,7 @@ function AppContent() {
               <Route path="/organizations" element={<OrganizationsPage />} />
               <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
               
-              <Route path="/activities" element={<ActivitiesPage />} />
-              <Route path="/activities/:activityId" element={<ActivityDetailPage />} />
+                              {/* Activities routes removed - using Google Calendar integration instead */}
               <Route path="/agent" element={<AgentPage />} />
               <Route path="/agent-v2" element={<AgentV2Page />} />
               <Route path="/profile" element={<ProfilePage />} />
