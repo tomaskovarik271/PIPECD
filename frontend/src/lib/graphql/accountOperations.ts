@@ -21,13 +21,6 @@ export const GET_MY_ACCOUNTS = gql`
       }
       totalDealValue
       activeDealCount
-      lastActivity {
-        id
-        subject
-        type
-        due_date
-        created_at
-      }
       customFieldValues {
         definition {
           id
@@ -116,13 +109,6 @@ export const GET_ORGANIZATION_WITH_ACCOUNT_MANAGER = gql`
       }
       totalDealValue
       activeDealCount
-      lastActivity {
-        id
-        subject
-        type
-        due_date
-        created_at
-      }
     }
   }
 `; 

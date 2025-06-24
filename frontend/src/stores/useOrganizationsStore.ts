@@ -87,13 +87,6 @@ const GET_ORGANIZATION_BY_ID_QUERY = gql`
       }
       totalDealValue
       activeDealCount
-      lastActivity {
-        id
-        subject
-        type
-        due_date
-        created_at
-      }
       people {
         id
         first_name
