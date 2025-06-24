@@ -57,8 +57,6 @@ interface ConversionResult {
   newPersonId?: string;
   newOrganizationId?: string;
   message?: string;
-  preservedActivities: boolean;
-  createdConversionActivity: boolean;
 }
 
 interface ProjectType {
@@ -106,8 +104,6 @@ interface ConversionPreview {
 
 interface ConversionInput {
   targetType: string;
-  preserveActivities: boolean;
-  createConversionActivity: boolean;
   dealData: {
     name: string;
     amount: number;
@@ -171,8 +167,6 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
   const [preview, setPreview] = useState<ConversionPreview | null>(null);
 
   // Conversion options
-  const [preserveActivities, setPreserveActivities] = useState(false);
-  const [createConversionActivity, setCreateConversionActivity] = useState(true);
   const [notes, setNotes] = useState('');
 
   // Deal data customization
@@ -322,8 +316,6 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
       // Prepare conversion input with the correct project type ID
       const conversionInput: ConversionInput = {
         targetType: 'DEAL',
-        preserveActivities,
-        createConversionActivity,
         dealData: {
           name: dealName || lead.name,
           amount: dealAmount || lead.estimated_value || 0,
@@ -406,8 +398,6 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
 
   const resetForm = () => {
     setNotes('');
-    setPreserveActivities(false);
-    setCreateConversionActivity(true);
     setValidation(null);
     setPreview(null);
   };
@@ -567,29 +557,7 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
                 </Button>
               </HStack>
 
-              <HStack spacing={6}>
-                <FormControl display="flex" alignItems="center">
-                  <FormLabel htmlFor="preserve-activities" mb="0" fontSize="sm">
-                    Preserve Activities
-                  </FormLabel>
-                  <Switch 
-                    id="preserve-activities"
-                    isChecked={preserveActivities}
-                    onChange={(e) => setPreserveActivities(e.target.checked)}
-                  />
-                </FormControl>
-
-                <FormControl display="flex" alignItems="center">
-                  <FormLabel htmlFor="create-activity" mb="0" fontSize="sm">
-                    Create Conversion Activity
-                  </FormLabel>
-                  <Switch 
-                    id="create-activity"
-                    isChecked={createConversionActivity}
-                    onChange={(e) => setCreateConversionActivity(e.target.checked)}
-                  />
-                </FormControl>
-              </HStack>
+              {/* Activity options removed - using Google Calendar integration instead */}
 
               <FormControl>
                 <FormLabel fontSize="sm">Conversion Notes</FormLabel>

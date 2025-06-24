@@ -609,28 +609,8 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
 
               <VStack spacing={4} align="stretch">
                 <HStack spacing={6}>
-                  <FormControl display="flex" alignItems="center">
-                    <FormLabel htmlFor="preserve-activities" mb="0" fontSize="sm">
-                      Preserve Activities
-                    </FormLabel>
-                    <Switch 
-                      id="preserve-activities"
-                      isChecked={preserveActivities}
-                      onChange={(e) => setPreserveActivities(e.target.checked)}
-                    />
-                  </FormControl>
-
-                  <FormControl display="flex" alignItems="center">
-                    <FormLabel htmlFor="create-activity" mb="0" fontSize="sm">
-                      Create Conversion Activity
-                    </FormLabel>
-                    <Switch 
-                      id="create-activity"
-                      isChecked={createConversionActivity}
-                      onChange={(e) => setCreateConversionActivity(e.target.checked)}
-                    />
-                  </FormControl>
-
+                  {/* Activity options removed - using Google Calendar integration instead */}
+                  
                   <FormControl display="flex" alignItems="center">
                     <FormLabel htmlFor="archive-deal" mb="0" fontSize="sm">
                       Archive Deal

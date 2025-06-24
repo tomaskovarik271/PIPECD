@@ -349,35 +349,7 @@ export function BulkConvertLeadsModal({
                 Global Options
               </Text>
               <VStack spacing={4} align="stretch">
-                <HStack spacing={6}>
-                  <FormControl display="flex" alignItems="center">
-                    <FormLabel htmlFor="preserve-activities" mb="0" fontSize="sm">
-                      Preserve Activities
-                    </FormLabel>
-                    <Switch 
-                      id="preserve-activities"
-                      isChecked={globalOptions.preserveActivities}
-                      onChange={(e) => setGlobalOptions(prev => ({ 
-                        ...prev, 
-                        preserveActivities: e.target.checked 
-                      }))}
-                    />
-                  </FormControl>
-
-                  <FormControl display="flex" alignItems="center">
-                    <FormLabel htmlFor="create-activity" mb="0" fontSize="sm">
-                      Create Conversion Activity
-                    </FormLabel>
-                    <Switch 
-                      id="create-activity"
-                      isChecked={globalOptions.createConversionActivity}
-                      onChange={(e) => setGlobalOptions(prev => ({ 
-                        ...prev, 
-                        createConversionActivity: e.target.checked 
-                      }))}
-                    />
-                  </FormControl>
-                </HStack>
+                {/* Activity options removed - using Google Calendar integration instead */}
 
                 <HStack>
                   <FormControl maxW="300px">
