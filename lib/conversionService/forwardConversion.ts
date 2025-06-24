@@ -176,34 +176,7 @@ export async function convertLeadToDeal(
     const createdDeal = await dealService.createDeal(userId, dealData, accessToken);
     console.log(`Created deal: ${createdDeal.id}`);
 
-    // 5. Data Migration Phase
-    if (input.preserveActivities !== false) {
-      // Transfer activities from lead to deal
-      try {
-        const { data: activities } = await supabase
-          .from('activities')
-          .select('*')
-          .eq('lead_id', input.leadId);
-
-        if (activities && activities.length > 0) {
-          const activityUpdates = activities.map(activity => ({
-            ...activity,
-            deal_id: createdDeal.id,
-            lead_id: null,
-            notes: `${activity.notes || ''}\n[Transferred from lead: ${lead.name}]`.trim()
-          }));
-
-          await supabase
-            .from('activities')
-            .upsert(activityUpdates);
-
-          console.log(`Transferred ${activities.length} activities to deal`);
-        }
-      } catch (error) {
-        console.error('Error transferring activities:', error);
-        // Non-blocking error
-      }
-    }
+    // 5. Data Migration Phase - Activities removed (using Google Calendar integration)
 
     // 6. Update Lead Status and WFM Status
     await updateLead(userId, input.leadId, {
@@ -266,7 +239,6 @@ export async function convertLeadToDeal(
       conversionData: {
         personCreated: !!personId,
         organizationCreated: !!organizationId,
-        activitiesTransferred: input.preserveActivities !== false,
         leadStatusUpdated,
         wfmTransitionExecuted: true // Deal creation handles WFM automatically
       },
@@ -275,29 +247,7 @@ export async function convertLeadToDeal(
       supabase
     });
 
-    // 8. Create Conversion Activity
-    if (input.createConversionActivity !== false) {
-      try {
-        await supabase
-          .from('activities')
-          .insert({
-            subject: `Lead converted to deal: ${createdDeal.name}`,
-            type: 'LEAD_CONVERSION',
-            status: 'COMPLETED',
-            deal_id: createdDeal.id,
-            person_id: personId,
-            organization_id: organizationId,
-            user_id: userId,
-            due_date: new Date().toISOString(),
-            completed_at: new Date().toISOString(),
-            notes: `Lead "${lead.name}" successfully converted to deal with ${personId ? 'person' : 'no person'} and ${organizationId ? 'organization' : 'no organization'}.${input.notes ? `\n\nNotes: ${input.notes}` : ''}`
-          });
-        console.log('Created conversion activity');
-      } catch (error) {
-        console.error('Error creating conversion activity:', error);
-        // Non-blocking error
-      }
-    }
+    // 8. Activity creation removed - using Google Calendar integration instead
 
     return {
       success: true,
