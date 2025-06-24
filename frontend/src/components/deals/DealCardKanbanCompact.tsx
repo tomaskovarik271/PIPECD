@@ -96,23 +96,11 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
     dueDateColor = colors.text.error;
   }
 
-  // Enhanced styling based on activity urgency - just a little more
-  const hasOverdueActivities = activityIndicators.overdueCount > 0;
-  const hasDueTodayActivities = activityIndicators.dueTodayCount > 0;
+  // Activity-based styling removed - using Google Calendar integration instead
   
   let borderLeftColor = "transparent";
   let borderLeftWidth = "1px";
   let boxShadowHint = "";
-  
-  if (hasOverdueActivities) {
-    borderLeftColor = "red.400";
-    borderLeftWidth = "2px";
-    boxShadowHint = "0 0 0 1px rgba(239, 68, 68, 0.1)";
-  } else if (hasDueTodayActivities) {
-    borderLeftColor = "orange.400";
-    borderLeftWidth = "2px";
-    boxShadowHint = "0 0 0 1px rgba(251, 146, 60, 0.1)";
-  }
 
   const baseStyle = {
     bg: colors.bg.elevated,
@@ -166,7 +154,7 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
               >
                 {deal.name}
               </Text>
-              <ActivityIndicator indicators={activityIndicators} variant="compact" />
+              {/* Activity indicator removed - using Google Calendar integration instead */}
             </HStack>
             <Text fontSize="sm" fontWeight="bold" color={colors.text.success} ml={2} flexShrink={0}>
               {formatDealAmount(deal, currencyDisplayMode, baseCurrencyForConversion)}
