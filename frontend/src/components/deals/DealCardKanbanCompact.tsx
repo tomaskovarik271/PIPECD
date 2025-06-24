@@ -14,8 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
 import { useAppStore } from '../../stores/useAppStore';
-import { ActivityIndicator } from '../common/ActivityIndicator';
-import { analyzeDealActivities } from '../../utils/activityIndicators';
+// Activity indicators removed - using Google Calendar integration instead
 
 // Extended Deal type that includes project_id which may be present on some deals
 interface DealWithProjectId extends Deal {
@@ -79,7 +78,7 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
   };
 
   // Analyze activities for indicators
-  const activityIndicators = analyzeDealActivities(deal.activities || []);
+  // Activity indicators removed - using Google Calendar integration instead
 
   const getEffectiveProbability = () => {
     if (deal.deal_specific_probability != null) return deal.deal_specific_probability;

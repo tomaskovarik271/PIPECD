@@ -16,8 +16,7 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { TimeIcon, ExternalLinkIcon, EditIcon, ViewIcon as EyeIcon } from '@chakra-ui/icons';
 import { differenceInDays, formatDistanceToNowStrict, isPast, format } from 'date-fns';
 import { useAppStore } from '../../stores/useAppStore';
-import { ActivityIndicator } from '../common/ActivityIndicator';
-import { analyzeDealActivities } from '../../utils/activityIndicators';
+// Activity indicators removed - using Google Calendar integration instead
 
 interface DealCardKanbanProps {
   deal: Deal;
@@ -67,7 +66,7 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
   const navigate = useNavigate();
 
   // Analyze activities for indicators
-  const activityIndicators = analyzeDealActivities(deal.activities || []);
+  // Activity indicators removed - using Google Calendar integration instead
 
   const placeholderTags = [deal.currentWfmStep?.status?.name].filter(Boolean) as string[];
   if (deal.amount && deal.amount > 50000) placeholderTags.push('High Value');
@@ -95,22 +94,12 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
   }
 
   // Enhanced styling based on activity urgency - just a little more
-  const hasOverdueActivities = activityIndicators.overdueCount > 0;
-  const hasDueTodayActivities = activityIndicators.dueTodayCount > 0;
+  // Activity status indicators removed - using Google Calendar integration instead
   
+  // Activity-based styling removed - using Google Calendar integration instead
   let borderLeftColor = "transparent";
   let borderLeftWidth = "1px";
   let boxShadowHint = "";
-  
-  if (hasOverdueActivities) {
-    borderLeftColor = "red.400";
-    borderLeftWidth = "2px";
-    boxShadowHint = "0 0 0 1px rgba(239, 68, 68, 0.1)";
-  } else if (hasDueTodayActivities) {
-    borderLeftColor = "orange.400";
-    borderLeftWidth = "2px";
-    boxShadowHint = "0 0 0 1px rgba(251, 146, 60, 0.1)";
-  }
 
   const baseStyle = {
     bg: colors.component.kanban.card,
@@ -191,7 +180,7 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
                   >
                     {deal.name}
                   </Text>
-                  <ActivityIndicator indicators={activityIndicators} variant="default" />
+                  {/* Activity indicator removed - using Google Calendar integration instead */}
                 </HStack>
                 <Text fontSize="sm" color={colors.text.muted}>
                   {deal.organization?.name || '-'}
