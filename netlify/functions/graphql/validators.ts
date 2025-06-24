@@ -1,8 +1,4 @@
 import { z } from 'zod';
-// import { StageType as GeneratedStageType } from '../../../lib/generated/graphql'; // REMOVED
-import { 
-    ActivityType as GeneratedActivityType
-} from '../../../lib/generated/graphql';
 
 // Zod schema for CustomFieldValueInput
 const CustomFieldValueInputSchema = z.object({
@@ -81,47 +77,5 @@ export const DealUpdateSchema = DealBaseSchema.partial().refine(
 
 // --- Pipeline Schemas ---
 
-// === Activity Validators ===
-
-const ActivityTypeEnum = z.nativeEnum(GeneratedActivityType, {
-    errorMap: () => ({ message: 'Invalid activity type. Must be one of CALL, DEADLINE, EMAIL, MEETING, SYSTEM_TASK, TASK.' })
-});
-
-export const CreateActivityInputSchema = z.object({
-  type: ActivityTypeEnum,
-  subject: z.string().trim().min(1, { message: 'Subject cannot be empty' }),
-  due_date: z.coerce.date().optional().nullable(),
-  notes: z.string().trim().optional().nullable(), // Trim notes
-  is_done: z.boolean().optional(), // Defaults false in DB
-  assigned_to_user_id: z.string().uuid({ message: 'Invalid UUID for assigned user ID' }).optional().nullable(),
-  deal_id: z.string().uuid({ message: 'Invalid UUID for deal ID' }).optional().nullable(),
-  person_id: z.string().uuid({ message: 'Invalid UUID for person ID' }).optional().nullable(),
-  organization_id: z.string().uuid({ message: 'Invalid UUID for organization ID' }).optional().nullable(),
-}).refine(data => !!data.deal_id || !!data.person_id || !!data.organization_id, {
-  message: 'An activity must be linked to at least one Deal, Person, or Organization.',
-  // path: ['deal_id'], // Add path for better error highlighting if desired, points to first field
-});
-
-export const UpdateActivityInputSchema = z.object({
-  // All fields are optional for update
-  type: ActivityTypeEnum.optional(),
-  subject: z.string().trim().min(1, { message: 'Subject cannot be empty when provided' }).optional(), // Validate non-empty only if provided
-  due_date: z.coerce.date().optional().nullable(),
-  notes: z.string().trim().nullable().optional(), // Allow explicitly setting notes to null or empty string after trim
-  is_done: z.boolean().optional(),
-  assigned_to_user_id: z.string().uuid({ message: 'Invalid UUID for assigned user ID' }).optional().nullable(),
-  deal_id: z.string().uuid({ message: 'Invalid UUID for deal ID' }).optional().nullable(),
-  person_id: z.string().uuid({ message: 'Invalid UUID for person ID' }).optional().nullable(),
-  organization_id: z.string().uuid({ message: 'Invalid UUID for organization ID' }).optional().nullable(),
-}).refine(data => Object.keys(data).length > 0, {
-    message: 'Update input cannot be empty. Provide at least one field to update.',
-});
-
-export const ActivityFilterInputSchema = z.object({
-    dealId: z.string().uuid({ message: 'Invalid UUID for filter dealId' }).optional(),
-    personId: z.string().uuid({ message: 'Invalid UUID for filter personId' }).optional(),
-    organizationId: z.string().uuid({ message: 'Invalid UUID for filter organizationId' }).optional(),
-    leadId: z.string().uuid({ message: 'Invalid UUID for filter leadId' }).optional(),
-    isDone: z.boolean().optional(),
-}).optional();
+// Activity validators removed - using Google Calendar integration instead
 

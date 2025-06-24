@@ -74,7 +74,7 @@ const AccountManagerAssignmentModal: React.FC<AccountManagerAssignmentModalProps
   const [isLoading, setIsLoading] = useState(false);
 
   // Get assignable users
-  const { data: usersData, loading: usersLoading } = useQuery(GET_ASSIGNABLE_USERS_QUERY);
+  const { data: usersData, loading: usersLoading, error: usersError } = useQuery(GET_ASSIGNABLE_USERS_QUERY);
 
   // Mutations
   const [assignAccountManager] = useMutation(ASSIGN_ACCOUNT_MANAGER);
@@ -175,6 +175,21 @@ const AccountManagerAssignmentModal: React.FC<AccountManagerAssignmentModalProps
               </Text>
             </Box>
 
+            {/* Error handling for users query */}
+            {usersError && (
+              <Alert status="error" borderRadius="md">
+                <AlertIcon />
+                <Text>
+                  Failed to load users: {usersError.message}
+                  {usersError.message.includes('Forbidden') && (
+                    <Text fontSize="sm" mt={1}>
+                      You need account manager assignment permissions to use this feature.
+                    </Text>
+                  )}
+                </Text>
+              </Alert>
+            )}
+
             {/* Current Account Manager */}
             {currentAccountManager ? (
               <Box>
@@ -219,7 +234,7 @@ const AccountManagerAssignmentModal: React.FC<AccountManagerAssignmentModalProps
                   placeholder="Select a user..."
                   value={selectedUserId}
                   onChange={(e) => setSelectedUserId(e.target.value)}
-                  isDisabled={usersLoading || isLoading}
+                  isDisabled={usersLoading || isLoading || !!usersError}
                   bg={colors.bg.input}
                   borderColor={colors.border.input}
                 >
@@ -263,7 +278,7 @@ const AccountManagerAssignmentModal: React.FC<AccountManagerAssignmentModalProps
             <Button
               colorScheme="blue"
               onClick={handleAssign}
-              isDisabled={!selectedUserId || usersLoading}
+              isDisabled={!selectedUserId || usersLoading || !!usersError}
               isLoading={isLoading}
               loadingText="Assigning..."
             >

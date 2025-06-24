@@ -7,8 +7,6 @@ export const GET_MY_ACCOUNTS = gql`
       id
       name
       address
-      industry
-      website
       notes
       created_at
       updated_at
@@ -95,8 +93,6 @@ export const GET_ORGANIZATION_WITH_ACCOUNT_MANAGER = gql`
       id
       name
       address
-      industry
-      website
       notes
       created_at
       updated_at

@@ -34,149 +34,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      activities: {
-        Row: {
-          assigned_to_user_id: string | null
-          created_at: string
-          deal_id: string | null
-          due_date: string | null
-          id: string
-          is_done: boolean
-          is_system_activity: boolean
-          lead_id: string | null
-          notes: string | null
-          organization_id: string | null
-          person_id: string | null
-          subject: string
-          type: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          assigned_to_user_id?: string | null
-          created_at?: string
-          deal_id?: string | null
-          due_date?: string | null
-          id?: string
-          is_done?: boolean
-          is_system_activity?: boolean
-          lead_id?: string | null
-          notes?: string | null
-          organization_id?: string | null
-          person_id?: string | null
-          subject: string
-          type: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          assigned_to_user_id?: string | null
-          created_at?: string
-          deal_id?: string | null
-          due_date?: string | null
-          id?: string
-          is_done?: boolean
-          is_system_activity?: boolean
-          lead_id?: string | null
-          notes?: string | null
-          organization_id?: string | null
-          person_id?: string | null
-          subject?: string
-          type?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "activities_assigned_to_user_id_fkey"
-            columns: ["assigned_to_user_id"]
-            isOneToOne: false
-            referencedRelation: "user_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "activities_deal_id_fkey"
-            columns: ["deal_id"]
-            isOneToOne: false
-            referencedRelation: "deals"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activities_lead_id_fkey"
-            columns: ["lead_id"]
-            isOneToOne: false
-            referencedRelation: "leads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activities_organization_id_fkey"
-            columns: ["organization_id"]
-            isOneToOne: false
-            referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "activities_person_id_fkey"
-            columns: ["person_id"]
-            isOneToOne: false
-            referencedRelation: "people"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      activity_reminders: {
-        Row: {
-          activity_id: string
-          created_at: string
-          failed_attempts: number
-          id: string
-          is_sent: boolean
-          last_error: string | null
-          reminder_content: Json | null
-          reminder_type: string
-          scheduled_for: string
-          sent_at: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          activity_id: string
-          created_at?: string
-          failed_attempts?: number
-          id?: string
-          is_sent?: boolean
-          last_error?: string | null
-          reminder_content?: Json | null
-          reminder_type: string
-          scheduled_for: string
-          sent_at?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          activity_id?: string
-          created_at?: string
-          failed_attempts?: number
-          id?: string
-          is_sent?: boolean
-          last_error?: string | null
-          reminder_content?: Json | null
-          reminder_type?: string
-          scheduled_for?: string
-          sent_at?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "activity_reminders_activity_id_fkey"
-            columns: ["activity_id"]
-            isOneToOne: false
-            referencedRelation: "activities"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       agent_conversations: {
         Row: {
           agent_version: string | null
@@ -299,6 +156,54 @@ export type Database = {
           setting_type?: string | null
           setting_value?: Json | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      calendar_sync_log: {
+        Row: {
+          activity_id: string | null
+          api_response: Json | null
+          calendar_event_id: string | null
+          calendar_id: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          processing_time_ms: number | null
+          success: boolean
+          sync_action: string | null
+          sync_direction: string | null
+          sync_source: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_id?: string | null
+          api_response?: Json | null
+          calendar_event_id?: string | null
+          calendar_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processing_time_ms?: number | null
+          success: boolean
+          sync_action?: string | null
+          sync_direction?: string | null
+          sync_source?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_id?: string | null
+          api_response?: Json | null
+          calendar_event_id?: string | null
+          calendar_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          processing_time_ms?: number | null
+          success?: boolean
+          sync_action?: string | null
+          sync_direction?: string | null
+          sync_source?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -830,41 +735,6 @@ export type Database = {
         }
         Relationships: []
       }
-      email_activities: {
-        Row: {
-          activity_type: string
-          created_at: string
-          email_id: string
-          id: string
-          metadata: Json | null
-          occurred_at: string
-        }
-        Insert: {
-          activity_type: string
-          created_at?: string
-          email_id: string
-          id?: string
-          metadata?: Json | null
-          occurred_at?: string
-        }
-        Update: {
-          activity_type?: string
-          created_at?: string
-          email_id?: string
-          id?: string
-          metadata?: Json | null
-          occurred_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "email_activities_email_id_fkey"
-            columns: ["email_id"]
-            isOneToOne: false
-            referencedRelation: "emails"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       email_pins: {
         Row: {
           created_at: string | null
@@ -1305,62 +1175,9 @@ export type Database = {
         }
         Relationships: []
       }
-      notifications: {
-        Row: {
-          action_url: string | null
-          created_at: string
-          entity_id: string | null
-          entity_type: string | null
-          expires_at: string | null
-          id: string
-          is_read: boolean
-          message: string
-          metadata: Json | null
-          notification_type: string
-          priority: string
-          read_at: string | null
-          title: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          action_url?: string | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type?: string | null
-          expires_at?: string | null
-          id?: string
-          is_read?: boolean
-          message: string
-          metadata?: Json | null
-          notification_type: string
-          priority?: string
-          read_at?: string | null
-          title: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          action_url?: string | null
-          created_at?: string
-          entity_id?: string | null
-          entity_type?: string | null
-          expires_at?: string | null
-          id?: string
-          is_read?: boolean
-          message?: string
-          metadata?: Json | null
-          notification_type?: string
-          priority?: string
-          read_at?: string | null
-          title?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       organizations: {
         Row: {
+          account_manager_id: string | null
           address: string | null
           created_at: string
           custom_field_values: Json
@@ -1371,6 +1188,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          account_manager_id?: string | null
           address?: string | null
           created_at?: string
           custom_field_values?: Json
@@ -1381,6 +1199,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          account_manager_id?: string | null
           address?: string | null
           created_at?: string
           custom_field_values?: Json
@@ -1390,7 +1209,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_account_manager_id_fkey"
+            columns: ["account_manager_id"]
+            isOneToOne: false
+            referencedRelation: "user_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       people: {
         Row: {
@@ -1861,6 +1688,66 @@ export type Database = {
         }
         Relationships: []
       }
+      user_calendar_preferences: {
+        Row: {
+          auto_add_deal_participants: boolean | null
+          auto_add_google_meet: boolean | null
+          auto_sync_enabled: boolean | null
+          business_calendar_id: string | null
+          created_at: string | null
+          default_buffer_time: number | null
+          default_location: string | null
+          default_meeting_duration: number | null
+          id: string
+          include_deal_context: boolean | null
+          primary_calendar_id: string | null
+          reminder_preferences: Json | null
+          sync_future_days: number | null
+          sync_past_days: number | null
+          updated_at: string | null
+          user_id: string
+          working_hours: Json | null
+        }
+        Insert: {
+          auto_add_deal_participants?: boolean | null
+          auto_add_google_meet?: boolean | null
+          auto_sync_enabled?: boolean | null
+          business_calendar_id?: string | null
+          created_at?: string | null
+          default_buffer_time?: number | null
+          default_location?: string | null
+          default_meeting_duration?: number | null
+          id?: string
+          include_deal_context?: boolean | null
+          primary_calendar_id?: string | null
+          reminder_preferences?: Json | null
+          sync_future_days?: number | null
+          sync_past_days?: number | null
+          updated_at?: string | null
+          user_id: string
+          working_hours?: Json | null
+        }
+        Update: {
+          auto_add_deal_participants?: boolean | null
+          auto_add_google_meet?: boolean | null
+          auto_sync_enabled?: boolean | null
+          business_calendar_id?: string | null
+          created_at?: string | null
+          default_buffer_time?: number | null
+          default_location?: string | null
+          default_meeting_duration?: number | null
+          id?: string
+          include_deal_context?: boolean | null
+          primary_calendar_id?: string | null
+          reminder_preferences?: Json | null
+          sync_future_days?: number | null
+          sync_past_days?: number | null
+          updated_at?: string | null
+          user_id?: string
+          working_hours?: Json | null
+        }
+        Relationships: []
+      }
       user_currency_preferences: {
         Row: {
           created_at: string | null
@@ -1922,57 +1809,6 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      user_reminder_preferences: {
-        Row: {
-          created_at: string
-          email_daily_digest_enabled: boolean
-          email_daily_digest_time: string
-          email_reminder_minutes_before: number
-          email_reminders_enabled: boolean
-          id: string
-          in_app_reminder_minutes_before: number
-          in_app_reminders_enabled: boolean
-          overdue_notification_frequency_hours: number
-          overdue_notifications_enabled: boolean
-          push_reminder_minutes_before: number
-          push_reminders_enabled: boolean
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          email_daily_digest_enabled?: boolean
-          email_daily_digest_time?: string
-          email_reminder_minutes_before?: number
-          email_reminders_enabled?: boolean
-          id?: string
-          in_app_reminder_minutes_before?: number
-          in_app_reminders_enabled?: boolean
-          overdue_notification_frequency_hours?: number
-          overdue_notifications_enabled?: boolean
-          push_reminder_minutes_before?: number
-          push_reminders_enabled?: boolean
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          email_daily_digest_enabled?: boolean
-          email_daily_digest_time?: string
-          email_reminder_minutes_before?: number
-          email_reminders_enabled?: boolean
-          id?: string
-          in_app_reminder_minutes_before?: number
-          in_app_reminders_enabled?: boolean
-          overdue_notification_frequency_hours?: number
-          overdue_notifications_enabled?: boolean
-          push_reminder_minutes_before?: number
-          push_reminders_enabled?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -2224,10 +2060,6 @@ export type Database = {
       check_user_has_permission: {
         Args: { checking_user_id: string; required_permission_code: string }
         Returns: boolean
-      }
-      cleanup_expired_notifications: {
-        Args: Record<PropertyKey, never>
-        Returns: number
       }
       create_lead_wfm_project: {
         Args: { lead_uuid: string; project_name?: string }

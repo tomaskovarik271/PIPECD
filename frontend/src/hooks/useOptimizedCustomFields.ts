@@ -109,6 +109,12 @@ export const useOptimizedCustomFields = (
 ): UseOptimizedCustomFieldsResult => {
   const { entityTypes, includeInactive = false } = options;
   
+  // Stabilize entityTypes to prevent unnecessary re-renders
+  const stableEntityTypes = useMemo(() => {
+    if (!entityTypes) return undefined;
+    return [...entityTypes].sort(); // Create a stable sorted copy
+  }, [entityTypes?.join(',')]);  // Use join for stable comparison
+  
   const [definitions, setDefinitions] = useState<Record<CustomFieldEntityType, CustomFieldDefinition[]>>({
     DEAL: [],
     PERSON: [],
@@ -126,9 +132,9 @@ export const useOptimizedCustomFields = (
       const allDefinitions = await fetchAllCustomFields(includeInactive);
       
       // Filter by entity types if specified
-      if (entityTypes && entityTypes.length > 0) {
+      if (stableEntityTypes && stableEntityTypes.length > 0) {
         const filteredDefinitions = {} as Record<CustomFieldEntityType, CustomFieldDefinition[]>;
-        entityTypes.forEach(entityType => {
+        stableEntityTypes.forEach(entityType => {
           filteredDefinitions[entityType] = allDefinitions[entityType] || [];
         });
         setDefinitions(filteredDefinitions);
@@ -141,7 +147,7 @@ export const useOptimizedCustomFields = (
     } finally {
       setLoading(false);
     }
-  }, [entityTypes, includeInactive]);
+  }, [stableEntityTypes, includeInactive]);
 
   useEffect(() => {
     fetchDefinitions();

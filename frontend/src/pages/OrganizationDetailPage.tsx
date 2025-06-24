@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
@@ -26,6 +26,12 @@ import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors'; // NEW
 import { useAppStore } from '../stores/useAppStore';
 import { StickerBoard } from '../components/common/StickerBoard';
 
+// Component imports
+import AccountManagerAssignmentModal from '../components/admin/AccountManagerAssignmentModal';
+import { CustomFieldRenderer } from '../components/common/CustomFieldRenderer';
+import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
+import { CustomFieldEntityType, CustomFieldType } from '../generated/graphql/graphql';
+
 const OrganizationDetailPage = () => {
   const { organizationId } = useParams<{ organizationId: string }>();
   const toast = useToast();
@@ -37,7 +43,22 @@ const OrganizationDetailPage = () => {
   // Inline editing states
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState('');
-  // Industry and website fields removed - industry is now a custom field
+  
+  // Account manager assignment modal state
+  const [isAccountManagerModalOpen, setIsAccountManagerModalOpen] = useState(false);
+  
+  // Custom fields hook - use stable entity types array
+  const organizationEntityTypes = useMemo(() => ['ORGANIZATION' as CustomFieldEntityType], []);
+  const { getDefinitionsForEntity } = useOptimizedCustomFields({ 
+    entityTypes: organizationEntityTypes 
+  });
+  
+  // Get active organization custom field definitions
+  const organizationCustomFieldDefinitions = React.useMemo(() => {
+    return getDefinitionsForEntity('ORGANIZATION' as CustomFieldEntityType)
+      .filter(def => def.isActive)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+  }, [getDefinitionsForEntity]);
 
   const fetchOrganizationById = useOrganizationsStore((state) => state.fetchOrganizationById); // Assuming this exists or will be added
   const updateOrganization = useOrganizationsStore((state) => state.updateOrganization);
@@ -253,13 +274,90 @@ const OrganizationDetailPage = () => {
                   )}
                 </HStack>
 
-                {/* Industry and Website fields removed - Industry is now handled as a custom field */}
+                {/* Account Manager Field */}
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text fontSize="sm" color={colors.text.muted}>Account Manager</Text>
+                    <HStack spacing={2}>
+                      <Text 
+                        fontSize="md" 
+                        fontWeight="medium" 
+                      color={colors.text.secondary}
+                    >
+                      {currentOrganization.accountManager?.display_name || 'Not assigned'}
+                      </Text>
+                      <IconButton 
+                        icon={<EditIcon />} 
+                        size="xs" 
+                        variant="ghost" 
+                      aria-label="Assign Account Manager" 
+                      onClick={() => setIsAccountManagerModalOpen(true)}
+                        color={colors.text.muted}
+                        _hover={{color: colors.text.link}}
+                        isDisabled={!canEditOrganization}
+                      />
+                    </HStack>
+                </HStack>
               </VStack>
             </Box>
-            {/* More cards for related deals, people, etc. can be added here */}
+
+            {/* Custom Fields Panel */}
+            {organizationCustomFieldDefinitions.length > 0 && (
+              <Box 
+                bg={colors.bg.elevated}
+                p={6} 
+                borderRadius="xl" 
+                borderWidth="1px" 
+                borderColor={colors.border.default}
+              >
+                <Heading 
+                  size="md" 
+                  mb={5} 
+                  color={colors.text.primary}
+                >
+                  Custom Information
+                </Heading>
+                        <VStack spacing={4} align="stretch">
+                  {organizationCustomFieldDefinitions.map((definition) => {
+                    const customFieldValue = currentOrganization.customFieldValues?.find(
+                      (cfv) => cfv.definition?.fieldName === definition.fieldName
+                    );
+
+                                         let displayValue = '-';
+                     if (customFieldValue) {
+                       if (definition.fieldType === CustomFieldType.Text || definition.fieldType === CustomFieldType.TextArea) {
+                         displayValue = customFieldValue.stringValue || '-';
+                       } else if (definition.fieldType === CustomFieldType.Number) {
+                         displayValue = customFieldValue.numberValue?.toString() || '-';
+                       } else if (definition.fieldType === CustomFieldType.Boolean) {
+                         displayValue = customFieldValue.booleanValue ? 'Yes' : 'No';
+                       } else if (definition.fieldType === CustomFieldType.Date) {
+                         displayValue = customFieldValue.dateValue || '-';
+                       } else if (definition.fieldType === CustomFieldType.Dropdown || definition.fieldType === CustomFieldType.MultiSelect) {
+                         displayValue = customFieldValue.selectedOptionValues?.join(', ') || '-';
+                       }
+                     }
+
+                    return (
+                      <HStack key={definition.id} justifyContent="space-between" alignItems="center">
+                        <Text fontSize="sm" color={colors.text.muted}>
+                          {definition.fieldLabel}
+                          </Text>
+                        <Text 
+                          fontSize="md" 
+                          fontWeight="medium" 
+                          color={colors.text.secondary}
+                        >
+                          {displayValue}
+                        </Text>
+                      </HStack>
+                    );
+                  })}
+                        </VStack>
+                </Box>
+            )}
 
             {/* Smart Stickers Section - Full Width */}
-            <Box 
+          <Box 
               bg={colors.bg.elevated}
               p={6} 
               borderRadius="xl" 
@@ -311,6 +409,27 @@ const OrganizationDetailPage = () => {
              </Box>
            </Center>
         )}
+
+        {/* Account Manager Assignment Modal */}
+          <AccountManagerAssignmentModal
+            isOpen={isAccountManagerModalOpen}
+          onClose={() => setIsAccountManagerModalOpen(false)}
+          organization={currentOrganization ? {
+              id: currentOrganization.id,
+              name: currentOrganization.name,
+            accountManager: currentOrganization.accountManager ? {
+              id: currentOrganization.accountManager.id,
+              display_name: currentOrganization.accountManager.display_name || currentOrganization.accountManager.email,
+              email: currentOrganization.accountManager.email,
+              avatar_url: currentOrganization.accountManager.avatar_url || undefined
+            } : null
+          } : null}
+            onAssignmentComplete={() => {
+            if (organizationId) {
+              fetchOrganizationById(organizationId);
+            }
+          }}
+        />
       </Box>
     </Box>
   );

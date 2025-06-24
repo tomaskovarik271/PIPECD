@@ -47,67 +47,6 @@ export type AccountPortfolioStats = {
   totalDealValue: Scalars["Float"]["output"];
 };
 
-export type Activity = {
-  __typename?: "Activity";
-  assignedToUser?: Maybe<User>;
-  assigned_to_user_id?: Maybe<Scalars["ID"]["output"]>;
-  created_at: Scalars["DateTime"]["output"];
-  deal?: Maybe<Deal>;
-  deal_id?: Maybe<Scalars["ID"]["output"]>;
-  due_date?: Maybe<Scalars["DateTime"]["output"]>;
-  id: Scalars["ID"]["output"];
-  is_done: Scalars["Boolean"]["output"];
-  is_system_activity: Scalars["Boolean"]["output"];
-  lead?: Maybe<Lead>;
-  lead_id?: Maybe<Scalars["ID"]["output"]>;
-  notes?: Maybe<Scalars["String"]["output"]>;
-  organization?: Maybe<Organization>;
-  organization_id?: Maybe<Scalars["ID"]["output"]>;
-  person?: Maybe<Person>;
-  person_id?: Maybe<Scalars["ID"]["output"]>;
-  subject: Scalars["String"]["output"];
-  type: ActivityType;
-  updated_at: Scalars["DateTime"]["output"];
-  user?: Maybe<User>;
-  user_id: Scalars["ID"]["output"];
-};
-
-export type ActivityFilterInput = {
-  dealId?: InputMaybe<Scalars["ID"]["input"]>;
-  isDone?: InputMaybe<Scalars["Boolean"]["input"]>;
-  leadId?: InputMaybe<Scalars["ID"]["input"]>;
-  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
-  personId?: InputMaybe<Scalars["ID"]["input"]>;
-};
-
-export type ActivityReminder = {
-  __typename?: "ActivityReminder";
-  activity?: Maybe<Activity>;
-  activityId: Scalars["ID"]["output"];
-  createdAt: Scalars["DateTime"]["output"];
-  failedAttempts: Scalars["Int"]["output"];
-  id: Scalars["ID"]["output"];
-  isSent: Scalars["Boolean"]["output"];
-  lastError?: Maybe<Scalars["String"]["output"]>;
-  reminderContent?: Maybe<Scalars["JSON"]["output"]>;
-  reminderType: ReminderType;
-  scheduledFor: Scalars["DateTime"]["output"];
-  sentAt?: Maybe<Scalars["DateTime"]["output"]>;
-  updatedAt: Scalars["DateTime"]["output"];
-  user?: Maybe<User>;
-  userId: Scalars["ID"]["output"];
-};
-
-/** Defines the GraphQL schema for Activities. */
-export enum ActivityType {
-  Call = "CALL",
-  Deadline = "DEADLINE",
-  Email = "EMAIL",
-  Meeting = "MEETING",
-  SystemTask = "SYSTEM_TASK",
-  Task = "TASK",
-}
-
 export type AgentConfig = {
   __typename?: "AgentConfig";
   autoExecute: Scalars["Boolean"]["output"];
@@ -395,19 +334,6 @@ export type ConvertedEntities = {
   person?: Maybe<Person>;
 };
 
-export type CreateActivityInput = {
-  assigned_to_user_id?: InputMaybe<Scalars["ID"]["input"]>;
-  deal_id?: InputMaybe<Scalars["ID"]["input"]>;
-  due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  is_done?: InputMaybe<Scalars["Boolean"]["input"]>;
-  lead_id?: InputMaybe<Scalars["ID"]["input"]>;
-  notes?: InputMaybe<Scalars["String"]["input"]>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
-  person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  subject: Scalars["String"]["input"];
-  type: ActivityType;
-};
-
 export type CreateAgentV2ConversationInput = {
   initialContext?: InputMaybe<Scalars["JSON"]["input"]>;
 };
@@ -466,19 +392,6 @@ export type CreateEmailInput = {
   toEmails: Array<Scalars["String"]["input"]>;
 };
 
-export type CreateNotificationInput = {
-  actionUrl?: InputMaybe<Scalars["String"]["input"]>;
-  entityId?: InputMaybe<Scalars["ID"]["input"]>;
-  entityType?: InputMaybe<Scalars["String"]["input"]>;
-  expiresAt?: InputMaybe<Scalars["DateTime"]["input"]>;
-  message: Scalars["String"]["input"];
-  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
-  notificationType: NotificationType;
-  priority?: InputMaybe<NotificationPriority>;
-  title: Scalars["String"]["input"];
-  userId: Scalars["ID"]["input"];
-};
-
 export type CreateStickerInput = {
   categoryId?: InputMaybe<Scalars["ID"]["input"]>;
   color?: InputMaybe<Scalars["String"]["input"]>;
@@ -495,17 +408,6 @@ export type CreateStickerInput = {
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   title: Scalars["String"]["input"];
   width?: InputMaybe<Scalars["Int"]["input"]>;
-};
-
-export type CreateTaskFromEmailInput = {
-  assigneeId?: InputMaybe<Scalars["String"]["input"]>;
-  dealId?: InputMaybe<Scalars["String"]["input"]>;
-  description?: InputMaybe<Scalars["String"]["input"]>;
-  dueDate?: InputMaybe<Scalars["String"]["input"]>;
-  emailId: Scalars["String"]["input"];
-  subject: Scalars["String"]["input"];
-  threadId?: InputMaybe<Scalars["String"]["input"]>;
-  useWholeThread?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type CreateWfmProjectTypeInput = {
@@ -640,7 +542,6 @@ export type CustomFieldValueInput = {
 
 export type Deal = {
   __typename?: "Deal";
-  activities: Array<Activity>;
   amount?: Maybe<Scalars["Float"]["output"]>;
   amountUsd?: Maybe<Scalars["Float"]["output"]>;
   amount_usd?: Maybe<Scalars["Float"]["output"]>;
@@ -1142,7 +1043,6 @@ export type GoogleTokenInput = {
 
 export type Lead = {
   __typename?: "Lead";
-  activities: Array<Activity>;
   ai_insights?: Maybe<Scalars["JSON"]["output"]>;
   assignedToUser?: Maybe<User>;
   assigned_at?: Maybe<Scalars["DateTime"]["output"]>;
@@ -1314,14 +1214,12 @@ export type Mutation = {
   attachDocumentToNoteAndDeal: DualAttachmentResponse;
   attachFileToDeal: DealDocumentAttachment;
   bulkConvertLeads: Array<LeadConversionResult>;
-  cancelActivityReminder: Scalars["Boolean"]["output"];
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
   convertCurrency: ConversionResult;
   convertDealToLead: DealToLeadConversionResult;
   convertLead: LeadConversionResult;
   copyDriveFile: DriveFile;
-  createActivity: Activity;
   createAgentConversation: AgentConversation;
   createAgentV2Conversation: AgentConversation;
   createContactFromEmail: Person;
@@ -1332,24 +1230,20 @@ export type Mutation = {
   createDocument: Document;
   createEmail: Email;
   createLead: Lead;
-  createNotification: Notification;
   createOrganization: Organization;
   createPerson: Person;
   createReactivationPlan: ReactivationPlan;
   createSticker: SmartSticker;
-  createTaskFromEmail: Activity;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
   createWFMWorkflow: WfmWorkflow;
   createWFMWorkflowStep: WfmWorkflowStep;
   createWFMWorkflowTransition: WfmWorkflowTransition;
   deactivateCustomFieldDefinition: CustomFieldDefinition;
-  deleteActivity: Scalars["ID"]["output"];
   deleteAgentConversation: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteDriveFile: Scalars["Boolean"]["output"];
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
-  deleteNotification: Scalars["Boolean"]["output"];
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   deleteReactivationPlan: Scalars["Boolean"]["output"];
@@ -1361,8 +1255,6 @@ export type Mutation = {
   executeAgentStep: AgentResponse;
   generateTaskContentFromEmail: AiGeneratedTaskContent;
   linkEmailToDeal: Scalars["Boolean"]["output"];
-  markAllNotificationsAsRead: Scalars["Int"]["output"];
-  markNotificationAsRead: Notification;
   markThreadAsRead: Scalars["Boolean"]["output"];
   markThreadAsUnread: Scalars["Boolean"]["output"];
   moveDriveFile: DriveFile;
@@ -1376,7 +1268,6 @@ export type Mutation = {
   removeNoteDocumentAttachment: Scalars["Boolean"]["output"];
   removeUserRole: User;
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
-  scheduleActivityReminder: ActivityReminder;
   sendAgentMessage: AgentResponse;
   sendAgentV2Message: AgentV2Response;
   sendAgentV2MessageStream: Scalars["String"]["output"];
@@ -1385,7 +1276,6 @@ export type Mutation = {
   syncGmailEmails: Array<Email>;
   toggleStickerPin: SmartSticker;
   unpinEmail: Scalars["Boolean"]["output"];
-  updateActivity: Activity;
   updateAgentConversation: AgentConversation;
   /** Update an app setting (admin only) */
   updateAppSetting: AppSetting;
@@ -1400,7 +1290,6 @@ export type Mutation = {
   updateLead?: Maybe<Lead>;
   updateLeadCurrency: CurrencyOperationResult;
   updateLeadWFMProgress: Lead;
-  updateMyReminderPreferences: UserReminderPreferences;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
   updateRatesFromECB: CurrencyOperationResult;
@@ -1465,10 +1354,6 @@ export type MutationBulkConvertLeadsArgs = {
   input: LeadConversionInput;
 };
 
-export type MutationCancelActivityReminderArgs = {
-  id: Scalars["ID"]["input"];
-};
-
 export type MutationComposeEmailArgs = {
   input: ComposeEmailInput;
 };
@@ -1498,10 +1383,6 @@ export type MutationCopyDriveFileArgs = {
   fileId: Scalars["String"]["input"];
   newName?: InputMaybe<Scalars["String"]["input"]>;
   newParentId: Scalars["String"]["input"];
-};
-
-export type MutationCreateActivityArgs = {
-  input: CreateActivityInput;
 };
 
 export type MutationCreateAgentConversationArgs = {
@@ -1544,10 +1425,6 @@ export type MutationCreateLeadArgs = {
   input: LeadInput;
 };
 
-export type MutationCreateNotificationArgs = {
-  input: CreateNotificationInput;
-};
-
 export type MutationCreateOrganizationArgs = {
   input: OrganizationInput;
 };
@@ -1563,10 +1440,6 @@ export type MutationCreateReactivationPlanArgs = {
 
 export type MutationCreateStickerArgs = {
   input: CreateStickerInput;
-};
-
-export type MutationCreateTaskFromEmailArgs = {
-  input: CreateTaskFromEmailInput;
 };
 
 export type MutationCreateWfmProjectTypeArgs = {
@@ -1593,10 +1466,6 @@ export type MutationDeactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
 
-export type MutationDeleteActivityArgs = {
-  id: Scalars["ID"]["input"];
-};
-
 export type MutationDeleteAgentConversationArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1610,10 +1479,6 @@ export type MutationDeleteDriveFileArgs = {
 };
 
 export type MutationDeleteLeadArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type MutationDeleteNotificationArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -1661,10 +1526,6 @@ export type MutationGenerateTaskContentFromEmailArgs = {
 export type MutationLinkEmailToDealArgs = {
   dealId: Scalars["String"]["input"];
   emailId: Scalars["String"]["input"];
-};
-
-export type MutationMarkNotificationAsReadArgs = {
-  id: Scalars["ID"]["input"];
 };
 
 export type MutationMarkThreadAsReadArgs = {
@@ -1719,12 +1580,6 @@ export type MutationRemoveUserRoleArgs = {
   userId: Scalars["ID"]["input"];
 };
 
-export type MutationScheduleActivityReminderArgs = {
-  activityId: Scalars["ID"]["input"];
-  reminderType: ReminderType;
-  scheduledFor: Scalars["DateTime"]["input"];
-};
-
 export type MutationSendAgentMessageArgs = {
   input: SendMessageInput;
 };
@@ -1757,11 +1612,6 @@ export type MutationToggleStickerPinArgs = {
 
 export type MutationUnpinEmailArgs = {
   id: Scalars["ID"]["input"];
-};
-
-export type MutationUpdateActivityArgs = {
-  id: Scalars["ID"]["input"];
-  input: UpdateActivityInput;
 };
 
 export type MutationUpdateAgentConversationArgs = {
@@ -1828,10 +1678,6 @@ export type MutationUpdateLeadCurrencyArgs = {
 export type MutationUpdateLeadWfmProgressArgs = {
   leadId: Scalars["ID"]["input"];
   targetWfmWorkflowStepId: Scalars["ID"]["input"];
-};
-
-export type MutationUpdateMyReminderPreferencesArgs = {
-  input: UpdateUserReminderPreferencesInput;
 };
 
 export type MutationUpdateOrganizationArgs = {
@@ -1923,104 +1769,44 @@ export type NoteDocumentAttachment = {
   noteId: Scalars["ID"]["output"];
 };
 
-export type Notification = {
-  __typename?: "Notification";
-  actionUrl?: Maybe<Scalars["String"]["output"]>;
-  createdAt: Scalars["DateTime"]["output"];
-  entityId?: Maybe<Scalars["ID"]["output"]>;
-  entityType?: Maybe<Scalars["String"]["output"]>;
-  expiresAt?: Maybe<Scalars["DateTime"]["output"]>;
-  id: Scalars["ID"]["output"];
-  isRead: Scalars["Boolean"]["output"];
-  message: Scalars["String"]["output"];
-  metadata?: Maybe<Scalars["JSON"]["output"]>;
-  notificationType: NotificationType;
-  priority: NotificationPriority;
-  readAt?: Maybe<Scalars["DateTime"]["output"]>;
-  title: Scalars["String"]["output"];
-  updatedAt: Scalars["DateTime"]["output"];
-  user?: Maybe<User>;
-  userId: Scalars["ID"]["output"];
-};
-
-export type NotificationFilterInput = {
-  entityId?: InputMaybe<Scalars["ID"]["input"]>;
-  entityType?: InputMaybe<Scalars["String"]["input"]>;
-  isRead?: InputMaybe<Scalars["Boolean"]["input"]>;
-  notificationType?: InputMaybe<NotificationType>;
-  priority?: InputMaybe<NotificationPriority>;
-};
-
-export enum NotificationPriority {
-  High = "HIGH",
-  Low = "LOW",
-  Normal = "NORMAL",
-  Urgent = "URGENT",
-}
-
-export type NotificationSummary = {
-  __typename?: "NotificationSummary";
-  notifications: Array<Notification>;
-  totalCount: Scalars["Int"]["output"];
-  unreadCount: Scalars["Int"]["output"];
-};
-
-export enum NotificationType {
-  ActivityOverdue = "ACTIVITY_OVERDUE",
-  ActivityReminder = "ACTIVITY_REMINDER",
-  Custom = "CUSTOM",
-  DealAssigned = "DEAL_ASSIGNED",
-  LeadAssigned = "LEAD_ASSIGNED",
-  SystemAnnouncement = "SYSTEM_ANNOUNCEMENT",
-}
-
 /** Defines the Organization type and related queries/mutations. */
 export type Organization = {
   __typename?: "Organization";
   accountManager?: Maybe<User>;
   account_manager_id?: Maybe<Scalars["ID"]["output"]>;
   activeDealCount?: Maybe<Scalars["Int"]["output"]>;
-  activities: Array<Activity>;
   address?: Maybe<Scalars["String"]["output"]>;
   created_at: Scalars["DateTime"]["output"];
   customFieldValues: Array<CustomFieldValue>;
   deals: Array<Deal>;
   id: Scalars["ID"]["output"];
-  industry?: Maybe<Scalars["String"]["output"]>;
-  lastActivity?: Maybe<Activity>;
   name: Scalars["String"]["output"];
   notes?: Maybe<Scalars["String"]["output"]>;
   people?: Maybe<Array<Person>>;
   totalDealValue?: Maybe<Scalars["Float"]["output"]>;
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
-  website?: Maybe<Scalars["String"]["output"]>;
 };
 
 export type OrganizationInput = {
   account_manager_id?: InputMaybe<Scalars["ID"]["input"]>;
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
-  industry?: InputMaybe<Scalars["String"]["input"]>;
   name: Scalars["String"]["input"];
   notes?: InputMaybe<Scalars["String"]["input"]>;
-  website?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type OrganizationUpdateInput = {
   account_manager_id?: InputMaybe<Scalars["ID"]["input"]>;
   address?: InputMaybe<Scalars["String"]["input"]>;
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
-  industry?: InputMaybe<Scalars["String"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
-  website?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 /** Defines the Person type and related queries/mutations. */
 export type Person = {
   __typename?: "Person";
-  activities: Array<Activity>;
   created_at: Scalars["DateTime"]["output"];
   customFieldValues: Array<CustomFieldValue>;
   deals?: Maybe<Array<Deal>>;
@@ -2073,9 +1859,6 @@ export type PinEmailInput = {
 
 export type Query = {
   __typename?: "Query";
-  activities: Array<Activity>;
-  activity?: Maybe<Activity>;
-  activityReminders: Array<ActivityReminder>;
   agentConversation?: Maybe<AgentConversation>;
   agentConversations: Array<AgentConversation>;
   agentThoughts: Array<AgentThought>;
@@ -2139,10 +1922,7 @@ export type Query = {
   me?: Maybe<User>;
   myAccountPortfolioStats: AccountPortfolioStats;
   myAccounts: Array<Organization>;
-  myNotifications: NotificationSummary;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
-  myReminderPreferences?: Maybe<UserReminderPreferences>;
-  notification?: Maybe<Notification>;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
   people: Array<Person>;
@@ -2157,7 +1937,6 @@ export type Query = {
   searchStickers: StickerConnection;
   suggestEmailParticipants: Array<Person>;
   supabaseConnectionTest: Scalars["String"]["output"];
-  unreadNotificationCount: Scalars["Int"]["output"];
   userCurrencyPreferences?: Maybe<UserCurrencyPreferences>;
   users: Array<User>;
   validateConversion: ConversionValidationResult;
@@ -2168,18 +1947,6 @@ export type Query = {
   wfmStatuses: Array<WfmStatus>;
   wfmWorkflow?: Maybe<WfmWorkflow>;
   wfmWorkflows: Array<WfmWorkflow>;
-};
-
-export type QueryActivitiesArgs = {
-  filter?: InputMaybe<ActivityFilterInput>;
-};
-
-export type QueryActivityArgs = {
-  id: Scalars["ID"]["input"];
-};
-
-export type QueryActivityRemindersArgs = {
-  activityId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type QueryAgentConversationArgs = {
@@ -2371,16 +2138,6 @@ export type QueryLeadsArgs = {
   filters?: InputMaybe<LeadFilters>;
 };
 
-export type QueryMyNotificationsArgs = {
-  filter?: InputMaybe<NotificationFilterInput>;
-  limit?: InputMaybe<Scalars["Int"]["input"]>;
-  offset?: InputMaybe<Scalars["Int"]["input"]>;
-};
-
-export type QueryNotificationArgs = {
-  id: Scalars["ID"]["input"];
-};
-
 export type QueryOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2501,13 +2258,6 @@ export enum ReactivationStrategy {
   DirectOutreach = "DIRECT_OUTREACH",
   Nurturing = "NURTURING",
   RelationshipBuilding = "RELATIONSHIP_BUILDING",
-}
-
-/** Activity Reminders and Notifications GraphQL Schema */
-export enum ReminderType {
-  Email = "EMAIL",
-  InApp = "IN_APP",
-  Push = "PUSH",
 }
 
 export type Role = {
@@ -2687,8 +2437,6 @@ export type Subscription = {
   agentV2MessageStream: AgentV2StreamChunk;
   agentV2ReflectionAdded: AgentThought;
   agentV2ThinkingUpdated: Array<AgentThought>;
-  notificationAdded: Notification;
-  notificationUpdated: Notification;
 };
 
 export type SubscriptionAgentConversationUpdatedArgs = {
@@ -2713,14 +2461,6 @@ export type SubscriptionAgentV2ReflectionAddedArgs = {
 
 export type SubscriptionAgentV2ThinkingUpdatedArgs = {
   conversationId: Scalars["ID"]["input"];
-};
-
-export type SubscriptionNotificationAddedArgs = {
-  userId: Scalars["ID"]["input"];
-};
-
-export type SubscriptionNotificationUpdatedArgs = {
-  userId: Scalars["ID"]["input"];
 };
 
 export enum ThinkingBudget {
@@ -2753,18 +2493,6 @@ export enum ToolExecutionStatus {
   Error = "ERROR",
   Success = "SUCCESS",
 }
-
-export type UpdateActivityInput = {
-  assigned_to_user_id?: InputMaybe<Scalars["ID"]["input"]>;
-  deal_id?: InputMaybe<Scalars["ID"]["input"]>;
-  due_date?: InputMaybe<Scalars["DateTime"]["input"]>;
-  is_done?: InputMaybe<Scalars["Boolean"]["input"]>;
-  notes?: InputMaybe<Scalars["String"]["input"]>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
-  person_id?: InputMaybe<Scalars["ID"]["input"]>;
-  subject?: InputMaybe<Scalars["String"]["input"]>;
-  type?: InputMaybe<ActivityType>;
-};
 
 export type UpdateAppSettingInput = {
   settingKey: Scalars["String"]["input"];
@@ -2819,19 +2547,6 @@ export type UpdateUserProfileInput = {
   avatar_url?: InputMaybe<Scalars["String"]["input"]>;
   /** The new display name for the user. Null means no change. */
   display_name?: InputMaybe<Scalars["String"]["input"]>;
-};
-
-export type UpdateUserReminderPreferencesInput = {
-  emailDailyDigestEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
-  emailDailyDigestTime?: InputMaybe<Scalars["String"]["input"]>;
-  emailReminderMinutesBefore?: InputMaybe<Scalars["Int"]["input"]>;
-  emailRemindersEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
-  inAppReminderMinutesBefore?: InputMaybe<Scalars["Int"]["input"]>;
-  inAppRemindersEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
-  overdueNotificationFrequencyHours?: InputMaybe<Scalars["Int"]["input"]>;
-  overdueNotificationsEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
-  pushReminderMinutesBefore?: InputMaybe<Scalars["Int"]["input"]>;
-  pushRemindersEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type UpdateWfmProjectTypeInput = {
@@ -2891,24 +2606,6 @@ export type UserCurrencyPreferences = {
   defaultCurrency: Scalars["String"]["output"];
   displayCurrency: Scalars["String"]["output"];
   updatedAt: Scalars["String"]["output"];
-  userId: Scalars["ID"]["output"];
-};
-
-export type UserReminderPreferences = {
-  __typename?: "UserReminderPreferences";
-  createdAt: Scalars["DateTime"]["output"];
-  emailDailyDigestEnabled: Scalars["Boolean"]["output"];
-  emailDailyDigestTime: Scalars["String"]["output"];
-  emailReminderMinutesBefore: Scalars["Int"]["output"];
-  emailRemindersEnabled: Scalars["Boolean"]["output"];
-  id: Scalars["ID"]["output"];
-  inAppReminderMinutesBefore: Scalars["Int"]["output"];
-  inAppRemindersEnabled: Scalars["Boolean"]["output"];
-  overdueNotificationFrequencyHours: Scalars["Int"]["output"];
-  overdueNotificationsEnabled: Scalars["Boolean"]["output"];
-  pushReminderMinutesBefore: Scalars["Int"]["output"];
-  pushRemindersEnabled: Scalars["Boolean"]["output"];
-  updatedAt: Scalars["DateTime"]["output"];
   userId: Scalars["ID"]["output"];
 };
 
@@ -3076,79 +2773,6 @@ export type GetAgentThoughtsQuery = {
     metadata: Record<string, any>;
     timestamp: string;
   }>;
-};
-
-export type GetMyNotificationsQueryVariables = Exact<{
-  limit?: InputMaybe<Scalars["Int"]["input"]>;
-  offset?: InputMaybe<Scalars["Int"]["input"]>;
-}>;
-
-export type GetMyNotificationsQuery = {
-  __typename?: "Query";
-  myNotifications: {
-    __typename?: "NotificationSummary";
-    totalCount: number;
-    unreadCount: number;
-    notifications: Array<{
-      __typename?: "Notification";
-      id: string;
-      userId: string;
-      title: string;
-      message: string;
-      notificationType: NotificationType;
-      isRead: boolean;
-      readAt?: string | null;
-      entityType?: string | null;
-      entityId?: string | null;
-      actionUrl?: string | null;
-      metadata?: Record<string, any> | null;
-      priority: NotificationPriority;
-      expiresAt?: string | null;
-      createdAt: string;
-      updatedAt: string;
-    }>;
-  };
-};
-
-export type GetUnreadNotificationCountQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type GetUnreadNotificationCountQuery = {
-  __typename?: "Query";
-  unreadNotificationCount: number;
-};
-
-export type MarkNotificationAsReadMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-}>;
-
-export type MarkNotificationAsReadMutation = {
-  __typename?: "Mutation";
-  markNotificationAsRead: {
-    __typename?: "Notification";
-    id: string;
-    isRead: boolean;
-    readAt?: string | null;
-  };
-};
-
-export type MarkAllNotificationsAsReadMutationVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type MarkAllNotificationsAsReadMutation = {
-  __typename?: "Mutation";
-  markAllNotificationsAsRead: number;
-};
-
-export type DeleteNotificationMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-}>;
-
-export type DeleteNotificationMutation = {
-  __typename?: "Mutation";
-  deleteNotification: boolean;
 };
 
 export type ConvertDealToLeadModalMutationVariables = Exact<{
@@ -3353,40 +2977,6 @@ export type ComposeEmailMutation = {
   };
 };
 
-export type CreateTaskFromEmailMutationVariables = Exact<{
-  input: CreateTaskFromEmailInput;
-}>;
-
-export type CreateTaskFromEmailMutation = {
-  __typename?: "Mutation";
-  createTaskFromEmail: {
-    __typename?: "Activity";
-    id: string;
-    subject: string;
-    notes?: string | null;
-    type: ActivityType;
-    due_date?: string | null;
-    is_done: boolean;
-  };
-};
-
-export type GenerateTaskContentFromEmailMutationVariables = Exact<{
-  input: GenerateTaskContentInput;
-}>;
-
-export type GenerateTaskContentFromEmailMutation = {
-  __typename?: "Mutation";
-  generateTaskContentFromEmail: {
-    __typename?: "AIGeneratedTaskContent";
-    subject: string;
-    description: string;
-    suggestedDueDate?: string | null;
-    confidence: number;
-    emailScope: string;
-    sourceContent: string;
-  };
-};
-
 export type MarkThreadAsReadMutationVariables = Exact<{
   threadId: Scalars["String"]["input"];
 }>;
@@ -3548,6 +3138,23 @@ export type SuggestEmailParticipantsQuery = {
   }>;
 };
 
+export type GenerateTaskContentFromEmailMutationVariables = Exact<{
+  input: GenerateTaskContentInput;
+}>;
+
+export type GenerateTaskContentFromEmailMutation = {
+  __typename?: "Mutation";
+  generateTaskContentFromEmail: {
+    __typename?: "AIGeneratedTaskContent";
+    subject: string;
+    description: string;
+    suggestedDueDate?: string | null;
+    confidence: number;
+    emailScope: string;
+    sourceContent: string;
+  };
+};
+
 export type GetPinnedEmailsQueryVariables = Exact<{
   dealId: Scalars["ID"]["input"];
 }>;
@@ -3579,55 +3186,6 @@ export type UpdateEmailPinMutation = {
     __typename?: "EmailPin";
     id: string;
     notes?: string | null;
-    updatedAt: string;
-  };
-};
-
-export type GetMyReminderPreferencesQueryVariables = Exact<{
-  [key: string]: never;
-}>;
-
-export type GetMyReminderPreferencesQuery = {
-  __typename?: "Query";
-  myReminderPreferences?: {
-    __typename?: "UserReminderPreferences";
-    id: string;
-    userId: string;
-    emailRemindersEnabled: boolean;
-    emailReminderMinutesBefore: number;
-    emailDailyDigestEnabled: boolean;
-    emailDailyDigestTime: string;
-    inAppRemindersEnabled: boolean;
-    inAppReminderMinutesBefore: number;
-    pushRemindersEnabled: boolean;
-    pushReminderMinutesBefore: number;
-    overdueNotificationsEnabled: boolean;
-    overdueNotificationFrequencyHours: number;
-    createdAt: string;
-    updatedAt: string;
-  } | null;
-};
-
-export type UpdateMyReminderPreferencesMutationVariables = Exact<{
-  input: UpdateUserReminderPreferencesInput;
-}>;
-
-export type UpdateMyReminderPreferencesMutation = {
-  __typename?: "Mutation";
-  updateMyReminderPreferences: {
-    __typename?: "UserReminderPreferences";
-    id: string;
-    userId: string;
-    emailRemindersEnabled: boolean;
-    emailReminderMinutesBefore: number;
-    emailDailyDigestEnabled: boolean;
-    emailDailyDigestTime: string;
-    inAppRemindersEnabled: boolean;
-    inAppReminderMinutesBefore: number;
-    pushRemindersEnabled: boolean;
-    pushReminderMinutesBefore: number;
-    overdueNotificationsEnabled: boolean;
-    overdueNotificationFrequencyHours: number;
     updatedAt: string;
   };
 };
@@ -3983,8 +3541,6 @@ export type GetMyAccountsQuery = {
     id: string;
     name: string;
     address?: string | null;
-    industry?: string | null;
-    website?: string | null;
     notes?: string | null;
     created_at: string;
     updated_at: string;
@@ -3997,14 +3553,6 @@ export type GetMyAccountsQuery = {
       display_name?: string | null;
       email: string;
       avatar_url?: string | null;
-    } | null;
-    lastActivity?: {
-      __typename?: "Activity";
-      id: string;
-      subject: string;
-      type: ActivityType;
-      due_date?: string | null;
-      created_at: string;
     } | null;
     customFieldValues: Array<{
       __typename?: "CustomFieldValue";
@@ -4098,8 +3646,6 @@ export type GetOrganizationWithAccountManagerQuery = {
     id: string;
     name: string;
     address?: string | null;
-    industry?: string | null;
-    website?: string | null;
     notes?: string | null;
     created_at: string;
     updated_at: string;
@@ -4112,14 +3658,6 @@ export type GetOrganizationWithAccountManagerQuery = {
       display_name?: string | null;
       email: string;
       avatar_url?: string | null;
-    } | null;
-    lastActivity?: {
-      __typename?: "Activity";
-      id: string;
-      subject: string;
-      type: ActivityType;
-      due_date?: string | null;
-      created_at: string;
     } | null;
   } | null;
 };
@@ -5885,191 +5423,6 @@ export type RemoveUserRoleMutation = {
   };
 };
 
-export type GetActivitiesQueryVariables = Exact<{
-  filter?: InputMaybe<ActivityFilterInput>;
-}>;
-
-export type GetActivitiesQuery = {
-  __typename?: "Query";
-  activities: Array<{
-    __typename?: "Activity";
-    id: string;
-    user_id: string;
-    created_at: string;
-    updated_at: string;
-    type: ActivityType;
-    subject: string;
-    due_date?: string | null;
-    is_done: boolean;
-    notes?: string | null;
-    assigned_to_user_id?: string | null;
-    deal_id?: string | null;
-    person_id?: string | null;
-    organization_id?: string | null;
-    assignedToUser?: {
-      __typename?: "User";
-      id: string;
-      email: string;
-      display_name?: string | null;
-      avatar_url?: string | null;
-    } | null;
-    deal?: { __typename?: "Deal"; id: string; name: string } | null;
-    person?: {
-      __typename?: "Person";
-      id: string;
-      first_name?: string | null;
-      last_name?: string | null;
-    } | null;
-    organization?: {
-      __typename?: "Organization";
-      id: string;
-      name: string;
-    } | null;
-  }>;
-};
-
-export type CreateActivityMutationVariables = Exact<{
-  input: CreateActivityInput;
-}>;
-
-export type CreateActivityMutation = {
-  __typename?: "Mutation";
-  createActivity: {
-    __typename?: "Activity";
-    id: string;
-    user_id: string;
-    created_at: string;
-    updated_at: string;
-    type: ActivityType;
-    subject: string;
-    due_date?: string | null;
-    is_done: boolean;
-    notes?: string | null;
-    assigned_to_user_id?: string | null;
-    deal_id?: string | null;
-    person_id?: string | null;
-    organization_id?: string | null;
-    assignedToUser?: {
-      __typename?: "User";
-      id: string;
-      email: string;
-      display_name?: string | null;
-      avatar_url?: string | null;
-    } | null;
-    deal?: { __typename?: "Deal"; id: string; name: string } | null;
-    person?: {
-      __typename?: "Person";
-      id: string;
-      first_name?: string | null;
-      last_name?: string | null;
-    } | null;
-    organization?: {
-      __typename?: "Organization";
-      id: string;
-      name: string;
-    } | null;
-  };
-};
-
-export type UpdateActivityMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-  input: UpdateActivityInput;
-}>;
-
-export type UpdateActivityMutation = {
-  __typename?: "Mutation";
-  updateActivity: {
-    __typename?: "Activity";
-    id: string;
-    user_id: string;
-    created_at: string;
-    updated_at: string;
-    type: ActivityType;
-    subject: string;
-    due_date?: string | null;
-    is_done: boolean;
-    notes?: string | null;
-    assigned_to_user_id?: string | null;
-    deal_id?: string | null;
-    person_id?: string | null;
-    organization_id?: string | null;
-    assignedToUser?: {
-      __typename?: "User";
-      id: string;
-      email: string;
-      display_name?: string | null;
-      avatar_url?: string | null;
-    } | null;
-    deal?: { __typename?: "Deal"; id: string; name: string } | null;
-    person?: {
-      __typename?: "Person";
-      id: string;
-      first_name?: string | null;
-      last_name?: string | null;
-    } | null;
-    organization?: {
-      __typename?: "Organization";
-      id: string;
-      name: string;
-    } | null;
-  };
-};
-
-export type DeleteActivityMutationVariables = Exact<{
-  id: Scalars["ID"]["input"];
-}>;
-
-export type DeleteActivityMutation = {
-  __typename?: "Mutation";
-  deleteActivity: string;
-};
-
-export type GetActivityByIdQueryVariables = Exact<{
-  id: Scalars["ID"]["input"];
-}>;
-
-export type GetActivityByIdQuery = {
-  __typename?: "Query";
-  activity?: {
-    __typename?: "Activity";
-    id: string;
-    type: ActivityType;
-    subject: string;
-    due_date?: string | null;
-    is_done: boolean;
-    notes?: string | null;
-    created_at: string;
-    updated_at: string;
-    is_system_activity: boolean;
-    assigned_to_user_id?: string | null;
-    user?: {
-      __typename?: "User";
-      id: string;
-      email: string;
-      display_name?: string | null;
-    } | null;
-    assignedToUser?: {
-      __typename?: "User";
-      id: string;
-      email: string;
-      display_name?: string | null;
-      avatar_url?: string | null;
-    } | null;
-    deal?: { __typename?: "Deal"; id: string; name: string } | null;
-    person?: {
-      __typename?: "Person";
-      id: string;
-      first_name?: string | null;
-      last_name?: string | null;
-    } | null;
-    organization?: {
-      __typename?: "Organization";
-      id: string;
-      name: string;
-    } | null;
-  } | null;
-};
-
 export type CreateAgentConversationMutationVariables = Exact<{
   config?: InputMaybe<AgentConfigInput>;
 }>;
@@ -6374,15 +5727,6 @@ export type CustomFieldValueFieldsFragment = {
   };
 };
 
-export type ActivitySummaryFieldsFragment = {
-  __typename?: "Activity";
-  id: string;
-  type: ActivityType;
-  subject: string;
-  due_date?: string | null;
-  is_done: boolean;
-};
-
 export type WfmStepFieldsFragment = {
   __typename?: "WFMWorkflowStep";
   id: string;
@@ -6477,14 +5821,6 @@ export type GetDealsQuery = {
         fieldName: string;
         fieldType: CustomFieldType;
       };
-    }>;
-    activities: Array<{
-      __typename?: "Activity";
-      id: string;
-      type: ActivityType;
-      subject: string;
-      due_date?: string | null;
-      is_done: boolean;
     }>;
     currentWfmStep?: {
       __typename?: "WFMWorkflowStep";
@@ -6760,14 +6096,6 @@ export type GetLeadsQuery = {
       email: string;
       avatar_url?: string | null;
     } | null;
-    activities: Array<{
-      __typename?: "Activity";
-      id: string;
-      type: ActivityType;
-      subject: string;
-      due_date?: string | null;
-      is_done: boolean;
-    }>;
     currentWfmStep?: {
       __typename?: "WFMWorkflowStep";
       id: string;
@@ -7124,6 +6452,8 @@ export type GetOrganizationByIdQuery = {
     created_at: string;
     updated_at: string;
     account_manager_id?: string | null;
+    totalDealValue?: number | null;
+    activeDealCount?: number | null;
     accountManager?: {
       __typename?: "User";
       id: string;
@@ -7131,6 +6461,17 @@ export type GetOrganizationByIdQuery = {
       email: string;
       avatar_url?: string | null;
     } | null;
+    people?: Array<{
+      __typename?: "Person";
+      id: string;
+      first_name?: string | null;
+      last_name?: string | null;
+      email?: string | null;
+      phone?: string | null;
+      notes?: string | null;
+      created_at: string;
+      updated_at: string;
+    }> | null;
     customFieldValues: Array<{
       __typename?: "CustomFieldValue";
       stringValue?: string | null;

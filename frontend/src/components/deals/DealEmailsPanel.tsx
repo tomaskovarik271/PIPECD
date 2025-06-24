@@ -72,7 +72,7 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { useThemeStore } from '../../stores/useThemeStore';
 import EmailContactFilter from './EmailContactFilter';
 import CreateContactFromEmailModal from './CreateContactFromEmailModal';
-import EnhancedCreateTaskModal from './EnhancedCreateTaskModal';
+// Task creation modal removed with activities system
 
 // GraphQL Queries and Mutations
 const GET_EMAIL_THREADS = gql`
@@ -159,31 +159,8 @@ const COMPOSE_EMAIL = gql`
   }
 `;
 
-const CREATE_TASK_FROM_EMAIL = gql`
-  mutation CreateTaskFromEmail($input: CreateTaskFromEmailInput!) {
-    createTaskFromEmail(input: $input) {
-      id
-      subject
-      notes
-      type
-      due_date
-      is_done
-    }
-  }
-`;
-
-const GENERATE_TASK_CONTENT = gql`
-  mutation GenerateTaskContentFromEmail($input: GenerateTaskContentInput!) {
-    generateTaskContentFromEmail(input: $input) {
-      subject
-      description
-      suggestedDueDate
-      confidence
-      emailScope
-      sourceContent
-    }
-  }
-`;
+// Task creation functionality removed with activities system
+// Using Google Calendar integration instead
 
 const MARK_THREAD_AS_READ = gql`
   mutation MarkThreadAsRead($threadId: String!) {
@@ -505,8 +482,9 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
     showPinnedOnly: false,
   });
   const [isComposeModalOpen, setIsComposeModalOpen] = useState(false);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [selectedEmailForTask, setSelectedEmailForTask] = useState<string | null>(null);
+  // Task modal state removed with activities system
+  // const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  // const [selectedEmailForTask, setSelectedEmailForTask] = useState<string | null>(null);
   const [isConvertToNoteModalOpen, setIsConvertToNoteModalOpen] = useState(false);
   const [selectedEmailForNote, setSelectedEmailForNote] = useState<EmailMessage | null>(null);
   const [isCreateContactModalOpen, setIsCreateContactModalOpen] = useState(false);
@@ -604,25 +582,8 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
     },
   });
 
-  const [createTaskFromEmail] = useMutation(CREATE_TASK_FROM_EMAIL, {
-    onCompleted: () => {
-      toast({
-        title: 'Task created successfully',
-        status: 'success',
-        duration: 3000,
-      });
-      setIsTaskModalOpen(false);
-      setSelectedEmailForTask(null);
-    },
-    onError: (error) => {
-      toast({
-        title: 'Failed to create task',
-        description: error.message,
-        status: 'error',
-        duration: 5000,
-      });
-    },
-  });
+  // Task creation removed with activities system
+  // Using Google Calendar integration instead
 
   const [markThreadAsRead] = useMutation(MARK_THREAD_AS_READ);
 
@@ -691,22 +652,15 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
     });
   };
 
+  // Task creation removed with activities system
+  // Using Google Calendar integration instead
   const handleCreateTask = (taskData: EmailTaskData) => {
-    if (!selectedEmailForTask) return;
-    
-    createTaskFromEmail({
-      variables: {
-        input: {
-          emailId: selectedEmailForTask,
-          threadId: taskData.threadId,
-          useWholeThread: taskData.useWholeThread,
-          subject: taskData.subject,
-          description: taskData.description,
-          dueDate: taskData.dueDate,
-          assigneeId: taskData.assigneeId,
-          dealId,
-        },
-      },
+    // Task creation functionality removed
+    toast({
+      title: 'Task Creation Disabled',
+      description: 'Task creation has been replaced with Google Calendar integration.',
+      status: 'info',
+      duration: 3000,
     });
   };
 
@@ -1168,7 +1122,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                           {thread.subject}
                         </Text>
                         <Text fontSize="xs" color={colors.text.secondary}>
-                          {formatTimestamp(thread.lastActivity)}
+                          {formatTimestamp(thread.lastMessageDate)}
                         </Text>
                       </HStack>
                       
@@ -1185,7 +1139,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                               New
                             </Badge>
                           )}
-                          {thread.latestMessage?.hasAttachments && (
+                          {(thread.latestMessage?.attachments?.length || 0) > 0 && (
                             <Icon as={FiPaperclip} boxSize={3} color={colors.text.secondary} />
                           )}
                           <Badge size="sm" variant="outline">
@@ -1256,17 +1210,17 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                             colorScheme="blue"
                           />
                         </Tooltip>
-                        <Tooltip label="Create task from email">
+                        <Tooltip label="Task creation disabled - using Google Calendar integration">
                           <Box position="relative">
                             <IconButton
-                              aria-label="Create Task"
+                              aria-label="Create Task (Disabled)"
                               icon={<FiZap />}
                               size="sm"
                               variant="ghost"
-                              colorScheme="green"
+                              colorScheme="gray"
+                              isDisabled={true}
                               onClick={() => {
-                                setSelectedEmailForTask(threadData.getEmailThread.latestMessage?.id);
-                                setIsTaskModalOpen(true);
+                                // Task creation disabled - using Google Calendar integration
                               }}
                             />
                           </Box>
@@ -1434,17 +1388,8 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
         defaultSubject={`Re: ${dealName}`}
       />
 
-      {/* Create Task Modal */}
-      <EnhancedCreateTaskModal
-        isOpen={isTaskModalOpen}
-        onClose={() => {
-          setIsTaskModalOpen(false);
-          setSelectedEmailForTask(null);
-        }}
-        onCreateTask={handleCreateTask}
-        selectedEmailId={selectedEmailForTask}
-        selectedThreadId={selectedThreadId}
-      />
+      {/* Create Task Modal - Removed with activities system */}
+      {/* Task creation functionality replaced with Google Calendar integration */}
 
       {/* Convert to Note Modal */}
       {selectedEmailForNote && (
