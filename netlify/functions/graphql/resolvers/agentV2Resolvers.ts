@@ -68,7 +68,7 @@ export const agentV2Resolvers = {
                   content: thought.content,
                   metadata: {
                     ...thought.metadata,
-                    toolType: thought.metadata?.toolType || (thought.type === 'reasoning' ? 'think' : undefined),
+                    toolType: thought.metadata?.toolType || (thought.type === 'reasoning' || thought.type === 'thinking' ? 'think' : undefined),
                     acknowledgment: thought.metadata?.acknowledgment,
                     strategy: thought.strategy,
                     concerns: thought.concerns,
