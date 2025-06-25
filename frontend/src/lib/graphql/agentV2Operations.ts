@@ -133,17 +133,6 @@ export const GET_AGENT_V2_CONVERSATIONS = gql`
         role
         content
         timestamp
-        thoughts {
-          id
-          type
-          content
-          metadata
-          reasoning
-          strategy
-          concerns
-          nextSteps
-          timestamp
-        }
       }
       context
       createdAt
