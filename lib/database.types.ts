@@ -159,53 +159,161 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_events: {
+        Row: {
+          created_at: string | null
+          deal_id: string | null
+          description: string | null
+          end_time: string
+          event_type: string
+          google_calendar_id: string
+          google_event_id: string
+          google_meet_link: string | null
+          id: string
+          is_all_day: boolean | null
+          is_cancelled: boolean | null
+          last_synced_at: string | null
+          location: string | null
+          next_actions: string[] | null
+          organization_id: string | null
+          outcome: string | null
+          outcome_notes: string | null
+          person_id: string | null
+          start_time: string
+          timezone: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          deal_id?: string | null
+          description?: string | null
+          end_time: string
+          event_type?: string
+          google_calendar_id: string
+          google_event_id: string
+          google_meet_link?: string | null
+          id?: string
+          is_all_day?: boolean | null
+          is_cancelled?: boolean | null
+          last_synced_at?: string | null
+          location?: string | null
+          next_actions?: string[] | null
+          organization_id?: string | null
+          outcome?: string | null
+          outcome_notes?: string | null
+          person_id?: string | null
+          start_time: string
+          timezone?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          deal_id?: string | null
+          description?: string | null
+          end_time?: string
+          event_type?: string
+          google_calendar_id?: string
+          google_event_id?: string
+          google_meet_link?: string | null
+          id?: string
+          is_all_day?: boolean | null
+          is_cancelled?: boolean | null
+          last_synced_at?: string | null
+          location?: string | null
+          next_actions?: string[] | null
+          organization_id?: string | null
+          outcome?: string | null
+          outcome_notes?: string | null
+          person_id?: string | null
+          start_time?: string
+          timezone?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_events_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_sync_log: {
         Row: {
-          activity_id: string | null
           api_response: Json | null
           calendar_event_id: string | null
           calendar_id: string | null
           created_at: string | null
           error_message: string | null
+          google_event_id: string | null
           id: string
           processing_time_ms: number | null
           success: boolean
-          sync_action: string | null
-          sync_direction: string | null
-          sync_source: string | null
+          sync_action: string
+          sync_direction: string
+          sync_source: string
           user_id: string
         }
         Insert: {
-          activity_id?: string | null
           api_response?: Json | null
           calendar_event_id?: string | null
           calendar_id?: string | null
           created_at?: string | null
           error_message?: string | null
+          google_event_id?: string | null
           id?: string
           processing_time_ms?: number | null
           success: boolean
-          sync_action?: string | null
-          sync_direction?: string | null
-          sync_source?: string | null
+          sync_action: string
+          sync_direction: string
+          sync_source: string
           user_id: string
         }
         Update: {
-          activity_id?: string | null
           api_response?: Json | null
           calendar_event_id?: string | null
           calendar_id?: string | null
           created_at?: string | null
           error_message?: string | null
+          google_event_id?: string | null
           id?: string
           processing_time_ms?: number | null
           success?: boolean
-          sync_action?: string | null
-          sync_direction?: string | null
-          sync_source?: string | null
+          sync_action?: string
+          sync_direction?: string
+          sync_source?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "calendar_sync_log_calendar_event_id_fkey"
+            columns: ["calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversion_history: {
         Row: {
@@ -1688,6 +1796,107 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assigned_to_user_id: string | null
+          calendar_event_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          created_by_user_id: string
+          deal_id: string | null
+          description: string | null
+          due_date: string | null
+          email_thread_id: string | null
+          estimated_duration: unknown | null
+          id: string
+          lead_id: string | null
+          notes: string | null
+          organization_id: string | null
+          person_id: string | null
+          priority: Database["public"]["Enums"]["task_priority_enum"]
+          status: Database["public"]["Enums"]["task_status_enum"]
+          tags: string[] | null
+          title: string
+          type: Database["public"]["Enums"]["task_type_enum"]
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_to_user_id?: string | null
+          calendar_event_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id: string
+          deal_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          email_thread_id?: string | null
+          estimated_duration?: unknown | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          organization_id?: string | null
+          person_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority_enum"]
+          status?: Database["public"]["Enums"]["task_status_enum"]
+          tags?: string[] | null
+          title: string
+          type?: Database["public"]["Enums"]["task_type_enum"]
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_to_user_id?: string | null
+          calendar_event_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          created_by_user_id?: string
+          deal_id?: string | null
+          description?: string | null
+          due_date?: string | null
+          email_thread_id?: string | null
+          estimated_duration?: unknown | null
+          id?: string
+          lead_id?: string | null
+          notes?: string | null
+          organization_id?: string | null
+          person_id?: string | null
+          priority?: Database["public"]["Enums"]["task_priority_enum"]
+          status?: Database["public"]["Enums"]["task_status_enum"]
+          tags?: string[] | null
+          title?: string
+          type?: Database["public"]["Enums"]["task_type_enum"]
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_person_id_fkey"
+            columns: ["person_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_calendar_preferences: {
         Row: {
           auto_add_deal_participants: boolean | null
@@ -2123,6 +2332,24 @@ export type Database = {
         | "DROPDOWN"
         | "MULTI_SELECT"
       entity_type: "DEAL" | "PERSON" | "ORGANIZATION" | "LEAD"
+      task_priority_enum: "low" | "medium" | "high" | "urgent"
+      task_status_enum:
+        | "pending"
+        | "in_progress"
+        | "completed"
+        | "cancelled"
+        | "waiting"
+      task_type_enum:
+        | "follow_up"
+        | "preparation"
+        | "deadline"
+        | "internal"
+        | "research"
+        | "administrative"
+        | "email"
+        | "call"
+        | "meeting_prep"
+        | "post_meeting"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2250,6 +2477,26 @@ export const Constants = {
         "MULTI_SELECT",
       ],
       entity_type: ["DEAL", "PERSON", "ORGANIZATION", "LEAD"],
+      task_priority_enum: ["low", "medium", "high", "urgent"],
+      task_status_enum: [
+        "pending",
+        "in_progress",
+        "completed",
+        "cancelled",
+        "waiting",
+      ],
+      task_type_enum: [
+        "follow_up",
+        "preparation",
+        "deadline",
+        "internal",
+        "research",
+        "administrative",
+        "email",
+        "call",
+        "meeting_prep",
+        "post_meeting",
+      ],
     },
   },
 } as const

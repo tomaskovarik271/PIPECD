@@ -1,0 +1,145 @@
+# Task Management GraphQL Schema
+
+enum TaskType {
+  FOLLOW_UP
+  PREPARATION
+  DEADLINE
+  INTERNAL
+  RESEARCH
+  ADMINISTRATIVE
+  EMAIL
+  CALL
+  MEETING_PREP
+  POST_MEETING
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  WAITING
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+type Task {
+  id: ID!
+  title: String!
+  description: String
+  type: TaskType!
+  status: TaskStatus!
+  priority: TaskPriority!
+  dueDate: DateTime
+  completedAt: DateTime
+  estimatedDuration: Int # minutes
+  
+  # Users
+  assignedToUser: User
+  createdByUser: User!
+  
+  # Business Context
+  deal: Deal
+  lead: Lead
+  person: Person
+  organization: Organization
+  emailThreadId: String
+  calendarEventId: String
+  
+  # Metadata
+  notes: String
+  tags: [String!]
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+input CreateTaskInput {
+  title: String!
+  description: String
+  type: TaskType!
+  priority: TaskPriority
+  dueDate: DateTime
+  estimatedDuration: Int
+  assignedToUserId: ID
+  dealId: ID
+  leadId: ID
+  personId: ID
+  organizationId: ID
+  emailThreadId: String
+  calendarEventId: String
+  notes: String
+  tags: [String!]
+}
+
+input UpdateTaskInput {
+  title: String
+  description: String
+  type: TaskType
+  status: TaskStatus
+  priority: TaskPriority
+  dueDate: DateTime
+  completedAt: DateTime
+  estimatedDuration: Int
+  assignedToUserId: ID
+  notes: String
+  tags: [String!]
+}
+
+input TaskFilters {
+  status: TaskStatus
+  assignedToUserId: ID
+  dealId: ID
+  leadId: ID
+  dueBefore: DateTime
+  dueAfter: DateTime
+  limit: Int
+  offset: Int
+}
+
+type TaskStats {
+  total: Int!
+  pending: Int!
+  inProgress: Int!
+  completed: Int!
+  overdue: Int!
+}
+
+extend type Query {
+  # Get tasks with filtering
+  tasks(filters: TaskFilters): [Task!]!
+  
+  # Get single task
+  task(id: ID!): Task
+  
+  # Get tasks for timeline (mixed with calendar events)
+  timelineTasks(
+    dealId: ID!
+    startDate: DateTime
+    endDate: DateTime
+  ): [Task!]!
+  
+  # Get user's daily tasks
+  myDailyTasks(date: DateTime!): [Task!]!
+  
+  # Get task statistics
+  taskStats(userId: ID): TaskStats!
+}
+
+extend type Mutation {
+  createTask(input: CreateTaskInput!): Task!
+  updateTask(id: ID!, input: UpdateTaskInput!): Task!
+  deleteTask(id: ID!): Boolean!
+  
+  # Quick actions
+  completeTask(id: ID!, notes: String): Task!
+  rescheduleTask(id: ID!, newDueDate: DateTime!): Task!
+  reassignTask(id: ID!, newAssigneeId: ID!): Task!
+  
+  # Bulk operations
+  bulkUpdateTasks(ids: [ID!]!, input: UpdateTaskInput!): [Task!]!
+} 
