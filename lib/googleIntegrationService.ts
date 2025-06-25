@@ -17,6 +17,7 @@ export interface GoogleIntegrationStatus {
   hasDriveAccess: boolean;
   hasGmailAccess: boolean;
   hasCalendarAccess: boolean;
+  hasContactsAccess: boolean;
   tokenExpiry?: string;
   missingScopes: string[];
 }
@@ -38,6 +39,17 @@ const refreshAccessToken = async (refreshToken: string): Promise<GoogleTokenData
     throw new Error('No refresh token available');
   }
 
+  const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  
+  console.log('Refreshing token with client_id:', clientId ? 'set' : 'undefined');
+  console.log('Environment check - NODE_ENV:', process.env.NODE_ENV);
+  
+  if (!clientId || !clientSecret) {
+    console.error('Google OAuth credentials not found in environment variables');
+    throw new Error('Google OAuth configuration error. Please check server configuration.');
+  }
+
   try {
     const response = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -45,8 +57,8 @@ const refreshAccessToken = async (refreshToken: string): Promise<GoogleTokenData
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: process.env.GOOGLE_OAUTH_CLIENT_ID || '',
-        client_secret: process.env.GOOGLE_OAUTH_CLIENT_SECRET || '',
+        client_id: clientId,
+        client_secret: clientSecret,
         refresh_token: refreshToken,
         grant_type: 'refresh_token',
       }),
@@ -179,6 +191,7 @@ const getIntegrationStatus = async (userId: string, accessToken: string): Promis
         hasDriveAccess: false,
         hasGmailAccess: false,
         hasCalendarAccess: false,
+        hasContactsAccess: false,
         missingScopes: REQUIRED_SCOPES
       };
     }
@@ -194,6 +207,7 @@ const getIntegrationStatus = async (userId: string, accessToken: string): Promis
       hasDriveAccess: grantedScopes.includes('https://www.googleapis.com/auth/drive'),
       hasGmailAccess: grantedScopes.some((scope: string) => scope.includes('gmail')),
       hasCalendarAccess: grantedScopes.includes('https://www.googleapis.com/auth/calendar'),
+      hasContactsAccess: grantedScopes.includes('https://www.googleapis.com/auth/contacts.readonly'),
       tokenExpiry: tokenData.expires_at,
       missingScopes
     };

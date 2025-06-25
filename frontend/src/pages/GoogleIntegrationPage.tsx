@@ -30,6 +30,7 @@ const GET_GOOGLE_INTEGRATION_STATUS = gql`
       hasDriveAccess
       hasGmailAccess
       hasCalendarAccess
+      hasContactsAccess
       tokenExpiry
       missingScopes
     }
@@ -49,6 +50,8 @@ const CONNECT_GOOGLE_INTEGRATION = gql`
       hasGoogleAuth
       hasDriveAccess
       hasGmailAccess
+      hasCalendarAccess
+      hasContactsAccess
       tokenExpiry
       missingScopes
     }
@@ -61,6 +64,7 @@ interface GoogleIntegrationStatus {
   hasDriveAccess: boolean;
   hasGmailAccess: boolean;
   hasCalendarAccess: boolean;
+  hasContactsAccess: boolean;
   tokenExpiry?: string;
   missingScopes: string[];
 }
@@ -381,6 +385,21 @@ const GoogleIntegrationPage: React.FC = () => {
                     size="sm"
                   >
                     {status?.hasCalendarAccess ? 'Enabled' : 'Not Enabled'}
+                  </Badge>
+                </HStack>
+
+                <HStack spacing={4}>
+                  <Icon
+                    as={status?.hasContactsAccess ? CheckIcon : InfoIcon}
+                    color={status?.hasContactsAccess ? 'green.500' : 'gray.500'}
+                  />
+                  <Text color={colors.text.secondary}>Google Contacts Access</Text>
+                  <Badge
+                    colorScheme={status?.hasContactsAccess ? 'green' : 'gray'}
+                    variant="subtle"
+                    size="sm"
+                  >
+                    {status?.hasContactsAccess ? 'Enabled' : 'Not Enabled'}
                   </Badge>
                 </HStack>
               </VStack>

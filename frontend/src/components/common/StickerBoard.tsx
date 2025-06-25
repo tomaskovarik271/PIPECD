@@ -383,9 +383,11 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
   }, [isFullscreen]);
 
   // Initialize sticker layouts
+  const memoizedStickers = useMemo(() => stickers, [stickers?.length, JSON.stringify(stickers?.map(s => s.id).sort())]);
+  
   useEffect(() => {
     const layouts = new Map<string, StickerLayout>();
-    stickers.forEach(sticker => {
+    memoizedStickers.forEach(sticker => {
       layouts.set(sticker.id, {
         id: sticker.id,
         position: { x: sticker.positionX, y: sticker.positionY },
@@ -393,7 +395,7 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
       });
     });
     setStickerLayouts(layouts);
-  }, [stickers]);
+  }, [memoizedStickers]);
 
   // Debounced server updates to prevent excessive calls during drag operations
   const debouncedUpdatePosition = useDebounce((stickerId: string, position: Position) => {
