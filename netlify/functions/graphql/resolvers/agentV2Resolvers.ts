@@ -31,7 +31,65 @@ export const agentV2Resolvers = {
           throw new GraphQLError('Failed to fetch conversations');
         }
 
-        return data || [];
+        // Load thoughts for each conversation to properly populate the messages
+        return Promise.all((data || []).map(async (conv: any) => {
+          // Get all thoughts for this conversation
+          const { data: allThoughts, error: thoughtsError } = await context.supabaseClient
+            .from('agent_thoughts')
+            .select('*')
+            .eq('conversation_id', conv.id)
+            .order('timestamp', { ascending: true });
+
+          if (thoughtsError) {
+            console.warn('Failed to fetch thoughts for conversation:', conv.id, thoughtsError);
+          }
+
+          return {
+            id: conv.id,
+            userId: conv.user_id,
+            agentVersion: conv.agent_version || 'v2',
+            messages: (conv.messages || []).map((msg: any) => {
+              // Filter thoughts that belong to this message (by timestamp proximity)
+              const messageTime = new Date(msg.timestamp).getTime();
+              const messageThoughts = (allThoughts || []).filter((thought: any) => {
+                const thoughtTime = new Date(thought.timestamp).getTime();
+                // Include thoughts within 1 minute of the message
+                return Math.abs(thoughtTime - messageTime) < 60000;
+              });
+              
+              return {
+                role: msg.role,
+                content: msg.content,
+                timestamp: msg.timestamp,
+                thoughts: messageThoughts.map((thought: any) => ({
+                  id: thought.id,
+                  conversationId: thought.conversation_id,
+                  type: thought.type?.toUpperCase() || 'REASONING',
+                  content: thought.content,
+                  metadata: {
+                    ...thought.metadata,
+                    toolType: thought.metadata?.toolType || (thought.type === 'reasoning' ? 'think' : undefined),
+                    acknowledgment: thought.metadata?.acknowledgment,
+                    strategy: thought.strategy,
+                    concerns: thought.concerns,
+                    nextSteps: thought.next_steps,
+                    reasoning: thought.reasoning,
+                    thinkingDepth: thought.metadata?.thinkingDepth,
+                    confidenceLevel: thought.metadata?.confidenceLevel
+                  },
+                  reasoning: thought.reasoning,
+                  strategy: thought.strategy,
+                  concerns: thought.concerns,
+                  nextSteps: thought.next_steps,
+                  timestamp: thought.timestamp,
+                })),
+              };
+            }),
+            context: conv.context,
+            createdAt: conv.created_at,
+            updatedAt: conv.updated_at,
+          };
+        }));
       } catch (err) {
         throw processZodError(err, action);
       }
