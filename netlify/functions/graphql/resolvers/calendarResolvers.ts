@@ -97,9 +97,6 @@ export const calendarMutations = {
     const userId = context.user!.id;
 
     try {
-      console.log('Calendar event creation started for user:', userId);
-      console.log('Input args:', JSON.stringify(args.input, null, 2));
-
       const eventData = {
         summary: args.input.title,
         description: args.input.description,
@@ -115,16 +112,12 @@ export const calendarMutations = {
         eventType: args.input.eventType
       };
 
-      console.log('Calling googleCalendarService.createEvent with:', JSON.stringify(eventData, null, 2));
-
       const createdEvent = await googleCalendarService.createEvent(
         userId,
         accessToken,
         eventData,
         args.input.calendarId || 'primary'
       );
-
-      console.log('Google Calendar service returned:', JSON.stringify(createdEvent, null, 2));
 
       if (!createdEvent) {
         throw new GraphQLError('Failed to create calendar event - no response from Google Calendar API');
