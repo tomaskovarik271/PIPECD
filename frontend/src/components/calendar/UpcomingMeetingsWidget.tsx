@@ -98,7 +98,7 @@ export const UpcomingMeetingsWidget: React.FC = () => {
                 <HStack>
                   <Icon as={FiUser} />
                   <Text>
-                    Deal: {meeting.deal.title} 
+                    Deal: {meeting.deal.name} 
                     {meeting.deal.amount && ` (${meeting.deal.currency || 'USD'} ${meeting.deal.amount})`}
                   </Text>
                 </HStack>
@@ -108,7 +108,7 @@ export const UpcomingMeetingsWidget: React.FC = () => {
                 <HStack>
                   <Icon as={FiUser} />
                   <Text>
-                    with {meeting.person.firstName} {meeting.person.lastName}
+                    with {meeting.person.first_name} {meeting.person.last_name}
                   </Text>
                 </HStack>
               )}

@@ -25,14 +25,14 @@ export const GET_UPCOMING_MEETINGS = gql`
       updatedAt
       deal {
         id
-        title
+        name
         amount
         currency
       }
       person {
         id
-        firstName
-        lastName
+        first_name
+        last_name
         email
       }
       organization {
@@ -84,12 +84,12 @@ export const CREATE_CALENDAR_EVENT = gql`
       updatedAt
       deal {
         id
-        title
+        name
       }
       person {
         id
-        firstName
-        lastName
+        first_name
+        last_name
         email
       }
       organization {
@@ -125,8 +125,8 @@ export const GET_DEAL_CALENDAR_EVENTS = gql`
       updatedAt
       person {
         id
-        firstName
-        lastName
+        first_name
+        last_name
         email
       }
       organization {
