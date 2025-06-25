@@ -68,6 +68,7 @@ import {
   SmallCloseIcon
 } from '@chakra-ui/icons';
 import { FaClipboardList, FaPhone } from 'react-icons/fa';
+import { FiClock } from 'react-icons/fi';
 import type { CustomFieldEntityType } from '../generated/graphql/graphql';
 
 // Store imports
@@ -90,9 +91,11 @@ import { DealOrganizationContactsPanel } from '../components/deals/DealOrganizat
 import DealEmailsPanel from '../components/deals/DealEmailsPanel';
 import { SharedDriveDocumentBrowser } from '../components/deals/SharedDriveDocumentBrowser';
 import { DealNotesPanel } from '../components/dealDetail/DealNotesPanel';
+import { DealTimelinePanel } from '../components/dealDetail/DealTimelinePanel';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 import { ScheduleMeetingModal } from '../components/calendar/ScheduleMeetingModal';
+import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 
 // Type imports
 
@@ -198,7 +201,7 @@ const DealDetailPage = () => {
     if (dealId) {
       fetchDealById(dealId);
       // Activities fetch removed - using Google Calendar integration instead
-      fetchCustomFieldDefinitions(CustomFieldEntityType.Deal);
+      fetchCustomFieldDefinitions('DEAL');
       if (!usersHaveBeenFetched) {
         fetchUserList();
       }
@@ -474,6 +477,12 @@ const DealDetailPage = () => {
                         </Badge>
                       </HStack>
                     </Tab>
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                      <HStack spacing={2}>
+                        <Icon as={FiClock} />
+                        <Text>Timeline</Text>
+                      </HStack>
+                    </Tab>
                     {/* Activities tab removed - using Google Calendar integration instead */}
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                       Emails
@@ -506,6 +515,12 @@ const DealDetailPage = () => {
                           dealId={currentDeal.id}
                           onNoteCountChange={handleStickyNotesCountChange}
                         />
+                      </Box>
+                    </TabPanel>
+                    
+                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
+                      <Box w="100%" maxW="100%">
+                        <DealTimelinePanel deal={currentDeal as Deal} />
                       </Box>
                     </TabPanel>
                   

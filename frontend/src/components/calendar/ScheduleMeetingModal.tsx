@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -21,6 +21,7 @@ import {
 import { useMutation } from '@apollo/client';
 import { CREATE_CALENDAR_EVENT } from '../../lib/graphql/calendarOperations';
 import { Deal } from '../../stores/useDealsStore';
+import { EmailAutocompleteInput } from '../common/EmailAutocompleteInput';
 
 interface ScheduleMeetingModalProps {
   isOpen: boolean;
@@ -42,6 +43,7 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
   const [attendeeEmails, setAttendeeEmails] = useState('');
   const [addGoogleMeet, setAddGoogleMeet] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const toast = useToast();
 
@@ -79,6 +81,7 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
     setAttendeeEmails('');
     setAddGoogleMeet(true);
     setIsSubmitting(false);
+    setError(null);
   };
 
   const handleSubmit = async () => {
@@ -95,18 +98,27 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
 
     setIsSubmitting(true);
 
+    // Convert datetime-local values to proper ISO strings
+    const convertLocalToISO = (localDateTime: string): string => {
+      // datetime-local gives us "YYYY-MM-DDTHH:mm" format
+      // We need to convert this to a proper ISO string
+      const date = new Date(localDateTime);
+      return date.toISOString();
+    };
+
     const input = {
       title,
       description: description || undefined,
-      startDateTime,
-      endDateTime,
+      startTime: convertLocalToISO(startDateTime),
+      endTime: convertLocalToISO(endDateTime),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, // User's local timezone
       location: location || undefined,
       eventType,
       addGoogleMeet,
       dealId: deal.id,
       personId: deal.person?.id || undefined,
       organizationId: deal.organization?.id || undefined,
-      attendeeEmails: attendeeEmails ? attendeeEmails.split(',').map(email => email.trim()).filter(Boolean) : undefined,
+      attendees: attendeeEmails ? attendeeEmails.split(',').map(email => email.trim()).filter(Boolean) : undefined,
     };
 
     try {
@@ -131,6 +143,13 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
       setEndDateTime(endISOString);
     }
   };
+
+  // Auto-populate attendee emails with deal contact when modal opens
+  useEffect(() => {
+    if (isOpen && deal.person?.email) {
+      setAttendeeEmails(deal.person.email);
+    }
+  }, [isOpen, deal.person?.email]);
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="lg">
@@ -202,9 +221,9 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
 
             <FormControl>
               <FormLabel>Attendee Emails (comma-separated)</FormLabel>
-              <Input
+              <EmailAutocompleteInput
                 value={attendeeEmails}
-                onChange={(e) => setAttendeeEmails(e.target.value)}
+                onChange={(value) => setAttendeeEmails(value)}
                 placeholder={deal.person?.email ? `${deal.person.email}, others...` : 'email1@example.com, email2@example.com'}
               />
             </FormControl>

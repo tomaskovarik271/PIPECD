@@ -1,6 +1,7 @@
 import { GraphQLError } from 'graphql';
 import { GraphQLContext, requireAuthentication, getAccessToken } from '../helpers';
 import { googleCalendarService } from '../../../../lib/googleCalendarService';
+import { googleContactsService } from '../../../../lib/googleContactsService';
 import { getAuthenticatedClient } from '../../../../lib/serviceUtils';
 import { dealService } from '../../../../lib/dealService';
 
@@ -36,7 +37,7 @@ export const calendarQueries = {
     requireAuthentication(context);
     const accessToken = getAccessToken(context)!;
     const supabase = getAuthenticatedClient(accessToken);
-    const userId = context.user!.id;
+    const userId = context.currentUser!.id;
 
     try {
       const endDate = new Date();
@@ -64,10 +65,60 @@ export const calendarQueries = {
     }
   },
 
+  dealCalendarEvents: async (_: any, args: { dealId: string }, context: GraphQLContext) => {
+    requireAuthentication(context);
+    const accessToken = getAccessToken(context)!;
+    const supabase = getAuthenticatedClient(accessToken);
+    const userId = context.currentUser!.id;
+
+    try {
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('deal_id', args.dealId)
+        .order('start_time', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching deal calendar events:', error);
+        throw new GraphQLError('Failed to fetch deal calendar events');
+      }
+
+      return (data || []).map(mapDbCalendarEventToGraphQL);
+    } catch (error) {
+      console.error('Error in dealCalendarEvents query:', error);
+      throw new GraphQLError('Failed to fetch deal calendar events');
+    }
+  },
+
+  searchGoogleContacts: async (_: any, args: { query: string }, context: GraphQLContext) => {
+    requireAuthentication(context);
+    const accessToken = getAccessToken(context)!;
+    const userId = context.currentUser!.id;
+
+    try {
+      if (!args.query || args.query.length < 2) {
+        return [];
+      }
+
+      const suggestions = await googleContactsService.searchContacts(userId, accessToken, args.query);
+      
+      return suggestions.map(contact => ({
+        email: contact.email,
+        name: contact.name || null,
+        photoUrl: contact.photoUrl || null
+      }));
+    } catch (error) {
+      console.error('Error searching Google contacts:', error);
+      // Return empty array on error - don't break the UI
+      return [];
+    }
+  },
+
   googleCalendars: async (_: any, __: any, context: GraphQLContext) => {
     requireAuthentication(context);
     const accessToken = getAccessToken(context)!;
-    const userId = context.user!.id;
+    const userId = context.currentUser!.id;
 
     try {
       const calendars = await googleCalendarService.getCalendarList(userId, accessToken);
@@ -94,7 +145,7 @@ export const calendarMutations = {
   createCalendarEvent: async (_: any, args: any, context: GraphQLContext) => {
     requireAuthentication(context);
     const accessToken = getAccessToken(context)!;
-    const userId = context.user!.id;
+    const userId = context.currentUser!.id;
 
     try {
       const eventData = {
@@ -120,7 +171,13 @@ export const calendarMutations = {
       );
 
       if (!createdEvent) {
+        console.error('createCalendarEvent: createdEvent is null/undefined');
         throw new GraphQLError('Failed to create calendar event - no response from Google Calendar API');
+      }
+
+      if (!createdEvent.id) {
+        console.error('createCalendarEvent: createdEvent.id is missing', createdEvent);
+        throw new GraphQLError('Failed to create calendar event - event ID is missing');
       }
 
       // Extract Google Meet link from conferenceData if available
@@ -128,16 +185,16 @@ export const calendarMutations = {
         (entry: any) => entry.entryPointType === 'video'
       )?.uri || null;
 
-      return {
+      const result = {
         id: createdEvent.id,
         googleEventId: createdEvent.id,
         googleCalendarId: args.input.calendarId || 'primary',
-        title: createdEvent.summary,
+        title: createdEvent.summary || 'Untitled Event',
         description: createdEvent.description || null,
-        startTime: createdEvent.start.dateTime || createdEvent.start.date!,
-        endTime: createdEvent.end.dateTime || createdEvent.end.date!,
-        isAllDay: !createdEvent.start.dateTime,
-        timezone: createdEvent.start.timeZone || 'UTC',
+        startTime: createdEvent.start?.dateTime || createdEvent.start?.date || new Date().toISOString(),
+        endTime: createdEvent.end?.dateTime || createdEvent.end?.date || new Date().toISOString(),
+        isAllDay: !createdEvent.start?.dateTime,
+        timezone: createdEvent.start?.timeZone || 'UTC',
         location: createdEvent.location || null,
         googleMeetLink,
         eventType: args.input.eventType || 'MEETING',
@@ -150,6 +207,8 @@ export const calendarMutations = {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+
+      return result;
     } catch (error) {
       console.error('Error creating calendar event:', error);
       throw new GraphQLError('Failed to create calendar event');
@@ -166,7 +225,8 @@ export const CalendarEvent = {
     const accessToken = getAccessToken(context)!;
     
     try {
-      return await dealService.getDealById(parent.deal_id, accessToken);
+      const { userId } = requireAuthentication(context);
+      return await dealService.getDealById(userId, parent.deal_id, accessToken);
     } catch (error) {
       console.error('Error fetching deal for calendar event:', error);
       return null;

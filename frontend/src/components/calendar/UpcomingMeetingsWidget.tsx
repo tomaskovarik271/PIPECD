@@ -5,7 +5,11 @@ import { FiCalendar, FiVideo, FiMapPin, FiUser } from 'react-icons/fi';
 import { GET_UPCOMING_MEETINGS } from '../../lib/graphql/calendarOperations';
 import { format } from 'date-fns';
 
-export const UpcomingMeetingsWidget: React.FC = () => {
+interface UpcomingMeetingsWidgetProps {
+  dealId?: string; // Optional prop to filter meetings for a specific deal
+}
+
+export const UpcomingMeetingsWidget: React.FC<UpcomingMeetingsWidgetProps> = ({ dealId }) => {
   const { data, loading, error } = useQuery(GET_UPCOMING_MEETINGS, {
     variables: { days: 7, limit: 5 },
     errorPolicy: 'all'
@@ -33,15 +37,24 @@ export const UpcomingMeetingsWidget: React.FC = () => {
   }
 
   const meetings = data?.upcomingMeetings || [];
+  
+  // Filter meetings by dealId if provided
+  const filteredMeetings = dealId 
+    ? meetings.filter((meeting: any) => meeting.deal?.id === dealId)
+    : meetings;
 
-  if (meetings.length === 0) {
+  if (filteredMeetings.length === 0) {
+    const noMeetingsMessage = dealId 
+      ? "No upcoming meetings for this deal in the next 7 days"
+      : "No upcoming meetings in the next 7 days";
+      
     return (
       <Card p={4}>
         <HStack mb={2}>
           <Icon as={FiCalendar} />
           <Text fontWeight="bold">Upcoming Meetings</Text>
         </HStack>
-        <Text color="gray.500">No upcoming meetings in the next 7 days</Text>
+        <Text color="gray.500">{noMeetingsMessage}</Text>
       </Card>
     );
   }
@@ -50,11 +63,13 @@ export const UpcomingMeetingsWidget: React.FC = () => {
     <Card p={4}>
       <HStack mb={4}>
         <Icon as={FiCalendar} />
-        <Text fontWeight="bold">Upcoming Meetings</Text>
+        <Text fontWeight="bold">
+          {dealId ? "Deal Meetings" : "Upcoming Meetings"}
+        </Text>
       </HStack>
       
       <VStack spacing={3} align="stretch">
-        {meetings.map((meeting: any) => (
+        {filteredMeetings.map((meeting: any) => (
           <Box
             key={meeting.id}
             p={3}
@@ -90,11 +105,20 @@ export const UpcomingMeetingsWidget: React.FC = () => {
               {meeting.googleMeetLink && (
                 <HStack>
                   <Icon as={FiVideo} />
-                  <Text>Google Meet</Text>
+                  <Text 
+                    as="a" 
+                    href={meeting.googleMeetLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    color="blue.600"
+                    _hover={{textDecoration: 'underline'}}
+                  >
+                    Join Google Meet
+                  </Text>
                 </HStack>
               )}
               
-              {meeting.deal && (
+              {!dealId && meeting.deal && (
                 <HStack>
                   <Icon as={FiUser} />
                   <Text>

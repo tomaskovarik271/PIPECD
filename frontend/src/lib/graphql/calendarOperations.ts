@@ -135,4 +135,15 @@ export const GET_DEAL_CALENDAR_EVENTS = gql`
       }
     }
   }
+`;
+
+// Contact suggestions for email autocomplete
+export const SEARCH_GOOGLE_CONTACTS = gql`
+  query SearchGoogleContacts($query: String!) {
+    searchGoogleContacts(query: $query) {
+      email
+      name
+      photoUrl
+    }
+  }
 `; 

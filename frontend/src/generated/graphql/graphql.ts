@@ -381,6 +381,13 @@ export type ContactScopeType =
   | 'PRIMARY'
   | 'SELECTED_ROLES';
 
+export type ContactSuggestion = {
+  __typename?: 'ContactSuggestion';
+  email: Scalars['String']['output'];
+  name?: Maybe<Scalars['String']['output']>;
+  photoUrl?: Maybe<Scalars['String']['output']>;
+};
+
 export type ConversionHistory = {
   __typename?: 'ConversionHistory';
   conversionData?: Maybe<Scalars['JSON']['output']>;
@@ -2242,6 +2249,7 @@ export type Query = {
   roles: Array<Role>;
   searchDriveFiles: DriveFileConnection;
   searchEmails: Array<Email>;
+  searchGoogleContacts: Array<ContactSuggestion>;
   searchSharedDriveFiles: Array<DriveFile>;
   searchStickers: StickerConnection;
   suggestEmailParticipants: Array<Person>;
@@ -2548,6 +2556,11 @@ export type QuerySearchDriveFilesArgs = {
 export type QuerySearchEmailsArgs = {
   entityType?: InputMaybe<EntityType>;
   limit?: InputMaybe<Scalars['Int']['input']>;
+  query: Scalars['String']['input'];
+};
+
+
+export type QuerySearchGoogleContactsArgs = {
   query: Scalars['String']['input'];
 };
 

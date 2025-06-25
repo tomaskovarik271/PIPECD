@@ -260,15 +260,26 @@ class GoogleCalendarService {
     try {
       const calendar = await this.getCalendarClient(userId, accessToken);
 
+      // Ensure proper ISO 8601 format for dateTime fields
+      const formatDateTime = (dateTime: string, timeZone: string = 'UTC'): string => {
+        const date = new Date(dateTime);
+        if (isNaN(date.getTime())) {
+          throw new Error(`Invalid date format: ${dateTime}`);
+        }
+        // Return the ISO string as-is since it's already in the correct format
+        // Google Calendar will interpret this according to the timeZone field
+        return date.toISOString();
+      };
+
       const eventPayload: any = {
         summary: eventData.summary,
         description: eventData.description,
         start: {
-          dateTime: eventData.startDateTime,
+          dateTime: formatDateTime(eventData.startDateTime, eventData.timeZone),
           timeZone: eventData.timeZone || 'UTC'
         },
         end: {
-          dateTime: eventData.endDateTime,
+          dateTime: formatDateTime(eventData.endDateTime, eventData.timeZone),
           timeZone: eventData.timeZone || 'UTC'
         },
         location: eventData.location,
@@ -316,6 +327,18 @@ class GoogleCalendarService {
       return this.formatCalendarEvent(response.data);
     } catch (error) {
       console.error('Error creating calendar event:', error);
+      
+      // Log more details about the Google API error
+      if (error && typeof error === 'object' && 'response' in error) {
+        const apiError = error as any;
+        console.error('Google Calendar API Error Details:');
+        console.error('Status:', apiError.status);
+        console.error('Message:', apiError.message);
+        if (apiError.response?.data?.error) {
+          console.error('API Error:', JSON.stringify(apiError.response.data.error, null, 2));
+        }
+      }
+      
       throw new Error('Failed to create calendar event');
     }
   }
@@ -488,7 +511,7 @@ class GoogleCalendarService {
 
       const event = eventResponse.data;
 
-      await supabase.from('calendar_events').insert({
+      const insertData = {
         user_id: userId,
         google_calendar_id: calendarId,
         google_event_id: googleEventId,
@@ -504,7 +527,14 @@ class GoogleCalendarService {
         timezone: event.start?.timeZone || 'UTC',
         location: event.location,
         google_meet_link: event.conferenceData?.entryPoints?.[0]?.uri
-      });
+      };
+
+      const { data, error } = await supabase.from('calendar_events').insert(insertData);
+
+      if (error) {
+        console.error('Database error storing calendar event:', error);
+        throw error;
+      }
 
       // Log the sync action
       await supabase.from('calendar_sync_log').insert({
@@ -520,6 +550,9 @@ class GoogleCalendarService {
     } catch (error) {
       console.error('Error storing CRM context:', error);
       // Don't throw - this shouldn't break calendar event creation
+      if (error && typeof error === 'object') {
+        console.error('Full error details:', JSON.stringify(error, null, 2));
+      }
     }
   }
 

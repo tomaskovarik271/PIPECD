@@ -2,6 +2,12 @@
 
 # ===== TYPES =====
 
+type ContactSuggestion {
+  email: String!
+  name: String
+  photoUrl: String
+}
+
 type CalendarEvent {
   id: ID!
   googleEventId: String!
@@ -251,6 +257,9 @@ extend type Query {
     days: Int = 7
     limit: Int = 10
   ): [CalendarEvent!]!
+  
+  # Contact Suggestions
+  searchGoogleContacts(query: String!): [ContactSuggestion!]!
 }
 
 # ===== MUTATIONS =====
