@@ -23,7 +23,26 @@ class GoogleContactsService {
       throw new Error('No valid Google tokens found. Please reconnect your Google account.');
     }
 
-    const oauth2Client = new google.auth.OAuth2();
+    // Check if we have contacts scope
+    const requiredScope = 'https://www.googleapis.com/auth/contacts.readonly';
+    if (!tokens.granted_scopes.includes(requiredScope)) {
+      throw new Error('CONTACTS_SCOPE_MISSING');
+    }
+
+    // Configure OAuth2Client with proper credentials for token refresh
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('Google OAuth configuration error. Please check server configuration.');
+    }
+
+    const oauth2Client = new google.auth.OAuth2(
+      clientId,
+      clientSecret,
+      // No redirect URI needed for server-side token refresh
+    );
+    
     oauth2Client.setCredentials({
       access_token: tokens.access_token,
       refresh_token: tokens.refresh_token,

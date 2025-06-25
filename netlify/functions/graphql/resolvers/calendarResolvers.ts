@@ -148,42 +148,35 @@ export const calendarMutations = {
     const userId = context.currentUser!.id;
 
     try {
-      const eventData = {
-        summary: args.input.title,
-        description: args.input.description,
-        startDateTime: args.input.startDateTime,
-        endDateTime: args.input.endDateTime,
-        timeZone: args.input.timezone || 'UTC',
-        location: args.input.location,
-        attendeeEmails: args.input.attendeeEmails,
-        addGoogleMeet: args.input.addGoogleMeet || false,
-        dealId: args.input.dealId,
-        personId: args.input.personId,
-        organizationId: args.input.organizationId,
-        eventType: args.input.eventType
-      };
-
       const createdEvent = await googleCalendarService.createEvent(
         userId,
         accessToken,
-        eventData,
+        {
+          summary: args.input.title,
+          description: args.input.description,
+          startDateTime: args.input.startTime,
+          endDateTime: args.input.endTime,
+          timeZone: args.input.timezone || 'UTC',
+          location: args.input.location,
+          attendeeEmails: args.input.attendeeEmails,
+          addGoogleMeet: args.input.addGoogleMeet,
+          reminders: args.input.reminders,
+          dealId: args.input.dealId,
+          personId: args.input.personId,
+          organizationId: args.input.organizationId,
+          eventType: args.input.eventType
+        },
         args.input.calendarId || 'primary'
       );
 
-      if (!createdEvent) {
-        console.error('createCalendarEvent: createdEvent is null/undefined');
-        throw new GraphQLError('Failed to create calendar event - no response from Google Calendar API');
+      // Extract Google Meet link from conference data
+      let googleMeetLink = null;
+      if (createdEvent.conferenceData?.entryPoints) {
+        const meetEntry = createdEvent.conferenceData.entryPoints.find(
+          (entry: any) => entry.entryPointType === 'video'
+        );
+        googleMeetLink = meetEntry?.uri || createdEvent.conferenceData.entryPoints[0]?.uri;
       }
-
-      if (!createdEvent.id) {
-        console.error('createCalendarEvent: createdEvent.id is missing', createdEvent);
-        throw new GraphQLError('Failed to create calendar event - event ID is missing');
-      }
-
-      // Extract Google Meet link from conferenceData if available
-      const googleMeetLink = createdEvent.conferenceData?.entryPoints?.find(
-        (entry: any) => entry.entryPointType === 'video'
-      )?.uri || null;
 
       const result = {
         id: createdEvent.id,
@@ -212,6 +205,38 @@ export const calendarMutations = {
     } catch (error) {
       console.error('Error creating calendar event:', error);
       throw new GraphQLError('Failed to create calendar event');
+    }
+  },
+
+  syncCalendarEvents: async (_: any, args: any, context: GraphQLContext) => {
+    requireAuthentication(context);
+    const accessToken = getAccessToken(context)!;
+    const userId = context.currentUser!.id;
+
+    try {
+      const syncResult = await googleCalendarService.syncCalendarEvents(
+        userId,
+        accessToken,
+        {
+          calendarId: args.calendarId,
+          fullSync: args.fullSync,
+          daysPast: args.daysPast,
+          daysFuture: args.daysFuture
+        }
+      );
+
+      return {
+        lastSyncAt: new Date().toISOString(),
+        nextSyncAt: null, // We don't have automatic sync yet
+        isConnected: true,
+        hasSyncErrors: syncResult.errors > 0,
+        errorMessage: syncResult.errors > 0 ? `${syncResult.errors} events failed to sync` : null,
+        eventsCount: syncResult.synced,
+        syncDuration: null
+      };
+    } catch (error) {
+      console.error('Error syncing calendar events:', error);
+      throw new GraphQLError('Failed to sync calendar events');
     }
   }
 };

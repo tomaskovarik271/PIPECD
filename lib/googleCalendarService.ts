@@ -577,6 +577,298 @@ class GoogleCalendarService {
       // Don't throw - this shouldn't break calendar event deletion
     }
   }
+
+  /**
+   * Sync calendar events from Google Calendar to PipeCD
+   * This method fetches recent events and syncs them to our database
+   */
+  async syncCalendarEvents(
+    userId: string,
+    accessToken: string,
+    options: {
+      calendarId?: string;
+      fullSync?: boolean;
+      daysPast?: number;
+      daysFuture?: number;
+    } = {}
+  ): Promise<{
+    synced: number;
+    errors: number;
+    newEvents: number;
+    updatedEvents: number;
+    deletedEvents: number;
+  }> {
+    const startTime = Date.now();
+    let synced = 0;
+    let errors = 0;
+    let newEvents = 0;
+    let updatedEvents = 0;
+    let deletedEvents = 0;
+
+    try {
+      const supabase = getAuthenticatedClient(accessToken);
+      const calendarId = options.calendarId || 'primary';
+      
+      // Calculate time range for sync
+      const now = new Date();
+      const daysPast = options.daysPast || 7;
+      const daysFuture = options.daysFuture || 30;
+      
+      const timeMin = new Date(now.getTime() - (daysPast * 24 * 60 * 60 * 1000));
+      const timeMax = new Date(now.getTime() + (daysFuture * 24 * 60 * 60 * 1000));
+
+      // Get events from Google Calendar
+      const googleEvents = await this.getEvents(userId, accessToken, calendarId, {
+        start: timeMin.toISOString(),
+        end: timeMax.toISOString()
+      });
+
+      console.log(`🔄 Syncing ${googleEvents.length} events from Google Calendar`);
+
+      // Get existing events from our database to detect additions/updates/deletions
+      const { data: existingEvents } = await supabase
+        .from('calendar_events')
+        .select('google_event_id, id, title, description, start_time, end_time, is_cancelled')
+        .eq('user_id', userId)
+        .eq('google_calendar_id', calendarId)
+        .gte('start_time', timeMin.toISOString())
+        .lte('start_time', timeMax.toISOString());
+
+      const existingEventMap = new Map(
+        (existingEvents || []).map(event => [event.google_event_id, event])
+      );
+
+      // Get set of Google Calendar event IDs
+      const googleEventIds = new Set(googleEvents.map(event => event.id));
+
+      // Process each Google event (additions and updates)
+      for (const googleEvent of googleEvents) {
+        try {
+          const existingEvent = existingEventMap.get(googleEvent.id);
+          
+          if (existingEvent) {
+            // Check if event needs updating
+            const needsUpdate = 
+              existingEvent.title !== googleEvent.summary ||
+              existingEvent.description !== googleEvent.description ||
+              existingEvent.start_time !== (googleEvent.start.dateTime || googleEvent.start.date) ||
+              existingEvent.end_time !== (googleEvent.end.dateTime || googleEvent.end.date) ||
+              existingEvent.is_cancelled; // Restore cancelled events if they exist in Google
+
+            if (needsUpdate) {
+              await this.updateExistingEvent(supabase, existingEvent.id, googleEvent, false); // false = not cancelled
+              updatedEvents++;
+              synced++;
+            }
+          } else {
+            // Create new event in our database
+            const crmContext = await this.detectDealContext(supabase, userId, googleEvent);
+            await this.syncNewEvent(supabase, userId, calendarId, googleEvent, crmContext);
+            newEvents++;
+            synced++;
+          }
+        } catch (eventError) {
+          console.error(`Error syncing event ${googleEvent.id}:`, eventError);
+          errors++;
+        }
+      }
+
+      // Handle deletions: events in our database but not in Google Calendar
+      for (const [googleEventId, existingEvent] of existingEventMap) {
+        if (!googleEventIds.has(googleEventId) && !existingEvent.is_cancelled) {
+          try {
+            // Mark event as cancelled instead of deleting (preserves history)
+            await supabase
+              .from('calendar_events')
+              .update({
+                is_cancelled: true,
+                last_synced_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingEvent.id);
+
+            deletedEvents++;
+            synced++;
+
+            console.log(`📅 Marked event as cancelled: ${existingEvent.title} (deleted from Google Calendar)`);
+          } catch (deleteError) {
+            console.error(`Error marking event as cancelled ${googleEventId}:`, deleteError);
+            errors++;
+          }
+        }
+      }
+
+      // Log sync completion
+      const processingTime = Date.now() - startTime;
+      await supabase.from('calendar_sync_log').insert({
+        user_id: userId,
+        sync_action: 'FULL_SYNC',
+        sync_direction: 'GOOGLE_TO_CRM',
+        sync_source: 'MANUAL',
+        calendar_id: calendarId,
+        success: true,
+        processing_time_ms: processingTime,
+        details: { synced, errors, newEvents, updatedEvents, deletedEvents }
+      });
+
+      console.log(`✅ Calendar sync completed: ${synced} synced, ${errors} errors, ${deletedEvents} deletions handled`);
+      
+      return { synced, errors, newEvents, updatedEvents, deletedEvents };
+
+    } catch (error) {
+      console.error('Error during calendar sync:', error);
+      throw new Error('Calendar sync failed');
+    }
+  }
+
+  /**
+   * Update an existing event in our database
+   */
+  private async updateExistingEvent(
+    supabase: any,
+    eventId: string,
+    googleEvent: CalendarEvent,
+    isCancelled: boolean
+  ): Promise<void> {
+    const updateData = {
+      title: googleEvent.summary || 'No Title',
+      description: googleEvent.description,
+      start_time: googleEvent.start.dateTime || googleEvent.start.date,
+      end_time: googleEvent.end.dateTime || googleEvent.end.date,
+      is_all_day: !googleEvent.start.dateTime,
+      timezone: googleEvent.start.timeZone || 'UTC',
+      location: googleEvent.location,
+      google_meet_link: googleEvent.conferenceData?.entryPoints?.[0]?.uri,
+      last_synced_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_cancelled: isCancelled
+    };
+
+    await supabase
+      .from('calendar_events')
+      .update(updateData)
+      .eq('id', eventId);
+  }
+
+  /**
+   * Create a new event in our database from Google Calendar
+   */
+  private async syncNewEvent(
+    supabase: any,
+    userId: string,
+    calendarId: string,
+    googleEvent: CalendarEvent,
+    crmContext: {
+      dealId?: string;
+      personId?: string;
+      organizationId?: string;
+      eventType?: string;
+    }
+  ): Promise<void> {
+    const insertData = {
+      user_id: userId,
+      google_calendar_id: calendarId,
+      google_event_id: googleEvent.id,
+      deal_id: crmContext.dealId,
+      person_id: crmContext.personId,
+      organization_id: crmContext.organizationId,
+      event_type: crmContext.eventType || 'MEETING',
+      title: googleEvent.summary || 'No Title',
+      description: googleEvent.description,
+      start_time: googleEvent.start.dateTime || googleEvent.start.date,
+      end_time: googleEvent.end.dateTime || googleEvent.end.date,
+      is_all_day: !googleEvent.start.dateTime,
+      timezone: googleEvent.start.timeZone || 'UTC',
+      location: googleEvent.location,
+      google_meet_link: googleEvent.conferenceData?.entryPoints?.[0]?.uri,
+      last_synced_at: new Date().toISOString()
+    };
+
+    await supabase.from('calendar_events').insert(insertData);
+  }
+
+  /**
+   * Smart deal detection from Google Calendar event
+   * Looks for deal information in title/description and links events to deals
+   */
+  private async detectDealContext(
+    supabase: any,
+    userId: string,
+    googleEvent: CalendarEvent
+  ): Promise<{
+    dealId?: string;
+    personId?: string;
+    organizationId?: string;
+    eventType?: string;
+  }> {
+    const context: any = {};
+
+    try {
+      // Look for PipeCD deal references in description
+      const description = googleEvent.description || '';
+      const title = googleEvent.summary || '';
+      const combinedText = `${title} ${description}`.toLowerCase();
+
+      // Extract Deal ID if present (from our generated descriptions)
+      const dealIdMatch = description.match(/deal id:\s*([a-f0-9-]+)/i);
+      if (dealIdMatch) {
+        context.dealId = dealIdMatch[1];
+        
+        // If we found a deal ID, get the associated person/organization
+        const { data: deal } = await supabase
+          .from('deals')
+          .select('person_id, organization_id')
+          .eq('id', context.dealId)
+          .eq('assigned_to', userId)
+          .single();
+
+        if (deal) {
+          context.personId = deal.person_id;
+          context.organizationId = deal.organization_id;
+        }
+      }
+
+      // If no direct deal ID, try to match by attendee emails
+      if (!context.dealId && googleEvent.attendees?.length) {
+        const attendeeEmails = googleEvent.attendees.map(a => a.email);
+        
+        // Look for deals with matching person emails
+        const { data: personDeals } = await supabase
+          .from('deals')
+          .select('id, person_id, organization_id, people!inner(email)')
+          .eq('assigned_to', userId)
+          .in('people.email', attendeeEmails)
+          .limit(1);
+
+        if (personDeals?.length) {
+          context.dealId = personDeals[0].id;
+          context.personId = personDeals[0].person_id;
+          context.organizationId = personDeals[0].organization_id;
+        }
+      }
+
+      // Detect event type from title/description
+      if (combinedText.includes('demo')) {
+        context.eventType = 'DEMO';
+      } else if (combinedText.includes('call')) {
+        context.eventType = 'CALL';
+      } else if (combinedText.includes('follow') || combinedText.includes('follow-up')) {
+        context.eventType = 'FOLLOW_UP';
+      } else if (combinedText.includes('proposal') || combinedText.includes('presentation')) {
+        context.eventType = 'PROPOSAL_PRESENTATION';
+      } else if (combinedText.includes('contract') || combinedText.includes('review')) {
+        context.eventType = 'CONTRACT_REVIEW';
+      } else {
+        context.eventType = 'MEETING';
+      }
+
+      return context;
+
+    } catch (error) {
+      console.error('Error detecting deal context:', error);
+      return { eventType: 'MEETING' };
+    }
+  }
 }
 
 // Export singleton instance

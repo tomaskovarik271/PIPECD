@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -8,20 +8,28 @@ import {
   ModalBody,
   ModalCloseButton,
   Button,
-  FormControl,
-  FormLabel,
-  Input,
-  Textarea,
-  Select,
   VStack,
+  Text,
   HStack,
-  Switch,
+  Icon,
   useToast,
+  Divider,
 } from '@chakra-ui/react';
-import { useMutation } from '@apollo/client';
-import { CREATE_CALENDAR_EVENT } from '../../lib/graphql/calendarOperations';
+import { FiExternalLink, FiCalendar, FiRefreshCw } from 'react-icons/fi';
+import { useMutation, gql } from '@apollo/client';
 import { Deal } from '../../stores/useDealsStore';
-import { EmailAutocompleteInput } from '../common/EmailAutocompleteInput';
+
+const SYNC_CALENDAR_EVENTS = gql`
+  mutation SyncCalendarEvents($calendarId: String, $fullSync: Boolean, $daysPast: Int, $daysFuture: Int) {
+    syncCalendarEvents(calendarId: $calendarId, fullSync: $fullSync, daysPast: $daysPast, daysFuture: $daysFuture) {
+      lastSyncAt
+      isConnected
+      hasSyncErrors
+      errorMessage
+      eventsCount
+    }
+  }
+`;
 
 interface ScheduleMeetingModalProps {
   isOpen: boolean;
@@ -34,223 +42,221 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
   onClose,
   deal,
 }) => {
-  const [title, setTitle] = useState(`Meeting: ${deal.name}`);
-  const [description, setDescription] = useState(`Meeting regarding deal: ${deal.name}`);
-  const [startDateTime, setStartDateTime] = useState('');
-  const [endDateTime, setEndDateTime] = useState('');
-  const [location, setLocation] = useState('');
-  const [eventType, setEventType] = useState('MEETING');
-  const [attendeeEmails, setAttendeeEmails] = useState('');
-  const [addGoogleMeet, setAddGoogleMeet] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const toast = useToast();
+  const [isCalendarOpened, setIsCalendarOpened] = useState(false);
+  const [syncCalendarEvents, { loading: syncLoading }] = useMutation(SYNC_CALENDAR_EVENTS);
 
-  const [createCalendarEvent] = useMutation(CREATE_CALENDAR_EVENT, {
-    onCompleted: () => {
-      toast({
-        title: 'Meeting Scheduled',
-        description: 'The meeting has been successfully added to your calendar.',
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
+  // Helper function to format dates for Google Calendar
+  const formatGoogleCalendarDate = (date: Date): string => {
+    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  };
+
+  // Get next business hour (9 AM - 5 PM, weekdays)
+  const getNextBusinessHour = (): Date => {
+    const now = new Date();
+    const nextHour = new Date(now);
+    nextHour.setHours(now.getHours() + 1, 0, 0, 0);
+
+    // If it's weekend or after hours, set to next Monday 9 AM
+    const day = nextHour.getDay();
+    const hour = nextHour.getHours();
+    
+    if (day === 0 || day === 6 || hour < 9 || hour >= 17) {
+      const nextMonday = new Date(nextHour);
+      const daysUntilMonday = day === 0 ? 1 : (8 - day);
+      nextMonday.setDate(nextHour.getDate() + daysUntilMonday);
+      nextMonday.setHours(9, 0, 0, 0);
+      return nextMonday;
+    }
+
+    return nextHour;
+  };
+
+  // Generate meeting description with deal context
+  const generateMeetingDescription = (dealData: Deal): string => {
+    const lines = [
+      `Meeting regarding deal: ${dealData.name}`,
+      '',
+      '📊 Deal Details:',
+      `• Amount: ${dealData.amount ? `${dealData.currency || 'USD'} ${dealData.amount.toLocaleString()}` : 'Not specified'}`,
+      `• Organization: ${dealData.organization?.name || 'Not specified'}`,
+      `• Contact: ${dealData.person ? `${dealData.person.first_name} ${dealData.person.last_name}` : 'Not specified'}`,
+      `• Stage: ${dealData.currentWfmStep?.status?.name || 'Not specified'}`,
+      '',
+      '🔗 Created from PipeCD',
+      `Deal ID: ${dealData.id}`
+    ];
+    return lines.join('\n');
+  };
+
+  // Build Google Calendar URL with pre-filled data
+  const buildGoogleCalendarUrl = (): string => {
+    const startTime = getNextBusinessHour();
+    const endTime = new Date(startTime.getTime() + 30 * 60000); // 30 minutes later
+
+    const attendees = [
+      deal.person?.email,
+      // Add more attendees from deal participants if available
+    ].filter(Boolean).join(',');
+
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: `Meeting: ${deal.name}`,
+      details: generateMeetingDescription(deal),
+      dates: `${formatGoogleCalendarDate(startTime)}/${formatGoogleCalendarDate(endTime)}`,
+      add: attendees,
+      location: '', // Leave empty for Google Meet auto-generation
+      src: 'PipeCD'
+    });
+
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
+
+  const handleOpenGoogleCalendar = () => {
+    const calendarUrl = buildGoogleCalendarUrl();
+    window.open(calendarUrl, '_blank');
+    setIsCalendarOpened(true);
+    
+    toast({
+      title: 'Opening Google Calendar',
+      description: 'Create your meeting in Google Calendar, then click "Sync Events" to see it in your PipeCD timeline.',
+      status: 'info',
+      duration: 6000,
+      isClosable: true,
+    });
+  };
+
+  const handleSyncEvents = async () => {
+    try {
+      const result = await syncCalendarEvents({
+        variables: {
+          daysPast: 1,    // Look back 1 day to catch recently created events
+          daysFuture: 30, // Look ahead 30 days
+        }
       });
-      onClose();
-      resetForm();
-    },
-    onError: (error) => {
+
+      if (result.data?.syncCalendarEvents) {
+        const { eventsCount, hasSyncErrors, errorMessage } = result.data.syncCalendarEvents;
+        
+        if (hasSyncErrors) {
+          toast({
+            title: 'Sync completed with errors',
+            description: errorMessage || 'Some events could not be synced',
+            status: 'warning',
+            duration: 5000,
+            isClosable: true,
+          });
+        } else {
+          toast({
+            title: 'Calendar sync successful!',
+            description: `${eventsCount} events synced. Your Google Calendar meetings now appear in PipeCD timeline.`,
+            status: 'success',
+            duration: 5000,
+            isClosable: true,
+          });
+        }
+        
+        // Close modal after successful sync
+        setTimeout(() => onClose(), 1500);
+      }
+    } catch (error) {
+      console.error('Error syncing calendar events:', error);
       toast({
-        title: 'Error Scheduling Meeting',
-        description: error.message,
+        title: 'Sync failed',
+        description: 'Could not sync calendar events. Please try again.',
         status: 'error',
         duration: 5000,
         isClosable: true,
       });
-      setIsSubmitting(false);
-    },
-  });
-
-  const resetForm = () => {
-    setTitle(`Meeting: ${deal.name}`);
-    setDescription(`Meeting regarding deal: ${deal.name}`);
-    setStartDateTime('');
-    setEndDateTime('');
-    setLocation('');
-    setEventType('MEETING');
-    setAttendeeEmails('');
-    setAddGoogleMeet(true);
-    setIsSubmitting(false);
-    setError(null);
-  };
-
-  const handleSubmit = async () => {
-    if (!startDateTime || !endDateTime) {
-      toast({
-        title: 'Missing Information',
-        description: 'Please provide both start and end times for the meeting.',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    // Convert datetime-local values to proper ISO strings
-    const convertLocalToISO = (localDateTime: string): string => {
-      // datetime-local gives us "YYYY-MM-DDTHH:mm" format
-      // We need to convert this to a proper ISO string
-      const date = new Date(localDateTime);
-      return date.toISOString();
-    };
-
-    const input = {
-      title,
-      description: description || undefined,
-      startTime: convertLocalToISO(startDateTime),
-      endTime: convertLocalToISO(endDateTime),
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, // User's local timezone
-      location: location || undefined,
-      eventType,
-      addGoogleMeet,
-      dealId: deal.id,
-      personId: deal.person?.id || undefined,
-      organizationId: deal.organization?.id || undefined,
-      attendees: attendeeEmails ? attendeeEmails.split(',').map(email => email.trim()).filter(Boolean) : undefined,
-    };
-
-    try {
-      await createCalendarEvent({ variables: { input } });
-    } catch (error) {
-      // Error is handled in onError callback
     }
   };
 
-  const handleClose = () => {
-    onClose();
-    resetForm();
+  const getFormattedDateTime = (): string => {
+    const startTime = getNextBusinessHour();
+    return startTime.toLocaleString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
   };
-
-  // Auto-fill end time when start time changes (default 30 minutes later)
-  const handleStartTimeChange = (value: string) => {
-    setStartDateTime(value);
-    if (value && !endDateTime) {
-      const start = new Date(value);
-      const end = new Date(start.getTime() + 30 * 60000); // Add 30 minutes
-      const endISOString = end.toISOString().slice(0, 16); // Format for datetime-local input
-      setEndDateTime(endISOString);
-    }
-  };
-
-  // Auto-populate attendee emails with deal contact when modal opens
-  useEffect(() => {
-    if (isOpen && deal.person?.email) {
-      setAttendeeEmails(deal.person.email);
-    }
-  }, [isOpen, deal.person?.email]);
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Schedule Meeting</ModalHeader>
+        <ModalHeader>
+          <HStack>
+            <Icon as={FiCalendar} />
+            <Text>Schedule Meeting</Text>
+          </HStack>
+        </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <VStack spacing={4}>
-            <FormControl isRequired>
-              <FormLabel>Meeting Title</FormLabel>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Enter meeting title"
-              />
-            </FormControl>
+          <VStack spacing={4} align="stretch">
+            <Text fontSize="lg" fontWeight="medium">
+              📅 {deal.name}
+            </Text>
+            
+            <VStack spacing={3} align="stretch" bg="gray.50" p={4} borderRadius="md">
+              <Text fontSize="sm" color="gray.600">
+                Pre-filled meeting details:
+              </Text>
+              <VStack spacing={1} align="stretch" fontSize="sm">
+                <Text><strong>Title:</strong> Meeting: {deal.name}</Text>
+                <Text><strong>Default time:</strong> {getFormattedDateTime()}</Text>
+                <Text><strong>Attendees:</strong> {deal.person?.email || 'None specified'}</Text>
+                <Text><strong>Location:</strong> Google Meet (auto-generated)</Text>
+              </VStack>
+            </VStack>
 
-            <FormControl>
-              <FormLabel>Description</FormLabel>
-              <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Meeting agenda or notes"
-                rows={3}
-              />
-            </FormControl>
+            <Text fontSize="sm" color="gray.500">
+              This will open Google Calendar with all the deal information pre-filled. 
+              You can adjust the time, add more attendees, and customize the meeting as needed.
+            </Text>
 
-            <HStack spacing={4} width="100%">
-              <FormControl isRequired flex="1">
-                <FormLabel>Start Time</FormLabel>
-                <Input
-                  type="datetime-local"
-                  value={startDateTime}
-                  onChange={(e) => handleStartTimeChange(e.target.value)}
-                />
-              </FormControl>
-
-              <FormControl isRequired flex="1">
-                <FormLabel>End Time</FormLabel>
-                <Input
-                  type="datetime-local"
-                  value={endDateTime}
-                  onChange={(e) => setEndDateTime(e.target.value)}
-                />
-              </FormControl>
-            </HStack>
-
-            <FormControl>
-              <FormLabel>Meeting Type</FormLabel>
-              <Select value={eventType} onChange={(e) => setEventType(e.target.value)}>
-                <option value="MEETING">General Meeting</option>
-                <option value="DEMO">Product Demo</option>
-                <option value="PROPOSAL_PRESENTATION">Proposal Presentation</option>
-                <option value="CONTRACT_REVIEW">Contract Review</option>
-                <option value="FOLLOW_UP">Follow-up</option>
-                <option value="CHECK_IN">Check-in</option>
-              </Select>
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>Location</FormLabel>
-              <Input
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Meeting location or leave empty for Google Meet"
-              />
-            </FormControl>
-
-            <FormControl>
-              <FormLabel>Attendee Emails (comma-separated)</FormLabel>
-              <EmailAutocompleteInput
-                value={attendeeEmails}
-                onChange={(value) => setAttendeeEmails(value)}
-                placeholder={deal.person?.email ? `${deal.person.email}, others...` : 'email1@example.com, email2@example.com'}
-              />
-            </FormControl>
-
-            <FormControl>
-              <HStack justifyContent="space-between">
-                <FormLabel mb="0">Add Google Meet</FormLabel>
-                <Switch
-                  isChecked={addGoogleMeet}
-                  onChange={(e) => setAddGoogleMeet(e.target.checked)}
-                />
-              </HStack>
-            </FormControl>
+            {isCalendarOpened && (
+              <>
+                <Divider />
+                <VStack spacing={3} align="stretch" bg="blue.50" p={4} borderRadius="md">
+                  <Text fontSize="sm" fontWeight="medium" color="blue.700">
+                    📋 Next Step: Sync Your Events
+                  </Text>
+                  <Text fontSize="sm" color="blue.600">
+                    After creating your meeting in Google Calendar, click "Sync Events" below to see it appear in your PipeCD timeline.
+                  </Text>
+                </VStack>
+              </>
+            )}
           </VStack>
         </ModalBody>
 
         <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={handleClose}>
+          <Button variant="ghost" mr={3} onClick={onClose}>
             Cancel
           </Button>
+          
+          {isCalendarOpened && (
+            <Button
+              colorScheme="green"
+              onClick={handleSyncEvents}
+              leftIcon={<FiRefreshCw />}
+              isLoading={syncLoading}
+              loadingText="Syncing..."
+              mr={3}
+            >
+              Sync Events
+            </Button>
+          )}
+          
           <Button
             colorScheme="blue"
-            onClick={handleSubmit}
-            isLoading={isSubmitting}
-            loadingText="Scheduling..."
+            onClick={handleOpenGoogleCalendar}
+            leftIcon={<FiExternalLink />}
           >
-            Schedule Meeting
+            Open Google Calendar
           </Button>
         </ModalFooter>
       </ModalContent>

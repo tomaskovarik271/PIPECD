@@ -42,9 +42,6 @@ const refreshAccessToken = async (refreshToken: string): Promise<GoogleTokenData
   const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
   
-  console.log('Refreshing token with client_id:', clientId ? 'set' : 'undefined');
-  console.log('Environment check - NODE_ENV:', process.env.NODE_ENV);
-  
   if (!clientId || !clientSecret) {
     console.error('Google OAuth credentials not found in environment variables');
     throw new Error('Google OAuth configuration error. Please check server configuration.');

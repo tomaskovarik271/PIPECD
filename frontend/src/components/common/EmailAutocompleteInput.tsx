@@ -242,23 +242,20 @@ export const EmailAutocompleteInput: React.FC<EmailAutocompleteInputProps> = ({
         {isOpen && (
           <Portal>
             <Box
-              position="absolute"
-              top="100%"
-              left={0}
-              right={0}
-              zIndex={1000}
+              position="fixed"
+              zIndex={9999}
               bg={bgColor}
               border="1px solid"
               borderColor={borderColor}
               borderRadius="md"
-              boxShadow="lg"
+              boxShadow="xl"
               maxH="300px"
               overflowY="auto"
-              mt={1}
+              minW="200px"
               style={{
                 width: containerRef.current?.offsetWidth || 'auto',
                 left: containerRef.current?.getBoundingClientRect().left || 0,
-                top: (containerRef.current?.getBoundingClientRect().bottom || 0) + window.scrollY
+                top: (containerRef.current?.getBoundingClientRect().bottom || 0) + 4
               }}
             >
               {loading && (

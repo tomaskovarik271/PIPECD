@@ -68,7 +68,7 @@ import {
   SmallCloseIcon
 } from '@chakra-ui/icons';
 import { FaClipboardList, FaPhone } from 'react-icons/fa';
-import { FiClock } from 'react-icons/fi';
+import { FiClock, FiMail, FiFolder, FiUsers, FiFileText } from 'react-icons/fi';
 import type { CustomFieldEntityType } from '../generated/graphql/graphql';
 
 // Store imports
@@ -165,6 +165,9 @@ const DealDetailPage = () => {
   // Sticky notes count state for tab display
   const [stickyNotesCount, setStickyNotesCount] = useState(0);
   
+  // Upcoming events count state for tab display
+  const [upcomingEventsCount, setUpcomingEventsCount] = useState(0);
+  
   // State for inline editing in right sidebar
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [newAmount, setNewAmount] = useState<string>('');
@@ -188,9 +191,13 @@ const DealDetailPage = () => {
     setDocumentCount(count);
   }, []);
   
-  const handleContactsCountChange = useCallback((count: number) => {
+  const handleContactsCountChange = (count: number) => {
     setContactsCount(count);
-  }, []);
+  };
+
+  const handleUpcomingEventsCountChange = (count: number) => {
+    setUpcomingEventsCount(count);
+  };
 
   const { isOpen: isEditDealModalOpen, onOpen: onEditDealModalOpen, onClose: onEditDealModalClose } = useDisclosure();
 
@@ -481,14 +488,23 @@ const DealDetailPage = () => {
                       <HStack spacing={2}>
                         <Icon as={FiClock} />
                         <Text>Timeline</Text>
+                        {upcomingEventsCount > 0 && (
+                          <Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
+                            {upcomingEventsCount}
+                          </Badge>
+                        )}
                       </HStack>
                     </Tab>
                     {/* Activities tab removed - using Google Calendar integration instead */}
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                      Emails
+                      <HStack spacing={2}>
+                        <Icon as={FiMail} />
+                        <Text>Emails</Text>
+                      </HStack>
                     </Tab>
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                       <HStack spacing={2}>
+                        <Icon as={FiFolder} />
                         <Text>Documents</Text>
                         <Badge colorScheme="green" variant="solid" borderRadius="full" fontSize="xs">
                           {documentCount}
@@ -497,6 +513,7 @@ const DealDetailPage = () => {
                     </Tab>
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                       <HStack spacing={2}>
+                        <Icon as={FiUsers} />
                         <Text>Contacts</Text>
                         <Badge colorScheme="purple" variant="solid" borderRadius="full" fontSize="xs">
                           {contactsCount}
@@ -504,7 +521,10 @@ const DealDetailPage = () => {
                       </HStack>
                     </Tab>
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                      History
+                      <HStack spacing={2}>
+                        <Icon as={FiFileText} />
+                        <Text>History</Text>
+                      </HStack>
                     </Tab>
                   </TabList>
                 
@@ -520,7 +540,10 @@ const DealDetailPage = () => {
                     
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
-                        <DealTimelinePanel deal={currentDeal as Deal} />
+                        <DealTimelinePanel 
+                          deal={currentDeal as Deal} 
+                          onUpcomingEventsCountChange={handleUpcomingEventsCountChange}
+                        />
                       </Box>
                     </TabPanel>
                   

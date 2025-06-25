@@ -290,6 +290,8 @@ extend type Mutation {
   syncCalendarEvents(
     calendarId: String
     fullSync: Boolean = false
+    daysPast: Int = 7
+    daysFuture: Int = 30
   ): CalendarSyncStatus!
   
   # Preferences
