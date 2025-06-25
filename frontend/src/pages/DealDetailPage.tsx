@@ -439,8 +439,7 @@ const DealDetailPage = () => {
                 deal={currentDeal as Deal}
                 isEditing={false}
                 setIsEditing={() => {}}
-                onCreateActivity={() => {}} // Activity functionality removed
-                dealActivities={[]} // Activities removed
+                dealActivities={[]} // Activities removed - using Google Calendar integration instead
               />
 
               {/* Tabs Section */}

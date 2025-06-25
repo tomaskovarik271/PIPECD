@@ -63,7 +63,6 @@ interface DealHeaderProps {
   deal: Deal;
   isEditing?: boolean;
   setIsEditing?: (editing: boolean) => void;
-  onCreateActivity?: () => void;
   dealActivities?: Array<{
     id: string;
     subject: string;
@@ -73,7 +72,7 @@ interface DealHeaderProps {
   }>;
 }
 
-export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEditing, setIsEditing: _setIsEditing, onCreateActivity, dealActivities = [] }) => {
+export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEditing, setIsEditing: _setIsEditing, dealActivities = [] }) => {
   const colors = useThemeColors();
   const [workflowSteps, setWorkflowSteps] = useState<WorkflowStep[]>([]);
   const [isLoadingSteps, setIsLoadingSteps] = useState(false);
@@ -288,27 +287,14 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEdit
           </HStack>
         </VStack>
 
-        {/* Quick Actions */}
-        <VStack spacing={2} align="end" mt={{base: 3, md: 0}} flexShrink={0}>
-          {nextSteps.length > 0 && (
+        {/* Calendar integration replaces activity buttons */}
+        {nextSteps.length > 0 && (
+          <VStack spacing={2} align="end" mt={{base: 3, md: 0}} flexShrink={0}>
             <Text fontSize="sm" color={colors.text.secondary} textAlign="right">
               Next: {nextSteps[0].subject}
             </Text>
-          )}
-          <HStack spacing={2}>
-            {/* NotificationCenter removed - using Google Calendar integration instead */}
-            {onCreateActivity && (
-              <Button 
-                size="sm" 
-                colorScheme="blue" 
-                leftIcon={<CalendarIcon />}
-                onClick={onCreateActivity}
-              >
-                Add Activity
-              </Button>
-            )}
-          </HStack>
-        </VStack>
+          </VStack>
+        )}
       </Flex>
 
       {/* Pipeline Progress */}
