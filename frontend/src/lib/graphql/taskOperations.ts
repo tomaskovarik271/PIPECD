@@ -27,16 +27,14 @@ export const TASK_WITH_USERS = gql`
     assignedToUser {
       id
       email
-      firstName
-      lastName
-      avatarUrl
+      display_name
+      avatar_url
     }
     createdByUser {
       id
       email
-      firstName
-      lastName
-      avatarUrl
+      display_name
+      avatar_url
     }
   }
   ${TASK_CORE_FIELDS}
@@ -53,15 +51,15 @@ export const TASK_WITH_BUSINESS_CONTEXT = gql`
     }
     lead {
       id
-      contactName
-      contactEmail
-      estimatedValue
+      contact_name
+      contact_email
+      estimated_value
       currency
     }
     person {
       id
-      firstName
-      lastName
+      first_name
+      last_name
       email
     }
     organization {

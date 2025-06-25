@@ -27,14 +27,14 @@ interface Task {
   estimatedDuration?: number;
   assignedToUser?: {
     id: string;
-    firstName?: string;
-    lastName?: string;
+    display_name?: string;
+    avatar_url?: string;
     email: string;
   };
   createdByUser: {
     id: string;
-    firstName?: string;
-    lastName?: string;
+    display_name?: string;
+    avatar_url?: string;
     email: string;
   };
   deal?: {
@@ -45,13 +45,13 @@ interface Task {
   };
   lead?: {
     id: string;
-    contactName: string;
-    contactEmail: string;
+    contact_name: string;
+    contact_email: string;
   };
   person?: {
     id: string;
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     email: string;
   };
   organization?: {
@@ -166,15 +166,15 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     if (task.lead) {
       return {
         type: 'lead',
-        name: task.lead.contactName,
-        value: task.lead.contactEmail,
+        name: task.lead.contact_name,
+        value: task.lead.contact_email,
         link: `/leads/${task.lead.id}`
       };
     }
     if (task.person) {
       return {
         type: 'person',
-        name: `${task.person.firstName} ${task.person.lastName}`,
+        name: `${task.person.first_name} ${task.person.last_name}`,
         value: task.person.email,
         link: `/people/${task.person.id}`
       };
@@ -323,9 +323,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <HStack spacing={1}>
                 <FiUser size={20} color={textColor} />
                 <Text fontSize="sm" color={textColor}>
-                  {task.assignedToUser.firstName && task.assignedToUser.lastName
-                    ? `${task.assignedToUser.firstName} ${task.assignedToUser.lastName}`
-                    : task.assignedToUser.email}
+                  {task.assignedToUser.display_name}
                 </Text>
               </HStack>
             )}
