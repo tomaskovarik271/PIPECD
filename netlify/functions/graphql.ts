@@ -76,7 +76,7 @@ import { conversionResolvers } from './graphql/resolvers/conversionResolvers';
 import { calendarResolvers } from './graphql/resolvers/calendarResolvers';
 
 // Import Task Resolvers
-import { taskQueries, taskMutations, TaskFieldResolvers } from './graphql/resolvers/taskResolvers';
+import { taskQueries, taskMutations, taskFieldResolvers } from './graphql/resolvers/taskResolvers';
 
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
@@ -241,7 +241,7 @@ export const resolvers = {
     ...agentV2Resolvers.AgentThought,
   },
   CalendarEvent: calendarResolvers.CalendarEvent,
-  Task: TaskFieldResolvers,
+  Task: taskFieldResolvers.Task,
 
 }; 
 

@@ -7,16 +7,16 @@ import { leadService } from '../../../../lib/leadService';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
 
-// Helper function to check task permissions
+// Permission checking helper
 async function checkTaskPermission(
   context: GraphQLContext,
   permission: string,
   taskId?: string
 ): Promise<void> {
-  const { user, userPermissions } = await requireAuthentication(context);
+  const { userId } = requireAuthentication(context);
   
   // Check if user has the general permission
-  if (userPermissions.includes(permission)) {
+  if (context.userPermissions && context.userPermissions.includes(permission)) {
     return;
   }
 
@@ -30,7 +30,7 @@ async function checkTaskPermission(
     }
 
     // Check if user owns or is assigned to the task
-    if (task.assigned_to_user_id === user.id || task.created_by_user_id === user.id) {
+    if (task.assigned_to_user_id === userId || task.created_by_user_id === userId) {
       return;
     }
   }
@@ -115,6 +115,56 @@ function mapTaskPriorityFromEnum(priority: string): string {
   return priorityMap[priority] || priority.toLowerCase();
 }
 
+// Helper function to convert PostgreSQL interval to minutes
+function convertIntervalToMinutes(interval: any): number | null {
+  if (!interval) return null;
+  
+  if (typeof interval === 'number') return interval;
+  
+  if (typeof interval === 'string') {
+    // Handle formats like "00:30:00", "1 hour 30 minutes", or "30 minutes"
+    if (interval.includes('minutes')) {
+      const match = interval.match(/(\d+)\s*minutes/);
+      return match ? parseInt(match[1]) : null;
+    }
+    
+    if (interval.includes(':')) {
+      // Format like "00:30:00" (HH:MM:SS)
+      const parts = interval.split(':');
+      if (parts.length >= 2) {
+        const hours = parseInt(parts[0]) || 0;
+        const minutes = parseInt(parts[1]) || 0;
+        return hours * 60 + minutes;
+      }
+    }
+  }
+  
+  return null;
+}
+
+// Helper function to format task response
+function formatTaskResponse(task: any) {
+  return {
+    ...task,
+    type: mapTaskTypeToEnum(task.type),
+    status: mapTaskStatusToEnum(task.status),
+    priority: mapTaskPriorityToEnum(task.priority),
+    dueDate: task.due_date,
+    completedAt: task.completed_at,
+    estimatedDuration: convertIntervalToMinutes(task.estimated_duration),
+    assignedToUser: task.assigned_to_user_id,
+    createdByUser: task.created_by_user_id,
+    deal: task.deal_id,
+    lead: task.lead_id,
+    person: task.person_id,
+    organization: task.organization_id,
+    emailThreadId: task.email_thread_id,
+    calendarEventId: task.calendar_event_id,
+    createdAt: task.created_at,
+    updatedAt: task.updated_at
+  };
+}
+
 // Query resolvers
 export const taskQueries = {
   tasks: async (_: any, { filters }: any, context: GraphQLContext) => {
@@ -127,26 +177,7 @@ export const taskQueries = {
     
     const tasks = await taskService.getTasks(dbFilters);
     
-    return tasks.map(task => ({
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    }));
+    return tasks.map(formatTaskResponse);
   },
 
   task: async (_: any, { id }: any, context: GraphQLContext) => {
@@ -155,26 +186,7 @@ export const taskQueries = {
     const task = await taskService.getTaskById(id);
     if (!task) return null;
     
-    return {
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    };
+    return formatTaskResponse(task);
   },
 
   timelineTasks: async (_: any, { dealId, startDate, endDate }: any, context: GraphQLContext) => {
@@ -182,53 +194,15 @@ export const taskQueries = {
     
     const tasks = await taskService.getTimelineTasks(dealId, startDate, endDate);
     
-    return tasks.map(task => ({
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    }));
+    return tasks.map(formatTaskResponse);
   },
 
   myDailyTasks: async (_: any, { date }: any, context: GraphQLContext) => {
-    const { user } = await requireAuthentication(context);
+    const { userId } = requireAuthentication(context);
     
-    const tasks = await taskService.getDailyTasks(user.id, date);
+    const tasks = await taskService.getDailyTasks(userId, date);
     
-    return tasks.map(task => ({
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    }));
+    return tasks.map(formatTaskResponse);
   },
 
   taskStats: async (_: any, { userId }: any, context: GraphQLContext) => {
@@ -243,7 +217,7 @@ export const taskQueries = {
 export const taskMutations = {
   createTask: async (_: any, { input }: any, context: GraphQLContext) => {
     await checkTaskPermission(context, 'task:create');
-    const { user } = await requireAuthentication(context);
+    const { userId } = requireAuthentication(context);
     
     const params = {
       ...input,
@@ -251,28 +225,9 @@ export const taskMutations = {
       priority: input.priority ? mapTaskPriorityFromEnum(input.priority) : undefined
     };
     
-    const task = await taskService.createTask(params, user.id);
+    const task = await taskService.createTask(params, userId);
     
-    return {
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    };
+    return formatTaskResponse(task);
   },
 
   updateTask: async (_: any, { id, input }: any, context: GraphQLContext) => {
@@ -287,26 +242,7 @@ export const taskMutations = {
     
     const task = await taskService.updateTask(id, params);
     
-    return {
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    };
+    return formatTaskResponse(task);
   },
 
   deleteTask: async (_: any, { id }: any, context: GraphQLContext) => {
@@ -320,26 +256,7 @@ export const taskMutations = {
     
     const task = await taskService.completeTask(id, notes);
     
-    return {
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    };
+    return formatTaskResponse(task);
   },
 
   rescheduleTask: async (_: any, { id, newDueDate }: any, context: GraphQLContext) => {
@@ -347,26 +264,7 @@ export const taskMutations = {
     
     const task = await taskService.rescheduleTask(id, newDueDate);
     
-    return {
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    };
+    return formatTaskResponse(task);
   },
 
   reassignTask: async (_: any, { id, newAssigneeId }: any, context: GraphQLContext) => {
@@ -374,91 +272,56 @@ export const taskMutations = {
     
     const task = await taskService.reassignTask(id, newAssigneeId);
     
-    return {
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    };
+    return formatTaskResponse(task);
   },
 
   bulkUpdateTasks: async (_: any, { ids, input }: any, context: GraphQLContext) => {
-    await checkTaskPermission(context, 'task:update_all');
+    await checkTaskPermission(context, 'task:update_assigned');
     
     const params = {
       ...input,
+      type: input.type ? mapTaskTypeFromEnum(input.type) : undefined,
       status: input.status ? mapTaskStatusFromEnum(input.status) : undefined,
       priority: input.priority ? mapTaskPriorityFromEnum(input.priority) : undefined
     };
     
     const tasks = await taskService.bulkUpdateTasks(ids, params);
     
-    return tasks.map(task => ({
-      ...task,
-      type: mapTaskTypeToEnum(task.type),
-      status: mapTaskStatusToEnum(task.status),
-      priority: mapTaskPriorityToEnum(task.priority),
-      dueDate: task.due_date,
-      completedAt: task.completed_at,
-      estimatedDuration: task.estimated_duration ? 
-        parseInt(task.estimated_duration.replace(' minutes', '')) : null,
-      assignedToUser: task.assigned_to_user_id,
-      createdByUser: task.created_by_user_id,
-      deal: task.deal_id,
-      lead: task.lead_id,
-      person: task.person_id,
-      organization: task.organization_id,
-      emailThreadId: task.email_thread_id,
-      calendarEventId: task.calendar_event_id,
-      createdAt: task.created_at,
-      updatedAt: task.updated_at
-    }));
+    return tasks.map(formatTaskResponse);
   }
 };
 
-// Field resolvers for nested data
-export const TaskFieldResolvers = {
-  assignedToUser: async (parent: any) => {
-    if (!parent.assignedToUser) return null;
-    return await getServiceLevelUserProfileData(parent.assignedToUser);
-  },
-
-  createdByUser: async (parent: any) => {
-    if (!parent.createdByUser) return null;
-    return await getServiceLevelUserProfileData(parent.createdByUser);
-  },
-
-  deal: async (parent: any) => {
-    if (!parent.deal) return null;
-    return await dealService.getDealById(parent.deal);
-  },
-
-  lead: async (parent: any) => {
-    if (!parent.lead) return null;
-    return await leadService.getLeadById(parent.lead);
-  },
-
-  person: async (parent: any) => {
-    if (!parent.person) return null;
-    return await personService.getPersonById(parent.person);
-  },
-
-  organization: async (parent: any) => {
-    if (!parent.organization) return null;
-    return await organizationService.getOrganizationById(parent.organization);
+// Field resolvers
+export const taskFieldResolvers = {
+  Task: {
+    assignedToUser: async (parent: any) => {
+      if (!parent.assignedToUser) return null;
+      return await getServiceLevelUserProfileData(parent.assignedToUser);
+    },
+    
+    createdByUser: async (parent: any) => {
+      if (!parent.createdByUser) return null;
+      return await getServiceLevelUserProfileData(parent.createdByUser);
+    },
+    
+    deal: async (parent: any) => {
+      if (!parent.deal) return null;
+      return await dealService.getDealById(parent.deal);
+    },
+    
+    lead: async (parent: any) => {
+      if (!parent.lead) return null;
+      return await leadService.getLeadById(parent.lead);
+    },
+    
+    person: async (parent: any) => {
+      if (!parent.person) return null;
+      return await personService.getPersonById(parent.person);
+    },
+    
+    organization: async (parent: any) => {
+      if (!parent.organization) return null;
+      return await organizationService.getOrganizationById(parent.organization);
+    }
   }
 }; 
