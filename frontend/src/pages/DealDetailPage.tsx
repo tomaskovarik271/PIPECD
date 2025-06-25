@@ -94,7 +94,6 @@ import { DealNotesPanel } from '../components/dealDetail/DealNotesPanel';
 import { DealTimelinePanel } from '../components/dealDetail/DealTimelinePanel';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
-import { ScheduleMeetingModal } from '../components/calendar/ScheduleMeetingModal';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 
 // Type imports
@@ -179,8 +178,7 @@ const DealDetailPage = () => {
   // State for collapsible custom fields
   const [isCustomFieldsExpanded, setIsCustomFieldsExpanded] = useState(true);
   
-  // State for schedule meeting modal
-  const [isScheduleMeetingModalOpen, setIsScheduleMeetingModalOpen] = useState(false);
+
   
   // Memoize callbacks to prevent infinite re-renders
   const handleStickyNotesCountChange = useCallback((count: number) => {
@@ -869,10 +867,13 @@ const DealDetailPage = () => {
                   {/* Schedule Meeting Button */}
                   <Box pt={4}>
                     <Button
+                      as="a"
+                      href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=Meeting: ${currentDeal.name}&details=Meeting regarding deal: ${currentDeal.name}${currentDeal.person ? ` with ${currentDeal.person.first_name} ${currentDeal.person.last_name}` : ''}${currentDeal.organization ? `. Organization: ${currentDeal.organization.name}` : ''}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       leftIcon={<CalendarIcon />}
                       colorScheme="blue"
                       size="md"
-                      onClick={() => setIsScheduleMeetingModalOpen(true)}
                       width="100%"
                       variant="solid"
                     >
@@ -1025,15 +1026,6 @@ const DealDetailPage = () => {
           onClose={onEditDealModalClose}
           deal={currentDeal}
           onDealUpdated={handleDealUpdated}
-        />
-      )}
-
-      {/* Schedule Meeting Modal */}
-      {isScheduleMeetingModalOpen && (
-        <ScheduleMeetingModal
-          isOpen={isScheduleMeetingModalOpen}
-          onClose={() => setIsScheduleMeetingModalOpen(false)}
-          deal={currentDeal}
         />
       )}
     </Box>
