@@ -30,7 +30,7 @@ import { StickerBoard } from '../components/common/StickerBoard';
 import AccountManagerAssignmentModal from '../components/admin/AccountManagerAssignmentModal';
 import { CustomFieldRenderer } from '../components/common/CustomFieldRenderer';
 import { useOptimizedCustomFields } from '../hooks/useOptimizedCustomFields';
-import { CustomFieldEntityType, CustomFieldType } from '../generated/graphql/graphql';
+import type { CustomFieldEntityType, CustomFieldType } from '../generated/graphql/graphql';
 
 const OrganizationDetailPage = () => {
   const { organizationId } = useParams<{ organizationId: string }>();

@@ -16,6 +16,7 @@ export interface GoogleIntegrationStatus {
   hasGoogleAuth: boolean;
   hasDriveAccess: boolean;
   hasGmailAccess: boolean;
+  hasCalendarAccess: boolean;
   tokenExpiry?: string;
   missingScopes: string[];
 }
@@ -176,6 +177,7 @@ const getIntegrationStatus = async (userId: string, accessToken: string): Promis
         hasGoogleAuth,
         hasDriveAccess: false,
         hasGmailAccess: false,
+        hasCalendarAccess: false,
         missingScopes: REQUIRED_SCOPES
       };
     }
@@ -190,6 +192,7 @@ const getIntegrationStatus = async (userId: string, accessToken: string): Promis
       hasGoogleAuth,
       hasDriveAccess: grantedScopes.includes('https://www.googleapis.com/auth/drive'),
       hasGmailAccess: grantedScopes.some((scope: string) => scope.includes('gmail')),
+      hasCalendarAccess: grantedScopes.includes('https://www.googleapis.com/auth/calendar'),
       tokenExpiry: tokenData.expires_at,
       missingScopes
     };

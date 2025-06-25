@@ -29,6 +29,7 @@ const GET_GOOGLE_INTEGRATION_STATUS = gql`
       hasGoogleAuth
       hasDriveAccess
       hasGmailAccess
+      hasCalendarAccess
       tokenExpiry
       missingScopes
     }
@@ -59,6 +60,7 @@ interface GoogleIntegrationStatus {
   hasGoogleAuth: boolean;
   hasDriveAccess: boolean;
   hasGmailAccess: boolean;
+  hasCalendarAccess: boolean;
   tokenExpiry?: string;
   missingScopes: string[];
 }
@@ -140,7 +142,8 @@ const GoogleIntegrationPage: React.FC = () => {
           'https://www.googleapis.com/auth/drive',
           'https://www.googleapis.com/auth/gmail.readonly',
           'https://www.googleapis.com/auth/gmail.send',
-          'https://www.googleapis.com/auth/gmail.modify'
+          'https://www.googleapis.com/auth/gmail.modify',
+          'https://www.googleapis.com/auth/calendar'
         ].join(' ');
 
         const oauthUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -217,7 +220,7 @@ const GoogleIntegrationPage: React.FC = () => {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            scopes: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify',
+            scopes: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar',
             queryParams: {
               access_type: 'offline',
               prompt: 'consent',
@@ -284,8 +287,8 @@ const GoogleIntegrationPage: React.FC = () => {
         </Heading>
 
         <Text color={colors.text.secondary}>
-          Connect your Google account to enable Google Drive file management and Gmail integration
-          for deals, contacts, and organizations.
+          Connect your Google account to enable Google Drive file management, Gmail integration,
+          and Google Calendar scheduling for deals, contacts, and organizations.
         </Text>
 
         {/* Integration Status Card */}
@@ -362,6 +365,21 @@ const GoogleIntegrationPage: React.FC = () => {
                     size="sm"
                   >
                     {status?.hasGmailAccess ? 'Enabled' : 'Not Enabled'}
+                  </Badge>
+                </HStack>
+
+                <HStack spacing={4}>
+                  <Icon
+                    as={status?.hasCalendarAccess ? CheckIcon : InfoIcon}
+                    color={status?.hasCalendarAccess ? 'green.500' : 'gray.500'}
+                  />
+                  <Text color={colors.text.secondary}>Google Calendar Access</Text>
+                  <Badge
+                    colorScheme={status?.hasCalendarAccess ? 'green' : 'gray'}
+                    variant="subtle"
+                    size="sm"
+                  >
+                    {status?.hasCalendarAccess ? 'Enabled' : 'Not Enabled'}
                   </Badge>
                 </HStack>
               </VStack>
@@ -444,7 +462,10 @@ const GoogleIntegrationPage: React.FC = () => {
                   📧 <strong>Gmail:</strong> Sync email conversations and track communication history
                 </Text>
                 <Text fontSize="sm" color={colors.text.secondary}>
-                  🔄 <strong>Auto-sync:</strong> Automatically organize files and emails by entity
+                  📅 <strong>Google Calendar:</strong> Schedule meetings and track upcoming events with CRM context
+                </Text>
+                <Text fontSize="sm" color={colors.text.secondary}>
+                  🔄 <strong>Auto-sync:</strong> Automatically organize files, emails, and events by entity
                 </Text>
               </VStack>
             </VStack>

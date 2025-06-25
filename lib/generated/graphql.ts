@@ -244,6 +244,143 @@ export type AttachFileInput = {
   fileId: Scalars["String"]["input"];
 };
 
+export type AvailabilitySlot = {
+  __typename?: "AvailabilitySlot";
+  available: Scalars["Boolean"]["output"];
+  end: Scalars["DateTime"]["output"];
+  start: Scalars["DateTime"]["output"];
+};
+
+export type CalendarAttendee = {
+  __typename?: "CalendarAttendee";
+  displayName?: Maybe<Scalars["String"]["output"]>;
+  email: Scalars["String"]["output"];
+  responseStatus: CalendarResponseStatus;
+};
+
+export type CalendarEvent = {
+  __typename?: "CalendarEvent";
+  attendees?: Maybe<Array<CalendarAttendee>>;
+  createdAt: Scalars["DateTime"]["output"];
+  deal?: Maybe<Deal>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  endTime: Scalars["DateTime"]["output"];
+  eventType: CalendarEventType;
+  googleCalendarId: Scalars["String"]["output"];
+  googleEventId: Scalars["String"]["output"];
+  googleMeetLink?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isAllDay: Scalars["Boolean"]["output"];
+  isCancelled: Scalars["Boolean"]["output"];
+  lastSyncedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  location?: Maybe<Scalars["String"]["output"]>;
+  nextActions?: Maybe<Array<Scalars["String"]["output"]>>;
+  organization?: Maybe<Organization>;
+  outcome?: Maybe<CalendarEventOutcome>;
+  outcomeNotes?: Maybe<Scalars["String"]["output"]>;
+  person?: Maybe<Person>;
+  startTime: Scalars["DateTime"]["output"];
+  timezone: Scalars["String"]["output"];
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export enum CalendarEventOutcome {
+  Cancelled = "CANCELLED",
+  Completed = "COMPLETED",
+  NoShow = "NO_SHOW",
+  Rescheduled = "RESCHEDULED",
+}
+
+export enum CalendarEventType {
+  Call = "CALL",
+  CheckIn = "CHECK_IN",
+  ContractReview = "CONTRACT_REVIEW",
+  Demo = "DEMO",
+  FollowUp = "FOLLOW_UP",
+  Internal = "INTERNAL",
+  Meeting = "MEETING",
+  ProposalPresentation = "PROPOSAL_PRESENTATION",
+}
+
+export type CalendarPreferences = {
+  __typename?: "CalendarPreferences";
+  autoAddDealParticipants: Scalars["Boolean"]["output"];
+  autoAddGoogleMeet: Scalars["Boolean"]["output"];
+  autoSyncEnabled: Scalars["Boolean"]["output"];
+  businessCalendarId?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  defaultBufferTime: Scalars["Int"]["output"];
+  defaultLocation: Scalars["String"]["output"];
+  defaultMeetingDuration: Scalars["Int"]["output"];
+  id: Scalars["ID"]["output"];
+  includeDealContext: Scalars["Boolean"]["output"];
+  primaryCalendarId?: Maybe<Scalars["String"]["output"]>;
+  reminderPreferences: Scalars["JSON"]["output"];
+  syncFutureDays: Scalars["Int"]["output"];
+  syncPastDays: Scalars["Int"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  workingHours: Scalars["JSON"]["output"];
+};
+
+export type CalendarPreferencesInput = {
+  autoAddDealParticipants?: InputMaybe<Scalars["Boolean"]["input"]>;
+  autoAddGoogleMeet?: InputMaybe<Scalars["Boolean"]["input"]>;
+  autoSyncEnabled?: InputMaybe<Scalars["Boolean"]["input"]>;
+  businessCalendarId?: InputMaybe<Scalars["String"]["input"]>;
+  defaultBufferTime?: InputMaybe<Scalars["Int"]["input"]>;
+  defaultLocation?: InputMaybe<Scalars["String"]["input"]>;
+  defaultMeetingDuration?: InputMaybe<Scalars["Int"]["input"]>;
+  includeDealContext?: InputMaybe<Scalars["Boolean"]["input"]>;
+  primaryCalendarId?: InputMaybe<Scalars["String"]["input"]>;
+  reminderPreferences?: InputMaybe<Scalars["JSON"]["input"]>;
+  syncFutureDays?: InputMaybe<Scalars["Int"]["input"]>;
+  syncPastDays?: InputMaybe<Scalars["Int"]["input"]>;
+  workingHours?: InputMaybe<Scalars["JSON"]["input"]>;
+};
+
+export type CalendarReminderInput = {
+  method: CalendarReminderMethod;
+  minutes: Scalars["Int"]["input"];
+};
+
+export enum CalendarReminderMethod {
+  Email = "EMAIL",
+  Popup = "POPUP",
+}
+
+export enum CalendarResponseStatus {
+  Accepted = "ACCEPTED",
+  Declined = "DECLINED",
+  NeedsAction = "NEEDS_ACTION",
+  Tentative = "TENTATIVE",
+}
+
+export enum CalendarSyncAction {
+  AddCrmContext = "ADD_CRM_CONTEXT",
+  CreateEvent = "CREATE_EVENT",
+  DeleteEvent = "DELETE_EVENT",
+  FullSync = "FULL_SYNC",
+  IncrementalSync = "INCREMENTAL_SYNC",
+  UpdateEvent = "UPDATE_EVENT",
+}
+
+export type CalendarSyncStatus = {
+  __typename?: "CalendarSyncStatus";
+  errorMessage?: Maybe<Scalars["String"]["output"]>;
+  eventsCount: Scalars["Int"]["output"];
+  hasSyncErrors: Scalars["Boolean"]["output"];
+  isConnected: Scalars["Boolean"]["output"];
+  lastSyncAt?: Maybe<Scalars["DateTime"]["output"]>;
+  nextSyncAt?: Maybe<Scalars["DateTime"]["output"]>;
+  syncDuration?: Maybe<Scalars["Int"]["output"]>;
+};
+
+export type CalendarTimeRangeInput = {
+  end: Scalars["DateTime"]["input"];
+  start: Scalars["DateTime"]["input"];
+};
+
 export type ComposeEmailInput = {
   attachments?: InputMaybe<Array<EmailAttachmentInput>>;
   bcc?: InputMaybe<Array<Scalars["String"]["input"]>>;
@@ -345,6 +482,23 @@ export type ConvertedEntities = {
 
 export type CreateAgentV2ConversationInput = {
   initialContext?: InputMaybe<Scalars["JSON"]["input"]>;
+};
+
+export type CreateCalendarEventInput = {
+  addGoogleMeet?: InputMaybe<Scalars["Boolean"]["input"]>;
+  attendeeEmails?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  calendarId?: InputMaybe<Scalars["String"]["input"]>;
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  endDateTime: Scalars["DateTime"]["input"];
+  eventType?: InputMaybe<CalendarEventType>;
+  location?: InputMaybe<Scalars["String"]["input"]>;
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
+  reminders?: InputMaybe<Array<CalendarReminderInput>>;
+  startDateTime: Scalars["DateTime"]["input"];
+  timezone?: InputMaybe<Scalars["String"]["input"]>;
+  title: Scalars["String"]["input"];
 };
 
 export type CreateContactFromEmailInput = {
@@ -1017,6 +1171,19 @@ export type GenerateTaskContentInput = {
   useWholeThread: Scalars["Boolean"]["input"];
 };
 
+export type GoogleCalendar = {
+  __typename?: "GoogleCalendar";
+  accessRole: Scalars["String"]["output"];
+  backgroundColor?: Maybe<Scalars["String"]["output"]>;
+  colorId?: Maybe<Scalars["String"]["output"]>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  foregroundColor?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["String"]["output"];
+  primary?: Maybe<Scalars["Boolean"]["output"]>;
+  summary: Scalars["String"]["output"];
+  timeZone: Scalars["String"]["output"];
+};
+
 /** Google Drive specific configuration */
 export type GoogleDriveConfig = {
   __typename?: "GoogleDriveConfig";
@@ -1027,6 +1194,7 @@ export type GoogleDriveConfig = {
 
 export type GoogleIntegrationStatus = {
   __typename?: "GoogleIntegrationStatus";
+  hasCalendarAccess: Scalars["Boolean"]["output"];
   hasDriveAccess: Scalars["Boolean"]["output"];
   hasGmailAccess: Scalars["Boolean"]["output"];
   hasGoogleAuth: Scalars["Boolean"]["output"];
@@ -1215,6 +1383,7 @@ export type Mutation = {
   __typename?: "Mutation";
   addAgentThoughts: Array<AgentThought>;
   addAgentV2Thoughts: Array<AgentThought>;
+  addDealContextToEvent: CalendarEvent;
   addDealParticipant: DealParticipant;
   archiveThread: Scalars["Boolean"]["output"];
   assignAccountManager: Organization;
@@ -1231,6 +1400,7 @@ export type Mutation = {
   copyDriveFile: DriveFile;
   createAgentConversation: AgentConversation;
   createAgentV2Conversation: AgentConversation;
+  createCalendarEvent: CalendarEvent;
   createContactFromEmail: Person;
   createCurrency: Currency;
   createCustomFieldDefinition: CustomFieldDefinition;
@@ -1250,6 +1420,7 @@ export type Mutation = {
   createWFMWorkflowTransition: WfmWorkflowTransition;
   deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteAgentConversation: Scalars["Boolean"]["output"];
+  deleteCalendarEvent: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteDriveFile: Scalars["Boolean"]["output"];
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
@@ -1272,22 +1443,28 @@ export type Mutation = {
   reactivateCustomFieldDefinition: CustomFieldDefinition;
   recalculateLeadScore: Lead;
   removeAccountManager: Organization;
+  removeDealContextFromEvent: CalendarEvent;
   removeDealParticipant: Scalars["Boolean"]["output"];
   removeDocumentAttachment: Scalars["Boolean"]["output"];
   removeNoteDocumentAttachment: Scalars["Boolean"]["output"];
   removeUserRole: User;
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
+  scheduleDemoMeeting: CalendarEvent;
+  scheduleFollowUpMeeting: CalendarEvent;
   sendAgentMessage: AgentResponse;
   sendAgentV2Message: AgentV2Response;
   sendAgentV2MessageStream: Scalars["String"]["output"];
   setExchangeRate: ExchangeRate;
   shareDriveFolder: Scalars["Boolean"]["output"];
+  syncCalendarEvents: CalendarSyncStatus;
   syncGmailEmails: Array<Email>;
   toggleStickerPin: SmartSticker;
   unpinEmail: Scalars["Boolean"]["output"];
   updateAgentConversation: AgentConversation;
   /** Update an app setting (admin only) */
   updateAppSetting: AppSetting;
+  updateCalendarEvent: CalendarEvent;
+  updateCalendarPreferences: CalendarPreferences;
   updateCurrency: Currency;
   updateCustomFieldDefinition: CustomFieldDefinition;
   updateDeal?: Maybe<Deal>;
@@ -1326,6 +1503,12 @@ export type MutationAddAgentThoughtsArgs = {
 export type MutationAddAgentV2ThoughtsArgs = {
   conversationId: Scalars["ID"]["input"];
   thoughts: Array<AgentV2ThoughtInput>;
+};
+
+export type MutationAddDealContextToEventArgs = {
+  dealId: Scalars["ID"]["input"];
+  eventId: Scalars["ID"]["input"];
+  eventType?: InputMaybe<CalendarEventType>;
 };
 
 export type MutationAddDealParticipantArgs = {
@@ -1402,6 +1585,10 @@ export type MutationCreateAgentV2ConversationArgs = {
   input: CreateAgentV2ConversationInput;
 };
 
+export type MutationCreateCalendarEventArgs = {
+  input: CreateCalendarEventInput;
+};
+
 export type MutationCreateContactFromEmailArgs = {
   input: CreateContactFromEmailInput;
 };
@@ -1476,6 +1663,10 @@ export type MutationDeactivateCustomFieldDefinitionArgs = {
 };
 
 export type MutationDeleteAgentConversationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteCalendarEventArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -1571,6 +1762,10 @@ export type MutationRemoveAccountManagerArgs = {
   organizationId: Scalars["ID"]["input"];
 };
 
+export type MutationRemoveDealContextFromEventArgs = {
+  eventId: Scalars["ID"]["input"];
+};
+
 export type MutationRemoveDealParticipantArgs = {
   dealId: Scalars["ID"]["input"];
   personId: Scalars["ID"]["input"];
@@ -1587,6 +1782,21 @@ export type MutationRemoveNoteDocumentAttachmentArgs = {
 export type MutationRemoveUserRoleArgs = {
   roleName: Scalars["String"]["input"];
   userId: Scalars["ID"]["input"];
+};
+
+export type MutationScheduleDemoMeetingArgs = {
+  attendeeEmails: Array<Scalars["String"]["input"]>;
+  dealId: Scalars["ID"]["input"];
+  duration?: InputMaybe<Scalars["Int"]["input"]>;
+  suggestedTime?: InputMaybe<Scalars["DateTime"]["input"]>;
+  title: Scalars["String"]["input"];
+};
+
+export type MutationScheduleFollowUpMeetingArgs = {
+  dealId: Scalars["ID"]["input"];
+  duration?: InputMaybe<Scalars["Int"]["input"]>;
+  suggestedTime?: InputMaybe<Scalars["DateTime"]["input"]>;
+  title: Scalars["String"]["input"];
 };
 
 export type MutationSendAgentMessageArgs = {
@@ -1610,6 +1820,11 @@ export type MutationShareDriveFolderArgs = {
   permissions: Array<DrivePermissionInput>;
 };
 
+export type MutationSyncCalendarEventsArgs = {
+  calendarId?: InputMaybe<Scalars["String"]["input"]>;
+  fullSync?: InputMaybe<Scalars["Boolean"]["input"]>;
+};
+
 export type MutationSyncGmailEmailsArgs = {
   entityId: Scalars["ID"]["input"];
   entityType: EntityType;
@@ -1629,6 +1844,15 @@ export type MutationUpdateAgentConversationArgs = {
 
 export type MutationUpdateAppSettingArgs = {
   input: UpdateAppSettingInput;
+};
+
+export type MutationUpdateCalendarEventArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateCalendarEventInput;
+};
+
+export type MutationUpdateCalendarPreferencesArgs = {
+  input: CalendarPreferencesInput;
 };
 
 export type MutationUpdateCurrencyArgs = {
@@ -1879,6 +2103,11 @@ export type Query = {
   /** Get all app settings (admin only for private settings) */
   appSettings: Array<AppSetting>;
   assignableUsers: Array<User>;
+  calendarEvent?: Maybe<CalendarEvent>;
+  calendarEvents: Array<CalendarEvent>;
+  calendarPreferences?: Maybe<CalendarPreferences>;
+  calendarSyncStatus: CalendarSyncStatus;
+  checkAvailability: Array<AvailabilitySlot>;
   conversionHistory: Array<ConversionHistory>;
   conversionHistoryById?: Maybe<ConversionHistory>;
   currencies: Array<Currency>;
@@ -1886,6 +2115,7 @@ export type Query = {
   customFieldDefinition?: Maybe<CustomFieldDefinition>;
   customFieldDefinitions: Array<CustomFieldDefinition>;
   deal?: Maybe<Deal>;
+  dealCalendarEvents: Array<CalendarEvent>;
   /** Get files in the deal folder or specific subfolder */
   dealFolderFiles: Array<DriveFile>;
   /** Get deal folder information, auto-creating if needed */
@@ -1921,6 +2151,7 @@ export type Query = {
   getSticker?: Maybe<SmartSticker>;
   getStickerCategories: Array<StickerCategory>;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
+  googleCalendars: Array<GoogleCalendar>;
   /** Get Google Drive configuration settings */
   googleDriveSettings: GoogleDriveConfig;
   googleIntegrationStatus: GoogleIntegrationStatus;
@@ -1946,6 +2177,7 @@ export type Query = {
   searchStickers: StickerConnection;
   suggestEmailParticipants: Array<Person>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  upcomingMeetings: Array<CalendarEvent>;
   userCurrencyPreferences?: Maybe<UserCurrencyPreferences>;
   users: Array<User>;
   validateConversion: ConversionValidationResult;
@@ -1990,6 +2222,26 @@ export type QueryAppSettingArgs = {
   settingKey: Scalars["String"]["input"];
 };
 
+export type QueryCalendarEventArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryCalendarEventsArgs = {
+  calendarId?: InputMaybe<Scalars["String"]["input"]>;
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  eventType?: InputMaybe<CalendarEventType>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
+  timeRange?: InputMaybe<CalendarTimeRangeInput>;
+};
+
+export type QueryCheckAvailabilityArgs = {
+  calendarIds?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  timeRange: CalendarTimeRangeInput;
+};
+
 export type QueryConversionHistoryArgs = {
   entityId: Scalars["ID"]["input"];
   entityType: Scalars["String"]["input"];
@@ -2014,6 +2266,10 @@ export type QueryCustomFieldDefinitionsArgs = {
 
 export type QueryDealArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryDealCalendarEventsArgs = {
+  dealId: Scalars["ID"]["input"];
 };
 
 export type QueryDealFolderFilesArgs = {
@@ -2189,6 +2445,11 @@ export type QuerySearchStickersArgs = {
 export type QuerySuggestEmailParticipantsArgs = {
   dealId: Scalars["ID"]["input"];
   threadId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type QueryUpcomingMeetingsArgs = {
+  days?: InputMaybe<Scalars["Int"]["input"]>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryUserCurrencyPreferencesArgs = {
@@ -2506,6 +2767,21 @@ export enum ToolExecutionStatus {
 export type UpdateAppSettingInput = {
   settingKey: Scalars["String"]["input"];
   settingValue: Scalars["JSON"]["input"];
+};
+
+export type UpdateCalendarEventInput = {
+  addGoogleMeet?: InputMaybe<Scalars["Boolean"]["input"]>;
+  attendeeEmails?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  endDateTime?: InputMaybe<Scalars["DateTime"]["input"]>;
+  location?: InputMaybe<Scalars["String"]["input"]>;
+  nextActions?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  outcome?: InputMaybe<CalendarEventOutcome>;
+  outcomeNotes?: InputMaybe<Scalars["String"]["input"]>;
+  reminders?: InputMaybe<Array<CalendarReminderInput>>;
+  startDateTime?: InputMaybe<Scalars["DateTime"]["input"]>;
+  timezone?: InputMaybe<Scalars["String"]["input"]>;
+  title?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type UpdateConversationInput = {
@@ -2850,7 +3126,20 @@ export type ResolversTypes = {
   AttachDocumentInput: AttachDocumentInput;
   AttachDocumentToNoteInput: AttachDocumentToNoteInput;
   AttachFileInput: AttachFileInput;
+  AvailabilitySlot: ResolverTypeWrapper<AvailabilitySlot>;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
+  CalendarAttendee: ResolverTypeWrapper<CalendarAttendee>;
+  CalendarEvent: ResolverTypeWrapper<CalendarEvent>;
+  CalendarEventOutcome: CalendarEventOutcome;
+  CalendarEventType: CalendarEventType;
+  CalendarPreferences: ResolverTypeWrapper<CalendarPreferences>;
+  CalendarPreferencesInput: CalendarPreferencesInput;
+  CalendarReminderInput: CalendarReminderInput;
+  CalendarReminderMethod: CalendarReminderMethod;
+  CalendarResponseStatus: CalendarResponseStatus;
+  CalendarSyncAction: CalendarSyncAction;
+  CalendarSyncStatus: ResolverTypeWrapper<CalendarSyncStatus>;
+  CalendarTimeRangeInput: CalendarTimeRangeInput;
   ComposeEmailInput: ComposeEmailInput;
   ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
   ContactRoleType: ContactRoleType;
@@ -2862,6 +3151,7 @@ export type ResolversTypes = {
   ConversionValidationResult: ResolverTypeWrapper<ConversionValidationResult>;
   ConvertedEntities: ResolverTypeWrapper<ConvertedEntities>;
   CreateAgentV2ConversationInput: CreateAgentV2ConversationInput;
+  CreateCalendarEventInput: CreateCalendarEventInput;
   CreateContactFromEmailInput: CreateContactFromEmailInput;
   CreateCurrencyInput: CreateCurrencyInput;
   CreateDealFolderInput: CreateDealFolderInput;
@@ -2929,6 +3219,7 @@ export type ResolversTypes = {
   ExtendedThinkingAnalysis: ResolverTypeWrapper<ExtendedThinkingAnalysis>;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
   GenerateTaskContentInput: GenerateTaskContentInput;
+  GoogleCalendar: ResolverTypeWrapper<GoogleCalendar>;
   GoogleDriveConfig: ResolverTypeWrapper<GoogleDriveConfig>;
   GoogleIntegrationStatus: ResolverTypeWrapper<GoogleIntegrationStatus>;
   GoogleTokenData: ResolverTypeWrapper<GoogleTokenData>;
@@ -2987,6 +3278,7 @@ export type ResolversTypes = {
   ToolExecution: ResolverTypeWrapper<ToolExecution>;
   ToolExecutionStatus: ToolExecutionStatus;
   UpdateAppSettingInput: UpdateAppSettingInput;
+  UpdateCalendarEventInput: UpdateCalendarEventInput;
   UpdateConversationInput: UpdateConversationInput;
   UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
@@ -3033,7 +3325,15 @@ export type ResolversParentTypes = {
   AttachDocumentInput: AttachDocumentInput;
   AttachDocumentToNoteInput: AttachDocumentToNoteInput;
   AttachFileInput: AttachFileInput;
+  AvailabilitySlot: AvailabilitySlot;
   Boolean: Scalars["Boolean"]["output"];
+  CalendarAttendee: CalendarAttendee;
+  CalendarEvent: CalendarEvent;
+  CalendarPreferences: CalendarPreferences;
+  CalendarPreferencesInput: CalendarPreferencesInput;
+  CalendarReminderInput: CalendarReminderInput;
+  CalendarSyncStatus: CalendarSyncStatus;
+  CalendarTimeRangeInput: CalendarTimeRangeInput;
   ComposeEmailInput: ComposeEmailInput;
   ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
   ConversionHistory: ConversionHistory;
@@ -3041,6 +3341,7 @@ export type ResolversParentTypes = {
   ConversionValidationResult: ConversionValidationResult;
   ConvertedEntities: ConvertedEntities;
   CreateAgentV2ConversationInput: CreateAgentV2ConversationInput;
+  CreateCalendarEventInput: CreateCalendarEventInput;
   CreateContactFromEmailInput: CreateContactFromEmailInput;
   CreateCurrencyInput: CreateCurrencyInput;
   CreateDealFolderInput: CreateDealFolderInput;
@@ -3100,6 +3401,7 @@ export type ResolversParentTypes = {
   ExtendedThinkingAnalysis: ExtendedThinkingAnalysis;
   Float: Scalars["Float"]["output"];
   GenerateTaskContentInput: GenerateTaskContentInput;
+  GoogleCalendar: GoogleCalendar;
   GoogleDriveConfig: GoogleDriveConfig;
   GoogleIntegrationStatus: GoogleIntegrationStatus;
   GoogleTokenData: GoogleTokenData;
@@ -3149,6 +3451,7 @@ export type ResolversParentTypes = {
   ToolDiscoveryResponse: ToolDiscoveryResponse;
   ToolExecution: ToolExecution;
   UpdateAppSettingInput: UpdateAppSettingInput;
+  UpdateCalendarEventInput: UpdateCalendarEventInput;
   UpdateConversationInput: UpdateConversationInput;
   UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
@@ -3446,6 +3749,194 @@ export type AppSettingResolvers<
     ContextType
   >;
   updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type AvailabilitySlotResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["AvailabilitySlot"] = ResolversParentTypes["AvailabilitySlot"],
+> = {
+  available?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  end?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  start?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CalendarAttendeeResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["CalendarAttendee"] = ResolversParentTypes["CalendarAttendee"],
+> = {
+  displayName?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  email?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  responseStatus?: Resolver<
+    ResolversTypes["CalendarResponseStatus"],
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CalendarEventResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["CalendarEvent"] = ResolversParentTypes["CalendarEvent"],
+> = {
+  attendees?: Resolver<
+    Maybe<Array<ResolversTypes["CalendarAttendee"]>>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  deal?: Resolver<Maybe<ResolversTypes["Deal"]>, ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  endTime?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  eventType?: Resolver<
+    ResolversTypes["CalendarEventType"],
+    ParentType,
+    ContextType
+  >;
+  googleCalendarId?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  googleEventId?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  googleMeetLink?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isAllDay?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  isCancelled?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  lastSyncedAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  location?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  nextActions?: Resolver<
+    Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  organization?: Resolver<
+    Maybe<ResolversTypes["Organization"]>,
+    ParentType,
+    ContextType
+  >;
+  outcome?: Resolver<
+    Maybe<ResolversTypes["CalendarEventOutcome"]>,
+    ParentType,
+    ContextType
+  >;
+  outcomeNotes?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
+  startTime?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  timezone?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CalendarPreferencesResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["CalendarPreferences"] = ResolversParentTypes["CalendarPreferences"],
+> = {
+  autoAddDealParticipants?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  autoAddGoogleMeet?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  autoSyncEnabled?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  businessCalendarId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  defaultBufferTime?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  defaultLocation?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  defaultMeetingDuration?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  includeDealContext?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  primaryCalendarId?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  reminderPreferences?: Resolver<
+    ResolversTypes["JSON"],
+    ParentType,
+    ContextType
+  >;
+  syncFutureDays?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  syncPastDays?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  workingHours?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type CalendarSyncStatusResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["CalendarSyncStatus"] = ResolversParentTypes["CalendarSyncStatus"],
+> = {
+  errorMessage?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  eventsCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  hasSyncErrors?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  isConnected?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  lastSyncAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  nextSyncAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  syncDuration?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -4466,6 +4957,35 @@ export type ExtendedThinkingAnalysisResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type GoogleCalendarResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GoogleCalendar"] = ResolversParentTypes["GoogleCalendar"],
+> = {
+  accessRole?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  backgroundColor?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  colorId?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  foregroundColor?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  primary?: Resolver<Maybe<ResolversTypes["Boolean"]>, ParentType, ContextType>;
+  summary?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  timeZone?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type GoogleDriveConfigResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -4494,6 +5014,11 @@ export type GoogleIntegrationStatusResolvers<
   ParentType extends
     ResolversParentTypes["GoogleIntegrationStatus"] = ResolversParentTypes["GoogleIntegrationStatus"],
 > = {
+  hasCalendarAccess?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
   hasDriveAccess?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
   hasGmailAccess?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
   hasGoogleAuth?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
@@ -4818,6 +5343,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationAddAgentV2ThoughtsArgs, "conversationId" | "thoughts">
   >;
+  addDealContextToEvent?: Resolver<
+    ResolversTypes["CalendarEvent"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAddDealContextToEventArgs, "dealId" | "eventId">
+  >;
   addDealParticipant?: Resolver<
     ResolversTypes["DealParticipant"],
     ParentType,
@@ -4916,6 +5447,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateAgentV2ConversationArgs, "input">
+  >;
+  createCalendarEvent?: Resolver<
+    ResolversTypes["CalendarEvent"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateCalendarEventArgs, "input">
   >;
   createContactFromEmail?: Resolver<
     ResolversTypes["Person"],
@@ -5030,6 +5567,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationDeleteAgentConversationArgs, "id">
+  >;
+  deleteCalendarEvent?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteCalendarEventArgs, "id">
   >;
   deleteDeal?: Resolver<
     Maybe<ResolversTypes["Boolean"]>,
@@ -5163,6 +5706,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationRemoveAccountManagerArgs, "organizationId">
   >;
+  removeDealContextFromEvent?: Resolver<
+    ResolversTypes["CalendarEvent"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRemoveDealContextFromEventArgs, "eventId">
+  >;
   removeDealParticipant?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -5191,6 +5740,24 @@ export type MutationResolvers<
     ResolversTypes["Boolean"],
     ParentType,
     ContextType
+  >;
+  scheduleDemoMeeting?: Resolver<
+    ResolversTypes["CalendarEvent"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationScheduleDemoMeetingArgs,
+      "attendeeEmails" | "dealId" | "duration" | "title"
+    >
+  >;
+  scheduleFollowUpMeeting?: Resolver<
+    ResolversTypes["CalendarEvent"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationScheduleFollowUpMeetingArgs,
+      "dealId" | "duration" | "title"
+    >
   >;
   sendAgentMessage?: Resolver<
     ResolversTypes["AgentResponse"],
@@ -5222,6 +5789,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationShareDriveFolderArgs, "folderId" | "permissions">
   >;
+  syncCalendarEvents?: Resolver<
+    ResolversTypes["CalendarSyncStatus"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationSyncCalendarEventsArgs, "fullSync">
+  >;
   syncGmailEmails?: Resolver<
     Array<ResolversTypes["Email"]>,
     ParentType,
@@ -5251,6 +5824,18 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateAppSettingArgs, "input">
+  >;
+  updateCalendarEvent?: Resolver<
+    ResolversTypes["CalendarEvent"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateCalendarEventArgs, "id" | "input">
+  >;
+  updateCalendarPreferences?: Resolver<
+    ResolversTypes["CalendarPreferences"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateCalendarPreferencesArgs, "input">
   >;
   updateCurrency?: Resolver<
     ResolversTypes["Currency"],
@@ -5611,6 +6196,34 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  calendarEvent?: Resolver<
+    Maybe<ResolversTypes["CalendarEvent"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryCalendarEventArgs, "id">
+  >;
+  calendarEvents?: Resolver<
+    Array<ResolversTypes["CalendarEvent"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryCalendarEventsArgs>
+  >;
+  calendarPreferences?: Resolver<
+    Maybe<ResolversTypes["CalendarPreferences"]>,
+    ParentType,
+    ContextType
+  >;
+  calendarSyncStatus?: Resolver<
+    ResolversTypes["CalendarSyncStatus"],
+    ParentType,
+    ContextType
+  >;
+  checkAvailability?: Resolver<
+    Array<ResolversTypes["AvailabilitySlot"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryCheckAvailabilityArgs, "timeRange">
+  >;
   conversionHistory?: Resolver<
     Array<ResolversTypes["ConversionHistory"]>,
     ParentType,
@@ -5654,6 +6267,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryDealArgs, "id">
+  >;
+  dealCalendarEvents?: Resolver<
+    Array<ResolversTypes["CalendarEvent"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryDealCalendarEventsArgs, "dealId">
   >;
   dealFolderFiles?: Resolver<
     Array<ResolversTypes["DriveFile"]>,
@@ -5849,6 +6468,11 @@ export type QueryResolvers<
       "fromStepId" | "workflowId"
     >
   >;
+  googleCalendars?: Resolver<
+    Array<ResolversTypes["GoogleCalendar"]>,
+    ParentType,
+    ContextType
+  >;
   googleDriveSettings?: Resolver<
     ResolversTypes["GoogleDriveConfig"],
     ParentType,
@@ -5959,6 +6583,12 @@ export type QueryResolvers<
     ResolversTypes["String"],
     ParentType,
     ContextType
+  >;
+  upcomingMeetings?: Resolver<
+    Array<ResolversTypes["CalendarEvent"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryUpcomingMeetingsArgs, "days" | "limit">
   >;
   userCurrencyPreferences?: Resolver<
     Maybe<ResolversTypes["UserCurrencyPreferences"]>,
@@ -6636,6 +7266,11 @@ export type Resolvers<ContextType = GraphQLContext> = {
   AgentV2Response?: AgentV2ResponseResolvers<ContextType>;
   AgentV2StreamChunk?: AgentV2StreamChunkResolvers<ContextType>;
   AppSetting?: AppSettingResolvers<ContextType>;
+  AvailabilitySlot?: AvailabilitySlotResolvers<ContextType>;
+  CalendarAttendee?: CalendarAttendeeResolvers<ContextType>;
+  CalendarEvent?: CalendarEventResolvers<ContextType>;
+  CalendarPreferences?: CalendarPreferencesResolvers<ContextType>;
+  CalendarSyncStatus?: CalendarSyncStatusResolvers<ContextType>;
   ConversionHistory?: ConversionHistoryResolvers<ContextType>;
   ConversionResult?: ConversionResultResolvers<ContextType>;
   ConversionValidationResult?: ConversionValidationResultResolvers<ContextType>;
@@ -6674,6 +7309,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   EmailThreadConnection?: EmailThreadConnectionResolvers<ContextType>;
   ExchangeRate?: ExchangeRateResolvers<ContextType>;
   ExtendedThinkingAnalysis?: ExtendedThinkingAnalysisResolvers<ContextType>;
+  GoogleCalendar?: GoogleCalendarResolvers<ContextType>;
   GoogleDriveConfig?: GoogleDriveConfigResolvers<ContextType>;
   GoogleIntegrationStatus?: GoogleIntegrationStatusResolvers<ContextType>;
   GoogleTokenData?: GoogleTokenDataResolvers<ContextType>;

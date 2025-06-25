@@ -68,7 +68,7 @@ import {
   SmallCloseIcon
 } from '@chakra-ui/icons';
 import { FaClipboardList, FaPhone } from 'react-icons/fa';
-import { CustomFieldEntityType } from '../generated/graphql/graphql';
+import type { CustomFieldEntityType } from '../generated/graphql/graphql';
 
 // Store imports
 import { useAppStore } from '../stores/useAppStore';

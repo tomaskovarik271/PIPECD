@@ -6,6 +6,7 @@ type GoogleIntegrationStatus {
   hasGoogleAuth: Boolean!
   hasDriveAccess: Boolean!
   hasGmailAccess: Boolean!
+  hasCalendarAccess: Boolean!
   tokenExpiry: DateTime
   missingScopes: [String!]!
 }
