@@ -119,6 +119,15 @@ export const calendarMutations = {
         args.input.calendarId || 'primary'
       );
 
+      if (!createdEvent) {
+        throw new GraphQLError('Failed to create calendar event - no response from Google Calendar API');
+      }
+
+      // Extract Google Meet link from conferenceData if available
+      const googleMeetLink = createdEvent.conferenceData?.entryPoints?.find(
+        (entry: any) => entry.entryPointType === 'video'
+      )?.uri || null;
+
       return {
         id: createdEvent.id,
         googleEventId: createdEvent.id,
@@ -130,13 +139,13 @@ export const calendarMutations = {
         isAllDay: !createdEvent.start.dateTime,
         timezone: createdEvent.start.timeZone || 'UTC',
         location: createdEvent.location || null,
-        googleMeetLink: null,
+        googleMeetLink,
         eventType: args.input.eventType || 'MEETING',
         outcome: null,
         outcomeNotes: null,
         nextActions: [],
         isCancelled: false,
-        attendees: [],
+        attendees: createdEvent.attendees || [],
         lastSyncedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
