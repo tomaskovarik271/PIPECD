@@ -18,7 +18,6 @@ export interface GoogleIntegrationStatus {
   hasGmailAccess: boolean;
   hasCalendarAccess: boolean;
   hasContactsAccess: boolean;
-  hasTasksAccess: boolean;
   tokenExpiry?: string;
   missingScopes: string[];
 }
@@ -29,8 +28,7 @@ const REQUIRED_SCOPES = [
   'https://www.googleapis.com/auth/gmail.send',
   'https://www.googleapis.com/auth/gmail.modify',
   'https://www.googleapis.com/auth/calendar',
-  'https://www.googleapis.com/auth/contacts.readonly',
-  'https://www.googleapis.com/auth/tasks'
+  'https://www.googleapis.com/auth/contacts.readonly'
 ];
 
 /**
@@ -191,7 +189,6 @@ const getIntegrationStatus = async (userId: string, accessToken: string): Promis
         hasGmailAccess: false,
         hasCalendarAccess: false,
         hasContactsAccess: false,
-        hasTasksAccess: false,
         missingScopes: REQUIRED_SCOPES
       };
     }
@@ -208,7 +205,6 @@ const getIntegrationStatus = async (userId: string, accessToken: string): Promis
       hasGmailAccess: grantedScopes.some((scope: string) => scope.includes('gmail')),
       hasCalendarAccess: grantedScopes.includes('https://www.googleapis.com/auth/calendar'),
       hasContactsAccess: grantedScopes.includes('https://www.googleapis.com/auth/contacts.readonly'),
-      hasTasksAccess: grantedScopes.includes('https://www.googleapis.com/auth/tasks'),
       tokenExpiry: tokenData.expires_at,
       missingScopes
     };
