@@ -92,6 +92,7 @@ import { SharedDriveDocumentBrowser } from '../components/deals/SharedDriveDocum
 import { DealNotesPanel } from '../components/dealDetail/DealNotesPanel';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
+import { ScheduleMeetingModal } from '../components/calendar/ScheduleMeetingModal';
 
 // Type imports
 
@@ -171,6 +172,9 @@ const DealDetailPage = () => {
   
   // State for collapsible custom fields
   const [isCustomFieldsExpanded, setIsCustomFieldsExpanded] = useState(true);
+  
+  // State for schedule meeting modal
+  const [isScheduleMeetingModalOpen, setIsScheduleMeetingModalOpen] = useState(false);
   
   // Memoize callbacks to prevent infinite re-renders
   const handleStickyNotesCountChange = useCallback((count: number) => {
@@ -824,6 +828,20 @@ const DealDetailPage = () => {
                       #{(currentDeal as any).project_id || '-'}
                     </Text>
                   </HStack>
+
+                  {/* Schedule Meeting Button */}
+                  <Box pt={4}>
+                    <Button
+                      leftIcon={<CalendarIcon />}
+                      colorScheme="blue"
+                      size="md"
+                      onClick={() => setIsScheduleMeetingModalOpen(true)}
+                      width="100%"
+                      variant="solid"
+                    >
+                      Schedule Meeting
+                    </Button>
+                  </Box>
                 </VStack>
               </Box>
 
@@ -970,6 +988,15 @@ const DealDetailPage = () => {
           onClose={onEditDealModalClose}
           deal={currentDeal}
           onDealUpdated={handleDealUpdated}
+        />
+      )}
+
+      {/* Schedule Meeting Modal */}
+      {isScheduleMeetingModalOpen && (
+        <ScheduleMeetingModal
+          isOpen={isScheduleMeetingModalOpen}
+          onClose={() => setIsScheduleMeetingModalOpen(false)}
+          deal={currentDeal}
         />
       )}
     </Box>
