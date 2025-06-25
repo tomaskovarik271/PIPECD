@@ -82,6 +82,91 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
     return new Date(timestamp).toLocaleTimeString();
   };
 
+  // Enhanced: Generate user-friendly summary for tool results
+  const getToolSummary = (tool: ToolExecution): string => {
+    if (tool.status === 'ERROR') {
+      return tool.error || 'Tool execution failed';
+    }
+
+    // Parse tool results for user-friendly summaries
+    switch (tool.name) {
+      case 'create_deal':
+        const deal = (tool.result as any)?.deal;
+        if (deal) {
+          return `Created deal "${deal.name}" worth ${deal.currency || 'USD'} ${deal.amount?.toLocaleString() || '0'}`;
+        }
+        return 'Deal created successfully';
+
+      case 'create_organization':
+        const org = (tool.result as any)?.organization;
+        if (org) {
+          return `Created organization "${org.name}"`;
+        }
+        return 'Organization created successfully';
+
+      case 'create_person':
+        const person = (tool.result as any)?.person;
+        if (person) {
+          const name = `${person.first_name || ''} ${person.last_name || ''}`.trim();
+          return `Created contact ${name ? `"${name}"` : 'successfully'}`;
+        }
+        return 'Contact created successfully';
+
+      case 'search_deals':
+        const deals = Array.isArray(tool.result) ? tool.result : [];
+        return `Found ${deals.length} deal${deals.length === 1 ? '' : 's'}`;
+
+      case 'update_deal':
+        const updatedDeal = (tool.result as any)?.deal;
+        if (updatedDeal) {
+          return `Updated deal "${updatedDeal.name}"`;
+        }
+        return 'Deal updated successfully';
+
+      case 'think':
+        return 'AI reasoning and planning completed';
+
+      default:
+        return 'Tool executed successfully';
+    }
+  };
+
+  // Enhanced: Show workflow steps in a user-friendly way
+  const renderWorkflowSteps = (result: any) => {
+    const steps = result?.workflow_steps;
+    if (!steps || !Array.isArray(steps) || steps.length === 0) {
+      return null;
+    }
+
+    return (
+      <Box mt={3} p={3} bg={useColorModeValue('blue.50', 'blue.900')} borderRadius="md" border="1px" borderColor={useColorModeValue('blue.200', 'blue.600')}>
+        <Text fontSize="sm" fontWeight="medium" mb={2} color="blue.600">
+          🔄 Workflow Steps
+        </Text>
+        <VStack align="stretch" spacing={1}>
+          {steps.slice(0, 5).map((step: any, index: number) => (
+            <HStack key={index} spacing={2} fontSize="xs">
+              <Text color={step.status === 'completed' ? 'green.500' : step.status === 'in_progress' ? 'blue.500' : 'red.500'}>
+                {step.status === 'completed' ? '✓' : step.status === 'in_progress' ? '⏳' : '✗'}
+              </Text>
+              <Text flex={1} color="gray.600">
+                {step.step?.replace(/_/g, ' ')?.replace(/\b\w/g, (l: string) => l.toUpperCase()) || 'Unknown Step'}
+              </Text>
+              <Badge size="xs" colorScheme={step.status === 'completed' ? 'green' : step.status === 'in_progress' ? 'blue' : 'red'}>
+                {step.status}
+              </Badge>
+            </HStack>
+          ))}
+          {steps.length > 5 && (
+            <Text fontSize="xs" color="gray.500" textAlign="center">
+              ... and {steps.length - 5} more steps
+            </Text>
+          )}
+        </VStack>
+      </Box>
+    );
+  };
+
   if (!toolExecutions || toolExecutions.length === 0) {
     return null;
   }
@@ -155,9 +240,12 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                     ) : (
                       <FiXCircle size={20} color={errorColor} />
                     )}
-                    <VStack align="start" spacing={0}>
+                    <VStack align="start" spacing={0} flex={1}>
                       <Text fontWeight="semibold" fontSize="sm">
-                        {tool.name}
+                        {tool.name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      </Text>
+                      <Text fontSize="sm" color="gray.600">
+                        {getToolSummary(tool)}
                       </Text>
                       <HStack spacing={2} fontSize="xs" color="gray.500">
                         <HStack spacing={1}>
@@ -188,44 +276,67 @@ const ToolExecutionPanel: React.FC<ToolExecutionPanelProps> = ({ toolExecutions 
                     borderColor={borderColor}
                   >
                     <VStack align="stretch" spacing={3}>
-                      {/* Input Parameters */}
-                      <Box>
-                        <Text fontWeight="medium" fontSize="sm" mb={2}>
-                          Input Parameters:
-                        </Text>
-                        <Code 
-                          display="block" 
-                          whiteSpace="pre-wrap" 
-                          p={2} 
-                          fontSize="xs"
-                          bg={codeBg}
-                        >
-                          {JSON.stringify(tool.input, null, 2)}
-                        </Code>
-                      </Box>
+                      {/* Enhanced: Show workflow steps if available */}
+                      {tool.status === 'SUCCESS' && tool.result && renderWorkflowSteps(tool.result)}
+
+                      {/* Enhanced: Show success message if available */}
+                      {tool.status === 'SUCCESS' && tool.result && (tool.result as any).message && (
+                        <Box p={3} bg="green.50" borderRadius="md" border="1px" borderColor="green.200">
+                          <Text fontSize="sm" color="green.800">
+                            ✅ {(tool.result as any).message}
+                          </Text>
+                        </Box>
+                      )}
 
                       <Divider />
 
-                      {/* Result or Error */}
+                      {/* Technical Details - collapsed by default */}
                       <Box>
-                        <Text fontWeight="medium" fontSize="sm" mb={2}>
-                          {tool.status === 'SUCCESS' ? 'Result:' : 'Error:'}
+                        <Text fontWeight="medium" fontSize="sm" mb={2} color="gray.600">
+                          🔧 Technical Details
                         </Text>
-                        <Code 
-                          display="block" 
-                          whiteSpace="pre-wrap" 
-                          p={2} 
-                          fontSize="xs"
-                          bg={codeBg}
-                          color={tool.status === 'ERROR' ? errorColor : undefined}
-                        >
-                          {tool.status === 'SUCCESS' 
-                            ? (typeof tool.result === 'string' 
-                                ? tool.result 
-                                : JSON.stringify(tool.result, null, 2))
-                            : tool.error
-                          }
-                        </Code>
+                        
+                        {/* Input Parameters */}
+                        <Box mb={3}>
+                          <Text fontWeight="medium" fontSize="sm" mb={2}>
+                            Input Parameters:
+                          </Text>
+                          <Code 
+                            display="block" 
+                            whiteSpace="pre-wrap" 
+                            p={2} 
+                            fontSize="xs"
+                            bg={codeBg}
+                            maxH="150px"
+                            overflow="auto"
+                          >
+                            {JSON.stringify(tool.input, null, 2)}
+                          </Code>
+                        </Box>
+
+                        {/* Result or Error */}
+                        <Box>
+                          <Text fontWeight="medium" fontSize="sm" mb={2}>
+                            {tool.status === 'SUCCESS' ? 'Raw Result:' : 'Error:'}
+                          </Text>
+                          <Code 
+                            display="block" 
+                            whiteSpace="pre-wrap" 
+                            p={2} 
+                            fontSize="xs"
+                            bg={codeBg}
+                            color={tool.status === 'ERROR' ? errorColor : undefined}
+                            maxH="200px"
+                            overflow="auto"
+                          >
+                            {tool.status === 'SUCCESS' 
+                              ? (typeof tool.result === 'string' 
+                                  ? tool.result 
+                                  : JSON.stringify(tool.result, null, 2))
+                              : tool.error
+                            }
+                          </Code>
+                        </Box>
                       </Box>
                     </VStack>
                   </Box>
