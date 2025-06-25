@@ -131,6 +131,7 @@ const loadTypeDefs = (): string => {
     'scalars.graphql', 
     'schema.graphql', 
     'smartStickers.graphql',
+    'tasks.graphql',
     'user.graphql', 
     'user_profile.graphql',
     'wfm_definitions.graphql',
