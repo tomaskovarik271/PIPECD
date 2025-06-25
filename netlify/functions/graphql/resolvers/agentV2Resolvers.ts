@@ -86,8 +86,8 @@ export const agentV2Resolvers = {
               };
             }),
             context: conv.context,
-            createdAt: conv.created_at,
-            updatedAt: conv.updated_at,
+            created_at: conv.created_at,
+            updated_at: conv.updated_at,
           };
         }));
       } catch (err) {
