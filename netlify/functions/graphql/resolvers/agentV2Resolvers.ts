@@ -46,8 +46,8 @@ export const agentV2Resolvers = {
 
           return {
             id: conv.id,
-            userId: conv.user_id,
-            agentVersion: conv.agent_version || 'v2',
+            user_id: conv.user_id,
+            agent_version: conv.agent_version,
             messages: (conv.messages || []).map((msg: any) => {
               // Filter thoughts that belong to this message (by timestamp proximity)
               const messageTime = new Date(msg.timestamp).getTime();

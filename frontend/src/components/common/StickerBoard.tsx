@@ -393,7 +393,7 @@ export const StickerBoard: React.FC<StickerBoardProps> = ({
       });
     });
     setStickerLayouts(layouts);
-  }, [stickers]);
+  }, [stickers.length, stickers.map(s => `${s.id}-${s.positionX}-${s.positionY}-${s.width}-${s.height}`).join(',')]); // Only update when stickers count or positions/sizes change
 
   // Debounced server updates to prevent excessive calls during drag operations
   const debouncedUpdatePosition = useDebounce((stickerId: string, position: Position) => {
