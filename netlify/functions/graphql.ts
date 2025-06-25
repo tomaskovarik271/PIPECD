@@ -72,6 +72,9 @@ import { currencyResolvers } from './graphql/resolvers/currency';
 // Import Conversion Resolvers
 import { conversionResolvers } from './graphql/resolvers/conversionResolvers';
 
+// Import Calendar Resolvers
+import { calendarResolvers } from './graphql/resolvers/calendarResolvers';
+
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
 
@@ -111,6 +114,7 @@ const loadTypeDefs = (): string => {
     'agentV2.graphql',
     'appSettings.graphql',
     'base.graphql', 
+    'calendar.graphql',
     'conversion.graphql',
     'currency.graphql',
     'customFields.graphql', 
@@ -181,6 +185,7 @@ export const resolvers = {
     ...appSettingsQueries,
     // Activity reminder resolvers removed - using Google Calendar integration instead
     ...currencyResolvers.Query,
+    ...calendarResolvers.Query,
   },
   Mutation: {
     ...BaseMutation,
@@ -200,6 +205,7 @@ export const resolvers = {
     ...userMutations,
     // Activity reminder resolvers removed - using Google Calendar integration instead
     ...currencyResolvers.Mutation,
+    ...calendarResolvers.Mutation,
   },
   Person,
   Deal: {
@@ -228,6 +234,7 @@ export const resolvers = {
   AgentThought: {
     ...agentV2Resolvers.AgentThought,
   },
+  CalendarEvent: calendarResolvers.CalendarEvent,
 
 }; 
 

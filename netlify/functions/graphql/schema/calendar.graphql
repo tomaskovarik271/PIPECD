@@ -1,0 +1,297 @@
+# Google Calendar Integration Schema
+
+# ===== TYPES =====
+
+type CalendarEvent {
+  id: ID!
+  googleEventId: String!
+  googleCalendarId: String!
+  
+  # Event Details
+  title: String!
+  description: String
+  startTime: DateTime!
+  endTime: DateTime!
+  isAllDay: Boolean!
+  timezone: String!
+  location: String
+  googleMeetLink: String
+  
+  # CRM Context
+  deal: Deal
+  person: Person
+  organization: Organization
+  eventType: CalendarEventType!
+  
+  # Meeting Outcome
+  outcome: CalendarEventOutcome
+  outcomeNotes: String
+  nextActions: [String!]
+  
+  # Status
+  isCancelled: Boolean!
+  
+  # Attendees
+  attendees: [CalendarAttendee!]
+  
+  # Metadata
+  lastSyncedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type CalendarAttendee {
+  email: String!
+  displayName: String
+  responseStatus: CalendarResponseStatus!
+}
+
+type GoogleCalendar {
+  id: String!
+  summary: String!
+  description: String
+  timeZone: String!
+  colorId: String
+  backgroundColor: String
+  foregroundColor: String
+  primary: Boolean
+  accessRole: String!
+}
+
+type CalendarPreferences {
+  id: ID!
+  
+  # Calendar Configuration
+  primaryCalendarId: String
+  businessCalendarId: String
+  autoSyncEnabled: Boolean!
+  
+  # Meeting Preferences
+  defaultMeetingDuration: Int!
+  defaultBufferTime: Int!
+  defaultLocation: String!
+  autoAddGoogleMeet: Boolean!
+  
+  # Deal Context Integration
+  includeDealContext: Boolean!
+  autoAddDealParticipants: Boolean!
+  
+  # Sync Configuration
+  syncPastDays: Int!
+  syncFutureDays: Int!
+  
+  # Working Hours
+  workingHours: JSON!
+  reminderPreferences: JSON!
+  
+  # Metadata
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type CalendarSyncStatus {
+  lastSyncAt: DateTime
+  nextSyncAt: DateTime
+  isConnected: Boolean!
+  hasSyncErrors: Boolean!
+  errorMessage: String
+  eventsCount: Int!
+  syncDuration: Int
+}
+
+type AvailabilitySlot {
+  start: DateTime!
+  end: DateTime!
+  available: Boolean!
+}
+
+# ===== ENUMS =====
+
+enum CalendarEventType {
+  MEETING
+  DEMO
+  CALL
+  PROPOSAL_PRESENTATION
+  CONTRACT_REVIEW
+  FOLLOW_UP
+  CHECK_IN
+  INTERNAL
+}
+
+enum CalendarEventOutcome {
+  COMPLETED
+  RESCHEDULED
+  NO_SHOW
+  CANCELLED
+}
+
+enum CalendarResponseStatus {
+  NEEDS_ACTION
+  DECLINED
+  TENTATIVE
+  ACCEPTED
+}
+
+enum CalendarSyncAction {
+  FULL_SYNC
+  INCREMENTAL_SYNC
+  CREATE_EVENT
+  UPDATE_EVENT
+  DELETE_EVENT
+  ADD_CRM_CONTEXT
+}
+
+# ===== INPUTS =====
+
+input CreateCalendarEventInput {
+  # Event Details
+  title: String!
+  description: String
+  startDateTime: DateTime!
+  endDateTime: DateTime!
+  timezone: String
+  location: String
+  addGoogleMeet: Boolean
+  
+  # CRM Context
+  dealId: ID
+  personId: ID
+  organizationId: ID
+  eventType: CalendarEventType
+  
+  # Attendees
+  attendeeEmails: [String!]
+  
+  # Reminders
+  reminders: [CalendarReminderInput!]
+  
+  # Calendar Selection
+  calendarId: String
+}
+
+input UpdateCalendarEventInput {
+  title: String
+  description: String
+  startDateTime: DateTime
+  endDateTime: DateTime
+  timezone: String
+  location: String
+  addGoogleMeet: Boolean
+  attendeeEmails: [String!]
+  reminders: [CalendarReminderInput!]
+  
+  # Meeting Outcome
+  outcome: CalendarEventOutcome
+  outcomeNotes: String
+  nextActions: [String!]
+}
+
+input CalendarReminderInput {
+  method: CalendarReminderMethod!
+  minutes: Int!
+}
+
+input CalendarPreferencesInput {
+  primaryCalendarId: String
+  businessCalendarId: String
+  autoSyncEnabled: Boolean
+  defaultMeetingDuration: Int
+  defaultBufferTime: Int
+  defaultLocation: String
+  autoAddGoogleMeet: Boolean
+  includeDealContext: Boolean
+  autoAddDealParticipants: Boolean
+  syncPastDays: Int
+  syncFutureDays: Int
+  workingHours: JSON
+  reminderPreferences: JSON
+}
+
+input CalendarTimeRangeInput {
+  start: DateTime!
+  end: DateTime!
+}
+
+enum CalendarReminderMethod {
+  EMAIL
+  POPUP
+}
+
+# ===== QUERIES =====
+
+extend type Query {
+  # Calendar Events
+  calendarEvents(
+    calendarId: String
+    timeRange: CalendarTimeRangeInput
+    dealId: ID
+    personId: ID
+    organizationId: ID
+    eventType: CalendarEventType
+    limit: Int
+    offset: Int
+  ): [CalendarEvent!]!
+  
+  calendarEvent(id: ID!): CalendarEvent
+  
+  # Calendar Management
+  googleCalendars: [GoogleCalendar!]!
+  calendarPreferences: CalendarPreferences
+  calendarSyncStatus: CalendarSyncStatus!
+  
+  # Availability
+  checkAvailability(
+    timeRange: CalendarTimeRangeInput!
+    calendarIds: [String!]
+  ): [AvailabilitySlot!]!
+  
+  # CRM Integration
+  dealCalendarEvents(dealId: ID!): [CalendarEvent!]!
+  upcomingMeetings(
+    days: Int = 7
+    limit: Int = 10
+  ): [CalendarEvent!]!
+}
+
+# ===== MUTATIONS =====
+
+extend type Mutation {
+  # Calendar Event Management
+  createCalendarEvent(input: CreateCalendarEventInput!): CalendarEvent!
+  updateCalendarEvent(id: ID!, input: UpdateCalendarEventInput!): CalendarEvent!
+  deleteCalendarEvent(id: ID!): Boolean!
+  
+  # Quick Actions
+  scheduleFollowUpMeeting(
+    dealId: ID!
+    title: String!
+    duration: Int = 30
+    suggestedTime: DateTime
+  ): CalendarEvent!
+  
+  scheduleDemoMeeting(
+    dealId: ID!
+    title: String!
+    duration: Int = 60
+    attendeeEmails: [String!]!
+    suggestedTime: DateTime
+  ): CalendarEvent!
+  
+  # Bulk Operations
+  syncCalendarEvents(
+    calendarId: String
+    fullSync: Boolean = false
+  ): CalendarSyncStatus!
+  
+  # Preferences
+  updateCalendarPreferences(input: CalendarPreferencesInput!): CalendarPreferences!
+  
+  # CRM Context
+  addDealContextToEvent(
+    eventId: ID!
+    dealId: ID!
+    eventType: CalendarEventType
+  ): CalendarEvent!
+  
+  removeDealContextFromEvent(eventId: ID!): CalendarEvent!
+} 
