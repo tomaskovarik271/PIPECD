@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, gql } from '@apollo/client';
 import {
   Box,
   VStack,
   HStack,
   Text,
-  Card,
   Badge,
   Icon,
   Flex,
@@ -14,7 +13,6 @@ import {
   Spinner,
   Alert,
   AlertIcon,
-  Divider,
   useColorModeValue,
   Tabs,
   TabList,
@@ -24,8 +22,7 @@ import {
   IconButton,
   Tooltip,
   useToast,
-  Collapse,
-  Heading
+  Collapse
 } from '@chakra-ui/react';
 import {
   FiCalendar,
@@ -37,12 +34,12 @@ import {
   FiAlertCircle,
   FiPlus,
   FiRefreshCw,
-  FiUsers,
   FiChevronDown,
   FiChevronRight
 } from 'react-icons/fi';
 import { format, isToday, isPast, isFuture } from 'date-fns';
 import { GET_DEAL_CALENDAR_EVENTS } from '../../lib/graphql/calendarOperations';
+import { ScheduleMeetingModal } from '../calendar/ScheduleMeetingModal';
 import { Deal } from '../../stores/useDealsStore';
 
 const SYNC_CALENDAR_EVENTS = gql`
@@ -59,7 +56,6 @@ const SYNC_CALENDAR_EVENTS = gql`
 
 interface DealTimelinePanelProps {
   deal: Deal;
-  onUpcomingEventsCountChange?: (count: number) => void;
 }
 
 interface TimelineEvent {
@@ -85,8 +81,9 @@ interface TimelineEvent {
   isCancelled: boolean;
 }
 
-export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUpcomingEventsCountChange }) => {
+export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) => {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'all'>('month');
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isCancelledExpanded, setIsCancelledExpanded] = useState(false);
   const toast = useToast();
 
@@ -217,36 +214,22 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
 
   const { overdue, today, upcoming, past, cancelled } = processEvents();
 
-  // Notify parent component about upcoming events count
-  useEffect(() => {
-    if (onUpcomingEventsCountChange) {
-      onUpcomingEventsCountChange(upcoming.length);
-    }
-  }, [upcoming.length, onUpcomingEventsCountChange]);
-
   const renderEvent = (event: TimelineEvent) => {
     const startTime = new Date(event.startTime);
     const endTime = event.endTime ? new Date(event.endTime) : undefined;
     
-    const getEventBg = () => {
-      if (event.isCancelled) return useColorModeValue('gray.50', 'gray.800');
-      if (isToday(startTime)) return useColorModeValue('green.25', 'green.900');
-      if (isPast(endTime || startTime)) return useColorModeValue('gray.25', 'gray.750');
-      return useColorModeValue('blue.25', 'blue.900');
-    };
-
     const getStatusIcon = () => {
       switch (event.status) {
         case 'completed':
-          return <Icon as={FiCheckCircle} color="green.400" boxSize={4} />;
+          return <Icon as={FiCheckCircle} color="green.500" boxSize={3} />;
         case 'overdue':
-          return <Icon as={FiAlertCircle} color="red.400" boxSize={4} />;
+          return <Icon as={FiAlertCircle} color="red.500" boxSize={3} />;
         case 'in_progress':
-          return <Icon as={FiClock} color="orange.400" boxSize={4} />;
+          return <Icon as={FiClock} color="orange.500" boxSize={3} />;
         case 'cancelled':
-          return <Icon as={FiAlertCircle} color="gray.400" boxSize={4} />;
+          return <Icon as={FiAlertCircle} color="gray.400" boxSize={3} />;
         default:
-          return <Icon as={FiCalendar} color="blue.400" boxSize={4} />;
+          return <Icon as={FiCalendar} color="blue.500" boxSize={3} />;
       }
     };
 
@@ -261,127 +244,83 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
       }
     };
 
-    const getBorderColor = () => {
-      if (event.isCancelled) return 'gray.300';
-      if (event.status === 'completed') return 'green.300';
-      if (event.status === 'overdue') return 'red.300';
-      if (isToday(startTime)) return 'green.300';
-      return 'blue.300';
-    };
-
     return (
       <Box
         key={event.id}
-        p={4}
-        bg={getEventBg()}
+        p={3}
+        bg={cardBg}
         border="1px solid"
-        borderColor={useColorModeValue('gray.200', 'gray.600')}
-        borderLeft="3px solid"
-        borderLeftColor={getBorderColor()}
+        borderColor={borderColor}
         borderRadius="md"
-        _hover={{
-          borderColor: useColorModeValue('gray.300', 'gray.500'),
-          bg: useColorModeValue('gray.50', 'gray.700')
-        }}
-        transition="all 0.2s"
+        borderLeft="3px solid"
+        borderLeftColor={event.status === 'completed' ? 'green.400' : event.status === 'overdue' ? 'red.400' : event.status === 'cancelled' ? 'gray.400' : 'blue.400'}
+        _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
+        transition="background-color 0.2s"
       >
-        <VStack align="stretch" spacing={3}>
-          {/* Header */}
-          <HStack justify="space-between">
-            <HStack>
-              {getStatusIcon()}
-              <Text fontWeight="semibold" fontSize="sm" color={useColorModeValue('gray.700', 'gray.200')}>
-                {event.title}
-              </Text>
-            </HStack>
-            {event.eventType && (
-              <Badge colorScheme={getEventTypeColor(event.eventType)} size="sm" variant="subtle">
-                {event.eventType.replace('_', ' ')}
-              </Badge>
-            )}
-          </HStack>
-
-          {/* Description */}
-          {event.description && (
-            <Text fontSize="xs" color={useColorModeValue('gray.600', 'gray.400')} noOfLines={2}>
-              {event.description}
+        {/* Header Row */}
+        <HStack justify="space-between" mb={2}>
+          <HStack spacing={2}>
+            {getStatusIcon()}
+            <Text fontWeight="semibold" fontSize="sm">
+              {event.title}
             </Text>
+            {isToday(startTime) && <Badge colorScheme="green" size="sm">TODAY</Badge>}
+          </HStack>
+          {event.eventType && (
+            <Badge colorScheme={getEventTypeColor(event.eventType)} size="sm" fontSize="xs">
+              {event.eventType.replace('_', ' ')}
+            </Badge>
+          )}
+        </HStack>
+
+        {/* Time Row */}
+        <HStack spacing={2} mb={2} fontSize="sm" color="gray.600">
+          <Icon as={FiClock} boxSize={3} />
+          <Text>
+            {format(startTime, 'MMM dd, HH:mm')}
+            {endTime && ` - ${format(endTime, 'HH:mm')}`}
+          </Text>
+        </HStack>
+
+        {/* Details Row */}
+        <HStack spacing={4} fontSize="sm" color="gray.600" wrap="wrap">
+          {event.person && (
+            <HStack spacing={1}>
+              <Icon as={FiUser} boxSize={3} />
+              <Text>{event.person.first_name} {event.person.last_name}</Text>
+            </HStack>
+          )}
+          
+          {event.location && (
+            <HStack spacing={1}>
+              <Icon as={FiMapPin} boxSize={3} />
+              <Text>{event.location}</Text>
+            </HStack>
           )}
 
-          {/* Time and Details */}
-          <VStack spacing={1} align="start" fontSize="xs">
-            <HStack>
-              <Icon as={FiClock} color="gray.500" boxSize={3} />
-              <Text color={useColorModeValue('gray.600', 'gray.400')}>
-                {format(startTime, 'MMM dd, yyyy HH:mm')}
-                {endTime && ` - ${format(endTime, 'HH:mm')}`}
-                {isToday(startTime) && <Badge ml={2} colorScheme="green" size="sm">TODAY</Badge>}
+          {event.googleMeetLink && (
+            <HStack spacing={1}>
+              <Icon as={FiVideo} color="blue.500" boxSize={3} />
+              <Text
+                as="a"
+                href={event.googleMeetLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                color="blue.600"
+                _hover={{ textDecoration: 'underline' }}
+              >
+                Google Meet
               </Text>
             </HStack>
-
-            {event.location && (
-              <HStack>
-                <Icon as={FiMapPin} color="gray.500" boxSize={3} />
-                <Text color={useColorModeValue('gray.600', 'gray.400')} noOfLines={1}>{event.location}</Text>
-              </HStack>
-            )}
-
-            {event.googleMeetLink && (
-              <HStack>
-                <Icon as={FiVideo} color="blue.500" boxSize={3} />
-                <Text
-                  as="a"
-                  href={event.googleMeetLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  color="blue.600"
-                  _hover={{ textDecoration: 'underline' }}
-                  fontSize="xs"
-                >
-                  Join Google Meet
-                </Text>
-              </HStack>
-            )}
-
-            {event.person && (
-              <HStack>
-                <Icon as={FiUser} color="gray.500" boxSize={3} />
-                <Text color={useColorModeValue('gray.600', 'gray.400')}>
-                  with {event.person.first_name} {event.person.last_name}
-                </Text>
-              </HStack>
-            )}
-          </VStack>
-
-          {/* Outcome and Next Actions - Simplified */}
-          {(event.outcome || event.nextActions?.length) && (
-            <Box>
-              <Divider borderColor={useColorModeValue('gray.200', 'gray.600')} />
-              <VStack align="stretch" spacing={1} mt={2}>
-                {event.outcome && (
-                  <Box>
-                    <Text fontSize="xs" fontWeight="semibold" color={useColorModeValue('gray.600', 'gray.400')} mb={1}>
-                      Outcome:
-                    </Text>
-                    <Text fontSize="xs" color={useColorModeValue('gray.700', 'gray.300')} noOfLines={2}>{event.outcome}</Text>
-                  </Box>
-                )}
-                
-                {event.nextActions && event.nextActions.length > 0 && (
-                  <Box>
-                    <Text fontSize="xs" fontWeight="semibold" color={useColorModeValue('gray.600', 'gray.400')} mb={1}>
-                      Next actions:
-                    </Text>
-                    <Text fontSize="xs" color={useColorModeValue('gray.700', 'gray.300')} noOfLines={2}>
-                      • {event.nextActions.slice(0, 2).join(' • ')}
-                      {event.nextActions.length > 2 && ` +${event.nextActions.length - 2} more`}
-                    </Text>
-                  </Box>
-                )}
-              </VStack>
-            </Box>
           )}
-        </VStack>
+        </HStack>
+
+        {/* Description */}
+        {event.description && (
+          <Text fontSize="sm" color="gray.600" mt={2} noOfLines={2}>
+            {event.description}
+          </Text>
+        )}
       </Box>
     );
   };
@@ -397,25 +336,18 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
 
   return (
     <VStack spacing={6} align="stretch">
-      {/* Header */}
-      <Flex 
-        justify="space-between" 
-        align="center" 
-        mb={6}
-        wrap="wrap"
-        gap={4}
-      >
-        <Heading size="md" color="gray.600">
+      {/* Header with Controls */}
+      <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
+        <Text fontSize="lg" fontWeight="bold">
           Deal Timeline & Activities
-        </Heading>
+        </Text>
         
         <HStack spacing={3}>
           <Select
             size="sm"
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value as any)}
-            variant="outline"
-            w="180px"
+            width="auto"
           >
             <option value="week">Past & Next Week</option>
             <option value="month">Past & Next Month</option>
@@ -451,36 +383,34 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
       )}
 
       {/* Timeline Content */}
-      <Tabs variant="enclosed" colorScheme="blue">
+      <Tabs variant="soft-rounded" colorScheme="blue">
         <TabList>
           <Tab>
+            <Icon as={FiCalendar} mr={2} />
             All Events
             <Badge ml={2} variant="subtle">
               {overdue.length + today.length + upcoming.length + past.length + cancelled.length}
             </Badge>
           </Tab>
           <Tab>
+            <Icon as={FiClock} mr={2} />
             Upcoming
             <Badge ml={2} colorScheme="blue" variant="subtle">
               {upcoming.length}
             </Badge>
           </Tab>
           <Tab>
+            <Icon as={FiCheckCircle} mr={2} />
             Today
             <Badge ml={2} colorScheme="green" variant="subtle">
               {today.length}
             </Badge>
           </Tab>
           <Tab>
+            <Icon as={FiCheckCircle} mr={2} />
             Past
             <Badge ml={2} variant="subtle">
               {past.length}
-            </Badge>
-          </Tab>
-          <Tab>
-            Cancelled
-            <Badge ml={2} variant="subtle">
-              {cancelled.length}
             </Badge>
           </Tab>
         </TabList>
@@ -488,17 +418,17 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
         <TabPanels>
           {/* All Events */}
           <TabPanel p={0} pt={6}>
-            <VStack spacing={6} align="stretch">
+            <VStack spacing={4} align="stretch">
               {/* Overdue Section */}
               {overdue.length > 0 && (
                 <Box>
-                  <HStack mb={4}>
-                    <Icon as={FiAlertCircle} color="red.500" />
-                    <Text fontWeight="bold" color="red.500">
+                  <HStack mb={3}>
+                    <Icon as={FiAlertCircle} color="red.500" boxSize={4} />
+                    <Text fontWeight="semibold" color="red.500" fontSize="sm">
                       Overdue ({overdue.length})
                     </Text>
                   </HStack>
-                  <VStack spacing={3} align="stretch">
+                  <VStack spacing={2} align="stretch">
                     {overdue.map(renderEvent)}
                   </VStack>
                 </Box>
@@ -507,13 +437,13 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
               {/* Today Section */}
               {today.length > 0 && (
                 <Box>
-                  <HStack mb={4}>
-                    <Icon as={FiClock} color="green.500" />
-                    <Text fontWeight="bold" color="green.500">
+                  <HStack mb={3}>
+                    <Icon as={FiClock} color="green.500" boxSize={4} />
+                    <Text fontWeight="semibold" color="green.500" fontSize="sm">
                       Today ({today.length})
                     </Text>
                   </HStack>
-                  <VStack spacing={3} align="stretch">
+                  <VStack spacing={2} align="stretch">
                     {today.map(renderEvent)}
                   </VStack>
                 </Box>
@@ -522,13 +452,13 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
               {/* Upcoming Section */}
               {upcoming.length > 0 && (
                 <Box>
-                  <HStack mb={4}>
-                    <Icon as={FiCalendar} color="blue.500" />
-                    <Text fontWeight="bold" color="blue.500">
+                  <HStack mb={3}>
+                    <Icon as={FiCalendar} color="blue.500" boxSize={4} />
+                    <Text fontWeight="semibold" color="blue.500" fontSize="sm">
                       Upcoming ({upcoming.length})
                     </Text>
                   </HStack>
-                  <VStack spacing={3} align="stretch">
+                  <VStack spacing={2} align="stretch">
                     {upcoming.map(renderEvent)}
                   </VStack>
                 </Box>
@@ -537,16 +467,16 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
               {/* Past Section */}
               {past.length > 0 && (
                 <Box>
-                  <HStack mb={4}>
-                    <Icon as={FiCheckCircle} color="gray.500" />
-                    <Text fontWeight="bold" color="gray.500">
+                  <HStack mb={3}>
+                    <Icon as={FiCheckCircle} color="gray.500" boxSize={4} />
+                    <Text fontWeight="semibold" color="gray.500" fontSize="sm">
                       Completed ({past.length})
                     </Text>
                   </HStack>
-                  <VStack spacing={3} align="stretch">
+                  <VStack spacing={2} align="stretch">
                     {past.slice(0, 10).map(renderEvent)}
                     {past.length > 10 && (
-                      <Text fontSize="sm" color="gray.500" textAlign="center">
+                      <Text fontSize="xs" color="gray.500" textAlign="center" mt={2}>
                         ... and {past.length - 10} more past events
                       </Text>
                     )}
@@ -558,7 +488,7 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
               {cancelled.length > 0 && (
                 <Box>
                   <HStack
-                    mb={4}
+                    mb={3}
                     cursor="pointer"
                     onClick={() => setIsCancelledExpanded(!isCancelledExpanded)}
                     _hover={{ bg: 'gray.50' }}
@@ -569,21 +499,22 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
                     <Icon 
                       as={isCancelledExpanded ? FiChevronDown : FiChevronRight} 
                       color="gray.500" 
+                      boxSize={3}
                     />
-                    <Icon as={FiAlertCircle} color="gray.500" />
-                    <Text fontWeight="bold" color="gray.500">
+                    <Icon as={FiAlertCircle} color="gray.500" boxSize={4} />
+                    <Text fontWeight="semibold" color="gray.500" fontSize="sm">
                       Cancelled ({cancelled.length})
                     </Text>
-                    <Text fontSize="sm" color="gray.400" ml="auto">
+                    <Text fontSize="xs" color="gray.400" ml="auto">
                       {isCancelledExpanded ? 'Click to hide' : 'Click to show'}
                     </Text>
                   </HStack>
                   
                   <Collapse in={isCancelledExpanded} animateOpacity>
-                    <VStack spacing={3} align="stretch">
+                    <VStack spacing={2} align="stretch">
                       {cancelled.slice(0, 10).map(renderEvent)}
                       {cancelled.length > 10 && (
-                        <Text fontSize="sm" color="gray.500" textAlign="center">
+                        <Text fontSize="xs" color="gray.500" textAlign="center" mt={2}>
                           ... and {cancelled.length - 10} more cancelled events
                         </Text>
                       )}
@@ -600,17 +531,14 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
                     No timeline events yet
                   </Text>
                   <Text color="gray.500" mb={6}>
-                    Create your first meeting in Google Calendar
+                    Schedule your first meeting with this deal to get started
                   </Text>
                   <Button
-                    as="a"
-                    href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=Meeting: ${deal.name}&details=Meeting regarding deal: ${deal.name}${deal.person ? ` with ${deal.person.first_name} ${deal.person.last_name}` : ''}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
                     leftIcon={<FiPlus />}
                     colorScheme="blue"
+                    onClick={() => setIsScheduleModalOpen(true)}
                   >
-                    Open Google Calendar
+                    Schedule Meeting
                   </Button>
                 </Box>
               )}
@@ -620,7 +548,7 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
           {/* Upcoming Tab */}
           <TabPanel p={0} pt={6}>
             {upcoming.length > 0 ? (
-              <VStack spacing={3} align="stretch">
+              <VStack spacing={2} align="stretch">
                 {upcoming.map(renderEvent)}
               </VStack>
             ) : (
@@ -636,7 +564,7 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
           {/* Today Tab */}
           <TabPanel p={0} pt={6}>
             {today.length > 0 ? (
-              <VStack spacing={3} align="stretch">
+              <VStack spacing={2} align="stretch">
                 {today.map(renderEvent)}
               </VStack>
             ) : (
@@ -652,10 +580,10 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
           {/* Past Tab */}
           <TabPanel p={0} pt={6}>
             {past.length > 0 ? (
-              <VStack spacing={3} align="stretch">
+              <VStack spacing={2} align="stretch">
                 {past.slice(0, 20).map(renderEvent)}
                 {past.length > 20 && (
-                  <Text fontSize="sm" color="gray.500" textAlign="center">
+                  <Text fontSize="xs" color="gray.500" textAlign="center" mt={4}>
                     Showing 20 most recent past events of {past.length} total
                   </Text>
                 )}
@@ -669,29 +597,15 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal, onUp
               </Box>
             )}
           </TabPanel>
-
-          {/* Cancelled Tab */}
-          <TabPanel p={0} pt={6}>
-            {cancelled.length > 0 ? (
-              <VStack spacing={3} align="stretch">
-                {cancelled.slice(0, 20).map(renderEvent)}
-                {cancelled.length > 20 && (
-                  <Text fontSize="sm" color="gray.500" textAlign="center">
-                    Showing 20 most recent cancelled events of {cancelled.length} total
-                  </Text>
-                )}
-              </VStack>
-            ) : (
-              <Box textAlign="center" py={8}>
-                <Icon as={FiAlertCircle} size="2em" color="gray.400" />
-                <Text color="gray.500" mt={2}>
-                  No cancelled meetings found
-                </Text>
-              </Box>
-            )}
-          </TabPanel>
         </TabPanels>
       </Tabs>
+
+      {/* Schedule Meeting Modal */}
+      <ScheduleMeetingModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        deal={deal}
+      />
     </VStack>
   );
 }; 

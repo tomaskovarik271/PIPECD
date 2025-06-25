@@ -68,7 +68,7 @@ import {
   SmallCloseIcon
 } from '@chakra-ui/icons';
 import { FaClipboardList, FaPhone } from 'react-icons/fa';
-import { FiClock, FiMail, FiFolder, FiUsers, FiFileText } from 'react-icons/fi';
+import { FiClock } from 'react-icons/fi';
 import type { CustomFieldEntityType } from '../generated/graphql/graphql';
 
 // Store imports
@@ -94,6 +94,7 @@ import { DealNotesPanel } from '../components/dealDetail/DealNotesPanel';
 import { DealTimelinePanel } from '../components/dealDetail/DealTimelinePanel';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
+import { ScheduleMeetingModal } from '../components/calendar/ScheduleMeetingModal';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 
 // Type imports
@@ -164,9 +165,6 @@ const DealDetailPage = () => {
   // Sticky notes count state for tab display
   const [stickyNotesCount, setStickyNotesCount] = useState(0);
   
-  // Upcoming events count state for tab display
-  const [upcomingEventsCount, setUpcomingEventsCount] = useState(0);
-  
   // State for inline editing in right sidebar
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [newAmount, setNewAmount] = useState<string>('');
@@ -178,7 +176,8 @@ const DealDetailPage = () => {
   // State for collapsible custom fields
   const [isCustomFieldsExpanded, setIsCustomFieldsExpanded] = useState(true);
   
-
+  // State for schedule meeting modal
+  const [isScheduleMeetingModalOpen, setIsScheduleMeetingModalOpen] = useState(false);
   
   // Memoize callbacks to prevent infinite re-renders
   const handleStickyNotesCountChange = useCallback((count: number) => {
@@ -189,13 +188,9 @@ const DealDetailPage = () => {
     setDocumentCount(count);
   }, []);
   
-  const handleContactsCountChange = (count: number) => {
+  const handleContactsCountChange = useCallback((count: number) => {
     setContactsCount(count);
-  };
-
-  const handleUpcomingEventsCountChange = (count: number) => {
-    setUpcomingEventsCount(count);
-  };
+  }, []);
 
   const { isOpen: isEditDealModalOpen, onOpen: onEditDealModalOpen, onClose: onEditDealModalClose } = useDisclosure();
 
@@ -486,23 +481,14 @@ const DealDetailPage = () => {
                       <HStack spacing={2}>
                         <Icon as={FiClock} />
                         <Text>Timeline</Text>
-                        {upcomingEventsCount > 0 && (
-                          <Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
-                            {upcomingEventsCount}
-                          </Badge>
-                        )}
                       </HStack>
                     </Tab>
                     {/* Activities tab removed - using Google Calendar integration instead */}
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                      <HStack spacing={2}>
-                        <Icon as={FiMail} />
-                        <Text>Emails</Text>
-                      </HStack>
+                      Emails
                     </Tab>
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                       <HStack spacing={2}>
-                        <Icon as={FiFolder} />
                         <Text>Documents</Text>
                         <Badge colorScheme="green" variant="solid" borderRadius="full" fontSize="xs">
                           {documentCount}
@@ -511,7 +497,6 @@ const DealDetailPage = () => {
                     </Tab>
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                       <HStack spacing={2}>
-                        <Icon as={FiUsers} />
                         <Text>Contacts</Text>
                         <Badge colorScheme="purple" variant="solid" borderRadius="full" fontSize="xs">
                           {contactsCount}
@@ -519,10 +504,7 @@ const DealDetailPage = () => {
                       </HStack>
                     </Tab>
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
-                      <HStack spacing={2}>
-                        <Icon as={FiFileText} />
-                        <Text>History</Text>
-                      </HStack>
+                      History
                     </Tab>
                   </TabList>
                 
@@ -538,10 +520,7 @@ const DealDetailPage = () => {
                     
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
-                        <DealTimelinePanel 
-                          deal={currentDeal as Deal} 
-                          onUpcomingEventsCountChange={handleUpcomingEventsCountChange}
-                        />
+                        <DealTimelinePanel deal={currentDeal as Deal} />
                       </Box>
                     </TabPanel>
                   
@@ -867,13 +846,10 @@ const DealDetailPage = () => {
                   {/* Schedule Meeting Button */}
                   <Box pt={4}>
                     <Button
-                      as="a"
-                      href={`https://calendar.google.com/calendar/render?action=TEMPLATE&text=Meeting: ${currentDeal.name}&details=Meeting regarding deal: ${currentDeal.name}${currentDeal.person ? ` with ${currentDeal.person.first_name} ${currentDeal.person.last_name}` : ''}${currentDeal.organization ? `. Organization: ${currentDeal.organization.name}` : ''}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       leftIcon={<CalendarIcon />}
                       colorScheme="blue"
                       size="md"
+                      onClick={() => setIsScheduleMeetingModalOpen(true)}
                       width="100%"
                       variant="solid"
                     >
@@ -1026,6 +1002,15 @@ const DealDetailPage = () => {
           onClose={onEditDealModalClose}
           deal={currentDeal}
           onDealUpdated={handleDealUpdated}
+        />
+      )}
+
+      {/* Schedule Meeting Modal */}
+      {isScheduleMeetingModalOpen && (
+        <ScheduleMeetingModal
+          isOpen={isScheduleMeetingModalOpen}
+          onClose={() => setIsScheduleMeetingModalOpen(false)}
+          deal={currentDeal}
         />
       )}
     </Box>

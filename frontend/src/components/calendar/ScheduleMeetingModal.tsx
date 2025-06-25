@@ -14,6 +14,7 @@ import {
   Icon,
   useToast,
   Divider,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { FiExternalLink, FiCalendar, FiRefreshCw } from 'react-icons/fi';
 import { useMutation, gql } from '@apollo/client';
@@ -45,6 +46,11 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
   const toast = useToast();
   const [isCalendarOpened, setIsCalendarOpened] = useState(false);
   const [syncCalendarEvents, { loading: syncLoading }] = useMutation(SYNC_CALENDAR_EVENTS);
+
+  // Theme-aware colors
+  const bgColor = useColorModeValue('gray.50', 'gray.700');
+  const textColor = useColorModeValue('gray.800', 'gray.100');
+  const labelColor = useColorModeValue('gray.700', 'gray.300');
 
   // Helper function to format dates for Google Calendar
   const formatGoogleCalendarDate = (date: Date): string => {
@@ -200,11 +206,11 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
               📅 {deal.name}
             </Text>
             
-            <VStack spacing={3} align="stretch" bg="gray.50" p={4} borderRadius="md">
-              <Text fontSize="sm" color="gray.600">
+            <VStack spacing={3} align="stretch" bg={bgColor} p={4} borderRadius="md">
+              <Text fontSize="sm" color={textColor} fontWeight="medium">
                 Pre-filled meeting details:
               </Text>
-              <VStack spacing={1} align="stretch" fontSize="sm">
+              <VStack spacing={2} align="stretch" fontSize="sm" color={textColor}>
                 <Text><strong>Title:</strong> Meeting: {deal.name}</Text>
                 <Text><strong>Default time:</strong> {getFormattedDateTime()}</Text>
                 <Text><strong>Attendees:</strong> {deal.person?.email || 'None specified'}</Text>
@@ -212,7 +218,7 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
               </VStack>
             </VStack>
 
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="sm" color={labelColor}>
               This will open Google Calendar with all the deal information pre-filled. 
               You can adjust the time, add more attendees, and customize the meeting as needed.
             </Text>
@@ -234,30 +240,35 @@ export const ScheduleMeetingModal: React.FC<ScheduleMeetingModalProps> = ({
         </ModalBody>
 
         <ModalFooter>
-          <Button variant="ghost" mr={3} onClick={onClose}>
-            Cancel
-          </Button>
-          
-          {isCalendarOpened && (
-            <Button
-              colorScheme="green"
-              onClick={handleSyncEvents}
-              leftIcon={<FiRefreshCw />}
-              isLoading={syncLoading}
-              loadingText="Syncing..."
-              mr={3}
-            >
-              Sync Events
+          <HStack spacing={3} width="100%" justify="flex-end">
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
             </Button>
-          )}
-          
-          <Button
-            colorScheme="blue"
-            onClick={handleOpenGoogleCalendar}
-            leftIcon={<FiExternalLink />}
-          >
-            Open Google Calendar
-          </Button>
+            
+            {isCalendarOpened && (
+              <Button
+                colorScheme="green"
+                onClick={handleSyncEvents}
+                leftIcon={<FiRefreshCw />}
+                isLoading={syncLoading}
+                loadingText="Syncing..."
+                size="md"
+              >
+                Sync Events
+              </Button>
+            )}
+            
+            {!isCalendarOpened && (
+              <Button
+                colorScheme="blue"
+                onClick={handleOpenGoogleCalendar}
+                leftIcon={<FiExternalLink />}
+                size="md"
+              >
+                Open Google Calendar
+              </Button>
+            )}
+          </HStack>
         </ModalFooter>
       </ModalContent>
     </Modal>
