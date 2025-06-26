@@ -840,4 +840,142 @@ read_only -- 7 permissions (view-only access)
 
 ---
 
-*This guide represents the complete state of PipeCD after the testing stack redesign and comprehensive system analysis. All migration files (78 total) and service implementations have been analyzed for accuracy and completeness.*
+## NETLIFY FUNCTIONS BACKEND ARCHITECTURE
+
+### GraphQL API Server (netlify/functions/graphql.ts - 349 lines)
+**Comprehensive GraphQL Server Implementation**
+- **GraphQL Yoga**: Modern GraphQL server with advanced features
+- **Authentication Integration**: Supabase OAuth with JWT validation
+- **Schema Composition**: 24 GraphQL schema files with modular design
+- **Resolver Integration**: Comprehensive resolver system with 23+ resolver modules
+- **Context Management**: Rich GraphQL context with authenticated Supabase client
+
+### GraphQL Schema Files (24 schemas)
+**Comprehensive API Surface**
+```graphql
+# Core Business Entities
+deal.graphql              # Deal management operations
+lead.graphql              # Lead qualification and conversion  
+person.graphql            # Contact management
+organization.graphql      # Company/account management
+
+# Advanced Features
+calendar.graphql          # Google Calendar integration (308 lines)
+emails.graphql           # Gmail integration with threading (223 lines)
+googleDrive.graphql      # Document management (257 lines)
+conversion.graphql       # Lead-deal conversion system (177 lines)
+currency.graphql         # Multi-currency system (182 lines)
+
+# AI & Collaboration
+agentV2.graphql          # AI Agent V2 implementation (165 lines)
+smartStickers.graphql    # Visual collaboration platform (206 lines)
+
+# Workflow & Administration
+wfm_definitions.graphql  # Business process management (201 lines)
+customFields.graphql     # Dynamic field system (113 lines)
+appSettings.graphql      # System configuration
+```
+
+### Inngest Background Jobs (netlify/functions/inngest.ts - 192 lines)
+**Production-Ready Background Processing**
+- **ECB Exchange Rate Updates**: Automated weekday currency updates at 6 AM
+- **Contact/Deal Creation Logging**: Audit trail processing
+- **Error Handling**: Non-retriable vs retriable error classification
+- **Timeout Management**: Function timeout detection and recovery
+- **Health Monitoring**: ECB API connectivity testing
+- **Performance Tracking**: Duration monitoring and optimization
+
+### Google OAuth Exchange (netlify/functions/google-oauth-exchange.ts - 91 lines)
+**Secure OAuth Implementation**
+- **Authorization Code Exchange**: Server-side OAuth token exchange
+- **CORS Support**: Cross-origin request handling
+- **Token Management**: Access/refresh token handling with expiration
+- **Error Handling**: Comprehensive OAuth error management
+- **Security**: Server-side secret management
+
+### GraphQL Resolvers Architecture
+
+#### Core Entity Resolvers (4 major modules)
+- **Deal Resolvers**: 407 lines with WFM integration, currency support
+- **Lead Resolvers**: 506 lines with conversion system, qualification workflows
+- **Person Resolvers**: 174 lines with contact management, duplicate detection
+- **Organization Resolvers**: 427 lines with account management, hierarchy
+
+#### Advanced Feature Resolvers
+- **AI Agent V2 Resolvers**: 299 lines with streaming support, thought analysis
+- **Calendar Resolvers**: 267 lines with Google Calendar integration
+- **Conversion Resolvers**: 437 lines with bidirectional lead-deal conversion
+- **Currency Resolvers**: 320 lines with multi-currency operations
+- **Smart Stickers Resolvers**: 133 lines with visual collaboration
+
+#### Specialized Resolvers
+- **Email Resolvers**: Advanced Gmail integration with threading
+- **Drive Resolvers**: Google Drive document management
+- **WFM Resolvers**: Business process workflow management
+- **Custom Fields Resolvers**: Dynamic field system
+
+### GraphQL Mutations & Queries
+
+#### Mutations (11 specialized modules)
+```typescript
+dealMutations.ts          // Deal CRUD operations (307 lines)
+leadMutations.ts          // Lead management (392 lines)
+emailMutations.ts         // Email operations (464 lines)
+driveMutations.ts         // Document management (265 lines)
+sharedDriveMutations.ts   // Shared drive operations (262 lines)
+organizationMutations.ts  // Organization management (178 lines)
+personMutations.ts        // Contact management (123 lines)
+dealParticipantMutations.ts // Deal participant management (43 lines)
+googleIntegration.ts      // Google service integration (114 lines)
+appSettingsMutations.ts   // System configuration (51 lines)
+userProfileMutations.ts   // User profile management (40 lines)
+```
+
+#### Queries (6 specialized modules)
+```typescript
+emailQueries.ts           // Gmail integration queries (182 lines)
+driveQueries.ts          // Document queries (195 lines)
+sharedDriveQueries.ts    // Shared drive queries (207 lines)
+appSettingsQueries.ts    // System configuration queries (87 lines)
+dealParticipantQueries.ts // Deal participant queries (30 lines)
+googleIntegration.ts     // Google service queries (68 lines)
+```
+
+### Backend Architecture Highlights
+
+#### **Advanced Calendar Integration**
+- **308-line GraphQL schema** with comprehensive event management
+- **CRM Context Integration**: Events linked to deals, people, organizations
+- **Event Types**: MEETING, DEMO, CALL, PROPOSAL_PRESENTATION, CONTRACT_REVIEW, FOLLOW_UP, CHECK_IN, INTERNAL
+- **Outcome Tracking**: COMPLETED, RESCHEDULED, NO_SHOW, CANCELLED
+- **Availability Management**: Multi-calendar availability checking
+
+#### **Sophisticated Email System**
+- **223-line GraphQL schema** with advanced Gmail integration
+- **Enhanced Filtering**: Multi-contact filtering beyond primary contact
+- **Deal Participants**: Many-to-many contact relationships
+- **Email Analytics**: Response rates, sentiment analysis, contact timing
+- **AI Task Generation**: Claude 3 Haiku integration for email-to-task conversion
+
+#### **Enterprise Document Management**
+- **257-line GraphQL schema** for Google Drive integration
+- **Shared Drive Support**: Enterprise shared drive management
+- **Document Categories**: PROPOSAL, CONTRACT, PRESENTATION, CLIENT_REQUEST, etc.
+- **Dual Attachment System**: Documents attached to both notes and deals
+- **Auto-Folder Creation**: Deal-specific folder structures
+
+#### **AI Agent V2 Backend**
+- **299-line resolver** with streaming support
+- **Thinking Analysis**: Extended reasoning with strategic insights
+- **Streaming Architecture**: Real-time response streaming
+- **V2-Specific Features**: Enhanced thinking budgets, cognitive workflows
+
+#### **Production Features**
+- **Error Recovery**: Comprehensive error handling and retry logic
+- **Performance Monitoring**: Request timing and optimization
+- **Security**: Row-level security, authentication validation
+- **Scalability**: Background job processing, async operations
+
+---
+
+*This guide represents the complete state of PipeCD after comprehensive analysis of all migration files (78 total), service implementations, and backend architecture. The system includes sophisticated GraphQL API, background job processing, and enterprise-grade integrations.*
