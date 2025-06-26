@@ -10,6 +10,7 @@ import type { DealInput } from '../../generated/graphql';
 
 export class CreateDealTool implements ToolExecutor {
   private workflowSteps: Array<{step: string, status: string, timestamp: string, details?: any}> = [];
+  private organizationCreated: boolean = false;
 
   // Static definition - this is what gets enhanced by CognitiveContextEngine
   static definition: ToolDefinition = {
@@ -74,6 +75,7 @@ export class CreateDealTool implements ToolExecutor {
       
       // Initialize workflow tracking
       this.workflowSteps = [];
+      this.organizationCreated = false;
       this.addWorkflowStep('initialize', 'completed', `Starting deal creation for "${input.organization_name}"`);
 
       // 1. Find or create organization
@@ -128,6 +130,7 @@ export class CreateDealTool implements ToolExecutor {
       return {
         success: true,
         deal: createdDeal,
+        organizationCreated: this.organizationCreated,
         message: `✅ Successfully created deal "${createdDeal.name}" worth ${currency} ${input.amount.toLocaleString()} for ${organization.name}`,
         details: {
           organization: organization.name,
@@ -209,6 +212,7 @@ export class CreateDealTool implements ToolExecutor {
 
       console.log(`✅ Created new organization: ${newOrg.name} (ID: ${newOrg.id})`);
       this.addWorkflowStep('organization_creation', 'completed', `Successfully created new organization: "${newOrg.name}"`, { organization_id: newOrg.id });
+      this.organizationCreated = true; // Flag that we created a new organization
       return newOrg;
   }
 

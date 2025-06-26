@@ -978,4 +978,152 @@ googleIntegration.ts     // Google service queries (68 lines)
 
 ---
 
-*This guide represents the complete state of PipeCD after comprehensive analysis of all migration files (78 total), service implementations, and backend architecture. The system includes sophisticated GraphQL API, background job processing, and enterprise-grade integrations.*
+## FRONTEND ARCHITECTURE
+
+### React Application Stack (frontend/ - Modern Enterprise Frontend)
+**Comprehensive React/TypeScript Application**
+- **Framework**: React 18 with TypeScript 5.7.2
+- **Build System**: Vite 6.3.4 with advanced optimization
+- **UI Framework**: Chakra UI 2.8.2 with custom theming system
+- **State Management**: Zustand 5.0.4 with 14 specialized stores
+- **Data Fetching**: Apollo Client 3.8.7 + TanStack React Query 5.75.1
+- **Authentication**: Supabase Auth UI with OAuth integration
+
+### Advanced Frontend Features
+
+#### **Sophisticated Theming System**
+- **3 Premium Themes**: Creative Dock Light Modern (352 lines), Industrial Metal (875 lines), Creative Dock Modern (378 lines)
+- **Semantic Tokens**: 538-line semantic token system with dynamic theme resolution
+- **Theme Store**: Centralized theme management with persistence
+- **useThemeColors Hook**: Intelligent theme-aware styling (232 lines)
+- **3D Visual Effects**: Multi-layer shadows, gradients, perspective transforms
+
+#### **Component Architecture**
+- **Lazy Loading**: All pages lazy-loaded for performance optimization
+- **Component Organization**: 
+  ```
+  components/
+  ├── admin/          # Administrative interfaces
+  ├── agent/          # AI Agent V1 & V2 components
+  ├── calendar/       # Google Calendar integration UI
+  ├── common/         # Reusable UI components
+  ├── conversion/     # Lead-deal conversion interfaces
+  ├── currency/       # Multi-currency display components
+  ├── dealDetail/     # Deal management interfaces
+  ├── deals/          # Deal-specific components (23+ files)
+  ├── layout/         # Application layout components
+  ├── leads/          # Lead management interfaces
+  └── profile/        # User profile components
+  ```
+
+#### **State Management Architecture**
+- **14 Specialized Stores**: Each domain has dedicated Zustand store
+  ```typescript
+  useAppStore.ts                    // Global app state (287 lines)
+  useDealsStore.ts                  // Deal management (477 lines)
+  useLeadsStore.ts                  // Lead management (411 lines)
+  useOrganizationsStore.ts          // Organization management (316 lines)
+  usePeopleStore.ts                 // Contact management (319 lines)
+  useWFMWorkflowStore.ts           // Business process workflows (516 lines)
+  useAgentStore.ts                 // AI Agent state (498 lines)
+  useThemeStore.ts                 // Theme management (45 lines)
+  useCustomFieldDefinitionStore.ts // Dynamic fields (163 lines)
+  ```
+
+#### **Advanced UI Components**
+- **Rich Text Editors**: TipTap integration with extensive plugins
+- **Drag & Drop**: Hello Pangea DnD for Kanban boards
+- **Forms**: React Hook Form with Yup/Zod validation
+- **Data Tables**: Advanced sorting, filtering, pagination
+- **Modals**: 18KB+ create/edit modals with complex validation
+
+### Build & Performance Optimizations
+
+#### **Vite Configuration** (108 lines)
+- **PWA Prevention**: Complete PWA/service worker blocking [memory:3812105973109387767]
+- **Code Splitting**: Manual chunks for vendor, UI, editor, forms, routing
+- **Asset Optimization**: Smart asset naming and caching strategies
+- **Performance**: ES2020 target, esbuild minification, 500KB chunk warnings
+
+#### **Development Features**
+- **GraphQL Codegen**: Automatic type generation from schema
+- **Testing**: Vitest with jsdom environment
+- **Linting**: ESLint 9.22.0 with TypeScript integration
+- **Hot Reload**: Vite dev server with instant updates
+
+### Page Architecture (15+ pages)
+
+#### **Core Business Pages**
+- **DealsPage.tsx**: 498 lines - Kanban board with advanced filtering
+- **DealDetailPage.tsx**: 1009 lines - Comprehensive deal management
+- **LeadsPage.tsx**: 478 lines - Lead qualification interface
+- **LeadDetailPage.tsx**: 934 lines - Lead detail management
+- **PeoplePage.tsx**: 417 lines - Contact management interface
+- **OrganizationsPage.tsx**: 421 lines - Account management
+
+#### **Integration Pages**
+- **GoogleIntegrationPage.tsx**: 499 lines - OAuth setup and management
+- **AgentV2Page.tsx**: 49 lines - AI Agent V2 interface
+- **ExchangeRatesPage.tsx**: 350 lines - Currency management
+
+#### **Administrative Pages**
+- **Admin directory**: WFM management, custom fields, user roles, Google Drive settings
+
+### Frontend-Backend Integration
+
+#### **GraphQL Integration**
+- **Apollo Client**: Comprehensive GraphQL client with caching
+- **Generated Types**: Automatic TypeScript types from backend schema
+- **Operations**: Specialized GraphQL operations for each domain
+- **Real-time**: Subscription support for live updates
+
+#### **Authentication Flow**
+- **Supabase Integration**: OAuth with Google/GitHub providers
+- **Session Management**: Persistent authentication state
+- **Route Protection**: Authenticated routes with loading states
+- **Theme Integration**: Auth UI matches application theming
+
+### Frontend Performance Features
+
+#### **Code Splitting Strategy**
+```typescript
+manualChunks: {
+  vendor: ['react', 'react-dom'],
+  apollo: ['@apollo/client', '@tanstack/react-query'],
+  'ui-core': ['@mui/material', '@mui/lab'],
+  'editor-tiptap': ['@tiptap/react', '@tiptap/starter-kit'],
+  forms: ['react-hook-form', '@hookform/resolvers'],
+  routing: ['react-router-dom'],
+  supabase: ['@supabase/supabase-js', '@supabase/auth-ui-react']
+}
+```
+
+#### **Loading Optimization**
+- **Lazy Loading**: All pages loaded on-demand
+- **Suspense**: Loading states for better UX
+- **Asset Optimization**: Image compression and caching
+- **Bundle Analysis**: Chunk size monitoring and warnings
+
+### Frontend Architecture Highlights
+
+#### **Enterprise-Grade UI System**
+- **3 Professional Themes**: Light modern, dark modern, industrial metal
+- **Semantic Design System**: 538-line token system with theme consistency
+- **3D Visual Effects**: Multi-layer shadows, gradients, animations
+- **Responsive Design**: Mobile-first with breakpoint management
+
+#### **Advanced Component Patterns**
+- **Store Integration**: Each component connected to relevant Zustand stores
+- **Theme Awareness**: Dynamic styling based on current theme
+- **Error Boundaries**: Comprehensive error handling and recovery
+- **Accessibility**: ARIA compliance and keyboard navigation
+
+#### **Performance Engineering**
+- **Lazy Loading**: Route-level code splitting
+- **Memoization**: React.memo and useMemo optimization
+- **Virtual Scrolling**: Large dataset handling
+- **Optimistic Updates**: Immediate UI feedback with rollback
+
+---
+
+*This guide represents the complete state of PipeCD after comprehensive analysis of all migration files (78 total), service implementations, backend architecture, and frontend implementation. The system is a sophisticated enterprise CRM with modern React frontend, GraphQL API, and production-ready features.*
