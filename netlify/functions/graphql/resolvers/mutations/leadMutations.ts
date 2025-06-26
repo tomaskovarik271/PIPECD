@@ -102,35 +102,9 @@ export const leadMutations: Pick<MutationResolvers<GraphQLContext>, 'createLead'
           const canUpdateOwn = context.userPermissions?.includes('lead:update_own') || false;
           const canAssignAnyPerm = context.userPermissions?.includes('lead:assign_any') || false;
 
-          let authorizedToUpdateThisLead = false;
-          if (canUpdateAny) {
-            authorizedToUpdateThisLead = true;
-          } else if (canUpdateOwn) {
-            const isCreator = existingLead.user_id === userId;
-            const isCurrentAssignee = existingLead.assigned_to_user_id === userId;
-            if (isCreator || isCurrentAssignee) {
-                authorizedToUpdateThisLead = true;
-            }
-          }
-
-          if (!authorizedToUpdateThisLead) {
+          // Full collaboration model: any member can update any lead
+          if (!canUpdateAny) {
             throw new GraphQLError('Forbidden: You do not have permission to update this lead.', { extensions: { code: 'FORBIDDEN' } });
-          }
-
-          // Check assignment change permissions if assignment is being changed
-          const changingAssignment = Object.prototype.hasOwnProperty.call(args.input, 'assignedToUserId');
-          if (changingAssignment) {
-            let authorizedToChangeAssignment = false;
-            if (canAssignAnyPerm) {
-                authorizedToChangeAssignment = true;
-            } else {
-                if (authorizedToUpdateThisLead) {
-                    authorizedToChangeAssignment = true;
-                }
-            }
-            if (!authorizedToChangeAssignment) {
-                throw new GraphQLError('Forbidden: You do not have permission to change the assignment for this lead.', { extensions: { code: 'FORBIDDEN' } });
-            }
           }
 
           const { customFields, estimatedCloseDate, assignedToUserId, ...otherValidatedDataForService } = args.input;
@@ -235,18 +209,8 @@ export const leadMutations: Pick<MutationResolvers<GraphQLContext>, 'createLead'
           const canUpdateAny = context.userPermissions?.includes('lead:update_any') || false;
           const canUpdateOwn = context.userPermissions?.includes('lead:update_own') || false;
 
-          let authorizedToRecalculateScore = false;
-          if (canUpdateAny) {
-            authorizedToRecalculateScore = true;
-          } else if (canUpdateOwn) {
-            const isCreator = existingLead.user_id === userId;
-            const isCurrentAssignee = existingLead.assigned_to_user_id === userId;
-            if (isCreator || isCurrentAssignee) {
-                authorizedToRecalculateScore = true;
-            }
-          }
-
-          if (!authorizedToRecalculateScore) {
+          // Full collaboration model: any member can recalculate lead score
+          if (!canUpdateAny) {
             throw new GraphQLError('Forbidden: You do not have permission to recalculate score for this lead.', { extensions: { code: 'FORBIDDEN' } });
           }
 

@@ -75,9 +75,6 @@ import { conversionResolvers } from './graphql/resolvers/conversionResolvers';
 // Import Calendar Resolvers
 import { calendarResolvers } from './graphql/resolvers/calendarResolvers';
 
-// Import Task Resolvers
-import { taskQueries, taskMutations, taskFieldResolvers } from './graphql/resolvers/taskResolvers';
-
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
 
@@ -134,7 +131,6 @@ const loadTypeDefs = (): string => {
     'scalars.graphql', 
     'schema.graphql', 
     'smartStickers.graphql',
-    'tasks.graphql',
     'user.graphql', 
     'user_profile.graphql',
     'wfm_definitions.graphql',
@@ -190,7 +186,6 @@ export const resolvers = {
     // Activity reminder resolvers removed - using Google Calendar integration instead
     ...currencyResolvers.Query,
     ...calendarResolvers.Query,
-    ...taskQueries,
   },
   Mutation: {
     ...BaseMutation,
@@ -211,7 +206,6 @@ export const resolvers = {
     // Activity reminder resolvers removed - using Google Calendar integration instead
     ...currencyResolvers.Mutation,
     ...calendarResolvers.Mutation,
-    ...taskMutations,
   },
   Person,
   Deal: {
@@ -241,7 +235,6 @@ export const resolvers = {
     ...agentV2Resolvers.AgentThought,
   },
   CalendarEvent: calendarResolvers.CalendarEvent,
-  Task: taskFieldResolvers.Task,
 
 }; 
 

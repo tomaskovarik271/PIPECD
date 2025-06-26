@@ -55,10 +55,8 @@ export const DealOverviewCard: React.FC<DealOverviewCardProps> = ({
   const session = useAppStore((state) => state.session);
   const currentUserId = session?.user.id;
   
-  // Check if user can edit this deal (same logic as in useDealsTableColumns)
-  const canEditDeal = userPermissions?.includes('deal:update_any') || 
-    (userPermissions?.includes('deal:update_own') && 
-     (deal.user_id === currentUserId || deal.assigned_to_user_id === currentUserId));
+  // Check if user can edit this deal (full collaboration model)
+  const canEditDeal = userPermissions?.includes('deal:update_any');
 
   const handleAmountUpdate = async () => {
     const numericAmount = parseFloat(newAmount);

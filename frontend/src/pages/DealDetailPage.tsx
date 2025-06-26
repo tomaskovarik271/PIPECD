@@ -213,22 +213,11 @@ const DealDetailPage = () => {
 
   // Permission checks
   const canEditDeal = useMemo(() => {
-    if (!userPermissions || !currentDeal) return false;
+    if (!userPermissions) return false;
     
-    // Check if user has update_any permission
-    if (userPermissions.includes('deal:update_any')) {
-      return true;
-    }
-    
-    // Check if user has update_own permission and is the owner or assigned to the deal
-    if (userPermissions.includes('deal:update_own')) {
-      const isOwner = currentDeal.user_id === currentUserId;
-      const isAssigned = currentDeal.assigned_to_user_id === currentUserId;
-      return isOwner || isAssigned;
-    }
-    
-    return false;
-  }, [userPermissions, currentDeal, currentUserId]);
+    // Full collaboration model: any member can edit any deal
+    return userPermissions.includes('deal:update_any');
+  }, [userPermissions]);
 
   // Format user list for dropdowns
   const formattedUserList = useMemo(() => {

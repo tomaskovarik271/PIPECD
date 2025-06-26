@@ -39,9 +39,7 @@ import {
 } from 'react-icons/fi';
 import { format, isToday, isPast, isFuture } from 'date-fns';
 import { GET_DEAL_CALENDAR_EVENTS } from '../../lib/graphql/calendarOperations';
-import { GET_TIMELINE_TASKS } from '../../lib/graphql/taskOperations';
 import { ScheduleMeetingModal } from '../calendar/ScheduleMeetingModal';
-import { TasksList } from '../tasks';
 import { Deal } from '../../stores/useDealsStore';
 
 const SYNC_CALENDAR_EVENTS = gql`
@@ -99,15 +97,6 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
   // Query for deal-specific calendar events
   const { data: calendarData, loading: calendarLoading, error: calendarError, refetch } = useQuery(
     GET_DEAL_CALENDAR_EVENTS,
-    {
-      variables: { dealId: deal.id },
-      fetchPolicy: 'cache-and-network'
-    }
-  );
-
-  // Query for deal-specific tasks
-  const { data: tasksData, loading: tasksLoading, error: tasksError, refetch: refetchTasks } = useQuery(
-    GET_TIMELINE_TASKS,
     {
       variables: { dealId: deal.id },
       fetchPolicy: 'cache-and-network'
@@ -208,50 +197,6 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
       });
     }
 
-    // Add tasks
-    if (tasksData?.timelineTasks) {
-      tasksData.timelineTasks.forEach((task: any) => {
-        const dueDate = task.dueDate ? new Date(task.dueDate) : null;
-        
-        let status: TimelineEvent['status'] = 'upcoming';
-        
-        if (task.status === 'completed') {
-          status = 'completed';
-        } else if (task.status === 'cancelled') {
-          status = 'cancelled';
-        } else if (task.status === 'in_progress') {
-          status = 'in_progress';
-        } else if (dueDate && isPast(dueDate)) {
-          status = 'overdue';
-        } else if (dueDate && isToday(dueDate)) {
-          status = 'in_progress';
-        }
-
-        events.push({
-          id: task.id,
-          type: 'task',
-          title: task.title,
-          description: task.description,
-          startTime: task.dueDate || task.createdAt,
-          endTime: undefined,
-          eventType: task.type,
-          status,
-          location: undefined,
-          googleMeetLink: undefined,
-          person: task.assignedToUser ? {
-            id: task.assignedToUser.id,
-            first_name: task.assignedToUser.firstName || '',
-            last_name: task.assignedToUser.lastName || '',
-            email: task.assignedToUser.email
-          } : undefined,
-          outcome: undefined,
-          outcomeNotes: task.notes,
-          nextActions: [],
-          isCancelled: task.status === 'cancelled'
-        });
-      });
-    }
-
     // Sort events by start time
     events.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
 
@@ -274,23 +219,6 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
     const endTime = event.endTime ? new Date(event.endTime) : undefined;
     
     const getStatusIcon = () => {
-      // For tasks, use task-specific icons
-      if (event.type === 'task') {
-        switch (event.status) {
-          case 'completed':
-            return <Icon as={FiCheckCircle} color="green.500" boxSize={3} />;
-          case 'overdue':
-            return <Icon as={FiAlertCircle} color="red.500" boxSize={3} />;
-          case 'in_progress':
-            return <Icon as={FiClock} color="orange.500" boxSize={3} />;
-          case 'cancelled':
-            return <Icon as={FiAlertCircle} color="gray.400" boxSize={3} />;
-          default:
-            return <Text fontSize="sm">📋</Text>; // Task icon
-        }
-      }
-      
-      // For calendar events, use calendar-specific icons
       switch (event.status) {
         case 'completed':
           return <Icon as={FiCheckCircle} color="green.500" boxSize={3} />;
@@ -306,49 +234,13 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
     };
 
     const getEventTypeColor = (type?: string): string => {
-      // Calendar event types
-      if (event.type === 'calendar') {
-        switch (type) {
-          case 'DEMO': return 'blue';
-          case 'PROPOSAL_PRESENTATION': return 'purple';
-          case 'CONTRACT_REVIEW': return 'orange';
-          case 'FOLLOW_UP': return 'green';
-          case 'CHECK_IN': return 'teal';
-          default: return 'gray';
-        }
-      }
-      
-      // Task types
-      if (event.type === 'task') {
-        switch (type) {
-          case 'call': return 'blue';
-          case 'email': return 'purple';
-          case 'meeting_prep': return 'teal';
-          case 'post_meeting': return 'cyan';
-          case 'follow_up': return 'green';
-          case 'deadline': return 'red';
-          case 'research': return 'yellow';
-          case 'admin': return 'gray';
-          case 'creative': return 'pink';
-          default: return 'gray';
-        }
-      }
-      
-      return 'gray';
-    };
-
-    const getTaskTypeEmoji = (type?: string): string => {
       switch (type) {
-        case 'call': return '📞';
-        case 'email': return '📧';
-        case 'meeting_prep': return '🤝';
-        case 'post_meeting': return '📋';
-        case 'follow_up': return '🔄';
-        case 'deadline': return '⏰';
-        case 'research': return '🔍';
-        case 'admin': return '📊';
-        case 'creative': return '🎨';
-        default: return '📋';
+        case 'DEMO': return 'blue';
+        case 'PROPOSAL_PRESENTATION': return 'purple';
+        case 'CONTRACT_REVIEW': return 'orange';
+        case 'FOLLOW_UP': return 'green';
+        case 'CHECK_IN': return 'teal';
+        default: return 'gray';
       }
     };
 
@@ -376,10 +268,7 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
           </HStack>
           {event.eventType && (
             <Badge colorScheme={getEventTypeColor(event.eventType)} size="sm" fontSize="xs">
-              {event.type === 'task' 
-                ? `${getTaskTypeEmoji(event.eventType)} ${event.eventType.replace('_', ' ')}`
-                : event.eventType.replace('_', ' ')
-              }
+              {event.eventType.replace('_', ' ')}
             </Badge>
           )}
         </HStack>
@@ -436,7 +325,7 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
     );
   };
 
-  if (calendarLoading || tasksLoading) {
+  if (calendarLoading) {
     return (
       <Box p={6} textAlign="center">
         <Spinner size="lg" />
@@ -522,18 +411,6 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
             Past
             <Badge ml={2} variant="subtle">
               {past.length}
-            </Badge>
-          </Tab>
-          <Tab>
-            <Text mr={2}>📋</Text>
-            Tasks
-            <Badge ml={2} colorScheme="purple" variant="subtle">
-              {(overdue.length + today.length + upcoming.length + past.length + cancelled.length) - 
-               (overdue.filter(e => e.type === 'calendar').length + 
-                today.filter(e => e.type === 'calendar').length + 
-                upcoming.filter(e => e.type === 'calendar').length + 
-                past.filter(e => e.type === 'calendar').length + 
-                cancelled.filter(e => e.type === 'calendar').length)}
             </Badge>
           </Tab>
         </TabList>
@@ -719,16 +596,6 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
                 </Text>
               </Box>
             )}
-          </TabPanel>
-
-          {/* Tasks Tab */}
-          <TabPanel p={0} pt={6}>
-            <TasksList
-              dealId={deal.id}
-              compact={true}
-              showFilters={true}
-              maxHeight="500px"
-            />
           </TabPanel>
         </TabPanels>
       </Tabs>

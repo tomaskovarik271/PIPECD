@@ -38,20 +38,9 @@ export const useUserAssignment = (options: UseUserAssignmentOptions = {}): UseUs
       return true; // Always disable if user list is loading
     }
     
-    if (isAdmin) {
-      return false; // Admins can always assign
-    }
-    
-    if (canAssignOwn && deal && currentUserId) {
-      const isCreator = deal.user_id === currentUserId;
-      const isCurrentAssignee = deal.assigned_to_user_id === currentUserId;
-      const isUnassigned = !deal.assigned_to_user_id;
-      
-      return !(isCreator || isCurrentAssignee || isUnassigned);
-    }
-    
-    return true; // Default to disabled if no permissions
-  }, [userListLoading, isAdmin, canAssignOwn, deal, currentUserId]);
+    // Full collaboration model: any user with assign permissions can assign
+    return !(isAdmin || canAssignOwn);
+  }, [userListLoading, isAdmin, canAssignOwn]);
 
   // Determine the list of users that can be assigned based on permissions
   const assignableUsers = useMemo(() => {

@@ -156,7 +156,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
             size="sm"
             variant="ghost"
             onClick={() => handleEditClick(deal)}
-            isDisabled={!!activeDeletingDealId || !(userPermissions?.includes('deal:update_any') || (userPermissions?.includes('deal:update_own') && (deal.user_id === currentUserId || deal.assigned_to_user_id === currentUserId)))}
+            isDisabled={!!activeDeletingDealId || !userPermissions?.includes('deal:update_any')}
           />
           <IconButton
             aria-label="Delete deal"

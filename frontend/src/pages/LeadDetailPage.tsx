@@ -153,12 +153,8 @@ const LeadDetailPage = () => {
   const session = useAppStore((state) => state.session);
   const currentUserId = session?.user.id;
   
-  // Check if user can edit leads (update_any OR update_own for leads they own/are assigned to)
-  const canEditLead = currentLead && (
-    userPermissions?.includes('lead:update_any') || 
-    (userPermissions?.includes('lead:update_own') && 
-     (currentLead.user_id === currentUserId || currentLead.assigned_to_user_id === currentUserId))
-  );
+  // Check if user can edit leads (full collaboration model)
+  const canEditLead = userPermissions?.includes('lead:update_any');
 
   // Fetch lead details
   useEffect(() => {

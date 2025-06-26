@@ -93,39 +93,9 @@ export const dealMutations: Pick<MutationResolvers<GraphQLContext>, 'createDeal'
           const canUpdateOwn = context.userPermissions?.includes('deal:update_own') || false;
           const canAssignAnyPerm = context.userPermissions?.includes('deal:assign_any') || false;
 
-          let authorizedToUpdateThisDeal = false;
-          if (canUpdateAny) {
-            authorizedToUpdateThisDeal = true;
-          } else if (canUpdateOwn) {
-            const isCreator = existingDeal.user_id === userId;
-            const isCurrentAssignee = existingDeal.assigned_to_user_id === userId;
-            if (isCreator || isCurrentAssignee) {
-                authorizedToUpdateThisDeal = true;
-            }
-          }
-
-          if (!authorizedToUpdateThisDeal) {
+          // Full collaboration model: any member can update any deal
+          if (!canUpdateAny) {
             throw new GraphQLError('Forbidden: You do not have permission to update this deal.', { extensions: { code: 'FORBIDDEN' } });
-          }
-
-          // If we reach here, user is authorized for general updates to this deal.
-          // Now, specifically check assignment change permissions if assignment is being changed.
-          const changingAssignment = Object.prototype.hasOwnProperty.call(args.input, 'assignedToUserId');
-          if (changingAssignment) {
-            let authorizedToChangeAssignment = false;
-            if (canAssignAnyPerm) { // Admin with 'deal:assign_any' can always change assignment
-                authorizedToChangeAssignment = true;
-            } else {
-                // For non-admins (who don't have 'deal:assign_any'):
-                // If they were authorizedToUpdateThisDeal (meaning they are creator or current assignee and have 'deal:update_own'),
-                // they are allowed to change the assignment freely on this specific deal.
-                if (authorizedToUpdateThisDeal) {
-                    authorizedToChangeAssignment = true;
-                }
-            }
-            if (!authorizedToChangeAssignment) {
-                throw new GraphQLError('Forbidden: You do not have permission to change the assignment for this deal.', { extensions: { code: 'FORBIDDEN' } });
-            }
           }
 
           const { customFields, expected_close_date, assignedToUserId, ...otherValidatedDataForService } = validatedInput;
