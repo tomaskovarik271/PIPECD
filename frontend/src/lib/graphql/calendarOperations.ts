@@ -59,6 +59,28 @@ export const GET_GOOGLE_CALENDARS = gql`
   }
 `;
 
+// New: Check availability for smart time suggestions
+export const CHECK_AVAILABILITY = gql`
+  query CheckAvailability($timeRange: CalendarTimeRangeInput!, $calendarIds: [String!]) {
+    checkAvailability(timeRange: $timeRange, calendarIds: $calendarIds) {
+      start
+      end
+      available
+    }
+  }
+`;
+
+// Enhanced: Contact suggestions with query parameter
+export const SEARCH_GOOGLE_CONTACTS = gql`
+  query SearchGoogleContacts($query: String!) {
+    searchGoogleContacts(query: $query) {
+      email
+      name
+      photoUrl
+    }
+  }
+`;
+
 // Mutations
 export const CREATE_CALENDAR_EVENT = gql`
   mutation CreateCalendarEvent($input: CreateCalendarEventInput!) {
@@ -137,13 +159,15 @@ export const GET_DEAL_CALENDAR_EVENTS = gql`
   }
 `;
 
-// Contact suggestions for email autocomplete
-export const SEARCH_GOOGLE_CONTACTS = gql`
-  query SearchGoogleContacts($query: String!) {
-    searchGoogleContacts(query: $query) {
-      email
-      name
-      photoUrl
+// Enhanced: Auto-sync mutation with better parameters
+export const SYNC_CALENDAR_EVENTS = gql`
+  mutation SyncCalendarEvents($calendarId: String, $fullSync: Boolean, $daysPast: Int, $daysFuture: Int) {
+    syncCalendarEvents(calendarId: $calendarId, fullSync: $fullSync, daysPast: $daysPast, daysFuture: $daysFuture) {
+      lastSyncAt
+      isConnected
+      hasSyncErrors
+      errorMessage
+      eventsCount
     }
   }
 `; 
