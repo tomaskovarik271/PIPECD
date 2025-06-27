@@ -1,0 +1,407 @@
+# Task Management GraphQL Schema
+# Implements CRM-native task management system
+
+# Core Types
+
+enum TaskEntityType {
+  DEAL
+  LEAD
+  PERSON
+  ORGANIZATION
+}
+
+enum TaskType {
+  # Deal Progression Tasks
+  DISCOVERY
+  DEMO_PREPARATION
+  PROPOSAL_CREATION
+  NEGOTIATION_PREP
+  CONTRACT_REVIEW
+  DEAL_CLOSURE
+  
+  # Lead Management Tasks
+  LEAD_QUALIFICATION
+  LEAD_NURTURING
+  FOLLOW_UP
+  LEAD_SCORING_REVIEW
+  
+  # Relationship Tasks
+  STAKEHOLDER_MAPPING
+  RELATIONSHIP_BUILDING
+  RENEWAL_PREPARATION
+  
+  # Administrative CRM Tasks
+  DATA_ENRICHMENT
+  CRM_UPDATE
+  REPORTING
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  WAITING_ON_INTERNAL
+  COMPLETED
+  CANCELLED
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+# Core Task Type
+type Task {
+  id: ID!
+  title: String!
+  description: String
+  status: TaskStatus!
+  priority: TaskPriority!
+  taskType: TaskType!
+  
+  # CRM Context
+  entityType: TaskEntityType!
+  entityId: ID!
+  deal: Deal
+  lead: Lead
+  person: Person
+  organization: Organization
+  
+  # Assignment
+  assignedToUser: User
+  createdByUser: User
+  dueDate: DateTime
+  completedAt: DateTime
+  
+  # Business Logic
+  completionTriggersStageChange: Boolean!
+  blocksStageProgression: Boolean!
+  requiredForDealClosure: Boolean!
+  affectsLeadScoring: Boolean!
+  
+  # Workflow
+  wfmProject: WFMProject
+  parentTask: Task
+  subtasks: [Task!]!
+  dependencies: [TaskDependency!]!
+  
+  # Metadata
+  customFieldValues: [CustomFieldValue!]!
+  tags: [String!]!
+  estimatedHours: Int
+  actualHours: Int
+  
+  # Calculated Fields
+  calculatedPriority: Float!
+  businessImpactScore: Float!
+  
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# Task Dependencies
+type TaskDependency {
+  id: ID!
+  task: Task!
+  dependsOnTask: Task!
+  dependencyType: String!
+  createdAt: DateTime!
+}
+
+# Task Automation Rules
+type TaskAutomationRule {
+  id: ID!
+  name: String!
+  description: String
+  triggerEvent: String!
+  triggerConditions: JSON!
+  taskTemplate: JSON!
+  isActive: Boolean!
+  appliesToEntityType: TaskEntityType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+# Task History
+type TaskHistory {
+  id: ID!
+  taskId: ID
+  action: String!
+  oldValue: JSON
+  newValue: JSON
+  changedByUser: User
+  createdAt: DateTime!
+}
+
+# Input Types
+
+input CreateTaskInput {
+  title: String!
+  description: String
+  status: TaskStatus = TODO
+  priority: TaskPriority = MEDIUM
+  taskType: TaskType!
+  
+  # CRM Context (Always Required)
+  entityType: TaskEntityType!
+  entityId: ID!
+  
+  # Assignment & Scheduling
+  assignedToUserId: ID
+  dueDate: DateTime
+  
+  # CRM Integration
+  dealId: ID
+  leadId: ID
+  personId: ID
+  organizationId: ID
+  
+  # Workflow Integration
+  wfmProjectId: ID
+  parentTaskId: ID
+  
+  # Business Logic
+  completionTriggersStageChange: Boolean = false
+  blocksStageProgression: Boolean = false
+  requiredForDealClosure: Boolean = false
+  affectsLeadScoring: Boolean = false
+  
+  # Metadata
+  customFieldValues: [CustomFieldValueInput!]
+  tags: [String!]
+  estimatedHours: Int
+}
+
+input UpdateTaskInput {
+  title: String
+  description: String
+  status: TaskStatus
+  priority: TaskPriority
+  taskType: TaskType
+  
+  # Assignment & Scheduling
+  assignedToUserId: ID
+  dueDate: DateTime
+  completedAt: DateTime
+  
+  # Business Logic
+  completionTriggersStageChange: Boolean
+  blocksStageProgression: Boolean
+  requiredForDealClosure: Boolean
+  affectsLeadScoring: Boolean
+  
+  # Metadata
+  customFieldValues: [CustomFieldValueInput!]
+  tags: [String!]
+  estimatedHours: Int
+  actualHours: Int
+}
+
+input TaskCompletionInput {
+  completedAt: DateTime
+  actualHours: Int
+  completionNotes: String
+}
+
+input TaskFiltersInput {
+  status: [TaskStatus!]
+  priority: [TaskPriority!]
+  taskType: [TaskType!]
+  entityType: [TaskEntityType!]
+  entityId: ID
+  assignedToUserId: ID
+  createdByUserId: ID
+  dueDateFrom: DateTime
+  dueDateTo: DateTime
+  overdue: Boolean
+  tags: [String!]
+}
+
+input CreateTaskAutomationRuleInput {
+  name: String!
+  description: String
+  triggerEvent: String!
+  triggerConditions: JSON!
+  taskTemplate: JSON!
+  isActive: Boolean = true
+  appliesToEntityType: TaskEntityType!
+}
+
+input UpdateTaskAutomationRuleInput {
+  name: String
+  description: String
+  triggerEvent: String
+  triggerConditions: JSON
+  taskTemplate: JSON
+  isActive: Boolean
+  appliesToEntityType: TaskEntityType
+}
+
+input CreateTaskDependencyInput {
+  taskId: ID!
+  dependsOnTaskId: ID!
+  dependencyType: String = "BLOCKS"
+}
+
+# Contextual Task Creation (Smart Defaults)
+input ContextualTaskCreationInput {
+  # Auto-inherited from parent entity
+  dealId: ID
+  leadId: ID
+  organizationId: ID
+  personId: ID
+  
+  # Basic task info
+  title: String!
+  description: String
+  taskType: TaskType!
+  priority: TaskPriority = MEDIUM
+  dueDate: DateTime
+  
+  # Assignment
+  assignedToUserId: ID
+  
+  # Use template
+  templateId: ID
+}
+
+# Bulk Operations
+input BulkTaskUpdatesInput {
+  status: TaskStatus
+  priority: TaskPriority
+  assignedToUserId: ID
+  dueDate: DateTime
+  tags: [String!]
+}
+
+# CRM Event for Automation
+input CRMEventInput {
+  eventType: String! # deal_stage_changed, lead_created, etc.
+  entityType: TaskEntityType!
+  entityId: ID!
+  eventData: JSON!
+}
+
+# CRM Context for Template Creation
+input CRMContextInput {
+  entityType: TaskEntityType!
+  entityId: ID!
+  dealId: ID
+  leadId: ID
+  personId: ID
+  organizationId: ID
+}
+
+# Queries
+
+extend type Query {
+  # Core Task Queries
+  task(id: ID!): Task
+  tasks(filters: TaskFiltersInput, limit: Int = 50, offset: Int = 0): [Task!]!
+  
+  # Context-aware queries
+  tasksForDeal(dealId: ID!, filters: TaskFiltersInput): [Task!]!
+  tasksForLead(leadId: ID!, filters: TaskFiltersInput): [Task!]!
+  tasksForPerson(personId: ID!, filters: TaskFiltersInput): [Task!]!
+  tasksForOrganization(organizationId: ID!, filters: TaskFiltersInput): [Task!]!
+  tasksForUser(userId: ID!, filters: TaskFiltersInput): [Task!]!
+  
+  # My Tasks
+  myTasks(filters: TaskFiltersInput): [Task!]!
+  myAssignedTasks(filters: TaskFiltersInput): [Task!]!
+  myOverdueTasks: [Task!]!
+  myTasksDueToday: [Task!]!
+  myTasksDueThisWeek: [Task!]!
+  
+  # Task Dependencies
+  taskDependencies(taskId: ID!): [TaskDependency!]!
+  
+  # Task History
+  taskHistory(taskId: ID!): [TaskHistory!]!
+  
+  # Automation Rules
+  taskAutomationRules(entityType: TaskEntityType): [TaskAutomationRule!]!
+  taskAutomationRule(id: ID!): TaskAutomationRule
+  
+  # Analytics/Stats
+  taskStats(entityType: TaskEntityType, entityId: ID): TaskStats!
+}
+
+# Task Statistics
+type TaskStats {
+  totalTasks: Int!
+  completedTasks: Int!
+  overdueTasks: Int!
+  tasksByStatus: [TaskStatusCount!]!
+  tasksByPriority: [TaskPriorityCount!]!
+  tasksByType: [TaskTypeCount!]!
+  averageCompletionTime: Float
+  completionRate: Float!
+}
+
+type TaskStatusCount {
+  status: TaskStatus!
+  count: Int!
+}
+
+type TaskPriorityCount {
+  priority: TaskPriority!
+  count: Int!
+}
+
+type TaskTypeCount {
+  taskType: TaskType!
+  count: Int!
+}
+
+# Mutations
+
+extend type Mutation {
+  # Core Task Operations
+  createTask(input: CreateTaskInput!): Task!
+  updateTask(id: ID!, input: UpdateTaskInput!): Task!
+  deleteTask(id: ID!): Boolean!
+  completeTask(id: ID!, completionData: TaskCompletionInput): Task!
+  
+  # Contextual Task Creation (Smart Defaults)
+  createContextualTask(input: ContextualTaskCreationInput!): Task!
+  
+  # Task Assignment
+  assignTask(taskId: ID!, userId: ID): Task!
+  unassignTask(taskId: ID!): Task!
+  
+  # Bulk Operations
+  bulkUpdateTasks(taskIds: [ID!]!, updates: BulkTaskUpdatesInput!): [Task!]!
+  bulkDeleteTasks(taskIds: [ID!]!): Boolean!
+  bulkAssignTasks(taskIds: [ID!]!, userId: ID!): [Task!]!
+  
+  # Task Dependencies
+  createTaskDependency(input: CreateTaskDependencyInput!): TaskDependency!
+  deleteTaskDependency(id: ID!): Boolean!
+  
+  # Automation Rules
+  createTaskAutomationRule(input: CreateTaskAutomationRuleInput!): TaskAutomationRule!
+  updateTaskAutomationRule(id: ID!, input: UpdateTaskAutomationRuleInput!): TaskAutomationRule!
+  deleteTaskAutomationRule(id: ID!): Boolean!
+  
+  # Automation Triggers
+  triggerTaskAutomation(event: CRMEventInput!): [Task!]!
+  createTasksFromTemplate(templateId: ID!, context: CRMContextInput!): [Task!]!
+}
+
+# Subscriptions (for real-time updates)
+
+extend type Subscription {
+  # Task Updates
+  taskUpdated(taskId: ID): Task!
+  taskCompleted(entityType: TaskEntityType, entityId: ID): Task!
+  
+  # User Task Updates
+  myTasksUpdated: Task!
+  
+  # Entity Task Updates
+  dealTasksUpdated(dealId: ID!): Task!
+  leadTasksUpdated(leadId: ID!): Task!
+} 

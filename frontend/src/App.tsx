@@ -26,6 +26,7 @@ const WFMWorkflowsPage = lazy(() => import('./pages/admin/WFMWorkflowsPage'));
 const WFMProjectTypesPage = lazy(() => import('./pages/admin/WFMProjectTypesPage'));
 const GoogleDriveSettingsPage = lazy(() => import('./pages/admin/GoogleDriveSettingsPage'));
 const UserRoleManagementPage = lazy(() => import('./pages/admin/UserRoleManagementPage').then(module => ({ default: module.UserRoleManagementPage })));
+const BusinessRulesPage = lazy(() => import('./pages/admin/BusinessRulesPage').then(module => ({ default: module.BusinessRulesPage })));
 const MyAccountsPage = lazy(() => import('./pages/MyAccountsPage'));
 
 import { 
@@ -106,6 +107,7 @@ function AppContent() {
               <Route path="/admin/custom-fields" element={<CustomFieldsPage />} />
               <Route path="/admin/google-drive" element={<GoogleDriveSettingsPage />} />
               <Route path="/admin/user-roles" element={<UserRoleManagementPage />} />
+              <Route path="/admin/business-rules" element={<BusinessRulesPage />} />
               <Route path="/admin/wfm" element={<WfmAdminPage />}>
                 <Route index element={<WFMStatusesPage />} />
                 <Route path="statuses" element={<WFMStatusesPage />} />

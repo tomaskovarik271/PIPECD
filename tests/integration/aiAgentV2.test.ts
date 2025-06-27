@@ -104,7 +104,7 @@ describe('AI Agent V2 - Cognitive Tools Integration', () => {
         deal => deal.name.includes('Enterprise') || deal.amount >= 400000
       );
       if (result.deals.length > 0) {
-        expect(enterpriseDeal).toBeDefined();
+      expect(enterpriseDeal).toBeDefined();
       }
 
       await scenario.cleanup();

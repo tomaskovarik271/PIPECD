@@ -324,15 +324,15 @@ const OrganizationDetailPage = () => {
 
                                          let displayValue = '-';
                      if (customFieldValue) {
-                       if (definition.fieldType === CustomFieldType.Text || definition.fieldType === CustomFieldType.TextArea) {
+                       if (definition.fieldType === 'TEXT' || definition.fieldType === 'TEXT_AREA') {
                          displayValue = customFieldValue.stringValue || '-';
-                       } else if (definition.fieldType === CustomFieldType.Number) {
+                       } else if (definition.fieldType === 'NUMBER') {
                          displayValue = customFieldValue.numberValue?.toString() || '-';
-                       } else if (definition.fieldType === CustomFieldType.Boolean) {
+                       } else if (definition.fieldType === 'BOOLEAN') {
                          displayValue = customFieldValue.booleanValue ? 'Yes' : 'No';
-                       } else if (definition.fieldType === CustomFieldType.Date) {
+                       } else if (definition.fieldType === 'DATE') {
                          displayValue = customFieldValue.dateValue || '-';
-                       } else if (definition.fieldType === CustomFieldType.Dropdown || definition.fieldType === CustomFieldType.MultiSelect) {
+                       } else if (definition.fieldType === 'DROPDOWN' || definition.fieldType === 'MULTI_SELECT') {
                          displayValue = customFieldValue.selectedOptionValues?.join(', ') || '-';
                        }
                      }

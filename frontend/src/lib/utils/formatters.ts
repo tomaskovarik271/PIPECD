@@ -1,5 +1,5 @@
 import type { Person as GeneratedPerson } from '../../generated/graphql/graphql';
-import { CurrencyFormatter } from '../../../../lib/utils/currencyFormatter';
+import { CurrencyFormatter } from './currencyFormatter';
 
 // Memoized date formatter
 const dateFormatter = new Intl.DateTimeFormat('en-US', {

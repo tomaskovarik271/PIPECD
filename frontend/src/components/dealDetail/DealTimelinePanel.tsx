@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, gql } from '@apollo/client';
+import { useQuery } from '@apollo/client';
 import {
   Box,
   VStack,
@@ -19,8 +19,6 @@ import {
   TabPanels,
   Tab,
   TabPanel,
-  IconButton,
-  Tooltip,
   useToast,
   Collapse
 } from '@chakra-ui/react';
@@ -33,26 +31,13 @@ import {
   FiCheckCircle,
   FiAlertCircle,
   FiPlus,
-  FiRefreshCw,
   FiChevronDown,
   FiChevronRight
 } from 'react-icons/fi';
 import { format, isToday, isPast, isFuture } from 'date-fns';
 import { GET_DEAL_CALENDAR_EVENTS } from '../../lib/graphql/calendarOperations';
-import { ScheduleMeetingModal } from '../calendar/ScheduleMeetingModal';
 import { Deal } from '../../stores/useDealsStore';
-
-const SYNC_CALENDAR_EVENTS = gql`
-  mutation SyncCalendarEvents($calendarId: String, $fullSync: Boolean, $daysPast: Int, $daysFuture: Int) {
-    syncCalendarEvents(calendarId: $calendarId, fullSync: $fullSync, daysPast: $daysPast, daysFuture: $daysFuture) {
-      lastSyncAt
-      isConnected
-      hasSyncErrors
-      errorMessage
-      eventsCount
-    }
-  }
-`;
+import { useQuickSchedule } from '../../hooks/useQuickSchedule';
 
 interface DealTimelinePanelProps {
   deal: Deal;
@@ -83,9 +68,9 @@ interface TimelineEvent {
 
 export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) => {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'all'>('month');
-  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [isCancelledExpanded, setIsCancelledExpanded] = useState(false);
   const toast = useToast();
+  const { quickSchedule } = useQuickSchedule();
 
   // Colors for different themes
   const cardBg = useColorModeValue('white', 'gray.800');
@@ -94,61 +79,15 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
   const pastBg = useColorModeValue('gray.50', 'gray.700');
   const todayBg = useColorModeValue('green.50', 'green.900');
 
-  // Query for deal-specific calendar events
-  const { data: calendarData, loading: calendarLoading, error: calendarError, refetch } = useQuery(
+  // Query for deal-specific calendar events (auto-refreshes with background sync)
+  const { data: calendarData, loading: calendarLoading, error: calendarError } = useQuery(
     GET_DEAL_CALENDAR_EVENTS,
     {
       variables: { dealId: deal.id },
-      fetchPolicy: 'cache-and-network'
+      fetchPolicy: 'cache-and-network',
+      pollInterval: 30000 // Auto-refresh every 30 seconds 🔄
     }
   );
-
-  const [syncCalendarEvents, { loading: syncLoading }] = useMutation(SYNC_CALENDAR_EVENTS);
-
-  const handleSyncEvents = async () => {
-    try {
-      const result = await syncCalendarEvents({
-        variables: {
-          daysPast: 7,    // Look back 7 days
-          daysFuture: 30, // Look ahead 30 days
-        }
-      });
-
-      if (result.data?.syncCalendarEvents) {
-        const { eventsCount, hasSyncErrors, errorMessage } = result.data.syncCalendarEvents;
-        
-        if (hasSyncErrors) {
-          toast({
-            title: 'Sync completed with errors',
-            description: errorMessage || 'Some events could not be synced',
-            status: 'warning',
-            duration: 5000,
-            isClosable: true,
-          });
-        } else {
-          toast({
-            title: 'Timeline updated!',
-            description: `${eventsCount} events synced from Google Calendar.`,
-            status: 'success',
-            duration: 4000,
-            isClosable: true,
-          });
-        }
-        
-        // Refetch the calendar events to update the UI
-        refetch();
-      }
-    } catch (error) {
-      console.error('Error syncing calendar events:', error);
-      toast({
-        title: 'Sync failed',
-        description: 'Could not sync calendar events. Please try again.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
 
   // Process and categorize events
   const processEvents = (): {
@@ -336,36 +275,25 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
 
   return (
     <VStack spacing={6} align="stretch">
-      {/* Header with Controls */}
-      <Flex justify="space-between" align="center" wrap="wrap" gap={4}>
-        <Text fontSize="lg" fontWeight="bold">
-          Deal Timeline & Activities
-        </Text>
-        
+      {/* Timeline Header */}
+      <Flex justifyContent="space-between" alignItems="center" mb={4}>
         <HStack spacing={3}>
-          <Select
-            size="sm"
-            value={timeRange}
-            onChange={(e) => setTimeRange(e.target.value as any)}
-            width="auto"
-          >
+          <Icon as={FiCalendar} color="blue.500" />
+          <Text fontSize="lg" fontWeight="semibold">
+            Meeting Timeline
+          </Text>
+          <Badge colorScheme="green" variant="subtle" fontSize="xs">
+            🔄 Auto-sync
+          </Badge>
+        </HStack>
+        
+        <HStack spacing={2}>
+          <Select size="sm" value={timeRange} onChange={(e) => setTimeRange(e.target.value as any)} maxW="200px">
             <option value="week">Past & Next Week</option>
             <option value="month">Past & Next Month</option>
             <option value="quarter">Past & Next Quarter</option>
             <option value="all">All Time</option>
           </Select>
-          
-          <Tooltip label="Sync from Google Calendar">
-            <IconButton
-              size="sm"
-              icon={<FiRefreshCw />}
-              onClick={handleSyncEvents}
-              variant="outline"
-              colorScheme="blue"
-              isLoading={syncLoading}
-              aria-label="Sync from Google Calendar"
-            />
-          </Tooltip>
         </HStack>
       </Flex>
 
@@ -376,7 +304,7 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
           <Box>
             <Text fontWeight="bold">Calendar integration not fully configured</Text>
             <Text fontSize="sm">
-              Connect your Google Calendar to see meeting timeline. Some features may be limited.
+              Connect your Google Calendar to enable automatic meeting timeline sync.
             </Text>
           </Box>
         </Alert>
@@ -536,7 +464,7 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
                   <Button
                     leftIcon={<FiPlus />}
                     colorScheme="blue"
-                    onClick={() => setIsScheduleModalOpen(true)}
+                    onClick={() => quickSchedule({ deal })}
                   >
                     Schedule Meeting
                   </Button>
@@ -599,13 +527,6 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
           </TabPanel>
         </TabPanels>
       </Tabs>
-
-      {/* Schedule Meeting Modal */}
-      <ScheduleMeetingModal
-        isOpen={isScheduleModalOpen}
-        onClose={() => setIsScheduleModalOpen(false)}
-        deal={deal}
-      />
     </VStack>
   );
 }; 

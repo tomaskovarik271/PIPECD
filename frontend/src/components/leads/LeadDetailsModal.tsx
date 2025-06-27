@@ -19,7 +19,7 @@ import {
 import { CheckCircleIcon, InfoIcon } from '@chakra-ui/icons';
 import type { Lead } from '../../stores/useLeadsStore';
 import { formatDate } from '../../lib/utils/formatters';
-import { CurrencyFormatter } from '../../../../lib/utils/currencyFormatter';
+import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface LeadDetailsModalProps {

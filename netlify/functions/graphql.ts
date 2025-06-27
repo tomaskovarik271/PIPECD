@@ -2,8 +2,8 @@ import { createYoga, createSchema, Plugin } from 'graphql-yoga';
 import type { Handler, HandlerContext } from '@netlify/functions';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabaseClient';
-import fs from 'fs';
-import path from 'path';
+import * as fs from 'fs';
+import * as path from 'path';
 import { createClient } from '@supabase/supabase-js';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -75,6 +75,12 @@ import { conversionResolvers } from './graphql/resolvers/conversionResolvers';
 // Import Calendar Resolvers
 import { calendarResolvers } from './graphql/resolvers/calendarResolvers';
 
+// Import Task Resolvers
+import taskResolvers from './graphql/resolvers/taskResolvers';
+
+// Import Business Rules Resolvers
+import { businessRulesResolvers } from './graphql/resolvers/businessRulesResolvers';
+
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
 
@@ -101,7 +107,8 @@ const loadTypeDefs = (): string => {
     'user.graphql', 
     'user_profile.graphql',
     'wfm_definitions.graphql',
-    'wfm_project.graphql'
+    'wfm_project.graphql',
+    'task.graphql'
   ];
 
   // !!! --- DEBUGGING: SELECT FILES TO LOAD --- !!!
@@ -109,37 +116,33 @@ const loadTypeDefs = (): string => {
   // Start by commenting out half, then a quarter, etc. (binary search).
   // Example: load only a few critical files to see if the base schema works.
   const filesToLoad = [
-    // Activity schema files removed - using Google Calendar integration instead
+    'scalars.graphql',
+    'enums.graphql',
+    'base.graphql', 
+    'schema.graphql',
+    'user.graphql', 
+    'user_profile.graphql',
+    'person.graphql', 
+    'organization.graphql', 
+    'deal.graphql',
+    'dealFolders.graphql',
+    'lead.graphql',
+    'history.graphql', 
+    'customFields.graphql', 
+    'emails.graphql',
+    'googleDrive.graphql',
+    'googleIntegration.graphql',
+    'smartStickers.graphql',
+    'wfm_definitions.graphql',
+    'wfm_project.graphql',
     'agent.graphql',
     'agentV2.graphql',
     'appSettings.graphql',
-    'base.graphql', 
-    'calendar.graphql',
     'conversion.graphql',
     'currency.graphql',
-    'customFields.graphql', 
-    'deal.graphql',
-    'dealFolders.graphql',
-    'emails.graphql',
-    'googleDrive.graphql',
-    'lead.graphql',
-    'enums.graphql', 
-    'googleIntegration.graphql',
-    'history.graphql', 
-    'organization.graphql', 
-    'person.graphql', 
-    'scalars.graphql', 
-    'schema.graphql', 
-    'smartStickers.graphql',
-    'user.graphql', 
-    'user_profile.graphql',
-    'wfm_definitions.graphql',
-    'wfm_project.graphql'
-    // To test with a minimal set, you might try just:
-    // 'scalars.graphql',
-    // 'base.graphql', // Defines Query, Mutation
-    // 'user.graphql', // Defines User type for base.graphql
-    // 'activity.graphql', // Extends Query/Mutation
+    'calendar.graphql',
+    'task.graphql',
+    'businessRules.graphql'
   ];
 
   try {
@@ -151,6 +154,9 @@ const loadTypeDefs = (): string => {
         typeDefs += fs.readFileSync(path.join(schemaDir, file), 'utf-8') + '\n';
       // }
     });
+    console.log('Loaded schema files:', filesToLoad);
+    console.log('Schema length:', typeDefs.length);
+    console.log('Business rules in schema:', typeDefs.includes('businessRules'));
     // console.log('Concatenated GraphQL Schema (potentially partial if filesToLoad is modified):\n', typeDefs);
     return typeDefs;
   } catch (error: unknown) {
@@ -186,6 +192,8 @@ export const resolvers = {
     // Activity reminder resolvers removed - using Google Calendar integration instead
     ...currencyResolvers.Query,
     ...calendarResolvers.Query,
+    ...taskResolvers.Query,
+    ...businessRulesResolvers.Query,
   },
   Mutation: {
     ...BaseMutation,
@@ -206,6 +214,8 @@ export const resolvers = {
     // Activity reminder resolvers removed - using Google Calendar integration instead
     ...currencyResolvers.Mutation,
     ...calendarResolvers.Mutation,
+    ...taskResolvers.Mutation,
+    ...businessRulesResolvers.Mutation,
   },
   Person,
   Deal: {
@@ -235,7 +245,14 @@ export const resolvers = {
     ...agentV2Resolvers.AgentThought,
   },
   CalendarEvent: calendarResolvers.CalendarEvent,
-
+  // Task type resolvers
+  Task: taskResolvers.Task,
+  TaskDependency: taskResolvers.TaskDependency,
+  TaskHistory: taskResolvers.TaskHistory,
+  // Business Rules type resolvers
+  BusinessRule: businessRulesResolvers.BusinessRule,
+  BusinessRuleNotification: businessRulesResolvers.BusinessRuleNotification,
+  RuleExecution: businessRulesResolvers.RuleExecution,
 }; 
 
 const yoga = createYoga<GraphQLContext>({

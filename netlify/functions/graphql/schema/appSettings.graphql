@@ -14,7 +14,7 @@ input UpdateAppSettingInput {
   settingValue: JSON!
 }
 
-type Query {
+extend type Query {
   """Get all app settings (admin only for private settings)"""
   appSettings: [AppSetting!]!
   
@@ -25,7 +25,7 @@ type Query {
   googleDriveSettings: GoogleDriveConfig!
 }
 
-type Mutation {
+extend type Mutation {
   """Update an app setting (admin only)"""
   updateAppSetting(input: UpdateAppSettingInput!): AppSetting!
 }

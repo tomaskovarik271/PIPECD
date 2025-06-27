@@ -1,11 +1,10 @@
 import { GraphQLError } from 'graphql';
-import { getAuthenticatedClient, handleSupabaseError, recordEntityHistory } from '../serviceUtils';
+import { getAuthenticatedClient, handleSupabaseError } from '../serviceUtils';
 import type { LeadInput, CustomFieldValueInput } from '../generated/graphql';
 import { inngest } from '../inngestClient';
 
 import { processCustomFieldsForCreate, processCustomFieldsForUpdate } from './leadCustomFields';
 import { calculateLeadScoreFields } from './leadScoring';
-import { generateLeadChanges, TRACKED_LEAD_FIELDS } from './leadHistory';
 import { createWFMProject } from '../wfmProjectService';
 import type { GraphQLContext } from '../../netlify/functions/graphql/helpers';
 import type { User } from '@supabase/supabase-js';
@@ -274,26 +273,6 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
 
               // console.log(`[leadCrud.createLead] Successfully linked WFM project ${wfmProjectIdToLink} to lead ${newLeadRecord.id}`);
 
-    // Record lead creation in history (using the FINAL updated lead record)
-    try {
-      await recordEntityHistory(
-        supabase,
-        'lead_history',
-        'lead_id',
-        updatedLeadWithWfmLink.id,
-        userId,
-        'CREATED',
-        { 
-          lead_name: updatedLeadWithWfmLink.name,
-          lead_score: updatedLeadWithWfmLink.lead_score,
-          source: updatedLeadWithWfmLink.source
-        }
-      );
-    } catch (historyError) {
-      console.error('[leadCrud.createLead] Failed to record lead creation history:', historyError);
-      // Continue - history failure shouldn't block lead creation
-    }
-
     return updatedLeadWithWfmLink as DbLead;
 
   } catch (wfmError: any) {
@@ -376,24 +355,8 @@ export async function updateLead(userId: string, id: string, input: LeadServiceU
     throw new GraphQLError('Failed to update lead', { extensions: { code: 'INTERNAL_SERVER_ERROR' } });
   }
 
-  // Record changes in history
-  try {
-    const changes = generateLeadChanges(currentLead, updatedLeadRecord);
-    if (changes && Object.keys(changes).length > 0) {
-      await recordEntityHistory(
-        supabase,
-        'lead_history',
-        'lead_id',
-        id,
-        userId,
-        'UPDATED',
-        changes
-      );
-    }
-  } catch (historyError) {
-    console.error('[leadCrud.updateLead] Failed to record lead update history:', historyError);
-    // Continue - history failure shouldn't block update
-  }
+  // Note: History recording is handled automatically by the track_lead_changes() trigger
+  // No manual history recording needed here
 
   // Trigger lead score recalculation if relevant fields changed
   const scoreRelevantFields = ['source', 'estimated_value', 'contact_email', 'company_name'];
@@ -448,7 +411,7 @@ export async function deleteLead(userId: string, id: string, accessToken: string
   // console.log('[leadCrud.deleteLead] called for user:', userId, 'id:', id);
   const supabase = getAuthenticatedClient(accessToken);
   
-  // Get lead data before deletion for history
+  // Get lead data before deletion for validation
   const leadToDelete = await getLeadById(userId, id, accessToken);
   if (!leadToDelete) {
     throw new GraphQLError('Lead not found', { extensions: { code: 'NOT_FOUND' } });
@@ -461,6 +424,7 @@ export async function deleteLead(userId: string, id: string, accessToken: string
     });
   }
 
+  // Delete the lead - the database trigger will automatically handle history recording
   const { error } = await supabase
     .from('leads')
     .delete()
@@ -468,24 +432,8 @@ export async function deleteLead(userId: string, id: string, accessToken: string
 
   handleSupabaseError(error, 'deleting lead');
 
-  // Record deletion in history
-  try {
-    await recordEntityHistory(
-      supabase,
-      'lead_history',
-      'lead_id',
-      id,
-      userId,
-      'DELETED',
-      {
-        lead_name: leadToDelete.name,
-        deleted_at: new Date().toISOString()
-      }
-    );
-  } catch (historyError) {
-    console.error('[leadCrud.deleteLead] Failed to record lead deletion history:', historyError);
-    // Continue - history failure shouldn't block deletion
-  }
+  // Note: History recording is handled automatically by the track_lead_changes() trigger
+  // No manual history recording needed here
 
   return true;
 }
@@ -522,7 +470,7 @@ export async function qualifyLead(
   qualificationNotes: string,
   accessToken: string
 ): Promise<DbLead> {
-  // This function is deprecated - qualification should be handled through WFM metadata
+  // This function is deprecated - qualification should be handled through WFM workflow progression. Use updateLeadWFMProgress instead.');
   throw new Error('Lead qualification should be handled through WFM workflow progression. Use updateLeadWFMProgress instead.');
 }
 
@@ -593,20 +541,8 @@ export async function recalculateLeadScore(
       throw new Error('Failed to update lead score');
     }
 
-    // Record history
-    await recordEntityHistory(
-      supabaseClient,
-      'lead_history',
-      'lead_id',
-      leadId,
-      userId,
-      'score_updated',
-      {
-        old_score: lead.lead_score,
-        new_score: scoreFields.totalScore,
-        score_factors: scoreFields.factors,
-      }
-    );
+    // Note: History recording is handled automatically by the track_lead_changes() trigger
+    // when the lead is updated above. No manual history recording needed here.
 
     return updatedLead;
   } catch (error) {

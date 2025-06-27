@@ -9,7 +9,7 @@ import type { Person as GeneratedPerson, CustomFieldDefinition as GQLCustomField
 
 import { getLinkDisplayDetails } from '../lib/utils/linkUtils';
 import { formatPersonName, formatDate } from '../lib/utils/formatters';
-import { CurrencyFormatter } from '../../../lib/utils/currencyFormatter';
+import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 
 interface UseDealsTableColumnsProps {
   dealCustomFieldDefinitions: GQLCustomFieldDefinition[];

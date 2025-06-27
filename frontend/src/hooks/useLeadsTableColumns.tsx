@@ -6,7 +6,7 @@ import type { ColumnDefinition } from '../components/common/SortableTable';
 import type { Lead } from '../stores/useLeadsStore';
 import type { CustomFieldDefinition } from '../generated/graphql/graphql';
 import { formatDate } from '../lib/utils/formatters';
-import { CurrencyFormatter } from '../../../lib/utils/currencyFormatter';
+import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 import { getLinkDisplayDetails } from '../lib/utils/linkUtils';
 import { useThemeColors } from '../hooks/useThemeColors';
 import { ConvertedLeadActions } from '../components/leads/ConvertedLeadActions';

@@ -139,7 +139,7 @@ type ToolDiscoveryResponse {
 # Queries
 # ================================
 
-type Query {
+extend type Query {
   # Get all conversations for the current user
   agentConversations(limit: Int = 10, offset: Int = 0): [AgentConversation!]!
   
@@ -157,7 +157,7 @@ type Query {
 # Mutations
 # ================================
 
-type Mutation {
+extend type Mutation {
   # Start a new conversation or send a message to existing one
   sendAgentMessage(input: SendMessageInput!): AgentResponse!
   

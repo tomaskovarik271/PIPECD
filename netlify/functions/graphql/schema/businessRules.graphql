@@ -1,0 +1,325 @@
+# Business Rules Engine GraphQL Schema
+# Provides comprehensive API for managing business rules, notifications, and execution tracking
+
+# ===============================
+# ENUMS
+# ===============================
+
+enum EntityTypeEnum {
+  DEAL
+  LEAD
+  TASK
+  PERSON
+  ORGANIZATION
+  ACTIVITY
+}
+
+enum TriggerTypeEnum {
+  EVENT_BASED
+  FIELD_CHANGE
+  TIME_BASED
+}
+
+enum RuleStatusEnum {
+  ACTIVE
+  INACTIVE
+  DRAFT
+}
+
+enum RuleConditionOperator {
+  EQUALS
+  NOT_EQUALS
+  GREATER_THAN
+  LESS_THAN
+  GREATER_EQUAL
+  LESS_EQUAL
+  OLDER_THAN
+  NEWER_THAN
+  IS_NULL
+  IS_NOT_NULL
+  CONTAINS
+  STARTS_WITH
+  ENDS_WITH
+  IN
+  NOT_IN
+  CHANGED_FROM
+  CHANGED_TO
+  DECREASED_BY_PERCENT
+  INCREASED_BY_PERCENT
+}
+
+enum RuleActionType {
+  NOTIFY_USER
+  NOTIFY_OWNER
+  CREATE_TASK
+  CREATE_ACTIVITY
+  UPDATE_FIELD
+  SEND_EMAIL
+}
+
+enum LogicalOperator {
+  AND
+  OR
+}
+
+# ===============================
+# INPUT TYPES
+# ===============================
+
+input RuleConditionInput {
+  field: String!
+  operator: RuleConditionOperator!
+  value: String!
+  logicalOperator: LogicalOperator = AND
+}
+
+input RuleActionInput {
+  type: RuleActionType!
+  target: String # User ID, email, etc.
+  template: String # Notification template name
+  message: String
+  priority: Int = 1
+  metadata: JSON
+}
+
+input BusinessRuleInput {
+  name: String!
+  description: String
+  entityType: EntityTypeEnum!
+  triggerType: TriggerTypeEnum!
+  triggerEvents: [String!]
+  triggerFields: [String!]
+  conditions: [RuleConditionInput!]!
+  actions: [RuleActionInput!]!
+  wfmWorkflowId: ID
+  wfmStepId: ID
+  wfmStatusId: ID
+  status: RuleStatusEnum = DRAFT
+}
+
+input UpdateBusinessRuleInput {
+  name: String
+  description: String
+  triggerEvents: [String!]
+  triggerFields: [String!]
+  conditions: [RuleConditionInput!]
+  actions: [RuleActionInput!]
+  wfmWorkflowId: ID
+  wfmStepId: ID
+  wfmStatusId: ID
+  status: RuleStatusEnum
+}
+
+input BusinessRuleFilters {
+  entityType: EntityTypeEnum
+  triggerType: TriggerTypeEnum
+  status: RuleStatusEnum
+  search: String
+}
+
+# ===============================
+# OUTPUT TYPES
+# ===============================
+
+type RuleCondition {
+  field: String!
+  operator: RuleConditionOperator!
+  value: String!
+  logicalOperator: LogicalOperator!
+}
+
+type RuleAction {
+  type: RuleActionType!
+  target: String
+  template: String
+  message: String
+  priority: Int!
+  metadata: JSON
+}
+
+type BusinessRule {
+  id: ID!
+  name: String!
+  description: String
+  entityType: EntityTypeEnum!
+  triggerType: TriggerTypeEnum!
+  triggerEvents: [String!]!
+  triggerFields: [String!]!
+  conditions: [RuleCondition!]!
+  actions: [RuleAction!]!
+  status: RuleStatusEnum!
+  executionCount: Int!
+  lastError: String
+  lastExecution: DateTime
+  
+  # WFM Integration
+  wfmWorkflow: WFMWorkflow
+  wfmStep: WFMWorkflowStep
+  wfmStatus: WFMStatus
+  
+  # Metadata
+  createdBy: User
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type BusinessRuleNotification {
+  id: ID!
+  rule: BusinessRule!
+  entityType: EntityTypeEnum!
+  entityId: ID!
+  user: User!
+  title: String!
+  message: String
+  notificationType: String!
+  priority: Int!
+  actions: JSON
+  readAt: DateTime
+  dismissedAt: DateTime
+  actedUponAt: DateTime
+  createdAt: DateTime!
+}
+
+type RuleExecution {
+  id: ID!
+  rule: BusinessRule!
+  entityId: ID!
+  entityType: EntityTypeEnum!
+  executionTrigger: String!
+  conditionsMet: Boolean!
+  executionResult: JSON!
+  notificationsCreated: Int!
+  tasksCreated: Int!
+  activitiesCreated: Int!
+  errors: [String!]!
+  executionTimeMs: Int
+  executedAt: DateTime!
+}
+
+type BusinessRuleExecutionResult {
+  rulesProcessed: Int!
+  notificationsCreated: Int!
+  tasksCreated: Int!
+  activitiesCreated: Int!
+  errors: [String!]!
+}
+
+type BusinessRulesConnection {
+  nodes: [BusinessRule!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type BusinessRuleNotificationsConnection {
+  nodes: [BusinessRuleNotification!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type RuleExecutionsConnection {
+  nodes: [RuleExecution!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+# Business Rule Analytics
+type BusinessRuleAnalytics {
+  totalRules: Int!
+  activeRules: Int!
+  totalExecutions: Int!
+  totalNotifications: Int!
+  averageExecutionTime: Float!
+  errorRate: Float!
+  topPerformingRules: [BusinessRule!]!
+  recentErrors: [String!]!
+}
+
+# ===============================
+# QUERIES
+# ===============================
+
+extend type Query {
+  # Business Rules Management
+  businessRules(
+    filters: BusinessRuleFilters
+    first: Int = 20
+    after: String
+  ): BusinessRulesConnection!
+  
+  businessRule(id: ID!): BusinessRule
+  
+  # Notifications
+  businessRuleNotifications(
+    userId: ID
+    unreadOnly: Boolean = false
+    first: Int = 20
+    after: String
+  ): BusinessRuleNotificationsConnection!
+  
+  businessRuleNotification(id: ID!): BusinessRuleNotification
+  
+  # Execution Tracking
+  ruleExecutions(
+    ruleId: ID
+    entityType: EntityTypeEnum
+    entityId: ID
+    first: Int = 20
+    after: String
+  ): RuleExecutionsConnection!
+  
+  ruleExecution(id: ID!): RuleExecution
+  
+  # Analytics
+  businessRuleAnalytics(
+    entityType: EntityTypeEnum
+    timeRange: String # "7d", "30d", "90d"
+  ): BusinessRuleAnalytics!
+  
+  # Testing & Validation
+  validateBusinessRule(input: BusinessRuleInput!): [String!]! # Returns validation errors
+  
+  previewRuleExecution(
+    ruleId: ID!
+    entityType: EntityTypeEnum!
+    entityId: ID!
+  ): BusinessRuleExecutionResult!
+}
+
+# ===============================
+# MUTATIONS
+# ===============================
+
+extend type Mutation {
+  # Business Rules Management
+  createBusinessRule(input: BusinessRuleInput!): BusinessRule!
+  updateBusinessRule(id: ID!, input: UpdateBusinessRuleInput!): BusinessRule!
+  deleteBusinessRule(id: ID!): Boolean!
+  
+  # Rule Status Management
+  activateBusinessRule(id: ID!): BusinessRule!
+  deactivateBusinessRule(id: ID!): BusinessRule!
+  duplicateBusinessRule(id: ID!, name: String!): BusinessRule!
+  
+  # Notification Management
+  markNotificationAsRead(id: ID!): BusinessRuleNotification!
+  markNotificationAsDismissed(id: ID!): BusinessRuleNotification!
+  markNotificationAsActedUpon(id: ID!): BusinessRuleNotification!
+  markAllNotificationsAsRead(userId: ID!): Int! # Returns count of marked notifications
+  
+  # Manual Rule Execution (for testing)
+  executeBusinessRule(
+    ruleId: ID!
+    entityType: EntityTypeEnum!
+    entityId: ID!
+    testMode: Boolean = false
+  ): BusinessRuleExecutionResult!
+  
+  # Bulk Operations
+  bulkUpdateBusinessRuleStatus(
+    ruleIds: [ID!]!
+    status: RuleStatusEnum!
+  ): [BusinessRule!]!
+} 

@@ -92,10 +92,12 @@ import DealEmailsPanel from '../components/deals/DealEmailsPanel';
 import { SharedDriveDocumentBrowser } from '../components/deals/SharedDriveDocumentBrowser';
 import { DealNotesPanel } from '../components/dealDetail/DealNotesPanel';
 import { DealTimelinePanel } from '../components/dealDetail/DealTimelinePanel';
+import { DealTasksPanel } from '../components/deals/DealTasksPanel';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
-import { ScheduleMeetingModal } from '../components/calendar/ScheduleMeetingModal';
+import { DirectCalendarScheduler } from '../lib/utils/directCalendarScheduler';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
+import { useQuickSchedule } from '../hooks/useQuickSchedule';
 
 // Type imports
 
@@ -165,6 +167,9 @@ const DealDetailPage = () => {
   // Sticky notes count state for tab display
   const [stickyNotesCount, setStickyNotesCount] = useState(0);
   
+  // Tasks count state for tab display
+  const [tasksCount, setTasksCount] = useState(0);
+  
   // State for inline editing in right sidebar
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [newAmount, setNewAmount] = useState<string>('');
@@ -176,8 +181,8 @@ const DealDetailPage = () => {
   // State for collapsible custom fields
   const [isCustomFieldsExpanded, setIsCustomFieldsExpanded] = useState(true);
   
-  // State for schedule meeting modal
-  const [isScheduleMeetingModalOpen, setIsScheduleMeetingModalOpen] = useState(false);
+  // Direct calendar scheduling (no modal needed)
+  const { quickSchedule } = useQuickSchedule();
   
   // Memoize callbacks to prevent infinite re-renders
   const handleStickyNotesCountChange = useCallback((count: number) => {
@@ -190,6 +195,10 @@ const DealDetailPage = () => {
   
   const handleContactsCountChange = useCallback((count: number) => {
     setContactsCount(count);
+  }, []);
+
+  const handleTasksCountChange = useCallback((count: number) => {
+    setTasksCount(count);
   }, []);
 
   const { isOpen: isEditDealModalOpen, onOpen: onEditDealModalOpen, onClose: onEditDealModalClose } = useDisclosure();
@@ -469,7 +478,16 @@ const DealDetailPage = () => {
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                       <HStack spacing={2}>
                         <Icon as={FiClock} />
-                        <Text>Timeline</Text>
+                        <Text>Meetings</Text>
+                      </HStack>
+                    </Tab>
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                      <HStack spacing={2}>
+                        <Icon as={FaClipboardList} />
+                        <Text>Tasks</Text>
+                        <Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
+                          {tasksCount}
+                        </Badge>
                       </HStack>
                     </Tab>
                     {/* Activities tab removed - using Google Calendar integration instead */}
@@ -510,6 +528,16 @@ const DealDetailPage = () => {
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
                         <DealTimelinePanel deal={currentDeal as Deal} />
+                      </Box>
+                    </TabPanel>
+                    
+                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
+                      <Box w="100%" maxW="100%">
+                        <DealTasksPanel 
+                          dealId={currentDeal.id}
+                          dealName={currentDeal.name}
+                          onTaskCountChange={handleTasksCountChange}
+                        />
                       </Box>
                     </TabPanel>
                   
@@ -832,13 +860,13 @@ const DealDetailPage = () => {
                     </Text>
                   </HStack>
 
-                  {/* Schedule Meeting Button */}
+                  {/* Direct Schedule Meeting Button */}
                   <Box pt={4}>
                     <Button
                       leftIcon={<CalendarIcon />}
                       colorScheme="blue"
                       size="md"
-                      onClick={() => setIsScheduleMeetingModalOpen(true)}
+                      onClick={() => quickSchedule({ deal: currentDeal })}
                       width="100%"
                       variant="solid"
                     >
@@ -994,14 +1022,7 @@ const DealDetailPage = () => {
         />
       )}
 
-      {/* Schedule Meeting Modal */}
-      {isScheduleMeetingModalOpen && (
-        <ScheduleMeetingModal
-          isOpen={isScheduleMeetingModalOpen}
-          onClose={() => setIsScheduleMeetingModalOpen(false)}
-          deal={currentDeal}
-        />
-      )}
+      {/* Direct calendar scheduling - no modal needed! */}
     </Box>
   );
 };

@@ -251,6 +251,130 @@ export type AvailabilitySlot = {
   start: Scalars["DateTime"]["output"];
 };
 
+export type BulkTaskUpdatesInput = {
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  dueDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  priority?: InputMaybe<TaskPriority>;
+  status?: InputMaybe<TaskStatus>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+};
+
+export type BusinessRule = {
+  __typename?: "BusinessRule";
+  actions: Array<RuleAction>;
+  conditions: Array<RuleCondition>;
+  createdAt: Scalars["DateTime"]["output"];
+  createdBy?: Maybe<User>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  entityType: EntityTypeEnum;
+  executionCount: Scalars["Int"]["output"];
+  id: Scalars["ID"]["output"];
+  lastError?: Maybe<Scalars["String"]["output"]>;
+  lastExecution?: Maybe<Scalars["DateTime"]["output"]>;
+  name: Scalars["String"]["output"];
+  status: RuleStatusEnum;
+  triggerEvents: Array<Scalars["String"]["output"]>;
+  triggerFields: Array<Scalars["String"]["output"]>;
+  triggerType: TriggerTypeEnum;
+  updatedAt: Scalars["DateTime"]["output"];
+  wfmStatus?: Maybe<WfmStatus>;
+  wfmStep?: Maybe<WfmWorkflowStep>;
+  wfmWorkflow?: Maybe<WfmWorkflow>;
+};
+
+export type BusinessRuleAnalytics = {
+  __typename?: "BusinessRuleAnalytics";
+  activeRules: Scalars["Int"]["output"];
+  averageExecutionTime: Scalars["Float"]["output"];
+  errorRate: Scalars["Float"]["output"];
+  recentErrors: Array<Scalars["String"]["output"]>;
+  topPerformingRules: Array<BusinessRule>;
+  totalExecutions: Scalars["Int"]["output"];
+  totalNotifications: Scalars["Int"]["output"];
+  totalRules: Scalars["Int"]["output"];
+};
+
+export type BusinessRuleExecutionResult = {
+  __typename?: "BusinessRuleExecutionResult";
+  activitiesCreated: Scalars["Int"]["output"];
+  errors: Array<Scalars["String"]["output"]>;
+  notificationsCreated: Scalars["Int"]["output"];
+  rulesProcessed: Scalars["Int"]["output"];
+  tasksCreated: Scalars["Int"]["output"];
+};
+
+export type BusinessRuleFilters = {
+  entityType?: InputMaybe<EntityTypeEnum>;
+  search?: InputMaybe<Scalars["String"]["input"]>;
+  status?: InputMaybe<RuleStatusEnum>;
+  triggerType?: InputMaybe<TriggerTypeEnum>;
+};
+
+export type BusinessRuleInput = {
+  actions: Array<RuleActionInput>;
+  conditions: Array<RuleConditionInput>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  entityType: EntityTypeEnum;
+  name: Scalars["String"]["input"];
+  status?: InputMaybe<RuleStatusEnum>;
+  triggerEvents?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  triggerFields?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  triggerType: TriggerTypeEnum;
+  wfmStatusId?: InputMaybe<Scalars["ID"]["input"]>;
+  wfmStepId?: InputMaybe<Scalars["ID"]["input"]>;
+  wfmWorkflowId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type BusinessRuleNotification = {
+  __typename?: "BusinessRuleNotification";
+  actedUponAt?: Maybe<Scalars["DateTime"]["output"]>;
+  actions?: Maybe<Scalars["JSON"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  dismissedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  entityId: Scalars["ID"]["output"];
+  entityType: EntityTypeEnum;
+  id: Scalars["ID"]["output"];
+  message?: Maybe<Scalars["String"]["output"]>;
+  notificationType: Scalars["String"]["output"];
+  priority: Scalars["Int"]["output"];
+  readAt?: Maybe<Scalars["DateTime"]["output"]>;
+  rule: BusinessRule;
+  title: Scalars["String"]["output"];
+  user: User;
+};
+
+export type BusinessRuleNotificationsConnection = {
+  __typename?: "BusinessRuleNotificationsConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  nodes: Array<BusinessRuleNotification>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type BusinessRulesConnection = {
+  __typename?: "BusinessRulesConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  nodes: Array<BusinessRule>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export type CrmContextInput = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityId: Scalars["ID"]["input"];
+  entityType: TaskEntityType;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type CrmEventInput = {
+  entityId: Scalars["ID"]["input"];
+  entityType: TaskEntityType;
+  eventData: Scalars["JSON"]["input"];
+  eventType: Scalars["String"]["input"];
+};
+
 export type CalendarAttendee = {
   __typename?: "CalendarAttendee";
   displayName?: Maybe<Scalars["String"]["output"]>;
@@ -410,6 +534,27 @@ export enum ContactScopeType {
   Primary = "PRIMARY",
   SelectedRoles = "SELECTED_ROLES",
 }
+
+export type ContactSuggestion = {
+  __typename?: "ContactSuggestion";
+  email: Scalars["String"]["output"];
+  name?: Maybe<Scalars["String"]["output"]>;
+  photoUrl?: Maybe<Scalars["String"]["output"]>;
+};
+
+export type ContextualTaskCreationInput = {
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  dueDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
+  priority?: InputMaybe<TaskPriority>;
+  taskType: TaskType;
+  templateId?: InputMaybe<Scalars["ID"]["input"]>;
+  title: Scalars["String"]["input"];
+};
 
 export type ConversionHistory = {
   __typename?: "ConversionHistory";
@@ -571,6 +716,47 @@ export type CreateStickerInput = {
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   title: Scalars["String"]["input"];
   width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type CreateTaskAutomationRuleInput = {
+  appliesToEntityType: TaskEntityType;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  name: Scalars["String"]["input"];
+  taskTemplate: Scalars["JSON"]["input"];
+  triggerConditions: Scalars["JSON"]["input"];
+  triggerEvent: Scalars["String"]["input"];
+};
+
+export type CreateTaskDependencyInput = {
+  dependencyType?: InputMaybe<Scalars["String"]["input"]>;
+  dependsOnTaskId: Scalars["ID"]["input"];
+  taskId: Scalars["ID"]["input"];
+};
+
+export type CreateTaskInput = {
+  affectsLeadScoring?: InputMaybe<Scalars["Boolean"]["input"]>;
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  blocksStageProgression?: InputMaybe<Scalars["Boolean"]["input"]>;
+  completionTriggersStageChange?: InputMaybe<Scalars["Boolean"]["input"]>;
+  customFieldValues?: InputMaybe<Array<CustomFieldValueInput>>;
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  dueDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  entityId: Scalars["ID"]["input"];
+  entityType: TaskEntityType;
+  estimatedHours?: InputMaybe<Scalars["Int"]["input"]>;
+  leadId?: InputMaybe<Scalars["ID"]["input"]>;
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  parentTaskId?: InputMaybe<Scalars["ID"]["input"]>;
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
+  priority?: InputMaybe<TaskPriority>;
+  requiredForDealClosure?: InputMaybe<Scalars["Boolean"]["input"]>;
+  status?: InputMaybe<TaskStatus>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  taskType: TaskType;
+  title: Scalars["String"]["input"];
+  wfmProjectId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type CreateWfmProjectTypeInput = {
@@ -1143,6 +1329,15 @@ export enum EntityType {
   Person = "PERSON",
 }
 
+export enum EntityTypeEnum {
+  Activity = "ACTIVITY",
+  Deal = "DEAL",
+  Lead = "LEAD",
+  Organization = "ORGANIZATION",
+  Person = "PERSON",
+  Task = "TASK",
+}
+
 export type ExchangeRate = {
   __typename?: "ExchangeRate";
   createdAt: Scalars["String"]["output"];
@@ -1195,6 +1390,7 @@ export type GoogleDriveConfig = {
 export type GoogleIntegrationStatus = {
   __typename?: "GoogleIntegrationStatus";
   hasCalendarAccess: Scalars["Boolean"]["output"];
+  hasContactsAccess: Scalars["Boolean"]["output"];
   hasDriveAccess: Scalars["Boolean"]["output"];
   hasGmailAccess: Scalars["Boolean"]["output"];
   hasGoogleAuth: Scalars["Boolean"]["output"];
@@ -1379,19 +1575,31 @@ export type LeadsStats = {
   totalLeads: Scalars["Int"]["output"];
 };
 
+export enum LogicalOperator {
+  And = "AND",
+  Or = "OR",
+}
+
 export type Mutation = {
   __typename?: "Mutation";
+  activateBusinessRule: BusinessRule;
   addAgentThoughts: Array<AgentThought>;
   addAgentV2Thoughts: Array<AgentThought>;
   addDealContextToEvent: CalendarEvent;
   addDealParticipant: DealParticipant;
   archiveThread: Scalars["Boolean"]["output"];
   assignAccountManager: Organization;
+  assignTask: Task;
   assignUserRole: User;
   attachDocumentToDeal: DealDocumentAttachment;
   attachDocumentToNoteAndDeal: DualAttachmentResponse;
   attachFileToDeal: DealDocumentAttachment;
+  bulkAssignTasks: Array<Task>;
   bulkConvertLeads: Array<LeadConversionResult>;
+  bulkDeleteTasks: Scalars["Boolean"]["output"];
+  bulkUpdateBusinessRuleStatus: Array<BusinessRule>;
+  bulkUpdateTasks: Array<Task>;
+  completeTask: Task;
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
   convertCurrency: ConversionResult;
@@ -1400,8 +1608,10 @@ export type Mutation = {
   copyDriveFile: DriveFile;
   createAgentConversation: AgentConversation;
   createAgentV2Conversation: AgentConversation;
+  createBusinessRule: BusinessRule;
   createCalendarEvent: CalendarEvent;
   createContactFromEmail: Person;
+  createContextualTask: Task;
   createCurrency: Currency;
   createCustomFieldDefinition: CustomFieldDefinition;
   createDeal: Deal;
@@ -1413,13 +1623,19 @@ export type Mutation = {
   createPerson: Person;
   createReactivationPlan: ReactivationPlan;
   createSticker: SmartSticker;
+  createTask: Task;
+  createTaskAutomationRule: TaskAutomationRule;
+  createTaskDependency: TaskDependency;
+  createTasksFromTemplate: Array<Task>;
   createWFMProjectType: WfmProjectType;
   createWFMStatus: WfmStatus;
   createWFMWorkflow: WfmWorkflow;
   createWFMWorkflowStep: WfmWorkflowStep;
   createWFMWorkflowTransition: WfmWorkflowTransition;
+  deactivateBusinessRule: BusinessRule;
   deactivateCustomFieldDefinition: CustomFieldDefinition;
   deleteAgentConversation: Scalars["Boolean"]["output"];
+  deleteBusinessRule: Scalars["Boolean"]["output"];
   deleteCalendarEvent: Scalars["Boolean"]["output"];
   deleteDeal?: Maybe<Scalars["Boolean"]["output"]>;
   deleteDriveFile: Scalars["Boolean"]["output"];
@@ -1428,13 +1644,22 @@ export type Mutation = {
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   deleteReactivationPlan: Scalars["Boolean"]["output"];
   deleteSticker: Scalars["Boolean"]["output"];
+  deleteTask: Scalars["Boolean"]["output"];
+  deleteTaskAutomationRule: Scalars["Boolean"]["output"];
+  deleteTaskDependency: Scalars["Boolean"]["output"];
   deleteWFMWorkflowStep: WfmWorkflowStepMutationResponse;
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
   detachFileFromDeal: Scalars["Boolean"]["output"];
+  duplicateBusinessRule: BusinessRule;
   executeAgentStep: AgentResponse;
+  executeBusinessRule: BusinessRuleExecutionResult;
   generateTaskContentFromEmail: AiGeneratedTaskContent;
   linkEmailToDeal: Scalars["Boolean"]["output"];
+  markAllNotificationsAsRead: Scalars["Int"]["output"];
+  markNotificationAsActedUpon: BusinessRuleNotification;
+  markNotificationAsDismissed: BusinessRuleNotification;
+  markNotificationAsRead: BusinessRuleNotification;
   markThreadAsRead: Scalars["Boolean"]["output"];
   markThreadAsUnread: Scalars["Boolean"]["output"];
   moveDriveFile: DriveFile;
@@ -1459,10 +1684,13 @@ export type Mutation = {
   syncCalendarEvents: CalendarSyncStatus;
   syncGmailEmails: Array<Email>;
   toggleStickerPin: SmartSticker;
+  triggerTaskAutomation: Array<Task>;
+  unassignTask: Task;
   unpinEmail: Scalars["Boolean"]["output"];
   updateAgentConversation: AgentConversation;
   /** Update an app setting (admin only) */
   updateAppSetting: AppSetting;
+  updateBusinessRule: BusinessRule;
   updateCalendarEvent: CalendarEvent;
   updateCalendarPreferences: CalendarPreferences;
   updateCurrency: Currency;
@@ -1482,6 +1710,8 @@ export type Mutation = {
   updateReactivationPlan: ReactivationPlan;
   updateSticker: SmartSticker;
   updateStickerTags: SmartSticker;
+  updateTask: Task;
+  updateTaskAutomationRule: TaskAutomationRule;
   updateUserCurrencyPreferences: UserCurrencyPreferences;
   /** Updates the profile for the currently authenticated user. */
   updateUserProfile?: Maybe<User>;
@@ -1493,6 +1723,10 @@ export type Mutation = {
   updateWFMWorkflowTransition: WfmWorkflowTransition;
   uploadFileToDrive: DriveFile;
   uploadToGoogleDrive: Document;
+};
+
+export type MutationActivateBusinessRuleArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationAddAgentThoughtsArgs = {
@@ -1524,6 +1758,11 @@ export type MutationAssignAccountManagerArgs = {
   userId: Scalars["ID"]["input"];
 };
 
+export type MutationAssignTaskArgs = {
+  taskId: Scalars["ID"]["input"];
+  userId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
 export type MutationAssignUserRoleArgs = {
   roleName: Scalars["String"]["input"];
   userId: Scalars["ID"]["input"];
@@ -1541,9 +1780,33 @@ export type MutationAttachFileToDealArgs = {
   input: AttachFileInput;
 };
 
+export type MutationBulkAssignTasksArgs = {
+  taskIds: Array<Scalars["ID"]["input"]>;
+  userId: Scalars["ID"]["input"];
+};
+
 export type MutationBulkConvertLeadsArgs = {
   ids: Array<Scalars["ID"]["input"]>;
   input: LeadConversionInput;
+};
+
+export type MutationBulkDeleteTasksArgs = {
+  taskIds: Array<Scalars["ID"]["input"]>;
+};
+
+export type MutationBulkUpdateBusinessRuleStatusArgs = {
+  ruleIds: Array<Scalars["ID"]["input"]>;
+  status: RuleStatusEnum;
+};
+
+export type MutationBulkUpdateTasksArgs = {
+  taskIds: Array<Scalars["ID"]["input"]>;
+  updates: BulkTaskUpdatesInput;
+};
+
+export type MutationCompleteTaskArgs = {
+  completionData?: InputMaybe<TaskCompletionInput>;
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationComposeEmailArgs = {
@@ -1585,12 +1848,20 @@ export type MutationCreateAgentV2ConversationArgs = {
   input: CreateAgentV2ConversationInput;
 };
 
+export type MutationCreateBusinessRuleArgs = {
+  input: BusinessRuleInput;
+};
+
 export type MutationCreateCalendarEventArgs = {
   input: CreateCalendarEventInput;
 };
 
 export type MutationCreateContactFromEmailArgs = {
   input: CreateContactFromEmailInput;
+};
+
+export type MutationCreateContextualTaskArgs = {
+  input: ContextualTaskCreationInput;
 };
 
 export type MutationCreateCurrencyArgs = {
@@ -1638,6 +1909,23 @@ export type MutationCreateStickerArgs = {
   input: CreateStickerInput;
 };
 
+export type MutationCreateTaskArgs = {
+  input: CreateTaskInput;
+};
+
+export type MutationCreateTaskAutomationRuleArgs = {
+  input: CreateTaskAutomationRuleInput;
+};
+
+export type MutationCreateTaskDependencyArgs = {
+  input: CreateTaskDependencyInput;
+};
+
+export type MutationCreateTasksFromTemplateArgs = {
+  context: CrmContextInput;
+  templateId: Scalars["ID"]["input"];
+};
+
 export type MutationCreateWfmProjectTypeArgs = {
   input: CreateWfmProjectTypeInput;
 };
@@ -1658,11 +1946,19 @@ export type MutationCreateWfmWorkflowTransitionArgs = {
   input: CreateWfmWorkflowTransitionInput;
 };
 
+export type MutationDeactivateBusinessRuleArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeactivateCustomFieldDefinitionArgs = {
   id: Scalars["ID"]["input"];
 };
 
 export type MutationDeleteAgentConversationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteBusinessRuleArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -1698,6 +1994,18 @@ export type MutationDeleteStickerArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteTaskArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteTaskAutomationRuleArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeleteTaskDependencyArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteWfmWorkflowStepArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1714,9 +2022,21 @@ export type MutationDetachFileFromDealArgs = {
   attachmentId: Scalars["ID"]["input"];
 };
 
+export type MutationDuplicateBusinessRuleArgs = {
+  id: Scalars["ID"]["input"];
+  name: Scalars["String"]["input"];
+};
+
 export type MutationExecuteAgentStepArgs = {
   conversationId: Scalars["ID"]["input"];
   stepId: Scalars["String"]["input"];
+};
+
+export type MutationExecuteBusinessRuleArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityTypeEnum;
+  ruleId: Scalars["ID"]["input"];
+  testMode?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type MutationGenerateTaskContentFromEmailArgs = {
@@ -1726,6 +2046,22 @@ export type MutationGenerateTaskContentFromEmailArgs = {
 export type MutationLinkEmailToDealArgs = {
   dealId: Scalars["String"]["input"];
   emailId: Scalars["String"]["input"];
+};
+
+export type MutationMarkAllNotificationsAsReadArgs = {
+  userId: Scalars["ID"]["input"];
+};
+
+export type MutationMarkNotificationAsActedUponArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationMarkNotificationAsDismissedArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationMarkNotificationAsReadArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationMarkThreadAsReadArgs = {
@@ -1822,6 +2158,8 @@ export type MutationShareDriveFolderArgs = {
 
 export type MutationSyncCalendarEventsArgs = {
   calendarId?: InputMaybe<Scalars["String"]["input"]>;
+  daysFuture?: InputMaybe<Scalars["Int"]["input"]>;
+  daysPast?: InputMaybe<Scalars["Int"]["input"]>;
   fullSync?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
@@ -1834,6 +2172,14 @@ export type MutationToggleStickerPinArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationTriggerTaskAutomationArgs = {
+  event: CrmEventInput;
+};
+
+export type MutationUnassignTaskArgs = {
+  taskId: Scalars["ID"]["input"];
+};
+
 export type MutationUnpinEmailArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -1844,6 +2190,11 @@ export type MutationUpdateAgentConversationArgs = {
 
 export type MutationUpdateAppSettingArgs = {
   input: UpdateAppSettingInput;
+};
+
+export type MutationUpdateBusinessRuleArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateBusinessRuleInput;
 };
 
 export type MutationUpdateCalendarEventArgs = {
@@ -1936,6 +2287,16 @@ export type MutationUpdateStickerTagsArgs = {
   id: Scalars["ID"]["input"];
   tagsToAdd?: InputMaybe<Array<Scalars["String"]["input"]>>;
   tagsToRemove?: InputMaybe<Array<Scalars["String"]["input"]>>;
+};
+
+export type MutationUpdateTaskArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateTaskInput;
+};
+
+export type MutationUpdateTaskAutomationRuleArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateTaskAutomationRuleInput;
 };
 
 export type MutationUpdateUserCurrencyPreferencesArgs = {
@@ -2103,6 +2464,11 @@ export type Query = {
   /** Get all app settings (admin only for private settings) */
   appSettings: Array<AppSetting>;
   assignableUsers: Array<User>;
+  businessRule?: Maybe<BusinessRule>;
+  businessRuleAnalytics: BusinessRuleAnalytics;
+  businessRuleNotification?: Maybe<BusinessRuleNotification>;
+  businessRuleNotifications: BusinessRuleNotificationsConnection;
+  businessRules: BusinessRulesConnection;
   calendarEvent?: Maybe<CalendarEvent>;
   calendarEvents: Array<CalendarEvent>;
   calendarPreferences?: Maybe<CalendarPreferences>;
@@ -2162,24 +2528,46 @@ export type Query = {
   me?: Maybe<User>;
   myAccountPortfolioStats: AccountPortfolioStats;
   myAccounts: Array<Organization>;
+  myAssignedTasks: Array<Task>;
+  myOverdueTasks: Array<Task>;
   myPermissions?: Maybe<Array<Scalars["String"]["output"]>>;
+  myTasks: Array<Task>;
+  myTasksDueThisWeek: Array<Task>;
+  myTasksDueToday: Array<Task>;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
   people: Array<Person>;
   person?: Maybe<Person>;
   personList: Array<PersonListItem>;
+  previewRuleExecution: BusinessRuleExecutionResult;
   reactivationPlan?: Maybe<ReactivationPlan>;
   reactivationPlans: Array<ReactivationPlan>;
   roles: Array<Role>;
+  ruleExecution?: Maybe<RuleExecution>;
+  ruleExecutions: RuleExecutionsConnection;
   searchDriveFiles: DriveFileConnection;
   searchEmails: Array<Email>;
+  searchGoogleContacts: Array<ContactSuggestion>;
   searchSharedDriveFiles: Array<DriveFile>;
   searchStickers: StickerConnection;
   suggestEmailParticipants: Array<Person>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  task?: Maybe<Task>;
+  taskAutomationRule?: Maybe<TaskAutomationRule>;
+  taskAutomationRules: Array<TaskAutomationRule>;
+  taskDependencies: Array<TaskDependency>;
+  taskHistory: Array<TaskHistory>;
+  taskStats: TaskStats;
+  tasks: Array<Task>;
+  tasksForDeal: Array<Task>;
+  tasksForLead: Array<Task>;
+  tasksForOrganization: Array<Task>;
+  tasksForPerson: Array<Task>;
+  tasksForUser: Array<Task>;
   upcomingMeetings: Array<CalendarEvent>;
   userCurrencyPreferences?: Maybe<UserCurrencyPreferences>;
   users: Array<User>;
+  validateBusinessRule: Array<Scalars["String"]["output"]>;
   validateConversion: ConversionValidationResult;
   wfmProjectType?: Maybe<WfmProjectType>;
   wfmProjectTypeByName?: Maybe<WfmProjectType>;
@@ -2220,6 +2608,32 @@ export type QueryAgentV2ThoughtsArgs = {
 
 export type QueryAppSettingArgs = {
   settingKey: Scalars["String"]["input"];
+};
+
+export type QueryBusinessRuleArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryBusinessRuleAnalyticsArgs = {
+  entityType?: InputMaybe<EntityTypeEnum>;
+  timeRange?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type QueryBusinessRuleNotificationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryBusinessRuleNotificationsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  unreadOnly?: InputMaybe<Scalars["Boolean"]["input"]>;
+  userId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type QueryBusinessRulesArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  filters?: InputMaybe<BusinessRuleFilters>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryCalendarEventArgs = {
@@ -2403,12 +2817,26 @@ export type QueryLeadsArgs = {
   filters?: InputMaybe<LeadFilters>;
 };
 
+export type QueryMyAssignedTasksArgs = {
+  filters?: InputMaybe<TaskFiltersInput>;
+};
+
+export type QueryMyTasksArgs = {
+  filters?: InputMaybe<TaskFiltersInput>;
+};
+
 export type QueryOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
 
 export type QueryPersonArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryPreviewRuleExecutionArgs = {
+  entityId: Scalars["ID"]["input"];
+  entityType: EntityTypeEnum;
+  ruleId: Scalars["ID"]["input"];
 };
 
 export type QueryReactivationPlanArgs = {
@@ -2420,6 +2848,18 @@ export type QueryReactivationPlansArgs = {
   status?: InputMaybe<ReactivationPlanStatus>;
 };
 
+export type QueryRuleExecutionArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryRuleExecutionsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<EntityTypeEnum>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  ruleId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
 export type QuerySearchDriveFilesArgs = {
   query: Scalars["String"]["input"];
 };
@@ -2427,6 +2867,10 @@ export type QuerySearchDriveFilesArgs = {
 export type QuerySearchEmailsArgs = {
   entityType?: InputMaybe<EntityType>;
   limit?: InputMaybe<Scalars["Int"]["input"]>;
+  query: Scalars["String"]["input"];
+};
+
+export type QuerySearchGoogleContactsArgs = {
   query: Scalars["String"]["input"];
 };
 
@@ -2447,6 +2891,62 @@ export type QuerySuggestEmailParticipantsArgs = {
   threadId?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type QueryTaskArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryTaskAutomationRuleArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QueryTaskAutomationRulesArgs = {
+  entityType?: InputMaybe<TaskEntityType>;
+};
+
+export type QueryTaskDependenciesArgs = {
+  taskId: Scalars["ID"]["input"];
+};
+
+export type QueryTaskHistoryArgs = {
+  taskId: Scalars["ID"]["input"];
+};
+
+export type QueryTaskStatsArgs = {
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<TaskEntityType>;
+};
+
+export type QueryTasksArgs = {
+  filters?: InputMaybe<TaskFiltersInput>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type QueryTasksForDealArgs = {
+  dealId: Scalars["ID"]["input"];
+  filters?: InputMaybe<TaskFiltersInput>;
+};
+
+export type QueryTasksForLeadArgs = {
+  filters?: InputMaybe<TaskFiltersInput>;
+  leadId: Scalars["ID"]["input"];
+};
+
+export type QueryTasksForOrganizationArgs = {
+  filters?: InputMaybe<TaskFiltersInput>;
+  organizationId: Scalars["ID"]["input"];
+};
+
+export type QueryTasksForPersonArgs = {
+  filters?: InputMaybe<TaskFiltersInput>;
+  personId: Scalars["ID"]["input"];
+};
+
+export type QueryTasksForUserArgs = {
+  filters?: InputMaybe<TaskFiltersInput>;
+  userId: Scalars["ID"]["input"];
+};
+
 export type QueryUpcomingMeetingsArgs = {
   days?: InputMaybe<Scalars["Int"]["input"]>;
   limit?: InputMaybe<Scalars["Int"]["input"]>;
@@ -2454,6 +2954,10 @@ export type QueryUpcomingMeetingsArgs = {
 
 export type QueryUserCurrencyPreferencesArgs = {
   userId: Scalars["ID"]["input"];
+};
+
+export type QueryValidateBusinessRuleArgs = {
+  input: BusinessRuleInput;
 };
 
 export type QueryValidateConversionArgs = {
@@ -2536,6 +3040,102 @@ export type Role = {
   id: Scalars["ID"]["output"];
   name: Scalars["String"]["output"];
 };
+
+export type RuleAction = {
+  __typename?: "RuleAction";
+  message?: Maybe<Scalars["String"]["output"]>;
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  priority: Scalars["Int"]["output"];
+  target?: Maybe<Scalars["String"]["output"]>;
+  template?: Maybe<Scalars["String"]["output"]>;
+  type: RuleActionType;
+};
+
+export type RuleActionInput = {
+  message?: InputMaybe<Scalars["String"]["input"]>;
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  priority?: InputMaybe<Scalars["Int"]["input"]>;
+  target?: InputMaybe<Scalars["String"]["input"]>;
+  template?: InputMaybe<Scalars["String"]["input"]>;
+  type: RuleActionType;
+};
+
+export enum RuleActionType {
+  CreateActivity = "CREATE_ACTIVITY",
+  CreateTask = "CREATE_TASK",
+  NotifyOwner = "NOTIFY_OWNER",
+  NotifyUser = "NOTIFY_USER",
+  SendEmail = "SEND_EMAIL",
+  UpdateField = "UPDATE_FIELD",
+}
+
+export type RuleCondition = {
+  __typename?: "RuleCondition";
+  field: Scalars["String"]["output"];
+  logicalOperator: LogicalOperator;
+  operator: RuleConditionOperator;
+  value: Scalars["String"]["output"];
+};
+
+export type RuleConditionInput = {
+  field: Scalars["String"]["input"];
+  logicalOperator?: InputMaybe<LogicalOperator>;
+  operator: RuleConditionOperator;
+  value: Scalars["String"]["input"];
+};
+
+export enum RuleConditionOperator {
+  ChangedFrom = "CHANGED_FROM",
+  ChangedTo = "CHANGED_TO",
+  Contains = "CONTAINS",
+  DecreasedByPercent = "DECREASED_BY_PERCENT",
+  EndsWith = "ENDS_WITH",
+  Equals = "EQUALS",
+  GreaterEqual = "GREATER_EQUAL",
+  GreaterThan = "GREATER_THAN",
+  In = "IN",
+  IncreasedByPercent = "INCREASED_BY_PERCENT",
+  IsNotNull = "IS_NOT_NULL",
+  IsNull = "IS_NULL",
+  LessEqual = "LESS_EQUAL",
+  LessThan = "LESS_THAN",
+  NewerThan = "NEWER_THAN",
+  NotEquals = "NOT_EQUALS",
+  NotIn = "NOT_IN",
+  OlderThan = "OLDER_THAN",
+  StartsWith = "STARTS_WITH",
+}
+
+export type RuleExecution = {
+  __typename?: "RuleExecution";
+  activitiesCreated: Scalars["Int"]["output"];
+  conditionsMet: Scalars["Boolean"]["output"];
+  entityId: Scalars["ID"]["output"];
+  entityType: EntityTypeEnum;
+  errors: Array<Scalars["String"]["output"]>;
+  executedAt: Scalars["DateTime"]["output"];
+  executionResult: Scalars["JSON"]["output"];
+  executionTimeMs?: Maybe<Scalars["Int"]["output"]>;
+  executionTrigger: Scalars["String"]["output"];
+  id: Scalars["ID"]["output"];
+  notificationsCreated: Scalars["Int"]["output"];
+  rule: BusinessRule;
+  tasksCreated: Scalars["Int"]["output"];
+};
+
+export type RuleExecutionsConnection = {
+  __typename?: "RuleExecutionsConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  nodes: Array<RuleExecution>;
+  totalCount: Scalars["Int"]["output"];
+};
+
+export enum RuleStatusEnum {
+  Active = "ACTIVE",
+  Draft = "DRAFT",
+  Inactive = "INACTIVE",
+}
 
 export type SendAgentV2MessageInput = {
   content: Scalars["String"]["input"];
@@ -2707,6 +3307,11 @@ export type Subscription = {
   agentV2MessageStream: AgentV2StreamChunk;
   agentV2ReflectionAdded: AgentThought;
   agentV2ThinkingUpdated: Array<AgentThought>;
+  dealTasksUpdated: Task;
+  leadTasksUpdated: Task;
+  myTasksUpdated: Task;
+  taskCompleted: Task;
+  taskUpdated: Task;
 };
 
 export type SubscriptionAgentConversationUpdatedArgs = {
@@ -2731,6 +3336,185 @@ export type SubscriptionAgentV2ReflectionAddedArgs = {
 
 export type SubscriptionAgentV2ThinkingUpdatedArgs = {
   conversationId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionDealTasksUpdatedArgs = {
+  dealId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionLeadTasksUpdatedArgs = {
+  leadId: Scalars["ID"]["input"];
+};
+
+export type SubscriptionTaskCompletedArgs = {
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<TaskEntityType>;
+};
+
+export type SubscriptionTaskUpdatedArgs = {
+  taskId?: InputMaybe<Scalars["ID"]["input"]>;
+};
+
+export type Task = {
+  __typename?: "Task";
+  actualHours?: Maybe<Scalars["Int"]["output"]>;
+  affectsLeadScoring: Scalars["Boolean"]["output"];
+  assignedToUser?: Maybe<User>;
+  blocksStageProgression: Scalars["Boolean"]["output"];
+  businessImpactScore: Scalars["Float"]["output"];
+  calculatedPriority: Scalars["Float"]["output"];
+  completedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  completionTriggersStageChange: Scalars["Boolean"]["output"];
+  createdAt: Scalars["DateTime"]["output"];
+  createdByUser?: Maybe<User>;
+  customFieldValues: Array<CustomFieldValue>;
+  deal?: Maybe<Deal>;
+  dependencies: Array<TaskDependency>;
+  description?: Maybe<Scalars["String"]["output"]>;
+  dueDate?: Maybe<Scalars["DateTime"]["output"]>;
+  entityId: Scalars["ID"]["output"];
+  entityType: TaskEntityType;
+  estimatedHours?: Maybe<Scalars["Int"]["output"]>;
+  id: Scalars["ID"]["output"];
+  lead?: Maybe<Lead>;
+  organization?: Maybe<Organization>;
+  parentTask?: Maybe<Task>;
+  person?: Maybe<Person>;
+  priority: TaskPriority;
+  requiredForDealClosure: Scalars["Boolean"]["output"];
+  status: TaskStatus;
+  subtasks: Array<Task>;
+  tags: Array<Scalars["String"]["output"]>;
+  taskType: TaskType;
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  wfmProject?: Maybe<WfmProject>;
+};
+
+export type TaskAutomationRule = {
+  __typename?: "TaskAutomationRule";
+  appliesToEntityType: TaskEntityType;
+  createdAt: Scalars["DateTime"]["output"];
+  description?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isActive: Scalars["Boolean"]["output"];
+  name: Scalars["String"]["output"];
+  taskTemplate: Scalars["JSON"]["output"];
+  triggerConditions: Scalars["JSON"]["output"];
+  triggerEvent: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+};
+
+export type TaskCompletionInput = {
+  actualHours?: InputMaybe<Scalars["Int"]["input"]>;
+  completedAt?: InputMaybe<Scalars["DateTime"]["input"]>;
+  completionNotes?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type TaskDependency = {
+  __typename?: "TaskDependency";
+  createdAt: Scalars["DateTime"]["output"];
+  dependencyType: Scalars["String"]["output"];
+  dependsOnTask: Task;
+  id: Scalars["ID"]["output"];
+  task: Task;
+};
+
+export enum TaskEntityType {
+  Deal = "DEAL",
+  Lead = "LEAD",
+  Organization = "ORGANIZATION",
+  Person = "PERSON",
+}
+
+export type TaskFiltersInput = {
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  createdByUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  dueDateFrom?: InputMaybe<Scalars["DateTime"]["input"]>;
+  dueDateTo?: InputMaybe<Scalars["DateTime"]["input"]>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<Array<TaskEntityType>>;
+  overdue?: InputMaybe<Scalars["Boolean"]["input"]>;
+  priority?: InputMaybe<Array<TaskPriority>>;
+  status?: InputMaybe<Array<TaskStatus>>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  taskType?: InputMaybe<Array<TaskType>>;
+};
+
+export type TaskHistory = {
+  __typename?: "TaskHistory";
+  action: Scalars["String"]["output"];
+  changedByUser?: Maybe<User>;
+  createdAt: Scalars["DateTime"]["output"];
+  id: Scalars["ID"]["output"];
+  newValue?: Maybe<Scalars["JSON"]["output"]>;
+  oldValue?: Maybe<Scalars["JSON"]["output"]>;
+  taskId?: Maybe<Scalars["ID"]["output"]>;
+};
+
+export enum TaskPriority {
+  High = "HIGH",
+  Low = "LOW",
+  Medium = "MEDIUM",
+  Urgent = "URGENT",
+}
+
+export type TaskPriorityCount = {
+  __typename?: "TaskPriorityCount";
+  count: Scalars["Int"]["output"];
+  priority: TaskPriority;
+};
+
+export type TaskStats = {
+  __typename?: "TaskStats";
+  averageCompletionTime?: Maybe<Scalars["Float"]["output"]>;
+  completedTasks: Scalars["Int"]["output"];
+  completionRate: Scalars["Float"]["output"];
+  overdueTasks: Scalars["Int"]["output"];
+  tasksByPriority: Array<TaskPriorityCount>;
+  tasksByStatus: Array<TaskStatusCount>;
+  tasksByType: Array<TaskTypeCount>;
+  totalTasks: Scalars["Int"]["output"];
+};
+
+export enum TaskStatus {
+  Cancelled = "CANCELLED",
+  Completed = "COMPLETED",
+  InProgress = "IN_PROGRESS",
+  Todo = "TODO",
+  WaitingOnCustomer = "WAITING_ON_CUSTOMER",
+  WaitingOnInternal = "WAITING_ON_INTERNAL",
+}
+
+export type TaskStatusCount = {
+  __typename?: "TaskStatusCount";
+  count: Scalars["Int"]["output"];
+  status: TaskStatus;
+};
+
+export enum TaskType {
+  ContractReview = "CONTRACT_REVIEW",
+  CrmUpdate = "CRM_UPDATE",
+  DataEnrichment = "DATA_ENRICHMENT",
+  DealClosure = "DEAL_CLOSURE",
+  DemoPreparation = "DEMO_PREPARATION",
+  Discovery = "DISCOVERY",
+  FollowUp = "FOLLOW_UP",
+  LeadNurturing = "LEAD_NURTURING",
+  LeadQualification = "LEAD_QUALIFICATION",
+  LeadScoringReview = "LEAD_SCORING_REVIEW",
+  NegotiationPrep = "NEGOTIATION_PREP",
+  ProposalCreation = "PROPOSAL_CREATION",
+  RelationshipBuilding = "RELATIONSHIP_BUILDING",
+  RenewalPreparation = "RENEWAL_PREPARATION",
+  Reporting = "REPORTING",
+  StakeholderMapping = "STAKEHOLDER_MAPPING",
+}
+
+export type TaskTypeCount = {
+  __typename?: "TaskTypeCount";
+  count: Scalars["Int"]["output"];
+  taskType: TaskType;
 };
 
 export enum ThinkingBudget {
@@ -2764,9 +3548,28 @@ export enum ToolExecutionStatus {
   Success = "SUCCESS",
 }
 
+export enum TriggerTypeEnum {
+  EventBased = "EVENT_BASED",
+  FieldChange = "FIELD_CHANGE",
+  TimeBased = "TIME_BASED",
+}
+
 export type UpdateAppSettingInput = {
   settingKey: Scalars["String"]["input"];
   settingValue: Scalars["JSON"]["input"];
+};
+
+export type UpdateBusinessRuleInput = {
+  actions?: InputMaybe<Array<RuleActionInput>>;
+  conditions?: InputMaybe<Array<RuleConditionInput>>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  status?: InputMaybe<RuleStatusEnum>;
+  triggerEvents?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  triggerFields?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  wfmStatusId?: InputMaybe<Scalars["ID"]["input"]>;
+  wfmStepId?: InputMaybe<Scalars["ID"]["input"]>;
+  wfmWorkflowId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
 export type UpdateCalendarEventInput = {
@@ -2816,6 +3619,35 @@ export type UpdateStickerInput = {
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   title?: InputMaybe<Scalars["String"]["input"]>;
   width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type UpdateTaskAutomationRuleInput = {
+  appliesToEntityType?: InputMaybe<TaskEntityType>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  isActive?: InputMaybe<Scalars["Boolean"]["input"]>;
+  name?: InputMaybe<Scalars["String"]["input"]>;
+  taskTemplate?: InputMaybe<Scalars["JSON"]["input"]>;
+  triggerConditions?: InputMaybe<Scalars["JSON"]["input"]>;
+  triggerEvent?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UpdateTaskInput = {
+  actualHours?: InputMaybe<Scalars["Int"]["input"]>;
+  affectsLeadScoring?: InputMaybe<Scalars["Boolean"]["input"]>;
+  assignedToUserId?: InputMaybe<Scalars["ID"]["input"]>;
+  blocksStageProgression?: InputMaybe<Scalars["Boolean"]["input"]>;
+  completedAt?: InputMaybe<Scalars["DateTime"]["input"]>;
+  completionTriggersStageChange?: InputMaybe<Scalars["Boolean"]["input"]>;
+  customFieldValues?: InputMaybe<Array<CustomFieldValueInput>>;
+  description?: InputMaybe<Scalars["String"]["input"]>;
+  dueDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  estimatedHours?: InputMaybe<Scalars["Int"]["input"]>;
+  priority?: InputMaybe<TaskPriority>;
+  requiredForDealClosure?: InputMaybe<Scalars["Boolean"]["input"]>;
+  status?: InputMaybe<TaskStatus>;
+  tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
+  taskType?: InputMaybe<TaskType>;
+  title?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type UpdateUserCurrencyPreferencesInput = {
@@ -3128,6 +3960,17 @@ export type ResolversTypes = {
   AttachFileInput: AttachFileInput;
   AvailabilitySlot: ResolverTypeWrapper<AvailabilitySlot>;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
+  BulkTaskUpdatesInput: BulkTaskUpdatesInput;
+  BusinessRule: ResolverTypeWrapper<BusinessRule>;
+  BusinessRuleAnalytics: ResolverTypeWrapper<BusinessRuleAnalytics>;
+  BusinessRuleExecutionResult: ResolverTypeWrapper<BusinessRuleExecutionResult>;
+  BusinessRuleFilters: BusinessRuleFilters;
+  BusinessRuleInput: BusinessRuleInput;
+  BusinessRuleNotification: ResolverTypeWrapper<BusinessRuleNotification>;
+  BusinessRuleNotificationsConnection: ResolverTypeWrapper<BusinessRuleNotificationsConnection>;
+  BusinessRulesConnection: ResolverTypeWrapper<BusinessRulesConnection>;
+  CRMContextInput: CrmContextInput;
+  CRMEventInput: CrmEventInput;
   CalendarAttendee: ResolverTypeWrapper<CalendarAttendee>;
   CalendarEvent: ResolverTypeWrapper<CalendarEvent>;
   CalendarEventOutcome: CalendarEventOutcome;
@@ -3144,6 +3987,8 @@ export type ResolversTypes = {
   ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
   ContactRoleType: ContactRoleType;
   ContactScopeType: ContactScopeType;
+  ContactSuggestion: ResolverTypeWrapper<ContactSuggestion>;
+  ContextualTaskCreationInput: ContextualTaskCreationInput;
   ConversionHistory: ResolverTypeWrapper<ConversionHistory>;
   ConversionReason: ConversionReason;
   ConversionResult: ResolverTypeWrapper<ConversionResult>;
@@ -3158,6 +4003,9 @@ export type ResolversTypes = {
   CreateDocumentInput: CreateDocumentInput;
   CreateEmailInput: CreateEmailInput;
   CreateStickerInput: CreateStickerInput;
+  CreateTaskAutomationRuleInput: CreateTaskAutomationRuleInput;
+  CreateTaskDependencyInput: CreateTaskDependencyInput;
+  CreateTaskInput: CreateTaskInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
   CreateWFMWorkflowInput: CreateWfmWorkflowInput;
@@ -3215,6 +4063,7 @@ export type ResolversTypes = {
   EmailThreadConnection: ResolverTypeWrapper<EmailThreadConnection>;
   EmailThreadsFilterInput: EmailThreadsFilterInput;
   EntityType: EntityType;
+  EntityTypeEnum: EntityTypeEnum;
   ExchangeRate: ResolverTypeWrapper<ExchangeRate>;
   ExtendedThinkingAnalysis: ResolverTypeWrapper<ExtendedThinkingAnalysis>;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
@@ -3237,6 +4086,7 @@ export type ResolversTypes = {
   LeadInput: LeadInput;
   LeadUpdateInput: LeadUpdateInput;
   LeadsStats: ResolverTypeWrapper<LeadsStats>;
+  LogicalOperator: LogicalOperator;
   Mutation: ResolverTypeWrapper<{}>;
   NoteDocumentAttachment: ResolverTypeWrapper<NoteDocumentAttachment>;
   Organization: ResolverTypeWrapper<Organization>;
@@ -3253,6 +4103,15 @@ export type ResolversTypes = {
   ReactivationPlanStatus: ReactivationPlanStatus;
   ReactivationStrategy: ReactivationStrategy;
   Role: ResolverTypeWrapper<Role>;
+  RuleAction: ResolverTypeWrapper<RuleAction>;
+  RuleActionInput: RuleActionInput;
+  RuleActionType: RuleActionType;
+  RuleCondition: ResolverTypeWrapper<RuleCondition>;
+  RuleConditionInput: RuleConditionInput;
+  RuleConditionOperator: RuleConditionOperator;
+  RuleExecution: ResolverTypeWrapper<RuleExecution>;
+  RuleExecutionsConnection: ResolverTypeWrapper<RuleExecutionsConnection>;
+  RuleStatusEnum: RuleStatusEnum;
   SendAgentV2MessageInput: SendAgentV2MessageInput;
   SendAgentV2MessageStreamInput: SendAgentV2MessageStreamInput;
   SendMessageInput: SendMessageInput;
@@ -3273,16 +4132,34 @@ export type ResolversTypes = {
   StickerSortField: StickerSortField;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
   Subscription: ResolverTypeWrapper<{}>;
+  Task: ResolverTypeWrapper<Task>;
+  TaskAutomationRule: ResolverTypeWrapper<TaskAutomationRule>;
+  TaskCompletionInput: TaskCompletionInput;
+  TaskDependency: ResolverTypeWrapper<TaskDependency>;
+  TaskEntityType: TaskEntityType;
+  TaskFiltersInput: TaskFiltersInput;
+  TaskHistory: ResolverTypeWrapper<TaskHistory>;
+  TaskPriority: TaskPriority;
+  TaskPriorityCount: ResolverTypeWrapper<TaskPriorityCount>;
+  TaskStats: ResolverTypeWrapper<TaskStats>;
+  TaskStatus: TaskStatus;
+  TaskStatusCount: ResolverTypeWrapper<TaskStatusCount>;
+  TaskType: TaskType;
+  TaskTypeCount: ResolverTypeWrapper<TaskTypeCount>;
   ThinkingBudget: ThinkingBudget;
   ToolDiscoveryResponse: ResolverTypeWrapper<ToolDiscoveryResponse>;
   ToolExecution: ResolverTypeWrapper<ToolExecution>;
   ToolExecutionStatus: ToolExecutionStatus;
+  TriggerTypeEnum: TriggerTypeEnum;
   UpdateAppSettingInput: UpdateAppSettingInput;
+  UpdateBusinessRuleInput: UpdateBusinessRuleInput;
   UpdateCalendarEventInput: UpdateCalendarEventInput;
   UpdateConversationInput: UpdateConversationInput;
   UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
   UpdateStickerInput: UpdateStickerInput;
+  UpdateTaskAutomationRuleInput: UpdateTaskAutomationRuleInput;
+  UpdateTaskInput: UpdateTaskInput;
   UpdateUserCurrencyPreferencesInput: UpdateUserCurrencyPreferencesInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
@@ -3327,6 +4204,17 @@ export type ResolversParentTypes = {
   AttachFileInput: AttachFileInput;
   AvailabilitySlot: AvailabilitySlot;
   Boolean: Scalars["Boolean"]["output"];
+  BulkTaskUpdatesInput: BulkTaskUpdatesInput;
+  BusinessRule: BusinessRule;
+  BusinessRuleAnalytics: BusinessRuleAnalytics;
+  BusinessRuleExecutionResult: BusinessRuleExecutionResult;
+  BusinessRuleFilters: BusinessRuleFilters;
+  BusinessRuleInput: BusinessRuleInput;
+  BusinessRuleNotification: BusinessRuleNotification;
+  BusinessRuleNotificationsConnection: BusinessRuleNotificationsConnection;
+  BusinessRulesConnection: BusinessRulesConnection;
+  CRMContextInput: CrmContextInput;
+  CRMEventInput: CrmEventInput;
   CalendarAttendee: CalendarAttendee;
   CalendarEvent: CalendarEvent;
   CalendarPreferences: CalendarPreferences;
@@ -3336,6 +4224,8 @@ export type ResolversParentTypes = {
   CalendarTimeRangeInput: CalendarTimeRangeInput;
   ComposeEmailInput: ComposeEmailInput;
   ConnectGoogleIntegrationInput: ConnectGoogleIntegrationInput;
+  ContactSuggestion: ContactSuggestion;
+  ContextualTaskCreationInput: ContextualTaskCreationInput;
   ConversionHistory: ConversionHistory;
   ConversionResult: ConversionResult;
   ConversionValidationResult: ConversionValidationResult;
@@ -3348,6 +4238,9 @@ export type ResolversParentTypes = {
   CreateDocumentInput: CreateDocumentInput;
   CreateEmailInput: CreateEmailInput;
   CreateStickerInput: CreateStickerInput;
+  CreateTaskAutomationRuleInput: CreateTaskAutomationRuleInput;
+  CreateTaskDependencyInput: CreateTaskDependencyInput;
+  CreateTaskInput: CreateTaskInput;
   CreateWFMProjectTypeInput: CreateWfmProjectTypeInput;
   CreateWFMStatusInput: CreateWfmStatusInput;
   CreateWFMWorkflowInput: CreateWfmWorkflowInput;
@@ -3432,6 +4325,12 @@ export type ResolversParentTypes = {
   ReactivationPlan: ReactivationPlan;
   ReactivationPlanInput: ReactivationPlanInput;
   Role: Role;
+  RuleAction: RuleAction;
+  RuleActionInput: RuleActionInput;
+  RuleCondition: RuleCondition;
+  RuleConditionInput: RuleConditionInput;
+  RuleExecution: RuleExecution;
+  RuleExecutionsConnection: RuleExecutionsConnection;
   SendAgentV2MessageInput: SendAgentV2MessageInput;
   SendAgentV2MessageStreamInput: SendAgentV2MessageStreamInput;
   SendMessageInput: SendMessageInput;
@@ -3448,14 +4347,27 @@ export type ResolversParentTypes = {
   StickerSortBy: StickerSortBy;
   String: Scalars["String"]["output"];
   Subscription: {};
+  Task: Task;
+  TaskAutomationRule: TaskAutomationRule;
+  TaskCompletionInput: TaskCompletionInput;
+  TaskDependency: TaskDependency;
+  TaskFiltersInput: TaskFiltersInput;
+  TaskHistory: TaskHistory;
+  TaskPriorityCount: TaskPriorityCount;
+  TaskStats: TaskStats;
+  TaskStatusCount: TaskStatusCount;
+  TaskTypeCount: TaskTypeCount;
   ToolDiscoveryResponse: ToolDiscoveryResponse;
   ToolExecution: ToolExecution;
   UpdateAppSettingInput: UpdateAppSettingInput;
+  UpdateBusinessRuleInput: UpdateBusinessRuleInput;
   UpdateCalendarEventInput: UpdateCalendarEventInput;
   UpdateConversationInput: UpdateConversationInput;
   UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
   UpdateStickerInput: UpdateStickerInput;
+  UpdateTaskAutomationRuleInput: UpdateTaskAutomationRuleInput;
+  UpdateTaskInput: UpdateTaskInput;
   UpdateUserCurrencyPreferencesInput: UpdateUserCurrencyPreferencesInput;
   UpdateUserProfileInput: UpdateUserProfileInput;
   UpdateWFMProjectTypeInput: UpdateWfmProjectTypeInput;
@@ -3763,6 +4675,204 @@ export type AvailabilitySlotResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type BusinessRuleResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["BusinessRule"] = ResolversParentTypes["BusinessRule"],
+> = {
+  actions?: Resolver<
+    Array<ResolversTypes["RuleAction"]>,
+    ParentType,
+    ContextType
+  >;
+  conditions?: Resolver<
+    Array<ResolversTypes["RuleCondition"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  createdBy?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  entityType?: Resolver<
+    ResolversTypes["EntityTypeEnum"],
+    ParentType,
+    ContextType
+  >;
+  executionCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  lastError?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  lastExecution?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes["RuleStatusEnum"], ParentType, ContextType>;
+  triggerEvents?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  triggerFields?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  triggerType?: Resolver<
+    ResolversTypes["TriggerTypeEnum"],
+    ParentType,
+    ContextType
+  >;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  wfmStatus?: Resolver<
+    Maybe<ResolversTypes["WFMStatus"]>,
+    ParentType,
+    ContextType
+  >;
+  wfmStep?: Resolver<
+    Maybe<ResolversTypes["WFMWorkflowStep"]>,
+    ParentType,
+    ContextType
+  >;
+  wfmWorkflow?: Resolver<
+    Maybe<ResolversTypes["WFMWorkflow"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type BusinessRuleAnalyticsResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["BusinessRuleAnalytics"] = ResolversParentTypes["BusinessRuleAnalytics"],
+> = {
+  activeRules?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  averageExecutionTime?: Resolver<
+    ResolversTypes["Float"],
+    ParentType,
+    ContextType
+  >;
+  errorRate?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  recentErrors?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  topPerformingRules?: Resolver<
+    Array<ResolversTypes["BusinessRule"]>,
+    ParentType,
+    ContextType
+  >;
+  totalExecutions?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalNotifications?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalRules?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type BusinessRuleExecutionResultResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["BusinessRuleExecutionResult"] = ResolversParentTypes["BusinessRuleExecutionResult"],
+> = {
+  activitiesCreated?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  errors?: Resolver<Array<ResolversTypes["String"]>, ParentType, ContextType>;
+  notificationsCreated?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  rulesProcessed?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  tasksCreated?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type BusinessRuleNotificationResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["BusinessRuleNotification"] = ResolversParentTypes["BusinessRuleNotification"],
+> = {
+  actedUponAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  actions?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  dismissedAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  entityId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  entityType?: Resolver<
+    ResolversTypes["EntityTypeEnum"],
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  message?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  notificationType?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  priority?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  readAt?: Resolver<Maybe<ResolversTypes["DateTime"]>, ParentType, ContextType>;
+  rule?: Resolver<ResolversTypes["BusinessRule"], ParentType, ContextType>;
+  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  user?: Resolver<ResolversTypes["User"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type BusinessRuleNotificationsConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["BusinessRuleNotificationsConnection"] = ResolversParentTypes["BusinessRuleNotificationsConnection"],
+> = {
+  hasNextPage?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  hasPreviousPage?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  nodes?: Resolver<
+    Array<ResolversTypes["BusinessRuleNotification"]>,
+    ParentType,
+    ContextType
+  >;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type BusinessRulesConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["BusinessRulesConnection"] = ResolversParentTypes["BusinessRulesConnection"],
+> = {
+  hasNextPage?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  hasPreviousPage?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  nodes?: Resolver<
+    Array<ResolversTypes["BusinessRule"]>,
+    ParentType,
+    ContextType
+  >;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type CalendarAttendeeResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -3937,6 +5047,17 @@ export type CalendarSyncStatusResolvers<
     ParentType,
     ContextType
   >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type ContactSuggestionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["ContactSuggestion"] = ResolversParentTypes["ContactSuggestion"],
+> = {
+  email?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  name?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  photoUrl?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -5019,6 +6140,11 @@ export type GoogleIntegrationStatusResolvers<
     ParentType,
     ContextType
   >;
+  hasContactsAccess?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
   hasDriveAccess?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
   hasGmailAccess?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
   hasGoogleAuth?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
@@ -5331,6 +6457,12 @@ export type MutationResolvers<
   ParentType extends
     ResolversParentTypes["Mutation"] = ResolversParentTypes["Mutation"],
 > = {
+  activateBusinessRule?: Resolver<
+    ResolversTypes["BusinessRule"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationActivateBusinessRuleArgs, "id">
+  >;
   addAgentThoughts?: Resolver<
     Array<ResolversTypes["AgentThought"]>,
     ParentType,
@@ -5367,6 +6499,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationAssignAccountManagerArgs, "organizationId" | "userId">
   >;
+  assignTask?: Resolver<
+    ResolversTypes["Task"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAssignTaskArgs, "taskId">
+  >;
   assignUserRole?: Resolver<
     ResolversTypes["User"],
     ParentType,
@@ -5391,11 +6529,44 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationAttachFileToDealArgs, "input">
   >;
+  bulkAssignTasks?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationBulkAssignTasksArgs, "taskIds" | "userId">
+  >;
   bulkConvertLeads?: Resolver<
     Array<ResolversTypes["LeadConversionResult"]>,
     ParentType,
     ContextType,
     RequireFields<MutationBulkConvertLeadsArgs, "ids" | "input">
+  >;
+  bulkDeleteTasks?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationBulkDeleteTasksArgs, "taskIds">
+  >;
+  bulkUpdateBusinessRuleStatus?: Resolver<
+    Array<ResolversTypes["BusinessRule"]>,
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationBulkUpdateBusinessRuleStatusArgs,
+      "ruleIds" | "status"
+    >
+  >;
+  bulkUpdateTasks?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationBulkUpdateTasksArgs, "taskIds" | "updates">
+  >;
+  completeTask?: Resolver<
+    ResolversTypes["Task"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCompleteTaskArgs, "id">
   >;
   composeEmail?: Resolver<
     ResolversTypes["EmailMessage"],
@@ -5448,6 +6619,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateAgentV2ConversationArgs, "input">
   >;
+  createBusinessRule?: Resolver<
+    ResolversTypes["BusinessRule"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateBusinessRuleArgs, "input">
+  >;
   createCalendarEvent?: Resolver<
     ResolversTypes["CalendarEvent"],
     ParentType,
@@ -5459,6 +6636,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationCreateContactFromEmailArgs, "input">
+  >;
+  createContextualTask?: Resolver<
+    ResolversTypes["Task"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateContextualTaskArgs, "input">
   >;
   createCurrency?: Resolver<
     ResolversTypes["Currency"],
@@ -5526,6 +6709,30 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateStickerArgs, "input">
   >;
+  createTask?: Resolver<
+    ResolversTypes["Task"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateTaskArgs, "input">
+  >;
+  createTaskAutomationRule?: Resolver<
+    ResolversTypes["TaskAutomationRule"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateTaskAutomationRuleArgs, "input">
+  >;
+  createTaskDependency?: Resolver<
+    ResolversTypes["TaskDependency"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateTaskDependencyArgs, "input">
+  >;
+  createTasksFromTemplate?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateTasksFromTemplateArgs, "context" | "templateId">
+  >;
   createWFMProjectType?: Resolver<
     ResolversTypes["WFMProjectType"],
     ParentType,
@@ -5556,6 +6763,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateWfmWorkflowTransitionArgs, "input">
   >;
+  deactivateBusinessRule?: Resolver<
+    ResolversTypes["BusinessRule"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeactivateBusinessRuleArgs, "id">
+  >;
   deactivateCustomFieldDefinition?: Resolver<
     ResolversTypes["CustomFieldDefinition"],
     ParentType,
@@ -5567,6 +6780,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationDeleteAgentConversationArgs, "id">
+  >;
+  deleteBusinessRule?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteBusinessRuleArgs, "id">
   >;
   deleteCalendarEvent?: Resolver<
     ResolversTypes["Boolean"],
@@ -5616,6 +6835,24 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteStickerArgs, "id">
   >;
+  deleteTask?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteTaskArgs, "id">
+  >;
+  deleteTaskAutomationRule?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteTaskAutomationRuleArgs, "id">
+  >;
+  deleteTaskDependency?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteTaskDependencyArgs, "id">
+  >;
   deleteWFMWorkflowStep?: Resolver<
     ResolversTypes["WFMWorkflowStepMutationResponse"],
     ParentType,
@@ -5640,11 +6877,26 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDetachFileFromDealArgs, "attachmentId">
   >;
+  duplicateBusinessRule?: Resolver<
+    ResolversTypes["BusinessRule"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDuplicateBusinessRuleArgs, "id" | "name">
+  >;
   executeAgentStep?: Resolver<
     ResolversTypes["AgentResponse"],
     ParentType,
     ContextType,
     RequireFields<MutationExecuteAgentStepArgs, "conversationId" | "stepId">
+  >;
+  executeBusinessRule?: Resolver<
+    ResolversTypes["BusinessRuleExecutionResult"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationExecuteBusinessRuleArgs,
+      "entityId" | "entityType" | "ruleId" | "testMode"
+    >
   >;
   generateTaskContentFromEmail?: Resolver<
     ResolversTypes["AIGeneratedTaskContent"],
@@ -5657,6 +6909,30 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationLinkEmailToDealArgs, "dealId" | "emailId">
+  >;
+  markAllNotificationsAsRead?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkAllNotificationsAsReadArgs, "userId">
+  >;
+  markNotificationAsActedUpon?: Resolver<
+    ResolversTypes["BusinessRuleNotification"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkNotificationAsActedUponArgs, "id">
+  >;
+  markNotificationAsDismissed?: Resolver<
+    ResolversTypes["BusinessRuleNotification"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkNotificationAsDismissedArgs, "id">
+  >;
+  markNotificationAsRead?: Resolver<
+    ResolversTypes["BusinessRuleNotification"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkNotificationAsReadArgs, "id">
   >;
   markThreadAsRead?: Resolver<
     ResolversTypes["Boolean"],
@@ -5793,7 +7069,10 @@ export type MutationResolvers<
     ResolversTypes["CalendarSyncStatus"],
     ParentType,
     ContextType,
-    RequireFields<MutationSyncCalendarEventsArgs, "fullSync">
+    RequireFields<
+      MutationSyncCalendarEventsArgs,
+      "daysFuture" | "daysPast" | "fullSync"
+    >
   >;
   syncGmailEmails?: Resolver<
     Array<ResolversTypes["Email"]>,
@@ -5806,6 +7085,18 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationToggleStickerPinArgs, "id">
+  >;
+  triggerTaskAutomation?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationTriggerTaskAutomationArgs, "event">
+  >;
+  unassignTask?: Resolver<
+    ResolversTypes["Task"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUnassignTaskArgs, "taskId">
   >;
   unpinEmail?: Resolver<
     ResolversTypes["Boolean"],
@@ -5824,6 +7115,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateAppSettingArgs, "input">
+  >;
+  updateBusinessRule?: Resolver<
+    ResolversTypes["BusinessRule"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateBusinessRuleArgs, "id" | "input">
   >;
   updateCalendarEvent?: Resolver<
     ResolversTypes["CalendarEvent"],
@@ -5952,6 +7249,18 @@ export type MutationResolvers<
       MutationUpdateStickerTagsArgs,
       "id" | "tagsToAdd" | "tagsToRemove"
     >
+  >;
+  updateTask?: Resolver<
+    ResolversTypes["Task"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateTaskArgs, "id" | "input">
+  >;
+  updateTaskAutomationRule?: Resolver<
+    ResolversTypes["TaskAutomationRule"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateTaskAutomationRuleArgs, "id" | "input">
   >;
   updateUserCurrencyPreferences?: Resolver<
     ResolversTypes["UserCurrencyPreferences"],
@@ -6195,6 +7504,36 @@ export type QueryResolvers<
     Array<ResolversTypes["User"]>,
     ParentType,
     ContextType
+  >;
+  businessRule?: Resolver<
+    Maybe<ResolversTypes["BusinessRule"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryBusinessRuleArgs, "id">
+  >;
+  businessRuleAnalytics?: Resolver<
+    ResolversTypes["BusinessRuleAnalytics"],
+    ParentType,
+    ContextType,
+    Partial<QueryBusinessRuleAnalyticsArgs>
+  >;
+  businessRuleNotification?: Resolver<
+    Maybe<ResolversTypes["BusinessRuleNotification"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryBusinessRuleNotificationArgs, "id">
+  >;
+  businessRuleNotifications?: Resolver<
+    ResolversTypes["BusinessRuleNotificationsConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryBusinessRuleNotificationsArgs, "first" | "unreadOnly">
+  >;
+  businessRules?: Resolver<
+    ResolversTypes["BusinessRulesConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryBusinessRulesArgs, "first">
   >;
   calendarEvent?: Resolver<
     Maybe<ResolversTypes["CalendarEvent"]>,
@@ -6508,8 +7847,35 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  myAssignedTasks?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryMyAssignedTasksArgs>
+  >;
+  myOverdueTasks?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType
+  >;
   myPermissions?: Resolver<
     Maybe<Array<ResolversTypes["String"]>>,
+    ParentType,
+    ContextType
+  >;
+  myTasks?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryMyTasksArgs>
+  >;
+  myTasksDueThisWeek?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType
+  >;
+  myTasksDueToday?: Resolver<
+    Array<ResolversTypes["Task"]>,
     ParentType,
     ContextType
   >;
@@ -6536,6 +7902,15 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  previewRuleExecution?: Resolver<
+    ResolversTypes["BusinessRuleExecutionResult"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      QueryPreviewRuleExecutionArgs,
+      "entityId" | "entityType" | "ruleId"
+    >
+  >;
   reactivationPlan?: Resolver<
     Maybe<ResolversTypes["ReactivationPlan"]>,
     ParentType,
@@ -6549,6 +7924,18 @@ export type QueryResolvers<
     Partial<QueryReactivationPlansArgs>
   >;
   roles?: Resolver<Array<ResolversTypes["Role"]>, ParentType, ContextType>;
+  ruleExecution?: Resolver<
+    Maybe<ResolversTypes["RuleExecution"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryRuleExecutionArgs, "id">
+  >;
+  ruleExecutions?: Resolver<
+    ResolversTypes["RuleExecutionsConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryRuleExecutionsArgs, "first">
+  >;
   searchDriveFiles?: Resolver<
     ResolversTypes["DriveFileConnection"],
     ParentType,
@@ -6560,6 +7947,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QuerySearchEmailsArgs, "limit" | "query">
+  >;
+  searchGoogleContacts?: Resolver<
+    Array<ResolversTypes["ContactSuggestion"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QuerySearchGoogleContactsArgs, "query">
   >;
   searchSharedDriveFiles?: Resolver<
     Array<ResolversTypes["DriveFile"]>,
@@ -6584,6 +7977,78 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  task?: Resolver<
+    Maybe<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTaskArgs, "id">
+  >;
+  taskAutomationRule?: Resolver<
+    Maybe<ResolversTypes["TaskAutomationRule"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTaskAutomationRuleArgs, "id">
+  >;
+  taskAutomationRules?: Resolver<
+    Array<ResolversTypes["TaskAutomationRule"]>,
+    ParentType,
+    ContextType,
+    Partial<QueryTaskAutomationRulesArgs>
+  >;
+  taskDependencies?: Resolver<
+    Array<ResolversTypes["TaskDependency"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTaskDependenciesArgs, "taskId">
+  >;
+  taskHistory?: Resolver<
+    Array<ResolversTypes["TaskHistory"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTaskHistoryArgs, "taskId">
+  >;
+  taskStats?: Resolver<
+    ResolversTypes["TaskStats"],
+    ParentType,
+    ContextType,
+    Partial<QueryTaskStatsArgs>
+  >;
+  tasks?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTasksArgs, "limit" | "offset">
+  >;
+  tasksForDeal?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTasksForDealArgs, "dealId">
+  >;
+  tasksForLead?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTasksForLeadArgs, "leadId">
+  >;
+  tasksForOrganization?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTasksForOrganizationArgs, "organizationId">
+  >;
+  tasksForPerson?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTasksForPersonArgs, "personId">
+  >;
+  tasksForUser?: Resolver<
+    Array<ResolversTypes["Task"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryTasksForUserArgs, "userId">
+  >;
   upcomingMeetings?: Resolver<
     Array<ResolversTypes["CalendarEvent"]>,
     ParentType,
@@ -6597,6 +8062,12 @@ export type QueryResolvers<
     RequireFields<QueryUserCurrencyPreferencesArgs, "userId">
   >;
   users?: Resolver<Array<ResolversTypes["User"]>, ParentType, ContextType>;
+  validateBusinessRule?: Resolver<
+    Array<ResolversTypes["String"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryValidateBusinessRuleArgs, "input">
+  >;
   validateConversion?: Resolver<
     ResolversTypes["ConversionValidationResult"],
     ParentType,
@@ -6706,6 +8177,97 @@ export type RoleResolvers<
   description?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type RuleActionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["RuleAction"] = ResolversParentTypes["RuleAction"],
+> = {
+  message?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  metadata?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  priority?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  target?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  template?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  type?: Resolver<ResolversTypes["RuleActionType"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type RuleConditionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["RuleCondition"] = ResolversParentTypes["RuleCondition"],
+> = {
+  field?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  logicalOperator?: Resolver<
+    ResolversTypes["LogicalOperator"],
+    ParentType,
+    ContextType
+  >;
+  operator?: Resolver<
+    ResolversTypes["RuleConditionOperator"],
+    ParentType,
+    ContextType
+  >;
+  value?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type RuleExecutionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["RuleExecution"] = ResolversParentTypes["RuleExecution"],
+> = {
+  activitiesCreated?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  conditionsMet?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  entityId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  entityType?: Resolver<
+    ResolversTypes["EntityTypeEnum"],
+    ParentType,
+    ContextType
+  >;
+  errors?: Resolver<Array<ResolversTypes["String"]>, ParentType, ContextType>;
+  executedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  executionResult?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  executionTimeMs?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
+  executionTrigger?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  notificationsCreated?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  rule?: Resolver<ResolversTypes["BusinessRule"], ParentType, ContextType>;
+  tasksCreated?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type RuleExecutionsConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["RuleExecutionsConnection"] = ResolversParentTypes["RuleExecutionsConnection"],
+> = {
+  hasNextPage?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  hasPreviousPage?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  nodes?: Resolver<
+    Array<ResolversTypes["RuleExecution"]>,
+    ParentType,
+    ContextType
+  >;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -6973,6 +8535,268 @@ export type SubscriptionResolvers<
     ContextType,
     RequireFields<SubscriptionAgentV2ThinkingUpdatedArgs, "conversationId">
   >;
+  dealTasksUpdated?: SubscriptionResolver<
+    ResolversTypes["Task"],
+    "dealTasksUpdated",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionDealTasksUpdatedArgs, "dealId">
+  >;
+  leadTasksUpdated?: SubscriptionResolver<
+    ResolversTypes["Task"],
+    "leadTasksUpdated",
+    ParentType,
+    ContextType,
+    RequireFields<SubscriptionLeadTasksUpdatedArgs, "leadId">
+  >;
+  myTasksUpdated?: SubscriptionResolver<
+    ResolversTypes["Task"],
+    "myTasksUpdated",
+    ParentType,
+    ContextType
+  >;
+  taskCompleted?: SubscriptionResolver<
+    ResolversTypes["Task"],
+    "taskCompleted",
+    ParentType,
+    ContextType,
+    Partial<SubscriptionTaskCompletedArgs>
+  >;
+  taskUpdated?: SubscriptionResolver<
+    ResolversTypes["Task"],
+    "taskUpdated",
+    ParentType,
+    ContextType,
+    Partial<SubscriptionTaskUpdatedArgs>
+  >;
+};
+
+export type TaskResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["Task"] = ResolversParentTypes["Task"],
+> = {
+  actualHours?: Resolver<Maybe<ResolversTypes["Int"]>, ParentType, ContextType>;
+  affectsLeadScoring?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  assignedToUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  blocksStageProgression?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  businessImpactScore?: Resolver<
+    ResolversTypes["Float"],
+    ParentType,
+    ContextType
+  >;
+  calculatedPriority?: Resolver<
+    ResolversTypes["Float"],
+    ParentType,
+    ContextType
+  >;
+  completedAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  completionTriggersStageChange?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  createdByUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  customFieldValues?: Resolver<
+    Array<ResolversTypes["CustomFieldValue"]>,
+    ParentType,
+    ContextType
+  >;
+  deal?: Resolver<Maybe<ResolversTypes["Deal"]>, ParentType, ContextType>;
+  dependencies?: Resolver<
+    Array<ResolversTypes["TaskDependency"]>,
+    ParentType,
+    ContextType
+  >;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  dueDate?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  entityId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  entityType?: Resolver<
+    ResolversTypes["TaskEntityType"],
+    ParentType,
+    ContextType
+  >;
+  estimatedHours?: Resolver<
+    Maybe<ResolversTypes["Int"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  lead?: Resolver<Maybe<ResolversTypes["Lead"]>, ParentType, ContextType>;
+  organization?: Resolver<
+    Maybe<ResolversTypes["Organization"]>,
+    ParentType,
+    ContextType
+  >;
+  parentTask?: Resolver<Maybe<ResolversTypes["Task"]>, ParentType, ContextType>;
+  person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
+  priority?: Resolver<ResolversTypes["TaskPriority"], ParentType, ContextType>;
+  requiredForDealClosure?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  status?: Resolver<ResolversTypes["TaskStatus"], ParentType, ContextType>;
+  subtasks?: Resolver<Array<ResolversTypes["Task"]>, ParentType, ContextType>;
+  tags?: Resolver<Array<ResolversTypes["String"]>, ParentType, ContextType>;
+  taskType?: Resolver<ResolversTypes["TaskType"], ParentType, ContextType>;
+  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  wfmProject?: Resolver<
+    Maybe<ResolversTypes["WFMProject"]>,
+    ParentType,
+    ContextType
+  >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TaskAutomationRuleResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TaskAutomationRule"] = ResolversParentTypes["TaskAutomationRule"],
+> = {
+  appliesToEntityType?: Resolver<
+    ResolversTypes["TaskEntityType"],
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  description?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isActive?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  taskTemplate?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  triggerConditions?: Resolver<ResolversTypes["JSON"], ParentType, ContextType>;
+  triggerEvent?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TaskDependencyResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TaskDependency"] = ResolversParentTypes["TaskDependency"],
+> = {
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  dependencyType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  dependsOnTask?: Resolver<ResolversTypes["Task"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  task?: Resolver<ResolversTypes["Task"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TaskHistoryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TaskHistory"] = ResolversParentTypes["TaskHistory"],
+> = {
+  action?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  changedByUser?: Resolver<
+    Maybe<ResolversTypes["User"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  newValue?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  oldValue?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  taskId?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TaskPriorityCountResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TaskPriorityCount"] = ResolversParentTypes["TaskPriorityCount"],
+> = {
+  count?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  priority?: Resolver<ResolversTypes["TaskPriority"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TaskStatsResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TaskStats"] = ResolversParentTypes["TaskStats"],
+> = {
+  averageCompletionTime?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  completedTasks?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  completionRate?: Resolver<ResolversTypes["Float"], ParentType, ContextType>;
+  overdueTasks?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  tasksByPriority?: Resolver<
+    Array<ResolversTypes["TaskPriorityCount"]>,
+    ParentType,
+    ContextType
+  >;
+  tasksByStatus?: Resolver<
+    Array<ResolversTypes["TaskStatusCount"]>,
+    ParentType,
+    ContextType
+  >;
+  tasksByType?: Resolver<
+    Array<ResolversTypes["TaskTypeCount"]>,
+    ParentType,
+    ContextType
+  >;
+  totalTasks?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TaskStatusCountResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TaskStatusCount"] = ResolversParentTypes["TaskStatusCount"],
+> = {
+  count?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  status?: Resolver<ResolversTypes["TaskStatus"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type TaskTypeCountResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["TaskTypeCount"] = ResolversParentTypes["TaskTypeCount"],
+> = {
+  count?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  taskType?: Resolver<ResolversTypes["TaskType"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type ToolDiscoveryResponseResolvers<
@@ -7267,10 +9091,17 @@ export type Resolvers<ContextType = GraphQLContext> = {
   AgentV2StreamChunk?: AgentV2StreamChunkResolvers<ContextType>;
   AppSetting?: AppSettingResolvers<ContextType>;
   AvailabilitySlot?: AvailabilitySlotResolvers<ContextType>;
+  BusinessRule?: BusinessRuleResolvers<ContextType>;
+  BusinessRuleAnalytics?: BusinessRuleAnalyticsResolvers<ContextType>;
+  BusinessRuleExecutionResult?: BusinessRuleExecutionResultResolvers<ContextType>;
+  BusinessRuleNotification?: BusinessRuleNotificationResolvers<ContextType>;
+  BusinessRuleNotificationsConnection?: BusinessRuleNotificationsConnectionResolvers<ContextType>;
+  BusinessRulesConnection?: BusinessRulesConnectionResolvers<ContextType>;
   CalendarAttendee?: CalendarAttendeeResolvers<ContextType>;
   CalendarEvent?: CalendarEventResolvers<ContextType>;
   CalendarPreferences?: CalendarPreferencesResolvers<ContextType>;
   CalendarSyncStatus?: CalendarSyncStatusResolvers<ContextType>;
+  ContactSuggestion?: ContactSuggestionResolvers<ContextType>;
   ConversionHistory?: ConversionHistoryResolvers<ContextType>;
   ConversionResult?: ConversionResultResolvers<ContextType>;
   ConversionValidationResult?: ConversionValidationResultResolvers<ContextType>;
@@ -7326,6 +9157,10 @@ export type Resolvers<ContextType = GraphQLContext> = {
   Query?: QueryResolvers<ContextType>;
   ReactivationPlan?: ReactivationPlanResolvers<ContextType>;
   Role?: RoleResolvers<ContextType>;
+  RuleAction?: RuleActionResolvers<ContextType>;
+  RuleCondition?: RuleConditionResolvers<ContextType>;
+  RuleExecution?: RuleExecutionResolvers<ContextType>;
+  RuleExecutionsConnection?: RuleExecutionsConnectionResolvers<ContextType>;
   SharedDrive?: SharedDriveResolvers<ContextType>;
   SharedDriveCapabilities?: SharedDriveCapabilitiesResolvers<ContextType>;
   SharedDriveImage?: SharedDriveImageResolvers<ContextType>;
@@ -7334,6 +9169,14 @@ export type Resolvers<ContextType = GraphQLContext> = {
   StickerCategory?: StickerCategoryResolvers<ContextType>;
   StickerConnection?: StickerConnectionResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
+  Task?: TaskResolvers<ContextType>;
+  TaskAutomationRule?: TaskAutomationRuleResolvers<ContextType>;
+  TaskDependency?: TaskDependencyResolvers<ContextType>;
+  TaskHistory?: TaskHistoryResolvers<ContextType>;
+  TaskPriorityCount?: TaskPriorityCountResolvers<ContextType>;
+  TaskStats?: TaskStatsResolvers<ContextType>;
+  TaskStatusCount?: TaskStatusCountResolvers<ContextType>;
+  TaskTypeCount?: TaskTypeCountResolvers<ContextType>;
   ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;
   ToolExecution?: ToolExecutionResolvers<ContextType>;
   User?: UserResolvers<ContextType>;

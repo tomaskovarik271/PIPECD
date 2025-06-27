@@ -7,7 +7,7 @@ import DealCardKanban from './DealCardKanban';
 import DealCardKanbanCompact from './DealCardKanbanCompact';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../stores/useAppStore';
-import { CurrencyFormatter } from '../../../../lib/utils/currencyFormatter';
+import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
 
 // REMOVED: Duplicate wrapper function - using CurrencyFormatter.format directly
 
