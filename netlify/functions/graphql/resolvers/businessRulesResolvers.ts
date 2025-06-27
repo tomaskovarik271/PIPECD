@@ -21,8 +21,14 @@ const mapDbBusinessRuleToGraphQL = (dbRule: any): BusinessRule => ({
   triggerType: dbRule.trigger_type as TriggerTypeEnum,
   triggerEvents: dbRule.trigger_events || [],
   triggerFields: dbRule.trigger_fields || [],
-  conditions: JSON.parse(dbRule.conditions || '[]'),
-  actions: JSON.parse(dbRule.actions || '[]'),
+  conditions: (JSON.parse(dbRule.conditions || '[]')).map((condition: any) => ({
+    ...condition,
+    logicalOperator: condition.logicalOperator || 'AND' // Ensure non-null default
+  })),
+  actions: (JSON.parse(dbRule.actions || '[]')).map((action: any) => ({
+    ...action,
+    priority: action.priority || 1 // Ensure priority has default value
+  })),
   status: dbRule.status as RuleStatusEnum,
   executionCount: dbRule.execution_count || 0,
   lastError: dbRule.last_error,
