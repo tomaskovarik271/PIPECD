@@ -199,13 +199,16 @@ export const BusinessRulesFormModal: React.FC<BusinessRulesFormModalProps> = ({
         entityType: initialValues.entityType || 'DEAL',
         triggerType: initialValues.triggerType || 'EVENT_BASED',
         triggerFields: initialValues.triggerFields || [],
-        conditions: initialValues.conditions ? JSON.parse(initialValues.conditions) : [{ field: '', operator: 'EQUALS', value: '', logicalOperator: 'AND' }],
-        actions: initialValues.actions ? JSON.parse(initialValues.actions) : [{ type: 'NOTIFY_USER', target: '', message: '', priority: 1 }],
+        conditions: initialValues.conditions && Array.isArray(initialValues.conditions) 
+          ? initialValues.conditions 
+          : [{ field: '', operator: 'EQUALS', value: '', logicalOperator: 'AND' }],
+        actions: initialValues.actions && Array.isArray(initialValues.actions) 
+          ? initialValues.actions 
+          : [{ type: 'NOTIFY_USER', target: '', message: '', priority: 1 }],
         status: initialValues.status || 'ACTIVE',
         wfmWorkflowId: initialValues.wfmWorkflowId || '',
         wfmStepId: initialValues.wfmStepId || '',
         wfmStatusId: initialValues.wfmStatusId || '',
-        schedule: initialValues.schedule || '',
       });
     } else {
       reset({
