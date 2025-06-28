@@ -40,12 +40,18 @@ import {
   FiZap,
   FiEye,
   FiChevronDown,
-  FiChevronUp
+  FiChevronUp,
+  FiFilter,
+  FiGrid,
+  FiList,
+  FiToggleLeft,
+  FiAlertTriangle,
+  FiTarget,
 } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
 interface FeatureHelpTipsProps {
-  feature: 'deal-to-lead-conversion' | 'lead-to-deal-conversion' | 'meeting-scheduling';
+  feature: 'deal-to-lead-conversion' | 'lead-to-deal-conversion' | 'meeting-scheduling' | 'deals-overview' | 'kanban-vs-table' | 'task-indicators';
   isOpen?: boolean;
   onToggle?: () => void;
 }
@@ -382,6 +388,265 @@ export const FeatureHelpTips: React.FC<FeatureHelpTipsProps> = ({
     </VStack>
   );
 
+  const renderDealsOverviewTips = () => (
+    <VStack spacing={4} align="stretch">
+      <Alert status="info" variant="left-accent">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Deals Overview & Management</AlertTitle>
+          <AlertDescription>
+            Your central hub for managing all sales opportunities with powerful filtering, views, and insights.
+          </AlertDescription>
+        </Box>
+      </Alert>
+
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+        <Card size="sm">
+          <CardHeader pb={2}>
+            <HStack>
+              <Icon as={FiEye} color="blue.500" />
+              <Heading size="sm">View Options</Heading>
+            </HStack>
+          </CardHeader>
+          <CardBody pt={0}>
+            <List spacing={2} fontSize="sm">
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                <strong>Table View:</strong> Detailed data in columns
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                <strong>Kanban View:</strong> Visual pipeline stages
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                <strong>Custom Columns:</strong> Show what matters most
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                <strong>Real-time Stats:</strong> Total value, win rate, etc.
+              </ListItem>
+            </List>
+          </CardBody>
+        </Card>
+
+        <Card size="sm">
+          <CardHeader pb={2}>
+            <HStack>
+              <Icon as={FiFilter} color="purple.500" />
+              <Heading size="sm">Smart Features</Heading>
+            </HStack>
+          </CardHeader>
+          <CardBody pt={0}>
+            <List spacing={2} fontSize="sm">
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                <strong>Global Search:</strong> Find deals instantly
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                <strong>Task Indicators:</strong> See overdue/due today
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                <strong>Quick Actions:</strong> Edit, convert, delete
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                <strong>Multi-Currency:</strong> Automatic totals
+              </ListItem>
+            </List>
+          </CardBody>
+        </Card>
+      </SimpleGrid>
+    </VStack>
+  );
+
+  const renderKanbanVsTableTips = () => (
+    <VStack spacing={4} align="stretch">
+      <Alert status="info" variant="left-accent">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Kanban vs Table Views</AlertTitle>
+          <AlertDescription>
+            Choose the perfect view for your workflow - visual pipeline management or detailed data analysis.
+          </AlertDescription>
+        </Box>
+      </Alert>
+
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+        <Card size="sm" borderColor="blue.200" borderWidth="2px">
+          <CardHeader pb={2}>
+            <HStack>
+              <Icon as={FiGrid} color="blue.500" />
+              <Heading size="sm">Kanban View</Heading>
+              <Badge colorScheme="blue" size="sm">Visual</Badge>
+            </HStack>
+          </CardHeader>
+          <CardBody pt={0}>
+            <List spacing={2} fontSize="sm">
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                Visual pipeline with drag & drop
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                See deal progression at a glance
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                Perfect for sales team meetings
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                Shows task indicators on cards
+              </ListItem>
+            </List>
+            <Text fontSize="xs" color="blue.600" mt={2} fontStyle="italic">
+              Best for: Pipeline reviews, team collaboration
+            </Text>
+          </CardBody>
+        </Card>
+
+        <Card size="sm" borderColor="purple.200" borderWidth="2px">
+          <CardHeader pb={2}>
+            <HStack>
+              <Icon as={FiList} color="purple.500" />
+              <Heading size="sm">Table View</Heading>
+              <Badge colorScheme="purple" size="sm">Data</Badge>
+            </HStack>
+          </CardHeader>
+          <CardBody pt={0}>
+            <List spacing={2} fontSize="sm">
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                Detailed data in sortable columns
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                Custom field visibility control
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                Perfect for data analysis
+              </ListItem>
+              <ListItem>
+                <ListIcon as={FiCheckCircle} color="green.500" />
+                Export and reporting ready
+              </ListItem>
+            </List>
+            <Text fontSize="xs" color="purple.600" mt={2} fontStyle="italic">
+              Best for: Data analysis, reporting, detailed review
+            </Text>
+          </CardBody>
+        </Card>
+      </SimpleGrid>
+
+      <Box p={3} bg="blue.50" borderRadius="md" border="1px solid" borderColor="blue.200">
+        <HStack mb={2}>
+          <Icon as={FiToggleLeft} color="blue.500" />
+          <Text fontWeight="semibold" fontSize="sm" color="blue.700">Quick Switching</Text>
+        </HStack>
+        <Text fontSize="sm" color="blue.600">
+          Use the view toggle in the header to instantly switch between Kanban and Table views. Your preferences are saved automatically.
+        </Text>
+      </Box>
+    </VStack>
+  );
+
+  const renderTaskIndicatorsTips = () => (
+    <VStack spacing={4} align="stretch">
+      <Alert status="info" variant="left-accent">
+        <AlertIcon />
+        <Box>
+          <AlertTitle>Task Indicators on Deal Cards</AlertTitle>
+          <AlertDescription>
+            Visual badges show when deals have tasks due today or overdue, helping you prioritize your work.
+          </AlertDescription>
+        </Box>
+      </Alert>
+
+      <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+        <Card size="sm">
+          <CardHeader pb={2}>
+            <HStack>
+              <Icon as={FiClock} color="orange.500" />
+              <Heading size="sm">Due Today</Heading>
+            </HStack>
+          </CardHeader>
+          <CardBody pt={0}>
+            <VStack align="start" spacing={2}>
+              <HStack>
+                <Badge colorScheme="orange" variant="solid" fontSize="xs">
+                  <Icon as={FiClock} mr={1} />
+                  2 Due Today
+                </Badge>
+                <Text fontSize="sm">Orange badge with clock icon</Text>
+              </HStack>
+              <Text fontSize="sm" color={colors.text.muted}>
+                Shows tasks that need attention today. Click the deal to see task details and take action.
+              </Text>
+            </VStack>
+          </CardBody>
+        </Card>
+
+        <Card size="sm">
+          <CardHeader pb={2}>
+            <HStack>
+              <Icon as={FiAlertTriangle} color="red.500" />
+              <Heading size="sm">Overdue</Heading>
+            </HStack>
+          </CardHeader>
+          <CardBody pt={0}>
+            <VStack align="start" spacing={2}>
+              <HStack>
+                <Badge colorScheme="red" variant="solid" fontSize="xs">
+                  <Icon as={FiAlertTriangle} mr={1} />
+                  1 Overdue
+                </Badge>
+                <Text fontSize="sm">Red badge with warning icon</Text>
+              </HStack>
+              <Text fontSize="sm" color={colors.text.muted}>
+                Urgent tasks that are past due. These require immediate attention to keep deals moving.
+              </Text>
+            </VStack>
+          </CardBody>
+        </Card>
+      </SimpleGrid>
+
+      <Box p={4} bg={colors.bg.elevated} borderRadius="md" border="1px solid" borderColor={colors.border.subtle}>
+        <HStack mb={3}>
+          <Icon as={FiTarget} color="green.500" />
+          <Text fontWeight="semibold">Smart Prioritization</Text>
+        </HStack>
+        <List spacing={2} fontSize="sm">
+          <ListItem>
+            <ListIcon as={FiCheckCircle} color="green.500" />
+            <strong>Hover for Details:</strong> See task names and due dates in tooltips
+          </ListItem>
+          <ListItem>
+            <ListIcon as={FiCheckCircle} color="green.500" />
+            <strong>Quick Navigation:</strong> Click deal card to manage tasks directly
+          </ListItem>
+          <ListItem>
+            <ListIcon as={FiCheckCircle} color="green.500" />
+            <strong>Visual Priority:</strong> Red (overdue) takes precedence over orange (due today)
+          </ListItem>
+        </List>
+      </Box>
+
+      <Alert status="success" variant="subtle">
+        <AlertIcon />
+        <Box>
+          <AlertTitle fontSize="sm">Never Miss a Follow-up</AlertTitle>
+          <AlertDescription fontSize="sm">
+            Task indicators ensure you never miss important follow-ups, helping you maintain momentum on every deal in your pipeline.
+          </AlertDescription>
+        </Box>
+      </Alert>
+    </VStack>
+  );
+
   const getFeatureTitle = () => {
     switch (feature) {
       case 'deal-to-lead-conversion':
@@ -390,6 +655,12 @@ export const FeatureHelpTips: React.FC<FeatureHelpTipsProps> = ({
         return 'Lead → Deal Conversion';
       case 'meeting-scheduling':
         return 'Calendar-Native Meeting Scheduling';
+      case 'deals-overview':
+        return 'Deals Overview & Management';
+      case 'kanban-vs-table':
+        return 'Kanban vs Table Views';
+      case 'task-indicators':
+        return 'Task Indicators on Deal Cards';
       default:
         return 'Feature Help';
     }
@@ -403,6 +674,12 @@ export const FeatureHelpTips: React.FC<FeatureHelpTipsProps> = ({
         return FiTrendingUp;
       case 'meeting-scheduling':
         return FiCalendar;
+      case 'deals-overview':
+        return FiEye;
+      case 'kanban-vs-table':
+        return FiGrid;
+      case 'task-indicators':
+        return FiTarget;
       default:
         return FiInfo;
     }
@@ -416,6 +693,12 @@ export const FeatureHelpTips: React.FC<FeatureHelpTipsProps> = ({
         return renderLeadToDealConversionTips();
       case 'meeting-scheduling':
         return renderMeetingSchedulingTips();
+      case 'deals-overview':
+        return renderDealsOverviewTips();
+      case 'kanban-vs-table':
+        return renderKanbanVsTableTips();
+      case 'task-indicators':
+        return renderTaskIndicatorsTips();
       default:
         return null;
     }

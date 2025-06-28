@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
-export type HelpFeature = 'deal-to-lead-conversion' | 'lead-to-deal-conversion' | 'meeting-scheduling';
+export type HelpFeature = 'deal-to-lead-conversion' | 'lead-to-deal-conversion' | 'meeting-scheduling' | 'deals-overview' | 'kanban-vs-table' | 'task-indicators';
 
 interface HelpContextType {
   availableHelp: HelpFeature[];

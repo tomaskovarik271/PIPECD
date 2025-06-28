@@ -40,6 +40,12 @@ export const HelpButton: React.FC = () => {
         return 'Lead → Deal Conversion';
       case 'meeting-scheduling':
         return 'Meeting Scheduling';
+      case 'deals-overview':
+        return 'Deals Overview';
+      case 'kanban-vs-table':
+        return 'Kanban vs Table Views';
+      case 'task-indicators':
+        return 'Task Indicators';
       default:
         return 'Feature Help';
     }

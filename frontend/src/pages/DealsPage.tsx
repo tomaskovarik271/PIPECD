@@ -34,6 +34,7 @@ import { useFilteredDeals } from '../hooks/useFilteredDeals';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
+import { useHelp } from '../contexts/HelpContext';
 
 function DealsPage() {
   const navigate = useNavigate();
@@ -94,6 +95,7 @@ function DealsPage() {
   const colors = useThemeColors();
   const styles = useThemeStyles();
   const pageLayoutStyles = usePageLayoutStyles(true); // true for statistics
+  const { addHelpFeature, removeHelpFeature } = useHelp();
 
   const TABLE_KEY = 'deals';
 
@@ -113,6 +115,19 @@ function DealsPage() {
     
     loadPageData();
   }, [fetchDeals, fetchUsers, hasFetchedUsers]);
+
+  // Register help features for the deals page
+  useEffect(() => {
+    addHelpFeature('deals-overview');
+    addHelpFeature('kanban-vs-table');
+    addHelpFeature('task-indicators');
+    
+    return () => {
+      removeHelpFeature('deals-overview');
+      removeHelpFeature('kanban-vs-table');
+      removeHelpFeature('task-indicators');
+    };
+  }, [addHelpFeature, removeHelpFeature]);
 
   // Conversion handlers - defined early to avoid hoisting issues
   const handleConvertClick = useCallback((deal: Deal) => {
