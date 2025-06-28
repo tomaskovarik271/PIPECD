@@ -291,15 +291,15 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEdit
         <HStack spacing={3} mt={{base: 3, md: 0}} flexShrink={0}>
           {/* Notification Center */}
           <NotificationCenter position="header" showBadge={true} />
-          
-          {/* Calendar integration replaces activity buttons */}
-          {nextSteps.length > 0 && (
+
+        {/* Calendar integration replaces activity buttons */}
+        {nextSteps.length > 0 && (
             <VStack spacing={2} align="end">
-              <Text fontSize="sm" color={colors.text.secondary} textAlign="right">
-                Next: {nextSteps[0].subject}
-              </Text>
-            </VStack>
-          )}
+            <Text fontSize="sm" color={colors.text.secondary} textAlign="right">
+              Next: {nextSteps[0].subject}
+            </Text>
+          </VStack>
+        )}
         </HStack>
       </Flex>
 

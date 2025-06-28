@@ -227,7 +227,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
                 } else if (eventType === 'DEAL_UPDATED' && typeof cfVal === 'object' && cfVal !== null && 'oldValue' in cfVal && 'newValue' in cfVal) {
                   const oldF = formatSingleCustomFieldValue(cfId, (cfVal as any).oldValue);
                   const newF = formatSingleCustomFieldValue(cfId, (cfVal as any).newValue);
-                  changeText = <>changed from &quot;{oldF}&quot; to &quot;{newF}&quot;</>;
+                  changeText = `changed from "${oldF}" to "${newF}"`;
                 } else {
                   changeText = formatSingleCustomFieldValue(cfId, cfVal); // Fallback for other cases
                 }
@@ -251,7 +251,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
         <ListItem key={key}>
           <Text as="span" fontWeight="medium">{displayKey}:</Text> 
           {eventType === 'DEAL_CREATED' && ` ${formatHistoryFieldValue(key, value)}`}
-          {eventType === 'DEAL_UPDATED' && ` changed from &quot;${formatHistoryFieldValue(key, oldValue)}&quot; to &quot;${formatHistoryFieldValue(key, value)}&quot;`}
+          {eventType === 'DEAL_UPDATED' && ` changed from "${formatHistoryFieldValue(key, oldValue)}" to "${formatHistoryFieldValue(key, value)}"`}
         </ListItem>
       );
     }
@@ -316,7 +316,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
               if (oldF !== newF) {
                 changeItems.push(
                   <ListItem key={cfId}>
-                    <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from &quot;{oldF}&quot; to &quot;{newF}&quot;
+                    <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from "{oldF}" to "{newF}"
                   </ListItem>
                 );
               }
@@ -325,7 +325,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
               const newF = formatSingleCustomFieldValue(cfId, valueObj.newValue);
               changeItems.push(
                 <ListItem key={cfId}>
-                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> set to &quot;{newF}&quot;
+                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> set to "{newF}"
                 </ListItem>
               );
             } else if ('oldValue' in valueObj) {
@@ -333,7 +333,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
               const oldF = formatSingleCustomFieldValue(cfId, valueObj.oldValue);
               changeItems.push(
                 <ListItem key={cfId}>
-                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> removed (was &quot;{oldF}&quot;)
+                  <Text as="span" fontWeight="medium">{fieldLabel}:</Text> removed (was "{oldF}")
                 </ListItem>
               );
             } else {
@@ -358,7 +358,7 @@ const DealHistoryItem: React.FC<DealHistoryItemProps> = ({ entry }) => {
                 if (oldF !== newF) {
                     changeItems.push(
                         <ListItem key={cfId}>
-                        <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from &quot;{oldF}&quot; to &quot;{newF}&quot;
+                        <Text as="span" fontWeight="medium">{fieldLabel}:</Text> changed from "{oldF}" to "{newF}"
                         </ListItem>
                     );
                 }

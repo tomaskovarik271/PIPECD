@@ -176,6 +176,115 @@ const buildStickerFilters = (filters: StickerFilters | null | undefined, baseQue
   return query;
 };
 
+// Mention processing helper functions
+const validateMentionedUsers = async (userIds: string[], supabaseClient: any): Promise<string[]> => {
+  if (!userIds || userIds.length === 0) return [];
+  
+  try {
+    const { data: users, error } = await supabaseClient
+      .from('user_profiles')
+      .select('user_id')
+      .in('user_id', userIds);
+    
+    if (error) {
+      console.error('Error validating mentioned users:', error);
+      return [];
+    }
+    
+    return users.map((user: any) => user.user_id);
+  } catch (error) {
+    console.error('Error validating mentioned users:', error);
+    return [];
+  }
+};
+
+const createMentionNotifications = async (
+  mentionedUserIds: string[], 
+  stickerId: string,
+  stickerTitle: string,
+  entityType: string,
+  entityId: string,
+  mentionerUserId: string,
+  supabaseClient: any
+): Promise<void> => {
+  if (!mentionedUserIds || mentionedUserIds.length === 0) return;
+  
+  // Don't notify the user who created the mention
+  const usersToNotify = mentionedUserIds.filter(userId => userId !== mentionerUserId);
+  if (usersToNotify.length === 0) return;
+  
+  try {
+    // Get mentioner's display name for notification
+    const { data: mentioner } = await supabaseClient
+      .from('user_profiles')
+      .select('display_name, first_name, last_name')
+      .eq('user_id', mentionerUserId)
+      .single();
+    
+    const mentionerName = mentioner?.display_name || 
+                         `${mentioner?.first_name || ''} ${mentioner?.last_name || ''}`.trim() || 
+                         'Someone';
+    
+    // Create notifications for each mentioned user
+    const notifications = usersToNotify.map(userId => ({
+      user_id: userId,
+      title: 'You were mentioned',
+      message: `${mentionerName} mentioned you in "${stickerTitle}"`,
+      notification_type: 'user_mentioned',
+      priority: 2, // NORMAL priority
+      entity_type: 'STICKER',
+      entity_id: stickerId,
+      action_url: `/${entityType.toLowerCase()}s/${entityId}?tab=stickers`,
+      metadata: {
+        sticker_id: stickerId,
+        sticker_title: stickerTitle,
+        entity_type: entityType,
+        entity_id: entityId,
+        mentioned_by_user_id: mentionerUserId,
+        mentioned_by_name: mentionerName
+      }
+    }));
+    
+    const { error } = await supabaseClient
+      .from('system_notifications')
+      .insert(notifications);
+    
+    if (error) {
+      console.error('Error creating mention notifications:', error);
+    }
+  } catch (error) {
+    console.error('Error creating mention notifications:', error);
+  }
+};
+
+const processMentions = async (
+  mentions: string[],
+  stickerId: string,
+  stickerTitle: string,
+  entityType: string,
+  entityId: string,
+  userId: string,
+  supabaseClient: any
+): Promise<string[]> => {
+  if (!mentions || mentions.length === 0) return [];
+  
+  // Validate mentioned users exist
+  const validMentions = await validateMentionedUsers(mentions, supabaseClient);
+  
+  // Create notifications for valid mentions
+  await createMentionNotifications(
+    validMentions,
+    stickerId,
+    stickerTitle,
+    entityType,
+    entityId,
+    userId,
+    supabaseClient
+  );
+  
+  return validMentions;
+};
+
 // --- Smart Stickers Service --- 
 export const smartStickersService = {
   // Core CRUD operations
@@ -183,6 +292,9 @@ export const smartStickersService = {
     // console.log('[smartStickersService.createSticker] called for user:', userId, 'input:', input);
     try {
       const supabase = getAuthenticatedClient(accessToken);
+      
+      // Process mentions - validate users and prepare for notifications
+      const validMentions = input.mentions ? await validateMentionedUsers(input.mentions, supabase) : [];
       
       const { data, error } = await supabase
         .from('smart_stickers')
@@ -200,7 +312,7 @@ export const smartStickersService = {
           is_pinned: input.isPinned || false,
           is_private: input.isPrivate || false,
           priority: mapPriorityToInteger(input.priority),
-          mentions: input.mentions || [],
+          mentions: validMentions,
           tags: input.tags || [],
           created_by_user_id: userId,
         })
@@ -208,6 +320,20 @@ export const smartStickersService = {
         .single();
 
       handleSupabaseError(error, 'creating sticker');
+      
+      // Create mention notifications after successful sticker creation
+      if (validMentions.length > 0) {
+        await createMentionNotifications(
+          validMentions,
+          data.id,
+          input.title,
+          input.entityType,
+          input.entityId,
+          userId,
+          supabase
+        );
+      }
+      
       return transformStickerFromDb(data);
     } catch (error) {
       console.error('[smartStickersService] Error creating sticker:', error);
@@ -258,7 +384,13 @@ export const smartStickersService = {
       if (input.isPinned !== undefined) updateData.is_pinned = input.isPinned;
       if (input.isPrivate !== undefined) updateData.is_private = input.isPrivate;
       if (input.priority !== undefined) updateData.priority = mapPriorityToInteger(input.priority);
-      if (input.mentions !== undefined) updateData.mentions = input.mentions;
+      if (input.mentions !== undefined) {
+        // Validate mentioned users
+        const validMentions = await validateMentionedUsers(input.mentions, supabase);
+        updateData.mentions = validMentions;
+        
+        // We'll handle notifications after the update
+      }
       if (input.tags !== undefined) updateData.tags = input.tags;
 
       const { data, error } = await supabase
@@ -272,6 +404,37 @@ export const smartStickersService = {
         throw new GraphQLError('Sticker not found', { extensions: { code: 'NOT_FOUND' } });
       }
       handleSupabaseError(error, 'updating sticker');
+      
+      // Handle mention notifications for updates
+      if (input.mentions !== undefined && updateData.mentions) {
+        // Get the original sticker to compare mentions
+        const { data: originalSticker } = await supabase
+          .from('smart_stickers')
+          .select('mentions, title, entity_type, entity_id')
+          .eq('id', id)
+          .single();
+        
+        if (originalSticker) {
+          const originalMentions = originalSticker.mentions || [];
+          const newMentions = updateData.mentions || [];
+          
+          // Find newly added mentions (users who weren't mentioned before)
+          const addedMentions = newMentions.filter((userId: string) => !originalMentions.includes(userId));
+          
+          // Create notifications for newly mentioned users
+          if (addedMentions.length > 0) {
+            await createMentionNotifications(
+              addedMentions,
+              id,
+              data.title,
+              data.entity_type,
+              data.entity_id,
+              userId,
+              supabase
+            );
+          }
+        }
+      }
       
       return transformStickerFromDb(data);
     } catch (error) {

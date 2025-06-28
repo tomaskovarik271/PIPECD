@@ -34,7 +34,6 @@ import { useFilteredDeals } from '../hooks/useFilteredDeals';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
-import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 
 function DealsPage() {
   const navigate = useNavigate();
@@ -411,21 +410,16 @@ function DealsPage() {
         )}
         
         {!pageIsLoading && !dealsError && displayedDeals.length > 0 && (
-          <Flex gap={6} sx={pageLayoutStyles.content} direction={{ base: 'column', lg: 'row' }}>
-            <Box flex="1" minW="0">
-              <SortableTable<Deal> 
-                data={displayedDeals} 
-                columns={visibleColumns} 
-                initialSortKey="expected_close_date" 
-                initialSortDirection="ascending"
-                onRowClick={handleRowClick}
-                excludeClickableColumns={['actions']}
-              />
-            </Box>
-            <Box w={{ base: '100%', lg: '350px' }} flexShrink={0}>
-              <UpcomingMeetingsWidget />
-            </Box>
-          </Flex>
+          <Box sx={pageLayoutStyles.content}>
+            <SortableTable<Deal> 
+              data={displayedDeals} 
+              columns={visibleColumns} 
+              initialSortKey="expected_close_date" 
+              initialSortDirection="ascending"
+              onRowClick={handleRowClick}
+              excludeClickableColumns={['actions']}
+            />
+          </Box>
         )}
       </Box>
 

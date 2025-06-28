@@ -1,4 +1,4 @@
-import React, { useCallback, useRef } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import {
   Box,
   HStack,
@@ -39,6 +39,7 @@ import ListItem from '@tiptap/extension-list-item';
 import Mention from '@tiptap/extension-mention';
 import Placeholder from '@tiptap/extension-placeholder';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useUserListStore } from '../../stores/useUserListStore';
 
 interface RichTextEditorProps {
   content: string;
@@ -75,6 +76,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const colors = useThemeColors();
   const toast = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { users, fetchUsers } = useUserListStore();
+
+  // Fetch users when component mounts
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const editor = useEditor({
     extensions: [
@@ -102,22 +109,143 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       Mention.configure({
         HTMLAttributes: {
           class: 'rich-text-mention',
+          'data-mention': '',
         },
         suggestion: {
           items: ({ query }) => {
-            // This would be connected to your team members API
-            const teamMembers = [
-              { id: '1', name: 'John Doe', email: 'john@company.com' },
-              { id: '2', name: 'Jane Smith', email: 'jane@company.com' },
-              { id: '3', name: 'Mike Johnson', email: 'mike@company.com' },
-            ];
-            
-            return teamMembers
-              .filter(member => 
-                member.name.toLowerCase().includes(query.toLowerCase()) ||
-                member.email.toLowerCase().includes(query.toLowerCase())
-              )
+            // Filter users based on display name or email
+            return users
+              .filter(user => {
+                const displayName = user.display_name || '';
+                const searchText = query.toLowerCase();
+                return (
+                  displayName.toLowerCase().includes(searchText) ||
+                  user.email.toLowerCase().includes(searchText)
+                );
+              })
+              .map(user => ({
+                id: user.id,
+                name: user.display_name || user.email,
+                email: user.email,
+              }))
               .slice(0, 5);
+          },
+          render: () => {
+            let component: any;
+            let popup: any;
+
+            return {
+              onStart: (props: any) => {
+                if (!props.items.length) {
+                  return;
+                }
+
+                // Create dropdown element
+                component = document.createElement('div');
+                component.className = 'mention-suggestions';
+                component.style.cssText = `
+                  position: absolute;
+                  background: white;
+                  border: 1px solid #ccc;
+                  border-radius: 8px;
+                  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                  padding: 4px;
+                  z-index: 1000;
+                  max-height: 200px;
+                  overflow-y: auto;
+                  min-width: 200px;
+                `;
+
+                // Render user items
+                props.items.forEach((item: any, index: number) => {
+                  const button = document.createElement('button');
+                  button.className = 'mention-item';
+                  button.style.cssText = `
+                    display: block;
+                    width: 100%;
+                    text-align: left;
+                    padding: 8px 12px;
+                    border: none;
+                    background: ${index === 0 ? '#f0f0f0' : 'transparent'};
+                    cursor: pointer;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    color: #333;
+                  `;
+                  button.innerHTML = `
+                    <div style="font-weight: 500;">${item.name}</div>
+                    <div style="font-size: 12px; color: #666;">${item.email}</div>
+                  `;
+                  
+                  button.addEventListener('click', () => {
+                    props.command({ id: item.id, label: item.name });
+                  });
+
+                  button.addEventListener('mouseenter', () => {
+                    button.style.background = '#f0f0f0';
+                  });
+
+                  button.addEventListener('mouseleave', () => {
+                    button.style.background = index === 0 ? '#f0f0f0' : 'transparent';
+                  });
+
+                  component.appendChild(button);
+                });
+
+                document.body.appendChild(component);
+
+                // Position the dropdown
+                const { range } = props;
+                const { left, top, height } = props.editor.view.coordsAtPos(range.from);
+                component.style.left = `${left}px`;
+                component.style.top = `${top + height + 5}px`;
+              },
+
+              onUpdate: (props: any) => {
+                if (!component) return;
+
+                // Update items
+                component.innerHTML = '';
+                props.items.forEach((item: any, index: number) => {
+                  const button = document.createElement('button');
+                  button.className = 'mention-item';
+                  button.style.cssText = `
+                    display: block;
+                    width: 100%;
+                    text-align: left;
+                    padding: 8px 12px;
+                    border: none;
+                    background: ${index === 0 ? '#f0f0f0' : 'transparent'};
+                    cursor: pointer;
+                    border-radius: 4px;
+                    font-size: 14px;
+                    color: #333;
+                  `;
+                  button.innerHTML = `
+                    <div style="font-weight: 500;">${item.name}</div>
+                    <div style="font-size: 12px; color: #666;">${item.email}</div>
+                  `;
+                  
+                  button.addEventListener('click', () => {
+                    props.command({ id: item.id, label: item.name });
+                  });
+
+                  component.appendChild(button);
+                });
+              },
+
+              onKeyDown: (props: any) => {
+                if (props.event.key === 'Escape') {
+                  component?.remove();
+                  return true;
+                }
+                return false;
+              },
+
+              onExit: () => {
+                component?.remove();
+              },
+            };
           },
         },
       }),

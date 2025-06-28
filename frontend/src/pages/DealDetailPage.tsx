@@ -267,16 +267,45 @@ const DealDetailPage = () => {
 
   const handleDealUpdate = async (dealId: string, updates: any): Promise<void> => {
     try {
-      await updateDealStoreAction(dealId, updates);
-      toast({
-        title: "Deal updated successfully",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-      });
-      handleDealUpdated();
+      const result = await updateDealStoreAction(dealId, updates);
+      
+      if (result.error) {
+        // Handle error from the store
+        console.error('Error updating deal:', result.error);
+        toast({
+          title: "Error updating deal",
+          description: result.error,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+      
+      if (result.deal) {
+        // Success - the store has already updated with the new data
+        // No need to re-fetch since the store's updateDeal already returns the updated deal
+        toast({
+          title: "Deal updated successfully",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+        // Removed: handleDealUpdated(); // This was causing the 2-second delay by re-fetching
+      } else {
+        // Unexpected case where no error but no deal either
+        console.error('Unexpected result: no deal and no error');
+        toast({
+          title: "Error updating deal",
+          description: "An unexpected error occurred",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      }
     } catch (error) {
-      console.error('Error updating deal:', error);
+      // Handle any unexpected errors
+      console.error('Unexpected error updating deal:', error);
       toast({
         title: "Error updating deal",
         description: error instanceof Error ? error.message : "An unknown error occurred",
@@ -291,16 +320,26 @@ const DealDetailPage = () => {
     if (!currentDeal) return;
     
     try {
-      const processedFields = await processCustomFieldsForSubmission([{
-        custom_field_definition_id: fieldId,
-        value: value
-      }], false);
+      // Create a single CustomFieldValueInput object for this field
+      const customFieldInput = {
+        definitionId: fieldId,
+        stringValue: value ? String(value) : undefined,
+        // Add other field types as needed based on the field type
+        // For now, assuming most custom fields are text/string fields
+      };
       
       await handleDealUpdate(currentDeal.id, {
-        customFieldValues: processedFields
+        customFields: [customFieldInput]
       });
     } catch (error) {
       console.error('Error updating custom field:', error);
+      toast({
+        title: "Error updating custom field",
+        description: error instanceof Error ? error.message : "An unknown error occurred",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
@@ -344,7 +383,7 @@ const DealDetailPage = () => {
     
     try {
       await handleDealUpdate(currentDeal.id, {
-        assigned_to_user_id: newOwnerId
+        assignedToUserId: newOwnerId
       });
       setIsEditingOwner(false);
       setNewOwnerId(null);

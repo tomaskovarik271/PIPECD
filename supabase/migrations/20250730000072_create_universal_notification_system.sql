@@ -22,7 +22,7 @@ CREATE TABLE public.system_notifications (
   priority INTEGER NOT NULL DEFAULT 2 CHECK (priority BETWEEN 1 AND 4),
   
   -- Entity linking for context
-  entity_type TEXT CHECK (entity_type IN ('TASK', 'DEAL', 'LEAD', 'PERSON', 'ORGANIZATION', 'DOCUMENT')),
+  entity_type TEXT CHECK (entity_type IN ('TASK', 'DEAL', 'LEAD', 'PERSON', 'ORGANIZATION', 'DOCUMENT', 'STICKER')),
   entity_id UUID,
   
   -- Action and metadata

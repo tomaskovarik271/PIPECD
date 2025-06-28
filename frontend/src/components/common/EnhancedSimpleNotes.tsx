@@ -193,6 +193,55 @@ const sanitizeHtml = (html: string): string => {
   });
 };
 
+// Add mention extraction utility function
+const extractMentionsFromContent = (content: string): string[] => {
+  // Extract mentions from HTML content created by TipTap
+  // TipTap mention extension creates elements like: <span data-mention data-id="user-id">@username</span>
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(content, 'text/html');
+  const mentionElements = doc.querySelectorAll('[data-mention]');
+  
+  const mentions: string[] = [];
+  mentionElements.forEach(element => {
+    // Try to get user ID from data-id attribute
+    let userId = element.getAttribute('data-id');
+    
+    // If no data-id, try to extract from data-type attribute (some TipTap versions use this)
+    if (!userId) {
+      const dataType = element.getAttribute('data-type');
+      if (dataType === 'mention') {
+        userId = element.getAttribute('id');
+      }
+    }
+    
+    // If still no ID, try to get from the mention text content
+    if (!userId) {
+      const textContent = element.textContent || '';
+      const match = textContent.match(/@(\w+)/);
+      if (match) {
+        userId = match[1];
+      }
+    }
+    
+    if (userId && !mentions.includes(userId)) {
+      mentions.push(userId);
+    }
+  });
+  
+  // Fallback: also check for simple @mentions in text content if no structured mentions found
+  if (mentions.length === 0) {
+    const mentionRegex = /@(\w+)/g;
+    let match;
+    while ((match = mentionRegex.exec(content)) !== null) {
+      if (!mentions.includes(match[1])) {
+        mentions.push(match[1]);
+      }
+    }
+  }
+  
+  return mentions;
+};
+
 export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
   entityType,
   entityId,
@@ -300,6 +349,9 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
     if (!newNoteContent.trim()) return;
 
     try {
+      // Extract mentions from content
+      const mentions = extractMentionsFromContent(newNoteContent);
+      
       await createSticker({
         entityType,
         entityId,
@@ -314,6 +366,7 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
         positionY: 0,
         width: 200,
         height: 150,
+        mentions, // Pass extracted mentions
       });
 
       setNewNoteContent('');
@@ -340,10 +393,14 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
     if (!editContent.trim()) return;
 
     try {
+      // Extract mentions from content
+      const mentions = extractMentionsFromContent(editContent);
+      
       await updateSticker({
         id: noteId,
         title: generateTitle(editContent),
         content: editContent,
+        mentions, // Pass extracted mentions
       });
 
       setEditingNoteId(null);
@@ -468,14 +525,10 @@ export const EnhancedSimpleNotes: React.FC<EnhancedSimpleNotesProps> = ({
     openAttachModal();
   };
 
-  const handleMention = () => {
-    toast({
-      title: 'Team Mentions',
-      description: 'Team member mentions coming soon!',
-      status: 'info',
-      duration: 3000,
-      isClosable: true,
-    });
+  const handleMention = (query: string) => {
+    // The RichTextEditor's mention extension will handle the UI
+    // No need for a placeholder toast - mentions will be processed
+    // when the note is saved via the extractMentionsFromContent function
   };
 
   if (loading) {
