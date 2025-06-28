@@ -18,7 +18,15 @@ import {
   ArrowBackIcon, // For toggle
   ArrowForwardIcon // For toggle
 } from '@chakra-ui/icons'; // Use appropriate icons
-import { FiCpu } from 'react-icons/fi'; // Import AI/robot icon
+import { 
+  FiCpu,           // AI/robot icon for sAIdkick
+  FiDatabase,      // Custom Fields (data structure)
+  FiUsers,         // User Roles (people management)
+  FiZap,           // Business Rules (automation/lightning)
+  FiGitBranch,     // Workflow Management (branching flows)
+  FiUser,          // My Profile (single user)
+  FiGlobe          // Google Integration (global/web icon)
+} from 'react-icons/fi'; // Import specific meaningful icons
 
 
 // Comment out direct imports if moving logos to public directory
@@ -45,16 +53,16 @@ const NAV_ITEMS = [
 const ADMIN_NAV_ITEMS = [
   { path: '/agent-v2', label: 'sAIdkick', icon: <FiCpu size={16} />, permission: 'app_settings:manage' }, // AI Assistant V2 renamed to sAIdkick
   
-  { path: '/admin/custom-fields', label: 'Custom Fields', icon: <SettingsIcon />, permission: 'custom_fields:manage_definitions' },
-  { path: '/admin/user-roles', label: 'User Roles', icon: <SettingsIcon />, permission: 'app_settings:manage' },
-  { path: '/admin/business-rules', label: 'Business Rules', icon: <SettingsIcon />, permission: 'app_settings:manage' },
+  { path: '/admin/custom-fields', label: 'Custom Fields', icon: <FiDatabase size={16} />, permission: 'custom_fields:manage_definitions' },
+  { path: '/admin/user-roles', label: 'User Roles', icon: <FiUsers size={16} />, permission: 'app_settings:manage' },
+  { path: '/admin/business-rules', label: 'Business Rules', icon: <FiZap size={16} />, permission: 'app_settings:manage' },
   // { path: '/admin/google-drive', label: 'Google Drive Settings', icon: <SettingsIcon />, permission: null }, // HIDDEN: Not using Google Drive yet
-  { path: '/admin/wfm', label: 'Workflow Management', icon: <SettingsIcon />, permission: 'app_settings:manage' }, // Use general admin permission - specific permissions are enforced at resolver level
+  { path: '/admin/wfm', label: 'Workflow Management', icon: <FiGitBranch size={16} />, permission: 'app_settings:manage' }, // Use general admin permission - specific permissions are enforced at resolver level
 ];
 
 const USER_NAV_ITEMS = [
-    { path: '/profile', label: 'My Profile', icon: <SettingsIcon /> },
-    { path: '/google-integration', label: 'Google Integration', icon: <SettingsIcon /> },
+    { path: '/profile', label: 'My Profile', icon: <FiUser size={16} /> },
+    { path: '/google-integration', label: 'Google Integration', icon: <FiGlobe size={16} /> },
 ];
 
 function Sidebar() {
