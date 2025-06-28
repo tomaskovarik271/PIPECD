@@ -17,7 +17,6 @@ const DealDetailPage = lazy(() => import('./pages/DealDetailPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const GoogleIntegrationPage = lazy(() => import('./pages/GoogleIntegrationPage'));
 const GoogleOAuthCallback = lazy(() => import('./pages/GoogleOAuthCallback'));
-const AgentPage = lazy(() => import('./pages/AgentPage'));
 const AgentV2Page = lazy(() => import('./pages/AgentV2Page').then(module => ({ default: module.AgentV2Page })));
 const CustomFieldsPage = lazy(() => import('./pages/admin/CustomFieldsPage'));
 const WfmAdminPage = lazy(() => import('./pages/admin/WfmAdminPage'));
@@ -98,7 +97,6 @@ function AppContent() {
               <Route path="/organizations/:organizationId" element={<OrganizationDetailPage />} />
               
                               {/* Activities routes removed - using Google Calendar integration instead */}
-              <Route path="/agent" element={<AgentPage />} />
               <Route path="/agent-v2" element={<AgentV2Page />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/my-accounts" element={<MyAccountsPage />} />
