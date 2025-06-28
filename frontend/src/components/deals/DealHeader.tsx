@@ -16,7 +16,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { CheckIcon, TimeIcon, WarningIcon, CalendarIcon } from '@chakra-ui/icons';
 import { Deal } from '../../stores/useDealsStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
-// NotificationCenter removed - using Google Calendar integration instead
+import NotificationCenter from '../notifications/NotificationCenter';
 import { gql } from 'graphql-request';
 import { gqlClient } from '../../lib/graphqlClient';
 
@@ -287,14 +287,20 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEdit
           </HStack>
         </VStack>
 
-        {/* Calendar integration replaces activity buttons */}
-        {nextSteps.length > 0 && (
-          <VStack spacing={2} align="end" mt={{base: 3, md: 0}} flexShrink={0}>
-            <Text fontSize="sm" color={colors.text.secondary} textAlign="right">
-              Next: {nextSteps[0].subject}
-            </Text>
-          </VStack>
-        )}
+        {/* Right side actions */}
+        <HStack spacing={3} mt={{base: 3, md: 0}} flexShrink={0}>
+          {/* Notification Center */}
+          <NotificationCenter position="header" showBadge={true} />
+          
+          {/* Calendar integration replaces activity buttons */}
+          {nextSteps.length > 0 && (
+            <VStack spacing={2} align="end">
+              <Text fontSize="sm" color={colors.text.secondary} textAlign="right">
+                Next: {nextSteps[0].subject}
+              </Text>
+            </VStack>
+          )}
+        </HStack>
       </Flex>
 
       {/* Pipeline Progress */}

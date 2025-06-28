@@ -1,0 +1,183 @@
+# Universal Notification System GraphQL Schema
+
+# Enums
+enum NotificationSource {
+  BUSINESS_RULE
+  SYSTEM
+}
+
+enum SystemNotificationType {
+  task_due_today
+  task_overdue
+  task_assigned
+  deal_close_date_approaching
+  lead_follow_up_due
+  user_assigned
+  user_mentioned
+  file_shared
+  system_announcement
+}
+
+enum NotificationPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+# System Notification Type
+type SystemNotification {
+  id: ID!
+  userId: ID!
+  title: String!
+  message: String!
+  notificationType: SystemNotificationType!
+  priority: NotificationPriority!
+  entityType: String
+  entityId: ID
+  actionUrl: String
+  metadata: JSON
+  isRead: Boolean!
+  readAt: DateTime
+  dismissedAt: DateTime
+  expiresAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  user: User
+}
+
+# Unified Notification Type (combines both sources)
+type UnifiedNotification {
+  source: NotificationSource!
+  id: ID!
+  userId: ID!
+  title: String!
+  message: String!
+  notificationType: String!
+  priority: Int!
+  entityType: String
+  entityId: ID
+  actionUrl: String
+  metadata: JSON
+  isRead: Boolean!
+  readAt: DateTime
+  dismissedAt: DateTime
+  expiresAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  
+  # Relations
+  user: User
+}
+
+# Notification Summary Type
+type NotificationSummary {
+  totalCount: Int!
+  unreadCount: Int!
+  businessRuleCount: Int!
+  systemCount: Int!
+  highPriorityCount: Int!
+}
+
+# Connection types for pagination
+type UnifiedNotificationsConnection {
+  nodes: [UnifiedNotification!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+type SystemNotificationsConnection {
+  nodes: [SystemNotification!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+# Input types
+input CreateSystemNotificationInput {
+  userId: ID!
+  title: String!
+  message: String!
+  notificationType: SystemNotificationType!
+  priority: NotificationPriority = NORMAL
+  entityType: String
+  entityId: ID
+  actionUrl: String
+  metadata: JSON
+  expiresAt: DateTime
+}
+
+input UpdateSystemNotificationInput {
+  isRead: Boolean
+  dismissedAt: DateTime
+}
+
+input NotificationFilters {
+  isRead: Boolean
+  source: NotificationSource
+  notificationType: String
+  priority: Int
+  entityType: String
+  entityId: ID
+  fromDate: DateTime
+  toDate: DateTime
+}
+
+# Queries
+extend type Query {
+  # Get unified notifications (both business rule and system)
+  unifiedNotifications(
+    first: Int = 20
+    after: String
+    filters: NotificationFilters
+  ): UnifiedNotificationsConnection!
+  
+  # Get system notifications only
+  systemNotifications(
+    first: Int = 20
+    after: String
+    filters: NotificationFilters
+  ): SystemNotificationsConnection!
+  
+  # Get notification summary for current user
+  notificationSummary: NotificationSummary!
+  
+  # Get unread notification count
+  unreadNotificationCount: Int!
+  
+  # Get single system notification
+  systemNotification(id: ID!): SystemNotification
+}
+
+# Mutations
+extend type Mutation {
+  # Create system notification (admin/system use)
+  createSystemNotification(input: CreateSystemNotificationInput!): SystemNotification!
+  
+  # Update system notification (mark as read/dismissed)
+  updateSystemNotification(id: ID!, input: UpdateSystemNotificationInput!): SystemNotification!
+  
+  # Mark single notification as read
+  markSystemNotificationAsRead(id: ID!): Boolean!
+  
+  # Mark all system notifications as read
+  markAllSystemNotificationsAsRead: Int!
+  
+  # Mark single business rule notification as read
+  markBusinessRuleNotificationAsRead(id: ID!): Boolean!
+  
+  # Mark all business rule notifications as read
+  markAllBusinessRuleNotificationsAsRead: Int!
+  
+  # Dismiss system notification
+  dismissSystemNotification(id: ID!): Boolean!
+  
+  # Delete system notification
+  deleteSystemNotification(id: ID!): Boolean!
+  
+  # Cleanup expired notifications
+  cleanupExpiredNotifications: Int!
+} 

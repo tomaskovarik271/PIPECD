@@ -12,6 +12,7 @@ import { userProfileMutations } from './mutations/userProfileMutations';
 import { googleIntegrationMutations } from './mutations/googleIntegration';
 // Activity reminder mutations removed - activities system eliminated
 import { dealParticipantMutations } from './mutations/dealParticipantMutations';
+import { notificationMutations } from './notificationResolvers';
 
 // This file primarily aggregates mutations from the ./mutations subdirectory.
 // Other mutations (like Activity or CustomFields) seem to be aggregated directly in graphql.ts
@@ -26,4 +27,6 @@ export const Mutation: MutationResolvers<GraphQLContext> = {
   ...googleIntegrationMutations,
   // Activity reminder mutations removed
   ...dealParticipantMutations,
+  // Universal Notification System mutations
+  ...notificationMutations,
 }; 

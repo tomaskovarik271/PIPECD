@@ -5,9 +5,59 @@ import { GraphQLError } from 'graphql';
 import logger from '../../../../lib/logger';
 import { getServiceLevelUserProfileData } from '../../../../lib/userProfileService';
 import type { User } from '../../../../lib/generated/graphql';
+import { createClient } from '@supabase/supabase-js';
 
 // For now, create a simple task service initialization without complex types
 const initTaskService = (supabase: any) => new TaskService(supabase);
+
+// Helper function to create task assignment notification
+const createTaskAssignmentNotification = async (task: any, assignedToUserId: string, createdByUserId: string) => {
+  // Only create notification if task is assigned to someone other than the creator
+  if (!assignedToUserId || assignedToUserId === createdByUserId) {
+    return;
+  }
+
+  try {
+    const supabaseAdmin = createClient(
+      process.env.SUPABASE_URL || '',
+      process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    );
+
+    await supabaseAdmin
+      .from('system_notifications')
+      .insert({
+        user_id: assignedToUserId,
+        notification_type: 'task_assigned',
+        title: `New Task Assigned: ${task.title}`,
+        message: `You have been assigned a new task: "${task.title}". Priority: ${task.priority}${task.due_date ? `, Due: ${new Date(task.due_date).toLocaleDateString()}` : ''}`,
+        priority: task.priority === 'URGENT' ? 4 : task.priority === 'HIGH' ? 3 : 2,
+        entity_type: 'TASK',
+        entity_id: task.entity_id,
+        metadata: {
+          task_id: task.id,
+          due_date: task.due_date,
+          entity_type: task.entity_type,
+          entity_id: task.entity_id,
+          deal_id: task.deal_id,
+          lead_id: task.lead_id,
+          person_id: task.person_id,
+          organization_id: task.organization_id,
+          created_by_user_id: createdByUserId
+        }
+      });
+
+    logger.info(`Created task assignment notification for user ${assignedToUserId}, task ${task.id}`);
+  } catch (error) {
+    logger.error('Error creating task assignment notification:', error);
+    // Don't throw - notification failure shouldn't break task creation
+  }
+};
 
 // Task resolver that maps database fields to GraphQL fields
 const mapTaskFromDb = (dbTask: any) => {
@@ -152,6 +202,11 @@ const taskResolvers = {
           throw new Error(`Failed to create task: ${error.message}`);
         }
 
+        // Create task assignment notification (async, don't wait)
+        if (data && input.assignedToUserId) {
+          createTaskAssignmentNotification(data, input.assignedToUserId, context.currentUser!.id);
+        }
+
         return mapTaskFromDb(data);
       } catch (error) {
         logger.error('Error in createTask mutation:', error);
@@ -166,6 +221,13 @@ const taskResolvers = {
       const supabase = getAuthenticatedClient(accessToken);
 
       try {
+        // Get original task data for comparison
+        const { data: originalTask } = await supabase
+          .from('tasks')
+          .select('assigned_to_user_id, title')
+          .eq('id', id)
+          .single();
+
         const updateData: any = {};
         
         if (input.title !== undefined) updateData.title = input.title;
@@ -190,6 +252,13 @@ const taskResolvers = {
         if (error) {
           logger.error('Error updating task:', error);
           throw new Error(`Failed to update task: ${error.message}`);
+        }
+
+        // Create task reassignment notification if assignee changed
+        if (data && input.assignedToUserId !== undefined && 
+            originalTask && input.assignedToUserId !== originalTask.assigned_to_user_id &&
+            input.assignedToUserId !== context.currentUser!.id) {
+          createTaskAssignmentNotification(data, input.assignedToUserId, context.currentUser!.id);
         }
 
         return mapTaskFromDb(data);

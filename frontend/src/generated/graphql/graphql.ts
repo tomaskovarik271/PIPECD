@@ -709,6 +709,19 @@ export type CreateStickerInput = {
   width?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
+export type CreateSystemNotificationInput = {
+  actionUrl?: InputMaybe<Scalars["String"]["input"]>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  expiresAt?: InputMaybe<Scalars["DateTime"]["input"]>;
+  message: Scalars["String"]["input"];
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  notificationType: SystemNotificationType;
+  priority?: InputMaybe<NotificationPriority>;
+  title: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
 export type CreateTaskAutomationRuleInput = {
   appliesToEntityType: TaskEntityType;
   description?: InputMaybe<Scalars["String"]["input"]>;
@@ -1590,6 +1603,7 @@ export type Mutation = {
   bulkDeleteTasks: Scalars["Boolean"]["output"];
   bulkUpdateBusinessRuleStatus: Array<BusinessRule>;
   bulkUpdateTasks: Array<Task>;
+  cleanupExpiredNotifications: Scalars["Int"]["output"];
   completeTask: Task;
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
@@ -1614,6 +1628,7 @@ export type Mutation = {
   createPerson: Person;
   createReactivationPlan: ReactivationPlan;
   createSticker: SmartSticker;
+  createSystemNotification: SystemNotification;
   createTask: Task;
   createTaskAutomationRule: TaskAutomationRule;
   createTaskDependency: TaskDependency;
@@ -1635,6 +1650,7 @@ export type Mutation = {
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   deleteReactivationPlan: Scalars["Boolean"]["output"];
   deleteSticker: Scalars["Boolean"]["output"];
+  deleteSystemNotification: Scalars["Boolean"]["output"];
   deleteTask: Scalars["Boolean"]["output"];
   deleteTaskAutomationRule: Scalars["Boolean"]["output"];
   deleteTaskDependency: Scalars["Boolean"]["output"];
@@ -1642,15 +1658,20 @@ export type Mutation = {
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
   detachFileFromDeal: Scalars["Boolean"]["output"];
+  dismissSystemNotification: Scalars["Boolean"]["output"];
   duplicateBusinessRule: BusinessRule;
   executeAgentStep: AgentResponse;
   executeBusinessRule: BusinessRuleExecutionResult;
   generateTaskContentFromEmail: AiGeneratedTaskContent;
   linkEmailToDeal: Scalars["Boolean"]["output"];
+  markAllBusinessRuleNotificationsAsRead: Scalars["Int"]["output"];
   markAllNotificationsAsRead: Scalars["Int"]["output"];
+  markAllSystemNotificationsAsRead: Scalars["Int"]["output"];
+  markBusinessRuleNotificationAsRead: Scalars["Boolean"]["output"];
   markNotificationAsActedUpon: BusinessRuleNotification;
   markNotificationAsDismissed: BusinessRuleNotification;
   markNotificationAsRead: BusinessRuleNotification;
+  markSystemNotificationAsRead: Scalars["Boolean"]["output"];
   markThreadAsRead: Scalars["Boolean"]["output"];
   markThreadAsUnread: Scalars["Boolean"]["output"];
   moveDriveFile: DriveFile;
@@ -1701,6 +1722,7 @@ export type Mutation = {
   updateReactivationPlan: ReactivationPlan;
   updateSticker: SmartSticker;
   updateStickerTags: SmartSticker;
+  updateSystemNotification: SystemNotification;
   updateTask: Task;
   updateTaskAutomationRule: TaskAutomationRule;
   updateUserCurrencyPreferences: UserCurrencyPreferences;
@@ -1900,6 +1922,10 @@ export type MutationCreateStickerArgs = {
   input: CreateStickerInput;
 };
 
+export type MutationCreateSystemNotificationArgs = {
+  input: CreateSystemNotificationInput;
+};
+
 export type MutationCreateTaskArgs = {
   input: CreateTaskInput;
 };
@@ -1985,6 +2011,10 @@ export type MutationDeleteStickerArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteSystemNotificationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteTaskArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2011,6 +2041,10 @@ export type MutationDeleteWfmStatusArgs = {
 
 export type MutationDetachFileFromDealArgs = {
   attachmentId: Scalars["ID"]["input"];
+};
+
+export type MutationDismissSystemNotificationArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationDuplicateBusinessRuleArgs = {
@@ -2043,6 +2077,10 @@ export type MutationMarkAllNotificationsAsReadArgs = {
   userId: Scalars["ID"]["input"];
 };
 
+export type MutationMarkBusinessRuleNotificationAsReadArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationMarkNotificationAsActedUponArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2052,6 +2090,10 @@ export type MutationMarkNotificationAsDismissedArgs = {
 };
 
 export type MutationMarkNotificationAsReadArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationMarkSystemNotificationAsReadArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -2280,6 +2322,11 @@ export type MutationUpdateStickerTagsArgs = {
   tagsToRemove?: InputMaybe<Array<Scalars["String"]["input"]>>;
 };
 
+export type MutationUpdateSystemNotificationArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateSystemNotificationInput;
+};
+
 export type MutationUpdateTaskArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateTaskInput;
@@ -2352,6 +2399,38 @@ export type NoteDocumentAttachment = {
   id: Scalars["ID"]["output"];
   mimeType?: Maybe<Scalars["String"]["output"]>;
   noteId: Scalars["ID"]["output"];
+};
+
+export type NotificationFilters = {
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  fromDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  isRead?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notificationType?: InputMaybe<Scalars["String"]["input"]>;
+  priority?: InputMaybe<Scalars["Int"]["input"]>;
+  source?: InputMaybe<NotificationSource>;
+  toDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+};
+
+export enum NotificationPriority {
+  High = "HIGH",
+  Low = "LOW",
+  Normal = "NORMAL",
+  Urgent = "URGENT",
+}
+
+export enum NotificationSource {
+  BusinessRule = "BUSINESS_RULE",
+  System = "SYSTEM",
+}
+
+export type NotificationSummary = {
+  __typename?: "NotificationSummary";
+  businessRuleCount: Scalars["Int"]["output"];
+  highPriorityCount: Scalars["Int"]["output"];
+  systemCount: Scalars["Int"]["output"];
+  totalCount: Scalars["Int"]["output"];
+  unreadCount: Scalars["Int"]["output"];
 };
 
 /** Defines the Organization type and related queries/mutations. */
@@ -2525,6 +2604,7 @@ export type Query = {
   myTasks: Array<Task>;
   myTasksDueThisWeek: Array<Task>;
   myTasksDueToday: Array<Task>;
+  notificationSummary: NotificationSummary;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
   people: Array<Person>;
@@ -2543,6 +2623,8 @@ export type Query = {
   searchStickers: StickerConnection;
   suggestEmailParticipants: Array<Person>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  systemNotification?: Maybe<SystemNotification>;
+  systemNotifications: SystemNotificationsConnection;
   task?: Maybe<Task>;
   taskAutomationRule?: Maybe<TaskAutomationRule>;
   taskAutomationRules: Array<TaskAutomationRule>;
@@ -2555,6 +2637,8 @@ export type Query = {
   tasksForOrganization: Array<Task>;
   tasksForPerson: Array<Task>;
   tasksForUser: Array<Task>;
+  unifiedNotifications: UnifiedNotificationsConnection;
+  unreadNotificationCount: Scalars["Int"]["output"];
   upcomingMeetings: Array<CalendarEvent>;
   userCurrencyPreferences?: Maybe<UserCurrencyPreferences>;
   users: Array<User>;
@@ -2882,6 +2966,16 @@ export type QuerySuggestEmailParticipantsArgs = {
   threadId?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type QuerySystemNotificationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QuerySystemNotificationsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  filters?: InputMaybe<NotificationFilters>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
 export type QueryTaskArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2936,6 +3030,12 @@ export type QueryTasksForPersonArgs = {
 export type QueryTasksForUserArgs = {
   filters?: InputMaybe<TaskFiltersInput>;
   userId: Scalars["ID"]["input"];
+};
+
+export type QueryUnifiedNotificationsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  filters?: InputMaybe<NotificationFilters>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryUpcomingMeetingsArgs = {
@@ -3346,6 +3446,47 @@ export type SubscriptionTaskUpdatedArgs = {
   taskId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+export type SystemNotification = {
+  __typename?: "SystemNotification";
+  actionUrl?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  dismissedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  entityId?: Maybe<Scalars["ID"]["output"]>;
+  entityType?: Maybe<Scalars["String"]["output"]>;
+  expiresAt?: Maybe<Scalars["DateTime"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isRead: Scalars["Boolean"]["output"];
+  message: Scalars["String"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notificationType: SystemNotificationType;
+  priority: NotificationPriority;
+  readAt?: Maybe<Scalars["DateTime"]["output"]>;
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
+  userId: Scalars["ID"]["output"];
+};
+
+export enum SystemNotificationType {
+  DealCloseDateApproaching = "deal_close_date_approaching",
+  FileShared = "file_shared",
+  LeadFollowUpDue = "lead_follow_up_due",
+  SystemAnnouncement = "system_announcement",
+  TaskAssigned = "task_assigned",
+  TaskDueToday = "task_due_today",
+  TaskOverdue = "task_overdue",
+  UserAssigned = "user_assigned",
+  UserMentioned = "user_mentioned",
+}
+
+export type SystemNotificationsConnection = {
+  __typename?: "SystemNotificationsConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  nodes: Array<SystemNotification>;
+  totalCount: Scalars["Int"]["output"];
+};
+
 export type Task = {
   __typename?: "Task";
   actualHours?: Maybe<Scalars["Int"]["output"]>;
@@ -3545,6 +3686,36 @@ export enum TriggerTypeEnum {
   TimeBased = "TIME_BASED",
 }
 
+export type UnifiedNotification = {
+  __typename?: "UnifiedNotification";
+  actionUrl?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  dismissedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  entityId?: Maybe<Scalars["ID"]["output"]>;
+  entityType?: Maybe<Scalars["String"]["output"]>;
+  expiresAt?: Maybe<Scalars["DateTime"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isRead: Scalars["Boolean"]["output"];
+  message: Scalars["String"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notificationType: Scalars["String"]["output"];
+  priority: Scalars["Int"]["output"];
+  readAt?: Maybe<Scalars["DateTime"]["output"]>;
+  source: NotificationSource;
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
+  userId: Scalars["ID"]["output"];
+};
+
+export type UnifiedNotificationsConnection = {
+  __typename?: "UnifiedNotificationsConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  nodes: Array<UnifiedNotification>;
+  totalCount: Scalars["Int"]["output"];
+};
+
 export type UpdateAppSettingInput = {
   settingKey: Scalars["String"]["input"];
   settingValue: Scalars["JSON"]["input"];
@@ -3610,6 +3781,11 @@ export type UpdateStickerInput = {
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   title?: InputMaybe<Scalars["String"]["input"]>;
   width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type UpdateSystemNotificationInput = {
+  dismissedAt?: InputMaybe<Scalars["DateTime"]["input"]>;
+  isRead?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type UpdateTaskAutomationRuleInput = {
@@ -4296,6 +4472,100 @@ export type UpdateEmailPinMutation = {
     notes?: string | null;
     updatedAt: string;
   };
+};
+
+export type GetNotificationSummaryQueryVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type GetNotificationSummaryQuery = {
+  __typename?: "Query";
+  notificationSummary: {
+    __typename?: "NotificationSummary";
+    totalCount: number;
+    unreadCount: number;
+    businessRuleCount: number;
+    systemCount: number;
+    highPriorityCount: number;
+  };
+};
+
+export type GetUnifiedNotificationsQueryVariables = Exact<{
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+  filters?: InputMaybe<NotificationFilters>;
+}>;
+
+export type GetUnifiedNotificationsQuery = {
+  __typename?: "Query";
+  unifiedNotifications: {
+    __typename?: "UnifiedNotificationsConnection";
+    totalCount: number;
+    hasNextPage: boolean;
+    hasPreviousPage: boolean;
+    nodes: Array<{
+      __typename?: "UnifiedNotification";
+      source: NotificationSource;
+      id: string;
+      title: string;
+      message: string;
+      notificationType: string;
+      priority: number;
+      entityType?: string | null;
+      entityId?: string | null;
+      actionUrl?: string | null;
+      isRead: boolean;
+      readAt?: string | null;
+      dismissedAt?: string | null;
+      expiresAt?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  };
+};
+
+export type MarkSystemNotificationAsReadMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type MarkSystemNotificationAsReadMutation = {
+  __typename?: "Mutation";
+  markSystemNotificationAsRead: boolean;
+};
+
+export type MarkAllSystemNotificationsAsReadMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type MarkAllSystemNotificationsAsReadMutation = {
+  __typename?: "Mutation";
+  markAllSystemNotificationsAsRead: number;
+};
+
+export type MarkBusinessRuleNotificationAsReadMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type MarkBusinessRuleNotificationAsReadMutation = {
+  __typename?: "Mutation";
+  markBusinessRuleNotificationAsRead: boolean;
+};
+
+export type MarkAllBusinessRuleNotificationsAsReadMutationVariables = Exact<{
+  [key: string]: never;
+}>;
+
+export type MarkAllBusinessRuleNotificationsAsReadMutation = {
+  __typename?: "Mutation";
+  markAllBusinessRuleNotificationsAsRead: number;
+};
+
+export type DismissSystemNotificationMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DismissSystemNotificationMutation = {
+  __typename?: "Mutation";
+  dismissSystemNotification: boolean;
 };
 
 export type UpdateUserProfileMutationVariables = Exact<{
@@ -7359,6 +7629,183 @@ export type GetDealWithHistoryQuery = {
       } | null;
     }> | null;
   } | null;
+};
+
+export type GetBusinessRulesQueryVariables = Exact<{ [key: string]: never }>;
+
+export type GetBusinessRulesQuery = {
+  __typename?: "Query";
+  businessRules: {
+    __typename?: "BusinessRulesConnection";
+    totalCount: number;
+    nodes: Array<{
+      __typename?: "BusinessRule";
+      id: string;
+      name: string;
+      description?: string | null;
+      entityType: EntityTypeEnum;
+      triggerType: TriggerTypeEnum;
+      triggerEvents: Array<string>;
+      triggerFields: Array<string>;
+      status: RuleStatusEnum;
+      executionCount: number;
+      lastError?: string | null;
+      lastExecution?: string | null;
+      createdAt: string;
+      updatedAt: string;
+      conditions: Array<{
+        __typename?: "RuleCondition";
+        field: string;
+        operator: RuleConditionOperator;
+        value: string;
+        logicalOperator: LogicalOperator;
+      }>;
+      actions: Array<{
+        __typename?: "RuleAction";
+        type: RuleActionType;
+        target?: string | null;
+        template?: string | null;
+        message?: string | null;
+        priority: number;
+        metadata?: Record<string, any> | null;
+      }>;
+      wfmWorkflow?: {
+        __typename?: "WFMWorkflow";
+        id: string;
+        name: string;
+      } | null;
+      wfmStep?: {
+        __typename?: "WFMWorkflowStep";
+        id: string;
+        status: { __typename?: "WFMStatus"; id: string; name: string };
+      } | null;
+      wfmStatus?: { __typename?: "WFMStatus"; id: string; name: string } | null;
+      createdBy?: {
+        __typename?: "User";
+        id: string;
+        email: string;
+        display_name?: string | null;
+      } | null;
+    }>;
+  };
+};
+
+export type CreateBusinessRuleMutationVariables = Exact<{
+  input: BusinessRuleInput;
+}>;
+
+export type CreateBusinessRuleMutation = {
+  __typename?: "Mutation";
+  createBusinessRule: {
+    __typename?: "BusinessRule";
+    id: string;
+    name: string;
+    description?: string | null;
+    entityType: EntityTypeEnum;
+    triggerType: TriggerTypeEnum;
+    triggerEvents: Array<string>;
+    triggerFields: Array<string>;
+    status: RuleStatusEnum;
+    executionCount: number;
+    lastError?: string | null;
+    lastExecution?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    conditions: Array<{
+      __typename?: "RuleCondition";
+      field: string;
+      operator: RuleConditionOperator;
+      value: string;
+      logicalOperator: LogicalOperator;
+    }>;
+    actions: Array<{
+      __typename?: "RuleAction";
+      type: RuleActionType;
+      target?: string | null;
+      template?: string | null;
+      message?: string | null;
+      priority: number;
+      metadata?: Record<string, any> | null;
+    }>;
+  };
+};
+
+export type UpdateBusinessRuleMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+  input: UpdateBusinessRuleInput;
+}>;
+
+export type UpdateBusinessRuleMutation = {
+  __typename?: "Mutation";
+  updateBusinessRule: {
+    __typename?: "BusinessRule";
+    id: string;
+    name: string;
+    description?: string | null;
+    entityType: EntityTypeEnum;
+    triggerType: TriggerTypeEnum;
+    triggerEvents: Array<string>;
+    triggerFields: Array<string>;
+    status: RuleStatusEnum;
+    executionCount: number;
+    lastError?: string | null;
+    lastExecution?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    conditions: Array<{
+      __typename?: "RuleCondition";
+      field: string;
+      operator: RuleConditionOperator;
+      value: string;
+      logicalOperator: LogicalOperator;
+    }>;
+    actions: Array<{
+      __typename?: "RuleAction";
+      type: RuleActionType;
+      target?: string | null;
+      template?: string | null;
+      message?: string | null;
+      priority: number;
+      metadata?: Record<string, any> | null;
+    }>;
+  };
+};
+
+export type DeleteBusinessRuleMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeleteBusinessRuleMutation = {
+  __typename?: "Mutation";
+  deleteBusinessRule: boolean;
+};
+
+export type ActivateBusinessRuleMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type ActivateBusinessRuleMutation = {
+  __typename?: "Mutation";
+  activateBusinessRule: {
+    __typename?: "BusinessRule";
+    id: string;
+    status: RuleStatusEnum;
+    updatedAt: string;
+  };
+};
+
+export type DeactivateBusinessRuleMutationVariables = Exact<{
+  id: Scalars["ID"]["input"];
+}>;
+
+export type DeactivateBusinessRuleMutation = {
+  __typename?: "Mutation";
+  deactivateBusinessRule: {
+    __typename?: "BusinessRule";
+    id: string;
+    status: RuleStatusEnum;
+    updatedAt: string;
+  };
 };
 
 export type PersonFieldsFragment = {

@@ -19,6 +19,7 @@ import { wfmProjectTypeService } from '../../../../lib/wfmProjectTypeService';
 import * as leadService from '../../../../lib/leadService';
 import { googleIntegrationService } from '../../../../lib/googleIntegrationService';
 import { dealParticipantQueries } from './queries/dealParticipantQueries';
+import { notificationQueries } from './notificationResolvers';
 
 // Import generated types from backend codegen
 import type {
@@ -570,6 +571,9 @@ export const Query: QueryResolvers<GraphQLContext> = {
 
     // Account Management queries
     ...accountManagementQueries,
+
+    // Universal Notification System queries
+    ...notificationQueries,
 
     // Activity system removed - using Google Calendar integration instead
 }; 

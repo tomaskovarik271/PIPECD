@@ -718,6 +718,19 @@ export type CreateStickerInput = {
   width?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
+export type CreateSystemNotificationInput = {
+  actionUrl?: InputMaybe<Scalars["String"]["input"]>;
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  expiresAt?: InputMaybe<Scalars["DateTime"]["input"]>;
+  message: Scalars["String"]["input"];
+  metadata?: InputMaybe<Scalars["JSON"]["input"]>;
+  notificationType: SystemNotificationType;
+  priority?: InputMaybe<NotificationPriority>;
+  title: Scalars["String"]["input"];
+  userId: Scalars["ID"]["input"];
+};
+
 export type CreateTaskAutomationRuleInput = {
   appliesToEntityType: TaskEntityType;
   description?: InputMaybe<Scalars["String"]["input"]>;
@@ -1599,6 +1612,7 @@ export type Mutation = {
   bulkDeleteTasks: Scalars["Boolean"]["output"];
   bulkUpdateBusinessRuleStatus: Array<BusinessRule>;
   bulkUpdateTasks: Array<Task>;
+  cleanupExpiredNotifications: Scalars["Int"]["output"];
   completeTask: Task;
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
@@ -1623,6 +1637,7 @@ export type Mutation = {
   createPerson: Person;
   createReactivationPlan: ReactivationPlan;
   createSticker: SmartSticker;
+  createSystemNotification: SystemNotification;
   createTask: Task;
   createTaskAutomationRule: TaskAutomationRule;
   createTaskDependency: TaskDependency;
@@ -1644,6 +1659,7 @@ export type Mutation = {
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
   deleteReactivationPlan: Scalars["Boolean"]["output"];
   deleteSticker: Scalars["Boolean"]["output"];
+  deleteSystemNotification: Scalars["Boolean"]["output"];
   deleteTask: Scalars["Boolean"]["output"];
   deleteTaskAutomationRule: Scalars["Boolean"]["output"];
   deleteTaskDependency: Scalars["Boolean"]["output"];
@@ -1651,15 +1667,20 @@ export type Mutation = {
   deleteWFMWorkflowTransition: WfmWorkflowTransitionMutationResponse;
   deleteWfmStatus: WfmStatusMutationResponse;
   detachFileFromDeal: Scalars["Boolean"]["output"];
+  dismissSystemNotification: Scalars["Boolean"]["output"];
   duplicateBusinessRule: BusinessRule;
   executeAgentStep: AgentResponse;
   executeBusinessRule: BusinessRuleExecutionResult;
   generateTaskContentFromEmail: AiGeneratedTaskContent;
   linkEmailToDeal: Scalars["Boolean"]["output"];
+  markAllBusinessRuleNotificationsAsRead: Scalars["Int"]["output"];
   markAllNotificationsAsRead: Scalars["Int"]["output"];
+  markAllSystemNotificationsAsRead: Scalars["Int"]["output"];
+  markBusinessRuleNotificationAsRead: Scalars["Boolean"]["output"];
   markNotificationAsActedUpon: BusinessRuleNotification;
   markNotificationAsDismissed: BusinessRuleNotification;
   markNotificationAsRead: BusinessRuleNotification;
+  markSystemNotificationAsRead: Scalars["Boolean"]["output"];
   markThreadAsRead: Scalars["Boolean"]["output"];
   markThreadAsUnread: Scalars["Boolean"]["output"];
   moveDriveFile: DriveFile;
@@ -1710,6 +1731,7 @@ export type Mutation = {
   updateReactivationPlan: ReactivationPlan;
   updateSticker: SmartSticker;
   updateStickerTags: SmartSticker;
+  updateSystemNotification: SystemNotification;
   updateTask: Task;
   updateTaskAutomationRule: TaskAutomationRule;
   updateUserCurrencyPreferences: UserCurrencyPreferences;
@@ -1909,6 +1931,10 @@ export type MutationCreateStickerArgs = {
   input: CreateStickerInput;
 };
 
+export type MutationCreateSystemNotificationArgs = {
+  input: CreateSystemNotificationInput;
+};
+
 export type MutationCreateTaskArgs = {
   input: CreateTaskInput;
 };
@@ -1994,6 +2020,10 @@ export type MutationDeleteStickerArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type MutationDeleteSystemNotificationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationDeleteTaskArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2020,6 +2050,10 @@ export type MutationDeleteWfmStatusArgs = {
 
 export type MutationDetachFileFromDealArgs = {
   attachmentId: Scalars["ID"]["input"];
+};
+
+export type MutationDismissSystemNotificationArgs = {
+  id: Scalars["ID"]["input"];
 };
 
 export type MutationDuplicateBusinessRuleArgs = {
@@ -2052,6 +2086,10 @@ export type MutationMarkAllNotificationsAsReadArgs = {
   userId: Scalars["ID"]["input"];
 };
 
+export type MutationMarkBusinessRuleNotificationAsReadArgs = {
+  id: Scalars["ID"]["input"];
+};
+
 export type MutationMarkNotificationAsActedUponArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2061,6 +2099,10 @@ export type MutationMarkNotificationAsDismissedArgs = {
 };
 
 export type MutationMarkNotificationAsReadArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationMarkSystemNotificationAsReadArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -2289,6 +2331,11 @@ export type MutationUpdateStickerTagsArgs = {
   tagsToRemove?: InputMaybe<Array<Scalars["String"]["input"]>>;
 };
 
+export type MutationUpdateSystemNotificationArgs = {
+  id: Scalars["ID"]["input"];
+  input: UpdateSystemNotificationInput;
+};
+
 export type MutationUpdateTaskArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateTaskInput;
@@ -2361,6 +2408,38 @@ export type NoteDocumentAttachment = {
   id: Scalars["ID"]["output"];
   mimeType?: Maybe<Scalars["String"]["output"]>;
   noteId: Scalars["ID"]["output"];
+};
+
+export type NotificationFilters = {
+  entityId?: InputMaybe<Scalars["ID"]["input"]>;
+  entityType?: InputMaybe<Scalars["String"]["input"]>;
+  fromDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+  isRead?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notificationType?: InputMaybe<Scalars["String"]["input"]>;
+  priority?: InputMaybe<Scalars["Int"]["input"]>;
+  source?: InputMaybe<NotificationSource>;
+  toDate?: InputMaybe<Scalars["DateTime"]["input"]>;
+};
+
+export enum NotificationPriority {
+  High = "HIGH",
+  Low = "LOW",
+  Normal = "NORMAL",
+  Urgent = "URGENT",
+}
+
+export enum NotificationSource {
+  BusinessRule = "BUSINESS_RULE",
+  System = "SYSTEM",
+}
+
+export type NotificationSummary = {
+  __typename?: "NotificationSummary";
+  businessRuleCount: Scalars["Int"]["output"];
+  highPriorityCount: Scalars["Int"]["output"];
+  systemCount: Scalars["Int"]["output"];
+  totalCount: Scalars["Int"]["output"];
+  unreadCount: Scalars["Int"]["output"];
 };
 
 /** Defines the Organization type and related queries/mutations. */
@@ -2534,6 +2613,7 @@ export type Query = {
   myTasks: Array<Task>;
   myTasksDueThisWeek: Array<Task>;
   myTasksDueToday: Array<Task>;
+  notificationSummary: NotificationSummary;
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
   people: Array<Person>;
@@ -2552,6 +2632,8 @@ export type Query = {
   searchStickers: StickerConnection;
   suggestEmailParticipants: Array<Person>;
   supabaseConnectionTest: Scalars["String"]["output"];
+  systemNotification?: Maybe<SystemNotification>;
+  systemNotifications: SystemNotificationsConnection;
   task?: Maybe<Task>;
   taskAutomationRule?: Maybe<TaskAutomationRule>;
   taskAutomationRules: Array<TaskAutomationRule>;
@@ -2564,6 +2646,8 @@ export type Query = {
   tasksForOrganization: Array<Task>;
   tasksForPerson: Array<Task>;
   tasksForUser: Array<Task>;
+  unifiedNotifications: UnifiedNotificationsConnection;
+  unreadNotificationCount: Scalars["Int"]["output"];
   upcomingMeetings: Array<CalendarEvent>;
   userCurrencyPreferences?: Maybe<UserCurrencyPreferences>;
   users: Array<User>;
@@ -2891,6 +2975,16 @@ export type QuerySuggestEmailParticipantsArgs = {
   threadId?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type QuerySystemNotificationArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type QuerySystemNotificationsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  filters?: InputMaybe<NotificationFilters>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
 export type QueryTaskArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -2945,6 +3039,12 @@ export type QueryTasksForPersonArgs = {
 export type QueryTasksForUserArgs = {
   filters?: InputMaybe<TaskFiltersInput>;
   userId: Scalars["ID"]["input"];
+};
+
+export type QueryUnifiedNotificationsArgs = {
+  after?: InputMaybe<Scalars["String"]["input"]>;
+  filters?: InputMaybe<NotificationFilters>;
+  first?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryUpcomingMeetingsArgs = {
@@ -3355,6 +3455,47 @@ export type SubscriptionTaskUpdatedArgs = {
   taskId?: InputMaybe<Scalars["ID"]["input"]>;
 };
 
+export type SystemNotification = {
+  __typename?: "SystemNotification";
+  actionUrl?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  dismissedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  entityId?: Maybe<Scalars["ID"]["output"]>;
+  entityType?: Maybe<Scalars["String"]["output"]>;
+  expiresAt?: Maybe<Scalars["DateTime"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isRead: Scalars["Boolean"]["output"];
+  message: Scalars["String"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notificationType: SystemNotificationType;
+  priority: NotificationPriority;
+  readAt?: Maybe<Scalars["DateTime"]["output"]>;
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
+  userId: Scalars["ID"]["output"];
+};
+
+export enum SystemNotificationType {
+  DealCloseDateApproaching = "deal_close_date_approaching",
+  FileShared = "file_shared",
+  LeadFollowUpDue = "lead_follow_up_due",
+  SystemAnnouncement = "system_announcement",
+  TaskAssigned = "task_assigned",
+  TaskDueToday = "task_due_today",
+  TaskOverdue = "task_overdue",
+  UserAssigned = "user_assigned",
+  UserMentioned = "user_mentioned",
+}
+
+export type SystemNotificationsConnection = {
+  __typename?: "SystemNotificationsConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  nodes: Array<SystemNotification>;
+  totalCount: Scalars["Int"]["output"];
+};
+
 export type Task = {
   __typename?: "Task";
   actualHours?: Maybe<Scalars["Int"]["output"]>;
@@ -3554,6 +3695,36 @@ export enum TriggerTypeEnum {
   TimeBased = "TIME_BASED",
 }
 
+export type UnifiedNotification = {
+  __typename?: "UnifiedNotification";
+  actionUrl?: Maybe<Scalars["String"]["output"]>;
+  createdAt: Scalars["DateTime"]["output"];
+  dismissedAt?: Maybe<Scalars["DateTime"]["output"]>;
+  entityId?: Maybe<Scalars["ID"]["output"]>;
+  entityType?: Maybe<Scalars["String"]["output"]>;
+  expiresAt?: Maybe<Scalars["DateTime"]["output"]>;
+  id: Scalars["ID"]["output"];
+  isRead: Scalars["Boolean"]["output"];
+  message: Scalars["String"]["output"];
+  metadata?: Maybe<Scalars["JSON"]["output"]>;
+  notificationType: Scalars["String"]["output"];
+  priority: Scalars["Int"]["output"];
+  readAt?: Maybe<Scalars["DateTime"]["output"]>;
+  source: NotificationSource;
+  title: Scalars["String"]["output"];
+  updatedAt: Scalars["DateTime"]["output"];
+  user?: Maybe<User>;
+  userId: Scalars["ID"]["output"];
+};
+
+export type UnifiedNotificationsConnection = {
+  __typename?: "UnifiedNotificationsConnection";
+  hasNextPage: Scalars["Boolean"]["output"];
+  hasPreviousPage: Scalars["Boolean"]["output"];
+  nodes: Array<UnifiedNotification>;
+  totalCount: Scalars["Int"]["output"];
+};
+
 export type UpdateAppSettingInput = {
   settingKey: Scalars["String"]["input"];
   settingValue: Scalars["JSON"]["input"];
@@ -3619,6 +3790,11 @@ export type UpdateStickerInput = {
   tags?: InputMaybe<Array<Scalars["String"]["input"]>>;
   title?: InputMaybe<Scalars["String"]["input"]>;
   width?: InputMaybe<Scalars["Int"]["input"]>;
+};
+
+export type UpdateSystemNotificationInput = {
+  dismissedAt?: InputMaybe<Scalars["DateTime"]["input"]>;
+  isRead?: InputMaybe<Scalars["Boolean"]["input"]>;
 };
 
 export type UpdateTaskAutomationRuleInput = {
@@ -4003,6 +4179,7 @@ export type ResolversTypes = {
   CreateDocumentInput: CreateDocumentInput;
   CreateEmailInput: CreateEmailInput;
   CreateStickerInput: CreateStickerInput;
+  CreateSystemNotificationInput: CreateSystemNotificationInput;
   CreateTaskAutomationRuleInput: CreateTaskAutomationRuleInput;
   CreateTaskDependencyInput: CreateTaskDependencyInput;
   CreateTaskInput: CreateTaskInput;
@@ -4089,6 +4266,10 @@ export type ResolversTypes = {
   LogicalOperator: LogicalOperator;
   Mutation: ResolverTypeWrapper<{}>;
   NoteDocumentAttachment: ResolverTypeWrapper<NoteDocumentAttachment>;
+  NotificationFilters: NotificationFilters;
+  NotificationPriority: NotificationPriority;
+  NotificationSource: NotificationSource;
+  NotificationSummary: ResolverTypeWrapper<NotificationSummary>;
   Organization: ResolverTypeWrapper<Organization>;
   OrganizationInput: OrganizationInput;
   OrganizationUpdateInput: OrganizationUpdateInput;
@@ -4132,6 +4313,9 @@ export type ResolversTypes = {
   StickerSortField: StickerSortField;
   String: ResolverTypeWrapper<Scalars["String"]["output"]>;
   Subscription: ResolverTypeWrapper<{}>;
+  SystemNotification: ResolverTypeWrapper<SystemNotification>;
+  SystemNotificationType: SystemNotificationType;
+  SystemNotificationsConnection: ResolverTypeWrapper<SystemNotificationsConnection>;
   Task: ResolverTypeWrapper<Task>;
   TaskAutomationRule: ResolverTypeWrapper<TaskAutomationRule>;
   TaskCompletionInput: TaskCompletionInput;
@@ -4151,6 +4335,8 @@ export type ResolversTypes = {
   ToolExecution: ResolverTypeWrapper<ToolExecution>;
   ToolExecutionStatus: ToolExecutionStatus;
   TriggerTypeEnum: TriggerTypeEnum;
+  UnifiedNotification: ResolverTypeWrapper<UnifiedNotification>;
+  UnifiedNotificationsConnection: ResolverTypeWrapper<UnifiedNotificationsConnection>;
   UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateBusinessRuleInput: UpdateBusinessRuleInput;
   UpdateCalendarEventInput: UpdateCalendarEventInput;
@@ -4158,6 +4344,7 @@ export type ResolversTypes = {
   UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
   UpdateStickerInput: UpdateStickerInput;
+  UpdateSystemNotificationInput: UpdateSystemNotificationInput;
   UpdateTaskAutomationRuleInput: UpdateTaskAutomationRuleInput;
   UpdateTaskInput: UpdateTaskInput;
   UpdateUserCurrencyPreferencesInput: UpdateUserCurrencyPreferencesInput;
@@ -4238,6 +4425,7 @@ export type ResolversParentTypes = {
   CreateDocumentInput: CreateDocumentInput;
   CreateEmailInput: CreateEmailInput;
   CreateStickerInput: CreateStickerInput;
+  CreateSystemNotificationInput: CreateSystemNotificationInput;
   CreateTaskAutomationRuleInput: CreateTaskAutomationRuleInput;
   CreateTaskDependencyInput: CreateTaskDependencyInput;
   CreateTaskInput: CreateTaskInput;
@@ -4313,6 +4501,8 @@ export type ResolversParentTypes = {
   LeadsStats: LeadsStats;
   Mutation: {};
   NoteDocumentAttachment: NoteDocumentAttachment;
+  NotificationFilters: NotificationFilters;
+  NotificationSummary: NotificationSummary;
   Organization: Organization;
   OrganizationInput: OrganizationInput;
   OrganizationUpdateInput: OrganizationUpdateInput;
@@ -4347,6 +4537,8 @@ export type ResolversParentTypes = {
   StickerSortBy: StickerSortBy;
   String: Scalars["String"]["output"];
   Subscription: {};
+  SystemNotification: SystemNotification;
+  SystemNotificationsConnection: SystemNotificationsConnection;
   Task: Task;
   TaskAutomationRule: TaskAutomationRule;
   TaskCompletionInput: TaskCompletionInput;
@@ -4359,6 +4551,8 @@ export type ResolversParentTypes = {
   TaskTypeCount: TaskTypeCount;
   ToolDiscoveryResponse: ToolDiscoveryResponse;
   ToolExecution: ToolExecution;
+  UnifiedNotification: UnifiedNotification;
+  UnifiedNotificationsConnection: UnifiedNotificationsConnection;
   UpdateAppSettingInput: UpdateAppSettingInput;
   UpdateBusinessRuleInput: UpdateBusinessRuleInput;
   UpdateCalendarEventInput: UpdateCalendarEventInput;
@@ -4366,6 +4560,7 @@ export type ResolversParentTypes = {
   UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
   UpdateStickerInput: UpdateStickerInput;
+  UpdateSystemNotificationInput: UpdateSystemNotificationInput;
   UpdateTaskAutomationRuleInput: UpdateTaskAutomationRuleInput;
   UpdateTaskInput: UpdateTaskInput;
   UpdateUserCurrencyPreferencesInput: UpdateUserCurrencyPreferencesInput;
@@ -6562,6 +6757,11 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationBulkUpdateTasksArgs, "taskIds" | "updates">
   >;
+  cleanupExpiredNotifications?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
   completeTask?: Resolver<
     ResolversTypes["Task"],
     ParentType,
@@ -6709,6 +6909,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreateStickerArgs, "input">
   >;
+  createSystemNotification?: Resolver<
+    ResolversTypes["SystemNotification"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCreateSystemNotificationArgs, "input">
+  >;
   createTask?: Resolver<
     ResolversTypes["Task"],
     ParentType,
@@ -6835,6 +7041,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDeleteStickerArgs, "id">
   >;
+  deleteSystemNotification?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeleteSystemNotificationArgs, "id">
+  >;
   deleteTask?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -6877,6 +7089,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationDetachFileFromDealArgs, "attachmentId">
   >;
+  dismissSystemNotification?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDismissSystemNotificationArgs, "id">
+  >;
   duplicateBusinessRule?: Resolver<
     ResolversTypes["BusinessRule"],
     ParentType,
@@ -6910,11 +7128,27 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationLinkEmailToDealArgs, "dealId" | "emailId">
   >;
+  markAllBusinessRuleNotificationsAsRead?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
   markAllNotificationsAsRead?: Resolver<
     ResolversTypes["Int"],
     ParentType,
     ContextType,
     RequireFields<MutationMarkAllNotificationsAsReadArgs, "userId">
+  >;
+  markAllSystemNotificationsAsRead?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
+  >;
+  markBusinessRuleNotificationAsRead?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkBusinessRuleNotificationAsReadArgs, "id">
   >;
   markNotificationAsActedUpon?: Resolver<
     ResolversTypes["BusinessRuleNotification"],
@@ -6933,6 +7167,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationMarkNotificationAsReadArgs, "id">
+  >;
+  markSystemNotificationAsRead?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationMarkSystemNotificationAsReadArgs, "id">
   >;
   markThreadAsRead?: Resolver<
     ResolversTypes["Boolean"],
@@ -7250,6 +7490,12 @@ export type MutationResolvers<
       "id" | "tagsToAdd" | "tagsToRemove"
     >
   >;
+  updateSystemNotification?: Resolver<
+    ResolversTypes["SystemNotification"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateSystemNotificationArgs, "id" | "input">
+  >;
   updateTask?: Resolver<
     ResolversTypes["Task"],
     ParentType,
@@ -7344,6 +7590,19 @@ export type NoteDocumentAttachmentResolvers<
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   mimeType?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   noteId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type NotificationSummaryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["NotificationSummary"] = ResolversParentTypes["NotificationSummary"],
+> = {
+  businessRuleCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  highPriorityCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  systemCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  unreadCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -7879,6 +8138,11 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  notificationSummary?: Resolver<
+    ResolversTypes["NotificationSummary"],
+    ParentType,
+    ContextType
+  >;
   organization?: Resolver<
     Maybe<ResolversTypes["Organization"]>,
     ParentType,
@@ -7977,6 +8241,18 @@ export type QueryResolvers<
     ParentType,
     ContextType
   >;
+  systemNotification?: Resolver<
+    Maybe<ResolversTypes["SystemNotification"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QuerySystemNotificationArgs, "id">
+  >;
+  systemNotifications?: Resolver<
+    ResolversTypes["SystemNotificationsConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QuerySystemNotificationsArgs, "first">
+  >;
   task?: Resolver<
     Maybe<ResolversTypes["Task"]>,
     ParentType,
@@ -8048,6 +8324,17 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryTasksForUserArgs, "userId">
+  >;
+  unifiedNotifications?: Resolver<
+    ResolversTypes["UnifiedNotificationsConnection"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryUnifiedNotificationsArgs, "first">
+  >;
+  unreadNotificationCount?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType
   >;
   upcomingMeetings?: Resolver<
     Array<ResolversTypes["CalendarEvent"]>,
@@ -8571,6 +8858,75 @@ export type SubscriptionResolvers<
   >;
 };
 
+export type SystemNotificationResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["SystemNotification"] = ResolversParentTypes["SystemNotification"],
+> = {
+  actionUrl?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  dismissedAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  entityId?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
+  entityType?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  expiresAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isRead?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  message?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  notificationType?: Resolver<
+    ResolversTypes["SystemNotificationType"],
+    ParentType,
+    ContextType
+  >;
+  priority?: Resolver<
+    ResolversTypes["NotificationPriority"],
+    ParentType,
+    ContextType
+  >;
+  readAt?: Resolver<Maybe<ResolversTypes["DateTime"]>, ParentType, ContextType>;
+  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type SystemNotificationsConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["SystemNotificationsConnection"] = ResolversParentTypes["SystemNotificationsConnection"],
+> = {
+  hasNextPage?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  hasPreviousPage?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  nodes?: Resolver<
+    Array<ResolversTypes["SystemNotification"]>,
+    ParentType,
+    ContextType
+  >;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type TaskResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -8826,6 +9182,76 @@ export type ToolExecutionResolvers<
     ContextType
   >;
   timestamp?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type UnifiedNotificationResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["UnifiedNotification"] = ResolversParentTypes["UnifiedNotification"],
+> = {
+  actionUrl?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  createdAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  dismissedAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  entityId?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
+  entityType?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  expiresAt?: Resolver<
+    Maybe<ResolversTypes["DateTime"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  isRead?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  message?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  metadata?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  notificationType?: Resolver<
+    ResolversTypes["String"],
+    ParentType,
+    ContextType
+  >;
+  priority?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  readAt?: Resolver<Maybe<ResolversTypes["DateTime"]>, ParentType, ContextType>;
+  source?: Resolver<
+    ResolversTypes["NotificationSource"],
+    ParentType,
+    ContextType
+  >;
+  title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  userId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type UnifiedNotificationsConnectionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["UnifiedNotificationsConnection"] = ResolversParentTypes["UnifiedNotificationsConnection"],
+> = {
+  hasNextPage?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  hasPreviousPage?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType
+  >;
+  nodes?: Resolver<
+    Array<ResolversTypes["UnifiedNotification"]>,
+    ParentType,
+    ContextType
+  >;
+  totalCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -9151,6 +9577,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   LeadsStats?: LeadsStatsResolvers<ContextType>;
   Mutation?: MutationResolvers<ContextType>;
   NoteDocumentAttachment?: NoteDocumentAttachmentResolvers<ContextType>;
+  NotificationSummary?: NotificationSummaryResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   Person?: PersonResolvers<ContextType>;
   PersonListItem?: PersonListItemResolvers<ContextType>;
@@ -9169,6 +9596,8 @@ export type Resolvers<ContextType = GraphQLContext> = {
   StickerCategory?: StickerCategoryResolvers<ContextType>;
   StickerConnection?: StickerConnectionResolvers<ContextType>;
   Subscription?: SubscriptionResolvers<ContextType>;
+  SystemNotification?: SystemNotificationResolvers<ContextType>;
+  SystemNotificationsConnection?: SystemNotificationsConnectionResolvers<ContextType>;
   Task?: TaskResolvers<ContextType>;
   TaskAutomationRule?: TaskAutomationRuleResolvers<ContextType>;
   TaskDependency?: TaskDependencyResolvers<ContextType>;
@@ -9179,6 +9608,8 @@ export type Resolvers<ContextType = GraphQLContext> = {
   TaskTypeCount?: TaskTypeCountResolvers<ContextType>;
   ToolDiscoveryResponse?: ToolDiscoveryResponseResolvers<ContextType>;
   ToolExecution?: ToolExecutionResolvers<ContextType>;
+  UnifiedNotification?: UnifiedNotificationResolvers<ContextType>;
+  UnifiedNotificationsConnection?: UnifiedNotificationsConnectionResolvers<ContextType>;
   User?: UserResolvers<ContextType>;
   UserCurrencyPreferences?: UserCurrencyPreferencesResolvers<ContextType>;
   WFMProject?: WfmProjectResolvers<ContextType>;

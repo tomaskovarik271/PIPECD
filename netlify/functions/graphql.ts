@@ -81,6 +81,9 @@ import taskResolvers from './graphql/resolvers/taskResolvers';
 // Import Business Rules Resolvers
 import { businessRulesResolvers } from './graphql/resolvers/businessRulesResolvers';
 
+// Import Notification Resolvers
+import { notificationQueries, notificationMutations, SystemNotification, UnifiedNotification } from './graphql/resolvers/notificationResolvers';
+
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
 
@@ -142,7 +145,8 @@ const loadTypeDefs = (): string => {
     'currency.graphql',
     'calendar.graphql',
     'task.graphql',
-    'businessRules.graphql'
+    'businessRules.graphql',
+    'notifications.graphql'
   ];
 
   try {
@@ -194,6 +198,7 @@ export const resolvers = {
     ...calendarResolvers.Query,
     ...taskResolvers.Query,
     ...businessRulesResolvers.Query,
+    ...notificationQueries,
   },
   Mutation: {
     ...BaseMutation,
@@ -216,6 +221,7 @@ export const resolvers = {
     ...calendarResolvers.Mutation,
     ...taskResolvers.Mutation,
     ...businessRulesResolvers.Mutation,
+    ...notificationMutations,
   },
   Person,
   Deal: {
@@ -253,6 +259,9 @@ export const resolvers = {
   BusinessRule: businessRulesResolvers.BusinessRule,
   BusinessRuleNotification: businessRulesResolvers.BusinessRuleNotification,
   RuleExecution: businessRulesResolvers.RuleExecution,
+  // Notification type resolvers
+  SystemNotification,
+  UnifiedNotification,
 }; 
 
 const yoga = createYoga<GraphQLContext>({

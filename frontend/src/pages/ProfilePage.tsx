@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Box, Heading, Button, VStack, useToast, Spinner, Text, Flex, IconButton, HStack } from '@chakra-ui/react';
 import { EditIcon, CloseIcon } from '@chakra-ui/icons';
-// NotificationCenter removed - using Google Calendar integration instead
 import { gql } from 'graphql-request';
 import { gqlClient } from '../lib/graphqlClient';
 import { isGraphQLErrorWithMessage } from '../lib/graphqlUtils';
@@ -112,9 +111,6 @@ const ProfilePage: React.FC = () => {
           </Heading>
           
           <HStack spacing={3}>
-            {/* Notification Center */}
-            {/* NotificationCenter removed - using Google Calendar integration instead */}
-            
             {user && !isEditing && (
               <IconButton
                 aria-label="Edit Profile"

@@ -39,6 +39,13 @@ type Documents = {
     "\n  query GetPinnedEmails($dealId: ID!) {\n    getPinnedEmails(dealId: $dealId) {\n      id\n      emailId\n      threadId\n      subject\n      fromEmail\n      pinnedAt\n      notes\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.GetPinnedEmailsDocument,
     "\n  mutation UnpinEmail($id: ID!) {\n    unpinEmail(id: $id)\n  }\n": typeof types.UnpinEmailDocument,
     "\n  mutation UpdateEmailPin($id: ID!, $input: UpdateEmailPinInput!) {\n    updateEmailPin(id: $id, input: $input) {\n      id\n      notes\n      updatedAt\n    }\n  }\n": typeof types.UpdateEmailPinDocument,
+    "\n  query GetNotificationSummary {\n    notificationSummary {\n      totalCount\n      unreadCount\n      businessRuleCount\n      systemCount\n      highPriorityCount\n    }\n  }\n": typeof types.GetNotificationSummaryDocument,
+    "\n  query GetUnifiedNotifications($first: Int, $filters: NotificationFilters) {\n    unifiedNotifications(first: $first, filters: $filters) {\n      nodes {\n        source\n        id\n        title\n        message\n        notificationType\n        priority\n        entityType\n        entityId\n        actionUrl\n        isRead\n        readAt\n        dismissedAt\n        expiresAt\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasNextPage\n      hasPreviousPage\n    }\n  }\n": typeof types.GetUnifiedNotificationsDocument,
+    "\n  mutation MarkSystemNotificationAsRead($id: ID!) {\n    markSystemNotificationAsRead(id: $id)\n  }\n": typeof types.MarkSystemNotificationAsReadDocument,
+    "\n  mutation MarkAllSystemNotificationsAsRead {\n    markAllSystemNotificationsAsRead\n  }\n": typeof types.MarkAllSystemNotificationsAsReadDocument,
+    "\n  mutation MarkBusinessRuleNotificationAsRead($id: ID!) {\n    markBusinessRuleNotificationAsRead(id: $id)\n  }\n": typeof types.MarkBusinessRuleNotificationAsReadDocument,
+    "\n  mutation MarkAllBusinessRuleNotificationsAsRead {\n    markAllBusinessRuleNotificationsAsRead\n  }\n": typeof types.MarkAllBusinessRuleNotificationsAsReadDocument,
+    "\n  mutation DismissSystemNotification($id: ID!) {\n    dismissSystemNotification(id: $id)\n  }\n": typeof types.DismissSystemNotificationDocument,
     "\n  mutation UpdateUserProfile($input: UpdateUserProfileInput!) {\n    updateUserProfile(input: $input) {\n      id\n      email\n      display_name\n      avatar_url\n    }\n  }\n": typeof types.UpdateUserProfileDocument,
     "\n  query GetExchangeRates {\n    exchangeRates {\n      id\n      fromCurrency\n      toCurrency\n      rate\n      effectiveDate\n      source\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.GetExchangeRatesDocument,
     "\n  mutation SetExchangeRate($input: SetExchangeRateInput!) {\n    setExchangeRate(input: $input) {\n      id\n      fromCurrency\n      toCurrency\n      rate\n      effectiveDate\n      source\n      createdAt\n      updatedAt\n    }\n  }\n": typeof types.SetExchangeRateDocument,
@@ -80,6 +87,13 @@ const documents: Documents = {
     "\n  query GetPinnedEmails($dealId: ID!) {\n    getPinnedEmails(dealId: $dealId) {\n      id\n      emailId\n      threadId\n      subject\n      fromEmail\n      pinnedAt\n      notes\n      createdAt\n      updatedAt\n    }\n  }\n": types.GetPinnedEmailsDocument,
     "\n  mutation UnpinEmail($id: ID!) {\n    unpinEmail(id: $id)\n  }\n": types.UnpinEmailDocument,
     "\n  mutation UpdateEmailPin($id: ID!, $input: UpdateEmailPinInput!) {\n    updateEmailPin(id: $id, input: $input) {\n      id\n      notes\n      updatedAt\n    }\n  }\n": types.UpdateEmailPinDocument,
+    "\n  query GetNotificationSummary {\n    notificationSummary {\n      totalCount\n      unreadCount\n      businessRuleCount\n      systemCount\n      highPriorityCount\n    }\n  }\n": types.GetNotificationSummaryDocument,
+    "\n  query GetUnifiedNotifications($first: Int, $filters: NotificationFilters) {\n    unifiedNotifications(first: $first, filters: $filters) {\n      nodes {\n        source\n        id\n        title\n        message\n        notificationType\n        priority\n        entityType\n        entityId\n        actionUrl\n        isRead\n        readAt\n        dismissedAt\n        expiresAt\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasNextPage\n      hasPreviousPage\n    }\n  }\n": types.GetUnifiedNotificationsDocument,
+    "\n  mutation MarkSystemNotificationAsRead($id: ID!) {\n    markSystemNotificationAsRead(id: $id)\n  }\n": types.MarkSystemNotificationAsReadDocument,
+    "\n  mutation MarkAllSystemNotificationsAsRead {\n    markAllSystemNotificationsAsRead\n  }\n": types.MarkAllSystemNotificationsAsReadDocument,
+    "\n  mutation MarkBusinessRuleNotificationAsRead($id: ID!) {\n    markBusinessRuleNotificationAsRead(id: $id)\n  }\n": types.MarkBusinessRuleNotificationAsReadDocument,
+    "\n  mutation MarkAllBusinessRuleNotificationsAsRead {\n    markAllBusinessRuleNotificationsAsRead\n  }\n": types.MarkAllBusinessRuleNotificationsAsReadDocument,
+    "\n  mutation DismissSystemNotification($id: ID!) {\n    dismissSystemNotification(id: $id)\n  }\n": types.DismissSystemNotificationDocument,
     "\n  mutation UpdateUserProfile($input: UpdateUserProfileInput!) {\n    updateUserProfile(input: $input) {\n      id\n      email\n      display_name\n      avatar_url\n    }\n  }\n": types.UpdateUserProfileDocument,
     "\n  query GetExchangeRates {\n    exchangeRates {\n      id\n      fromCurrency\n      toCurrency\n      rate\n      effectiveDate\n      source\n      createdAt\n      updatedAt\n    }\n  }\n": types.GetExchangeRatesDocument,
     "\n  mutation SetExchangeRate($input: SetExchangeRateInput!) {\n    setExchangeRate(input: $input) {\n      id\n      fromCurrency\n      toCurrency\n      rate\n      effectiveDate\n      source\n      createdAt\n      updatedAt\n    }\n  }\n": types.SetExchangeRateDocument,
@@ -210,6 +224,34 @@ export function graphql(source: "\n  mutation UnpinEmail($id: ID!) {\n    unpinE
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function graphql(source: "\n  mutation UpdateEmailPin($id: ID!, $input: UpdateEmailPinInput!) {\n    updateEmailPin(id: $id, input: $input) {\n      id\n      notes\n      updatedAt\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateEmailPin($id: ID!, $input: UpdateEmailPinInput!) {\n    updateEmailPin(id: $id, input: $input) {\n      id\n      notes\n      updatedAt\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetNotificationSummary {\n    notificationSummary {\n      totalCount\n      unreadCount\n      businessRuleCount\n      systemCount\n      highPriorityCount\n    }\n  }\n"): (typeof documents)["\n  query GetNotificationSummary {\n    notificationSummary {\n      totalCount\n      unreadCount\n      businessRuleCount\n      systemCount\n      highPriorityCount\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  query GetUnifiedNotifications($first: Int, $filters: NotificationFilters) {\n    unifiedNotifications(first: $first, filters: $filters) {\n      nodes {\n        source\n        id\n        title\n        message\n        notificationType\n        priority\n        entityType\n        entityId\n        actionUrl\n        isRead\n        readAt\n        dismissedAt\n        expiresAt\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasNextPage\n      hasPreviousPage\n    }\n  }\n"): (typeof documents)["\n  query GetUnifiedNotifications($first: Int, $filters: NotificationFilters) {\n    unifiedNotifications(first: $first, filters: $filters) {\n      nodes {\n        source\n        id\n        title\n        message\n        notificationType\n        priority\n        entityType\n        entityId\n        actionUrl\n        isRead\n        readAt\n        dismissedAt\n        expiresAt\n        createdAt\n        updatedAt\n      }\n      totalCount\n      hasNextPage\n      hasPreviousPage\n    }\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation MarkSystemNotificationAsRead($id: ID!) {\n    markSystemNotificationAsRead(id: $id)\n  }\n"): (typeof documents)["\n  mutation MarkSystemNotificationAsRead($id: ID!) {\n    markSystemNotificationAsRead(id: $id)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation MarkAllSystemNotificationsAsRead {\n    markAllSystemNotificationsAsRead\n  }\n"): (typeof documents)["\n  mutation MarkAllSystemNotificationsAsRead {\n    markAllSystemNotificationsAsRead\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation MarkBusinessRuleNotificationAsRead($id: ID!) {\n    markBusinessRuleNotificationAsRead(id: $id)\n  }\n"): (typeof documents)["\n  mutation MarkBusinessRuleNotificationAsRead($id: ID!) {\n    markBusinessRuleNotificationAsRead(id: $id)\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation MarkAllBusinessRuleNotificationsAsRead {\n    markAllBusinessRuleNotificationsAsRead\n  }\n"): (typeof documents)["\n  mutation MarkAllBusinessRuleNotificationsAsRead {\n    markAllBusinessRuleNotificationsAsRead\n  }\n"];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(source: "\n  mutation DismissSystemNotification($id: ID!) {\n    dismissSystemNotification(id: $id)\n  }\n"): (typeof documents)["\n  mutation DismissSystemNotification($id: ID!) {\n    dismissSystemNotification(id: $id)\n  }\n"];
 /**
  * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

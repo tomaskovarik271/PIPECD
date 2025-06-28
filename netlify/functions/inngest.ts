@@ -53,6 +53,215 @@ const logDealCreation = inngest.createFunction(
   }
 );
 
+// Function to process task notifications for due and overdue tasks
+export const processTaskNotifications = inngest.createFunction(
+  { 
+    id: 'process-task-notifications', 
+    name: 'Process Task Notifications',
+    retries: 1,
+  },
+  { cron: '0 9 * * 1-5' }, // Run weekdays at 9 AM
+  async ({ event, step }) => {
+    console.log('[Inngest Fn: processTaskNotifications] Starting task notification processing');
+
+    try {
+      // Step 1: Get all tasks due today
+      const tasksDueToday = await step.run('get-tasks-due-today', async () => {
+        console.log('[Inngest Fn: processTaskNotifications] Fetching tasks due today...');
+        
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const { data: tasks, error } = await supabaseAdmin
+          .from('tasks')
+          .select(`
+            id, title, description, due_date, assigned_to_user_id, entity_type, entity_id,
+            deal_id, lead_id, person_id, organization_id, priority
+          `)
+          .gte('due_date', today.toISOString())
+          .lt('due_date', tomorrow.toISOString())
+          .neq('status', 'COMPLETED')
+          .neq('status', 'CANCELLED')
+          .not('assigned_to_user_id', 'is', null);
+
+        if (error) {
+          throw new Error(`Failed to fetch tasks due today: ${error.message}`);
+        }
+
+        console.log(`[Inngest Fn: processTaskNotifications] Found ${(tasks || []).length} tasks due today`);
+        return tasks || [];
+      });
+
+      // Step 2: Get all overdue tasks
+      const overdueTasks = await step.run('get-overdue-tasks', async () => {
+        console.log('[Inngest Fn: processTaskNotifications] Fetching overdue tasks...');
+        
+        const now = new Date();
+
+        const { data: tasks, error } = await supabaseAdmin
+          .from('tasks')
+          .select(`
+            id, title, description, due_date, assigned_to_user_id, entity_type, entity_id,
+            deal_id, lead_id, person_id, organization_id, priority
+          `)
+          .lt('due_date', now.toISOString())
+          .neq('status', 'COMPLETED')
+          .neq('status', 'CANCELLED')
+          .not('assigned_to_user_id', 'is', null);
+
+        if (error) {
+          throw new Error(`Failed to fetch overdue tasks: ${error.message}`);
+        }
+
+        console.log(`[Inngest Fn: processTaskNotifications] Found ${(tasks || []).length} overdue tasks`);
+        return tasks || [];
+      });
+
+      // Step 3: Create notifications for tasks due today
+      const dueTodayNotifications = await step.run('create-due-today-notifications', async () => {
+        if (tasksDueToday.length === 0) return 0;
+
+        console.log('[Inngest Fn: processTaskNotifications] Creating notifications for tasks due today...');
+        
+        // Check for existing notifications today to avoid duplicates
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const { data: existingNotifications } = await supabaseAdmin
+          .from('system_notifications')
+          .select('metadata')
+          .eq('notification_type', 'task_due_today')
+          .gte('created_at', today.toISOString())
+          .lt('created_at', tomorrow.toISOString());
+
+        const existingTaskIds = new Set(
+          (existingNotifications || []).map(n => n.metadata?.task_id).filter(Boolean)
+        );
+
+        const tasksToNotify = tasksDueToday.filter(task => !existingTaskIds.has(task.id));
+        
+        if (tasksToNotify.length === 0) {
+          console.log('[Inngest Fn: processTaskNotifications] No new due today notifications needed');
+          return 0;
+        }
+
+        const notifications = tasksToNotify.map(task => ({
+          user_id: task.assigned_to_user_id,
+          notification_type: 'task_due_today',
+          title: `Task Due Today: ${task.title}`,
+          message: `Your task "${task.title}" is due today. Priority: ${task.priority}`,
+          priority: task.priority === 'URGENT' ? 4 : task.priority === 'HIGH' ? 3 : 2,
+          entity_type: 'TASK',
+          entity_id: task.entity_id,
+          metadata: {
+            task_id: task.id,
+            due_date: task.due_date,
+            entity_type: task.entity_type,
+            entity_id: task.entity_id,
+            deal_id: task.deal_id,
+            lead_id: task.lead_id,
+            person_id: task.person_id,
+            organization_id: task.organization_id
+          }
+        }));
+
+        const { error } = await supabaseAdmin
+          .from('system_notifications')
+          .insert(notifications);
+
+        if (error) {
+          throw new Error(`Failed to create due today notifications: ${error.message}`);
+        }
+
+        return notifications.length;
+      });
+
+      // Step 4: Create notifications for overdue tasks
+      const overdueNotifications = await step.run('create-overdue-notifications', async () => {
+        if (overdueTasks.length === 0) return 0;
+
+        console.log('[Inngest Fn: processTaskNotifications] Creating notifications for overdue tasks...');
+        
+        // Check for existing overdue notifications today to avoid spam
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        const { data: existingNotifications } = await supabaseAdmin
+          .from('system_notifications')
+          .select('metadata')
+          .eq('notification_type', 'task_overdue')
+          .gte('created_at', today.toISOString())
+          .lt('created_at', tomorrow.toISOString());
+
+        const existingTaskIds = new Set(
+          (existingNotifications || []).map(n => n.metadata?.task_id).filter(Boolean)
+        );
+
+        const tasksToNotify = overdueTasks.filter(task => !existingTaskIds.has(task.id));
+        
+        if (tasksToNotify.length === 0) {
+          console.log('[Inngest Fn: processTaskNotifications] No new overdue notifications needed');
+          return 0;
+        }
+
+        const notifications = tasksToNotify.map(task => ({
+          user_id: task.assigned_to_user_id,
+          notification_type: 'task_overdue',
+          title: `Overdue Task: ${task.title}`,
+          message: `Your task "${task.title}" is overdue since ${new Date(task.due_date).toLocaleDateString()}. Priority: ${task.priority}`,
+          priority: task.priority === 'URGENT' ? 4 : task.priority === 'HIGH' ? 3 : 2,
+          entity_type: 'TASK',
+          entity_id: task.entity_id,
+          metadata: {
+            task_id: task.id,
+            due_date: task.due_date,
+            days_overdue: Math.floor((new Date().getTime() - new Date(task.due_date).getTime()) / (1000 * 60 * 60 * 24)),
+            entity_type: task.entity_type,
+            entity_id: task.entity_id,
+            deal_id: task.deal_id,
+            lead_id: task.lead_id,
+            person_id: task.person_id,
+            organization_id: task.organization_id
+          }
+        }));
+
+        const { error } = await supabaseAdmin
+          .from('system_notifications')
+          .insert(notifications);
+
+        if (error) {
+          throw new Error(`Failed to create overdue notifications: ${error.message}`);
+        }
+
+        return notifications.length;
+      });
+
+      const result = {
+        success: true,
+        tasksDueToday: tasksDueToday.length,
+        overdueTasks: overdueTasks.length,
+        dueTodayNotifications,
+        overdueNotifications,
+        totalNotifications: dueTodayNotifications + overdueNotifications,
+        message: `Processed ${tasksDueToday.length} tasks due today and ${overdueTasks.length} overdue tasks, created ${dueTodayNotifications + overdueNotifications} notifications`
+      };
+
+      console.log('[Inngest Fn: processTaskNotifications] Final result:', result);
+      return result;
+
+    } catch (error) {
+      console.error('[Inngest Fn: processTaskNotifications] Error:', error);
+      throw new Error(`Task notification processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+);
+
 // Function to update exchange rates from ECB API
 export const updateExchangeRatesFromECB = inngest.createFunction(
   { 
@@ -168,6 +377,7 @@ export const functions = [
   helloWorld, 
   logContactCreation, 
   logDealCreation, 
+  processTaskNotifications,
   updateExchangeRatesFromECB
 ];
 
