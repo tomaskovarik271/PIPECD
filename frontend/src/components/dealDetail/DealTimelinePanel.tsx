@@ -72,12 +72,13 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
   const toast = useToast();
   const { quickSchedule } = useQuickSchedule();
 
-  // Colors for different themes
+  // Colors for different themes - move all hook calls to top level
   const cardBg = useColorModeValue('white', 'gray.800');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const upcomingBg = useColorModeValue('blue.50', 'blue.900');
   const pastBg = useColorModeValue('gray.50', 'gray.700');
   const todayBg = useColorModeValue('green.50', 'green.900');
+  const hoverBg = useColorModeValue('gray.50', 'gray.700'); // Move this from renderEvent
 
   // Query for deal-specific calendar events (auto-refreshes with background sync)
   const { data: calendarData, loading: calendarLoading, error: calendarError } = useQuery(
@@ -193,7 +194,7 @@ export const DealTimelinePanel: React.FC<DealTimelinePanelProps> = ({ deal }) =>
         borderRadius="md"
         borderLeft="3px solid"
         borderLeftColor={event.status === 'completed' ? 'green.400' : event.status === 'overdue' ? 'red.400' : event.status === 'cancelled' ? 'gray.400' : 'blue.400'}
-        _hover={{ bg: useColorModeValue('gray.50', 'gray.700') }}
+        _hover={{ bg: hoverBg }}
         transition="background-color 0.2s"
       >
         {/* Header Row */}

@@ -442,35 +442,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     </Card>
   );
 
-  const NotificationTrigger = () => (
-    <Box position="relative">
-      <IconButton
-        icon={<FiBell />}
-        variant="ghost"
-        onClick={onOpen}
-        aria-label="Open notifications"
-        size={position === 'header' ? 'sm' : 'md'}
-      />
-      {showBadge && unreadCount > 0 && (
-        <Badge
-          position="absolute"
-          top="-1"
-          right="-1"
-          colorScheme="red"
-          borderRadius="full"
-          fontSize="xs"
-          minW={5}
-          h={5}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </Badge>
-      )}
-    </Box>
-  );
-
   const NotificationContent = () => (
     <Box maxW={maxWidth} w="full">
       {/* Header with space for close button */}
@@ -577,7 +548,32 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   return (
     <Popover isOpen={isOpen} onClose={onClose} placement="bottom-end">
       <PopoverTrigger>
-        <NotificationTrigger />
+        <Box position="relative">
+          <IconButton
+            icon={<FiBell />}
+            variant="ghost"
+            onClick={onOpen}
+            aria-label="Open notifications"
+            size={position === 'header' ? 'sm' : 'md'}
+          />
+          {showBadge && unreadCount > 0 && (
+            <Badge
+              position="absolute"
+              top="-1"
+              right="-1"
+              colorScheme="red"
+              borderRadius="full"
+              fontSize="xs"
+              minW={5}
+              h={5}
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Badge>
+          )}
+        </Box>
       </PopoverTrigger>
       <PopoverContent>
         <PopoverCloseButton />

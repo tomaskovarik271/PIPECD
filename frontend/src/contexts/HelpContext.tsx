@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 export type HelpFeature = 'deal-to-lead-conversion' | 'lead-to-deal-conversion' | 'meeting-scheduling';
 
@@ -19,23 +19,23 @@ interface HelpProviderProps {
 export const HelpProvider: React.FC<HelpProviderProps> = ({ children }) => {
   const [availableHelp, setAvailableHelpState] = useState<HelpFeature[]>([]);
 
-  const setAvailableHelp = (features: HelpFeature[]) => {
+  const setAvailableHelp = useCallback((features: HelpFeature[]) => {
     setAvailableHelpState(features);
-  };
+  }, []);
 
-  const addHelpFeature = (feature: HelpFeature) => {
+  const addHelpFeature = useCallback((feature: HelpFeature) => {
     setAvailableHelpState(prev => 
       prev.includes(feature) ? prev : [...prev, feature]
     );
-  };
+  }, []);
 
-  const removeHelpFeature = (feature: HelpFeature) => {
+  const removeHelpFeature = useCallback((feature: HelpFeature) => {
     setAvailableHelpState(prev => prev.filter(f => f !== feature));
-  };
+  }, []);
 
-  const clearHelp = () => {
+  const clearHelp = useCallback(() => {
     setAvailableHelpState([]);
-  };
+  }, []);
 
   return (
     <HelpContext.Provider value={{
