@@ -199,12 +199,30 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
       }
     } catch (error) {
       console.error('Error loading shared drives:', error);
+      
+      // Check if it's a Google integration issue
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isAuthError = errorMessage.includes('not authorized') || 
+                         errorMessage.includes('authentication') || 
+                         errorMessage.includes('integration');
+      
       toast({
-        title: 'Error loading shared drives',
-        description: 'Failed to load your shared drives. Please check your Google Drive access.',
+        title: isAuthError ? 'Google Drive Not Connected' : 'Error Loading Documents',
+        description: isAuthError 
+          ? 'To access shared drive documents, please connect your Google account in the Google Integration settings.'
+          : 'Failed to load your shared drives. Please try again or check your Google Drive access.',
         status: 'error',
-        duration: 5000,
+        duration: 8000,
         isClosable: true,
+        action: isAuthError ? (
+          <Button
+            size="sm"
+            colorScheme="blue"
+            onClick={() => window.open('/google-integration', '_blank')}
+          >
+            Connect Google
+          </Button>
+        ) : undefined,
       });
     }
   };
@@ -229,12 +247,30 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
       setFolders((foldersResponse as any).getSharedDriveFolders);
     } catch (error) {
       console.error('Error loading drive contents:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isAuthError = errorMessage.includes('not authorized') || 
+                         errorMessage.includes('authentication') || 
+                         errorMessage.includes('integration') ||
+                         errorMessage.includes('insufficient authentication scopes');
+      
       toast({
-        title: 'Error loading folder contents',
-        description: 'Failed to load files and folders.',
+        title: isAuthError ? 'Google Drive Access Required' : 'Error Loading Folder',
+        description: isAuthError 
+          ? 'Your Google Drive connection has expired or lacks proper permissions. Please reconnect your Google account with Drive access.'
+          : 'Failed to load files and folders. Please try again.',
         status: 'error',
-        duration: 3000,
+        duration: isAuthError ? 8000 : 3000,
         isClosable: true,
+        action: isAuthError ? (
+          <Button
+            size="sm"
+            colorScheme="blue"
+            onClick={() => window.open('/google-integration', '_blank')}
+          >
+            Reconnect Google
+          </Button>
+        ) : undefined,
       });
     } finally {
       setLoading(false);
@@ -277,12 +313,29 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
       setActiveTab(1); // Switch to search tab
     } catch (error) {
       console.error('Error searching files:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isAuthError = errorMessage.includes('not authorized') || 
+                         errorMessage.includes('authentication') || 
+                         errorMessage.includes('integration');
+      
       toast({
-        title: 'Search failed',
-        description: 'Failed to search for files.',
+        title: isAuthError ? 'Google Drive Search Unavailable' : 'Search Failed',
+        description: isAuthError 
+          ? 'To search Google Drive files, please ensure your Google account is properly connected with Drive permissions.'
+          : 'Failed to search for files. Please try again.',
         status: 'error',
-        duration: 3000,
+        duration: isAuthError ? 6000 : 3000,
         isClosable: true,
+        action: isAuthError ? (
+          <Button
+            size="sm"
+            colorScheme="blue"
+            onClick={() => window.open('/google-integration', '_blank')}
+          >
+            Check Connection
+          </Button>
+        ) : undefined,
       });
     } finally {
       setLoading(false);

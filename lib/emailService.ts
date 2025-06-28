@@ -126,15 +126,15 @@ class EmailService {
     } catch (error) {
       console.error('Failed to get Gmail client:', error);
       if (error instanceof Error && error.message === 'GMAIL_NOT_CONNECTED') {
-        throw new Error('Gmail integration not connected. Please reconnect your Google account.');
-      }
-      if (error instanceof Error && (error.message.includes('JWSError') || error.message.includes('Invalid number of parts'))) {
-        throw new Error('Gmail authentication expired. Please reconnect your Google account.');
+        throw new Error('Gmail integration not connected. Please connect your Google account in the Google Integration settings to access emails.');
       }
       if (error instanceof Error && error.message.includes('refresh')) {
-        throw new Error('Gmail authentication expired. Please reconnect your Google account.');
+        throw new Error('Gmail authentication has expired. Please reconnect your Google account in the Google Integration settings.');
       }
-      throw new Error('Failed to authenticate with Gmail. Please check your Google integration.');
+      if (error instanceof Error && error.message.includes('insufficient authentication scopes')) {
+        throw new Error('Gmail permissions are insufficient. Please reconnect your Google account with proper Gmail access permissions.');
+      }
+      throw new Error('Failed to authenticate with Gmail. Please check your Google integration settings and ensure your account is properly connected.');
     }
   }
 

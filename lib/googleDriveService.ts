@@ -203,12 +203,15 @@ class GoogleDriveService {
     } catch (error) {
       console.error('Failed to get Drive client:', error);
       if (error instanceof Error && error.message === 'DRIVE_NOT_CONNECTED') {
-        throw new Error('Google Drive integration not connected. Please reconnect your Google account.');
+        throw new Error('Google Drive integration not connected. Please connect your Google account in the Google Integration settings to access Drive files.');
       }
       if (error instanceof Error && error.message.includes('refresh')) {
-        throw new Error('Google Drive authentication expired. Please reconnect your Google account.');
+        throw new Error('Google Drive authentication has expired. Please reconnect your Google account in the Google Integration settings.');
       }
-      throw new Error('Failed to authenticate with Google Drive. Please check your Google integration.');
+      if (error instanceof Error && error.message.includes('insufficient authentication scopes')) {
+        throw new Error('Google Drive permissions are insufficient. Please reconnect your Google account with proper Drive access permissions.');
+      }
+      throw new Error('Failed to authenticate with Google Drive. Please check your Google integration settings and ensure your account is properly connected.');
     }
   }
 
