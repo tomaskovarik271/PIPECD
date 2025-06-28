@@ -1,0 +1,59 @@
+import React, { createContext, useContext, useState, ReactNode } from 'react';
+
+export type HelpFeature = 'deal-to-lead-conversion' | 'lead-to-deal-conversion' | 'meeting-scheduling';
+
+interface HelpContextType {
+  availableHelp: HelpFeature[];
+  setAvailableHelp: (features: HelpFeature[]) => void;
+  addHelpFeature: (feature: HelpFeature) => void;
+  removeHelpFeature: (feature: HelpFeature) => void;
+  clearHelp: () => void;
+}
+
+const HelpContext = createContext<HelpContextType | undefined>(undefined);
+
+interface HelpProviderProps {
+  children: ReactNode;
+}
+
+export const HelpProvider: React.FC<HelpProviderProps> = ({ children }) => {
+  const [availableHelp, setAvailableHelpState] = useState<HelpFeature[]>([]);
+
+  const setAvailableHelp = (features: HelpFeature[]) => {
+    setAvailableHelpState(features);
+  };
+
+  const addHelpFeature = (feature: HelpFeature) => {
+    setAvailableHelpState(prev => 
+      prev.includes(feature) ? prev : [...prev, feature]
+    );
+  };
+
+  const removeHelpFeature = (feature: HelpFeature) => {
+    setAvailableHelpState(prev => prev.filter(f => f !== feature));
+  };
+
+  const clearHelp = () => {
+    setAvailableHelpState([]);
+  };
+
+  return (
+    <HelpContext.Provider value={{
+      availableHelp,
+      setAvailableHelp,
+      addHelpFeature,
+      removeHelpFeature,
+      clearHelp
+    }}>
+      {children}
+    </HelpContext.Provider>
+  );
+};
+
+export const useHelp = () => {
+  const context = useContext(HelpContext);
+  if (context === undefined) {
+    throw new Error('useHelp must be used within a HelpProvider');
+  }
+  return context;
+}; 

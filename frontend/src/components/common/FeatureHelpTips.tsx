@@ -314,26 +314,26 @@ export const FeatureHelpTips: React.FC<FeatureHelpTipsProps> = ({
           <CardHeader pb={2}>
             <HStack>
               <Icon as={FiLink} color="green.500" />
-              <Heading size="sm">Auto-Context Magic</Heading>
+              <Heading size="sm">Smart Integration</Heading>
             </HStack>
           </CardHeader>
           <CardBody pt={0}>
             <List spacing={2} fontSize="sm">
               <ListItem>
                 <ListIcon as={FiCheckCircle} color="green.500" />
-                Deal value & stage embedded
+                Meeting appears in timeline automatically
               </ListItem>
               <ListItem>
                 <ListIcon as={FiCheckCircle} color="green.500" />
-                Contact info auto-filled
+                No manual data entry required
               </ListItem>
               <ListItem>
                 <ListIcon as={FiCheckCircle} color="green.500" />
-                Meeting linked to deal
+                Uses familiar Google Calendar interface
               </ListItem>
               <ListItem>
                 <ListIcon as={FiCheckCircle} color="green.500" />
-                PipeCD Deal ID embedded
+                CRM context preserved seamlessly
               </ListItem>
             </List>
           </CardBody>

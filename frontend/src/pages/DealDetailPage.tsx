@@ -98,7 +98,7 @@ import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 import { DirectCalendarScheduler } from '../lib/utils/directCalendarScheduler';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 import { useQuickSchedule } from '../hooks/useQuickSchedule';
-import { FeatureHelpTips } from '../components/common/FeatureHelpTips';
+import { useHelp } from '../contexts/HelpContext';
 
 // Type imports
 
@@ -184,6 +184,7 @@ const DealDetailPage = () => {
   
   // Direct calendar scheduling (no modal needed)
   const { quickSchedule } = useQuickSchedule();
+  const { addHelpFeature, removeHelpFeature } = useHelp();
   
   // Memoize callbacks to prevent infinite re-renders
   const handleStickyNotesCountChange = useCallback((count: number) => {
@@ -220,6 +221,14 @@ const DealDetailPage = () => {
       // useAppStore.setState({ currentDeal: null, currentDealError: null });
     };
   }, [dealId, fetchDealById, fetchCustomFieldDefinitions, usersHaveBeenFetched, fetchUserList]);
+
+  // Add meeting scheduling help when page loads
+  useEffect(() => {
+    addHelpFeature('meeting-scheduling');
+    return () => {
+      removeHelpFeature('meeting-scheduling');
+    };
+  }, [addHelpFeature, removeHelpFeature]);
 
   // Permission checks
   const canEditDeal = useMemo(() => {
@@ -912,11 +921,6 @@ const DealDetailPage = () => {
                     >
                       Schedule Meeting
                     </Button>
-                  </Box>
-
-                  {/* Meeting Scheduling Help Tips */}
-                  <Box pt={4}>
-                    <FeatureHelpTips feature="meeting-scheduling" />
                   </Box>
                 </VStack>
               </Box>
