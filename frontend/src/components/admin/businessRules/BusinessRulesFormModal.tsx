@@ -130,12 +130,12 @@ const ACTION_TYPES = [
 ];
 
 const COMMON_FIELDS = {
-  DEAL: ['name', 'value', 'status', 'closeDate', 'probability', 'ownerId', 'organizationId'],
-  LEAD: ['contactName', 'contactEmail', 'status', 'estimatedValue', 'estimatedCloseDate', 'ownerId'],
-  PERSON: ['firstName', 'lastName', 'email', 'phone', 'organizationId'],
-  ORGANIZATION: ['name', 'industry', 'website', 'accountManagerId'],
-  TASK: ['title', 'description', 'status', 'priority', 'dueDate', 'assigneeId'],
-  ACTIVITY: ['subject', 'type', 'status', 'dueDate', 'assigneeId'],
+  DEAL: ['name', 'amount', 'currency', 'expected_close_date', 'deal_specific_probability', 'assigned_to_user_id', 'user_id', 'organization_id', 'person_id', 'project_id', 'wfm_project_id', 'created_at', 'updated_at'],
+  LEAD: ['contact_name', 'contact_email', 'contact_phone', 'estimated_value', 'estimated_close_date', 'lead_score', 'source', 'status', 'assigned_to_user_id', 'user_id', 'organization_id', 'created_at', 'updated_at'],
+  PERSON: ['first_name', 'last_name', 'email', 'phone', 'organization_id', 'user_id', 'created_at', 'updated_at'],
+  ORGANIZATION: ['name', 'industry', 'website', 'account_manager_id', 'user_id', 'created_at', 'updated_at'],
+  TASK: ['title', 'description', 'status', 'priority', 'due_date', 'assigned_to_user_id', 'user_id', 'created_at', 'updated_at'],
+  ACTIVITY: ['subject', 'type', 'status', 'due_date', 'assigned_to_user_id', 'user_id', 'created_at', 'updated_at'],
 };
 
 export const BusinessRulesFormModal: React.FC<BusinessRulesFormModalProps> = ({
