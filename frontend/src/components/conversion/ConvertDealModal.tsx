@@ -35,6 +35,7 @@ import {
 import { FiArrowLeft, FiUser, FiHome, FiTrendingDown, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { gql, useMutation } from '@apollo/client';
+import { FeatureHelpTips } from '../common/FeatureHelpTips';
 
 // GraphQL mutation for deal conversion
 const CONVERT_DEAL_TO_LEAD_MODAL = gql`
@@ -412,6 +413,9 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
 
         <ModalBody>
           <VStack spacing={6} align="stretch">
+            {/* Feature Help Tips */}
+            <FeatureHelpTips feature="deal-to-lead-conversion" />
+            
             {/* Deal Summary */}
             <Box p={4} bg={colors.bg.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
               <HStack justify="space-between" mb={3}>

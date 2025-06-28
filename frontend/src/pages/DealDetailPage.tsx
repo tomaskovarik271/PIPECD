@@ -98,6 +98,7 @@ import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 import { DirectCalendarScheduler } from '../lib/utils/directCalendarScheduler';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 import { useQuickSchedule } from '../hooks/useQuickSchedule';
+import { FeatureHelpTips } from '../components/common/FeatureHelpTips';
 
 // Type imports
 
@@ -911,6 +912,11 @@ const DealDetailPage = () => {
                     >
                       Schedule Meeting
                     </Button>
+                  </Box>
+
+                  {/* Meeting Scheduling Help Tips */}
+                  <Box pt={4}>
+                    <FeatureHelpTips feature="meeting-scheduling" />
                   </Box>
                 </VStack>
               </Box>

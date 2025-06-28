@@ -35,6 +35,7 @@ import { FiArrowRight, FiUser, FiHome, FiTrendingUp, FiCheckCircle } from 'react
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useMutation, useApolloClient } from '@apollo/client';
 import { gql } from '@apollo/client';
+import { FeatureHelpTips } from '../common/FeatureHelpTips';
 
 // Types
 interface Lead {
@@ -428,6 +429,9 @@ export function ConvertLeadModal({ isOpen, onClose, lead, onConversionComplete }
 
         <ModalBody>
           <VStack spacing={6} align="stretch">
+            {/* Feature Help Tips */}
+            <FeatureHelpTips feature="lead-to-deal-conversion" />
+            
             {/* Lead Summary */}
             <Box p={4} bg={colors.bg.elevated} borderRadius="md" border="1px" borderColor={colors.border.subtle}>
               <HStack justify="space-between" mb={3}>
