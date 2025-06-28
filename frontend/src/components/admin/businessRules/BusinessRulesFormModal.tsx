@@ -129,6 +129,43 @@ const ACTION_TYPES = [
   { value: 'WEBHOOK', label: 'Webhook (Future)' },
 ];
 
+const TRIGGER_EVENTS = {
+  DEAL: [
+    { value: 'DEAL_CREATED', label: 'Deal Created' },
+    { value: 'DEAL_UPDATED', label: 'Deal Updated' },
+    { value: 'DEAL_ASSIGNED', label: 'Deal Assigned' },
+    { value: 'DEAL_WFM_STATUS_CHANGED', label: 'Deal Stage Changed' },
+    { value: 'DEAL_AMOUNT_CHANGED', label: 'Deal Amount Changed' },
+    { value: 'DEAL_CLOSED', label: 'Deal Closed' },
+  ],
+  LEAD: [
+    { value: 'LEAD_CREATED', label: 'Lead Created' },
+    { value: 'LEAD_UPDATED', label: 'Lead Updated' },
+    { value: 'LEAD_ASSIGNED', label: 'Lead Assigned' },
+    { value: 'LEAD_WFM_STATUS_CHANGED', label: 'Lead Stage Changed' },
+    { value: 'LEAD_CONVERTED', label: 'Lead Converted' },
+  ],
+  PERSON: [
+    { value: 'PERSON_CREATED', label: 'Person Created' },
+    { value: 'PERSON_UPDATED', label: 'Person Updated' },
+  ],
+  ORGANIZATION: [
+    { value: 'ORGANIZATION_CREATED', label: 'Organization Created' },
+    { value: 'ORGANIZATION_UPDATED', label: 'Organization Updated' },
+  ],
+  TASK: [
+    { value: 'TASK_CREATED', label: 'Task Created' },
+    { value: 'TASK_UPDATED', label: 'Task Updated' },
+    { value: 'TASK_COMPLETED', label: 'Task Completed' },
+    { value: 'TASK_OVERDUE', label: 'Task Overdue' },
+  ],
+  ACTIVITY: [
+    { value: 'ACTIVITY_CREATED', label: 'Activity Created' },
+    { value: 'ACTIVITY_UPDATED', label: 'Activity Updated' },
+    { value: 'ACTIVITY_COMPLETED', label: 'Activity Completed' },
+  ],
+};
+
 const COMMON_FIELDS = {
   DEAL: ['name', 'amount', 'currency', 'expected_close_date', 'deal_specific_probability', 'assigned_to_user_id', 'user_id', 'organization_id', 'person_id', 'project_id', 'wfm_project_id', 'created_at', 'updated_at'],
   LEAD: ['contact_name', 'contact_email', 'contact_phone', 'estimated_value', 'estimated_close_date', 'lead_score', 'source', 'status', 'assigned_to_user_id', 'user_id', 'organization_id', 'created_at', 'updated_at'],
@@ -372,6 +409,48 @@ export const BusinessRulesFormModal: React.FC<BusinessRulesFormModalProps> = ({
               </Box>
 
               <Divider borderColor={colors.border.default} />
+
+              {/* Trigger Events */}
+              {watchedTriggerType === 'EVENT_BASED' && (
+                <>
+                  <Box>
+                    <Text fontSize="lg" fontWeight="bold" color={colors.text.primary} mb={4}>
+                      Trigger Events
+                    </Text>
+                    <FormControl>
+                      <FormLabel color={colors.text.primary}>
+                        Select which events should trigger this rule
+                      </FormLabel>
+                      <VStack align="stretch" spacing={2}>
+                        {TRIGGER_EVENTS[watchedEntityType as keyof typeof TRIGGER_EVENTS]?.map((event) => (
+                          <Controller
+                            key={event.value}
+                            name="triggerEvents"
+                            control={control}
+                            render={({ field }) => (
+                              <Checkbox
+                                isChecked={field.value?.includes(event.value) || false}
+                                onChange={(e) => {
+                                  const currentEvents = field.value || [];
+                                  if (e.target.checked) {
+                                    field.onChange([...currentEvents, event.value]);
+                                  } else {
+                                    field.onChange(currentEvents.filter((v: string) => v !== event.value));
+                                  }
+                                }}
+                                colorScheme="blue"
+                              >
+                                <Text color={colors.text.primary}>{event.label}</Text>
+                              </Checkbox>
+                            )}
+                          />
+                        ))}
+                      </VStack>
+                    </FormControl>
+                  </Box>
+                  <Divider borderColor={colors.border.default} />
+                </>
+              )}
 
               {/* Conditions */}
               <Box>
