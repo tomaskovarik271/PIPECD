@@ -7,6 +7,7 @@ import {
   Progress,
   Avatar,
   Flex,
+  Tag,
 } from '@chakra-ui/react';
 import { Deal } from '../../stores/useDealsStore';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
@@ -14,10 +15,11 @@ import { useNavigate } from 'react-router-dom';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
 import { useAppStore } from '../../stores/useAppStore';
+import { FiClock, FiAlertTriangle } from 'react-icons/fi';
 // Activity indicators removed - using Google Calendar integration instead
 
 // Extended Deal type that includes project_id which may be present on some deals
-interface DealWithProjectId extends Deal {
+interface DealWithProjectId extends Omit<Deal, 'project_id'> {
   project_id?: string | number;
 }
 
@@ -63,9 +65,10 @@ const formatDealAmount = (deal: Deal, displayMode: 'mixed' | 'converted', baseCu
 interface DealCardKanbanCompactProps {
   deal: DealWithProjectId;
   index: number;
+  taskIndicators?: { dealId: string; tasksDueToday: number; tasksOverdue: number; totalActiveTasks: number; };
 }
 
-const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo(({ deal, index }) => {
+const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo(({ deal, index, taskIndicators }) => {
   const colors = useThemeColors();
   const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
   const navigate = useNavigate();
@@ -141,7 +144,7 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
           onClick={handleCardClick}
           {...(snapshot.isDragging ? draggingStyle : baseStyle)}
         >
-          {/* Header Row: Name + Activity Indicators + Amount */}
+          {/* Header Row: Name + Task Indicators + Amount */}
           <HStack justify="space-between" mb={2} align="center">
             <HStack spacing={2} flex={1} minWidth={0}>
               <Text 
@@ -154,7 +157,25 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
               >
                 {deal.name}
               </Text>
-              {/* Activity indicator removed - using Google Calendar integration instead */}
+              {/* Task indicators */}
+              <HStack spacing={1} flexShrink={0}>
+                {taskIndicators && taskIndicators.tasksDueToday > 0 && (
+                  <Tooltip label={`${taskIndicators.tasksDueToday} task${taskIndicators.tasksDueToday > 1 ? 's' : ''} due today`} placement="top">
+                    <Tag size="sm" colorScheme="orange" variant="solid" cursor="help">
+                      <FiClock size={8} style={{ marginRight: '2px' }} />
+                      {taskIndicators.tasksDueToday}
+                    </Tag>
+                  </Tooltip>
+                )}
+                {taskIndicators && taskIndicators.tasksOverdue > 0 && (
+                  <Tooltip label={`${taskIndicators.tasksOverdue} overdue task${taskIndicators.tasksOverdue > 1 ? 's' : ''}`} placement="top">
+                    <Tag size="sm" colorScheme="red" variant="solid" cursor="help">
+                      <FiAlertTriangle size={8} style={{ marginRight: '2px' }} />
+                      {taskIndicators.tasksOverdue}
+                    </Tag>
+                  </Tooltip>
+                )}
+              </HStack>
             </HStack>
             <Text fontSize="sm" fontWeight="bold" color={colors.text.success} ml={2} flexShrink={0}>
               {formatDealAmount(deal, currencyDisplayMode, baseCurrencyForConversion)}

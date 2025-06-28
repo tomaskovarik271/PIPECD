@@ -3,21 +3,11 @@ import { NavLink as RouterNavLink } from 'react-router-dom';
 import { useAppStore } from '../../stores/useAppStore';
 import ThemeSwitcher from '../common/ThemeSwitcher';
 import { 
-  InfoOutlineIcon,     // People (Represents contact info?)
-  // BuildingIcon,      // Organizations (From chakra-icons-lib, need install? Let's use AtSignIcon for now)
-  AtSignIcon,        // Organizations (Placeholder)
-  CheckCircleIcon,   // Deals (Represents closing deal?)
-  CalendarIcon,      // Activities (Represents scheduling?)
-  StarIcon, // Added for Leads
-  // StarIcon, // Placeholder for People
-  // LockIcon, // Placeholder for Organizations
-  // CopyIcon, // Placeholder for Pipelines
-  // TimeIcon, // Placeholder for Activities
-  SettingsIcon, // Used for Profile and Admin items now
+  SettingsIcon, // Used for toggle and fallbacks
   HamburgerIcon, // For toggle
   ArrowBackIcon, // For toggle
   ArrowForwardIcon // For toggle
-} from '@chakra-ui/icons'; // Use appropriate icons
+} from '@chakra-ui/icons'; // Minimal chakra icons
 import { 
   FiCpu,           // AI/robot icon for sAIdkick
   FiDatabase,      // Custom Fields (data structure)
@@ -25,7 +15,12 @@ import {
   FiZap,           // Business Rules (automation/lightning)
   FiGitBranch,     // Workflow Management (branching flows)
   FiUser,          // My Profile (single user)
-  FiGlobe          // Google Integration (global/web icon)
+  FiGlobe,         // Google Integration (global/web icon)
+  FiDollarSign,    // Deals (money/revenue)
+  FiTarget,        // Leads (targeting prospects)
+  FiUserCheck,     // Contacts (verified people)
+  FiHome,          // Organizations (buildings/companies - using FiHome as alternative)
+  FiBriefcase      // My Accounts (business portfolio)
 } from 'react-icons/fi'; // Import specific meaningful icons
 
 
@@ -42,12 +37,12 @@ import { useMemo } from 'react';
 import { useThemeColors } from '../../hooks/useThemeColors'; // NEW: Use semantic tokens
 
 const NAV_ITEMS = [
-  { path: '/deals', label: 'Deals', icon: <CheckCircleIcon /> },
-  { path: '/leads', label: 'Leads', icon: <StarIcon /> },
-  { path: '/people', label: 'Contacts', icon: <InfoOutlineIcon /> },
-  { path: '/organizations', label: 'Organizations', icon: <AtSignIcon /> },
+  { path: '/deals', label: 'Deals', icon: <FiDollarSign size={16} /> },
+  { path: '/leads', label: 'Leads', icon: <FiTarget size={16} /> },
+  { path: '/people', label: 'Contacts', icon: <FiUserCheck size={16} /> },
+  { path: '/organizations', label: 'Organizations', icon: <FiHome size={16} /> },
   // Activities removed - using Google Calendar integration instead
-  { path: '/my-accounts', label: 'My Accounts', icon: <AtSignIcon />, permission: 'organization:view_account_portfolio' },
+  { path: '/my-accounts', label: 'My Accounts', icon: <FiBriefcase size={16} />, permission: 'organization:view_account_portfolio' },
 ];
 
 const ADMIN_NAV_ITEMS = [

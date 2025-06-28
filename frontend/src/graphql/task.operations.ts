@@ -123,4 +123,15 @@ export const GET_TASK_STATS = gql`
       completionRate
     }
   }
+`;
+
+export const GET_DEAL_TASK_INDICATORS = gql`
+  query GetDealTaskIndicators($dealIds: [ID!]!) {
+    dealTaskIndicators(dealIds: $dealIds) {
+      dealId
+      tasksDueToday
+      tasksOverdue
+      totalActiveTasks
+    }
+  }
 `; 

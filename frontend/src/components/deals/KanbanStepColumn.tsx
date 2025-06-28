@@ -68,9 +68,10 @@ interface KanbanStepColumnProps {
   weightedAmountSum: number;
   index: number;
   isCompact?: boolean;
+  getTaskIndicators?: (dealId: string) => { dealId: string; tasksDueToday: number; tasksOverdue: number; totalActiveTasks: number; };
 }
 
-const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, deals, weightedAmountSum: _weightedAmountSum, index: _index, isCompact = false }) => {
+const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, deals, weightedAmountSum: _weightedAmountSum, index: _index, isCompact = false, getTaskIndicators }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
   const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
@@ -182,12 +183,14 @@ const KanbanStepColumn: React.FC<KanbanStepColumnProps> = React.memo(({ step, de
                     key={deal.id} 
                     deal={deal} 
                     index={idx}
+                    taskIndicators={getTaskIndicators?.(deal.id)}
                   />
                 ) : (
                   <DealCardKanban 
                     key={deal.id} 
                     deal={deal} 
                     index={idx}
+                    taskIndicators={getTaskIndicators?.(deal.id)}
                   />
                 )
               )}

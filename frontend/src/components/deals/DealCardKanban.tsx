@@ -13,14 +13,16 @@ import { Deal } from '../../stores/useDealsStore';
 import { Draggable, DraggableProvided, DraggableStateSnapshot } from '@hello-pangea/dnd';
 import { useNavigate } from 'react-router-dom';
 import { useThemeColors } from '../../hooks/useThemeColors';
-import { TimeIcon, ExternalLinkIcon, EditIcon, ViewIcon as EyeIcon } from '@chakra-ui/icons';
+import { TimeIcon, ExternalLinkIcon, EditIcon, ViewIcon as EyeIcon, WarningIcon } from '@chakra-ui/icons';
 import { differenceInDays, formatDistanceToNowStrict, isPast, format } from 'date-fns';
 import { useAppStore } from '../../stores/useAppStore';
+import { FiClock, FiAlertTriangle } from 'react-icons/fi';
 // Activity indicators removed - using Google Calendar integration instead
 
 interface DealCardKanbanProps {
   deal: Deal;
   index: number;
+  taskIndicators?: { dealId: string; tasksDueToday: number; tasksOverdue: number; totalActiveTasks: number; };
 }
 
 // Simple exchange rates for demo (in production, this would come from the database)
@@ -60,7 +62,7 @@ const formatDealAmount = (deal: Deal, displayMode: 'mixed' | 'converted', baseCu
   }
 };
 
-const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index }) => {
+const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index, taskIndicators }) => {
   const colors = useThemeColors();
   const { currencyDisplayMode, baseCurrencyForConversion } = useAppStore();
   const navigate = useNavigate();
@@ -177,10 +179,29 @@ const DealCardKanban: React.FC<DealCardKanbanProps> = React.memo(({ deal, index 
                     fontSize="md"
                     lineHeight="1.3"
                     noOfLines={2}
+                    flex="1"
                   >
                     {deal.name}
                   </Text>
-                  {/* Activity indicator removed - using Google Calendar integration instead */}
+                  {/* Task indicators */}
+                  <HStack spacing={1} flexShrink={0}>
+                    {taskIndicators && taskIndicators.tasksDueToday > 0 && (
+                      <Tooltip label={`${taskIndicators.tasksDueToday} task${taskIndicators.tasksDueToday > 1 ? 's' : ''} due today`} placement="top">
+                        <Tag size="sm" colorScheme="orange" variant="solid" cursor="help">
+                          <FiClock size={10} style={{ marginRight: '2px' }} />
+                          {taskIndicators.tasksDueToday}
+                        </Tag>
+                      </Tooltip>
+                    )}
+                    {taskIndicators && taskIndicators.tasksOverdue > 0 && (
+                      <Tooltip label={`${taskIndicators.tasksOverdue} overdue task${taskIndicators.tasksOverdue > 1 ? 's' : ''}`} placement="top">
+                        <Tag size="sm" colorScheme="red" variant="solid" cursor="help">
+                          <FiAlertTriangle size={10} style={{ marginRight: '2px' }} />
+                          {taskIndicators.tasksOverdue}
+                        </Tag>
+                      </Tooltip>
+                    )}
+                  </HStack>
                 </HStack>
                 <Text fontSize="sm" color={colors.text.muted}>
                   {deal.organization?.name || '-'}

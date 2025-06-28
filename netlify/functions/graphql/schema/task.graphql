@@ -327,6 +327,9 @@ extend type Query {
   
   # Analytics/Stats
   taskStats(entityType: TaskEntityType, entityId: ID): TaskStats!
+  
+  # Deal Task Indicators (for kanban cards)
+  dealTaskIndicators(dealIds: [ID!]!): [DealTaskIndicator!]!
 }
 
 # Task Statistics
@@ -354,6 +357,14 @@ type TaskPriorityCount {
 type TaskTypeCount {
   taskType: TaskType!
   count: Int!
+}
+
+# Deal Task Indicator (for kanban cards)
+type DealTaskIndicator {
+  dealId: ID!
+  tasksDueToday: Int!
+  tasksOverdue: Int!
+  totalActiveTasks: Int!
 }
 
 # Mutations

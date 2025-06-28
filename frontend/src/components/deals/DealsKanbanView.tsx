@@ -7,6 +7,7 @@ import type { WfmWorkflowStep } from '../../generated/graphql/graphql';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import KanbanStepColumn from './KanbanStepColumn';
 import { useThemeStore } from '../../stores/useThemeStore';
+import { useDealTaskIndicators } from '../../hooks/useDealTaskIndicators';
 
 // const SALES_DEAL_WORKFLOW_ID = 'your-sales-deal-workflow-id-here'; // Remove hardcoded ID
 
@@ -45,6 +46,10 @@ const DealsKanbanView: React.FC<DealsKanbanViewProps> = ({ deals, isCompact = fa
   // Theme-aware scrollbar colors for the main Kanban container
   const kanbanScrollbarThumbBg = useColorModeValue('gray.300', 'gray.500');
   const kanbanScrollbarTrackBg = useColorModeValue('gray.100', 'gray.600');
+
+  // Get task indicators for all deals
+  const dealIds = useMemo(() => deals.map(deal => deal.id), [deals]);
+  const { getIndicatorsForDeal, loading: taskIndicatorsLoading } = useDealTaskIndicators(dealIds);
 
   useEffect(() => {
     if (!hasInitiallyFetchedDeals && !dealsLoading && !dealsError) {
@@ -235,6 +240,7 @@ const DealsKanbanView: React.FC<DealsKanbanViewProps> = ({ deals, isCompact = fa
                       weightedAmountSum={weightedAmountByStepId[step.id] || 0}
                       index={index}
                       isCompact={isCompact}
+                      getTaskIndicators={getIndicatorsForDeal}
                     />
                   ))}
               </Flex>

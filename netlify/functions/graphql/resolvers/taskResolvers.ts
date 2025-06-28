@@ -161,6 +161,60 @@ const taskResolvers = {
       }
 
       return data ? mapTaskFromDb(data) : null;
+    },
+
+    // Deal task indicators for kanban cards
+    dealTaskIndicators: async (_: any, { dealIds }: any, context: GraphQLContext) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context)!;
+      const supabase = getAuthenticatedClient(accessToken);
+
+      try {
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+        const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+
+        // Get task counts for all deals in one query
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('deal_id, due_date, status')
+          .in('deal_id', dealIds)
+          .neq('status', 'COMPLETED')
+          .neq('status', 'CANCELLED');
+
+        if (error) {
+          logger.error('Error fetching deal task indicators:', error);
+          throw new Error(`Failed to fetch deal task indicators: ${error.message}`);
+        }
+
+        // Process the data to create indicators for each deal
+        const indicators = dealIds.map((dealId: string) => {
+          const dealTasks = (data || []).filter(task => task.deal_id === dealId);
+          
+          const tasksDueToday = dealTasks.filter(task => 
+            task.due_date && 
+            task.due_date >= startOfDay && 
+            task.due_date < endOfDay
+          ).length;
+
+          const tasksOverdue = dealTasks.filter(task => 
+            task.due_date && 
+            new Date(task.due_date) < new Date(startOfDay)
+          ).length;
+
+          return {
+            dealId,
+            tasksDueToday,
+            tasksOverdue,
+            totalActiveTasks: dealTasks.length
+          };
+        });
+
+        return indicators;
+      } catch (error) {
+        logger.error('Error in dealTaskIndicators resolver:', error);
+        throw new Error('Failed to fetch deal task indicators');
+      }
     }
   },
 
