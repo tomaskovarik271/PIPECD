@@ -210,17 +210,14 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
         errorMessage = error.errors[0].message || 'Unknown error';
       }
       
-      console.log('DEBUG: Extracted error message:', errorMessage);
-      console.log('DEBUG: Full error object:', error);
-      
       // Check if it's a Google integration issue
+      // Note: Backend sometimes returns generic "Unexpected error." for Google integration issues
       const isAuthError = errorMessage.includes('not authorized') || 
                          errorMessage.includes('authentication') || 
                          errorMessage.includes('integration') ||
                          errorMessage.includes('Google Drive access') ||
-                         errorMessage.includes('connect your Google account');
-      
-      console.log('DEBUG: isAuthError:', isAuthError);
+                         errorMessage.includes('connect your Google account') ||
+                         errorMessage.includes('Unexpected error.'); // Handle generic backend errors
       
       toast({
         title: isAuthError ? 'Google Drive Not Connected' : 'Error Loading Documents',
@@ -270,7 +267,8 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
                          errorMessage.includes('integration') ||
                          errorMessage.includes('insufficient authentication scopes') ||
                          errorMessage.includes('Google Drive access') ||
-                         errorMessage.includes('connect your Google account');
+                         errorMessage.includes('connect your Google account') ||
+                         errorMessage.includes('Unexpected error.'); // Handle generic backend errors
       
       toast({
         title: isAuthError ? 'Google Drive Access Required' : 'Error Loading Folder',
@@ -337,7 +335,8 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
                          errorMessage.includes('authentication') || 
                          errorMessage.includes('integration') ||
                          errorMessage.includes('Google Drive access') ||
-                         errorMessage.includes('connect your Google account');
+                         errorMessage.includes('connect your Google account') ||
+                         errorMessage.includes('Unexpected error.'); // Handle generic backend errors
       
       toast({
         title: isAuthError ? 'Google Drive Search Unavailable' : 'Search Failed',
