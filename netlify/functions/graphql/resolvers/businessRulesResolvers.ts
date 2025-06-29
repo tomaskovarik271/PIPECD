@@ -982,7 +982,7 @@ export const businessRulesResolvers = {
           const { data: user } = await context.supabaseClient
             .from('user_profiles')
             .select('*')
-            .eq('id', rule.created_by)
+            .eq('user_id', rule.created_by)
             .single();
           
           return user || null;
@@ -1026,7 +1026,7 @@ export const businessRulesResolvers = {
           const { data: user } = await context.supabaseClient
             .from('user_profiles')
             .select('*')
-            .eq('id', notification.user_id)
+            .eq('user_id', notification.user_id)
             .single();
           
           return user || null;
