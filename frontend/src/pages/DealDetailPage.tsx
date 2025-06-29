@@ -98,6 +98,7 @@ import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 import { DirectCalendarScheduler } from '../lib/utils/directCalendarScheduler';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 import { useQuickSchedule } from '../hooks/useQuickSchedule';
+import { FeatureTooltip } from '../components/common/FeatureTooltip';
 
 // Type imports
 
@@ -901,16 +902,23 @@ const DealDetailPage = () => {
 
                   {/* Direct Schedule Meeting Button */}
                   <Box pt={4}>
-                    <Button
-                      leftIcon={<CalendarIcon />}
-                      colorScheme="blue"
-                      size="md"
-                      onClick={() => quickSchedule({ deal: currentDeal })}
-                      width="100%"
-                      variant="solid"
+                    <FeatureTooltip
+                      featureId="schedule-meeting-deal"
+                      context="deal-detail"
+                      placement="top"
+                      onFeatureUsed={() => quickSchedule({ deal: currentDeal })}
                     >
-                      Schedule Meeting
-                    </Button>
+                      <Button
+                        leftIcon={<CalendarIcon />}
+                        colorScheme="blue"
+                        size="md"
+                        onClick={() => quickSchedule({ deal: currentDeal })}
+                        width="100%"
+                        variant="solid"
+                      >
+                        Schedule Meeting
+                      </Button>
+                    </FeatureTooltip>
                   </Box>
                 </VStack>
               </Box>

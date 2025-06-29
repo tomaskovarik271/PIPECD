@@ -34,6 +34,7 @@ import { useFilteredDeals } from '../hooks/useFilteredDeals';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
+import { FeatureCallout } from '../components/common/FeatureCallout';
 
 function DealsPage() {
   const navigate = useNavigate();
@@ -377,6 +378,15 @@ function DealsPage() {
       />
 
       <Box sx={pageLayoutStyles.container}>
+        {/* Feature Discovery Callout */}
+        <FeatureCallout
+          featureId="deal-to-lead-conversion"
+          context="deals-table"
+          variant="left-accent"
+          isCollapsible={true}
+          defaultOpen={false}
+        />
+        
         {pageIsLoading && (
           <VStack justify="center" align="center" minH="300px" w="100%">
             <Spinner 
