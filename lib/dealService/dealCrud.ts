@@ -236,6 +236,30 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
         initialChangesForHistory
     );
     
+    // ---- BUSINESS RULES INTEGRATION ----
+    // Trigger business rules for deal creation
+    try {
+      const { data: businessRulesResult, error: businessRulesError } = await supabase
+        .rpc('process_business_rules', {
+          p_entity_type: 'DEAL',
+          p_entity_id: updatedDealWithWfmLink.id,
+          p_trigger_event: 'DEAL_CREATED',
+          p_entity_data: JSON.stringify(updatedDealWithWfmLink),
+          p_change_data: JSON.stringify(initialChangesForHistory)
+        });
+      
+      if (businessRulesError) {
+        console.error(`[dealCrud.createDeal] Business rules processing failed for deal ${updatedDealWithWfmLink.id}:`, businessRulesError.message);
+        // Don't throw - business rules failure shouldn't break deal creation
+      } else if (businessRulesResult) {
+        console.log(`[dealCrud.createDeal] Business rules processed for deal ${updatedDealWithWfmLink.id}:`, businessRulesResult);
+      }
+    } catch (businessRulesException: any) {
+      console.error(`[dealCrud.createDeal] Business rules processing exception for deal ${updatedDealWithWfmLink.id}:`, businessRulesException.message);
+      // Don't throw - business rules failure shouldn't break deal creation
+    }
+    // ---- END BUSINESS RULES INTEGRATION ----
+    
     // Send Inngest event
     try {
         await inngest.send({
@@ -463,6 +487,30 @@ export async function updateDeal(userId: string, id: string, input: DealServiceU
     const changes = generateDealChanges(oldDataForHistory as Deal, finalDataForHistory as Deal);
     if (Object.keys(changes).length > 0) {
         await recordEntityHistory(supabase, 'deal_history', 'deal_id', id, userId, 'DEAL_UPDATED', changes);
+        
+        // ---- BUSINESS RULES INTEGRATION ----
+        // Trigger business rules for deal updates
+        try {
+          const { data: businessRulesResult, error: businessRulesError } = await supabase
+            .rpc('process_business_rules', {
+              p_entity_type: 'DEAL',
+              p_entity_id: id,
+              p_trigger_event: 'DEAL_UPDATED',
+              p_entity_data: JSON.stringify(finalDataForHistory),
+              p_change_data: JSON.stringify(changes)
+            });
+          
+          if (businessRulesError) {
+            console.error(`[dealCrud.updateDeal] Business rules processing failed for deal ${id}:`, businessRulesError.message);
+            // Don't throw - business rules failure shouldn't break deal updates
+          } else if (businessRulesResult) {
+            console.log(`[dealCrud.updateDeal] Business rules processed for deal ${id}:`, businessRulesResult);
+          }
+        } catch (businessRulesException: any) {
+          console.error(`[dealCrud.updateDeal] Business rules processing exception for deal ${id}:`, businessRulesException.message);
+          // Don't throw - business rules failure shouldn't break deal updates
+        }
+        // ---- END BUSINESS RULES INTEGRATION ----
     }
   }
   

@@ -35,9 +35,6 @@ import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 
-// Feature Discovery components
-import { FeatureCallout } from '../components/common/FeatureCallout';
-
 function DealsPage() {
   const navigate = useNavigate();
   const { 
@@ -378,8 +375,6 @@ function DealsPage() {
         secondaryActions={secondaryActions}
         statistics={statistics}
       />
-
-      <FeatureCallout featureId="deal-to-lead-conversion" />
 
       <Box sx={pageLayoutStyles.container}>
         {pageIsLoading && (

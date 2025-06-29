@@ -99,10 +99,6 @@ import { DirectCalendarScheduler } from '../lib/utils/directCalendarScheduler';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 import { useQuickSchedule } from '../hooks/useQuickSchedule';
 
-// Feature Discovery components
-import { FeatureTooltip } from '../components/common/FeatureTooltip';
-import { FeatureCallout } from '../components/common/FeatureCallout';
-
 // Type imports
 
 interface LinkDisplayDetails {
@@ -905,19 +901,16 @@ const DealDetailPage = () => {
 
                   {/* Direct Schedule Meeting Button */}
                   <Box pt={4}>
-                    <FeatureCallout featureId="deal-to-lead-conversion" />
-                    <FeatureTooltip featureId="schedule-meeting-deal" placement="left">
-                      <Button
-                        leftIcon={<CalendarIcon />}
-                        colorScheme="blue"
-                        size="md"
-                        onClick={() => quickSchedule({ deal: currentDeal })}
-                        width="100%"
-                        variant="solid"
-                      >
-                        Schedule Meeting
-                      </Button>
-                    </FeatureTooltip>
+                    <Button
+                      leftIcon={<CalendarIcon />}
+                      colorScheme="blue"
+                      size="md"
+                      onClick={() => quickSchedule({ deal: currentDeal })}
+                      width="100%"
+                      variant="solid"
+                    >
+                      Schedule Meeting
+                    </Button>
                   </Box>
                 </VStack>
               </Box>
