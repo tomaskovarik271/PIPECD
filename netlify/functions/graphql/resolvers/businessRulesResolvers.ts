@@ -1024,22 +1024,36 @@ export const businessRulesResolvers = {
 
     createdBy: async (parent: BusinessRule, _: any, context: GraphQLContext) => {
       if (!parent.createdBy && parent.id) {
-        const { data: rule } = await context.supabaseClient
-          .from('business_rules')
-          .select('created_by')
-          .eq('id', parent.id)
-          .single();
-        
-        if (rule?.created_by) {
-          const { data: user } = await context.supabaseClient
-            .from('user_profiles')
-            .select('*')
-            .eq('user_id', rule.created_by)
+        try {
+          const { data: rule } = await context.supabaseClient
+            .from('business_rules')
+            .select('created_by')
+            .eq('id', parent.id)
             .single();
           
-          return user || null;
+          if (rule?.created_by) {
+            const { data: user } = await context.supabaseClient
+              .from('user_profiles')
+              .select('*')
+              .eq('user_id', rule.created_by)
+              .single();
+            
+            // Only return user if we have all required fields
+            if (user && user.user_id) {
+              return {
+                id: user.user_id,
+                email: user.email,
+                display_name: user.display_name,
+                // Add other required User fields as needed
+                ...user
+              };
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching createdBy user:', error);
         }
       }
+      // Return null if no user found or error occurred
       return null;
     }
   },
@@ -1068,22 +1082,36 @@ export const businessRulesResolvers = {
 
     user: async (parent: BusinessRuleNotification, _: any, context: GraphQLContext) => {
       if (!parent.user && parent.id) {
-        const { data: notification } = await context.supabaseClient
-          .from('business_rule_notifications')
-          .select('user_id')
-          .eq('id', parent.id)
-          .single();
-        
-        if (notification?.user_id) {
-          const { data: user } = await context.supabaseClient
-            .from('user_profiles')
-            .select('*')
-            .eq('user_id', notification.user_id)
+        try {
+          const { data: notification } = await context.supabaseClient
+            .from('business_rule_notifications')
+            .select('user_id')
+            .eq('id', parent.id)
             .single();
           
-          return user || null;
+          if (notification?.user_id) {
+            const { data: user } = await context.supabaseClient
+              .from('user_profiles')
+              .select('*')
+              .eq('user_id', notification.user_id)
+              .single();
+            
+            // Only return user if we have all required fields
+            if (user && user.user_id) {
+              return {
+                id: user.user_id,
+                email: user.email,
+                display_name: user.display_name,
+                // Add other required User fields as needed
+                ...user
+              };
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching notification user:', error);
         }
       }
+      // Return null if no user found or error occurred
       return null;
     }
   },
