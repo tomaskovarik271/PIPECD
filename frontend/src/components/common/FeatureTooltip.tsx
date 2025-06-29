@@ -100,7 +100,14 @@ export const FeatureTooltip: React.FC<FeatureTooltipProps> = ({
   }
 
   const tooltipContent = (
-    <VStack align="start" spacing={2} maxW="300px">
+    <VStack 
+      align="start" 
+      spacing={3} 
+      maxW="320px" 
+      p={2}
+      onMouseEnter={() => setIsTooltipOpen(true)}
+      onMouseLeave={() => setTimeout(() => setIsTooltipOpen(false), 200)}
+    >
       <HStack justify="space-between" w="full">
         <Text fontWeight="bold" fontSize="sm">
           {feature.title}
@@ -119,27 +126,31 @@ export const FeatureTooltip: React.FC<FeatureTooltipProps> = ({
       </Text>
 
       {(feature.detailedDescription || feature.demoUrl || feature.docsUrl) && (
-        <HStack spacing={2} w="full">
+        <VStack spacing={2} w="full" align="start">
           <Button
-            size="xs"
+            size="sm"
             colorScheme="blue"
-            variant="outline"
+            variant="solid"
             onClick={handleLearnMore}
+            w="full"
+            onMouseDown={(e) => e.preventDefault()}
           >
             Learn More
           </Button>
           {feature.demoUrl && (
-            <Link href={feature.demoUrl} isExternal>
+            <Link href={feature.demoUrl} isExternal w="full">
               <Button
-                size="xs"
-                variant="ghost"
+                size="sm"
+                variant="outline"
                 rightIcon={<ExternalLinkIcon />}
+                w="full"
+                onMouseDown={(e) => e.preventDefault()}
               >
-                Demo
+                View Demo
               </Button>
             </Link>
           )}
-        </HStack>
+        </VStack>
       )}
 
       {usageCount > 0 && (
@@ -152,38 +163,52 @@ export const FeatureTooltip: React.FC<FeatureTooltipProps> = ({
 
   return (
     <>
-      <HStack spacing={1}>
+      <Box position="relative" display="inline-flex">
         <Tooltip
           label={tooltipContent}
           placement={placement}
           hasArrow
-          isOpen={triggerOn === 'hover' ? undefined : isTooltipOpen}
-          onOpen={() => setIsTooltipOpen(true)}
-          onClose={() => setIsTooltipOpen(false)}
-          closeOnClick={triggerOn === 'click'}
-          closeDelay={triggerOn === 'hover' ? 500 : 0}
+          isOpen={isTooltipOpen}
+          closeDelay={0}
           openDelay={triggerOn === 'hover' ? 300 : 0}
+          gutter={12}
         >
-          <Box onClick={handleFeatureUsed}>
+          <Box 
+            onClick={handleFeatureUsed} 
+            onMouseEnter={() => triggerOn === 'hover' && setIsTooltipOpen(true)}
+            onMouseLeave={() => {
+              if (triggerOn === 'hover') {
+                setTimeout(() => setIsTooltipOpen(false), 300);
+              }
+            }}
+          >
             {children}
           </Box>
         </Tooltip>
-        
-        {showBadge && !discovered && !dismissed && (
-          <Badge
-            colorScheme={feature.category === 'innovative' ? 'purple' : feature.category === 'advanced' ? 'blue' : 'gray'}
-            variant="solid"
-            fontSize="xs"
-            borderRadius="full"
-            px={2}
-            py={1}
-            cursor="pointer"
-            onClick={() => setIsTooltipOpen(!isTooltipOpen)}
-          >
-            {feature.category === 'innovative' ? 'NEW' : '?'}
-          </Badge>
-        )}
-      </HStack>
+      </Box>
+      
+      {/* Badge positioned outside the tooltip container to avoid affecting button width */}
+      {showBadge && !discovered && !dismissed && (
+        <Badge
+          position="absolute"
+          top="-8px"
+          right="-12px"
+          colorScheme={feature.category === 'innovative' ? 'purple' : feature.category === 'advanced' ? 'blue' : 'gray'}
+          variant="solid"
+          fontSize="xs"
+          borderRadius="full"
+          px={2}
+          py={1}
+          cursor="pointer"
+          onClick={() => setIsTooltipOpen(!isTooltipOpen)}
+          zIndex={10}
+          minW="auto"
+          h="auto"
+          pointerEvents="auto"
+        >
+          {feature.category === 'innovative' ? 'NEW' : '?'}
+        </Badge>
+      )}
 
       {/* Detailed Modal */}
       <Modal isOpen={isModalOpen} onClose={onModalClose} size="lg">
