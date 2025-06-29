@@ -247,6 +247,18 @@ export const useBusinessRulesStore = create<BusinessRulesState>((set, get) => ({
       // Transform input to match GraphQL schema
       const graphqlInput = {
         ...input,
+        // Ensure actions have proper data types
+        actions: input.actions.map(action => ({
+          ...action,
+          priority: Number(action.priority) || 1 // Convert to number
+        })),
+        // Ensure conditions have proper data types
+        conditions: input.conditions.map(condition => ({
+          ...condition,
+          // Ensure operator and logicalOperator are strings
+          operator: condition.operator,
+          logicalOperator: condition.logicalOperator || 'AND'
+        }))
       };
 
       const response = await gqlClient.request<{ createBusinessRule: BusinessRule }>(
@@ -275,6 +287,22 @@ export const useBusinessRulesStore = create<BusinessRulesState>((set, get) => ({
       // Transform input to match GraphQL schema
       const graphqlInput = {
         ...input,
+        // Ensure actions have proper data types if provided
+        ...(input.actions && {
+          actions: input.actions.map(action => ({
+            ...action,
+            priority: Number(action.priority) || 1 // Convert to number
+          }))
+        }),
+        // Ensure conditions have proper data types if provided
+        ...(input.conditions && {
+          conditions: input.conditions.map(condition => ({
+            ...condition,
+            // Ensure operator and logicalOperator are strings
+            operator: condition.operator,
+            logicalOperator: condition.logicalOperator || 'AND'
+          }))
+        })
       };
 
       const response = await gqlClient.request<{ updateBusinessRule: BusinessRule }>(
