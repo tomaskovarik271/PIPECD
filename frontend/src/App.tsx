@@ -42,7 +42,6 @@ import { useAppStore } from './stores/useAppStore';
 import { useWFMConfigStore } from './stores/useWFMConfigStore';
 import Sidebar from './components/layout/Sidebar';
 import { useThemeColors } from './hooks/useThemeColors';
-import { HelpProvider } from './contexts/HelpContext';
 
 // Loading component for lazy-loaded routes
 function PageLoader() {
@@ -65,29 +64,28 @@ function AppContent() {
   const colors = useThemeColors();
 
   return (
-    <HelpProvider>
-      <Box minH="100vh" bg={colors.bg.app}>
-        <Flex>
-          <Box 
-            w={sidebarWidth}
-            minH="100vh" 
-            bg={colors.bg.sidebar}
-            position="fixed" 
-            left="0" 
-            top="0"
-            zIndex="10"
-          >
-            <Sidebar />
-          </Box>
-          
-          <Box 
-            flex="1" 
-            ml={sidebarWidth}
-            bg={colors.bg.app}
-            transition="margin-left 0.2s ease-in-out"
-          >
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
+    <Box minH="100vh" bg={colors.bg.app}>
+      <Flex>
+        <Box 
+          w={sidebarWidth}
+          minH="100vh" 
+          bg={colors.bg.sidebar}
+          position="fixed" 
+          left="0" 
+          top="0"
+          zIndex="10"
+        >
+          <Sidebar />
+        </Box>
+        
+        <Box 
+          flex="1" 
+          ml={sidebarWidth}
+          bg={colors.bg.app}
+          transition="margin-left 0.2s ease-in-out"
+        >
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
               <Route path="/" element={<Navigate to="/deals" replace />} />
               <Route path="/people" element={<PeoplePage />} />
               <Route path="/people/:personId" element={<PersonDetailPage />} />
@@ -120,7 +118,6 @@ function AppContent() {
         </Box>
       </Flex>
     </Box>
-    </HelpProvider>
   );
 }
 

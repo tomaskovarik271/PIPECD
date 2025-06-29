@@ -35,7 +35,6 @@ import {
 import { FiArrowLeft, FiUser, FiHome, FiTrendingDown, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { gql, useMutation } from '@apollo/client';
-import { useHelp } from '../../contexts/HelpContext';
 
 // GraphQL mutation for deal conversion
 const CONVERT_DEAL_TO_LEAD_MODAL = gql`
@@ -150,7 +149,6 @@ const CONVERSION_REASONS = [
 export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }: ConvertDealModalProps) {
   const colors = useThemeColors();
   const toast = useToast();
-  const { addHelpFeature, removeHelpFeature } = useHelp();
   const { isOpen: showAdvanced, onToggle: toggleAdvanced } = useDisclosure();
 
   // GraphQL mutation
@@ -179,15 +177,6 @@ export function ConvertDealModal({ isOpen, onClose, deal, onConversionComplete }
   const [estimatedCloseDate, setEstimatedCloseDate] = useState('');
   const [leadSource, setLeadSource] = useState('deal_conversion');
   const [leadDescription, setLeadDescription] = useState('');
-
-  // Add help feature when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      addHelpFeature('deal-to-lead-conversion');
-    } else {
-      removeHelpFeature('deal-to-lead-conversion');
-    }
-  }, [isOpen, addHelpFeature, removeHelpFeature]);
 
   // Initialize form data when deal changes
   useEffect(() => {

@@ -19,7 +19,6 @@ import { TbLayoutGrid } from 'react-icons/tb';
 import { useAppStore } from '../../stores/useAppStore';
 import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import NotificationCenter from '../notifications/NotificationCenter';
-import HelpButton from '../common/HelpButton';
 
 interface PageStatistic {
   label: string;
@@ -170,9 +169,6 @@ const UnifiedPageHeader: React.FC<UnifiedPageHeaderProps> = ({
               )}
             </HStack>
           )}
-          
-          {/* Help & Tips */}
-          <HelpButton />
           
           {/* Notification Center */}
           <NotificationCenter position="header" showBadge={true} />

@@ -14,13 +14,24 @@ export const sharedDriveQueries = {
       const googleTokens = await googleIntegrationService.getStoredTokens(userId, accessToken);
       
       if (!googleTokens || !googleTokens.access_token) {
-        throw new Error('Google Drive access not authorized. Please connect your Google account.');
+        throw new Error('Google Drive access not authorized. Please connect your Google account in Google Integration settings.');
       }
       
       const drives = await googleDriveService.listSharedDrives(userId, accessToken);
       return drives;
     } catch (error) {
       console.error('Error fetching shared drives:', error);
+      
+      // Preserve specific Google integration error messages
+      if (error instanceof Error) {
+        if (error.message.includes('not authorized') || 
+            error.message.includes('authentication') || 
+            error.message.includes('integration') ||
+            error.message.includes('insufficient authentication scopes')) {
+          throw error; // Re-throw the specific error message
+        }
+      }
+      
       throw new Error('Failed to fetch shared drives');
     }
   },
@@ -36,7 +47,7 @@ export const sharedDriveQueries = {
       const googleTokens = await googleIntegrationService.getStoredTokens(userId, accessToken);
       
       if (!googleTokens || !googleTokens.access_token) {
-        throw new Error('Google Drive access not authorized. Please connect your Google account.');
+        throw new Error('Google Drive access not authorized. Please reconnect your Google account with Drive permissions.');
       }
       
       const files = await googleDriveService.listSharedDriveFiles(
@@ -49,6 +60,17 @@ export const sharedDriveQueries = {
       return files;
     } catch (error) {
       console.error('Error fetching shared drive files:', error);
+      
+      // Preserve specific Google integration error messages
+      if (error instanceof Error) {
+        if (error.message.includes('not authorized') || 
+            error.message.includes('authentication') || 
+            error.message.includes('integration') ||
+            error.message.includes('insufficient authentication scopes')) {
+          throw error; // Re-throw the specific error message
+        }
+      }
+      
       throw new Error('Failed to fetch shared drive files');
     }
   },
@@ -91,7 +113,7 @@ export const sharedDriveQueries = {
       const googleTokens = await googleIntegrationService.getStoredTokens(userId, accessToken);
       
       if (!googleTokens || !googleTokens.access_token) {
-        throw new Error('Google Drive access not authorized. Please connect your Google account.');
+        throw new Error('Google Drive access not authorized. Please ensure your Google account is connected with Drive permissions.');
       }
       
       const files = await googleDriveService.searchSharedDriveFiles(
@@ -103,6 +125,17 @@ export const sharedDriveQueries = {
       return files;
     } catch (error) {
       console.error('Error searching shared drive files:', error);
+      
+      // Preserve specific Google integration error messages
+      if (error instanceof Error) {
+        if (error.message.includes('not authorized') || 
+            error.message.includes('authentication') || 
+            error.message.includes('integration') ||
+            error.message.includes('insufficient authentication scopes')) {
+          throw error; // Re-throw the specific error message
+        }
+      }
+      
       throw new Error('Failed to search shared drive files');
     }
   },
