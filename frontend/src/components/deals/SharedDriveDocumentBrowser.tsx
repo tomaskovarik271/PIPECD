@@ -200,29 +200,33 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
     } catch (error) {
       console.error('Error loading shared drives:', error);
       
+      // Extract error message from GraphQL error structure
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      } else if (error && typeof error === 'object' && 'errors' in error && Array.isArray(error.errors) && error.errors.length > 0) {
+        errorMessage = error.errors[0].message || 'Unknown error';
+      }
+      
+
+      
       // Check if it's a Google integration issue
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const isAuthError = errorMessage.includes('not authorized') || 
                          errorMessage.includes('authentication') || 
-                         errorMessage.includes('integration');
+                         errorMessage.includes('integration') ||
+                         errorMessage.includes('Google Drive access') ||
+                         errorMessage.includes('connect your Google account');
       
       toast({
         title: isAuthError ? 'Google Drive Not Connected' : 'Error Loading Documents',
         description: isAuthError 
-          ? 'To access shared drive documents, please connect your Google account in the Google Integration settings.'
+          ? 'To access shared drive documents, please go to Google Integration settings and connect your Google account.'
           : 'Failed to load your shared drives. Please try again or check your Google Drive access.',
         status: 'error',
         duration: 8000,
         isClosable: true,
-        action: isAuthError ? (
-          <Button
-            size="sm"
-            colorScheme="blue"
-            onClick={() => window.open('/google-integration', '_blank')}
-          >
-            Connect Google
-          </Button>
-        ) : undefined,
       });
     }
   };
@@ -248,29 +252,31 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
     } catch (error) {
       console.error('Error loading drive contents:', error);
       
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      // Extract error message from GraphQL error structure
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      } else if (error && typeof error === 'object' && 'errors' in error && Array.isArray(error.errors) && error.errors.length > 0) {
+        errorMessage = error.errors[0].message || 'Unknown error';
+      }
+      
       const isAuthError = errorMessage.includes('not authorized') || 
                          errorMessage.includes('authentication') || 
                          errorMessage.includes('integration') ||
-                         errorMessage.includes('insufficient authentication scopes');
+                         errorMessage.includes('insufficient authentication scopes') ||
+                         errorMessage.includes('Google Drive access') ||
+                         errorMessage.includes('connect your Google account');
       
       toast({
         title: isAuthError ? 'Google Drive Access Required' : 'Error Loading Folder',
         description: isAuthError 
-          ? 'Your Google Drive connection has expired or lacks proper permissions. Please reconnect your Google account with Drive access.'
+          ? 'Your Google Drive connection has expired or lacks proper permissions. Please go to Google Integration settings to reconnect your account.'
           : 'Failed to load files and folders. Please try again.',
         status: 'error',
         duration: isAuthError ? 8000 : 3000,
         isClosable: true,
-        action: isAuthError ? (
-          <Button
-            size="sm"
-            colorScheme="blue"
-            onClick={() => window.open('/google-integration', '_blank')}
-          >
-            Reconnect Google
-          </Button>
-        ) : undefined,
       });
     } finally {
       setLoading(false);
@@ -314,28 +320,30 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
     } catch (error) {
       console.error('Error searching files:', error);
       
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      // Extract error message from GraphQL error structure
+      let errorMessage = 'Unknown error';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      } else if (error && typeof error === 'object' && 'errors' in error && Array.isArray(error.errors) && error.errors.length > 0) {
+        errorMessage = error.errors[0].message || 'Unknown error';
+      }
+      
       const isAuthError = errorMessage.includes('not authorized') || 
                          errorMessage.includes('authentication') || 
-                         errorMessage.includes('integration');
+                         errorMessage.includes('integration') ||
+                         errorMessage.includes('Google Drive access') ||
+                         errorMessage.includes('connect your Google account');
       
       toast({
         title: isAuthError ? 'Google Drive Search Unavailable' : 'Search Failed',
         description: isAuthError 
-          ? 'To search Google Drive files, please ensure your Google account is properly connected with Drive permissions.'
+          ? 'To search Google Drive files, please go to Google Integration settings to ensure your account is properly connected with Drive permissions.'
           : 'Failed to search for files. Please try again.',
         status: 'error',
         duration: isAuthError ? 6000 : 3000,
         isClosable: true,
-        action: isAuthError ? (
-          <Button
-            size="sm"
-            colorScheme="blue"
-            onClick={() => window.open('/google-integration', '_blank')}
-          >
-            Check Connection
-          </Button>
-        ) : undefined,
       });
     } finally {
       setLoading(false);
