@@ -448,8 +448,15 @@ export const businessRulesResolvers = {
       }
       
       // Validate trigger-specific requirements
-      if (input.triggerType === 'FIELD_CHANGE' && (!input.triggerFields || input.triggerFields.length === 0)) {
-        errors.push('Trigger fields are required for FIELD_CHANGE trigger type');
+      if (input.triggerType === 'FIELD_CHANGE') {
+        // For FIELD_CHANGE, we can auto-populate triggerFields from condition fields
+        if (!input.triggerFields || input.triggerFields.length === 0) {
+          // Auto-populate from condition fields
+          const conditionFields = input.conditions?.map(c => c.field).filter(f => f) || [];
+          if (conditionFields.length === 0) {
+            errors.push('Trigger fields are required for FIELD_CHANGE trigger type, or at least one condition with a field must be specified');
+          }
+        }
       }
       
       if (input.triggerType === 'EVENT_BASED' && (!input.triggerEvents || input.triggerEvents.length === 0)) {
@@ -465,8 +472,11 @@ export const businessRulesResolvers = {
           if (!condition.operator) {
             errors.push(`Condition ${index + 1}: Operator is required`);
           }
-          if (condition.value === undefined || condition.value === null) {
-            errors.push(`Condition ${index + 1}: Value is required`);
+          // Some operators don't require values (IS_NULL, IS_NOT_NULL)
+          const operatorsWithoutValue = ['IS_NULL', 'IS_NOT_NULL'];
+          if (!operatorsWithoutValue.includes(condition.operator) && 
+              (condition.value === undefined || condition.value === null || condition.value === '')) {
+            errors.push(`Condition ${index + 1}: Value is required for operator ${condition.operator}`);
           }
         });
       }
@@ -584,6 +594,14 @@ export const businessRulesResolvers = {
       
       const { input } = args;
       
+      // Auto-populate triggerFields for FIELD_CHANGE trigger type
+      let finalTriggerFields = input.triggerFields || [];
+      if (input.triggerType === 'FIELD_CHANGE' && finalTriggerFields.length === 0) {
+        // Auto-populate from condition fields
+        const conditionFields = input.conditions?.map(c => c.field).filter(f => f) || [];
+        finalTriggerFields = [...new Set(conditionFields)]; // Remove duplicates
+      }
+      
       // Validate the input
       const validationErrors = await businessRulesResolvers.Query.validateBusinessRule(
         _, { input }, context
@@ -601,14 +619,14 @@ export const businessRulesResolvers = {
           entity_type: input.entityType,
           trigger_type: input.triggerType,
           trigger_events: input.triggerEvents || [],
-          trigger_fields: input.triggerFields || [],
+          trigger_fields: finalTriggerFields,
           conditions: JSON.stringify(input.conditions),
           actions: JSON.stringify(input.actions),
-          wfm_workflow_id: input.wfmWorkflowId,
-          wfm_step_id: input.wfmStepId,
-          wfm_status_id: input.wfmStatusId,
+          wfm_workflow_id: input.wfmWorkflowId || null,
+          wfm_step_id: input.wfmStepId || null,
+          wfm_status_id: input.wfmStatusId || null,
           status: input.status || 'DRAFT',
-          created_by: context.currentUser?.id
+          created_by: userId
         })
         .select()
         .single()
