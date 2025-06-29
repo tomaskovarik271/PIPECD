@@ -13,34 +13,65 @@ import {
 } from '../../../../lib/generated/graphql';
 
 // Database mappers for business rules
-const mapDbBusinessRuleToGraphQL = (dbRule: any): BusinessRule => ({
-  id: dbRule.id,
-  name: dbRule.name,
-  description: dbRule.description,
-  entityType: dbRule.entity_type as EntityTypeEnum,
-  triggerType: dbRule.trigger_type as TriggerTypeEnum,
-  triggerEvents: dbRule.trigger_events || [],
-  triggerFields: dbRule.trigger_fields || [],
-  conditions: (JSON.parse(dbRule.conditions || '[]')).map((condition: any) => ({
-    ...condition,
-    logicalOperator: condition.logicalOperator || 'AND' // Ensure non-null default
-  })),
-  actions: (JSON.parse(dbRule.actions || '[]')).map((action: any) => ({
-    ...action,
-    priority: action.priority || 1 // Ensure priority has default value
-  })),
-  status: dbRule.status as RuleStatusEnum,
-  executionCount: dbRule.execution_count || 0,
-  lastError: dbRule.last_error,
-  lastExecution: dbRule.last_execution,
-  createdAt: new Date(dbRule.created_at),
-  updatedAt: new Date(dbRule.updated_at),
-  // Relations will be resolved separately
-  wfmWorkflow: null,
-  wfmStep: null,
-  wfmStatus: null,
-  createdBy: null
-});
+const mapDbBusinessRuleToGraphQL = (dbRule: any): BusinessRule => {
+  try {
+    // Parse conditions with error handling
+    let conditions = [];
+    try {
+      const conditionsData = typeof dbRule.conditions === 'string' 
+        ? JSON.parse(dbRule.conditions) 
+        : dbRule.conditions || [];
+      conditions = conditionsData.map((condition: any) => ({
+        ...condition,
+        logicalOperator: condition.logicalOperator || 'AND' // Ensure non-null default
+      }));
+    } catch (conditionsError) {
+      console.error('Error parsing conditions for rule:', dbRule.id, conditionsError);
+      conditions = [];
+    }
+
+    // Parse actions with error handling
+    let actions = [];
+    try {
+      const actionsData = typeof dbRule.actions === 'string' 
+        ? JSON.parse(dbRule.actions) 
+        : dbRule.actions || [];
+      actions = actionsData.map((action: any) => ({
+        ...action,
+        priority: action.priority || 1 // Ensure priority has default value
+      }));
+    } catch (actionsError) {
+      console.error('Error parsing actions for rule:', dbRule.id, actionsError);
+      actions = [];
+    }
+
+    return {
+      id: dbRule.id,
+      name: dbRule.name,
+      description: dbRule.description,
+      entityType: dbRule.entity_type as EntityTypeEnum,
+      triggerType: dbRule.trigger_type as TriggerTypeEnum,
+      triggerEvents: dbRule.trigger_events || [],
+      triggerFields: dbRule.trigger_fields || [],
+      conditions,
+      actions,
+      status: dbRule.status as RuleStatusEnum,
+      executionCount: dbRule.execution_count || 0,
+      lastError: dbRule.last_error,
+      lastExecution: dbRule.last_execution,
+      createdAt: new Date(dbRule.created_at),
+      updatedAt: new Date(dbRule.updated_at),
+      // Relations will be resolved separately
+      wfmWorkflow: null,
+      wfmStep: null,
+      wfmStatus: null,
+      createdBy: null
+    };
+  } catch (error) {
+    console.error('Error mapping business rule:', dbRule?.id, error);
+    throw new Error(`Failed to map business rule ${dbRule?.id}: ${error.message}`);
+  }
+};
 
 const mapDbBusinessRuleNotificationToGraphQL = (dbNotification: any): BusinessRuleNotification => ({
   id: dbNotification.id,
@@ -88,57 +119,78 @@ export const businessRulesResolvers = {
       },
       context: GraphQLContext
     ) => {
-      const { userId } = requireAuthentication(context);
-      requirePermission(context, 'app_settings:manage');
-      
-      const { filters = {}, first = 20, after } = args;
-      
-      // Build the query using Supabase client
-      let query = context.supabaseClient
-        .from('business_rules')
-        .select('*', { count: 'exact' });
-      
-      // Apply filters
-      if (filters.entityType) {
-        query = query.eq('entity_type', filters.entityType);
+      try {
+        const { userId } = requireAuthentication(context);
+        requirePermission(context, 'app_settings:manage');
+        
+        const { filters = {}, first = 20, after } = args;
+        
+        // Build the query using Supabase client
+        let query = context.supabaseClient
+          .from('business_rules')
+          .select('*', { count: 'exact' });
+        
+        // Apply filters
+        if (filters.entityType) {
+          query = query.eq('entity_type', filters.entityType);
+        }
+        
+        if (filters.triggerType) {
+          query = query.eq('trigger_type', filters.triggerType);
+        }
+        
+        if (filters.status) {
+          query = query.eq('status', filters.status);
+        }
+        
+        if (filters.search) {
+          query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+        }
+        
+        // Handle pagination
+        if (after) {
+          query = query.lt('created_at', after);
+        }
+        
+        // Order and limit
+        query = query.order('created_at', { ascending: false }).limit(first + 1);
+        
+        console.log('Executing business rules query...');
+        const { data: rules, count, error } = await query;
+        
+        if (error) {
+          console.error('Supabase query error:', error);
+          throw new Error(`Failed to fetch business rules: ${error.message}`);
+        }
+        
+        console.log(`Found ${rules?.length || 0} business rules`);
+        
+        const hasNextPage = rules ? rules.length > first : false;
+        let nodes = [];
+        
+        if (rules) {
+          try {
+            nodes = rules.slice(0, first).map((rule, index) => {
+              console.log(`Mapping rule ${index + 1}/${rules.length}: ${rule.id}`);
+              return mapDbBusinessRuleToGraphQL(rule);
+            });
+            console.log(`Successfully mapped ${nodes.length} business rules`);
+          } catch (mappingError) {
+            console.error('Error mapping business rules:', mappingError);
+            throw new Error(`Failed to process business rules: ${mappingError.message}`);
+          }
+        }
+        
+        return {
+          nodes,
+          totalCount: count || 0,
+          hasNextPage,
+          hasPreviousPage: !!after
+        };
+      } catch (error) {
+        console.error('Business rules query error:', error);
+        throw error;
       }
-      
-      if (filters.triggerType) {
-        query = query.eq('trigger_type', filters.triggerType);
-      }
-      
-      if (filters.status) {
-        query = query.eq('status', filters.status);
-      }
-      
-      if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
-      
-      // Handle pagination
-      if (after) {
-        query = query.lt('created_at', after);
-      }
-      
-      // Order and limit
-      query = query.order('created_at', { ascending: false }).limit(first + 1);
-      
-      const { data: rules, count, error } = await query;
-      
-      if (error) {
-        console.error('Error fetching business rules:', error);
-        throw new Error(`Failed to fetch business rules: ${error.message}`);
-      }
-      
-      const hasNextPage = rules ? rules.length > first : false;
-      const nodes = rules ? rules.slice(0, first).map(mapDbBusinessRuleToGraphQL) : [];
-      
-      return {
-        nodes,
-        totalCount: count || 0,
-        hasNextPage,
-        hasPreviousPage: !!after
-      };
     },
 
     businessRule: async (
