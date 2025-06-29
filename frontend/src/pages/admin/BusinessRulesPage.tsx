@@ -47,11 +47,13 @@ import {
   CheckIcon, 
   CloseIcon,
   SearchIcon,
-  SettingsIcon
+  SettingsIcon,
+  QuestionIcon
 } from '@chakra-ui/icons';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { BusinessRulesFormModal } from '../../components/admin/businessRules/BusinessRulesFormModal';
 import { BusinessRuleDetailsModal } from '../../components/admin/businessRules/BusinessRuleDetailsModal';
+import BusinessRulesAdminGuide from '../../components/admin/businessRules/BusinessRulesAdminGuide';
 import { useBusinessRulesStore } from '../../stores/useBusinessRulesStore';
 
 export const BusinessRulesPage: React.FC = () => {
@@ -61,6 +63,7 @@ export const BusinessRulesPage: React.FC = () => {
   // Modal states
   const { isOpen: isFormOpen, onOpen: onFormOpen, onClose: onFormClose } = useDisclosure();
   const { isOpen: isDetailsOpen, onOpen: onDetailsOpen, onClose: onDetailsClose } = useDisclosure();
+  const { isOpen: isGuideOpen, onOpen: onGuideOpen, onClose: onGuideClose } = useDisclosure();
   
   // Local state
   const [selectedRule, setSelectedRule] = useState<any>(null);
@@ -239,11 +242,15 @@ export const BusinessRulesPage: React.FC = () => {
     );
   };
 
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString();
+  };
+
   if (loading) {
     return (
       <Container maxW="7xl" py={8}>
-        <VStack spacing={4} align="center" py={16}>
-          <Spinner size="lg" color={colors.interactive.default} />
+        <VStack spacing={4}>
+          <Spinner size="xl" color={colors.interactive.default} />
           <Text color={colors.text.secondary}>Loading business rules...</Text>
         </VStack>
       </Container>
@@ -271,19 +278,33 @@ export const BusinessRulesPage: React.FC = () => {
       >
         <CardHeader>
           <VStack spacing={6} align="start" width="100%">
-            <Box>
-              <Heading 
-                as="h1" 
-                size="xl" 
-                mb={2}
-                color={colors.text.primary}
+            <HStack justify="space-between" width="100%">
+              <Box>
+                <Heading 
+                  as="h1" 
+                  size="xl" 
+                  mb={2}
+                  color={colors.text.primary}
+                >
+                  Business Rules Engine
+                </Heading>
+                <Text color={colors.text.secondary}>
+                  Automate business processes with intelligent rules that trigger actions based on entity changes, field updates, and scheduled events.
+                </Text>
+              </Box>
+              
+              <Button
+                leftIcon={<QuestionIcon />}
+                onClick={onGuideOpen}
+                variant="outline"
+                colorScheme="blue"
+                size="md"
+                minW="140px"
+                flexShrink={0}
               >
-                Business Rules Engine
-              </Heading>
-              <Text color={colors.text.secondary}>
-                Automate business processes with intelligent rules that trigger actions based on entity changes, field updates, and scheduled events.
-              </Text>
-            </Box>
+                Admin Guide
+              </Button>
+            </HStack>
 
             <Flex 
               width="100%" 
@@ -376,7 +397,7 @@ export const BusinessRulesPage: React.FC = () => {
                 leftIcon={<AddIcon />}
                 onClick={handleCreateRule}
                 bg={colors.interactive.default}
-                color={colors.interactive.text}
+                color="white"
                 _hover={{ 
                   bg: colors.interactive.hover,
                   transform: 'translateY(-1px)',
@@ -450,117 +471,81 @@ export const BusinessRulesPage: React.FC = () => {
                   </Tr>
                 ) : (
                   filteredRules.map((rule) => (
-                    <Tr 
-                      key={rule.id}
-                      _hover={{ bg: colors.component.table.rowHover }}
-                    >
-                      <Td borderColor={colors.border.subtle}>
+                    <Tr key={rule.id} _hover={{ bg: colors.component.table.rowHover }}>
+                      <Td borderColor={colors.border.default}>
                         <VStack align="start" spacing={1}>
-                          <Text 
-                            fontWeight="medium"
-                            color={colors.text.primary}
-                            cursor="pointer"
-                            onClick={() => handleViewRule(rule)}
-                            _hover={{ textDecoration: 'underline' }}
-                          >
+                          <Text color={colors.text.primary} fontWeight="medium">
                             {rule.name}
                           </Text>
                           {rule.description && (
-                            <Text 
-                              fontSize="sm" 
-                              color={colors.text.muted}
-                              noOfLines={1}
-                            >
+                            <Text color={colors.text.secondary} fontSize="sm" noOfLines={2}>
                               {rule.description}
                             </Text>
                           )}
                         </VStack>
                       </Td>
-                      
-                      <Td borderColor={colors.border.subtle}>
+                      <Td borderColor={colors.border.default}>
                         {getEntityTypeBadge(rule.entityType)}
                       </Td>
-                      
-                      <Td borderColor={colors.border.subtle}>
+                      <Td borderColor={colors.border.default}>
                         {getTriggerTypeBadge(rule.triggerType)}
                       </Td>
-                      
-                      <Td borderColor={colors.border.subtle}>
+                      <Td borderColor={colors.border.default}>
                         {getStatusBadge(rule.status)}
                       </Td>
-                      
-                      <Td borderColor={colors.border.subtle}>
+                      <Td borderColor={colors.border.default}>
                         <Text color={colors.text.primary}>
                           {rule.executionCount || 0}
                         </Text>
                       </Td>
-                      
-                      <Td borderColor={colors.border.subtle}>
-                        <Text color={colors.text.muted} fontSize="sm">
-                          {rule.lastExecution 
-                            ? new Date(rule.lastExecution).toLocaleDateString()
-                            : 'Never'
-                          }
+                      <Td borderColor={colors.border.default}>
+                        <Text color={colors.text.secondary} fontSize="sm">
+                          {rule.lastExecution ? formatDate(rule.lastExecution) : 'Never'}
                         </Text>
                       </Td>
-                      
-                      <Td borderColor={colors.border.subtle}>
+                      <Td borderColor={colors.border.default}>
                         <HStack spacing={2}>
                           <Tooltip label="View Details">
                             <IconButton
-                              aria-label="View rule details"
                               icon={<ViewIcon />}
                               size="sm"
                               variant="ghost"
+                              colorScheme="blue"
                               onClick={() => handleViewRule(rule)}
-                              color={colors.text.secondary}
-                              _hover={{ 
-                                color: colors.text.primary,
-                                bg: colors.bg.subtle
-                              }}
+                              aria-label="View rule details"
                             />
                           </Tooltip>
                           
                           <Tooltip label="Edit Rule">
                             <IconButton
-                              aria-label="Edit rule"
                               icon={<EditIcon />}
                               size="sm"
                               variant="ghost"
+                              colorScheme="blue"
                               onClick={() => handleEditRule(rule)}
-                              color={colors.text.secondary}
-                              _hover={{ 
-                                color: colors.text.primary,
-                                bg: colors.bg.subtle
-                              }}
+                              aria-label="Edit rule"
                             />
                           </Tooltip>
                           
                           <Tooltip label={rule.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}>
                             <IconButton
-                              aria-label={rule.status === 'ACTIVE' ? 'Deactivate rule' : 'Activate rule'}
                               icon={rule.status === 'ACTIVE' ? <CloseIcon /> : <CheckIcon />}
                               size="sm"
                               variant="ghost"
+                              colorScheme={rule.status === 'ACTIVE' ? 'orange' : 'green'}
                               onClick={() => handleToggleStatus(rule)}
-                              color={rule.status === 'ACTIVE' ? colors.status.warning : colors.status.success}
-                              _hover={{ 
-                                bg: colors.bg.subtle
-                              }}
+                              aria-label={rule.status === 'ACTIVE' ? 'Deactivate rule' : 'Activate rule'}
                             />
                           </Tooltip>
                           
                           <Tooltip label="Delete Rule">
                             <IconButton
-                              aria-label="Delete rule"
                               icon={<DeleteIcon />}
                               size="sm"
                               variant="ghost"
+                              colorScheme="red"
                               onClick={() => handleDeleteRule(rule)}
-                              color={colors.status.error}
-                              _hover={{ 
-                                bg: colors.bg.subtle
-                              }}
+                              aria-label="Delete rule"
                             />
                           </Tooltip>
                         </HStack>
@@ -574,7 +559,7 @@ export const BusinessRulesPage: React.FC = () => {
         </CardBody>
       </Card>
 
-      {/* Create/Edit Rule Modal */}
+      {/* Modals */}
       <BusinessRulesFormModal
         isOpen={isFormOpen}
         onClose={onFormClose}
@@ -583,15 +568,19 @@ export const BusinessRulesPage: React.FC = () => {
         isEditing={!!selectedRule}
       />
 
-      {/* Rule Details Modal */}
       <BusinessRuleDetailsModal
         isOpen={isDetailsOpen}
         onClose={onDetailsClose}
         rule={selectedRule}
         onEdit={() => {
           onDetailsClose();
-          onFormOpen();
+          handleEditRule(selectedRule);
         }}
+      />
+
+      <BusinessRulesAdminGuide
+        isOpen={isGuideOpen}
+        onClose={onGuideClose}
       />
     </Container>
   );

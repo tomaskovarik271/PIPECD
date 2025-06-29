@@ -1,7 +1,6 @@
--- Fix business rules function to properly handle JSON string conversion
--- The issue is that conditions and actions are stored as JSON strings but the function expects JSONB
+-- Fix ambiguous column reference in process_business_rules function
+-- The issue is that execution_time_ms variable and column have the same name
 
--- Drop and recreate the process_business_rules function with proper JSON handling
 CREATE OR REPLACE FUNCTION public.process_business_rules(
   p_entity_type entity_type_enum,
   p_entity_id UUID,
@@ -78,14 +77,15 @@ BEGIN
       -- Update execution record with results
       execution_time_ms := EXTRACT(EPOCH FROM (clock_timestamp() - start_time)) * 1000;
       
-      UPDATE public.rule_executions 
+      -- Fixed: Use column alias to avoid ambiguity
+      UPDATE public.rule_executions AS re
       SET execution_result = action_execution_result,
           notifications_created = COALESCE((action_execution_result ->> 'notifications_created')::INTEGER, 0),
           tasks_created = COALESCE((action_execution_result ->> 'tasks_created')::INTEGER, 0),
           activities_created = COALESCE((action_execution_result ->> 'activities_created')::INTEGER, 0),
           errors = COALESCE(action_execution_result -> 'errors', '[]'::JSONB),
-          rule_executions.execution_time_ms = execution_time_ms
-      WHERE id = rule_execution_id;
+          re.execution_time_ms = execution_time_ms
+      WHERE re.id = rule_execution_id;
       
       -- Update rule execution count
       UPDATE public.business_rules 

@@ -21,7 +21,7 @@
 
 ⠙ Waiting for framework port 5173. This can be configured using the 'targetPort' property in the netlify.toml
 [1G
-  VITE v6.3.4  ready in 118 ms
+  VITE v6.3.4  ready in 121 ms
 
 ⠹ Waiting for framework port 5173. This can be configured using the 'targetPort' property in the netlify.toml
 [1G  ➜  Local:   http://localhost:5173/
@@ -37,7 +37,7 @@
 ◈ Loaded function google-oauth-exchange
 ◈ Loaded function inngest
 ◈ Loaded function graphql
-(node:78147) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+(node:99709) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
 (Use `node --trace-deprecation ...` to show where the warning was created)
 Request from ::1: POST /.netlify/functions/graphql
 AgentServiceV2 initialized with Claude Sonnet 4 integration
@@ -68,458 +68,116 @@ Loaded schema files: [
   'currency.graphql',
   'calendar.graphql',
   'task.graphql',
-  'businessRules.graphql'
+  'businessRules.graphql',
+  'notifications.graphql'
 ]
-Schema length: 80903
+Schema length: 85063
 Business rules in schema: true
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 71 ms.
-Response with status 200 in 60 ms.
-Response with status 200 in 78 ms.
-Response with status 200 in 53 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 21 ms.
-Response with status 200 in 662 ms.
-Response with status 200 in 150 ms.
-Response with status 200 in 55 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 30 ms.
-Response with status 200 in 25 ms.
-Response with status 200 in 38 ms.
-Response with status 200 in 78 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 68 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 57 ms.
-Response with status 200 in 140 ms.
-Response with status 200 in 145 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 2167 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 6 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 42 ms.
-Response with status 200 in 45 ms.
-Response with status 200 in 42 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 30 ms.
-Response with status 200 in 93 ms.
-Response with status 200 in 123 ms.
-Response with status 200 in 27 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 9 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
+Response with status 200 in 58 ms.
 Response with status 200 in 40 ms.
-Response with status 200 in 28 ms.
-Response with status 200 in 35 ms.
-Response with status 200 in 53 ms.
-Response with status 200 in 36 ms.
+Response with status 200 in 61 ms.
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 104 ms.
-Response with status 200 in 106 ms.
-Response with status 200 in 106 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 135 ms.
-Response with status 200 in 145 ms.
-Response with status 200 in 148 ms.
-Response with status 200 in 149 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 89 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 42 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 36 ms.
-Response with status 200 in 37 ms.
+Response with status 200 in 67 ms.
+Response with status 200 in 564 ms.
+Response with status 200 in 120 ms.
 Response with status 200 in 43 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 45 ms.
-Response with status 200 in 57 ms.
-Response with status 200 in 13 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 15 ms.
-Response with status 200 in 9 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 27 ms.
-Response with status 200 in 30 ms.
-Response with status 200 in 36 ms.
-Response with status 200 in 59 ms.
-Response with status 200 in 55 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 36 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 182 ms.
-Response with status 200 in 183 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 48 ms.
-Response with status 200 in 55 ms.
-Response with status 200 in 50 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 62 ms.
-Response with status 200 in 53 ms.
-Response with status 200 in 101 ms.
-Response with status 200 in 119 ms.
-Request from ::1: POST /.netlify/functions/graphql
 Response with status 200 in 51 ms.
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 15 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 23 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 38 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 14 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-🔄 Syncing 31 events from Google Calendar
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 640 ms.
-Request from ::1: POST /.netlify/functions/graphql
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 660 ms.
-Response with status 200 in 356 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 19 ms.
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 328 ms.
-Response with status 200 in 13 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 26 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 18 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 19 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 20 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 83 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 82 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-🔄 Syncing 31 events from Google Calendar
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 507 ms.
-Request from ::1: POST /.netlify/functions/graphql
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 456 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 491 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 327 ms.
-Response with status 200 in 439 ms.
-Response with status 200 in 390 ms.
-Response with status 200 in 1420 ms.
-Response with status 200 in 1389 ms.
-Response with status 200 in 1231 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 34 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 49 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 47 ms.
+Response with status 200 in 33 ms.
+Response with status 200 in 29 ms.
+Response with status 200 in 30 ms.
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Response with status 200 in 32 ms.
-🔄 Syncing 31 events from Google Calendar
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 596 ms.
-🔄 Syncing 31 events from Google Calendar
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 508 ms.
-[1G10:19:09 PM [vite] (client) hmr update /src/App.tsx
-⠼ Waiting for framework port 5173. This can be configured using the 'targetPort' property in the netlify.toml
-[1G10:19:10 PM [vite] (client) hmr update /src/App.tsx
-⠴ Waiting for framework port 5173. This can be configured using the 'targetPort' property in the netlify.toml
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 41 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
+Response with status 200 in 31 ms.
+Response with status 200 in 45 ms.
+Response with status 200 in 28 ms.
+Response with status 200 in 26 ms.
+Response with status 200 in 28 ms.
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Response with status 200 in 26 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 29 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 37 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 23 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 51 ms.
-Response with status 200 in 79 ms.
+Response with status 200 in 25 ms.
+Response with status 200 in 166 ms.
+Response with status 200 in 166 ms.
 Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 19 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 49 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 39 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 40 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 77 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 346 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 419 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-🔄 Syncing 31 events from Google Calendar
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 478 ms.
-Request from ::1: POST /.netlify/functions/graphql
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 492 ms.
-🔄 Syncing 31 events from Google Calendar
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 46 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-Response with status 200 in 13 ms.
-Request from ::1: POST /.netlify/functions/graphql
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 394 ms.
-Request from ::1: POST /.netlify/functions/graphql
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 413 ms.
-Response with status 200 in 13 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 27 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 11 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 971 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 13 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 354 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 14 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 1000 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 8 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 13 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 341 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 425 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-Response with status 200 in 747 ms.
-Response with status 200 in 612 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 455 ms.
-Response with status 200 in 418 ms.
-Response with status 200 in 407 ms.
-Response with status 200 in 378 ms.
-Response with status 200 in 417 ms.
-Response with status 200 in 1035 ms.
-[1G10:19:16 PM [vite] (client) hmr update /src/App.tsx
-⠦ Waiting for framework port 5173. This can be configured using the 'targetPort' property in the netlify.toml
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 30 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 15 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 19 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 37 ms.
+Executing business rules query...
+Executing business rules query...
+Found 5 business rules
+Mapping rule 1/5: 62defc68-3708-427c-9220-6af36082d5e0
+Mapping rule 2/5: 22c058da-7a9f-45d8-984f-f727069a4bbb
+Mapping rule 3/5: f5ad5298-7d41-4328-8be2-ccc18f0f9c3f
+Mapping rule 4/5: de0f010a-b76a-4b47-b796-d41a765dd047
+Mapping rule 5/5: 226e79e4-2966-4946-b768-7ee606f29a84
+Successfully mapped 5 business rules
+Found 5 business rules
+Mapping rule 1/5: 62defc68-3708-427c-9220-6af36082d5e0
+Mapping rule 2/5: 22c058da-7a9f-45d8-984f-f727069a4bbb
+Mapping rule 3/5: f5ad5298-7d41-4328-8be2-ccc18f0f9c3f
+Mapping rule 4/5: de0f010a-b76a-4b47-b796-d41a765dd047
+Mapping rule 5/5: 226e79e4-2966-4946-b768-7ee606f29a84
+Successfully mapped 5 business rules
 Response with status 200 in 48 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 22 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 46 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 12 ms.
-Request from ::1: POST /.netlify/functions/graphql
 Response with status 200 in 44 ms.
+Request from ::1: OPTIONS /.netlify/functions/graphql
+AgentServiceV2 initialized with Claude Sonnet 4 integration
+Loaded schema files: [
+  'scalars.graphql',
+  'enums.graphql',
+  'base.graphql',
+  'schema.graphql',
+  'user.graphql',
+  'user_profile.graphql',
+  'person.graphql',
+  'organization.graphql',
+  'deal.graphql',
+  'dealFolders.graphql',
+  'lead.graphql',
+  'history.graphql',
+  'customFields.graphql',
+  'emails.graphql',
+  'googleDrive.graphql',
+  'googleIntegration.graphql',
+  'smartStickers.graphql',
+  'wfm_definitions.graphql',
+  'wfm_project.graphql',
+  'agent.graphql',
+  'agentV2.graphql',
+  'appSettings.graphql',
+  'conversion.graphql',
+  'currency.graphql',
+  'calendar.graphql',
+  'task.graphql',
+  'businessRules.graphql',
+  'notifications.graphql'
+]
+Schema length: 85063
+Business rules in schema: true
+Response with status 204 in 246 ms.
+Request from ::1: OPTIONS /.netlify/functions/graphql
+Response with status 204 in 1 ms.
 Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 27 ms.
+Request from ::1: POST /.netlify/functions/graphql
+Response with status 200 in 13 ms.
+Response with status 200 in 9 ms.
+Request from ::1: POST /.netlify/functions/graphql
+Request from ::1: POST /.netlify/functions/graphql
 Request from ::1: POST /.netlify/functions/graphql
 Response with status 200 in 15 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 41 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 304 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 284 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 365 ms.
-Request from ::1: POST /.netlify/functions/graphql
+Response with status 200 in 13 ms.
 Response with status 200 in 23 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-🔄 Syncing 31 events from Google Calendar
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 466 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 8 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 368 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 676 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 13 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 27 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 12 ms.
-Request from ::1: POST /.netlify/functions/graphql
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 409 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 13 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 304 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 16 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-Response with status 200 in 396 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 7 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 16 ms.
-Request from ::1: POST /.netlify/functions/graphql
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 375 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 1162 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 621 ms.
-Request from ::1: POST /.netlify/functions/graphql
-🔄 Syncing 31 events from Google Calendar
-Response with status 200 in 728 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 386 ms.
-✅ Calendar sync completed: 31 synced, 0 errors, 0 deletions handled
-Response with status 200 in 435 ms.
-Response with status 200 in 358 ms.
-Response with status 200 in 415 ms.
-Response with status 200 in 360 ms.
-Response with status 200 in 1151 ms.
-[1G10:19:30 PM [vite] (client) hmr update /src/components/layout/Sidebar.tsx
-⠧ Waiting for framework port 5173. This can be configured using the 'targetPort' property in the netlify.toml
-[1G10:19:30 PM [vite] (client) hmr update /src/components/layout/Sidebar.tsx
-⠇ Waiting for framework port 5173. This can be configured using the 'targetPort' property in the netlify.toml
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 41 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 7 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 1 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 49 ms.
-Response with status 200 in 54 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 3 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 2 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 62 ms.
-Response with status 200 in 81 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 22 ms.
-Response with status 200 in 18 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 4 ms.
-Response with status 200 in 22 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 4 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 1958 ms.
-Response with status 200 in 1976 ms.
-Response with status 200 in 2164 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 1 ms.
-Response with status 200 in 47 ms.
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 8 ms.
-Response with status 200 in 41 ms.
-Response with status 200 in 115 ms.
-Response with status 200 in 93 ms.
-Response with status 200 in 43 ms.
-[1G10:41:06 PM [vite] (client) hmr update /src/pages/admin/BusinessRulesPage.tsx
-⠏ Waiting for framework port 5173. This can be configured using the 'targetPort' property in the netlify.toml
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 28 ms.
-[1G10:41:06 PM [vite] (client) hmr update /src/pages/admin/BusinessRulesPage.tsx
-⠋ Waiting for framework port 5173. This can be configured using the 'targetPort' property in the netlify.toml
-Request from ::1: POST /.netlify/functions/graphql
-Response with status 200 in 1 ms.

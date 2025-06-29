@@ -105,24 +105,42 @@ export const BusinessRuleDetailsModal: React.FC<BusinessRuleDetailsModalProps> =
     return new Date(dateString).toLocaleString();
   };
 
-  const parseConditions = (conditionsStr: string) => {
+  const parseConditions = (conditionsData: any) => {
     try {
-      return JSON.parse(conditionsStr);
+      // If it's already an array, return it directly
+      if (Array.isArray(conditionsData)) {
+        return conditionsData;
+      }
+      // If it's a string, try to parse it
+      if (typeof conditionsData === 'string') {
+        return JSON.parse(conditionsData);
+      }
+      // If it's null/undefined, return empty array
+      return [];
     } catch {
       return [];
     }
   };
 
-  const parseActions = (actionsStr: string) => {
+  const parseActions = (actionsData: any) => {
     try {
-      return JSON.parse(actionsStr);
+      // If it's already an array, return it directly
+      if (Array.isArray(actionsData)) {
+        return actionsData;
+      }
+      // If it's a string, try to parse it
+      if (typeof actionsData === 'string') {
+        return JSON.parse(actionsData);
+      }
+      // If it's null/undefined, return empty array
+      return [];
     } catch {
       return [];
     }
   };
 
-  const conditions = parseConditions(rule.conditions || '[]');
-  const actions = parseActions(rule.actions || '[]');
+  const conditions = parseConditions(rule.conditions);
+  const actions = parseActions(rule.actions);
   const successRate = rule.executionCount > 0 ? ((rule.executionCount - (rule.errorCount || 0)) / rule.executionCount * 100) : 100;
 
   return (

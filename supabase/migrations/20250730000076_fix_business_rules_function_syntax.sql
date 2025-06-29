@@ -1,7 +1,6 @@
--- Fix business rules function to properly handle JSON string conversion
--- The issue is that conditions and actions are stored as JSON strings but the function expects JSONB
+-- Fix the business rules function syntax error
+-- The issue is with the UPDATE statement column reference
 
--- Drop and recreate the process_business_rules function with proper JSON handling
 CREATE OR REPLACE FUNCTION public.process_business_rules(
   p_entity_type entity_type_enum,
   p_entity_id UUID,
@@ -15,7 +14,7 @@ DECLARE
   total_result JSONB := '{"rules_processed": 0, "notifications_created": 0, "tasks_created": 0, "activities_created": 0, "errors": []}'::JSONB;
   rule_execution_id UUID;
   start_time TIMESTAMPTZ;
-  execution_time_ms INTEGER;
+  exec_time_ms INTEGER; -- Renamed variable to avoid ambiguity
   conditions_met BOOLEAN;
   rule_conditions JSONB;
   rule_actions JSONB;
@@ -76,15 +75,16 @@ BEGIN
       );
       
       -- Update execution record with results
-      execution_time_ms := EXTRACT(EPOCH FROM (clock_timestamp() - start_time)) * 1000;
+      exec_time_ms := EXTRACT(EPOCH FROM (clock_timestamp() - start_time)) * 1000;
       
+      -- Fixed: Use renamed variable to avoid ambiguity
       UPDATE public.rule_executions 
       SET execution_result = action_execution_result,
           notifications_created = COALESCE((action_execution_result ->> 'notifications_created')::INTEGER, 0),
           tasks_created = COALESCE((action_execution_result ->> 'tasks_created')::INTEGER, 0),
           activities_created = COALESCE((action_execution_result ->> 'activities_created')::INTEGER, 0),
           errors = COALESCE(action_execution_result -> 'errors', '[]'::JSONB),
-          rule_executions.execution_time_ms = execution_time_ms
+          execution_time_ms = exec_time_ms
       WHERE id = rule_execution_id;
       
       -- Update rule execution count
