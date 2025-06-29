@@ -210,7 +210,8 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
         errorMessage = error.errors[0].message || 'Unknown error';
       }
       
-
+      console.log('DEBUG: Extracted error message:', errorMessage);
+      console.log('DEBUG: Full error object:', error);
       
       // Check if it's a Google integration issue
       const isAuthError = errorMessage.includes('not authorized') || 
@@ -218,6 +219,8 @@ export const SharedDriveDocumentBrowser: React.FC<SharedDriveDocumentBrowserProp
                          errorMessage.includes('integration') ||
                          errorMessage.includes('Google Drive access') ||
                          errorMessage.includes('connect your Google account');
+      
+      console.log('DEBUG: isAuthError:', isAuthError);
       
       toast({
         title: isAuthError ? 'Google Drive Not Connected' : 'Error Loading Documents',
