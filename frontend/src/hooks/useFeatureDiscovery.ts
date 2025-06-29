@@ -1,112 +1,93 @@
-import { useEffect, useState, useCallback } from 'react';
-import { featureDiscoveryService, FeatureHint, FeatureDiscoveryEvent, UserDiscoveryState } from '../../../lib/services/featureDiscoveryService';
+import { useCallback, useEffect, useState } from 'react';
+import { featureDiscoveryService, type ContextualSuggestion } from '../../../lib/featureDiscoveryService';
+import { useAppStore } from '../stores/useAppStore';
 
-export interface UseFeatureDiscoveryReturn {
-  // Feature queries
-  getFeature: (featureId: string) => FeatureHint | undefined;
-  getAllFeatures: () => FeatureHint[];
-  getFeaturesForContext: (context: string) => FeatureHint[];
-  getUndiscoveredFeaturesForContext: (context: string) => FeatureHint[];
-  
-  // Discovery state
-  isFeatureDiscovered: (featureId: string) => boolean;
-  isFeatureDismissed: (featureId: string) => boolean;
-  getFeatureUsageCount: (featureId: string) => number;
-  shouldShowGuidance: (featureId: string, guidanceType?: 'tooltip' | 'callout' | 'spotlight') => boolean;
-  
-  // Discovery actions
-  markFeatureDiscovered: (featureId: string, context?: string) => void;
-  markFeatureUsed: (featureId: string, context?: string) => void;
-  dismissFeature: (featureId: string, context?: string) => void;
-  resetFeatureDiscovery: (featureId?: string) => void;
-  
-  // Preferences
-  preferences: UserDiscoveryState['discoveryPreferences'];
-  updatePreferences: (preferences: Partial<UserDiscoveryState['discoveryPreferences']>) => void;
-  
-  // Analytics
-  discoveryStats: ReturnType<typeof featureDiscoveryService.getDiscoveryStats>;
-  
-  // Utilities
-  getNextFeatureToDiscover: (context: string) => FeatureHint | null;
-  hasPrerequisites: (featureId: string) => boolean;
-}
+export const useFeatureDiscovery = () => {
+  const { user } = useAppStore();
+  const userId = user?.id;
 
-export const useFeatureDiscovery = (): UseFeatureDiscoveryReturn => {
-  const [preferences, setPreferences] = useState(featureDiscoveryService.getPreferences());
-  const [discoveryStats, setDiscoveryStats] = useState(featureDiscoveryService.getDiscoveryStats());
-  const [, forceUpdate] = useState({});
+  const markFeatureDiscovered = useCallback((featureId: string) => {
+    if (userId) {
+      featureDiscoveryService.markFeatureDiscovered(userId, featureId);
+    }
+  }, [userId]);
 
-  // Force re-render when discovery state changes
-  const triggerUpdate = useCallback(() => {
-    setPreferences(featureDiscoveryService.getPreferences());
-    setDiscoveryStats(featureDiscoveryService.getDiscoveryStats());
-    forceUpdate({});
+  const markTourCompleted = useCallback((tourId: string) => {
+    if (userId) {
+      featureDiscoveryService.markTourCompleted(userId, tourId);
+    }
+  }, [userId]);
+
+  const markCalloutDismissed = useCallback((calloutId: string) => {
+    if (userId) {
+      featureDiscoveryService.markCalloutDismissed(userId, calloutId);
+    }
+  }, [userId]);
+
+  const incrementFeatureUsage = useCallback((featureId: string) => {
+    if (userId) {
+      featureDiscoveryService.incrementFeatureUsage(userId, featureId);
+    }
+  }, [userId]);
+
+  const shouldShowGuidance = useCallback((featureId: string) => {
+    if (!userId) return false;
+    return featureDiscoveryService.shouldShowGuidance(userId, featureId);
+  }, [userId]);
+
+  const getFeature = useCallback((featureId: string) => {
+    return featureDiscoveryService.getFeature(featureId);
   }, []);
 
-  useEffect(() => {
-    // Listen for discovery events to update state
-    const handleDiscoveryEvent = (event: FeatureDiscoveryEvent) => {
-      triggerUpdate();
-    };
+  const getSuggestionsForContext = useCallback((context: string) => {
+    if (!userId) return [];
+    return featureDiscoveryService.getSuggestionsForContext(context, userId);
+  }, [userId]);
 
-    featureDiscoveryService.addEventListener(handleDiscoveryEvent);
-    
-    return () => {
-      featureDiscoveryService.removeEventListener(handleDiscoveryEvent);
-    };
-  }, [triggerUpdate]);
+  const getUserProgress = useCallback(() => {
+    if (!userId) return null;
+    return featureDiscoveryService.getUserProgress(userId);
+  }, [userId]);
 
-  // Wrapped methods that trigger updates
-  const markFeatureDiscovered = useCallback((featureId: string, context?: string) => {
-    featureDiscoveryService.markFeatureDiscovered(featureId, context);
-  }, []);
+  const setUserGuidanceLevel = useCallback((level: 'minimal' | 'standard' | 'comprehensive') => {
+    if (userId) {
+      featureDiscoveryService.setUserGuidanceLevel(userId, level);
+    }
+  }, [userId]);
 
-  const markFeatureUsed = useCallback((featureId: string, context?: string) => {
-    featureDiscoveryService.markFeatureUsed(featureId, context);
-  }, []);
-
-  const dismissFeature = useCallback((featureId: string, context?: string) => {
-    featureDiscoveryService.dismissFeature(featureId, context);
-  }, []);
-
-  const resetFeatureDiscovery = useCallback((featureId?: string) => {
-    featureDiscoveryService.resetFeatureDiscovery(featureId);
-  }, []);
-
-  const updatePreferences = useCallback((newPreferences: Partial<UserDiscoveryState['discoveryPreferences']>) => {
-    featureDiscoveryService.updatePreferences(newPreferences);
-    setPreferences(featureDiscoveryService.getPreferences());
+  const searchFeatures = useCallback((query: string) => {
+    return featureDiscoveryService.searchFeatures(query);
   }, []);
 
   return {
-    // Feature queries (direct access, no state needed)
-    getFeature: featureDiscoveryService.getFeature.bind(featureDiscoveryService),
-    getAllFeatures: featureDiscoveryService.getAllFeatures.bind(featureDiscoveryService),
-    getFeaturesForContext: featureDiscoveryService.getFeaturesForContext.bind(featureDiscoveryService),
-    getUndiscoveredFeaturesForContext: featureDiscoveryService.getUndiscoveredFeaturesForContext.bind(featureDiscoveryService),
-    
-    // Discovery state (direct access, state updates via events)
-    isFeatureDiscovered: featureDiscoveryService.isFeatureDiscovered.bind(featureDiscoveryService),
-    isFeatureDismissed: featureDiscoveryService.isFeatureDismissed.bind(featureDiscoveryService),
-    getFeatureUsageCount: featureDiscoveryService.getFeatureUsageCount.bind(featureDiscoveryService),
-    shouldShowGuidance: featureDiscoveryService.shouldShowGuidance.bind(featureDiscoveryService),
-    
-    // Discovery actions (wrapped to trigger updates)
+    // Core methods
     markFeatureDiscovered,
-    markFeatureUsed,
-    dismissFeature,
-    resetFeatureDiscovery,
+    markTourCompleted,
+    markCalloutDismissed,
+    incrementFeatureUsage,
+    shouldShowGuidance,
+    getFeature,
+    getSuggestionsForContext,
+    getUserProgress,
+    setUserGuidanceLevel,
+    searchFeatures,
     
-    // Preferences (reactive state)
-    preferences,
-    updatePreferences,
-    
-    // Analytics (reactive state)
-    discoveryStats,
-    
-    // Utilities (direct access)
-    getNextFeatureToDiscover: featureDiscoveryService.getNextFeatureToDiscover.bind(featureDiscoveryService),
-    hasPrerequisites: featureDiscoveryService.hasPrerequisites.bind(featureDiscoveryService),
+    // Utility properties
+    isAuthenticated: !!userId,
+    userId
   };
+};
+
+export const useContextualSuggestions = (context: string) => {
+  const { getSuggestionsForContext, isAuthenticated } = useFeatureDiscovery();
+  const [suggestions, setSuggestions] = useState<ContextualSuggestion[]>([]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const contextSuggestions = getSuggestionsForContext(context);
+      setSuggestions(contextSuggestions);
+    }
+  }, [context, getSuggestionsForContext, isAuthenticated]);
+
+  return suggestions;
 }; 

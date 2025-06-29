@@ -2,240 +2,211 @@
 
 ## Overview
 
-PipeCD's Feature Discovery System provides intelligent, contextual guidance for innovative CRM features that break traditional patterns. The system helps users discover and understand unique capabilities without overwhelming experienced users.
+PipeCD's Feature Discovery System provides intelligent, non-intrusive guidance for users discovering innovative CRM features that break traditional patterns. The system ensures new users get proper guidance while experienced users aren't overwhelmed with repetitive help.
 
-## Design Principles
+## Design Philosophy
 
-### 1. **Progressive Disclosure**
-- Start with subtle hints, escalate to detailed guidance only when needed
-- Allow users to control their learning experience
-- Remember user preferences and progress
+### Core Principles
+1. **Progressive Disclosure** - Show information when users need it, not before
+2. **Contextual Relevance** - Guidance appears in the right place at the right time
+3. **User Autonomy** - Users control their learning experience
+4. **Persistent Memory** - System remembers what users have already learned
+5. **Graceful Degradation** - Works even if discovery data is unavailable
 
-### 2. **Contextual Relevance**
-- Show guidance when and where it's most useful
-- Adapt to user behavior and current workflow
-- Prioritize features based on user role and usage patterns
-
-### 3. **Non-Intrusive Design**
-- Maintain PipeCD's clean, professional interface
-- Provide opt-out mechanisms for all guidance
-- Use subtle visual cues that enhance rather than distract
-
-### 4. **Intelligent Persistence**
-- Track which features users have discovered and used
-- Adapt guidance frequency based on user expertise
-- Sync discovery state across sessions
+### User Experience Goals
+- **For New Users**: Clear guidance on innovative features
+- **For Experienced Users**: Minimal interference with established workflows
+- **For Power Users**: Advanced tips and shortcuts
+- **For All Users**: Consistent, beautiful, and helpful interface
 
 ## System Architecture
 
-### Core Components
+### Components Hierarchy
+```
+FeatureDiscoveryProvider (Context)
+├── FeatureTooltip (Basic tooltip guidance)
+├── FeatureCallout (Prominent feature announcements)
+├── FeatureSpotlight (Overlay-based feature highlighting)
+├── FeatureTour (Multi-step guided tours)
+└── FeatureDiscoveryPanel (Help panel with contextual tips)
+```
 
-1. **FeatureDiscoveryService** - Central service managing feature hints and user progress
-2. **FeatureTooltip** - Reusable component for contextual tooltips
-3. **FeatureCallout** - Component for more prominent feature announcements
-4. **FeatureSpotlight** - Full-screen overlay for major feature introductions
-5. **FeatureDiscoveryProvider** - React context for system-wide state management
+### Data Flow
+1. **Feature Registration** - Features register themselves with metadata
+2. **User Progress Tracking** - System tracks which features users have discovered
+3. **Context Detection** - System knows current page/component context
+4. **Intelligent Display** - Shows appropriate guidance based on user state
+5. **Persistence** - Saves user preferences and progress
 
-### Data Models
+## Implementation
 
+### Core Service (`lib/featureDiscoveryService.ts`)
+- **Feature Registration**: Central registry of all discoverable features
+- **User Progress**: Tracks which features users have seen/used
+- **Context Awareness**: Knows current page context for relevant suggestions
+- **Display Logic**: Determines when and how to show guidance
+
+### React Components
+- **FeatureTooltip**: Subtle tooltip with rich content
+- **FeatureCallout**: Dismissible alert-style announcements
+- **FeatureSpotlight**: Overlay highlighting with explanation
+- **FeatureTour**: Multi-step guided tours for complex workflows
+- **FeatureDiscoveryPanel**: Contextual help sidebar
+
+### Storage Strategy
+- **LocalStorage**: User preferences and basic progress tracking
+- **Database**: Advanced analytics and cross-device sync (future)
+- **Feature Flags**: A/B testing different guidance approaches
+
+## Feature Types & Use Cases
+
+### Type 1: Innovative CRM Features
+**Examples**: Schedule Meeting from Deal, Deal-to-Lead Conversion, Calendar-Native CRM
+**Guidance**: Rich tooltips explaining the unique value proposition
+**Timing**: On hover or first encounter
+
+### Type 2: Complex Workflows  
+**Examples**: WFM Integration, Smart Stickers, AI Agent
+**Guidance**: Multi-step tours with interactive elements
+**Timing**: On first access or user request
+
+### Type 3: Hidden Power Features
+**Examples**: Keyboard shortcuts, Bulk operations, Advanced filters
+**Guidance**: Progressive disclosure in help panel
+**Timing**: After user demonstrates proficiency with basics
+
+### Type 4: Integration Features
+**Examples**: Google Workspace integration, Email-to-Task, Document management
+**Guidance**: Contextual callouts with setup instructions
+**Timing**: When integration is needed but not configured
+
+## Configuration Schema
+
+### Feature Definition
 ```typescript
-interface FeatureHint {
-  id: string;                    // Unique feature identifier
-  title: string;                 // Feature name
-  description: string;           // Brief explanation
-  detailedDescription?: string;  // Extended explanation
-  context: string[];             // Pages/components where it appears
-  priority: 'critical' | 'high' | 'medium' | 'low';
-  type: 'tooltip' | 'callout' | 'spotlight' | 'badge';
-  category: 'innovative' | 'standard' | 'advanced';
-  prerequisites?: string[];      // Other features user should know first
-  demoUrl?: string;             // Link to demo video/gif
-  docsUrl?: string;             // Link to documentation
-}
-
-interface UserDiscoveryState {
-  discoveredFeatures: Set<string>;
-  dismissedFeatures: Set<string>;
-  featureUsageCount: Map<string, number>;
-  lastSeenVersion: string;
-  discoveryPreferences: {
-    showTooltips: boolean;
-    showCallouts: boolean;
-    showSpotlights: boolean;
-    autoAdvance: boolean;
-  };
+interface FeatureDefinition {
+  id: string;                    // Unique identifier
+  title: string;                 // Display name
+  description: string;           // Detailed explanation
+  category: FeatureCategory;     // Grouping for organization
+  priority: Priority;            // Display importance
+  contexts: string[];            // Where this feature applies
+  type: GuidanceType;           // How to display guidance
+  prerequisites?: string[];      // Required features/setup
+  learnMoreUrl?: string;        // Link to documentation
+  videoUrl?: string;            // Demo video
+  estimatedTime?: number;       // Minutes to learn
 }
 ```
 
-## Feature Categories
-
-### 1. **Innovative Features** (High Priority)
-- Features that don't exist in traditional CRMs
-- Require explanation of concept and benefits
-- Examples: Calendar-native scheduling, Deal-to-Lead conversion
-
-### 2. **Advanced Features** (Medium Priority)
-- Complex workflows that power users will appreciate
-- May need guidance on optimal usage patterns
-- Examples: Smart stickers, WFM integration
-
-### 3. **Standard Features** (Low Priority)
-- Traditional CRM features with PipeCD enhancements
-- Minimal guidance needed
-- Examples: Basic CRUD operations with enhanced UX
-
-## Implementation Guide
-
-### 1. Service Layer Setup
-
-The FeatureDiscoveryService handles all discovery logic, user state management, and feature definitions.
-
-### 2. Component Integration
-
-Components use the discovery system through:
-- `useFeatureDiscovery()` hook for accessing service
-- `<FeatureTooltip>` wrapper for contextual hints
-- `<FeatureCallout>` for prominent announcements
-- `<FeatureSpotlight>` for major feature introductions
-
-### 3. User State Management
-
-- Browser localStorage for persistence
-- Supabase integration for cross-device sync (future)
-- User preferences stored in user profile
-
-## Feature Definitions
-
-### Current Innovative Features
-
-1. **Calendar-Native Meeting Scheduling**
-   - Context: Deal detail pages, contact interactions
-   - Innovation: Direct Google Calendar integration with deal context
-   - Guidance: Explain seamless calendar workflow
-
-2. **Deal-to-Lead Conversion**
-   - Context: Deal tables, deal detail pages
-   - Innovation: Reverse pipeline flow for re-qualification
-   - Guidance: Explain when and why to convert back
-
-3. **Smart Activity Management**
-   - Context: Activity panels, calendar integration
-   - Innovation: AI-powered task generation from emails
-   - Guidance: Show email-to-task workflow
-
-4. **WFM Process Integration**
-   - Context: Deal/lead workflows
-   - Innovation: Embedded project management
-   - Guidance: Explain process automation benefits
-
-### Future Feature Categories
-
-- **AI-Powered Insights**: Predictive analytics, smart recommendations
-- **Advanced Automation**: Business rules, workflow triggers
-- **Integration Features**: Third-party service connections
-- **Collaboration Tools**: Team-based workflows, shared workspaces
-
-## Usage Patterns
-
-### 1. **First-Time User Experience**
-- Progressive introduction to core innovative features
-- Guided tour of unique capabilities
-- Gentle learning curve with opt-out options
-
-### 2. **Feature Discovery Flow**
-- Subtle hints appear when users approach new features
-- Escalating guidance based on user interaction
-- Success celebration when features are successfully used
-
-### 3. **Expert User Experience**
-- Minimal guidance for experienced users
-- Quick access to advanced features
-- Optional deep-dive explanations available on demand
+### User Progress Tracking
+```typescript
+interface UserProgress {
+  userId: string;
+  discoveredFeatures: string[];     // Features user has seen
+  completedTours: string[];         // Tours user has finished
+  dismissedCallouts: string[];      // Callouts user has dismissed
+  preferredGuidanceLevel: Level;    // User's help preference
+  lastActiveDate: Date;             // For relevance scoring
+}
+```
 
 ## Best Practices
 
 ### For Developers
-
-1. **Feature Registration**: Always register new innovative features in the discovery system
-2. **Context Awareness**: Consider where and when guidance is most helpful
-3. **User Testing**: Validate guidance effectiveness with real users
-4. **Performance**: Lazy-load guidance content to maintain app performance
+1. **Register Features Early** - Add to registry when implementing new features
+2. **Use Semantic IDs** - Clear, descriptive feature identifiers
+3. **Write User-Focused Copy** - Explain benefits, not just functionality
+4. **Test Guidance Flows** - Verify the discovery experience works smoothly
+5. **Monitor Usage** - Track which guidance is actually helpful
 
 ### For Designers
-
-1. **Visual Hierarchy**: Use subtle cues that don't compete with primary UI
-2. **Consistent Language**: Maintain consistent terminology across all guidance
-3. **Accessibility**: Ensure all guidance is accessible to screen readers
-4. **Mobile Optimization**: Adapt guidance for mobile interfaces
+1. **Maintain Visual Hierarchy** - Guidance shouldn't overpower main content
+2. **Use Consistent Patterns** - Similar features should have similar guidance
+3. **Design for Dismissal** - Always provide clear way to close/skip
+4. **Consider Accessibility** - Ensure guidance works with screen readers
+5. **Test with Real Users** - Validate that guidance actually helps
 
 ### For Product Managers
+1. **Prioritize High-Impact Features** - Focus guidance on features that drive value
+2. **Monitor Discovery Metrics** - Track feature adoption and guidance effectiveness
+3. **Iterate Based on Feedback** - Continuously improve guidance based on user behavior
+4. **Balance Innovation with Usability** - Don't let guidance become overwhelming
 
-1. **Feature Prioritization**: Focus guidance on features with highest business impact
-2. **User Feedback**: Collect feedback on guidance effectiveness
-3. **Analytics**: Track feature discovery and adoption rates
-4. **Iteration**: Continuously improve guidance based on user behavior
+## Metrics & Analytics
 
-## Metrics and Analytics
+### Key Performance Indicators
+- **Feature Discovery Rate** - % of users who find innovative features
+- **Guidance Completion Rate** - % of users who complete tours/callouts
+- **Feature Adoption Rate** - % of users who actually use discovered features
+- **User Satisfaction** - Feedback on guidance helpfulness
+- **Support Ticket Reduction** - Fewer questions about feature usage
 
-### Discovery Metrics
-- Feature discovery rate (% of users who find each feature)
-- Time to feature adoption (discovery → first use)
-- Guidance interaction rates (tooltip views, callout clicks)
-- User preference patterns (what guidance types are most effective)
-
-### Success Indicators
-- Increased feature adoption rates
-- Reduced support tickets for feature usage
-- Higher user satisfaction scores
-- Improved onboarding completion rates
-
-## Technical Considerations
-
-### Performance
-- Lazy loading of guidance content
-- Minimal impact on app startup time
-- Efficient state management
-- Caching of user preferences
-
-### Accessibility
-- Screen reader compatible
-- Keyboard navigation support
-- High contrast mode compatibility
-- Respect user motion preferences
-
-### Internationalization
-- Translatable guidance content
-- Culturally appropriate examples
-- Right-to-left language support
-- Regional feature variations
+### A/B Testing Opportunities
+- **Guidance Timing** - When to show tooltips (hover vs. first visit)
+- **Content Length** - Brief vs. detailed explanations
+- **Visual Style** - Different tooltip/callout designs
+- **Placement Strategy** - Where to position guidance elements
 
 ## Future Enhancements
 
 ### Phase 1: Foundation (Current)
 - Basic tooltip and callout system
-- Local storage persistence
-- Core innovative features covered
+- LocalStorage-based progress tracking
+- Core feature registry
 
 ### Phase 2: Intelligence
-- User behavior analysis
-- Adaptive guidance timing
-- Personalized feature recommendations
-- A/B testing framework
+- Smart timing based on user behavior
+- Contextual relevance scoring
+- Cross-device progress sync
 
-### Phase 3: Advanced Features
-- Interactive tutorials
-- Video guidance integration
-- Voice-guided assistance
-- AI-powered help suggestions
+### Phase 3: Personalization
+- Adaptive guidance based on user role
+- Learning path recommendations
+- Advanced analytics dashboard
 
-### Phase 4: Enterprise Features
-- Admin-controlled guidance policies
-- Team-based discovery tracking
-- Custom guidance for organizational workflows
-- Integration with training systems
+### Phase 4: Community
+- User-generated tips and tricks
+- Peer-to-peer guidance sharing
+- Community-driven feature documentation
 
-## Conclusion
+## Integration Points
 
-The Feature Discovery System positions PipeCD as an innovative, user-friendly CRM that guides users through its unique capabilities while respecting their expertise level. By implementing this system thoughtfully, we ensure that PipeCD's revolutionary features are discoverable and usable by all users, from CRM novices to power users.
+### Current PipeCD Features Requiring Guidance
+1. **Schedule Meeting** (Deal Detail Page)
+2. **Deal-to-Lead Conversion** (Deals Table & Deal Detail)
+3. **Smart Stickers** (Deal Detail Page)
+4. **AI Agent** (Navigation & Chat Interface)
+5. **WFM Integration** (Project Management Features)
+6. **Google Workspace Integration** (Calendar, Drive, Gmail)
+7. **Email-to-Task Conversion** (Email Panel)
+8. **Calendar-Native CRM** (Overall concept)
 
-The system's modular design allows for continuous enhancement and adaptation as new features are developed, ensuring that PipeCD remains at the forefront of user experience in the CRM space. 
+### Implementation Priority
+1. **High Priority**: Schedule Meeting, Deal-to-Lead, Google Integration
+2. **Medium Priority**: Smart Stickers, AI Agent, WFM Features
+3. **Low Priority**: Advanced shortcuts, Power user features
+
+## Success Criteria
+
+### User Experience
+- Users discover innovative features within first week of usage
+- 90% of users find guidance helpful (not annoying)
+- Feature adoption increases by 40% with proper guidance
+- Support tickets about feature usage decrease by 60%
+
+### Technical Performance
+- Guidance system adds <100ms to page load time
+- No impact on core CRM functionality
+- Graceful handling of offline/error states
+- Cross-browser compatibility maintained
+
+### Business Impact
+- Increased user engagement with innovative features
+- Higher user retention due to better onboarding
+- Reduced training and support costs
+- Competitive advantage through superior UX
+
+---
+
+*This document serves as the foundation for PipeCD's approach to feature discovery and user guidance. It should be updated as the system evolves and new features are added.* 

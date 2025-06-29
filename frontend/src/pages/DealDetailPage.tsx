@@ -98,7 +98,10 @@ import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 import { DirectCalendarScheduler } from '../lib/utils/directCalendarScheduler';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 import { useQuickSchedule } from '../hooks/useQuickSchedule';
+
+// Feature Discovery components
 import { FeatureTooltip } from '../components/common/FeatureTooltip';
+import { FeatureCallout } from '../components/common/FeatureCallout';
 
 // Type imports
 
@@ -902,12 +905,8 @@ const DealDetailPage = () => {
 
                   {/* Direct Schedule Meeting Button */}
                   <Box pt={4}>
-                    <FeatureTooltip
-                      featureId="schedule-meeting-deal"
-                      context="deal-detail"
-                      placement="top"
-                      onFeatureUsed={() => quickSchedule({ deal: currentDeal })}
-                    >
+                    <FeatureCallout featureId="deal-to-lead-conversion" />
+                    <FeatureTooltip featureId="schedule-meeting-deal" placement="left">
                       <Button
                         leftIcon={<CalendarIcon />}
                         colorScheme="blue"

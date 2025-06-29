@@ -1,292 +1,132 @@
-import React, { ReactNode, useState, useEffect } from 'react';
+import React from 'react';
 import {
   Tooltip,
   HStack,
   VStack,
   Text,
-  IconButton,
-  Link,
   Badge,
-  Box,
-  Button,
-  useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalCloseButton,
+  IconButton,
+  useColorModeValue,
 } from '@chakra-ui/react';
-import { InfoIcon, ExternalLinkIcon, CloseIcon } from '@chakra-ui/icons';
-import { useFeatureDiscovery } from '../../hooks/useFeatureDiscovery';
-import { FeatureHint } from '../../../../lib/services/featureDiscoveryService';
+import { InfoIcon, CloseIcon } from '@chakra-ui/icons';
+import { featureDiscoveryService } from '../../../../lib/featureDiscoveryService';
+import { useAppStore } from '../../stores/useAppStore';
 
 interface FeatureTooltipProps {
   featureId: string;
-  children: ReactNode;
-  context?: string;
-  showBadge?: boolean;
-  triggerOn?: 'hover' | 'click';
+  children: React.ReactNode;
   placement?: 'top' | 'bottom' | 'left' | 'right';
-  onFeatureUsed?: () => void;
+  showIcon?: boolean;
+  size?: 'sm' | 'md' | 'lg';
 }
 
 export const FeatureTooltip: React.FC<FeatureTooltipProps> = ({
   featureId,
   children,
-  context,
-  showBadge = true,
-  triggerOn = 'hover',
   placement = 'top',
-  onFeatureUsed
+  showIcon = true,
+  size = 'md'
 }) => {
-  const {
-    getFeature,
-    shouldShowGuidance,
-    markFeatureDiscovered,
-    markFeatureUsed,
-    dismissFeature,
-    isFeatureDiscovered,
-    isFeatureDismissed,
-    getFeatureUsageCount
-  } = useFeatureDiscovery();
+  const { user } = useAppStore();
+  const userId = user?.id;
 
-  const { isOpen: isModalOpen, onOpen: onModalOpen, onClose: onModalClose } = useDisclosure();
-  const [isTooltipOpen, setIsTooltipOpen] = useState(false);
+  const iconColor = useColorModeValue('blue.500', 'blue.300');
+  const badgeColorScheme = useColorModeValue('blue', 'blue');
 
-  const feature = getFeature(featureId);
-  const shouldShow = feature && shouldShowGuidance(featureId, 'tooltip');
-  const usageCount = getFeatureUsageCount(featureId);
-  const discovered = isFeatureDiscovered(featureId);
-  const dismissed = isFeatureDismissed(featureId);
-
-  // Auto-mark as discovered when tooltip is shown
-  useEffect(() => {
-    if (isTooltipOpen && feature && !discovered) {
-      markFeatureDiscovered(featureId, context);
-    }
-  }, [isTooltipOpen, feature, discovered, featureId, context, markFeatureDiscovered]);
-
-  // Handle feature usage
-  const handleFeatureUsed = () => {
-    if (feature) {
-      markFeatureUsed(featureId, context);
-      onFeatureUsed?.();
-    }
-  };
-
-  // Handle dismiss
-  const handleDismiss = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    dismissFeature(featureId, context);
-    setIsTooltipOpen(false);
-  };
-
-  // Handle learn more
-  const handleLearnMore = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsTooltipOpen(false);
-    onModalOpen();
-  };
-
-  if (!feature || !shouldShow) {
-    // Still wrap children but without tooltip
-    return (
-      <Box onClick={handleFeatureUsed}>
-        {children}
-      </Box>
-    );
+  // Don't render if no user
+  if (!userId) {
+    return <>{children}</>;
   }
 
+  // Check if we should show guidance for this feature
+  const shouldShow = featureDiscoveryService.shouldShowGuidance(userId, featureId);
+  const feature = featureDiscoveryService.getFeature(featureId);
+
+  if (!shouldShow || !feature) {
+    return <>{children}</>;
+  }
+
+  const handleTooltipOpen = () => {
+    featureDiscoveryService.markFeatureDiscovered(userId, featureId);
+  };
+
+  const handleDismiss = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    featureDiscoveryService.markCalloutDismissed(userId, featureId);
+  };
+
   const tooltipContent = (
-    <VStack 
-      align="start" 
-      spacing={3} 
-      maxW="320px" 
-      p={2}
-      onMouseEnter={() => setIsTooltipOpen(true)}
-      onMouseLeave={() => setTimeout(() => setIsTooltipOpen(false), 200)}
-    >
+    <VStack align="start" spacing={2} maxW="300px">
       <HStack justify="space-between" w="full">
-        <Text fontWeight="bold" fontSize="sm">
-          {feature.title}
-        </Text>
+        <HStack spacing={2}>
+          <Text fontWeight="bold" fontSize="sm">
+            {feature.title}
+          </Text>
+          {feature.isNew && (
+            <Badge colorScheme={badgeColorScheme} size="sm">
+              NEW
+            </Badge>
+          )}
+        </HStack>
         <IconButton
-          aria-label="Dismiss hint"
           icon={<CloseIcon />}
           size="xs"
           variant="ghost"
           onClick={handleDismiss}
+          aria-label="Dismiss tooltip"
         />
       </HStack>
       
-      <Text fontSize="sm" color="gray.600">
+      <Text fontSize="xs" color="gray.600">
         {feature.description}
       </Text>
-
-      {(feature.detailedDescription || feature.demoUrl || feature.docsUrl) && (
-        <VStack spacing={2} w="full" align="start">
-          <Button
-            size="sm"
-            colorScheme="blue"
-            variant="solid"
-            onClick={handleLearnMore}
-            w="full"
-            onMouseDown={(e) => e.preventDefault()}
-          >
-            Learn More
-          </Button>
-          {feature.demoUrl && (
-            <Link href={feature.demoUrl} isExternal w="full">
-              <Button
-                size="sm"
-                variant="outline"
-                rightIcon={<ExternalLinkIcon />}
-                w="full"
-                onMouseDown={(e) => e.preventDefault()}
-              >
-                View Demo
-              </Button>
-            </Link>
-          )}
-        </VStack>
-      )}
-
-      {usageCount > 0 && (
+      
+      {feature.estimatedTime && (
         <Text fontSize="xs" color="gray.500">
-          Used {usageCount} time{usageCount !== 1 ? 's' : ''}
+          ⏱️ {feature.estimatedTime} min to learn
+        </Text>
+      )}
+      
+      {feature.learnMoreUrl && (
+        <Text 
+          fontSize="xs" 
+          color="blue.500" 
+          cursor="pointer"
+          textDecoration="underline"
+          onClick={() => window.open(feature.learnMoreUrl, '_blank')}
+        >
+          Learn more →
         </Text>
       )}
     </VStack>
   );
 
   return (
-    <>
-      <Box position="relative" display="inline-flex">
+    <HStack spacing={2}>
+      {children}
+      {showIcon && (
         <Tooltip
           label={tooltipContent}
           placement={placement}
           hasArrow
-          isOpen={isTooltipOpen}
-          closeDelay={0}
-          openDelay={triggerOn === 'hover' ? 300 : 0}
-          gutter={12}
+          bg="white"
+          color="black"
+          borderColor="gray.200"
+          borderWidth="1px"
+          borderRadius="md"
+          p={3}
+          shadow="lg"
+          onOpen={handleTooltipOpen}
         >
-          <Box 
-            onClick={handleFeatureUsed} 
-            onMouseEnter={() => triggerOn === 'hover' && setIsTooltipOpen(true)}
-            onMouseLeave={() => {
-              if (triggerOn === 'hover') {
-                setTimeout(() => setIsTooltipOpen(false), 300);
-              }
-            }}
-          >
-            {children}
-          </Box>
+          <InfoIcon
+            color={iconColor}
+            cursor="pointer"
+            boxSize={size === 'sm' ? 3 : size === 'md' ? 4 : 5}
+            _hover={{ color: 'blue.600' }}
+            transition="color 0.2s"
+          />
         </Tooltip>
-      </Box>
-      
-      {/* Badge positioned outside the tooltip container to avoid affecting button width */}
-      {showBadge && !discovered && !dismissed && (
-        <Badge
-          position="absolute"
-          top="-8px"
-          right="-12px"
-          colorScheme={feature.category === 'innovative' ? 'purple' : feature.category === 'advanced' ? 'blue' : 'gray'}
-          variant="solid"
-          fontSize="xs"
-          borderRadius="full"
-          px={2}
-          py={1}
-          cursor="pointer"
-          onClick={() => setIsTooltipOpen(!isTooltipOpen)}
-          zIndex={10}
-          minW="auto"
-          h="auto"
-          pointerEvents="auto"
-        >
-          {feature.category === 'innovative' ? 'NEW' : '?'}
-        </Badge>
       )}
-
-      {/* Detailed Modal */}
-      <Modal isOpen={isModalOpen} onClose={onModalClose} size="lg">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            <HStack>
-              <Text>{feature.title}</Text>
-              <Badge
-                colorScheme={feature.category === 'innovative' ? 'purple' : feature.category === 'advanced' ? 'blue' : 'gray'}
-                variant="subtle"
-              >
-                {feature.category}
-              </Badge>
-            </HStack>
-          </ModalHeader>
-          <ModalCloseButton />
-          
-          <ModalBody>
-            <VStack align="start" spacing={4}>
-              <Text color="gray.600">
-                {feature.description}
-              </Text>
-              
-              {feature.detailedDescription && (
-                <Box>
-                  <Text fontWeight="semibold" mb={2}>How it works:</Text>
-                  <Text>{feature.detailedDescription}</Text>
-                </Box>
-              )}
-
-              {feature.prerequisites && feature.prerequisites.length > 0 && (
-                <Box>
-                  <Text fontWeight="semibold" mb={2}>Prerequisites:</Text>
-                  <VStack align="start" spacing={1}>
-                    {feature.prerequisites.map(prereqId => {
-                      const prereq = getFeature(prereqId);
-                      return prereq ? (
-                        <HStack key={prereqId} spacing={2}>
-                          <Badge
-                            colorScheme={isFeatureDiscovered(prereqId) ? 'green' : 'red'}
-                            variant="subtle"
-                          >
-                            {isFeatureDiscovered(prereqId) ? '✓' : '✗'}
-                          </Badge>
-                          <Text fontSize="sm">{prereq.title}</Text>
-                        </HStack>
-                      ) : null;
-                    })}
-                  </VStack>
-                </Box>
-              )}
-            </VStack>
-          </ModalBody>
-          
-          <ModalFooter>
-            <HStack spacing={3}>
-              {feature.docsUrl && (
-                <Link href={feature.docsUrl} isExternal>
-                  <Button variant="ghost" rightIcon={<ExternalLinkIcon />}>
-                    Documentation
-                  </Button>
-                </Link>
-              )}
-              {feature.demoUrl && (
-                <Link href={feature.demoUrl} isExternal>
-                  <Button colorScheme="blue" variant="outline" rightIcon={<ExternalLinkIcon />}>
-                    View Demo
-                  </Button>
-                </Link>
-              )}
-              <Button colorScheme="blue" onClick={onModalClose}>
-                Got it!
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+    </HStack>
   );
 }; 
