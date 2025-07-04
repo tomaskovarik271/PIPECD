@@ -31,6 +31,7 @@ import { GET_ORGANIZATION_PEOPLE_WITH_ROLES } from '../../lib/graphql/personOrga
 import type { Person, PersonOrganizationRole } from '../../generated/graphql/graphql';
 import AddOrganizationRoleModal from '../people/AddOrganizationRoleModal';
 import AddPersonToOrganizationModal from '../organizations/AddPersonToOrganizationModal';
+import { SmartEmailButton } from '../common/SmartEmailComposer';
 
 interface ContactRole extends Omit<PersonOrganizationRole, 'person'> {
   person: {
@@ -48,11 +49,15 @@ interface DealOrganizationContactsPanelProps {
     name: string;
   } | null;
   onContactCountChange?: (count: number) => void;
+  dealId?: string;
+  dealName?: string;
 }
 
 export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPanelProps> = ({
   organization,
   onContactCountChange,
+  dealId,
+  dealName,
 }) => {
   const colors = useThemeColors();
   const currentThemeName = useThemeStore((state) => state.currentTheme);
@@ -338,15 +343,21 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
                     </Button>
                   </Tooltip>
                   {role.person.email && (
-                    <Tooltip label="Send email">
-                      <IconButton
-                        icon={<EmailIcon />}
-                        aria-label="Send email"
-                        size="xs"
-                        variant="ghost"
-                        onClick={() => window.open(`mailto:${role.person.email}`)}
-                      />
-                    </Tooltip>
+                    <SmartEmailButton
+                      to={role.person.email}
+                      size="xs"
+                      variant="ghost"
+                      isIconButton={true}
+                      tooltip="Send email"
+                      context={{
+                        dealId,
+                        dealName,
+                        personId: role.person.id,
+                        personName: `${role.person.first_name || ''} ${role.person.last_name || ''}`.trim(),
+                        organizationId: organization?.id,
+                        organizationName: organization?.name,
+                      }}
+                    />
                   )}
                   {role.person.phone && (
                     <Tooltip label="Call">

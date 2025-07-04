@@ -98,6 +98,7 @@ import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
 import { DirectCalendarScheduler } from '../lib/utils/directCalendarScheduler';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 import { useQuickSchedule } from '../hooks/useQuickSchedule';
+import { SmartEmailButton } from '../components/common/SmartEmailComposer';
 
 // Type imports
 
@@ -610,6 +611,8 @@ const DealDetailPage = () => {
                             name: currentDeal.organization.name
                           } : null} 
                           onContactCountChange={handleContactsCountChange}
+                          dealId={currentDeal.id}
+                          dealName={currentDeal.name}
                         />
                       </Box>
                     </TabPanel>
@@ -1001,16 +1004,24 @@ const DealDetailPage = () => {
                     </VStack>
                   </HStack>
                   {currentDeal.person?.email && (
-                    <Button 
-                      size="xs" 
-                      variant="outline" 
-                      leftIcon={<EmailIcon />}
-                      onClick={() => window.open(`mailto:${currentDeal.person?.email}`)}
-                      width="full"
-                      mt={3}
-                    >
-                      Email
-                    </Button>
+                    <Box mt={3}>
+                      <SmartEmailButton
+                        to={currentDeal.person.email}
+                        size="xs"
+                        variant="outline"
+                        width="full"
+                        context={{
+                          dealId: currentDeal.id,
+                          dealName: currentDeal.name,
+                          personId: currentDeal.person.id,
+                          personName: `${currentDeal.person.first_name || ''} ${currentDeal.person.last_name || ''}`.trim(),
+                          organizationId: currentDeal.organization?.id,
+                          organizationName: currentDeal.organization?.name,
+                        }}
+                      >
+                        Email
+                      </SmartEmailButton>
+                    </Box>
                   )}
                 </Box>
               )}

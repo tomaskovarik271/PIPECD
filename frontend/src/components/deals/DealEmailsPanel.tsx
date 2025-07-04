@@ -72,6 +72,7 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { useThemeStore } from '../../stores/useThemeStore';
 import EmailContactFilter from './EmailContactFilter';
 import CreateContactFromEmailModal from './CreateContactFromEmailModal';
+import { SmartEmailButton } from '../common/SmartEmailComposer';
 // Task creation modal removed with activities system
 
 // GraphQL Queries and Mutations
@@ -481,7 +482,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
     includeAllParticipants: false,
     showPinnedOnly: false,
   });
-  const [isComposeModalOpen, setIsComposeModalOpen] = useState(false);
+  // Compose modal state removed - now using unified SmartEmailComposer
   // Task modal state removed with activities system
   // const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   // const [selectedEmailForTask, setSelectedEmailForTask] = useState<string | null>(null);
@@ -569,7 +570,6 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
         status: 'success',
         duration: 3000,
       });
-      setIsComposeModalOpen(false);
       refetchThreads();
     },
     onError: (error) => {
@@ -852,14 +852,21 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                     bg={showAdvancedFilters ? colors.interactive.active : 'transparent'}
                     color={showAdvancedFilters ? colors.text.onAccent : colors.text.secondary}
                   />
-                  <Button
+                  <SmartEmailButton
+                    to={primaryContactEmail || ''}
                     size="sm"
-                    leftIcon={<FiPlus />}
-                    colorScheme="blue"
-                    onClick={() => setIsComposeModalOpen(true)}
+                    variant="solid"
+                    context={{
+                      dealId,
+                      dealName,
+                      personId: undefined, // Will be auto-filled from primaryContactEmail
+                      personName: undefined,
+                      organizationId: undefined,
+                      organizationName: undefined,
+                    }}
                   >
                     Compose
-                  </Button>
+                  </SmartEmailButton>
                 </HStack>
               </HStack>
 
@@ -1191,16 +1198,19 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                         {threadData.getEmailThread.subject}
                       </Text>
                       <HStack spacing={2} flexShrink={0}>
-                        <Tooltip label="Reply to email">
-                          <IconButton
-                            aria-label="Reply"
-                            icon={<FiEdit />}
-                            size="sm"
-                            variant="ghost"
-                            colorScheme="blue"
-                            onClick={() => setIsComposeModalOpen(true)}
-                          />
-                        </Tooltip>
+                        <SmartEmailButton
+                          to={threadData.getEmailThread.latestMessage?.from || ''}
+                          size="sm"
+                          variant="ghost"
+                          isIconButton={true}
+                          icon="edit"
+                          tooltip="Reply to email"
+                          context={{
+                            dealId,
+                            dealName,
+                            threadId: selectedThreadId || undefined,
+                          }}
+                        />
                         <Tooltip label="Forward email">
                           <IconButton
                             aria-label="Forward"
@@ -1379,14 +1389,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
         </GridItem>
       </Grid>
 
-      {/* Compose Email Modal */}
-      <ComposeEmailModal
-        isOpen={isComposeModalOpen}
-        onClose={() => setIsComposeModalOpen(false)}
-        onSend={handleComposeEmail}
-        defaultTo={primaryContactEmail}
-        defaultSubject={`Re: ${dealName}`}
-      />
+      {/* Old Compose Email Modal removed - now using unified SmartEmailComposer */}
 
       {/* Create Task Modal - Removed with activities system */}
       {/* Task creation functionality replaced with Google Calendar integration */}
