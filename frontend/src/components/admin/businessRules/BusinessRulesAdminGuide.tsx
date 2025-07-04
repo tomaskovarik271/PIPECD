@@ -84,6 +84,7 @@ const BusinessRulesAdminGuide: React.FC<BusinessRulesAdminGuideProps> = ({
   const successColor = useColorModeValue('green.500', 'green.300');
   const warningColor = useColorModeValue('orange.500', 'orange.300');
   const cardBg = useColorModeValue('gray.50', 'gray.700');
+  const primaryTextColor = useColorModeValue('gray.800', 'gray.200');
   
   const QuickStartSection = () => (
     <VStack spacing={6} align="stretch">
@@ -276,7 +277,7 @@ const BusinessRulesAdminGuide: React.FC<BusinessRulesAdminGuideProps> = ({
                     <Badge colorScheme="green">NOTIFY_OWNER</Badge>
                     <Text>Send notification to entity owner</Text>
                   </HStack>
-                  <Code mt={2} display="block" p={3} bg="white" fontSize="sm">
+                  <Code mt={2} display="block" p={3} bg="white" color="black" fontSize="sm">
                     {`{
   "type": "NOTIFY_OWNER",
   "template": "Deal Alert",
@@ -293,7 +294,7 @@ const BusinessRulesAdminGuide: React.FC<BusinessRulesAdminGuideProps> = ({
                     <Badge colorScheme="green">NOTIFY_USER</Badge>
                     <Text>Send notification to specific user</Text>
                   </HStack>
-                  <Code mt={2} display="block" p={3} bg="white" fontSize="sm">
+                  <Code mt={2} display="block" p={3} bg="white" color="black" fontSize="sm">
                     {`{
   "type": "NOTIFY_USER",
   "target": "user-uuid",
@@ -462,22 +463,22 @@ const BusinessRulesAdminGuide: React.FC<BusinessRulesAdminGuideProps> = ({
         <CardBody>
           <VStack spacing={4} align="stretch">
             <Box>
-              <Text fontWeight="semibold" mb={2}>Professional Notifications:</Text>
-              <Code display="block" p={3} bg="white" fontSize="sm">
+              <Text fontWeight="semibold" mb={2} color={accentColor}>Professional Notifications:</Text>
+              <Code display="block" p={3} bg={cardBg} color={primaryTextColor} fontSize="sm">
                 "High value opportunity: {`{{deal_name}}`} worth {`{{deal_amount}}`} requires immediate attention."
               </Code>
             </Box>
             
             <Box>
-              <Text fontWeight="semibold" mb={2}>Rich Context Messages:</Text>
-              <Code display="block" p={3} bg="white" fontSize="sm">
+              <Text fontWeight="semibold" mb={2} color={accentColor}>Rich Context Messages:</Text>
+              <Code display="block" p={3} bg={cardBg} color={primaryTextColor} fontSize="sm">
                 "🚨 URGENT: Deal {`{{deal_name}}`} value dropped by 25% to {`{{deal_amount}}`}. Immediate review required."
               </Code>
             </Box>
             
             <Box>
-              <Text fontWeight="semibold" mb={2}>Assignment Updates:</Text>
-              <Code display="block" p={3} bg="white" fontSize="sm">
+              <Text fontWeight="semibold" mb={2} color={accentColor}>Assignment Updates:</Text>
+              <Code display="block" p={3} bg={cardBg} color={primaryTextColor} fontSize="sm">
                 "✅ SUCCESS: You are now responsible for {`{{deal_name}}`} ({`{{deal_amount}}`}) closing on {`{{deal_close_date}}`}."
               </Code>
             </Box>
@@ -506,14 +507,23 @@ const BusinessRulesAdminGuide: React.FC<BusinessRulesAdminGuideProps> = ({
             <AccordionIcon />
           </AccordionButton>
           <AccordionPanel pb={4}>
-            <Code display="block" p={4} bg="white" fontSize="sm" whiteSpace="pre-wrap">
-{`Entity: DEAL
-Trigger: EVENT_BASED (DEAL_CREATED)
-Conditions:
-  - amount GREATER_THAN 50000
-Actions:
-  - NOTIFY_OWNER: "High value deal detected: {{deal_name}} - Amount: {{deal_amount}}"`}
-            </Code>
+            <Box>
+              <Text mb={3} color={primaryTextColor}>
+                Trigger: DEAL_CREATED
+                <br />
+                Condition: amount &gt; 50000
+                <br />
+                Action:
+              </Text>
+              <Code display="block" p={3} bg={cardBg} color={primaryTextColor} fontSize="sm">
+                {`{
+  "type": "NOTIFY_OWNER",
+  "template": "High Value Deal Detected",
+  "message": "🎯 HIGH VALUE DEAL DETECTED: {{deal_name}} - Amount: {{deal_amount}} | Priority: Review within 24h",
+  "priority": 3
+}`}
+              </Code>
+            </Box>
           </AccordionPanel>
         </AccordionItem>
 
@@ -528,14 +538,23 @@ Actions:
             <AccordionIcon />
           </AccordionButton>
           <AccordionPanel pb={4}>
-            <Code display="block" p={4} bg="white" fontSize="sm" whiteSpace="pre-wrap">
-{`Entity: DEAL
-Trigger: FIELD_CHANGE (assigned_to_user_id)
-Conditions:
-  - assigned_to_user_id IS_NOT_NULL
-Actions:
-  - NOTIFY_OWNER: "You have been assigned to deal: {{deal_name}} with amount {{deal_amount}}"`}
-            </Code>
+            <Box>
+              <Text mb={3} color={primaryTextColor}>
+                Trigger: FIELD_CHANGE (assigned_to)
+                <br />
+                Condition: assigned_to IS_NOT_NULL
+                <br />
+                Action:
+              </Text>
+              <Code display="block" p={3} bg={cardBg} color={primaryTextColor} fontSize="sm">
+                {`{
+  "type": "NOTIFY_OWNER",
+  "template": "Deal Assignment",
+  "message": "✅ You have been assigned to {{deal_name}} ({{deal_amount}}) - Due: {{deal_close_date}}",
+  "priority": 2
+}`}
+              </Code>
+            </Box>
           </AccordionPanel>
         </AccordionItem>
 
@@ -550,15 +569,23 @@ Actions:
             <AccordionIcon />
           </AccordionButton>
           <AccordionPanel pb={4}>
-            <Code display="block" p={4} bg="white" fontSize="sm" whiteSpace="pre-wrap">
-{`Entity: DEAL
-Trigger: FIELD_CHANGE (amount)
-Conditions:
-  - amount DECREASED_BY_PERCENT 25
-Actions:
-  - NOTIFY_OWNER: "Deal value decreased: {{deal_name}} is now {{deal_amount}}"
-  - Priority: 3 (HIGH)`}
-            </Code>
+            <Box>
+              <Text mb={3} color={primaryTextColor}>
+                Trigger: FIELD_CHANGE (amount)
+                <br />
+                Condition: amount DECREASED_BY_PERCENT 25
+                <br />
+                Action:
+              </Text>
+              <Code display="block" p={3} bg={cardBg} color={primaryTextColor} fontSize="sm">
+                {`{
+  "type": "NOTIFY_OWNER",
+  "template": "Deal Value Alert",
+  "message": "⚠️ VALUE ALERT: {{deal_name}} decreased to {{deal_amount}} (-25%) - Immediate review required",
+  "priority": 3
+}`}
+              </Code>
+            </Box>
           </AccordionPanel>
         </AccordionItem>
 
@@ -573,15 +600,24 @@ Actions:
             <AccordionIcon />
           </AccordionButton>
           <AccordionPanel pb={4}>
-            <Code display="block" p={4} bg="white" fontSize="sm" whiteSpace="pre-wrap">
-{`Entity: DEAL
-Trigger: EVENT_BASED (DEAL_CREATED)
-Conditions:
-  - amount GREATER_THAN 100000 AND
-  - organization_name CONTAINS "Corporation"
-Actions:
-  - NOTIFY_USER (manager): "Enterprise deal created: {{deal_name}} for {{organization_name}} worth {{deal_amount}}"`}
-            </Code>
+            <Box>
+              <Text mb={3} color={primaryTextColor}>
+                Trigger: DEAL_CREATED
+                <br />
+                Conditions: amount &gt; 100000 AND organization_name CONTAINS "Corporation"
+                <br />
+                Action:
+              </Text>
+              <Code display="block" p={3} bg={cardBg} color={primaryTextColor} fontSize="sm">
+                {`{
+  "type": "NOTIFY_USER",
+  "target": "manager-uuid",
+  "template": "Enterprise Deal Alert",
+  "message": "🏢 ENTERPRISE DEAL: {{deal_name}} for {{organization_name}} worth {{deal_amount}} - Executive review required",
+  "priority": 3
+}`}
+              </Code>
+            </Box>
           </AccordionPanel>
         </AccordionItem>
 
@@ -596,16 +632,30 @@ Actions:
             <AccordionIcon />
           </AccordionButton>
           <AccordionPanel pb={4}>
-            <Code display="block" p={4} bg="white" fontSize="sm" whiteSpace="pre-wrap">
-{`Entity: DEAL
-Trigger: FIELD_CHANGE (status)
-Conditions:
-  - status EQUALS "LOST" AND
-  - amount GREATER_THAN 25000
-Actions:
-  - CREATE_TASK: "Analyze lost deal: {{deal_name}} - conduct post-mortem"
-  - NOTIFY_OWNER: "High-value deal lost: {{deal_name}} ({{deal_amount}}) - review required"`}
-            </Code>
+            <Box>
+              <Text mb={3} color={primaryTextColor}>
+                Trigger: FIELD_CHANGE (status)
+                <br />
+                Conditions: status EQUALS "LOST" AND amount &gt; 25000
+                <br />
+                Actions:
+              </Text>
+              <Code display="block" p={3} bg={cardBg} color={primaryTextColor} fontSize="sm">
+                {`{
+  "type": "CREATE_TASK",
+  "template": "Lost Deal Analysis",
+  "message": "Analyze lost deal: {{deal_name}} - conduct post-mortem",
+  "priority": 2
+}
+
+{
+  "type": "NOTIFY_OWNER",
+  "template": "Lost Deal Alert",
+  "message": "💔 HIGH-VALUE DEAL LOST: {{deal_name}} ({{deal_amount}}) - Post-mortem analysis required",
+  "priority": 3
+}`}
+              </Code>
+            </Box>
           </AccordionPanel>
         </AccordionItem>
       </Accordion>

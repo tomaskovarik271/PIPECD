@@ -40,6 +40,8 @@ import {
 import { format, parseISO } from 'date-fns';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { StickerBoard } from '../components/common/StickerBoard';
+import PersonOrganizationRoles from '../components/people/PersonOrganizationRoles';
+import { GET_PERSON_ORGANIZATION_ROLES } from '../lib/graphql/personOrganizationRoleOperations';
 
 // Helper to format dates
 const formatDate = (dateString: string | Date | undefined) => {
@@ -256,6 +258,14 @@ const PersonDetailPage = () => {
                 >
                   <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                     Contact Information
+                  </Tab>
+                  <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <HStack spacing={2}>
+                      <Text>Organizations</Text>
+                      <Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
+                        {currentPerson.organizationRoles?.length || (currentPerson.organization ? 1 : 0)}
+                      </Badge>
+                    </HStack>
                   </Tab>
                   <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
                     <HStack spacing={2}>
@@ -562,6 +572,18 @@ const PersonDetailPage = () => {
                         </HStack>
                       </VStack>
                     </VStack>
+                  </TabPanel>
+
+                  {/* Organizations Tab */}
+                  <TabPanel p={6}>
+                    <PersonOrganizationRoles 
+                      organizationRoles={currentPerson.organizationRoles || []}
+                      primaryOrganization={currentPerson.primaryOrganization}
+                      legacyOrganization={currentPerson.organization}
+                      personId={currentPerson.id}
+                      personName={`${currentPerson.first_name || ''} ${currentPerson.last_name || ''}`.trim()}
+                      onRefresh={() => fetchPersonById(personId!)}
+                    />
                   </TabPanel>
 
                   {/* Notes/Stickers Tab */}

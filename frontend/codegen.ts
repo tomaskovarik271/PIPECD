@@ -16,6 +16,7 @@ const config: CodegenConfig = {
         useTypeImports: true, // Uses `import type` for generated types
         scalars: { // Add this section to map custom scalars
           DateTime: 'string', // Map the GraphQL DateTime scalar to TypeScript string
+          Date: 'string', // Map the GraphQL Date scalar to TypeScript string
           JSON: 'Record<string, any>' // Map the GraphQL JSON scalar to TypeScript object
         }
       },

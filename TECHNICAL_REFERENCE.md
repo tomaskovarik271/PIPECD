@@ -1,6 +1,6 @@
 # PipeCD Technical Reference
 
-**Version**: 3.0 | **Last Updated**: January 25, 2025
+**Version**: 3.1 | **Last Updated**: January 25, 2025
 
 ## 1. Database Schema Reference
 
@@ -19,6 +19,8 @@
 - **AI System**: agent_conversations, agent_thoughts, agent_v2_conversations
 - **Smart Stickers**: stickers, sticker_categories
 - **Document Management**: documents, note_document_attachments, deal_participants
+- **Business Rules**: business_rules, business_rule_notifications, rule_executions
+- **Task Management**: tasks, task_dependencies, task_automation_rules, task_history
 
 ### 1.3 Removed Systems (Prepared for Google Calendar)
 - ~~**Activities**: Removed in favor of Google Calendar integration~~
@@ -34,7 +36,7 @@
 - `personService.ts`: Contact management
 
 ### 2.2 Advanced Services
-- `aiAgentV2/`: AI with Claude Sonnet 4 and revolutionary cognitive tools
+- `aiAgentV2/`: AI with Claude Sonnet 4 and workflow tools
 - `conversionService/`: Bi-directional lead-deal conversion
 - `services/currencyService.ts`: Multi-currency with ECB integration
 - `smartStickersService.ts`: Visual collaboration system
@@ -51,11 +53,12 @@
 
 ## 3. GraphQL API Structure
 
-### 3.1 Schema Files (23 total - 3 removed)
+### 3.1 Schema Files (25 total - 3 removed)
 - Core entities: deal.graphql, lead.graphql, organization.graphql, person.graphql
 - Systems: conversion.graphql, currency.graphql, agentV2.graphql, smartStickers.graphql
 - Integrations: googleDrive.graphql, emails.graphql, googleIntegration.graphql
 - WFM: wfmWorkflow.graphql, wfmStatus.graphql, wfmProjectType.graphql
+- Business Automation: businessRules.graphql, task.graphql
 
 ### 3.2 Removed Schema Files (Google Calendar Ready)
 - ~~activity.graphql: Removed for Google Calendar API~~
@@ -92,19 +95,19 @@
 
 ## 5. AI System Implementation
 
-### 5.1 AI Agent V2 Tools (Revolutionary Cognitive System)
+### 5.1 AI Agent V2 Tools
 - **Entity Creation**: CreateDealTool, CreateOrganizationTool, CreatePersonTool
 - **Entity Updates**: UpdateDealTool, UpdateOrganizationTool, UpdatePersonTool  
-- **Search & Discovery**: SearchDealsTool with cognitive clustering
-- **Cognitive Tools**: ThinkTool with structured reasoning
-- **Data Intelligence**: GetDropdownDataTool with semantic processing
+- **Search & Discovery**: SearchDealsTool with clustering
+- **Analysis Tools**: ThinkTool with structured reasoning
+- **Data Tools**: GetDropdownDataTool with semantic processing
 
-### 5.2 Cognitive Innovations
-- **World's First AI-Optimized Dropdown System**: 90% cognitive load reduction
-- **Semantic Clustering**: AIs think in patterns, not lists
-- **Contextual Reasoning**: Claude Sonnet 4 with business intelligence
-- **Transparent Workflows**: Complete audit trails for all operations
-- **Sub-second Performance**: 96ms total execution for complex workflows
+### 5.2 AI Features
+- **Optimized Dropdown System**: Improved user experience
+- **Semantic Clustering**: Pattern-based data organization
+- **Contextual Processing**: Claude Sonnet 4 with business logic
+- **Transparent Workflows**: Audit trails for all operations
+- **Performance**: 96ms total execution for complex workflows
 
 ### 5.3 Tool Development Pattern
 ```typescript
@@ -116,7 +119,7 @@ export class ExampleTool implements ToolExecutor {
   };
   
   async execute(params: any, context?: ToolExecutionContext): Promise<any> {
-    // Revolutionary cognitive implementation
+    // Tool implementation
   }
 }
 ```
@@ -130,9 +133,9 @@ export class ExampleTool implements ToolExecutor {
 - **Clean RBAC System**: 57 permissions across 11 resources (activity permissions removed)
 
 ### 6.2 Permission Distribution
-- **Admin Role**: 56 permissions (was 63 - 7 activity permissions removed)
-- **Member Role**: 23 permissions (was 27 - 4 activity permissions removed) 
-- **Read-Only Role**: 6 permissions (was 7 - 1 activity permission removed)
+- **Admin Role**: 77 permissions (includes business rules and task management)
+- **Member Role**: 42 permissions (includes task assignment and basic automation)
+- **Read-Only Role**: 7 permissions (view-only access)
 
 ### 6.3 Data Protection
 - Encryption at rest and in transit
@@ -160,44 +163,114 @@ export class ExampleTool implements ToolExecutor {
 - Parallel data fetching with Promise.all
 - Memory leak prevention
 
-## 8. Google Calendar Integration Preparation
+## 8. Business Rules Engine (Production Ready)
 
-### 8.1 Architecture Foundation
-- **Calendar-Native CRM**: Google Calendar as PRIMARY system with business overlay
-- **Revolutionary Approach**: Enhance rather than replace calendar tools
-- **Zero Learning Curve**: Native Google Calendar experience maintained
-- **Future-Proof**: Automatic Google updates inherited
+### 8.1 Core Implementation
+- **Database Schema**: business_rules, business_rule_notifications, rule_executions
+- **Template Engine**: substitute_template_variables() with rich formatting
+- **Admin Interface**: BusinessRulesPage.tsx with search, filtering, CRUD operations
+- **GraphQL API**: Complete businessRules.graphql schema with full operations
+- **Service Integration**: Active in dealService/dealCrud.ts with automatic triggering
 
-### 8.2 Clean System State
+### 8.2 Template Variables
+```typescript
+// Deal Variables (with formatting)
+{{deal_name}} → "ACME Corporation Deal"
+{{deal_amount}} → "EUR 75,000.00" (formatted with currency)
+{{deal_currency}} → "EUR"
+{{deal_stage}} → "Negotiation"
+{{deal_owner}} → "John Smith"
+
+// Lead Variables
+{{lead_name}} → "Jane Doe"
+{{lead_email}} → "jane@company.com"
+{{lead_value}} → "USD 25,000.00" (formatted)
+
+// Universal Variables
+{{entity_id}} → Entity UUID
+{{current_date}} → "2025-01-25"
+{{current_time}} → "2025-01-25 14:30:00"
+```
+
+### 8.3 Production Status
+- ✅ Rules automatically trigger on deal creation/updates
+- ✅ Template substitution working with currency formatting
+- ✅ Admin UI with rule management and execution tracking
+- ✅ Complete audit trails in rule_executions table
+- ✅ Production testing validated with real scenarios
+
+## 9. Task Management System (Production Ready)
+
+### 9.1 Core Implementation
+- **Database Schema**: tasks, task_dependencies, task_automation_rules, task_history
+- **GraphQL API**: Complete task.graphql with 25+ operations
+- **CRM Integration**: Tasks always linked to deals, leads, people, or organizations
+- **Business Logic**: Stage progression blocking, lead scoring effects
+
+### 9.2 Task Types (15 Business-Focused)
+```typescript
+// Deal Progression
+DISCOVERY, DEMO_PREPARATION, PROPOSAL_CREATION, 
+NEGOTIATION_PREP, CONTRACT_REVIEW, DEAL_CLOSURE
+
+// Lead Management
+LEAD_QUALIFICATION, LEAD_NURTURING, FOLLOW_UP, LEAD_SCORING_REVIEW
+
+// Relationship Management
+STAKEHOLDER_MAPPING, RELATIONSHIP_BUILDING, RENEWAL_PREPARATION
+
+// Administrative
+DATA_ENRICHMENT, CRM_UPDATE, REPORTING
+```
+
+### 9.3 Advanced Features
+- **Task Dependencies**: Circular dependency prevention
+- **Automation Rules**: Event-driven task creation
+- **Workflow Integration**: Connected to WFM system
+- **Business Impact**: Tasks can block stage progression, affect lead scoring
+- **Bulk Operations**: Efficient task management operations
+
+## 10. Google Calendar Integration Preparation
+
+### 10.1 Architecture Foundation
+- **Calendar-Focused CRM**: Google Calendar as primary system with business overlay
+- **Integration Approach**: Enhance rather than replace calendar tools
+- **Familiar Interface**: Standard Google Calendar experience maintained
+- **Forward Compatible**: Leverages Google updates
+
+### 10.2 Clean System State
 - **Activities System Removed**: Complete elimination of conflicting functionality
 - **Authentication Fixed**: User creation fully functional
 - **RBAC Cleaned**: No activity-related permissions remain
 - **Database Ready**: Clean schema for calendar event integration
 
-### 8.3 Integration Points
+### 10.3 Integration Points
 - **Google OAuth**: Extended scopes for Calendar API access
 - **Event-Deal Linking**: Seamless calendar-CRM entity relationships
 - **Meeting Scheduling**: Direct calendar integration
 - **Business Intelligence**: CRM context overlaid on calendar events
 
-## 9. Deployment & Operations
+## 11. Deployment & Operations
 
-### 9.1 Infrastructure
+### 11.1 Infrastructure
 - Frontend: Netlify CDN hosting
 - API: Netlify Serverless Functions  
 - Database: Supabase managed PostgreSQL
-- Background jobs: Inngest workflow engine (simplified - only ECB updates)
+- Background jobs: Inngest workflow engine + Business Rules automation
+- Business Rules: Database-native triggers and functions
 
-### 9.2 Development Workflow
+### 11.2 Development Workflow
 - Local development: `netlify dev` + `supabase start`
-- Version control: Git with feature branches (`google-calendar-integration`)
-- Database migrations: Versioned SQL files (58 migrations total)
-- Type safety: End-to-end TypeScript
+- Version control: Git with feature branches
+- Database migrations: Versioned SQL files (77 migrations total)
+- Type safety: End-to-end TypeScript with generated GraphQL types
 
-### 9.3 Production Hardening
+### 11.3 Production Hardening
 - **HardeningService**: Circuit breaker, rate limiting, performance monitoring
 - **Error Recovery**: Exponential backoff, input validation, graceful degradation
 - **Health Monitoring**: Real-time system health tracking
+- **Business Rules Monitoring**: Complete execution audit trails and error tracking
+- **Task System Monitoring**: Task completion rates and automation effectiveness
 - **Security**: SQL injection prevention, XSS protection, permission validation
 
 ## 10. Current Production Status

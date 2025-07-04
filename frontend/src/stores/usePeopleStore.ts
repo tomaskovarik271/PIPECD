@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { gql } from 'graphql-request';
 import { gqlClient } from '../lib/graphqlClient';
 // import { supabase } from '../lib/supabase'; // REMOVED
-import type { Person as GeneratedPerson, PersonInput, MutationCreatePersonArgs, MutationUpdatePersonArgs, MutationDeletePersonArgs, Organization, Deal, Activity, CustomFieldValue } from '../generated/graphql/graphql';
+import type { Person as GeneratedPerson, PersonInput, MutationCreatePersonArgs, MutationUpdatePersonArgs, MutationDeletePersonArgs, Organization, Deal, CustomFieldValue } from '../generated/graphql/graphql';
 import { isGraphQLErrorWithMessage /*, GraphQLErrorWithMessage REMOVED */ } from '../lib/graphqlUtils';
 
 // Re-export Person type for convenience by consumers
@@ -43,7 +43,7 @@ const GET_PEOPLE_QUERY = gql`
   }
 `;
 
-// New GQL Query for a single Person by ID
+// New GQL Query for a single Person by ID with multi-organization support
 const GET_PERSON_BY_ID_QUERY = gql`
   query GetPersonById($id: ID!) {
     person(id: $id) {
@@ -55,26 +55,50 @@ const GET_PERSON_BY_ID_QUERY = gql`
       notes
       created_at
       updated_at
+      
+      # Legacy organization support (backward compatibility)
       organization_id
       organization {
         id
         name
-        # Add other organization fields if needed
       }
+      
+      # NEW: Multi-organization support
+      organizationRoles {
+        id
+        organization_id
+        role_title
+        department
+        is_primary
+        status
+        start_date
+        end_date
+        notes
+        created_at
+        organization {
+          id
+          name
+          address
+        }
+      }
+      primaryOrganization {
+        id
+        name
+        address
+      }
+      primaryRole {
+        id
+        role_title
+        department
+        is_primary
+      }
+      
       deals {
         id
         name
         amount
-        # created_at # Example: if needed
       }
-      # activities {
-      #   id
-      #   type
-      #   subject
-      #   due_date
-      #   is_done
-      #   # created_at # Example: if needed
-      # }
+      
       customFieldValues {
         stringValue
         numberValue

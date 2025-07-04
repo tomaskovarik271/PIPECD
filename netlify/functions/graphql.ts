@@ -84,6 +84,15 @@ import { businessRulesResolvers } from './graphql/resolvers/businessRulesResolve
 // Import Notification Resolvers
 import { notificationQueries, notificationMutations, SystemNotification, UnifiedNotification } from './graphql/resolvers/notificationResolvers';
 
+// Import Person Organization Role Resolvers
+import { 
+  PersonOrganizationRole, 
+  PersonHistory, 
+  PersonEnhanced,
+  PersonOrganizationRoleQueries, 
+  PersonOrganizationRoleMutations 
+} from './graphql/resolvers/personOrganizationRole';
+
 const loadTypeDefs = (): string => {
   const schemaDir = path.join(process.cwd(), 'netlify/functions/graphql/schema');
 
@@ -199,6 +208,7 @@ export const resolvers = {
     ...taskResolvers.Query,
     ...businessRulesResolvers.Query,
     ...notificationQueries,
+    ...PersonOrganizationRoleQueries,
   },
   Mutation: {
     ...BaseMutation,
@@ -222,8 +232,14 @@ export const resolvers = {
     ...taskResolvers.Mutation,
     ...businessRulesResolvers.Mutation,
     ...notificationMutations,
+    ...PersonOrganizationRoleMutations,
   },
-  Person,
+  Person: {
+    ...Person,
+    ...PersonEnhanced,
+  },
+  PersonOrganizationRole,
+  PersonHistory,
   Deal: {
     ...Deal,
     ...currencyResolvers.Deal,

@@ -25,6 +25,7 @@ import { useOrganizationsStore, Organization } from '../stores/useOrganizationsS
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors'; // NEW: Use semantic tokens
 import { useAppStore } from '../stores/useAppStore';
 import { StickerBoard } from '../components/common/StickerBoard';
+import OrganizationPeoplePanel from '../components/organizations/OrganizationPeoplePanel';
 
 // Component imports
 import AccountManagerAssignmentModal from '../components/admin/AccountManagerAssignmentModal';
@@ -355,6 +356,20 @@ const OrganizationDetailPage = () => {
                         </VStack>
                 </Box>
             )}
+
+            {/* People & Roles Panel */}
+            <Box 
+              bg={colors.bg.elevated}
+              p={6} 
+              borderRadius="xl" 
+              borderWidth="1px" 
+              borderColor={colors.border.default}
+            >
+              <OrganizationPeoplePanel
+                organizationId={currentOrganization.id}
+                organizationName={currentOrganization.name}
+              />
+            </Box>
 
             {/* Smart Stickers Section - Full Width */}
           <Box 

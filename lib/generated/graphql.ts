@@ -34,6 +34,7 @@ export type Scalars = {
   Boolean: { input: boolean; output: boolean };
   Int: { input: number; output: number };
   Float: { input: number; output: number };
+  Date: { input: Date; output: Date };
   DateTime: { input: Date; output: Date };
   JSON: { input: { [key: string]: any }; output: { [key: string]: any } };
 };
@@ -1019,6 +1020,14 @@ export type DealSubfolders = {
   technical?: Maybe<DriveFolder>;
 };
 
+export type DealTaskIndicator = {
+  __typename?: "DealTaskIndicator";
+  dealId: Scalars["ID"]["output"];
+  tasksDueToday: Scalars["Int"]["output"];
+  tasksOverdue: Scalars["Int"]["output"];
+  totalActiveTasks: Scalars["Int"]["output"];
+};
+
 export type DealToLeadConversionInput = {
   archiveDeal?: InputMaybe<Scalars["Boolean"]["input"]>;
   conversionReason: ConversionReason;
@@ -1635,6 +1644,7 @@ export type Mutation = {
   createLead: Lead;
   createOrganization: Organization;
   createPerson: Person;
+  createPersonOrganizationRole: PersonOrganizationRole;
   createReactivationPlan: ReactivationPlan;
   createSticker: SmartSticker;
   createSystemNotification: SystemNotification;
@@ -1657,6 +1667,7 @@ export type Mutation = {
   deleteLead?: Maybe<Scalars["Boolean"]["output"]>;
   deleteOrganization?: Maybe<Scalars["Boolean"]["output"]>;
   deletePerson?: Maybe<Scalars["Boolean"]["output"]>;
+  deletePersonOrganizationRole: Scalars["Boolean"]["output"];
   deleteReactivationPlan: Scalars["Boolean"]["output"];
   deleteSticker: Scalars["Boolean"]["output"];
   deleteSystemNotification: Scalars["Boolean"]["output"];
@@ -1701,6 +1712,7 @@ export type Mutation = {
   sendAgentV2Message: AgentV2Response;
   sendAgentV2MessageStream: Scalars["String"]["output"];
   setExchangeRate: ExchangeRate;
+  setPrimaryOrganizationRole: PersonOrganizationRole;
   shareDriveFolder: Scalars["Boolean"]["output"];
   syncCalendarEvents: CalendarSyncStatus;
   syncGmailEmails: Array<Email>;
@@ -1727,6 +1739,7 @@ export type Mutation = {
   updateLeadWFMProgress: Lead;
   updateOrganization?: Maybe<Organization>;
   updatePerson?: Maybe<Person>;
+  updatePersonOrganizationRole: PersonOrganizationRole;
   updateRatesFromECB: CurrencyOperationResult;
   updateReactivationPlan: ReactivationPlan;
   updateSticker: SmartSticker;
@@ -1922,6 +1935,11 @@ export type MutationCreatePersonArgs = {
   input: PersonInput;
 };
 
+export type MutationCreatePersonOrganizationRoleArgs = {
+  input: PersonOrganizationRoleInput;
+  personId: Scalars["ID"]["input"];
+};
+
 export type MutationCreateReactivationPlanArgs = {
   input: ReactivationPlanInput;
   leadId: Scalars["ID"]["input"];
@@ -2009,6 +2027,10 @@ export type MutationDeleteOrganizationArgs = {
 };
 
 export type MutationDeletePersonArgs = {
+  id: Scalars["ID"]["input"];
+};
+
+export type MutationDeletePersonOrganizationRoleArgs = {
   id: Scalars["ID"]["input"];
 };
 
@@ -2193,6 +2215,11 @@ export type MutationSetExchangeRateArgs = {
   input: SetExchangeRateInput;
 };
 
+export type MutationSetPrimaryOrganizationRoleArgs = {
+  personId: Scalars["ID"]["input"];
+  roleId: Scalars["ID"]["input"];
+};
+
 export type MutationShareDriveFolderArgs = {
   folderId: Scalars["String"]["input"];
   permissions: Array<DrivePermissionInput>;
@@ -2314,6 +2341,11 @@ export type MutationUpdateOrganizationArgs = {
 export type MutationUpdatePersonArgs = {
   id: Scalars["ID"]["input"];
   input: PersonInput;
+};
+
+export type MutationUpdatePersonOrganizationRoleArgs = {
+  id: Scalars["ID"]["input"];
+  input: PersonOrganizationRoleUpdateInput;
 };
 
 export type MutationUpdateReactivationPlanArgs = {
@@ -2482,17 +2514,33 @@ export type Person = {
   __typename?: "Person";
   created_at: Scalars["DateTime"]["output"];
   customFieldValues: Array<CustomFieldValue>;
-  deals?: Maybe<Array<Deal>>;
+  deals: Array<Deal>;
   email?: Maybe<Scalars["String"]["output"]>;
   first_name?: Maybe<Scalars["String"]["output"]>;
   id: Scalars["ID"]["output"];
   last_name?: Maybe<Scalars["String"]["output"]>;
   notes?: Maybe<Scalars["String"]["output"]>;
   organization?: Maybe<Organization>;
+  organizationRoles: Array<PersonOrganizationRole>;
   organization_id?: Maybe<Scalars["ID"]["output"]>;
   phone?: Maybe<Scalars["String"]["output"]>;
+  primaryOrganization?: Maybe<Organization>;
+  primaryRole?: Maybe<PersonOrganizationRole>;
   updated_at: Scalars["DateTime"]["output"];
   user_id: Scalars["ID"]["output"];
+};
+
+export type PersonHistory = {
+  __typename?: "PersonHistory";
+  created_at: Scalars["DateTime"]["output"];
+  event_type: Scalars["String"]["output"];
+  field_name?: Maybe<Scalars["String"]["output"]>;
+  id: Scalars["ID"]["output"];
+  new_value?: Maybe<Scalars["JSON"]["output"]>;
+  old_value?: Maybe<Scalars["JSON"]["output"]>;
+  person?: Maybe<Person>;
+  person_id?: Maybe<Scalars["ID"]["output"]>;
+  user_id?: Maybe<Scalars["ID"]["output"]>;
 };
 
 export type PersonInput = {
@@ -2501,6 +2549,7 @@ export type PersonInput = {
   first_name?: InputMaybe<Scalars["String"]["input"]>;
   last_name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
+  organizationRoles?: InputMaybe<Array<PersonOrganizationRoleInput>>;
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
@@ -2511,12 +2560,53 @@ export type PersonListItem = {
   name: Scalars["String"]["output"];
 };
 
+export type PersonOrganizationRole = {
+  __typename?: "PersonOrganizationRole";
+  created_at: Scalars["DateTime"]["output"];
+  created_by_user_id?: Maybe<Scalars["ID"]["output"]>;
+  department?: Maybe<Scalars["String"]["output"]>;
+  end_date?: Maybe<Scalars["Date"]["output"]>;
+  id: Scalars["ID"]["output"];
+  is_primary: Scalars["Boolean"]["output"];
+  notes?: Maybe<Scalars["String"]["output"]>;
+  organization: Organization;
+  organization_id: Scalars["ID"]["output"];
+  person: Person;
+  person_id: Scalars["ID"]["output"];
+  role_title: Scalars["String"]["output"];
+  start_date?: Maybe<Scalars["Date"]["output"]>;
+  status: Scalars["String"]["output"];
+  updated_at: Scalars["DateTime"]["output"];
+};
+
+export type PersonOrganizationRoleInput = {
+  department?: InputMaybe<Scalars["String"]["input"]>;
+  end_date?: InputMaybe<Scalars["Date"]["input"]>;
+  is_primary?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  organization_id: Scalars["ID"]["input"];
+  role_title: Scalars["String"]["input"];
+  start_date?: InputMaybe<Scalars["Date"]["input"]>;
+  status?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type PersonOrganizationRoleUpdateInput = {
+  department?: InputMaybe<Scalars["String"]["input"]>;
+  end_date?: InputMaybe<Scalars["Date"]["input"]>;
+  is_primary?: InputMaybe<Scalars["Boolean"]["input"]>;
+  notes?: InputMaybe<Scalars["String"]["input"]>;
+  role_title?: InputMaybe<Scalars["String"]["input"]>;
+  start_date?: InputMaybe<Scalars["Date"]["input"]>;
+  status?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type PersonUpdateInput = {
   customFields?: InputMaybe<Array<CustomFieldValueInput>>;
   email?: InputMaybe<Scalars["String"]["input"]>;
   first_name?: InputMaybe<Scalars["String"]["input"]>;
   last_name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
+  organizationRoles?: InputMaybe<Array<PersonOrganizationRoleInput>>;
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
@@ -2565,6 +2655,7 @@ export type Query = {
   dealFolderFiles: Array<DriveFile>;
   /** Get deal folder information, auto-creating if needed */
   dealFolderInfo: DealFolderInfo;
+  dealTaskIndicators: Array<DealTaskIndicator>;
   deals: Array<Deal>;
   dealsByCurrency: Array<DealsByCurrencyResult>;
   discoverAgentTools: ToolDiscoveryResponse;
@@ -2617,8 +2708,11 @@ export type Query = {
   organization?: Maybe<Organization>;
   organizations: Array<Organization>;
   people: Array<Person>;
+  peopleByOrganization: Array<Person>;
   person?: Maybe<Person>;
+  personHistory: Array<PersonHistory>;
   personList: Array<PersonListItem>;
+  personOrganizationRoles: Array<PersonOrganizationRole>;
   previewRuleExecution: BusinessRuleExecutionResult;
   reactivationPlan?: Maybe<ReactivationPlan>;
   reactivationPlans: Array<ReactivationPlan>;
@@ -2779,6 +2873,10 @@ export type QueryDealFolderInfoArgs = {
   dealId: Scalars["ID"]["input"];
 };
 
+export type QueryDealTaskIndicatorsArgs = {
+  dealIds: Array<Scalars["ID"]["input"]>;
+};
+
 export type QueryExchangeRateArgs = {
   effectiveDate?: InputMaybe<Scalars["String"]["input"]>;
   fromCurrency: Scalars["String"]["input"];
@@ -2913,8 +3011,21 @@ export type QueryOrganizationArgs = {
   id: Scalars["ID"]["input"];
 };
 
+export type QueryPeopleByOrganizationArgs = {
+  includeFormerEmployees?: InputMaybe<Scalars["Boolean"]["input"]>;
+  organizationId: Scalars["ID"]["input"];
+};
+
 export type QueryPersonArgs = {
   id: Scalars["ID"]["input"];
+};
+
+export type QueryPersonHistoryArgs = {
+  personId: Scalars["ID"]["input"];
+};
+
+export type QueryPersonOrganizationRolesArgs = {
+  personId: Scalars["ID"]["input"];
 };
 
 export type QueryPreviewRuleExecutionArgs = {
@@ -4199,6 +4310,7 @@ export type ResolversTypes = {
   CustomFieldType: CustomFieldType;
   CustomFieldValue: ResolverTypeWrapper<CustomFieldValue>;
   CustomFieldValueInput: CustomFieldValueInput;
+  Date: ResolverTypeWrapper<Scalars["Date"]["output"]>;
   DateTime: ResolverTypeWrapper<Scalars["DateTime"]["output"]>;
   Deal: ResolverTypeWrapper<Deal>;
   DealDocumentAttachment: ResolverTypeWrapper<DealDocumentAttachment>;
@@ -4208,6 +4320,7 @@ export type ResolversTypes = {
   DealParticipant: ResolverTypeWrapper<DealParticipant>;
   DealParticipantInput: DealParticipantInput;
   DealSubfolders: ResolverTypeWrapper<DealSubfolders>;
+  DealTaskIndicator: ResolverTypeWrapper<DealTaskIndicator>;
   DealToLeadConversionInput: DealToLeadConversionInput;
   DealToLeadConversionResult: ResolverTypeWrapper<DealToLeadConversionResult>;
   DealUpdateInput: DealUpdateInput;
@@ -4274,8 +4387,12 @@ export type ResolversTypes = {
   OrganizationInput: OrganizationInput;
   OrganizationUpdateInput: OrganizationUpdateInput;
   Person: ResolverTypeWrapper<Person>;
+  PersonHistory: ResolverTypeWrapper<PersonHistory>;
   PersonInput: PersonInput;
   PersonListItem: ResolverTypeWrapper<PersonListItem>;
+  PersonOrganizationRole: ResolverTypeWrapper<PersonOrganizationRole>;
+  PersonOrganizationRoleInput: PersonOrganizationRoleInput;
+  PersonOrganizationRoleUpdateInput: PersonOrganizationRoleUpdateInput;
   PersonUpdateInput: PersonUpdateInput;
   PinEmailInput: PinEmailInput;
   Query: ResolverTypeWrapper<{}>;
@@ -4443,6 +4560,7 @@ export type ResolversParentTypes = {
   CustomFieldOptionInput: CustomFieldOptionInput;
   CustomFieldValue: CustomFieldValue;
   CustomFieldValueInput: CustomFieldValueInput;
+  Date: Scalars["Date"]["output"];
   DateTime: Scalars["DateTime"]["output"];
   Deal: Deal;
   DealDocumentAttachment: DealDocumentAttachment;
@@ -4452,6 +4570,7 @@ export type ResolversParentTypes = {
   DealParticipant: DealParticipant;
   DealParticipantInput: DealParticipantInput;
   DealSubfolders: DealSubfolders;
+  DealTaskIndicator: DealTaskIndicator;
   DealToLeadConversionInput: DealToLeadConversionInput;
   DealToLeadConversionResult: DealToLeadConversionResult;
   DealUpdateInput: DealUpdateInput;
@@ -4507,8 +4626,12 @@ export type ResolversParentTypes = {
   OrganizationInput: OrganizationInput;
   OrganizationUpdateInput: OrganizationUpdateInput;
   Person: Person;
+  PersonHistory: PersonHistory;
   PersonInput: PersonInput;
   PersonListItem: PersonListItem;
+  PersonOrganizationRole: PersonOrganizationRole;
+  PersonOrganizationRoleInput: PersonOrganizationRoleInput;
+  PersonOrganizationRoleUpdateInput: PersonOrganizationRoleUpdateInput;
   PersonUpdateInput: PersonUpdateInput;
   PinEmailInput: PinEmailInput;
   Query: {};
@@ -5491,6 +5614,11 @@ export type CustomFieldValueResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export interface DateScalarConfig
+  extends GraphQLScalarTypeConfig<ResolversTypes["Date"], any> {
+  name: "Date";
+}
+
 export interface DateTimeScalarConfig
   extends GraphQLScalarTypeConfig<ResolversTypes["DateTime"], any> {
   name: "DateTime";
@@ -5742,6 +5870,18 @@ export type DealSubfoldersResolvers<
     ParentType,
     ContextType
   >;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DealTaskIndicatorResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DealTaskIndicator"] = ResolversParentTypes["DealTaskIndicator"],
+> = {
+  dealId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  tasksDueToday?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  tasksOverdue?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalActiveTasks?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -6897,6 +7037,15 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationCreatePersonArgs, "input">
   >;
+  createPersonOrganizationRole?: Resolver<
+    ResolversTypes["PersonOrganizationRole"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationCreatePersonOrganizationRoleArgs,
+      "input" | "personId"
+    >
+  >;
   createReactivationPlan?: Resolver<
     ResolversTypes["ReactivationPlan"],
     ParentType,
@@ -7028,6 +7177,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationDeletePersonArgs, "id">
+  >;
+  deletePersonOrganizationRole?: Resolver<
+    ResolversTypes["Boolean"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationDeletePersonOrganizationRoleArgs, "id">
   >;
   deleteReactivationPlan?: Resolver<
     ResolversTypes["Boolean"],
@@ -7299,6 +7454,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationSetExchangeRateArgs, "input">
   >;
+  setPrimaryOrganizationRole?: Resolver<
+    ResolversTypes["PersonOrganizationRole"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationSetPrimaryOrganizationRoleArgs, "personId" | "roleId">
+  >;
   shareDriveFolder?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -7463,6 +7624,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdatePersonArgs, "id" | "input">
+  >;
+  updatePersonOrganizationRole?: Resolver<
+    ResolversTypes["PersonOrganizationRole"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdatePersonOrganizationRoleArgs, "id" | "input">
   >;
   updateRatesFromECB?: Resolver<
     ResolversTypes["CurrencyOperationResult"],
@@ -7663,11 +7830,7 @@ export type PersonResolvers<
     ParentType,
     ContextType
   >;
-  deals?: Resolver<
-    Maybe<Array<ResolversTypes["Deal"]>>,
-    ParentType,
-    ContextType
-  >;
+  deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
   email?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
   first_name?: Resolver<
     Maybe<ResolversTypes["String"]>,
@@ -7686,14 +7849,50 @@ export type PersonResolvers<
     ParentType,
     ContextType
   >;
+  organizationRoles?: Resolver<
+    Array<ResolversTypes["PersonOrganizationRole"]>,
+    ParentType,
+    ContextType
+  >;
   organization_id?: Resolver<
     Maybe<ResolversTypes["ID"]>,
     ParentType,
     ContextType
   >;
   phone?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  primaryOrganization?: Resolver<
+    Maybe<ResolversTypes["Organization"]>,
+    ParentType,
+    ContextType
+  >;
+  primaryRole?: Resolver<
+    Maybe<ResolversTypes["PersonOrganizationRole"]>,
+    ParentType,
+    ContextType
+  >;
   updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   user_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type PersonHistoryResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["PersonHistory"] = ResolversParentTypes["PersonHistory"],
+> = {
+  created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  event_type?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  field_name?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  new_value?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  old_value?: Resolver<Maybe<ResolversTypes["JSON"]>, ParentType, ContextType>;
+  person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
+  person_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
+  user_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -7704,6 +7903,41 @@ export type PersonListItemResolvers<
 > = {
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type PersonOrganizationRoleResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["PersonOrganizationRole"] = ResolversParentTypes["PersonOrganizationRole"],
+> = {
+  created_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
+  created_by_user_id?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
+  department?: Resolver<
+    Maybe<ResolversTypes["String"]>,
+    ParentType,
+    ContextType
+  >;
+  end_date?: Resolver<Maybe<ResolversTypes["Date"]>, ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  is_primary?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  notes?: Resolver<Maybe<ResolversTypes["String"]>, ParentType, ContextType>;
+  organization?: Resolver<
+    ResolversTypes["Organization"],
+    ParentType,
+    ContextType
+  >;
+  organization_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  person?: Resolver<ResolversTypes["Person"], ParentType, ContextType>;
+  person_id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  role_title?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  start_date?: Resolver<Maybe<ResolversTypes["Date"]>, ParentType, ContextType>;
+  status?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updated_at?: Resolver<ResolversTypes["DateTime"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -7883,6 +8117,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QueryDealFolderInfoArgs, "dealId">
+  >;
+  dealTaskIndicators?: Resolver<
+    Array<ResolversTypes["DealTaskIndicator"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryDealTaskIndicatorsArgs, "dealIds">
   >;
   deals?: Resolver<Array<ResolversTypes["Deal"]>, ParentType, ContextType>;
   dealsByCurrency?: Resolver<
@@ -8155,16 +8395,37 @@ export type QueryResolvers<
     ContextType
   >;
   people?: Resolver<Array<ResolversTypes["Person"]>, ParentType, ContextType>;
+  peopleByOrganization?: Resolver<
+    Array<ResolversTypes["Person"]>,
+    ParentType,
+    ContextType,
+    RequireFields<
+      QueryPeopleByOrganizationArgs,
+      "includeFormerEmployees" | "organizationId"
+    >
+  >;
   person?: Resolver<
     Maybe<ResolversTypes["Person"]>,
     ParentType,
     ContextType,
     RequireFields<QueryPersonArgs, "id">
   >;
+  personHistory?: Resolver<
+    Array<ResolversTypes["PersonHistory"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryPersonHistoryArgs, "personId">
+  >;
   personList?: Resolver<
     Array<ResolversTypes["PersonListItem"]>,
     ParentType,
     ContextType
+  >;
+  personOrganizationRoles?: Resolver<
+    Array<ResolversTypes["PersonOrganizationRole"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryPersonOrganizationRolesArgs, "personId">
   >;
   previewRuleExecution?: Resolver<
     ResolversTypes["BusinessRuleExecutionResult"],
@@ -9538,6 +9799,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   CustomFieldDefinition?: CustomFieldDefinitionResolvers<ContextType>;
   CustomFieldOption?: CustomFieldOptionResolvers<ContextType>;
   CustomFieldValue?: CustomFieldValueResolvers<ContextType>;
+  Date?: GraphQLScalarType;
   DateTime?: GraphQLScalarType;
   Deal?: DealResolvers<ContextType>;
   DealDocumentAttachment?: DealDocumentAttachmentResolvers<ContextType>;
@@ -9545,6 +9807,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
   DealParticipant?: DealParticipantResolvers<ContextType>;
   DealSubfolders?: DealSubfoldersResolvers<ContextType>;
+  DealTaskIndicator?: DealTaskIndicatorResolvers<ContextType>;
   DealToLeadConversionResult?: DealToLeadConversionResultResolvers<ContextType>;
   DealsByCurrencyResult?: DealsByCurrencyResultResolvers<ContextType>;
   Document?: DocumentResolvers<ContextType>;
@@ -9580,7 +9843,9 @@ export type Resolvers<ContextType = GraphQLContext> = {
   NotificationSummary?: NotificationSummaryResolvers<ContextType>;
   Organization?: OrganizationResolvers<ContextType>;
   Person?: PersonResolvers<ContextType>;
+  PersonHistory?: PersonHistoryResolvers<ContextType>;
   PersonListItem?: PersonListItemResolvers<ContextType>;
+  PersonOrganizationRole?: PersonOrganizationRoleResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
   ReactivationPlan?: ReactivationPlanResolvers<ContextType>;
   Role?: RoleResolvers<ContextType>;
