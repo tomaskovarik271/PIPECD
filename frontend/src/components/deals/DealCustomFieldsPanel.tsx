@@ -55,6 +55,7 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
 }) => {
   const colors = useThemeColors();
   const toast = useToast();
+  const { users } = useUserListStore();
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<CustomFieldData['value']>(null);
   const [saving, setSaving] = useState(false);
@@ -145,8 +146,18 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
           case 'USER_MULTISELECT':
             if (cfv.selectedOptionValues && cfv.selectedOptionValues.length > 0) {
               // For USER_MULTISELECT, selectedOptionValues contains user IDs
-              // We need to resolve these to user names for display
-              displayValue = `${cfv.selectedOptionValues.length} user(s) selected`;
+              // Resolve user IDs to user names for display
+              const selectedUsers = cfv.selectedOptionValues
+                .map(userId => users.find(user => user.id === userId))
+                .filter(Boolean)
+                .map(user => user.display_name || user.email);
+              
+              if (selectedUsers.length > 0) {
+                displayValue = selectedUsers.join(', ');
+              } else {
+                // Fallback if users aren't loaded yet or user not found
+                displayValue = `${cfv.selectedOptionValues.length} user(s) selected`;
+              }
             } else {
               displayValue = '-';
             }
@@ -165,7 +176,7 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
         };
       })
       .filter(Boolean);
-  }, [customFieldDefinitions, customFieldValues, hasCustomFields, getLinkDisplayDetails, colors.text.link]);
+  }, [customFieldDefinitions, customFieldValues, hasCustomFields, getLinkDisplayDetails, colors.text.link, users]);
 
   const handleEditClick = useCallback((field: ProcessedCustomField) => {
     setEditingFieldId(field.id);
