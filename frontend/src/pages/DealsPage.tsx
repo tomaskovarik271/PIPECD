@@ -339,12 +339,23 @@ function DealsPage() {
         {isConfirmDeleteDialogOpen && dealIdPendingConfirmation && (
           <ConfirmationDialog
             isOpen={isConfirmDeleteDialogOpen}
-            onClose={closeConfirmDeleteModal}
+            onClose={() => {
+              closeConfirmDeleteModal();
+              setDealIdPendingConfirmation(null);
+              clearDealToDeleteId();
+            }}
             title="Delete Deal"
             body="Are you sure you want to delete this deal? This action cannot be undone."
             confirmButtonText="Delete"
             confirmButtonColor="red"
-            onConfirm={() => confirmDeleteHandler(dealIdPendingConfirmation)}
+            onConfirm={async () => {
+              const success = await confirmDeleteHandler(dealIdPendingConfirmation);
+              if (success) {
+                closeConfirmDeleteModal();
+                setDealIdPendingConfirmation(null);
+                clearDealToDeleteId();
+              }
+            }}
             isConfirmLoading={isDeletingDeal}
           />
         )}
@@ -449,18 +460,29 @@ function DealsPage() {
         />
       )}
 
-      {isConfirmDeleteDialogOpen && dealIdPendingConfirmation && (
-        <ConfirmationDialog
-          isOpen={isConfirmDeleteDialogOpen}
-          onClose={closeConfirmDeleteModal}
-          title="Delete Deal"
-          body="Are you sure you want to delete this deal? This action cannot be undone."
-          confirmButtonText="Delete"
-          confirmButtonColor="red"
-          onConfirm={() => confirmDeleteHandler(dealIdPendingConfirmation)}
-          isConfirmLoading={isDeletingDeal}
-        />
-      )}
+              {isConfirmDeleteDialogOpen && dealIdPendingConfirmation && (
+          <ConfirmationDialog
+            isOpen={isConfirmDeleteDialogOpen}
+            onClose={() => {
+              closeConfirmDeleteModal();
+              setDealIdPendingConfirmation(null);
+              clearDealToDeleteId();
+            }}
+            title="Delete Deal"
+            body="Are you sure you want to delete this deal? This action cannot be undone."
+            confirmButtonText="Delete"
+            confirmButtonColor="red"
+            onConfirm={async () => {
+              const success = await confirmDeleteHandler(dealIdPendingConfirmation);
+              if (success) {
+                closeConfirmDeleteModal();
+                setDealIdPendingConfirmation(null);
+                clearDealToDeleteId();
+              }
+            }}
+            isConfirmLoading={isDeletingDeal}
+          />
+        )}
 
       {isColumnSelectorOpen && (
         <ColumnSelector
