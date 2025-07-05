@@ -145,6 +145,9 @@ export const Person: PersonResolvers<GraphQLContext> = {
               case CustomFieldType.UserMultiselect:
                 if (Array.isArray(rawValue)) {
                   fieldValue.selectedOptionValues = rawValue.map(String);
+                } else if (typeof rawValue === 'string' && rawValue.trim() !== '') {
+                  // Handle legacy data where USER_MULTISELECT was stored as string instead of array
+                  fieldValue.selectedOptionValues = [rawValue];
                 }
                 break;
               default:

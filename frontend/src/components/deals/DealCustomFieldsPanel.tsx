@@ -93,6 +93,7 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
             break;
           case 'DROPDOWN':
           case 'MULTI_SELECT':
+          case 'USER_MULTISELECT':
             currentValue = cfv.selectedOptionValues || [];
             break;
           default:

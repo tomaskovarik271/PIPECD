@@ -181,6 +181,12 @@ export const Lead: LeadResolvers<GraphQLContext> = {
                   fieldValue.selectedOptionValues = rawValue.selectedOptionValues.filter((val: any) => typeof val === 'string');
                 } else if (typeof rawValue.selectedOptionValues === 'string') {
                   fieldValue.selectedOptionValues = [rawValue.selectedOptionValues];
+                } else if (Array.isArray(rawValue)) {
+                  // Handle direct array values (like deals, persons, organizations)
+                  fieldValue.selectedOptionValues = rawValue.map(String);
+                } else if (typeof rawValue === 'string' && rawValue.trim() !== '') {
+                  // Handle legacy data where USER_MULTISELECT was stored as string instead of array
+                  fieldValue.selectedOptionValues = [rawValue];
                 }
                 break;
               default:
