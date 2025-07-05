@@ -202,6 +202,11 @@ export const Deal: DealResolvers<GraphQLContext> = {
                   fieldValue.selectedOptionValues = rawValue.map(String);
                 }
                 break;
+              case CustomFieldType.UserMultiselect:
+                if (Array.isArray(rawValue)) {
+                  fieldValue.selectedOptionValues = rawValue.map(String);
+                }
+                break;
               default:
                 console.warn(`Unhandled custom field type: ${definition.fieldType as string} for definition ${definition.fieldName}`);
             }

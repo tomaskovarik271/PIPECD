@@ -872,8 +872,8 @@ export enum CustomFieldType {
   MultiSelect = "MULTI_SELECT",
   Number = "NUMBER",
   Text = "TEXT",
-  UserMultiselect = "USER_MULTISELECT",
   TextArea = "TEXT_AREA",
+  UserMultiselect = "USER_MULTISELECT",
 }
 
 export type CustomFieldValue = {
@@ -4171,6 +4171,22 @@ export type GetAgentThoughtsQuery = {
   }>;
 };
 
+export type ComposeEmailMutationVariables = Exact<{
+  input: ComposeEmailInput;
+}>;
+
+export type ComposeEmailMutation = {
+  __typename?: "Mutation";
+  composeEmail: {
+    __typename?: "EmailMessage";
+    id: string;
+    subject: string;
+    from: string;
+    to: Array<string>;
+    timestamp: string;
+  };
+};
+
 export type ConvertDealToLeadModalMutationVariables = Exact<{
   id: Scalars["ID"]["input"];
   input: DealToLeadConversionInput;
@@ -4355,22 +4371,6 @@ export type GetEmailAnalyticsQuery = {
     emailSentiment?: string | null;
     responseRate?: number | null;
   } | null;
-};
-
-export type ComposeEmailMutationVariables = Exact<{
-  input: ComposeEmailInput;
-}>;
-
-export type ComposeEmailMutation = {
-  __typename?: "Mutation";
-  composeEmail: {
-    __typename?: "EmailMessage";
-    id: string;
-    subject: string;
-    from: string;
-    to: Array<string>;
-    timestamp: string;
-  };
 };
 
 export type MarkThreadAsReadMutationVariables = Exact<{

@@ -188,6 +188,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
           case 'NUMBER': return cfValue.numberValue || 0;
           case 'DATE': return cfValue.dateValue ? new Date(cfValue.dateValue).getTime() : 0;
           case 'BOOLEAN': return cfValue.booleanValue ? 'true' : 'false';
+          case 'USER_MULTISELECT': return cfValue.selectedOptionValues?.length || 0;
           default: return cfValue.stringValue?.toLowerCase() || '';
         }
       },
@@ -229,6 +230,11 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
           case 'MULTI_SELECT': {
             const sVals = selectedOptionValues || [];
             displayValue = sVals.map(v => def.dropdownOptions?.find(o => o.value === v)?.label || v).join(', ') || '-';
+            break;
+          }
+          case 'USER_MULTISELECT': {
+            const userIds = selectedOptionValues || [];
+            displayValue = userIds.length > 0 ? `${userIds.length} user(s) selected` : '-';
             break;
           }
           default: 

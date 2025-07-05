@@ -176,6 +176,13 @@ export const Lead: LeadResolvers<GraphQLContext> = {
                   fieldValue.selectedOptionValues = [rawValue.selectedOptionValues];
                 }
                 break;
+              case CustomFieldType.UserMultiselect:
+                if (Array.isArray(rawValue.selectedOptionValues)) {
+                  fieldValue.selectedOptionValues = rawValue.selectedOptionValues.filter((val: any) => typeof val === 'string');
+                } else if (typeof rawValue.selectedOptionValues === 'string') {
+                  fieldValue.selectedOptionValues = [rawValue.selectedOptionValues];
+                }
+                break;
               default:
                 console.warn(`Unknown custom field type: ${definition.fieldType} for field ${definition.fieldName} on lead ${parent.id}`);
             }

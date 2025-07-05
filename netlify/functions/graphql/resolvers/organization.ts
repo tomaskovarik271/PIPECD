@@ -249,12 +249,17 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
                 fieldValue.selectedOptionValues = [rawValue];
               }
               break;
-            case CustomFieldType.MultiSelect:
-              if (Array.isArray(rawValue)) {
-                fieldValue.selectedOptionValues = rawValue.map(String);
-              }
-              break;
-            default:
+                          case CustomFieldType.MultiSelect:
+                if (Array.isArray(rawValue)) {
+                  fieldValue.selectedOptionValues = rawValue.map(String);
+                }
+                break;
+              case CustomFieldType.UserMultiselect:
+                if (Array.isArray(rawValue)) {
+                  fieldValue.selectedOptionValues = rawValue.map(String);
+                }
+                break;
+              default:
               console.warn(`[Organization.customFieldValues] organization: ${organizationIdForLog}, Def: ${definition.fieldName}, Unhandled custom field type: ${definition.fieldType as string}`);
           }
           return fieldValue;

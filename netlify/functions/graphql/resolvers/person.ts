@@ -142,6 +142,11 @@ export const Person: PersonResolvers<GraphQLContext> = {
                   fieldValue.selectedOptionValues = rawValue.map(String);
                 }
                 break;
+              case CustomFieldType.UserMultiselect:
+                if (Array.isArray(rawValue)) {
+                  fieldValue.selectedOptionValues = rawValue.map(String);
+                }
+                break;
               default:
                 console.warn(`[Person.customFieldValues] person: ${personIdForLog}, Def: ${definition.fieldName}, Unhandled custom field type: ${definition.fieldType}`);
             }
