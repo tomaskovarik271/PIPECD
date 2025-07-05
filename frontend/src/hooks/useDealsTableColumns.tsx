@@ -39,7 +39,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
     activeDeletingDealId,
   } = props;
 
-  const { users } = useUserListStore();
+  const { users, refreshUsers } = useUserListStore();
 
   const standardColumns = useMemo((): ColumnDefinition<Deal>[] => [
     { key: 'name', header: 'Name', renderCell: (d) => d.name, isSortable: true },
@@ -247,6 +247,11 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
               if (selectedUsers.length > 0) {
                 displayValue = selectedUsers.join(', ');
               } else {
+                // If no users found but we have user IDs, refresh the user store
+                // This handles cases where users were deleted but the store is stale
+                if (userIds.length > 0) {
+                  refreshUsers().catch(console.error);
+                }
                 // Fallback if users aren't loaded yet or user not found
                 displayValue = `${userIds.length} user(s) selected`;
               }
@@ -261,7 +266,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
         return displayValue;
       },
     }));
-  }, [dealCustomFieldDefinitions, users]);
+  }, [dealCustomFieldDefinitions, users, refreshUsers]);
 
   return {
     standardColumns,

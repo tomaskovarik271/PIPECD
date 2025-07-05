@@ -55,7 +55,7 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
 }) => {
   const colors = useThemeColors();
   const toast = useToast();
-  const { users } = useUserListStore();
+  const { users, refreshUsers } = useUserListStore();
   const [editingFieldId, setEditingFieldId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState<CustomFieldData['value']>(null);
   const [saving, setSaving] = useState(false);
@@ -155,6 +155,11 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
               if (selectedUsers.length > 0) {
                 displayValue = selectedUsers.join(', ');
               } else {
+                // If no users found but we have user IDs, refresh the user store
+                // This handles cases where users were deleted but the store is stale
+                if (cfv.selectedOptionValues.length > 0) {
+                  refreshUsers().catch(console.error);
+                }
                 // Fallback if users aren't loaded yet or user not found
                 displayValue = `${cfv.selectedOptionValues.length} user(s) selected`;
               }
