@@ -20,6 +20,7 @@ import {
   CustomFieldDefinitionInput,
   CustomFieldEntityType,
   CustomFieldOptionInput,
+  CustomFieldType,
 } from '../../../generated/graphql/graphql';
 
 export interface CustomFieldDefinitionFormValues extends Omit<CustomFieldDefinitionInput, 'dropdownOptions' | 'entityType'> {
@@ -53,7 +54,7 @@ const CustomFieldDefinitionForm: React.FC<CustomFieldDefinitionFormProps> = ({
       entityType: entityType,
       isRequired: initialValues?.isRequired ?? false,
       displayOrder: initialValues?.displayOrder ?? 0,
-      fieldType: initialValues?.fieldType || 'TEXT',
+      fieldType: initialValues?.fieldType || CustomFieldType.Text,
       dropdownOptions: initialValues?.dropdownOptions || [],
     },
   });
@@ -71,7 +72,7 @@ const CustomFieldDefinitionForm: React.FC<CustomFieldDefinitionFormProps> = ({
       entityType: entityType,
       isRequired: initialValues?.isRequired ?? false,
       displayOrder: initialValues?.displayOrder ?? 0,
-      fieldType: initialValues?.fieldType || 'TEXT',
+      fieldType: initialValues?.fieldType || CustomFieldType.Text,
       dropdownOptions: initialValues?.dropdownOptions || [],
     };
     reset(defaultVals);
@@ -129,10 +130,10 @@ const CustomFieldDefinitionForm: React.FC<CustomFieldDefinitionFormProps> = ({
             name="fieldType"
             control={control}
             rules={{ required: 'Field Type is required' }}
-            defaultValue={'TEXT'}
+            defaultValue={CustomFieldType.Text}
             render={({ field }) => (
               <Select {...field} id="fieldType" isDisabled={isEditMode}>
-                {['TEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'DROPDOWN', 'MULTI_SELECT', 'TEXT_AREA'].map((type) => (
+                {['TEXT', 'NUMBER', 'BOOLEAN', 'DATE', 'DROPDOWN', 'MULTI_SELECT', 'USER_MULTISELECT', 'TEXT_AREA'].map((type) => (
                   <option key={type} value={type}>
                     {type}
                   </option>

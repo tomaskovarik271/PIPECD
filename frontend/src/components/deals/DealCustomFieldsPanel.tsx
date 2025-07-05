@@ -16,6 +16,7 @@ import { ExternalLinkIcon, InfoIcon, EditIcon, CheckIcon, CloseIcon } from '@cha
 import { CustomFieldDefinition, CustomFieldValue } from '../../stores/useDealsStore';
 import { CustomFieldRenderer } from '../common/CustomFieldRenderer';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import { useUserListStore } from '../../stores/useUserListStore';
 
 // Types
 interface CustomFieldData {
@@ -136,6 +137,15 @@ export const DealCustomFieldsPanel: React.FC<DealCustomFieldsPanelProps> = ({
                 return opt ? opt.label : val;
               });
               displayValue = selectedLabels.join(', ');
+            } else {
+              displayValue = '-';
+            }
+            break;
+          case 'USER_MULTISELECT':
+            if (cfv.selectedOptionValues && cfv.selectedOptionValues.length > 0) {
+              // For USER_MULTISELECT, selectedOptionValues contains user IDs
+              // We need to resolve these to user names for display
+              displayValue = `${cfv.selectedOptionValues.length} user(s) selected`;
             } else {
               displayValue = '-';
             }

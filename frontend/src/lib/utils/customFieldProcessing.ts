@@ -16,9 +16,10 @@ export const initializeCustomFieldValues = (definitions: CustomFieldDefinition[]
       case 'BOOLEAN' as CustomFieldType:
         initialValues[def.fieldName] = false;
         break;
-      case 'MULTI_SELECT' as CustomFieldType:
-        initialValues[def.fieldName] = [];
-        break;
+              case 'MULTI_SELECT' as CustomFieldType:
+        case 'USER_MULTISELECT' as CustomFieldType:
+          initialValues[def.fieldName] = [];
+          break;
       default:
         initialValues[def.fieldName] = '';
     }
@@ -58,6 +59,7 @@ export const initializeCustomFieldValuesFromEntity = (
             : '';
           break;
         case 'MULTI_SELECT' as CustomFieldType:
+        case 'USER_MULTISELECT' as CustomFieldType:
           initialValues[def.fieldName] = existingValue.selectedOptionValues || [];
           break;
         case 'DROPDOWN' as CustomFieldType:
@@ -77,6 +79,7 @@ export const initializeCustomFieldValuesFromEntity = (
           initialValues[def.fieldName] = false;
           break;
         case 'MULTI_SELECT' as CustomFieldType:
+        case 'USER_MULTISELECT' as CustomFieldType:
           initialValues[def.fieldName] = [];
           break;
         default:
@@ -128,6 +131,7 @@ export const processCustomFieldsForSubmission = (
             valueInput.stringValue = String(formValue);
             break;
           case 'MULTI_SELECT' as CustomFieldType:
+          case 'USER_MULTISELECT' as CustomFieldType:
             valueInput.selectedOptionValues = Array.isArray(formValue) && formValue.length > 0 
               ? formValue.map(String) 
               : undefined;

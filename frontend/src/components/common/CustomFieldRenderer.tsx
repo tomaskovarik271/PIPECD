@@ -14,6 +14,7 @@ import {
   Text,
 } from '@chakra-ui/react';
 import type { CustomFieldDefinition, CustomFieldType } from '../../generated/graphql/graphql';
+import { UserMultiSelectField } from './UserMultiSelectField';
 
 type CustomFieldValue = string | number | boolean | string[] | null | undefined;
 
@@ -58,7 +59,7 @@ export const CustomFieldRenderer: React.FC<CustomFieldRendererProps> = React.mem
         return (
           <Textarea
             id={fieldName}
-            value={value || ''}
+            value={typeof value === 'string' ? value : ''}
             onChange={handleInputChange}
             placeholder={`Enter ${fieldLabel.toLowerCase()}`}
             isDisabled={isDisabled}
@@ -69,7 +70,7 @@ export const CustomFieldRenderer: React.FC<CustomFieldRendererProps> = React.mem
         return (
           <NumberInput
             id={fieldName}
-            value={value || ''}
+            value={typeof value === 'string' || typeof value === 'number' ? String(value) : ''}
             onChange={handleNumberChange}
             precision={2}
             isDisabled={isDisabled}
@@ -93,7 +94,7 @@ export const CustomFieldRenderer: React.FC<CustomFieldRendererProps> = React.mem
           <Input
             type="date"
             id={fieldName}
-            value={value || ''}
+            value={typeof value === 'string' ? value : ''}
             onChange={handleInputChange}
             isDisabled={isDisabled}
           />
@@ -104,7 +105,7 @@ export const CustomFieldRenderer: React.FC<CustomFieldRendererProps> = React.mem
           <Select
             id={fieldName}
             placeholder={`Select ${fieldLabel.toLowerCase()}...`}
-            value={value || ''}
+            value={typeof value === 'string' ? value : ''}
             onChange={handleInputChange}
             isDisabled={isDisabled}
           >
@@ -119,7 +120,7 @@ export const CustomFieldRenderer: React.FC<CustomFieldRendererProps> = React.mem
       case 'MULTI_SELECT' as CustomFieldType:
         return (
           <CheckboxGroup
-            value={value || []}
+            value={Array.isArray(value) ? value : []}
             onChange={handleCheckboxGroupChange}
             isDisabled={isDisabled}
           >
@@ -135,6 +136,16 @@ export const CustomFieldRenderer: React.FC<CustomFieldRendererProps> = React.mem
               ))}
             </VStack>
           </CheckboxGroup>
+        );
+
+      case 'USER_MULTISELECT' as CustomFieldType:
+        return (
+          <UserMultiSelectField
+            value={Array.isArray(value) ? value : []}
+            onChange={onChange}
+            isDisabled={isDisabled}
+            placeholder={`Select ${fieldLabel.toLowerCase()}...`}
+          />
         );
 
       default:

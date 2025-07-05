@@ -881,6 +881,7 @@ export enum CustomFieldType {
   MultiSelect = "MULTI_SELECT",
   Number = "NUMBER",
   Text = "TEXT",
+  UserMultiselect = "USER_MULTISELECT",
   TextArea = "TEXT_AREA",
 }
 

@@ -7,6 +7,7 @@ enum CustomFieldType {
   BOOLEAN
   DROPDOWN
   MULTI_SELECT
+  USER_MULTISELECT
 }
 
 enum CustomFieldEntityType {
