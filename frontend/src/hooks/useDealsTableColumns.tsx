@@ -10,6 +10,7 @@ import type { Person as GeneratedPerson, CustomFieldDefinition as GQLCustomField
 import { getLinkDisplayDetails } from '../lib/utils/linkUtils';
 import { formatPersonName, formatDate } from '../lib/utils/formatters';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
+import { useUserListStore } from '../stores/useUserListStore';
 
 interface UseDealsTableColumnsProps {
   dealCustomFieldDefinitions: GQLCustomFieldDefinition[];
@@ -37,6 +38,8 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
     currentUserId,
     activeDeletingDealId,
   } = props;
+
+  const { users } = useUserListStore();
 
   const standardColumns = useMemo((): ColumnDefinition<Deal>[] => [
     { key: 'name', header: 'Name', renderCell: (d) => d.name, isSortable: true },
@@ -234,7 +237,22 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
           }
           case 'USER_MULTISELECT': {
             const userIds = selectedOptionValues || [];
-            displayValue = userIds.length > 0 ? `${userIds.length} user(s) selected` : '-';
+            if (userIds.length > 0) {
+              // Resolve user IDs to user names for display
+              const selectedUsers = userIds
+                .map(userId => users.find(user => user.id === userId))
+                .filter((user): user is NonNullable<typeof user> => Boolean(user))
+                .map(user => user.display_name || user.email);
+              
+              if (selectedUsers.length > 0) {
+                displayValue = selectedUsers.join(', ');
+              } else {
+                // Fallback if users aren't loaded yet or user not found
+                displayValue = `${userIds.length} user(s) selected`;
+              }
+            } else {
+              displayValue = '-';
+            }
             break;
           }
           default: 
@@ -243,7 +261,7 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
         return displayValue;
       },
     }));
-  }, [dealCustomFieldDefinitions]);
+  }, [dealCustomFieldDefinitions, users]);
 
   return {
     standardColumns,
