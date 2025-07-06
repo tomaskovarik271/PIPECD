@@ -31,7 +31,6 @@ const CREATE_CONTACT_FROM_EMAIL = gql`
       first_name
       last_name
       email
-      organization_id
     }
   }
 `;

@@ -16,14 +16,32 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
      try {
        const supabase = getAuthenticatedClient(accessToken);
        
-       const { data: peopleData, error } = await supabase
+       // Use role-based system instead of legacy organization_id
+       // First get the person IDs from roles
+       const { data: roleData, error: roleError } = await supabase
+         .from('person_organization_roles')
+         .select('person_id')
+         .eq('organization_id', parent.id)
+         .eq('status', 'active');
+
+       if (roleError) throw roleError;
+       
+       if (!roleData || roleData.length === 0) {
+         return [];
+       }
+
+       // Get unique person IDs
+       const personIds = [...new Set(roleData.map(role => role.person_id))];
+
+       // Then get the people data
+       const { data: peopleData, error: peopleError } = await supabase
          .from('people')
          .select('*')
-         .eq('organization_id', parent.id)
+         .in('id', personIds)
          .eq('user_id', context.currentUser!.id);
-       
-       if (error) throw error;
-       
+
+       if (peopleError) throw peopleError;
+
        return peopleData?.map(person => ({
          id: person.id,
          created_at: person.created_at,
@@ -34,9 +52,8 @@ export const Organization: OrganizationResolvers<GraphQLContext> = {
          email: person.email,
          phone: person.phone,
          notes: person.notes,
-         organization_id: person.organization_id,
          db_custom_field_values: person.custom_field_values,
-       })) as any || [];
+       })) as any[] || [];
      } catch (error) {
        console.error('Error fetching organization people:', error);
        return [];

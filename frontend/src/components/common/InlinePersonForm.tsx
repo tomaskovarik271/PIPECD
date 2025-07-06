@@ -22,6 +22,8 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { useDebounce } from '../../lib/utils/useDebounce';
 import { duplicateDetectionService } from '../../lib/services/duplicateDetectionService';
 import type { Person, Organization } from '../../generated/graphql/graphql';
+import { useMutation } from '@apollo/client';
+import { CREATE_PERSON_ORGANIZATION_ROLE } from '../../lib/graphql/personOrganizationRoleOperations';
 
 interface SimilarOrganizationResult {
   id: string;
@@ -66,6 +68,9 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
   const [isCheckingSuggestions, setIsCheckingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
+  // GraphQL mutation for creating organization role
+  const [createPersonOrganizationRole] = useMutation(CREATE_PERSON_ORGANIZATION_ROLE);
+
   // Fetch organizations on mount
   useEffect(() => {
     fetchOrganizations();
@@ -99,8 +104,8 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSelectSuggestedOrg = (organization: Organization) => {
-    setFormData(prev => ({ ...prev, organization_id: organization.id }));
+  const handleSelectSuggestedOrg = (suggestion: SimilarOrganizationResult) => {
+    setFormData(prev => ({ ...prev, organization_id: suggestion.id }));
     setShowSuggestions(false);
   };
 
@@ -116,16 +121,43 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
     }
 
     try {
+      // Create person WITHOUT organization_id (using new role-based system)
       const personInput = {
         first_name: formData.first_name.trim() || undefined,
         last_name: formData.last_name.trim() || undefined,
         email: formData.email.trim() || undefined,
         phone: formData.phone.trim() || undefined,
-        organization_id: formData.organization_id || undefined,
         notes: formData.notes.trim() || undefined,
+        // NOTE: No organization_id - we'll use organization roles instead
       };
 
       const newPerson = await createPerson(personInput);
+      
+      if (newPerson && formData.organization_id) {
+        // Create primary organization role for the new person
+        try {
+          await createPersonOrganizationRole({
+            variables: {
+              personId: newPerson.id,
+              input: {
+                organization_id: formData.organization_id,
+                role_title: 'Contact', // Default role title
+                is_primary: false, // Don't automatically make it primary
+                status: 'active'
+              }
+            }
+          });
+        } catch (roleError) {
+          console.error('Error creating organization role:', roleError);
+          // Person was created successfully, just show a warning about the role
+          toast({
+            title: 'Person created with warning',
+            description: 'Person was created but organization role could not be set. You can add it manually.',
+            status: 'warning',
+            duration: 5000,
+          });
+        }
+      }
       
       if (newPerson) {
         const displayName = [newPerson.first_name, newPerson.last_name].filter(Boolean).join(' ') || newPerson.email;
@@ -217,7 +249,7 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
                     variant="ghost"
                     size="xs"
                     leftIcon={<FiUser />}
-                    onClick={() => handleSelectSuggestedOrg(org as Organization)}
+                    onClick={() => handleSelectSuggestedOrg(org)}
                     color={colors.text.primary}
                   >
                     {org.suggestion}

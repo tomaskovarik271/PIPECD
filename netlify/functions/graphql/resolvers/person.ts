@@ -18,41 +18,153 @@ import { getAuthenticatedClient } from '../../../../lib/serviceUtils'; // Added 
 // };
 
 export const Person: PersonResolvers<GraphQLContext> = {
-    // Resolver for the nested 'organization' field within Person
+    // BACKWARD COMPATIBILITY: organization resolver now points to primaryOrganization
     organization: async (parent, _args, context) => {
       requireAuthentication(context);
       const accessToken = getAccessToken(context);
       if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
 
-      if (!parent.organization_id) {
+      try {
+        const supabase = getAuthenticatedClient(accessToken);
+        
+        // Get primary organization from roles
+        const { data: roleData, error: roleError } = await supabase
+          .from('person_organization_roles')
+          .select('organization_id')
+          .eq('person_id', parent.id)
+          .eq('is_primary', true)
+          .eq('status', 'active')
+          .single();
+
+        if (roleError && roleError.code !== 'PGRST116') throw roleError;
+
+        const organizationId = roleData?.organization_id;
+        if (!organizationId) return null;
+
+        const orgRecord = await organizationService.getOrganizationById(context.currentUser!.id, organizationId, accessToken);
+        if (orgRecord) {
+          return {
+            id: orgRecord.id,
+            created_at: orgRecord.created_at,
+            updated_at: orgRecord.updated_at,
+            user_id: orgRecord.user_id,
+            name: orgRecord.name,
+            address: orgRecord.address,
+            notes: orgRecord.notes,
+          } as Organization;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching Person.organization:', error);
         return null;
       }
+    },
+
+    // NEW: Get all organization roles for a person
+    organizationRoles: async (parent, _args, context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+
       try {
-        const orgRecord = await organizationService.getOrganizationById(context.currentUser!.id, parent.organization_id, accessToken);
-        if (!orgRecord) {
-          return null;
-        }
-        // Map OrganizationRecord to the expected Organization type for the resolver
-        // Fields like 'activities', 'deals', 'people' on Organization will be resolved by their own resolvers
-        return {
-          id: orgRecord.id,
-          created_at: orgRecord.created_at,
-          updated_at: orgRecord.updated_at,
-          user_id: orgRecord.user_id,
-          name: orgRecord.name,
-          address: orgRecord.address,
-          notes: orgRecord.notes,
-          // The following are resolved by Organization type resolvers, so not needed here:
-          // activities: [], 
-          // deals: [],
-          // people: [], 
-        } as Organization; // Cast to assert the shape is sufficient for resolver chain
-      } catch (e) {
-        // Don't throw here, just return null if org fetch fails (e.g., RLS denies)
-        console.error('Error fetching Person.organization:', e);
-        return null; 
+        const supabase = getAuthenticatedClient(accessToken);
+        const { data, error } = await supabase
+          .from('person_organization_roles')
+          .select('*')
+          .eq('person_id', parent.id)
+          .eq('status', 'active')
+          .order('is_primary', { ascending: false })
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        return (data || []) as any[];
+      } catch (error) {
+        console.error('Error fetching person organization roles:', error);
+        return [];
       }
     },
+
+    // NEW: Get primary organization for a person
+    primaryOrganization: async (parent, _args, context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+
+      try {
+        const supabase = getAuthenticatedClient(accessToken);
+        
+        // First try to get from explicitly marked primary role
+        const { data: primaryRoleData, error: primaryRoleError } = await supabase
+          .from('person_organization_roles')
+          .select('organization_id')
+          .eq('person_id', parent.id)
+          .eq('is_primary', true)
+          .eq('status', 'active')
+          .single();
+
+        let organizationId = primaryRoleData?.organization_id;
+
+        // If no explicit primary role found, get the first active role
+        if (!organizationId && (primaryRoleError?.code === 'PGRST116')) {
+          const { data: firstRoleData, error: firstRoleError } = await supabase
+            .from('person_organization_roles')
+            .select('organization_id')
+            .eq('person_id', parent.id)
+            .eq('status', 'active')
+            .order('created_at', { ascending: true })
+            .limit(1)
+            .single();
+
+          if (firstRoleError && firstRoleError.code !== 'PGRST116') throw firstRoleError;
+          organizationId = firstRoleData?.organization_id;
+        }
+
+        if (!organizationId) return null;
+
+        // Get the organization from role
+        const orgRecord = await organizationService.getOrganizationById(context.currentUser!.id, organizationId, accessToken);
+        if (orgRecord) {
+          return {
+            id: orgRecord.id,
+            created_at: orgRecord.created_at,
+            updated_at: orgRecord.updated_at,
+            user_id: orgRecord.user_id,
+            name: orgRecord.name,
+            address: orgRecord.address,
+            notes: orgRecord.notes,
+          } as Organization;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error fetching primary organization:', error);
+        return null;
+      }
+    },
+
+    // NEW: Get primary role for a person
+    primaryRole: async (parent, _args, context) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context);
+      if (!accessToken) throw new GraphQLError('Missing access token', { extensions: { code: 'UNAUTHENTICATED' } });
+
+      try {
+        const supabase = getAuthenticatedClient(accessToken);
+        const { data, error } = await supabase
+          .from('person_organization_roles')
+          .select('*')
+          .eq('person_id', parent.id)
+          .eq('is_primary', true)
+          .eq('status', 'active')
+          .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        return data as any || null;
+      } catch (error) {
+        console.error('Error fetching primary role:', error);
+        return null;
+      }
+    },
+
     // Placeholder for deals linked to a person (requires dealService update)
     deals: async (_parent, _args, context) => {
       requireAuthentication(context);

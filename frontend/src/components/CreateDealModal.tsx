@@ -267,6 +267,16 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       setIsLoading(false);
       return;
     }
+    if (!organizationId) {
+      setError('Organization is required.');
+      setIsLoading(false);
+      return;
+    }
+    if (!personId) {
+      setError('Person is required.');
+      setIsLoading(false);
+      return;
+    }
     if (!selectedWFMProjectTypeId) {
       setError('WFM Project Type selection is required.');
       setIsLoading(false);
@@ -391,13 +401,13 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
             </FormControl>
 
             {/* Enhanced Organization Selection */}
-            <FormControl>
+            <FormControl isRequired>
               <FormLabel>Organization</FormLabel>
               <SearchableSelect
                 options={organizationOptions}
                 value={organizationId || ''}
                 onChange={handleOrganizationChange}
-                placeholder="Select organization (optional)"
+                placeholder="Select organization"
                 isLoading={organizationsLoading}
                 error={organizationsError || undefined}
                 isDisabled={organizationsLoading}
@@ -418,13 +428,13 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
             </FormControl>
 
             {/* Enhanced Person Selection */}
-            <FormControl>
+            <FormControl isRequired>
               <FormLabel>Person</FormLabel>
               <SearchableSelect
                 options={peopleOptions}
                 value={personId || ''}
                 onChange={handlePersonChange}
-                placeholder="Select person (optional)"
+                placeholder="Select person"
                 isLoading={peopleLoading}
                 error={peopleError || undefined}
                 isDisabled={peopleLoading}

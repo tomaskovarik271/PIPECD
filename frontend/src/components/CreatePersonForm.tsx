@@ -13,22 +13,22 @@ import {
   useToast,
   Text,
   Spinner,
-  NumberInput,
-  NumberInputField,
-  Checkbox,
   ModalBody,
   ModalFooter,
 } from '@chakra-ui/react';
+import { useMutation } from '@apollo/client';
 import {
   PersonInput,
   CustomFieldValueInput,
   CustomFieldDefinition,
   CustomFieldEntityType,
-  CustomFieldType as GQLCustomFieldType,
 } from '../generated/graphql/graphql';
 import { usePeopleStore } from '../stores/usePeopleStore';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
 import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
+import { CREATE_PERSON_ORGANIZATION_ROLE } from '../lib/graphql/personOrganizationRoleOperations';
+import { CustomFieldRenderer } from './common/CustomFieldRenderer';
+import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
 
 interface CreatePersonFormProps {
   onClose: () => void;
@@ -42,11 +42,13 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
     email: '',
     phone: '',
     notes: '',
-    organization_id: null,
     customFields: [],
   });
 
-  const [customFieldData, setCustomFieldData] = useState<Record<string, string | number | boolean | string[]>>({});
+  // Separate state for organization selection
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>('');
+
+  const [customFieldData, setCustomFieldData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
@@ -58,6 +60,9 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
   } = useOrganizationsStore();
 
   const { createPerson: createPersonAction, peopleError } = usePeopleStore();
+  
+  // GraphQL mutation for creating organization role
+  const [createPersonOrganizationRole] = useMutation(CREATE_PERSON_ORGANIZATION_ROLE);
   
   const allDefinitions = useCustomFieldDefinitionStore(state => state.definitions);
   const definitionsLoading = useCustomFieldDefinitionStore(state => state.loading);
@@ -80,17 +85,17 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === 'organization_id' && value === '') {
-      setFormData(prev => ({ ...prev, [name]: null }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCustomFieldChange = (fieldName: string, value: unknown, type: GQLCustomFieldType) => {
+  const handleOrganizationChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedOrganizationId(e.target.value);
+  };
+
+  const handleCustomFieldChange = (fieldName: string, value: string | number | boolean | string[] | null | undefined) => {
     setCustomFieldData(prev => ({
       ...prev,
-      [fieldName]: type === 'BOOLEAN' ? (value as React.ChangeEvent<HTMLInputElement>).target.checked : value as string | number | boolean | string[],
+      [fieldName]: value || '',
     }));
   };
 
@@ -105,43 +110,11 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
       return;
     }
 
-    const processedCustomFields: CustomFieldValueInput[] = personCustomFieldDefinitions
-      .map(def => {
-        const rawValue = customFieldData[def.fieldName];
-        if (rawValue === undefined || rawValue === null || rawValue === '') {
-          if (def.isRequired) {
-            setLocalError((prev) => (prev ? prev + `\n` : ``) + `Field '${def.fieldLabel}' is required.`);
-          }
-          return null;
-        }
-
-        const cfInput: CustomFieldValueInput = { definitionId: def.id };
-        switch (def.fieldType) {
-          case 'TEXT':
-            cfInput.stringValue = String(rawValue);
-            break;
-          case 'NUMBER': {
-            const num = parseFloat(rawValue);
-            if (!isNaN(num)) cfInput.numberValue = num;
-            else setLocalError((prev) => (prev ? prev + `\n` : ``) + `Invalid number for '${def.fieldLabel}'.`);
-            break;
-          }
-          case 'BOOLEAN':
-            cfInput.booleanValue = Boolean(rawValue);
-            break;
-          case 'DATE':
-            cfInput.dateValue = rawValue;
-            break;
-          case 'DROPDOWN':
-            cfInput.selectedOptionValues = [String(rawValue)];
-            break;
-          case 'MULTI_SELECT':
-            cfInput.selectedOptionValues = Array.isArray(rawValue) ? rawValue.map(String) : (rawValue ? [String(rawValue)] : []);
-            break;
-        }
-        return cfInput;
-      })
-      .filter(Boolean) as CustomFieldValueInput[];
+    // Process custom fields using utility function
+    const processedCustomFields = processCustomFieldsForSubmission(
+      personCustomFieldDefinitions,
+      customFieldData
+    );
       
     if (localError) {
         setIsLoading(false);
@@ -154,7 +127,6 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
       email: formData.email || null,
       phone: formData.phone || null,
       notes: formData.notes || null,
-      organization_id: formData.organization_id || null,
       customFields: processedCustomFields.length > 0 ? processedCustomFields : null,
     };
 
@@ -165,6 +137,32 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
         setLocalError(peopleError || 'Failed to create person. Please try again.');
         setIsLoading(false);
         return;
+      }
+
+      // Create organization role if organization is selected
+      if (selectedOrganizationId && createdPerson) {
+        try {
+          await createPersonOrganizationRole({
+            variables: {
+              personId: createdPerson.id,
+              input: {
+                organization_id: selectedOrganizationId,
+                role_title: 'Contact', // Default role title
+                is_primary: false, // Don't automatically make it primary
+                status: 'active'
+              }
+            }
+          });
+        } catch (roleError) {
+          console.error('Error creating organization role:', roleError);
+          // Person was created successfully, just show a warning about the role
+          toast({
+            title: 'Person created with warning',
+            description: 'Person was created but organization role could not be set. You can add it manually.',
+            status: 'warning',
+            duration: 5000,
+          });
+        }
       }
 
       toast({ 
@@ -229,9 +227,8 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
             {orgError && <Alert status="error" size="sm"><AlertIcon />{orgError}</Alert>}
             {!orgLoading && !orgError && (
               <Select
-                name="organization_id"
-                value={formData.organization_id || ''}
-                onChange={handleChange}
+                value={selectedOrganizationId}
+                onChange={handleOrganizationChange}
                 placeholder="Select organization (optional)"
                 isDisabled={orgLoading || !organizations || organizations.length === 0}
               >
@@ -251,50 +248,14 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
           {personCustomFieldDefinitions.length > 0 && (
             <>
               <Text fontSize="lg" fontWeight="semibold" color="gray.700" mt={6}>Custom Fields</Text>
-              {personCustomFieldDefinitions.map((def: CustomFieldDefinition) => (
-                <FormControl key={def.id} isRequired={def.isRequired}>
-                  <FormLabel>{def.fieldLabel}</FormLabel>
-                  {def.fieldType === 'TEXT' && (
-                    <Input
-                      value={customFieldData[def.fieldName] || ''}
-                      onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
-                    />
-                  )}
-                  {def.fieldType === 'NUMBER' && (
-                    <NumberInput
-                      value={customFieldData[def.fieldName] || ''}
-                      onChange={(value) => handleCustomFieldChange(def.fieldName, value, def.fieldType)}
-                    >
-                      <NumberInputField />
-                    </NumberInput>
-                  )}
-                  {def.fieldType === 'BOOLEAN' && (
-                    <Checkbox
-                      isChecked={customFieldData[def.fieldName] || false}
-                      onChange={(e) => handleCustomFieldChange(def.fieldName, e, def.fieldType)}
-                    >
-                      Yes/No
-                    </Checkbox>
-                  )}
-                  {def.fieldType === 'DATE' && (
-                    <Input
-                      type="date"
-                      value={customFieldData[def.fieldName] || ''}
-                      onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
-                    />
-                  )}
-                  {def.fieldType === 'DROPDOWN' && (
-                    <Select
-                      value={customFieldData[def.fieldName] || ''}
-                      onChange={(e) => handleCustomFieldChange(def.fieldName, e.target.value, def.fieldType)}
-                      placeholder="Select option"
-                    >
-                      {def.dropdownOptions?.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </Select>
-                  )}
-                </FormControl>
+              {personCustomFieldDefinitions.map((definition: CustomFieldDefinition) => (
+                <CustomFieldRenderer
+                  key={definition.id}
+                  definition={definition}
+                  value={customFieldData[definition.fieldName]}
+                  onChange={(value) => handleCustomFieldChange(definition.fieldName, value)}
+                  isRequired={definition.isRequired}
+                />
               ))}
             </>
           )}

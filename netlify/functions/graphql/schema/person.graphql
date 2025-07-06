@@ -3,7 +3,7 @@ Defines the Person type and related queries/mutations.
 """
 
 # Person GraphQL Schema
-# Enhanced with multi-organization support while maintaining backward compatibility
+# Enhanced with multi-organization support
 
 type Person {
   id: ID!
@@ -16,14 +16,13 @@ type Person {
   phone: String
   notes: String
   
-  # Legacy single organization support (maintained for backward compatibility)
-  organization_id: ID
-  organization: Organization
-  
-  # NEW: Multi-organization support (Phase 1)
+  # Multi-organization support via role-based system
   organizationRoles: [PersonOrganizationRole!]!
   primaryOrganization: Organization
   primaryRole: PersonOrganizationRole
+  
+  # Legacy organization resolver (for backward compatibility - uses primaryOrganization)
+  organization: Organization
   
   # Relationships
   deals: [Deal!]!
@@ -88,7 +87,7 @@ input PersonOrganizationRoleUpdateInput {
   notes: String
 }
 
-# Enhanced PersonInput with multi-organization support
+# Enhanced PersonInput with multi-organization support only
 input PersonInput {
   first_name: String
   last_name: String
@@ -96,10 +95,7 @@ input PersonInput {
   phone: String
   notes: String
   
-  # Legacy support (deprecated but maintained)
-  organization_id: ID
-  
-  # NEW: Multi-organization roles
+  # Multi-organization roles
   organizationRoles: [PersonOrganizationRoleInput!]
   
   # Custom fields
@@ -114,10 +110,7 @@ input PersonUpdateInput {
   phone: String
   notes: String
   
-  # Legacy support (deprecated but maintained)
-  organization_id: ID
-  
-  # NEW: Multi-organization roles (will replace existing roles)
+  # Multi-organization roles (will replace existing roles)
   organizationRoles: [PersonOrganizationRoleInput!]
   
   # Custom fields

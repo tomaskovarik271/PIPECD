@@ -144,9 +144,9 @@ function PeoplePage() {
       { 
         key: 'organization', 
         header: 'Organization', 
-        renderCell: (person) => person.organization?.name || '-',
+        renderCell: (person) => person.primaryOrganization?.name || '-',
         isSortable: true,
-        sortAccessor: (person) => person.organization?.name?.toLowerCase() || '',
+        sortAccessor: (person) => person.primaryOrganization?.name?.toLowerCase() || '',
       },
     ];
 

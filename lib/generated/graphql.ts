@@ -2523,7 +2523,6 @@ export type Person = {
   notes?: Maybe<Scalars["String"]["output"]>;
   organization?: Maybe<Organization>;
   organizationRoles: Array<PersonOrganizationRole>;
-  organization_id?: Maybe<Scalars["ID"]["output"]>;
   phone?: Maybe<Scalars["String"]["output"]>;
   primaryOrganization?: Maybe<Organization>;
   primaryRole?: Maybe<PersonOrganizationRole>;
@@ -2551,7 +2550,6 @@ export type PersonInput = {
   last_name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
   organizationRoles?: InputMaybe<Array<PersonOrganizationRoleInput>>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -2608,7 +2606,6 @@ export type PersonUpdateInput = {
   last_name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
   organizationRoles?: InputMaybe<Array<PersonOrganizationRoleInput>>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -7852,11 +7849,6 @@ export type PersonResolvers<
   >;
   organizationRoles?: Resolver<
     Array<ResolversTypes["PersonOrganizationRole"]>,
-    ParentType,
-    ContextType
-  >;
-  organization_id?: Resolver<
-    Maybe<ResolversTypes["ID"]>,
     ParentType,
     ContextType
   >;

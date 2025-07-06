@@ -138,8 +138,8 @@ export const PersonEnhanced = {
     try {
       const supabase = getAuthenticatedClient(accessToken);
       
-      // First try to get from primary role
-      const { data: roleData, error: roleError } = await supabase
+      // First try to get from explicitly marked primary role
+      const { data: primaryRoleData, error: primaryRoleError } = await supabase
         .from('person_organization_roles')
         .select('organization_id')
         .eq('person_id', parent.id)
@@ -147,9 +147,23 @@ export const PersonEnhanced = {
         .eq('status', 'active')
         .single();
 
-      if (roleError && roleError.code !== 'PGRST116') throw roleError;
+      let organizationId = primaryRoleData?.organization_id;
 
-      const organizationId = roleData?.organization_id;
+      // If no explicit primary role found, get the first active role
+      if (!organizationId && (primaryRoleError?.code === 'PGRST116')) {
+        const { data: firstRoleData, error: firstRoleError } = await supabase
+          .from('person_organization_roles')
+          .select('organization_id')
+          .eq('person_id', parent.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: true })
+          .limit(1)
+          .single();
+
+        if (firstRoleError && firstRoleError.code !== 'PGRST116') throw firstRoleError;
+        organizationId = firstRoleData?.organization_id;
+      }
+
       if (!organizationId) return null;
 
       // Get the organization

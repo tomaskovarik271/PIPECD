@@ -21,8 +21,7 @@ const GET_PEOPLE_QUERY = gql`
       notes
       created_at
       updated_at
-      organization_id
-      organization { id name }
+      primaryOrganization { id name }
       customFieldValues {
         stringValue
         numberValue
@@ -56,14 +55,7 @@ const GET_PERSON_BY_ID_QUERY = gql`
       created_at
       updated_at
       
-      # Legacy organization support (backward compatibility)
-      organization_id
-      organization {
-        id
-        name
-      }
-      
-      # NEW: Multi-organization support
+      # Multi-organization support
       organizationRoles {
         id
         organization_id
@@ -91,6 +83,12 @@ const GET_PERSON_BY_ID_QUERY = gql`
         role_title
         department
         is_primary
+      }
+      
+      # Backward compatibility - organization resolver now points to primaryOrganization
+      organization {
+        id
+        name
       }
       
       deals {
@@ -129,8 +127,7 @@ const CREATE_PERSON_MUTATION = gql`
       notes
       created_at
       updated_at
-      organization_id
-      organization { id name }
+      primaryOrganization { id name }
       customFieldValues {
         stringValue
         numberValue
@@ -161,8 +158,7 @@ const UPDATE_PERSON_MUTATION = gql`
       notes
       created_at
       updated_at
-      organization_id
-      organization { id name }
+      primaryOrganization { id name }
       customFieldValues {
         stringValue
         numberValue

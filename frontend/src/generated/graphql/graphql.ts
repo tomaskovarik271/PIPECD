@@ -2514,7 +2514,6 @@ export type Person = {
   notes?: Maybe<Scalars["String"]["output"]>;
   organization?: Maybe<Organization>;
   organizationRoles: Array<PersonOrganizationRole>;
-  organization_id?: Maybe<Scalars["ID"]["output"]>;
   phone?: Maybe<Scalars["String"]["output"]>;
   primaryOrganization?: Maybe<Organization>;
   primaryRole?: Maybe<PersonOrganizationRole>;
@@ -2542,7 +2541,6 @@ export type PersonInput = {
   last_name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
   organizationRoles?: InputMaybe<Array<PersonOrganizationRoleInput>>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -2599,7 +2597,6 @@ export type PersonUpdateInput = {
   last_name?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
   organizationRoles?: InputMaybe<Array<PersonOrganizationRoleInput>>;
-  organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   phone?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -4171,6 +4168,25 @@ export type GetAgentThoughtsQuery = {
   }>;
 };
 
+export type SyncCalendarEventsMutationVariables = Exact<{
+  calendarId?: InputMaybe<Scalars["String"]["input"]>;
+  fullSync?: InputMaybe<Scalars["Boolean"]["input"]>;
+  daysPast?: InputMaybe<Scalars["Int"]["input"]>;
+  daysFuture?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type SyncCalendarEventsMutation = {
+  __typename?: "Mutation";
+  syncCalendarEvents: {
+    __typename?: "CalendarSyncStatus";
+    lastSyncAt?: string | null;
+    isConnected: boolean;
+    hasSyncErrors: boolean;
+    errorMessage?: string | null;
+    eventsCount: number;
+  };
+};
+
 export type ComposeEmailMutationVariables = Exact<{
   input: ComposeEmailInput;
 }>;
@@ -4268,7 +4284,6 @@ export type CreateContactFromEmailMutation = {
     first_name?: string | null;
     last_name?: string | null;
     email?: string | null;
-    organization_id?: string | null;
   };
 };
 
@@ -5258,25 +5273,6 @@ export type GetAllCustomFieldDefinitionsQuery = {
       label: string;
     }> | null;
   }>;
-};
-
-export type SyncCalendarEventsMutationVariables = Exact<{
-  calendarId?: InputMaybe<Scalars["String"]["input"]>;
-  fullSync?: InputMaybe<Scalars["Boolean"]["input"]>;
-  daysPast?: InputMaybe<Scalars["Int"]["input"]>;
-  daysFuture?: InputMaybe<Scalars["Int"]["input"]>;
-}>;
-
-export type SyncCalendarEventsMutation = {
-  __typename?: "Mutation";
-  syncCalendarEvents: {
-    __typename?: "CalendarSyncStatus";
-    lastSyncAt?: string | null;
-    isConnected: boolean;
-    hasSyncErrors: boolean;
-    errorMessage?: string | null;
-    eventsCount: number;
-  };
 };
 
 export type GetEntityStickersQueryVariables = Exact<{
@@ -9086,8 +9082,7 @@ export type GetPeopleQuery = {
     notes?: string | null;
     created_at: string;
     updated_at: string;
-    organization_id?: string | null;
-    organization?: {
+    primaryOrganization?: {
       __typename?: "Organization";
       id: string;
       name: string;
@@ -9132,12 +9127,6 @@ export type GetPersonByIdQuery = {
     notes?: string | null;
     created_at: string;
     updated_at: string;
-    organization_id?: string | null;
-    organization?: {
-      __typename?: "Organization";
-      id: string;
-      name: string;
-    } | null;
     organizationRoles: Array<{
       __typename?: "PersonOrganizationRole";
       id: string;
@@ -9169,6 +9158,11 @@ export type GetPersonByIdQuery = {
       role_title: string;
       department?: string | null;
       is_primary: boolean;
+    } | null;
+    organization?: {
+      __typename?: "Organization";
+      id: string;
+      name: string;
     } | null;
     deals: Array<{
       __typename?: "Deal";
@@ -9216,8 +9210,7 @@ export type CreatePersonMutation = {
     notes?: string | null;
     created_at: string;
     updated_at: string;
-    organization_id?: string | null;
-    organization?: {
+    primaryOrganization?: {
       __typename?: "Organization";
       id: string;
       name: string;
@@ -9263,8 +9256,7 @@ export type UpdatePersonMutation = {
     notes?: string | null;
     created_at: string;
     updated_at: string;
-    organization_id?: string | null;
-    organization?: {
+    primaryOrganization?: {
       __typename?: "Organization";
       id: string;
       name: string;
