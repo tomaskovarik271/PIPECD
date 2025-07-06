@@ -99,6 +99,7 @@ import { DirectCalendarScheduler } from '../lib/utils/directCalendarScheduler';
 import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsWidget';
 import { useQuickSchedule } from '../hooks/useQuickSchedule';
 import { SmartEmailButton } from '../components/common/SmartEmailComposer';
+import { EmbeddedCalendarModal } from '../components/calendar/EmbeddedCalendarModal';
 
 // Type imports
 
@@ -183,7 +184,7 @@ const DealDetailPage = () => {
   const [isCustomFieldsExpanded, setIsCustomFieldsExpanded] = useState(true);
   
   // Direct calendar scheduling (no modal needed)
-  const { quickSchedule } = useQuickSchedule();
+  const { quickSchedule, embeddedModal } = useQuickSchedule();
   
   // Memoize callbacks to prevent infinite re-renders
   const handleStickyNotesCountChange = useCallback((count: number) => {
@@ -908,7 +909,7 @@ const DealDetailPage = () => {
                       leftIcon={<CalendarIcon />}
                       colorScheme="blue"
                       size="md"
-                      onClick={() => quickSchedule({ deal: currentDeal })}
+                      onClick={() => quickSchedule({ deal: currentDeal, useEmbeddedModal: true })}
                       width="100%"
                       variant="solid"
                     >
@@ -1072,7 +1073,17 @@ const DealDetailPage = () => {
         />
       )}
 
-      {/* Direct calendar scheduling - no modal needed! */}
+      {/* Embedded Calendar Modal */}
+      {embeddedModal.deal && (
+        <EmbeddedCalendarModal
+          isOpen={embeddedModal.isOpen}
+          onClose={embeddedModal.onClose}
+          deal={embeddedModal.deal}
+          onMeetingCreated={embeddedModal.onMeetingCreated}
+        />
+      )}
+
+      {/* Direct calendar scheduling - now with embedded modal! */}
     </Box>
   );
 };

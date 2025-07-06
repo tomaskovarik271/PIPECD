@@ -114,11 +114,11 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
   // Get existing people IDs for filtering
   const existingPeopleIds = people.map((person: Person) => person.id);
   
-  // Notify parent component of contact count
+      // Notify parent component of contact count
   React.useEffect(() => {
-    if (onContactCountChange) {
+      if (onContactCountChange) {
       onContactCountChange(organizationRoles.length);
-    }
+      }
   }, [organizationRoles.length, onContactCountChange]);
 
   if (!organization) {
@@ -226,14 +226,14 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
             >
               Add Person
             </Button>
-            <Button 
-              as={RouterLink} 
-              to="/people" 
-              size="sm" 
-              variant="outline"
-            >
+          <Button 
+            as={RouterLink} 
+            to="/people" 
+            size="sm" 
+            variant="outline" 
+          >
               Manage All People
-            </Button>
+          </Button>
           </HStack>
         </Center>
       ) : (
@@ -275,16 +275,16 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
                 />
                 <VStack align="start" spacing={1} flex={1}>
                   <HStack spacing={2} align="center">
-                    <Link 
-                      as={RouterLink} 
+                  <Link 
+                    as={RouterLink} 
                       to={`/people/${role.person.id}`} 
-                      fontWeight="medium" 
-                      color={colors.text.link} 
-                      _hover={{ textDecoration: 'underline' }}
-                      fontSize="sm"
-                    >
+                    fontWeight="medium" 
+                    color={colors.text.link} 
+                    _hover={{ textDecoration: 'underline' }}
+                    fontSize="sm"
+                  >
                       {role.person.first_name} {role.person.last_name}
-                    </Link>
+                  </Link>
                     {role.is_primary && (
                       <Badge size="sm" colorScheme="blue" variant="subtle">
                         PRIMARY
@@ -345,8 +345,8 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
                   {role.person.email && (
                     <SmartEmailButton
                       to={role.person.email}
-                      size="xs"
-                      variant="ghost"
+                        size="xs"
+                        variant="ghost"
                       isIconButton={true}
                       tooltip="Send email"
                       context={{
@@ -357,7 +357,7 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
                         organizationId: organization?.id,
                         organizationName: organization?.name,
                       }}
-                    />
+                      />
                   )}
                   {role.person.phone && (
                     <Tooltip label="Call">
@@ -384,15 +384,15 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
               >
                 Add Person
               </Button>
-              <Button 
-                as={RouterLink} 
-                to={`/organizations/${organization.id}`}
-                size="sm" 
-                variant="outline"
-                leftIcon={<ExternalLinkIcon />}
-              >
-                View Organization Profile
-              </Button>
+            <Button 
+              as={RouterLink} 
+              to={`/organizations/${organization.id}`}
+              size="sm" 
+              variant="outline"
+              leftIcon={<ExternalLinkIcon />}
+            >
+              View Organization Profile
+            </Button>
             </HStack>
           )}
         </VStack>

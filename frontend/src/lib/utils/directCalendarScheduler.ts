@@ -25,6 +25,8 @@ interface DirectScheduleOptions {
   onSync?: (success: boolean) => void;
   toast?: any; // Toast function for notifications
   apolloClient?: ApolloClient<any>; // Optional Apollo client for sync
+  useEmbeddedModal?: boolean; // Use embedded modal instead of new tab
+  onOpenEmbeddedModal?: (deal: Deal) => void; // Callback to open embedded modal
 }
 
 export class DirectCalendarScheduler {
@@ -39,14 +41,24 @@ export class DirectCalendarScheduler {
   }
 
   /**
-   * Main function: Directly schedule meeting (no modal)
+   * Main function: Schedule meeting (embedded modal or new tab)
    */
-  static scheduleMeeting({ deal, toast, apolloClient }: DirectScheduleOptions): void {
+  static scheduleMeeting({ deal, toast, apolloClient, useEmbeddedModal, onOpenEmbeddedModal }: DirectScheduleOptions): void {
     // Store Apollo client if provided
     if (apolloClient) {
       this.apolloClient = apolloClient;
     }
 
+    // Option 1: Use embedded modal for better UX
+    if (useEmbeddedModal && onOpenEmbeddedModal) {
+      onOpenEmbeddedModal(deal);
+      
+      // Start silent auto-sync for embedded modal
+      this.startSilentAutoSync(toast);
+      return;
+    }
+
+    // Option 2: Fallback to new tab (legacy behavior)
     // 1. Build Google Calendar URL with deal context
     const calendarUrl = this.buildGoogleCalendarUrl(deal);
     
@@ -71,7 +83,7 @@ export class DirectCalendarScheduler {
   /**
    * Build Google Calendar URL with embedded deal context
    */
-  private static buildGoogleCalendarUrl(deal: Deal): string {
+  static buildGoogleCalendarUrl(deal: Deal): string {
     const startTime = this.getNextBusinessHour();
     const endTime = new Date(startTime.getTime() + 60 * 60000); // 1 hour
 

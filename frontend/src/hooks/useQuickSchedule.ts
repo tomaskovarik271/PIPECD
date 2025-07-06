@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useToast } from '@chakra-ui/react';
 import { useApolloClient, gql } from '@apollo/client';
 import { DirectCalendarScheduler } from '../lib/utils/directCalendarScheduler';
@@ -29,11 +29,16 @@ export interface QuickScheduleOptions {
   deal: Deal;
   successMessage?: string;
   onSync?: (success: boolean) => void;
+  useEmbeddedModal?: boolean; // Use embedded modal instead of new tab
 }
 
 export const useQuickSchedule = () => {
   const toast = useToast();
   const apolloClient = useApolloClient();
+  const [embeddedModalState, setEmbeddedModalState] = useState<{ isOpen: boolean; deal: Deal | null }>({
+    isOpen: false,
+    deal: null
+  });
 
   // Set Apollo client for DirectCalendarScheduler
   DirectCalendarScheduler.setApolloClient(apolloClient);
@@ -84,12 +89,16 @@ export const useQuickSchedule = () => {
   }, [apolloClient]);
 
   const quickSchedule = useCallback(
-    ({ deal, successMessage, onSync }: QuickScheduleOptions) => {
+    ({ deal, successMessage, onSync, useEmbeddedModal }: QuickScheduleOptions) => {
       DirectCalendarScheduler.scheduleMeeting({
         deal,
         toast,
         apolloClient,
-        onSync
+        onSync,
+        useEmbeddedModal,
+        onOpenEmbeddedModal: useEmbeddedModal ? (dealToSchedule: Deal) => {
+          setEmbeddedModalState({ isOpen: true, deal: dealToSchedule });
+        } : undefined
       });
 
       // Optional custom success handling
@@ -111,9 +120,24 @@ export const useQuickSchedule = () => {
     DirectCalendarScheduler.stopAutoSync();
   }, []);
 
+  const closeEmbeddedModal = useCallback(() => {
+    setEmbeddedModalState({ isOpen: false, deal: null });
+  }, []);
+
+  const handleMeetingCreated = useCallback(() => {
+    // Optional callback when meeting is created in embedded modal
+    closeEmbeddedModal();
+  }, [closeEmbeddedModal]);
+
   return {
     quickSchedule,
     stopAutoSync,
-    isReady: !!apolloClient // Indicates if scheduling is ready
+    isReady: !!apolloClient, // Indicates if scheduling is ready
+    embeddedModal: {
+      isOpen: embeddedModalState.isOpen,
+      deal: embeddedModalState.deal,
+      onClose: closeEmbeddedModal,
+      onMeetingCreated: handleMeetingCreated
+    }
   };
 }; 
