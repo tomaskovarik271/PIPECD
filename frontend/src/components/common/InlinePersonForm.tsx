@@ -20,7 +20,7 @@ import { usePeopleStore } from '../../stores/usePeopleStore';
 import { useOrganizationsStore } from '../../stores/useOrganizationsStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useDebounce } from '../../lib/utils/useDebounce';
-import { duplicateDetectionService } from '../../lib/services/duplicateDetectionService';
+import { duplicateDetectionService, type SimilarPersonResult } from '../../lib/services/duplicateDetectionService';
 import type { Person, Organization } from '../../generated/graphql/graphql';
 import { useMutation } from '@apollo/client';
 import { CREATE_PERSON_ORGANIZATION_ROLE } from '../../lib/graphql/personOrganizationRoleOperations';
@@ -52,7 +52,7 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
 }) => {
   const colors = useThemeColors();
   const toast = useToast();
-  const { createPerson, peopleLoading } = usePeopleStore();
+  const { createPerson, peopleLoading, people } = usePeopleStore();
   const { organizations, fetchOrganizations } = useOrganizationsStore();
 
   const [formData, setFormData] = useState<PersonFormData>({
@@ -64,9 +64,15 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
     notes: '',
   });
 
+  // Organization suggestions state (existing)
   const [orgSuggestions, setOrgSuggestions] = useState<SimilarOrganizationResult[]>([]);
   const [isCheckingSuggestions, setIsCheckingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // NEW: Person duplicate detection state
+  const [personDuplicates, setPersonDuplicates] = useState<SimilarPersonResult[]>([]);
+  const [isCheckingPersonDuplicates, setIsCheckingPersonDuplicates] = useState(false);
+  const [showPersonDuplicates, setShowPersonDuplicates] = useState(false);
 
   // GraphQL mutation for creating organization role
   const [createPersonOrganizationRole] = useMutation(CREATE_PERSON_ORGANIZATION_ROLE);
@@ -76,7 +82,7 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
     fetchOrganizations();
   }, [fetchOrganizations]);
 
-  // Debounced organization suggestion based on email using real service
+  // Existing: Debounced organization suggestion based on email using real service
   const debouncedEmailCheck = useDebounce(async (email: string) => {
     if (!email.includes('@') || email.split('@')[1]?.length < 3) {
       setOrgSuggestions([]);
@@ -96,9 +102,50 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
     }
   }, 500);
 
+  // NEW: Debounced person duplicate detection
+  const debouncedPersonCheck = useDebounce(async (formData: PersonFormData) => {
+    // Build search term from available data
+    const searchTerms = [
+      formData.first_name.trim(),
+      formData.last_name.trim(),
+      formData.email.trim()
+    ].filter(Boolean).join(' ');
+    
+    if (searchTerms.length < 2) {
+      setPersonDuplicates([]);
+      setShowPersonDuplicates(false);
+      return;
+    }
+
+    setIsCheckingPersonDuplicates(true);
+    try {
+      // Check for similar people using name + email
+      const personSuggestions = await duplicateDetectionService.findSimilarPeople(
+        searchTerms, 
+        people
+      );
+      setPersonDuplicates(personSuggestions);
+      setShowPersonDuplicates(personSuggestions.length > 0);
+    } catch (error) {
+      console.error('Error checking person duplicates:', error);
+    } finally {
+      setIsCheckingPersonDuplicates(false);
+    }
+  }, 500);
+
   useEffect(() => {
     debouncedEmailCheck(formData.email);
   }, [formData.email, debouncedEmailCheck]);
+
+  // NEW: Trigger person duplicate check when name or email changes
+  useEffect(() => {
+    debouncedPersonCheck(formData);
+  }, [
+    formData.first_name,
+    formData.last_name,
+    formData.email,
+    debouncedPersonCheck
+  ]);
 
   const handleInputChange = (field: keyof PersonFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -107,6 +154,36 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
   const handleSelectSuggestedOrg = (suggestion: SimilarOrganizationResult) => {
     setFormData(prev => ({ ...prev, organization_id: suggestion.id }));
     setShowSuggestions(false);
+  };
+
+  // NEW: Handle selecting existing person
+  const handleSelectExistingPerson = (person: SimilarPersonResult) => {
+    // Create a Person object from SimilarPersonResult
+    const existingPerson: Person = {
+      __typename: 'Person',
+      id: person.id,
+      first_name: person.name.split(' ')[0] || '',
+      last_name: person.name.split(' ').slice(1).join(' ') || '',
+      email: person.email || '',
+      phone: person.phone || '',
+      notes: '',
+      created_at: '',
+      updated_at: '',
+      user_id: '', // Will be filled by the actual person data
+      customFieldValues: [],
+      deals: [],
+      organizationRoles: [],
+    };
+
+    toast({
+      title: 'Existing Person Selected',
+      description: `Selected ${person.name} instead of creating duplicate.`,
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    });
+
+    onCreated(existingPerson);
   };
 
   const handleCreate = async () => {
@@ -201,13 +278,16 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
         <HStack spacing={2}>
           <FormControl>
             <FormLabel fontSize="sm">First Name</FormLabel>
-            <Input
-              placeholder="John"
-              value={formData.first_name}
-              onChange={(e) => handleInputChange('first_name', e.target.value)}
-              bg={colors.bg.input}
-              borderColor={colors.border.input}
-            />
+            <HStack>
+              <Input
+                placeholder="John"
+                value={formData.first_name}
+                onChange={(e) => handleInputChange('first_name', e.target.value)}
+                bg={colors.bg.input}
+                borderColor={colors.border.input}
+              />
+              {isCheckingPersonDuplicates && <Spinner size="sm" />}
+            </HStack>
           </FormControl>
           <FormControl>
             <FormLabel fontSize="sm">Last Name</FormLabel>
@@ -220,6 +300,44 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
             />
           </FormControl>
         </HStack>
+
+        {/* NEW: Person Duplicate Suggestions */}
+        {showPersonDuplicates && (
+          <Alert status="warning" size="sm" borderRadius="md">
+            <AlertIcon />
+            <Box flex={1}>
+              <AlertTitle fontSize="sm" color={colors.text.primary}>Similar people found:</AlertTitle>
+              <VStack align="start" mt={2} spacing={1}>
+                {personDuplicates.map(person => (
+                  <Button
+                    key={person.id}
+                    variant="solid"
+                    size="xs"
+                    leftIcon={<FiUser />}
+                    onClick={() => handleSelectExistingPerson(person)}
+                    colorScheme="blue"
+                    bg="blue.500"
+                    color="white"
+                    _hover={{ bg: 'blue.600' }}
+                    fontWeight="medium"
+                  >
+                    {person.suggestion}
+                  </Button>
+                ))}
+                                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={() => setShowPersonDuplicates(false)}
+                    borderColor={colors.border.default}
+                    color={colors.text.secondary}
+                    _hover={{ bg: colors.bg.elevated }}
+                  >
+                  Create new person anyway
+                </Button>
+              </VStack>
+            </Box>
+          </Alert>
+        )}
 
         <FormControl>
           <FormLabel fontSize="sm">Email</FormLabel>
@@ -282,15 +400,17 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
 
         <FormControl>
           <FormLabel fontSize="sm">Organization</FormLabel>
-          <Select 
+          <Select
             placeholder="Select organization (optional)"
             value={formData.organization_id}
             onChange={(e) => handleInputChange('organization_id', e.target.value)}
             bg={colors.bg.input}
             borderColor={colors.border.input}
           >
-            {organizations.map((org) => (
-              <option key={org.id} value={org.id}>{org.name}</option>
+            {organizations.map((org: Organization) => (
+              <option key={org.id} value={org.id}>
+                {org.name}
+              </option>
             ))}
           </Select>
         </FormControl>
@@ -316,11 +436,7 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
           >
             Create Person
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={onCancel}
-          >
+          <Button size="sm" variant="ghost" onClick={onCancel}>
             Cancel
           </Button>
         </HStack>

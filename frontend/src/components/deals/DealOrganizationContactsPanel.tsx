@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Box,
   VStack,
@@ -29,7 +29,7 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { GET_ORGANIZATION_PEOPLE_WITH_ROLES } from '../../lib/graphql/personOrganizationRoleOperations';
 import type { Person, PersonOrganizationRole } from '../../generated/graphql/graphql';
-import AddOrganizationRoleModal from '../people/AddOrganizationRoleModal';
+import RoleManagementModal from '../people/RoleManagementModal';
 import AddPersonToOrganizationModal from '../organizations/AddPersonToOrganizationModal';
 import { SmartEmailButton } from '../common/SmartEmailComposer';
 
@@ -78,21 +78,40 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
 
   const people = data?.peopleByOrganization || [];
   
-  // Extract all organization roles for the current organization from all people
-  const organizationRoles: ContactRole[] = people.flatMap((person: Person) => 
-    person.organizationRoles
-      ?.filter((role: PersonOrganizationRole) => role.organization_id === organization?.id)
-      ?.map((role: PersonOrganizationRole): ContactRole => ({
-        ...role,
-        person: {
-          id: person.id,
-          first_name: person.first_name,
-          last_name: person.last_name,
-          email: person.email,
-          phone: person.phone,
-        }
-      })) || []
-  );
+  // Consolidate people with multiple roles to avoid duplicates
+  const consolidatedContacts = useMemo(() => {
+    const contactMap = new Map<string, {
+      person: {
+        id: string;
+        first_name?: string | null;
+        last_name?: string | null;
+        email?: string | null;
+        phone?: string | null;
+      };
+      roles: PersonOrganizationRole[];
+    }>();
+
+    people.forEach((person: Person) => {
+      const personRoles = person.organizationRoles?.filter(
+        (role: PersonOrganizationRole) => role.organization_id === organization?.id
+      ) || [];
+
+      if (personRoles.length > 0) {
+        contactMap.set(person.id, {
+          person: {
+            id: person.id,
+            first_name: person.first_name,
+            last_name: person.last_name,
+            email: person.email,
+            phone: person.phone,
+          },
+          roles: personRoles,
+        });
+      }
+    });
+
+    return Array.from(contactMap.values());
+  }, [people, organization?.id]);
 
   // Handler functions for role management
   const handleManageRoles = (person: { id: string; first_name?: string | null; last_name?: string | null }) => {
@@ -114,12 +133,12 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
   // Get existing people IDs for filtering
   const existingPeopleIds = people.map((person: Person) => person.id);
   
-      // Notify parent component of contact count
+        // Notify parent component of contact count
   React.useEffect(() => {
-      if (onContactCountChange) {
-      onContactCountChange(organizationRoles.length);
-      }
-  }, [organizationRoles.length, onContactCountChange]);
+    if (onContactCountChange) {
+      onContactCountChange(consolidatedContacts.length);
+    }
+  }, [consolidatedContacts.length, onContactCountChange]);
 
   if (!organization) {
     return (
@@ -181,7 +200,7 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
         <Heading size="sm" color={colors.text.primary}>Organization Contacts</Heading>
         <HStack spacing={2}>
           <Badge variant="subtle" colorScheme="blue" fontSize="xs">
-            {organizationRoles.length} contact{organizationRoles.length !== 1 ? 's' : ''}
+            {consolidatedContacts.length} contact{consolidatedContacts.length !== 1 ? 's' : ''}
           </Badge>
           {organization && (
             <Tooltip label="View organization profile">
@@ -198,7 +217,7 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
         </HStack>
       </Flex>
 
-      {organizationRoles.length > 0 && (
+      {consolidatedContacts.length > 0 && (
         <FormControl display="flex" alignItems="center" mb={3}>
           <FormLabel htmlFor="include-former" fontSize="sm" mb={0} color={colors.text.secondary}>
             Include former employees
@@ -212,7 +231,7 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
         </FormControl>
       )}
 
-      {organizationRoles.length === 0 ? (
+      {consolidatedContacts.length === 0 ? (
         <Center minH="100px" flexDirection="column" bg={colors.bg.elevated} borderRadius="md" p={4}>
           <Icon as={InfoIcon} w={6} h={6} color={colors.text.muted} mb={3} />
           <Text color={colors.text.secondary} fontSize="sm" textAlign="center">
@@ -238,144 +257,160 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
         </Center>
       ) : (
         <VStack spacing={3} align="stretch" bg={colors.component.kanban.card} p={4} borderRadius="lg" borderWidth="1px" borderColor={colors.component.kanban.cardBorder} boxShadow="metallic">
-          {organizationRoles.map((role: ContactRole) => (
-            <Box 
-              key={role.id} 
-              p={3}
-              borderRadius="md"
-              bg={colors.component.kanban.card}
-              borderWidth="1px"
-              borderColor={colors.component.kanban.cardBorder}
-              boxShadow="metallic"
-              position="relative"
-              _before={{
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '3px',
-                height: '100%',
-                background: currentThemeName === 'industrialMetal' ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)' : 'transparent',
-                borderRadius: '0 0 0 md',
-              }}
-              _hover={{ 
-                borderColor: colors.component.kanban.cardBorder,
-                transform: 'translateX(4px) translateY(-1px)',
-                boxShadow: 'industrial3d',
-                bg: colors.component.kanban.cardHover,
-              }}
-              transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-            >
-              <HStack spacing={3} align="start">
-                <Avatar 
-                  size="sm"
-                  name={`${role.person.first_name || ''} ${role.person.last_name || ''}`}
-                  bg={colors.interactive.default}
-                  color={colors.text.onAccent}
-                />
-                <VStack align="start" spacing={1} flex={1}>
-                  <HStack spacing={2} align="center">
-                  <Link 
-                    as={RouterLink} 
-                      to={`/people/${role.person.id}`} 
-                    fontWeight="medium" 
-                    color={colors.text.link} 
-                    _hover={{ textDecoration: 'underline' }}
-                    fontSize="sm"
-                  >
-                      {role.person.first_name} {role.person.last_name}
-                  </Link>
-                    {role.is_primary && (
-                      <Badge size="sm" colorScheme="blue" variant="subtle">
-                        PRIMARY
-                      </Badge>
-                    )}
-                    {role.status === 'former' && (
-                      <Badge size="sm" colorScheme="gray" variant="subtle">
-                        FORMER
-                      </Badge>
-                    )}
-                  </HStack>
-                  
-                  <Text fontSize="xs" color={colors.text.secondary} fontWeight="medium">
-                    {role.role_title}
-                    {role.department && ` • ${role.department}`}
-                  </Text>
-                  
-                  {role.person.email && (
-                    <HStack spacing={1}>
-                      <Icon as={EmailIcon} w={3} h={3} color={colors.text.muted} />
+          {consolidatedContacts.map((contact) => {
+            const primaryRole = contact.roles.find(role => role.is_primary) || contact.roles[0];
+            const hasPrimaryRole = contact.roles.some(role => role.is_primary);
+            const hasFormerRole = contact.roles.some(role => role.status === 'former');
+            
+            return (
+              <Box 
+                key={contact.person.id} 
+                p={3}
+                borderRadius="md"
+                bg={colors.component.kanban.card}
+                borderWidth="1px"
+                borderColor={colors.component.kanban.cardBorder}
+                boxShadow="metallic"
+                position="relative"
+                _before={{
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '3px',
+                  height: '100%',
+                  background: currentThemeName === 'industrialMetal' ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)' : 'transparent',
+                  borderRadius: '0 0 0 md',
+                }}
+                _hover={{ 
+                  borderColor: colors.component.kanban.cardBorder,
+                  transform: 'translateX(4px) translateY(-1px)',
+                  boxShadow: 'industrial3d',
+                  bg: colors.component.kanban.cardHover,
+                }}
+                transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+              >
+                <HStack spacing={3} align="start">
+                  <Avatar 
+                    size="sm"
+                    name={`${contact.person.first_name || ''} ${contact.person.last_name || ''}`}
+                    bg={colors.interactive.default}
+                    color={colors.text.onAccent}
+                  />
+                  <VStack align="start" spacing={1} flex={1}>
+                    <HStack spacing={2} align="center" wrap="wrap">
                       <Link 
-                        href={`mailto:${role.person.email}`} 
-                        fontSize="xs" 
-                        color={colors.text.secondary}
-                        _hover={{ color: colors.text.link }}
+                        as={RouterLink} 
+                        to={`/people/${contact.person.id}`} 
+                        fontWeight="medium" 
+                        color={colors.text.link} 
+                        _hover={{ textDecoration: 'underline' }}
+                        fontSize="sm"
                       >
-                        {role.person.email}
+                        {contact.person.first_name} {contact.person.last_name}
                       </Link>
+                      {hasPrimaryRole && (
+                        <Badge size="sm" colorScheme="blue" variant="subtle">
+                          PRIMARY
+                        </Badge>
+                      )}
+                      {hasFormerRole && (
+                        <Badge size="sm" colorScheme="gray" variant="subtle">
+                          FORMER
+                        </Badge>
+                      )}
                     </HStack>
-                  )}
+                    
+                    {/* Show all roles as badges */}
+                    <HStack spacing={1} wrap="wrap">
+                      {contact.roles.map((role, index) => (
+                        <Badge 
+                          key={role.id} 
+                          size="xs" 
+                          colorScheme={role.is_primary ? "purple" : "gray"} 
+                          variant="outline"
+                        >
+                          {role.role_title}
+                          {role.department && ` (${role.department})`}
+                        </Badge>
+                      ))}
+                    </HStack>
+                    
+                    {contact.person.email && (
+                      <HStack spacing={1}>
+                        <Icon as={EmailIcon} w={3} h={3} color={colors.text.muted} />
+                        <Link 
+                          href={`mailto:${contact.person.email}`} 
+                          fontSize="xs" 
+                          color={colors.text.secondary}
+                          _hover={{ color: colors.text.link }}
+                        >
+                          {contact.person.email}
+                        </Link>
+                      </HStack>
+                    )}
+                    
+                    {contact.person.phone && (
+                      <HStack spacing={1}>
+                        <Icon as={PhoneIcon} w={3} h={3} color={colors.text.muted} />
+                        <Link 
+                          href={`tel:${contact.person.phone}`} 
+                          fontSize="xs" 
+                          color={colors.text.secondary}
+                          _hover={{ color: colors.text.link }}
+                        >
+                          {contact.person.phone}
+                        </Link>
+                      </HStack>
+                    )}
+                  </VStack>
                   
-                  {role.person.phone && (
-                    <HStack spacing={1}>
-                      <Icon as={PhoneIcon} w={3} h={3} color={colors.text.muted} />
-                      <Link 
-                        href={`tel:${role.person.phone}`} 
-                        fontSize="xs" 
-                        color={colors.text.secondary}
-                        _hover={{ color: colors.text.link }}
+                  <VStack spacing={1}>
+                    <Tooltip label="Manage Roles">
+                      <Button
+                        size="xs"
+                        variant="outline"
+                        colorScheme="blue"
+                        onClick={() => handleManageRoles(contact.person)}
                       >
-                        {role.person.phone}
-                      </Link>
-                    </HStack>
-                  )}
-                </VStack>
-                
-                <VStack spacing={1}>
-                  <Tooltip label="Manage Roles">
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      colorScheme="blue"
-                      onClick={() => handleManageRoles(role.person)}
-                    >
-                      Manage
-                    </Button>
-                  </Tooltip>
-                  {role.person.email && (
-                    <SmartEmailButton
-                      to={role.person.email}
-                        size="xs"
-                        variant="ghost"
-                      isIconButton={true}
-                      tooltip="Send email"
-                      context={{
-                        dealId,
-                        dealName,
-                        personId: role.person.id,
-                        personName: `${role.person.first_name || ''} ${role.person.last_name || ''}`.trim(),
-                        organizationId: organization?.id,
-                        organizationName: organization?.name,
-                      }}
-                      />
-                  )}
-                  {role.person.phone && (
-                    <Tooltip label="Call">
-                      <IconButton
-                        icon={<PhoneIcon />}
-                        aria-label="Call"
-                        size="xs"
-                        variant="ghost"
-                        onClick={() => window.open(`tel:${role.person.phone}`)}
-                      />
+                        Manage
+                      </Button>
                     </Tooltip>
-                  )}
-                </VStack>
-              </HStack>
-            </Box>
-          ))}
+                    {contact.person.email && (
+                      <SmartEmailButton
+                        to={contact.person.email}
+                        size="xs"
+                        variant="ghost"
+                        isIconButton={true}
+                        tooltip="Send email"
+                        context={{
+                          dealId,
+                          dealName,
+                          personId: contact.person.id,
+                          personName: `${contact.person.first_name || ''} ${contact.person.last_name || ''}`.trim(),
+                          organizationId: organization?.id,
+                          organizationName: organization?.name,
+                        }}
+                      />
+                    )}
+                    {contact.person.phone && (
+                      <Tooltip label="Call">
+                        <IconButton
+                          icon={<PhoneIcon />}
+                          aria-label="Call"
+                          size="xs"
+                          variant="ghost"
+                          onClick={() => window.open(`tel:${contact.person.phone}`)}
+                        />
+                      </Tooltip>
+                    )}
+                  </VStack>
+                </HStack>
+              </Box>
+            );
+          })}
           
-          {organizationRoles.length > 0 && (
+          {consolidatedContacts.length > 0 && (
             <HStack spacing={2}>
               <Button 
                 size="sm" 
@@ -399,13 +434,17 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
       )}
       
       {/* Role Management Modal */}
-      {selectedPerson && (
-        <AddOrganizationRoleModal
+      {selectedPerson && organization && (
+        <RoleManagementModal
           isOpen={isOpen}
           onClose={onClose}
           personId={selectedPerson.id}
           personName={selectedPerson.name}
-          existingRole={null} // For now, always add new roles from deal view
+          organizationId={organization.id}
+          organizationName={organization.name}
+          existingRoles={
+            consolidatedContacts.find(contact => contact.person.id === selectedPerson.id)?.roles || []
+          }
           onSuccess={handleSuccess}
         />
       )}

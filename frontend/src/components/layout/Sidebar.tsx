@@ -18,7 +18,6 @@ import {
   FiGlobe,         // Google Integration (global/web icon)
   FiDollarSign,    // Deals (money/revenue)
   FiTarget,        // Leads (targeting prospects)
-  FiUserCheck,     // Contacts (verified people)
   FiHome,          // Organizations (buildings/companies - using FiHome as alternative)
   FiBriefcase      // My Accounts (business portfolio)
 } from 'react-icons/fi'; // Import specific meaningful icons
@@ -39,7 +38,7 @@ import { useThemeColors } from '../../hooks/useThemeColors'; // NEW: Use semanti
 const NAV_ITEMS = [
   { path: '/deals', label: 'Deals', icon: <FiDollarSign size={16} /> },
   { path: '/leads', label: 'Leads', icon: <FiTarget size={16} /> },
-  { path: '/people', label: 'Contacts', icon: <FiUserCheck size={16} /> },
+  { path: '/people', label: 'People', icon: <FiUsers size={16} /> },
   { path: '/organizations', label: 'Organizations', icon: <FiHome size={16} /> },
   // Activities removed - using Google Calendar integration instead
   { path: '/my-accounts', label: 'My Accounts', icon: <FiBriefcase size={16} />, permission: 'organization:view_account_portfolio' },

@@ -73,6 +73,10 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
     estimatedValue: undefined,
     wfmProjectTypeId: '',
   });
+
+  // NEW: Track selected entities for linking
+  const [selectedPersonId, setSelectedPersonId] = useState<string | undefined>();
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>();
   
   const [customFieldFormValues, setCustomFieldFormValues] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -195,6 +199,7 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
 
   const handleSelectContactSuggestion = (suggestion: PersonSuggestion) => {
     setSelectedContactSuggestion(suggestion);
+    setSelectedPersonId(suggestion.id); // NEW: Capture entity ID for linking
     setFormData(prev => ({
       ...prev,
       contactName: suggestion.name,
@@ -207,6 +212,7 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
 
   const handleSelectCompanySuggestion = (suggestion: OrganizationSuggestion) => {
     setSelectedCompanySuggestion(suggestion);
+    setSelectedOrganizationId(suggestion.id); // NEW: Capture entity ID for linking
     setFormData(prev => ({
       ...prev,
       companyName: suggestion.name,
@@ -237,6 +243,9 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
         contactEmail: formData.contactEmail || undefined,
         contactPhone: formData.contactPhone || undefined,
         companyName: formData.companyName || undefined,
+        // NEW: Entity-based references when suggestions were selected
+        personId: selectedPersonId || undefined,
+        organizationId: selectedOrganizationId || undefined,
         estimatedValue: formData.estimatedValue || undefined,
         wfmProjectTypeId: 'AUTO_DEFAULT_LEAD_QUALIFICATION',
       };

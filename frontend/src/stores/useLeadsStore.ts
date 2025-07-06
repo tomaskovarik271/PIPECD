@@ -77,6 +77,9 @@ const LEAD_CORE_FIELDS_FRAGMENT = gql`
     contact_email
     contact_phone
     company_name
+    # NEW: Entity-based references
+    person_id
+    organization_id
     estimated_value
     estimated_close_date
     lead_score

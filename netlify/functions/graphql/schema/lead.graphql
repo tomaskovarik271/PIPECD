@@ -8,6 +8,11 @@ type Lead {
   contact_email: String
   contact_phone: String
   company_name: String
+  # NEW: Entity-based references (optional for backward compatibility)
+  person_id: ID
+  person: Person
+  organization_id: ID
+  organization: Organization
   estimated_value: Float
   estimated_close_date: DateTime
   lead_score: Int!
@@ -53,6 +58,9 @@ input LeadInput {
   contactEmail: String
   contactPhone: String
   companyName: String
+  # NEW: Entity-based inputs (optional)
+  personId: ID
+  organizationId: ID
   estimatedValue: Float
   estimatedCloseDate: DateTime
   assignedToUserId: ID
@@ -68,6 +76,9 @@ input LeadUpdateInput {
   contactEmail: String
   contactPhone: String
   companyName: String
+  # NEW: Entity-based updates (optional)
+  personId: ID
+  organizationId: ID
   estimatedValue: Float
   estimatedCloseDate: DateTime
   assignedToUserId: ID

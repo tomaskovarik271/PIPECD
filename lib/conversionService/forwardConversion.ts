@@ -74,12 +74,16 @@ export async function convertLeadToDeal(
 
     const lead = validationResult.sourceEntity as any;
 
-    // 2. Entity Creation Phase
+    // 2. ENHANCED Entity Resolution Phase (supports entity-linked leads)
     let personId: string | undefined;
     let organizationId: string | undefined;
 
-    // Create or find Person from lead contact data
-    if (lead.contact_name || lead.contact_email) {
+    // NEW: Use direct entity references if available (much simpler!)
+    if (lead.person_id) {
+      personId = lead.person_id;
+      console.log(`Using linked person entity: ${personId}`);
+    } else if (lead.contact_name || lead.contact_email) {
+      // FALLBACK: Legacy string-based person creation
       try {
         // Check if person already exists by email
         if (lead.contact_email) {
@@ -114,8 +118,12 @@ export async function convertLeadToDeal(
       }
     }
 
-    // Create or find Organization from lead company data
-    if (lead.company_name) {
+    // NEW: Use direct organization reference if available (much simpler!)
+    if (lead.organization_id) {
+      organizationId = lead.organization_id;
+      console.log(`Using linked organization entity: ${organizationId}`);
+    } else if (lead.company_name) {
+      // FALLBACK: Legacy string-based organization creation
       try {
         // Check if organization already exists by name
         const existingOrgs = await organizationService.getOrganizations(userId, accessToken);
@@ -136,14 +144,6 @@ export async function convertLeadToDeal(
           const createdOrg = await organizationService.createOrganization(userId, orgData, accessToken);
           organizationId = createdOrg.id;
           console.log(`Created new organization: ${organizationId}`);
-        }
-
-        // Link person to organization if both exist
-        if (personId && organizationId) {
-          await personService.updatePerson(userId, personId, {
-            organization_id: organizationId
-          }, accessToken);
-          console.log(`Linked person ${personId} to organization ${organizationId}`);
         }
       } catch (error) {
         console.error('Error creating/finding organization:', error);

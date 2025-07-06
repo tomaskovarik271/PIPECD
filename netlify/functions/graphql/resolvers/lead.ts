@@ -33,6 +33,52 @@ interface RawDbWfmProject {
 }
 
 export const Lead: LeadResolvers<GraphQLContext> = {
+    // NEW: Entity-based person reference
+    person: async (parent: GraphQLLeadParent, _args: any, context: GraphQLContext): Promise<Person | null> => {
+      if (!parent.person_id) return null;
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context)!;
+      try {
+         const personRecord = await personService.getPersonById(context.currentUser!.id, parent.person_id, accessToken);
+         if (!personRecord) return null;
+         return {
+            id: personRecord.id,
+            created_at: personRecord.created_at,
+            updated_at: personRecord.updated_at,
+            user_id: personRecord.user_id,
+            first_name: personRecord.first_name,
+            last_name: personRecord.last_name,
+            email: personRecord.email,
+            phone: personRecord.phone,
+            notes: personRecord.notes,
+         } as unknown as Person;
+      } catch (e) {
+          console.error(`Error fetching person ${parent.person_id} for lead ${parent.id}:`, e);
+          return null; 
+      }
+    },
+    // NEW: Entity-based organization reference
+    organization: async (parent: GraphQLLeadParent, _args: any, context: GraphQLContext): Promise<Organization | null> => {
+      if (!parent.organization_id) return null;
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context)!;
+      try {
+        const orgRecord = await organizationService.getOrganizationById(context.currentUser!.id, parent.organization_id, accessToken);
+        if (!orgRecord) return null;
+        return {
+          id: orgRecord.id,
+          name: orgRecord.name,
+          address: orgRecord.address,
+          notes: orgRecord.notes,
+          user_id: orgRecord.user_id,
+          created_at: orgRecord.created_at,
+          updated_at: orgRecord.updated_at,
+        } as Organization;
+      } catch (e) {
+        console.error(`Error fetching organization ${parent.organization_id} for lead ${parent.id}:`, e);
+        return null;
+      }
+    },
     converted_to_person: async (parent: GraphQLLeadParent, _args: any, context: GraphQLContext): Promise<Person | null> => {
       if (!parent.converted_to_person_id) return null;
       requireAuthentication(context);

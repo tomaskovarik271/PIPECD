@@ -20,7 +20,6 @@ import {
   Checkbox,
 } from '@chakra-ui/react';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
-import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
 import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitionStore';
 import type {
   PersonInput,
@@ -36,25 +35,17 @@ interface EditPersonFormProps {
 }
 
 const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSuccess }) => {
-  const [formData, setFormData] = useState<PersonInput>({
+  const [formData, setFormData] = useState({
     first_name: person.first_name,
     last_name: person.last_name,
     email: person.email,
     phone: person.phone,
     notes: person.notes,
-    organization_id: person.organization_id,
     customFields: [],
   });
   const [customFieldData, setCustomFieldData] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
-
-  const { 
-    organizations, 
-    organizationsLoading: orgLoading, 
-    organizationsError: orgError,
-    fetchOrganizations 
-  } = useOrganizationsStore();
 
   const { updatePerson: updatePersonAction, peopleError } = usePeopleStore();
   
@@ -70,13 +61,10 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
   );
 
   useEffect(() => {
-    if (!orgLoading && (!organizations || organizations.length === 0)) {
-      fetchOrganizations();
-    }
     if (!definitionsLoading && !allDefinitions.some(d => d.entityType === 'PERSON')) {
       fetchDefinitions('PERSON' as CustomFieldEntityType);
     }
-  }, [organizations, orgLoading, fetchOrganizations, definitionsLoading, allDefinitions, fetchDefinitions]);
+  }, [definitionsLoading, allDefinitions, fetchDefinitions]);
 
   // Initialize custom field data from person
   useEffect(() => {
@@ -137,11 +125,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === 'organization_id' && value === '') {
-      setFormData(prev => ({ ...prev, [name]: null }));
-    } else {
-      setFormData(prev => ({ ...prev, [name]: value }));
-    }
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleCustomFieldChange = (fieldName: string, value: string | React.ChangeEvent<HTMLInputElement>, type: GQLCustomFieldType) => {
@@ -210,7 +194,6 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
       email: formData.email || null,
       phone: formData.phone || null,
       notes: formData.notes || null,
-      organization_id: formData.organization_id || null,
       customFields: processedCustomFields.length > 0 ? processedCustomFields : null,
     };
 
@@ -277,25 +260,6 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
           <FormControl>
             <FormLabel>Phone</FormLabel>
             <Input type="tel" name="phone" value={formData.phone || ''} onChange={handleChange} />
-          </FormControl>
-          
-          <FormControl>
-            <FormLabel>Organization</FormLabel>
-            {orgLoading && <Spinner size="sm" />}
-            {orgError && <Alert status="error" size="sm"><AlertIcon />{orgError}</Alert>}
-            {!orgLoading && !orgError && (
-              <Select
-                name="organization_id"
-                value={formData.organization_id || ''}
-                onChange={handleChange}
-                placeholder="Select organization (optional)"
-                isDisabled={orgLoading || !organizations || organizations.length === 0}
-              >
-                {organizations && organizations.map((org: Organization) => (
-                  <option key={org.id} value={org.id}>{org.name}</option>
-                ))}
-              </Select>
-            )}
           </FormControl>
           
           <FormControl>

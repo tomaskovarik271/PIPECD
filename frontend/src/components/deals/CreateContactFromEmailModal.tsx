@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Modal,
   ModalOverlay,
@@ -20,9 +20,12 @@ import {
   Divider,
   Badge,
   useToast,
+  Box,
 } from '@chakra-ui/react';
 import { gql, useMutation, useQuery } from '@apollo/client';
 import { useThemeColors } from '../../hooks/useThemeColors';
+import SearchableSelect, { SearchableSelectOption } from '../common/SearchableSelect';
+import InlineOrganizationForm from '../common/InlineOrganizationForm';
 
 const CREATE_CONTACT_FROM_EMAIL = gql`
   mutation CreateContactFromEmail($input: CreateContactFromEmailInput!) {
@@ -55,8 +58,8 @@ interface EmailMessage {
 interface Organization {
   id: string;
   name: string;
-  website?: string;
-  address?: string;
+  website?: string | null;
+  address?: string | null;
 }
 
 interface CreateContactFromEmailModalProps {
@@ -108,6 +111,8 @@ const CreateContactFromEmailModal: React.FC<CreateContactFromEmailModalProps> = 
     notes: '',
   });
 
+  const [showInlineOrgForm, setShowInlineOrgForm] = useState(false);
+
   // Parse email information when modal opens
   useEffect(() => {
     if (isOpen && emailMessage) {
@@ -124,7 +129,28 @@ const CreateContactFromEmailModal: React.FC<CreateContactFromEmailModalProps> = 
   }, [isOpen, emailMessage]);
 
   // GraphQL hooks
-  const { data: organizationsData } = useQuery(GET_ORGANIZATIONS);
+  const { data: organizationsData, loading: organizationsLoading, error: organizationsError } = useQuery(GET_ORGANIZATIONS);
+
+  // Convert organizations to SearchableSelect options
+  const organizationOptions: SearchableSelectOption[] = useMemo(() => {
+    return (organizationsData?.organizations || []).map((org: Organization) => ({
+      value: org.id,
+      label: org.name,
+    }));
+  }, [organizationsData]);
+
+  const handleOrganizationChange = (value: string) => {
+    setFormData({ ...formData, organizationId: value });
+  };
+
+  const handleCreateNewOrganization = () => {
+    setShowInlineOrgForm(true);
+  };
+
+  const handleOrganizationCreated = (organization: Organization) => {
+    setFormData({ ...formData, organizationId: organization.id });
+    setShowInlineOrgForm(false);
+  };
 
   const [createContactFromEmail, { loading }] = useMutation(CREATE_CONTACT_FROM_EMAIL, {
     onCompleted: (data) => {
@@ -273,19 +299,28 @@ const CreateContactFromEmailModal: React.FC<CreateContactFromEmailModalProps> = 
 
               <FormControl>
                 <FormLabel>Organization</FormLabel>
-                <Select
-                  value={formData.organizationId}
-                  onChange={(e) => setFormData({ ...formData, organizationId: e.target.value })}
+                <SearchableSelect
+                  options={organizationOptions}
+                  value={formData.organizationId || ''}
+                  onChange={handleOrganizationChange}
                   placeholder="Select organization (optional)"
-                  bg={colors.bg.input}
-                  borderColor={colors.border.input}
-                >
-                  {organizationsData?.organizations?.map((org: Organization) => (
-                    <option key={org.id} value={org.id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </Select>
+                  isLoading={organizationsLoading}
+                  error={organizationsError?.message}
+                  isDisabled={organizationsLoading}
+                  allowCreate={true}
+                  createLabel="Create New Organization"
+                  onCreateNew={handleCreateNewOrganization}
+                />
+                
+                {/* Inline Organization Creation */}
+                {showInlineOrgForm && (
+                  <Box mt={3}>
+                    <InlineOrganizationForm
+                      onCreated={handleOrganizationCreated}
+                      onCancel={() => setShowInlineOrgForm(false)}
+                    />
+                  </Box>
+                )}
               </FormControl>
 
               <FormControl>

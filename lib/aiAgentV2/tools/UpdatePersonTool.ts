@@ -8,7 +8,6 @@ interface UpdatePersonParams {
   last_name?: string;
   email?: string;
   phone?: string;
-  organization_id?: string;
   notes?: string;
 }
 
@@ -25,7 +24,7 @@ export class UpdatePersonTool implements ToolExecutor {
 
   static definition: ToolDefinition = {
     name: 'update_person',
-    description: 'Update existing person/contact information with intelligent validation and duplicate detection',
+    description: 'Update existing person/contact information with intelligent validation and duplicate detection. Note: Organization relationships are managed separately through role operations.',
     input_schema: {
       type: 'object',
       properties: {
@@ -48,10 +47,6 @@ export class UpdatePersonTool implements ToolExecutor {
         phone: {
           type: 'string',
           description: 'New phone number (will be auto-formatted)'
-        },
-        organization_id: {
-          type: 'string',
-          description: 'Organization ID to associate with (or null to remove association)'
         },
         notes: {
           type: 'string',
@@ -108,7 +103,7 @@ export class UpdatePersonTool implements ToolExecutor {
         const allPersons = await personService.getPeople(context.userId, context.authToken);
         const emailConflict = allPersons.find((person: Person) => 
           person.id !== person_id && 
-          person.email?.toLowerCase() === updateData.email.toLowerCase()
+          person.email?.toLowerCase() === updateData.email?.toLowerCase()
         );
         
         if (emailConflict) {
@@ -175,13 +170,6 @@ export class UpdatePersonTool implements ToolExecutor {
         updateInput.phone = processedPhone;
       }
 
-      if (updateData.organization_id !== undefined && updateData.organization_id !== existingPerson.organization_id) {
-        const oldOrg = existingPerson.organization_id || 'No organization';
-        const newOrg = updateData.organization_id || 'No organization';
-        changes.push(`organization: ${oldOrg} → ${newOrg}`);
-        updateInput.organization_id = updateData.organization_id;
-      }
-
       if (updateData.notes && updateData.notes !== existingPerson.notes) {
         changes.push(`notes: Updated`);
         updateInput.notes = updateData.notes;
@@ -227,7 +215,6 @@ export class UpdatePersonTool implements ToolExecutor {
           last_name: updatedPerson.last_name || 'Not specified',
           email: updatedPerson.email || 'Not specified',
           phone: updatedPerson.phone || 'Not specified',
-          organization_id: updatedPerson.organization_id || 'No organization',
           updated_at: updatedPerson.updated_at,
           changes_applied: changes.length,
           changed_fields: changes,

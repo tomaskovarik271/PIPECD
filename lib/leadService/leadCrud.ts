@@ -20,6 +20,9 @@ export interface DbLead {
   contact_email?: string | null;
   contact_phone?: string | null;
   company_name?: string | null;
+  // NEW: Entity-based references
+  person_id?: string | null;
+  organization_id?: string | null;
   estimated_value?: number | null;
   estimated_close_date?: string | null;
   lead_score: number;
@@ -50,6 +53,9 @@ export interface LeadServiceUpdateData {
   contact_email?: string | null;
   contact_phone?: string | null;
   company_name?: string | null;
+  // NEW: Entity-based references
+  person_id?: string | null;
+  organization_id?: string | null;
   estimated_value?: number | null;
   estimated_close_date?: string | null;
   lead_score?: number | null;
@@ -140,6 +146,9 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
     contact_email: leadCoreData.contactEmail,
     contact_phone: leadCoreData.contactPhone,
     company_name: leadCoreData.companyName,
+    // NEW: Entity-based references
+    person_id: leadCoreData.personId || null,
+    organization_id: leadCoreData.organizationId || null,
     estimated_value: leadCoreData.estimatedValue,
     estimated_close_date: leadCoreData.estimatedCloseDate,
   };
@@ -165,7 +174,7 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
     .insert(finalLeadInsertPayload)
     .select(`
       id, user_id, name, source, description, contact_name, contact_email, 
-      contact_phone, company_name, estimated_value, estimated_close_date,
+      contact_phone, company_name, person_id, organization_id, estimated_value, estimated_close_date,
       lead_score, lead_score_factors, assigned_to_user_id, assigned_at,
       converted_at, converted_to_deal_id, converted_to_person_id, 
       converted_to_organization_id, converted_by_user_id, wfm_project_id,
@@ -254,7 +263,7 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
         .eq('id', newLeadRecord.id)
         .select(`
           id, user_id, name, source, description, contact_name, contact_email, 
-          contact_phone, company_name, estimated_value, estimated_close_date,
+          contact_phone, company_name, person_id, organization_id, estimated_value, estimated_close_date,
           lead_score, lead_score_factors, assigned_to_user_id, assigned_at,
           converted_at, converted_to_deal_id, converted_to_person_id, 
           converted_to_organization_id, converted_by_user_id, wfm_project_id,

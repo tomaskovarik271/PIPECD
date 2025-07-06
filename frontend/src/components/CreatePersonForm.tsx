@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Button,
   FormControl,
@@ -29,10 +29,19 @@ import { useCustomFieldDefinitionStore } from '../stores/useCustomFieldDefinitio
 import { CREATE_PERSON_ORGANIZATION_ROLE } from '../lib/graphql/personOrganizationRoleOperations';
 import { CustomFieldRenderer } from './common/CustomFieldRenderer';
 import { processCustomFieldsForSubmission } from '../lib/utils/customFieldProcessing';
+import SearchableSelect, { SearchableSelectOption } from './common/SearchableSelect';
+import InlineOrganizationForm from './common/InlineOrganizationForm';
 
 interface CreatePersonFormProps {
   onClose: () => void;
   onSuccess: () => void;
+}
+
+interface PersonOrganizationRoleInput {
+  organization_id: string;
+  role_title: string;
+  is_primary: boolean;
+  status: string;
 }
 
 function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
@@ -47,8 +56,9 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
 
   // Separate state for organization selection
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string>('');
+  const [showInlineOrgForm, setShowInlineOrgForm] = useState(false);
 
-  const [customFieldData, setCustomFieldData] = useState<Record<string, any>>({});
+  const [customFieldData, setCustomFieldData] = useState<Record<string, string | number | boolean | string[]>>({});
   const [isLoading, setIsLoading] = useState(false);
   const toast = useToast();
 
@@ -61,14 +71,14 @@ function CreatePersonForm({ onClose, onSuccess }: CreatePersonFormProps) {
 
   const { createPerson: createPersonAction, peopleError } = usePeopleStore();
   
-  // GraphQL mutation for creating organization role
-  const [createPersonOrganizationRole] = useMutation(CREATE_PERSON_ORGANIZATION_ROLE);
-  
   const allDefinitions = useCustomFieldDefinitionStore(state => state.definitions);
   const definitionsLoading = useCustomFieldDefinitionStore(state => state.loading);
+  const _definitionsError = useCustomFieldDefinitionStore(state => state.error);
   const fetchDefinitions = useCustomFieldDefinitionStore(state => state.fetchCustomFieldDefinitions);
 
   const [localError, setLocalError] = useState<string | null>(null);
+
+  const [createPersonOrganizationRole] = useMutation(CREATE_PERSON_ORGANIZATION_ROLE);
 
   const personCustomFieldDefinitions = allDefinitions.filter(
     d => d.entityType === 'PERSON' && d.isActive

@@ -252,6 +252,7 @@ const AddPersonToOrganizationModal: React.FC<AddPersonToOrganizationModalProps> 
           personId={selectedPerson.id}
           personName={getPersonName(selectedPerson)}
           existingRole={null}
+          preselectedOrganizationId={organizationId}
           onSuccess={handleRoleSuccess}
         />
       )}

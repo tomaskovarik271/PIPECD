@@ -222,7 +222,7 @@ function CreateOrganizationModal({ isOpen, onClose, onOrganizationCreated }: Cre
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="xl" scrollBehavior="inside">
       <ModalOverlay />
       <ModalContent as="form" onSubmit={handleSubmit}>
-        <ModalHeader>Create New Organization</ModalHeader>
+        <ModalHeader>Create Organization</ModalHeader>
         <ModalCloseButton />
         <ModalBody pb={6}>
           {(localError || storeError || definitionStoreError) && (

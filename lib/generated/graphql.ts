@@ -1478,7 +1478,11 @@ export type Lead = {
   lead_score: Scalars["Int"]["output"];
   lead_score_factors?: Maybe<Scalars["JSON"]["output"]>;
   name: Scalars["String"]["output"];
+  organization?: Maybe<Organization>;
+  organization_id?: Maybe<Scalars["ID"]["output"]>;
   originalDeal?: Maybe<Deal>;
+  person?: Maybe<Person>;
+  person_id?: Maybe<Scalars["ID"]["output"]>;
   qualificationLevel: Scalars["Float"]["output"];
   qualificationStatus: Scalars["String"]["output"];
   reactivationPlan?: Maybe<ReactivationPlan>;
@@ -1569,6 +1573,8 @@ export type LeadInput = {
   estimatedCloseDate?: InputMaybe<Scalars["DateTime"]["input"]>;
   estimatedValue?: InputMaybe<Scalars["Float"]["input"]>;
   name: Scalars["String"]["input"];
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
   source?: InputMaybe<Scalars["String"]["input"]>;
   wfmProjectTypeId: Scalars["ID"]["input"];
 };
@@ -1585,6 +1591,8 @@ export type LeadUpdateInput = {
   estimatedValue?: InputMaybe<Scalars["Float"]["input"]>;
   leadScore?: InputMaybe<Scalars["Int"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
   source?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -6697,11 +6705,23 @@ export type LeadResolvers<
     ContextType
   >;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  organization?: Resolver<
+    Maybe<ResolversTypes["Organization"]>,
+    ParentType,
+    ContextType
+  >;
+  organization_id?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
   originalDeal?: Resolver<
     Maybe<ResolversTypes["Deal"]>,
     ParentType,
     ContextType
   >;
+  person?: Resolver<Maybe<ResolversTypes["Person"]>, ParentType, ContextType>;
+  person_id?: Resolver<Maybe<ResolversTypes["ID"]>, ParentType, ContextType>;
   qualificationLevel?: Resolver<
     ResolversTypes["Float"],
     ParentType,

@@ -362,7 +362,7 @@ function PeoplePage() {
         <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl" isCentered scrollBehavior="inside">
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader>Create New Person</ModalHeader>
+                            <ModalHeader>Create Person</ModalHeader>
             <ModalCloseButton />
             <ModalBody pb={6}>
               <CreatePersonForm onSuccess={onCreateClose} onClose={onCreateClose} />

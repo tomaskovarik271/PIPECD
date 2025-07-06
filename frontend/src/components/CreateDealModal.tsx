@@ -23,6 +23,7 @@ import {
   Text,
   Box,
 } from '@chakra-ui/react';
+import { useMutation } from '@apollo/client';
 import { usePeopleStore, Person } from '../stores/usePeopleStore';
 import { useDealsStore, DealInput } from '../stores/useDealsStore';
 import { useWFMProjectTypeStore, WfmProjectType } from '../stores/useWFMProjectTypeStore';
@@ -39,6 +40,7 @@ import { DealAmountInput } from './currency/CurrencyInput';
 import InlineOrganizationForm from './common/InlineOrganizationForm';
 import InlinePersonForm from './common/InlinePersonForm';
 import SearchableSelect, { SearchableSelectOption } from './common/SearchableSelect';
+import { CREATE_PERSON_ORGANIZATION_ROLE } from '../lib/graphql/personOrganizationRoleOperations';
 
 interface CreateDealModalProps {
   isOpen: boolean;
@@ -67,6 +69,14 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
   // Inline creation states
   const [showInlineOrgForm, setShowInlineOrgForm] = useState(false);
   const [showInlinePersonForm, setShowInlinePersonForm] = useState(false);
+
+  // Mutation for creating person organization roles
+  const [createPersonOrganizationRole] = useMutation(CREATE_PERSON_ORGANIZATION_ROLE, {
+    onError: (error) => {
+      console.error('Error creating person organization role:', error);
+      // Don't throw error - deal was created successfully
+    }
+  });
 
   // Store hooks
   const { 
@@ -222,15 +232,12 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       if (person.organization?.name) {
         organizationName = person.organization.name;
         label = `${personName} (${organizationName})`;
-        isFromSelectedOrg = person.organization.id === organizationId;
-      } else if (person.organization_id && organizations.length > 0) {
-        // Fallback: find organization by ID if organization object not populated
-        const org = organizations.find(o => o.id === person.organization_id);
-        if (org?.name) {
-          organizationName = org.name;
-          label = `${personName} (${organizationName})`;
-          isFromSelectedOrg = org.id === organizationId;
-        }
+        isFromSelectedOrg = person.organization?.id === organizationId;
+      } else if (person.primaryOrganization && organizations.length > 0) {
+        // Use primary organization from role-based system
+        organizationName = person.primaryOrganization.name;
+        label = `${personName} (${organizationName})`;
+        isFromSelectedOrg = person.primaryOrganization.id === organizationId;
       } else {
         // No organization
         label = `${personName} (No organization)`;
@@ -315,6 +322,35 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       const createdDeal = await createDealAction(dealInput);
 
       if (createdDeal) {
+        // Ensure the person has an organization role for the selected organization
+        if (personId && organizationId) {
+          try {
+            // Check if the person already has a role with this organization
+            const selectedPerson = people.find(p => p.id === personId);
+            const hasRole = selectedPerson?.organizationRoles?.some(role => 
+              role.organization_id === organizationId && role.status === 'active'
+            );
+
+            if (!hasRole) {
+              // Create organization role for the person
+              await createPersonOrganizationRole({
+                variables: {
+                  personId: personId,
+                  input: {
+                    organization_id: organizationId,
+                    role_title: 'Contact', // Default role title
+                    is_primary: false, // Don't automatically make it primary
+                    status: 'active'
+                  }
+                }
+              });
+            }
+          } catch (roleError) {
+            console.error('Error ensuring organization role:', roleError);
+            // Don't show error to user - deal was created successfully
+          }
+        }
+
         toast({ 
           title: 'Deal Created', 
           description: 'The new deal has been successfully created.', 

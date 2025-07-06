@@ -1469,7 +1469,11 @@ export type Lead = {
   lead_score: Scalars["Int"]["output"];
   lead_score_factors?: Maybe<Scalars["JSON"]["output"]>;
   name: Scalars["String"]["output"];
+  organization?: Maybe<Organization>;
+  organization_id?: Maybe<Scalars["ID"]["output"]>;
   originalDeal?: Maybe<Deal>;
+  person?: Maybe<Person>;
+  person_id?: Maybe<Scalars["ID"]["output"]>;
   qualificationLevel: Scalars["Float"]["output"];
   qualificationStatus: Scalars["String"]["output"];
   reactivationPlan?: Maybe<ReactivationPlan>;
@@ -1560,6 +1564,8 @@ export type LeadInput = {
   estimatedCloseDate?: InputMaybe<Scalars["DateTime"]["input"]>;
   estimatedValue?: InputMaybe<Scalars["Float"]["input"]>;
   name: Scalars["String"]["input"];
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
   source?: InputMaybe<Scalars["String"]["input"]>;
   wfmProjectTypeId: Scalars["ID"]["input"];
 };
@@ -1576,6 +1582,8 @@ export type LeadUpdateInput = {
   estimatedValue?: InputMaybe<Scalars["Float"]["input"]>;
   leadScore?: InputMaybe<Scalars["Int"]["input"]>;
   name?: InputMaybe<Scalars["String"]["input"]>;
+  organizationId?: InputMaybe<Scalars["ID"]["input"]>;
+  personId?: InputMaybe<Scalars["ID"]["input"]>;
   source?: InputMaybe<Scalars["String"]["input"]>;
 };
 
@@ -8481,6 +8489,8 @@ export type LeadCoreFieldsFragment = {
   contact_email?: string | null;
   contact_phone?: string | null;
   company_name?: string | null;
+  person_id?: string | null;
+  organization_id?: string | null;
   estimated_value?: number | null;
   estimated_close_date?: string | null;
   lead_score: number;
@@ -8532,6 +8542,8 @@ export type GetLeadsQuery = {
     contact_email?: string | null;
     contact_phone?: string | null;
     company_name?: string | null;
+    person_id?: string | null;
+    organization_id?: string | null;
     estimated_value?: number | null;
     estimated_close_date?: string | null;
     lead_score: number;
@@ -8613,6 +8625,8 @@ export type CreateLeadMutation = {
     contact_email?: string | null;
     contact_phone?: string | null;
     company_name?: string | null;
+    person_id?: string | null;
+    organization_id?: string | null;
     estimated_value?: number | null;
     estimated_close_date?: string | null;
     lead_score: number;
@@ -8695,6 +8709,8 @@ export type UpdateLeadMutation = {
     contact_email?: string | null;
     contact_phone?: string | null;
     company_name?: string | null;
+    person_id?: string | null;
+    organization_id?: string | null;
     estimated_value?: number | null;
     estimated_close_date?: string | null;
     lead_score: number;
@@ -8766,6 +8782,8 @@ export type UpdateLeadWfmProgressMutation = {
     contact_email?: string | null;
     contact_phone?: string | null;
     company_name?: string | null;
+    person_id?: string | null;
+    organization_id?: string | null;
     estimated_value?: number | null;
     estimated_close_date?: string | null;
     lead_score: number;

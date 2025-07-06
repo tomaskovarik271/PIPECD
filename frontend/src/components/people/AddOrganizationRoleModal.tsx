@@ -39,6 +39,7 @@ interface AddOrganizationRoleModalProps {
   personId: string;
   personName: string;
   existingRole?: PersonOrganizationRole | null;
+  preselectedOrganizationId?: string;
   onSuccess: () => void;
 }
 
@@ -48,6 +49,7 @@ const AddOrganizationRoleModal: React.FC<AddOrganizationRoleModalProps> = ({
   personId,
   personName,
   existingRole,
+  preselectedOrganizationId,
   onSuccess,
 }) => {
   const colors = useThemeColors();
@@ -105,7 +107,7 @@ const AddOrganizationRoleModal: React.FC<AddOrganizationRoleModalProps> = ({
     } else {
       // Reset form for new role
       setFormData({
-        organization_id: '',
+        organization_id: preselectedOrganizationId || '',
         role_title: '',
         department: '',
         is_primary: false,
@@ -116,7 +118,7 @@ const AddOrganizationRoleModal: React.FC<AddOrganizationRoleModalProps> = ({
       });
     }
     setErrors({});
-  }, [existingRole, isOpen]);
+  }, [existingRole, preselectedOrganizationId, isOpen]);
 
   // Form validation
   const validateForm = () => {
@@ -247,6 +249,8 @@ const AddOrganizationRoleModal: React.FC<AddOrganizationRoleModalProps> = ({
                 borderColor={colors.border.input}
                 color={colors.text.primary}
                 _placeholder={{ color: colors.text.secondary }}
+                isDisabled={!!preselectedOrganizationId && !existingRole}
+                opacity={!!preselectedOrganizationId && !existingRole ? 0.6 : 1}
               >
                 {organizations.map((org) => (
                   <option key={org.id} value={org.id}>
@@ -257,6 +261,11 @@ const AddOrganizationRoleModal: React.FC<AddOrganizationRoleModalProps> = ({
               {errors.organization_id && (
                 <Text fontSize="sm" color="red.500" mt={1}>
                   {errors.organization_id}
+                </Text>
+              )}
+              {!!preselectedOrganizationId && !existingRole && (
+                <Text fontSize="xs" color={colors.text.muted} mt={1}>
+                  Organization pre-selected from context
                 </Text>
               )}
             </FormControl>

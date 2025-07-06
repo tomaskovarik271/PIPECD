@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -30,6 +30,7 @@ import {
   Tab,
   TabPanel,
   Input,
+  Icon,
 } from '@chakra-ui/react';
 import { 
   ArrowBackIcon, 
@@ -42,6 +43,7 @@ import {
   DeleteIcon,
   CheckIcon,
   SmallCloseIcon,
+  WarningIcon,
 } from '@chakra-ui/icons';
 import { useLeadsStore, Lead } from '../stores/useLeadsStore';
 import { useThemeColors } from '../hooks/useThemeColors';
@@ -153,8 +155,11 @@ const LeadDetailPage = () => {
   const session = useAppStore((state) => state.session);
   const currentUserId = session?.user.id;
   
-  // Check if user can edit leads (full collaboration model)
-  const canEditLead = userPermissions?.includes('lead:update_any');
+  // Check if user can edit leads - using memoization for performance
+  const canEditLead = useMemo(() => {
+    if (!userPermissions) return false;
+    return userPermissions.includes('lead:update_any');
+  }, [userPermissions]);
 
   // Fetch lead details
   useEffect(() => {
@@ -321,37 +326,74 @@ const LeadDetailPage = () => {
     return 'Cold Lead';
   };
 
+  // Loading state
   if (isLoading) {
     return (
-      <Center h="50vh">
-        <VStack spacing={4}>
-          <Spinner size="xl" color={leadTheme.colors.primary} />
-          <Text color={colors.text.secondary}>Loading lead details...</Text>
-        </VStack>
-      </Center>
+      <Box 
+        bg={colors.bg.app}
+        minH="100vh" 
+        h="100vh" 
+        overflow="hidden" 
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        p={4} 
+      >
+        <Center h="full">
+          <Spinner size="xl" color={colors.interactive.default} />
+        </Center>
+      </Box>
     );
   }
 
-  if (error || !currentLead) {
+  // Error state
+  if (error) {
     return (
-      <Center h="50vh">
-        <Alert status="error" maxW="md" borderRadius="lg">
-          <AlertIcon />
-          <VStack align="start" spacing={2}>
-            <Text fontWeight="bold">Error Loading Lead</Text>
-            <Text>{error || 'Lead not found'}</Text>
-            <Button
-              as={RouterLink}
-              to="/leads"
-              leftIcon={<ArrowBackIcon />}
-              size="sm"
-              mt={2}
-            >
-              Back to Leads
-            </Button>
-          </VStack>
-        </Alert>
-      </Center>
+      <Box 
+        bg={colors.bg.app}
+        minH="100vh" 
+        h="100vh" 
+        overflow="hidden" 
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        p={4} 
+      >
+        <Center h="100vh" flexDirection="column" bg={colors.bg.elevated} borderRadius="xl" p={6}>
+          <Icon as={WarningIcon} w={8} h={8} color={colors.text.warning} mb={4} />
+          <Text color={colors.text.secondary} fontSize="lg">Error loading lead.</Text>
+          <Text color={colors.text.muted} fontSize="sm" mb={4}>
+            {error}
+          </Text>
+          <Button as={RouterLink} to="/leads" mt={6} colorScheme="blue" variant="outline">
+            Back to Leads
+          </Button>
+        </Center>
+      </Box>
+    );
+  }
+
+  // Lead not found
+  if (!currentLead) {
+    return (
+      <Box 
+        bg={colors.bg.app}
+        minH="100vh" 
+        h="100vh" 
+        overflow="hidden" 
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        p={4} 
+      >
+        <Center h="100vh" flexDirection="column" bg={colors.bg.elevated} borderRadius="xl" p={6}>
+          <Icon as={WarningIcon} w={8} h={8} color={colors.text.warning} mb={4} />
+          <Text color={colors.text.secondary} fontSize="lg">Lead not found.</Text>
+          <Button as={RouterLink} to="/leads" mt={6} colorScheme="blue" variant="outline">
+            Back to Leads
+          </Button>
+        </Center>
+      </Box>
     );
   }
 

@@ -7,14 +7,15 @@ interface CreatePersonParams {
   last_name?: string;
   email?: string;
   phone?: string;
-  organization_id?: string;
+  organization_id?: string; // Still accept for backward compatibility but handle via roles
+  role_title?: string; // New: specify role when linking to organization
   notes?: string;
 }
 
 export class CreatePersonTool implements ToolExecutor {
   static definition: ToolDefinition = {
     name: 'create_person',
-    description: 'Create a new person/contact with intelligent duplicate detection and organization linking',
+    description: 'Create a new person/contact with intelligent duplicate detection and organization role linking',
     input_schema: {
       type: 'object',
       properties: {
@@ -36,7 +37,11 @@ export class CreatePersonTool implements ToolExecutor {
         },
         organization_id: {
           type: 'string',
-          description: 'Organization ID to link this person to (optional)'
+          description: 'Organization ID to create a role relationship with (optional)'
+        },
+        role_title: {
+          type: 'string',
+          description: 'Role title when linking to organization (default: "Contact")'
         },
         notes: {
           type: 'string',
@@ -53,7 +58,7 @@ export class CreatePersonTool implements ToolExecutor {
         throw new Error('Authentication required for person creation');
       }
 
-      const { first_name, last_name, email, phone, organization_id, notes } = params;
+      const { first_name, last_name, email, phone, organization_id, role_title, notes } = params;
 
       // Validate that at least one meaningful field is provided
       if (!first_name && !last_name && !email) {
@@ -98,7 +103,7 @@ export class CreatePersonTool implements ToolExecutor {
             
             return (inputFirstName && personFirstName.includes(inputFirstName)) ||
                    (inputLastName && personLastName.includes(inputLastName)) ||
-                   (inputFirstName && personLastName.includes(inputFirstName)) ||
+                   (inputFirstName && personLastName.includes(inputLastName)) ||
                    (inputLastName && personFirstName.includes(inputLastName));
           });
 
@@ -120,7 +125,7 @@ export class CreatePersonTool implements ToolExecutor {
         }
       }
 
-      // 3. SERVICE LAYER INTEGRATION (Direct service call, not GraphQL)
+      // 3. CREATE PERSON WITH ROLE-BASED SYSTEM
       console.log(`[CreatePersonTool] Creating person with service layer`);
       
       const personInput: PersonInput = {
@@ -128,8 +133,14 @@ export class CreatePersonTool implements ToolExecutor {
         last_name: last_name || null,
         email: email || null,
         phone: processedPhone || null,
-        organization_id: organization_id || null,
-        notes: notes || null
+        notes: notes || null,
+        // Create organizationRoles if organization_id provided
+        organizationRoles: organization_id ? [{
+          organization_id: organization_id,
+          role_title: role_title || 'Contact',
+          is_primary: false, // Don't automatically make it primary
+          status: 'active'
+        }] : null
       };
 
       const newPerson = await personService.createPerson(
@@ -146,7 +157,7 @@ export class CreatePersonTool implements ToolExecutor {
       return {
         success,
         person: newPerson,
-        message: `✅ Successfully created person "${fullName}"`,
+        message: `✅ Successfully created person "${fullName}"${organization_id ? ' with organization role' : ''}`,
         details: {
           id: newPerson.id,
           full_name: fullName,
@@ -154,7 +165,8 @@ export class CreatePersonTool implements ToolExecutor {
           last_name: newPerson.last_name || 'Not specified',
           email: newPerson.email || 'Not specified',
           phone: newPerson.phone || 'Not specified',
-          organization_linked: !!organization_id,
+          organization_role_created: !!organization_id,
+          role_title: organization_id ? (role_title || 'Contact') : 'None',
           created_at: newPerson.created_at,
           phone_auto_formatted: phone !== processedPhone
         }
