@@ -19,9 +19,22 @@ import {
   Badge,
 } from '@chakra-ui/react';
 import { FiCalendar, FiExternalLink, FiRefreshCw, FiMonitor } from 'react-icons/fi';
+import { useApolloClient, gql } from '@apollo/client';
 import { Deal } from '../../stores/useDealsStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { DirectCalendarScheduler } from '../../lib/utils/directCalendarScheduler';
+
+const SYNC_CALENDAR_EVENTS = gql`
+  mutation SyncCalendarEvents($calendarId: String, $fullSync: Boolean, $daysPast: Int, $daysFuture: Int) {
+    syncCalendarEvents(calendarId: $calendarId, fullSync: $fullSync, daysPast: $daysPast, daysFuture: $daysFuture) {
+      lastSyncAt
+      isConnected
+      hasSyncErrors
+      errorMessage
+      eventsCount
+    }
+  }
+`;
 
 interface EmbeddedCalendarModalProps {
   isOpen: boolean;
@@ -40,12 +53,13 @@ export const EmbeddedCalendarModal: React.FC<EmbeddedCalendarModalProps> = ({
 }) => {
   const colors = useThemeColors();
   const toast = useToast();
+  const apolloClient = useApolloClient();
   const [isLoading, setIsLoading] = useState(false);
   const [calendarUrl, setCalendarUrl] = useState<string>('');
   const [syncStatus, setSyncStatus] = useState<'waiting' | 'syncing' | 'synced'>('waiting');
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const popupRef = useRef<Window | null>(null);
-  const syncIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Use DirectCalendarScheduler to build URL (avoid code duplication)
   const buildGoogleCalendarUrl = (): string => {
@@ -61,15 +75,15 @@ export const EmbeddedCalendarModal: React.FC<EmbeddedCalendarModalProps> = ({
     }
   }, [isOpen, deal]);
 
-  // Clean up popup and intervals when modal closes
+  // Clean up popup and timeouts when modal closes
   useEffect(() => {
     if (!isOpen) {
       if (popupRef.current && !popupRef.current.closed) {
         popupRef.current.close();
       }
-      if (syncIntervalRef.current) {
-        clearInterval(syncIntervalRef.current);
-        syncIntervalRef.current = null;
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+        syncTimeoutRef.current = null;
       }
       setIsPopupOpen(false);
     }
@@ -134,61 +148,65 @@ export const EmbeddedCalendarModal: React.FC<EmbeddedCalendarModalProps> = ({
           isClosable: true,
         });
 
-        // Start sync check
-        setSyncStatus('syncing');
-        startSyncCheck();
+        // Start real sync after a short delay to let Google Calendar save
+        syncTimeoutRef.current = setTimeout(() => {
+          startRealSync();
+        }, 2000); // 2 second delay
       }
     }, 1000);
   };
 
-  // Start checking for meeting sync
-  const startSyncCheck = () => {
-    let attempts = 0;
-    const maxAttempts = 6; // 30 seconds
+  // Start real calendar sync
+  const startRealSync = async () => {
+    setSyncStatus('syncing');
+    
+    try {
+      const result = await apolloClient.mutate({
+        mutation: SYNC_CALENDAR_EVENTS,
+        variables: {
+          daysPast: 0,     // Today only
+          daysFuture: 1,   // Tomorrow
+          fullSync: false  // Quick sync
+        }
+      });
 
-    syncIntervalRef.current = setInterval(() => {
-      attempts++;
+      const syncData = result.data?.syncCalendarEvents;
       
-      // Simulate sync check (in real implementation, this would call the sync API)
-      if (attempts >= 3) {
-        // Simulate successful sync
-        setSyncStatus('synced');
-        if (syncIntervalRef.current) {
-          clearInterval(syncIntervalRef.current);
-          syncIntervalRef.current = null;
-        }
-        
-        toast({
-          title: '✅ Meeting synced!',
-          description: 'Meeting now appears in both Google Calendar and PipeCD.',
-          status: 'success',
-          duration: 3000,
-          isClosable: true,
-        });
-        
-        // Refresh email data to show the new meeting
-        onEmailRefresh?.();
-        
-        onMeetingCreated?.();
-        return;
+      if (syncData?.hasSyncErrors) {
+        throw new Error(syncData.errorMessage || 'Sync failed');
       }
 
-      if (attempts >= maxAttempts) {
-        setSyncStatus('waiting');
-        if (syncIntervalRef.current) {
-          clearInterval(syncIntervalRef.current);
-          syncIntervalRef.current = null;
-        }
-        
-        toast({
-          title: 'Sync timeout',
-          description: 'Meeting may take a few minutes to appear in PipeCD.',
-          status: 'warning',
-          duration: 5000,
-          isClosable: true,
-        });
-      }
-    }, 5000); // Check every 5 seconds
+      // Success!
+      setSyncStatus('synced');
+      
+      toast({
+        title: '✅ Meeting synced!',
+        description: `${syncData?.eventsCount || 0} events synced to PipeCD.`,
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+      
+      // Refresh email data to show the new meeting
+      onEmailRefresh?.();
+      
+      onMeetingCreated?.();
+      
+    } catch (error) {
+      console.error('Calendar sync failed:', error);
+      setSyncStatus('waiting');
+      
+      toast({
+        title: 'Sync failed',
+        description: 'Meeting may take a few minutes to appear in PipeCD.',
+        status: 'warning',
+        duration: 5000,
+        isClosable: true,
+      });
+      
+      // Still refresh email data in case sync worked but API reported error
+      onEmailRefresh?.();
+    }
   };
 
 
