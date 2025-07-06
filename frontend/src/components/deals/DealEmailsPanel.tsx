@@ -232,6 +232,7 @@ interface DealEmailsPanelProps {
   dealId: string;
   primaryContactEmail?: string;
   dealName: string;
+  refreshTrigger?: number; // Increment this to trigger a refresh
 }
 
 interface EmailFilter {
@@ -440,6 +441,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   dealId,
   primaryContactEmail,
   dealName,
+  refreshTrigger,
 }) => {
   const colors = useThemeColors();
   const currentThemeName = useThemeStore((state) => state.currentTheme);
@@ -630,6 +632,13 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
       });
     },
   });
+
+  // Refresh email data when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger !== undefined && refreshTrigger > 0) {
+      refetchThreads();
+    }
+  }, [refreshTrigger, refetchThreads]);
 
   // Handlers
   const handleThreadSelect = (threadId: string) => {

@@ -28,6 +28,7 @@ interface EmbeddedCalendarModalProps {
   onClose: () => void;
   deal: Deal;
   onMeetingCreated?: () => void;
+  onEmailRefresh?: () => void; // Callback to refresh email data
 }
 
 export const EmbeddedCalendarModal: React.FC<EmbeddedCalendarModalProps> = ({
@@ -35,6 +36,7 @@ export const EmbeddedCalendarModal: React.FC<EmbeddedCalendarModalProps> = ({
   onClose,
   deal,
   onMeetingCreated,
+  onEmailRefresh,
 }) => {
   const colors = useThemeColors();
   const toast = useToast();
@@ -163,6 +165,9 @@ export const EmbeddedCalendarModal: React.FC<EmbeddedCalendarModalProps> = ({
           duration: 3000,
           isClosable: true,
         });
+        
+        // Refresh email data to show the new meeting
+        onEmailRefresh?.();
         
         onMeetingCreated?.();
         return;

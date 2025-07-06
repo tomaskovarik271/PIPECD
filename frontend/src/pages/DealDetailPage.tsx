@@ -183,6 +183,9 @@ const DealDetailPage = () => {
   // State for collapsible custom fields
   const [isCustomFieldsExpanded, setIsCustomFieldsExpanded] = useState(true);
   
+  // Email refresh trigger
+  const [emailRefreshTrigger, setEmailRefreshTrigger] = useState(0);
+  
   // Direct calendar scheduling (no modal needed)
   const { quickSchedule, embeddedModal } = useQuickSchedule();
   
@@ -590,6 +593,7 @@ const DealDetailPage = () => {
                           dealId={dealId!} 
                           primaryContactEmail={currentDeal.person?.email || undefined}
                           dealName={currentDeal.name}
+                          refreshTrigger={emailRefreshTrigger}
                         />
                       </Box>
                     </TabPanel>
@@ -1080,6 +1084,7 @@ const DealDetailPage = () => {
           onClose={embeddedModal.onClose}
           deal={embeddedModal.deal}
           onMeetingCreated={embeddedModal.onMeetingCreated}
+          onEmailRefresh={() => setEmailRefreshTrigger(prev => prev + 1)}
         />
       )}
 
