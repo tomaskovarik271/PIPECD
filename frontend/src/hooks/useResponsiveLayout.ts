@@ -53,10 +53,10 @@ export const useResponsiveLayout = (config: ResponsiveLayoutConfig = {}) => {
       minHeight: hasTabs ? 'calc(100vh - 200px)' : 'calc(100vh - 140px)'
     },
     lg: {
-      // Desktop: Flexible width based on sidebar presence
-      width: hasRightSidebar ? 'calc(100% - 470px)' : '100%',
+      // Desktop: Let grid control width
+      width: '100%', // Removed calc() - let grid handle it
       minHeight: hasTabs ? 'calc(100vh - 220px)' : 'calc(100vh - 160px)',
-      maxWidth: hasRightSidebar ? 'none' : '1200px'
+      overflow: 'hidden' // Prevent overflow
     }
   });
 
@@ -73,11 +73,9 @@ export const useResponsiveLayout = (config: ResponsiveLayoutConfig = {}) => {
       position: 'relative' as const
     },
     lg: {
-      // Desktop: Fixed sidebar
+      // Desktop: Flexible width controlled by grid
       display: hasRightSidebar ? 'block' : 'none',
-      width: '450px',
-      minWidth: '450px',
-      maxWidth: '450px',
+      width: '100%', // Let grid control the width
       position: 'relative' as const
     }
   });
@@ -101,7 +99,16 @@ export const useResponsiveLayout = (config: ResponsiveLayoutConfig = {}) => {
     lg: {
       // Desktop: Two-column grid when sidebar exists
       display: hasRightSidebar ? 'grid' : 'flex',
-      gridTemplateColumns: hasRightSidebar ? '1fr 450px' : undefined,
+      gridTemplateColumns: hasRightSidebar ? '2fr 1fr' : undefined, // Changed from 1fr 450px
+      flexDirection: hasRightSidebar ? undefined : 'column' as const,
+      gap: responsiveSpacing.sectionGap.lg,
+      width: '100%',
+      alignItems: 'flex-start'
+    },
+    xl: {
+      // Large screens: Better proportions
+      display: hasRightSidebar ? 'grid' : 'flex',
+      gridTemplateColumns: hasRightSidebar ? '3fr 1fr' : undefined, // Even more content space
       flexDirection: hasRightSidebar ? undefined : 'column' as const,
       gap: responsiveSpacing.sectionGap.lg,
       width: '100%',
