@@ -330,6 +330,9 @@ extend type Query {
   
   # Deal Task Indicators (for kanban cards)
   dealTaskIndicators(dealIds: [ID!]!): [DealTaskIndicator!]!
+  
+  # Global Task Indicators (for notification center)
+  globalTaskIndicators(userId: ID!): GlobalTaskIndicator!
 }
 
 # Task Statistics
@@ -365,6 +368,22 @@ type DealTaskIndicator {
   tasksDueToday: Int!
   tasksOverdue: Int!
   totalActiveTasks: Int!
+}
+
+# Global Task Indicator (for notification center)
+type GlobalTaskIndicator {
+  tasksDueToday: Int!
+  tasksOverdue: Int!
+  tasksHighPriority: Int!
+  totalActiveTasks: Int!
+  tasksByPriority: GlobalTaskPriorityBreakdown!
+}
+
+type GlobalTaskPriorityBreakdown {
+  urgent: Int!
+  high: Int!
+  medium: Int!
+  low: Int!
 }
 
 # Mutations

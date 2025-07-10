@@ -215,6 +215,70 @@ const taskResolvers = {
         logger.error('Error in dealTaskIndicators resolver:', error);
         throw new Error('Failed to fetch deal task indicators');
       }
+    },
+
+    // Global task indicators for notification center
+    globalTaskIndicators: async (_: any, { userId }: any, context: GraphQLContext) => {
+      requireAuthentication(context);
+      const accessToken = getAccessToken(context)!;
+      const supabase = getAuthenticatedClient(accessToken);
+
+      try {
+        const today = new Date();
+        const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+
+        // Get all tasks for the user
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('due_date, status, priority')
+          .eq('assigned_to_user_id', userId)
+          .neq('status', 'COMPLETED')
+          .neq('status', 'CANCELLED');
+
+        if (error) {
+          logger.error('Error fetching global task indicators:', error);
+          throw new Error(`Failed to fetch global task indicators: ${error.message}`);
+        }
+
+        const allTasks = data || [];
+
+        // Calculate indicators
+        const tasksDueToday = allTasks.filter(task => {
+          if (!task.due_date) return false;
+          const dueDate = new Date(task.due_date);
+          const taskDate = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+          const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          return taskDate.getTime() === todayDate.getTime();
+        }).length;
+
+        const tasksOverdue = allTasks.filter(task => {
+          if (!task.due_date) return false;
+          return new Date(task.due_date) < new Date(startOfDay);
+        }).length;
+
+        const tasksHighPriority = allTasks.filter(task => 
+          task.priority === 'HIGH' || task.priority === 'URGENT'
+        ).length;
+
+        // Count by priority
+        const tasksByPriority = {
+          urgent: allTasks.filter(t => t.priority === 'URGENT').length,
+          high: allTasks.filter(t => t.priority === 'HIGH').length,
+          medium: allTasks.filter(t => t.priority === 'MEDIUM').length,
+          low: allTasks.filter(t => t.priority === 'LOW').length,
+        };
+
+        return {
+          tasksDueToday,
+          tasksOverdue,
+          tasksHighPriority,
+          totalActiveTasks: allTasks.length,
+          tasksByPriority
+        };
+      } catch (error) {
+        logger.error('Error in globalTaskIndicators resolver:', error);
+        throw new Error('Failed to fetch global task indicators');
+      }
     }
   },
 

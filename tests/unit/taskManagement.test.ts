@@ -180,7 +180,7 @@ describe('Task Management System', () => {
       const result = await taskService.getTasksForDeal(scenario.deals[0].id);
 
       expect(result).toBeDefined();
-      expect(result.length).toBe(3);
+      expect(result.length).toBe(5); // 2 from factory + 3 from beforeEach
       
       // Verify all tasks belong to the deal
       result.forEach(task => {

@@ -70,6 +70,7 @@ VALUES
 
 supabase migration up --local
 supabase db push --linked
+npx inngest-cli dev -u http://localhost:8888/.netlify/functions/inngest
 
 ############
 

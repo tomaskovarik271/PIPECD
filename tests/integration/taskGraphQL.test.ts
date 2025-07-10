@@ -125,26 +125,53 @@ describe('Task GraphQL Integration', () => {
     const factory = new BusinessScenarioFactory(testEnv.supabase, testEnv.testUserId);
     scenario = await factory.createEnterpriseSalesScenario();
 
-    // Set up GraphQL client with authentication
+    // Set up GraphQL client with authentication using Supabase Edge Functions
     graphqlClient = {
       request: async (query: string, variables?: any) => {
-        const response = await fetch('/.netlify/functions/graphql', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${testEnv.mockAuthToken}`
-          },
-          body: JSON.stringify({
-            query,
-            variables
-          })
-        });
+        try {
+          // Use Supabase Edge Functions invoke for proper test environment
+          const { data, error } = await testEnv.supabase.functions.invoke('graphql', {
+            body: { query, variables },
+            headers: {
+              'Authorization': `Bearer ${testEnv.mockAuthToken}`,
+              'Content-Type': 'application/json'
+            }
+          });
 
-        const result = await response.json();
-        if (result.errors) {
-          throw new Error(`GraphQL Error: ${JSON.stringify(result.errors)}`);
+          if (error) {
+            throw new Error(`Edge Function Error: ${error.message}`);
+          }
+
+          if (data?.errors) {
+            throw new Error(`GraphQL Error: ${JSON.stringify(data.errors)}`);
+          }
+
+          return data?.data || data;
+        } catch (fetchError) {
+          // Fallback to direct HTTP if edge functions not available in test
+          const testUrl = process.env.NETLIFY_DEV_URL || 'http://localhost:8888';
+          const response = await fetch(`${testUrl}/.netlify/functions/graphql`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${testEnv.mockAuthToken}`
+            },
+            body: JSON.stringify({
+              query,
+              variables
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          if (result.errors) {
+            throw new Error(`GraphQL Error: ${JSON.stringify(result.errors)}`);
+          }
+          return result.data;
         }
-        return result.data;
       }
     };
   });

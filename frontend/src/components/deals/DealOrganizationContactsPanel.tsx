@@ -98,16 +98,16 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
 
       if (personRoles.length > 0) {
         contactMap.set(person.id, {
-          person: {
-            id: person.id,
-            first_name: person.first_name,
-            last_name: person.last_name,
-            email: person.email,
-            phone: person.phone,
+        person: {
+          id: person.id,
+          first_name: person.first_name,
+          last_name: person.last_name,
+          email: person.email,
+          phone: person.phone,
           },
           roles: personRoles,
         });
-      }
+        }
     });
 
     return Array.from(contactMap.values());
@@ -133,11 +133,11 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
   // Get existing people IDs for filtering
   const existingPeopleIds = people.map((person: Person) => person.id);
   
-        // Notify parent component of contact count
+      // Notify parent component of contact count
   React.useEffect(() => {
-    if (onContactCountChange) {
+      if (onContactCountChange) {
       onContactCountChange(consolidatedContacts.length);
-    }
+      }
   }, [consolidatedContacts.length, onContactCountChange]);
 
   if (!organization) {
@@ -263,64 +263,64 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
             const hasFormerRole = contact.roles.some(role => role.status === 'former');
             
             return (
-              <Box 
+            <Box 
                 key={contact.person.id} 
-                p={3}
-                borderRadius="md"
-                bg={colors.component.kanban.card}
-                borderWidth="1px"
-                borderColor={colors.component.kanban.cardBorder}
-                boxShadow="metallic"
-                position="relative"
-                _before={{
-                  content: '""',
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  width: '3px',
-                  height: '100%',
-                  background: currentThemeName === 'industrialMetal' ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)' : 'transparent',
-                  borderRadius: '0 0 0 md',
-                }}
-                _hover={{ 
-                  borderColor: colors.component.kanban.cardBorder,
-                  transform: 'translateX(4px) translateY(-1px)',
-                  boxShadow: 'industrial3d',
-                  bg: colors.component.kanban.cardHover,
-                }}
-                transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
-              >
-                <HStack spacing={3} align="start">
-                  <Avatar 
-                    size="sm"
+              p={3}
+              borderRadius="md"
+              bg={colors.component.kanban.card}
+              borderWidth="1px"
+              borderColor={colors.component.kanban.cardBorder}
+              boxShadow="metallic"
+              position="relative"
+              _before={{
+                content: '""',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '3px',
+                height: '100%',
+                background: currentThemeName === 'industrialMetal' ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)' : 'transparent',
+                borderRadius: '0 0 0 md',
+              }}
+              _hover={{ 
+                borderColor: colors.component.kanban.cardBorder,
+                transform: 'translateX(4px) translateY(-1px)',
+                boxShadow: 'industrial3d',
+                bg: colors.component.kanban.cardHover,
+              }}
+              transition="all 0.3s cubic-bezier(0.4, 0, 0.2, 1)"
+            >
+              <HStack spacing={3} align="start">
+                <Avatar 
+                  size="sm"
                     name={`${contact.person.first_name || ''} ${contact.person.last_name || ''}`}
-                    bg={colors.interactive.default}
-                    color={colors.text.onAccent}
-                  />
-                  <VStack align="start" spacing={1} flex={1}>
+                  bg={colors.interactive.default}
+                  color={colors.text.onAccent}
+                />
+                <VStack align="start" spacing={1} flex={1}>
                     <HStack spacing={2} align="center" wrap="wrap">
-                      <Link 
-                        as={RouterLink} 
+                  <Link 
+                    as={RouterLink} 
                         to={`/people/${contact.person.id}`} 
-                        fontWeight="medium" 
-                        color={colors.text.link} 
-                        _hover={{ textDecoration: 'underline' }}
-                        fontSize="sm"
-                      >
+                    fontWeight="medium" 
+                    color={colors.text.link} 
+                    _hover={{ textDecoration: 'underline' }}
+                    fontSize="sm"
+                  >
                         {contact.person.first_name} {contact.person.last_name}
-                      </Link>
+                  </Link>
                       {hasPrimaryRole && (
-                        <Badge size="sm" colorScheme="blue" variant="subtle">
-                          PRIMARY
-                        </Badge>
-                      )}
+                      <Badge size="sm" colorScheme="blue" variant="subtle">
+                        PRIMARY
+                      </Badge>
+                    )}
                       {hasFormerRole && (
-                        <Badge size="sm" colorScheme="gray" variant="subtle">
-                          FORMER
-                        </Badge>
-                      )}
-                    </HStack>
-                    
+                      <Badge size="sm" colorScheme="gray" variant="subtle">
+                        FORMER
+                      </Badge>
+                    )}
+                  </HStack>
+                  
                     {/* Show all roles as badges */}
                     <HStack spacing={1} wrap="wrap">
                       {contact.roles.map((role, index) => (
@@ -330,83 +330,83 @@ export const DealOrganizationContactsPanel: React.FC<DealOrganizationContactsPan
                           colorScheme={role.is_primary ? "purple" : "gray"} 
                           variant="outline"
                         >
-                          {role.role_title}
+                    {role.role_title}
                           {role.department && ` (${role.department})`}
                         </Badge>
                       ))}
                     </HStack>
-                    
-                    {contact.person.email && (
-                      <HStack spacing={1}>
-                        <Icon as={EmailIcon} w={3} h={3} color={colors.text.muted} />
-                        <Link 
-                          href={`mailto:${contact.person.email}`} 
-                          fontSize="xs" 
-                          color={colors.text.secondary}
-                          _hover={{ color: colors.text.link }}
-                        >
-                          {contact.person.email}
-                        </Link>
-                      </HStack>
-                    )}
-                    
-                    {contact.person.phone && (
-                      <HStack spacing={1}>
-                        <Icon as={PhoneIcon} w={3} h={3} color={colors.text.muted} />
-                        <Link 
-                          href={`tel:${contact.person.phone}`} 
-                          fontSize="xs" 
-                          color={colors.text.secondary}
-                          _hover={{ color: colors.text.link }}
-                        >
-                          {contact.person.phone}
-                        </Link>
-                      </HStack>
-                    )}
-                  </VStack>
                   
-                  <VStack spacing={1}>
-                    <Tooltip label="Manage Roles">
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        colorScheme="blue"
-                        onClick={() => handleManageRoles(contact.person)}
-                      >
-                        Manage
-                      </Button>
-                    </Tooltip>
                     {contact.person.email && (
-                      <SmartEmailButton
+                    <HStack spacing={1}>
+                      <Icon as={EmailIcon} w={3} h={3} color={colors.text.muted} />
+                      <Link 
+                          href={`mailto:${contact.person.email}`} 
+                        fontSize="xs" 
+                        color={colors.text.secondary}
+                        _hover={{ color: colors.text.link }}
+                      >
+                          {contact.person.email}
+                      </Link>
+                    </HStack>
+                  )}
+                  
+                    {contact.person.phone && (
+                    <HStack spacing={1}>
+                      <Icon as={PhoneIcon} w={3} h={3} color={colors.text.muted} />
+                      <Link 
+                          href={`tel:${contact.person.phone}`} 
+                        fontSize="xs" 
+                        color={colors.text.secondary}
+                        _hover={{ color: colors.text.link }}
+                      >
+                          {contact.person.phone}
+                      </Link>
+                    </HStack>
+                  )}
+                </VStack>
+                
+                <VStack spacing={1}>
+                  <Tooltip label="Manage Roles">
+                    <Button
+                      size="xs"
+                      variant="outline"
+                      colorScheme="blue"
+                        onClick={() => handleManageRoles(contact.person)}
+                    >
+                      Manage
+                    </Button>
+                  </Tooltip>
+                    {contact.person.email && (
+                    <SmartEmailButton
                         to={contact.person.email}
                         size="xs"
                         variant="ghost"
-                        isIconButton={true}
-                        tooltip="Send email"
-                        context={{
-                          dealId,
-                          dealName,
+                      isIconButton={true}
+                      tooltip="Send email"
+                      context={{
+                        dealId,
+                        dealName,
                           personId: contact.person.id,
                           personName: `${contact.person.first_name || ''} ${contact.person.last_name || ''}`.trim(),
-                          organizationId: organization?.id,
-                          organizationName: organization?.name,
-                        }}
+                        organizationId: organization?.id,
+                        organizationName: organization?.name,
+                      }}
                       />
-                    )}
+                  )}
                     {contact.person.phone && (
-                      <Tooltip label="Call">
-                        <IconButton
-                          icon={<PhoneIcon />}
-                          aria-label="Call"
-                          size="xs"
-                          variant="ghost"
+                    <Tooltip label="Call">
+                      <IconButton
+                        icon={<PhoneIcon />}
+                        aria-label="Call"
+                        size="xs"
+                        variant="ghost"
                           onClick={() => window.open(`tel:${contact.person.phone}`)}
-                        />
-                      </Tooltip>
-                    )}
-                  </VStack>
-                </HStack>
-              </Box>
+                      />
+                    </Tooltip>
+                  )}
+                </VStack>
+              </HStack>
+            </Box>
             );
           })}
           

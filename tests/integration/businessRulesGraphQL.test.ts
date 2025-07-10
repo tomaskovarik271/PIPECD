@@ -26,17 +26,36 @@ describe('Business Rules GraphQL Integration', () => {
   });
 
   const executeGraphQL = async (query: string, variables?: any) => {
-    const response = await fetch(GRAPHQL_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${testEnv.mockAuthToken}`,
-      },
-      body: JSON.stringify({ query, variables }),
-    });
+    try {
+      // Use Supabase Edge Functions invoke for proper test environment
+      const { data, error } = await testEnv.supabase.functions.invoke('graphql', {
+        body: { query, variables },
+        headers: {
+          'Authorization': `Bearer ${testEnv.mockAuthToken}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
-    const result = await response.json();
-    return result;
+      if (error) {
+        return { errors: [{ message: `Edge Function Error: ${error.message}` }] };
+      }
+
+      return data || { errors: [{ message: 'No data returned from edge function' }] };
+    } catch (fetchError) {
+      // Fallback to direct HTTP if edge functions not available in test
+      const testUrl = process.env.NETLIFY_DEV_URL || GRAPHQL_ENDPOINT;
+      const response = await fetch(testUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${testEnv.mockAuthToken}`,
+        },
+        body: JSON.stringify({ query, variables }),
+      });
+
+      const result = await response.json();
+      return result;
+    }
   };
 
   it('should query business rules with correct schema structure', async () => {

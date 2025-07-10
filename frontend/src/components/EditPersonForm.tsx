@@ -125,7 +125,7 @@ const EditPersonForm: React.FC<EditPersonFormProps> = ({ person, onClose, onSucc
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+      setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleCustomFieldChange = (fieldName: string, value: string | React.ChangeEvent<HTMLInputElement>, type: GQLCustomFieldType) => {

@@ -32,6 +32,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { gqlClient } from '../../lib/graphqlClient';
 import { isGraphQLErrorWithMessage } from '../../lib/graphqlUtils';
+import { useGlobalTaskIndicators } from '../../hooks/useGlobalTaskIndicators';
+import { useAppStore } from '../../stores/useAppStore';
 
 // GraphQL Operations using gql template literals
 const GET_NOTIFICATION_SUMMARY = gql`
@@ -155,18 +157,43 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   showBadge = true
 }) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [filters, setFilters] = useState<NotificationFilters>({});
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const toast = useToast();
   const colors = useThemeColors();
+  
+  // Get current user from app store
+  const { user } = useAppStore();
+  
+  // Use live task indicators hook for real-time notifications
+  const {
+    taskIndicators,
+    unreadCount,
+    liveNotificationItems,
+    loading: notificationsLoading,
+    error: notificationsError,
+    refetch
+  } = useGlobalTaskIndicators(user?.id || null);
 
-  // State for summary data
+  // Debug logging
+  console.log('NotificationCenter Debug:', {
+    userId: user?.id,
+    taskIndicators,
+    unreadCount,
+    liveNotificationItems,
+    loading: notificationsLoading,
+    error: notificationsError
+  });
+
+  // State for business rule notifications (still using stored notifications)
+  const [businessRuleNotifications, setBusinessRuleNotifications] = useState<UnifiedNotification[]>([]);
+  const [businessRuleLoading, setBusinessRuleLoading] = useState(true);
+  
+  // State for old notification system (being phased out)
   const [summary, setSummary] = useState<NotificationSummary | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
-
-  // State for notifications data
   const [notifications, setNotifications] = useState<UnifiedNotification[]>([]);
-  const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [oldNotificationsLoading, setOldNotificationsLoading] = useState(true);
+  const [filters, setFilters] = useState<NotificationFilters>({});
 
   // Fetch notification summary
   const fetchSummary = useCallback(async () => {
@@ -185,7 +212,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
-    setNotificationsLoading(true);
+    setOldNotificationsLoading(true);
     try {
       const variables = {
         first: 20,
@@ -200,7 +227,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
-      setNotificationsLoading(false);
+      setOldNotificationsLoading(false);
     }
   }, [filters, showUnreadOnly]);
 
@@ -217,8 +244,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     
     return () => clearInterval(interval);
   }, [fetchSummary, fetchNotifications]);
-
-  const unreadCount = summary?.unreadCount || 0;
 
   const handleMarkAsRead = async (notificationId: string, source: string) => {
     try {
@@ -451,23 +476,26 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         aria-label="Open notifications"
         size={position === 'header' ? 'sm' : 'md'}
       />
-      {showBadge && unreadCount > 0 && (
-        <Badge
-          position="absolute"
-          top="-1"
-          right="-1"
-          colorScheme="red"
-          borderRadius="full"
-          fontSize="xs"
-          minW={5}
-          h={5}
-          display="flex"
-          alignItems="center"
-          justifyContent="center"
-        >
-          {unreadCount > 99 ? '99+' : unreadCount}
-        </Badge>
-      )}
+      {showBadge && (() => {
+        const totalUnreadCount = unreadCount + (summary?.unreadCount || 0);
+        return totalUnreadCount > 0 && (
+          <Badge
+            position="absolute"
+            top="-1"
+            right="-1"
+            colorScheme="red"
+            borderRadius="full"
+            fontSize="xs"
+            minW={5}
+            h={5}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+          </Badge>
+        );
+      })()}
     </Box>
   );
 
@@ -506,60 +534,95 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
             </MenuList>
           </Menu>
           
-          {unreadCount > 0 && (
-            <Tooltip label="Mark all as read">
-              <IconButton
-                icon={<FiCheckCircle />}
-                size="xs"
-                variant="ghost"
-                colorScheme="green"
-                onClick={handleMarkAllAsRead}
-                aria-label="Mark all notifications as read"
-              />
-            </Tooltip>
-          )}
+          {(() => {
+            const totalUnreadCount = unreadCount + (summary?.unreadCount || 0);
+            return totalUnreadCount > 0 && (
+              <Tooltip label="Mark all as read">
+                <IconButton
+                  icon={<FiCheckCircle />}
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="green"
+                  onClick={handleMarkAllAsRead}
+                  aria-label="Mark all notifications as read"
+                />
+              </Tooltip>
+            );
+          })()}
         </HStack>
       </HStack>
 
       {/* Summary Stats */}
-      {summary && (
-        <HStack spacing={4} mb={3} p={2} bg={colors.bg.card} borderRadius="md">
-          <VStack spacing={0} align="center">
-            <Text fontSize="lg" fontWeight="bold" color={colors.text.primary}>
-              {summary.totalCount}
-            </Text>
-            <Text fontSize="xs" color={colors.text.muted}>Total</Text>
-          </VStack>
-          <VStack spacing={0} align="center">
-            <Text fontSize="lg" fontWeight="bold" color="blue.500">
-              {summary.unreadCount}
-            </Text>
-            <Text fontSize="xs" color={colors.text.muted}>Unread</Text>
-          </VStack>
-          <VStack spacing={0} align="center">
-            <Text fontSize="lg" fontWeight="bold" color="orange.500">
-              {summary.highPriorityCount}
-            </Text>
-            <Text fontSize="xs" color={colors.text.muted}>High Priority</Text>
-          </VStack>
-        </HStack>
-      )}
+      {(() => {
+        // Calculate combined counts including live task notifications
+        const combinedTotalCount = (summary?.totalCount || 0) + liveNotificationItems.length;
+        const combinedUnreadCount = (summary?.unreadCount || 0) + liveNotificationItems.filter(item => !item.isRead).length;
+        const combinedHighPriorityCount = (summary?.highPriorityCount || 0) + liveNotificationItems.filter(item => item.priority >= 3).length;
+        
+        return (
+          <HStack spacing={4} mb={3} p={2} bg={colors.bg.card} borderRadius="md">
+            <VStack spacing={0} align="center">
+              <Text fontSize="lg" fontWeight="bold" color={colors.text.primary}>
+                {combinedTotalCount}
+              </Text>
+              <Text fontSize="xs" color={colors.text.muted}>Total</Text>
+            </VStack>
+            <VStack spacing={0} align="center">
+              <Text fontSize="lg" fontWeight="bold" color="blue.500">
+                {combinedUnreadCount}
+              </Text>
+              <Text fontSize="xs" color={colors.text.muted}>Unread</Text>
+            </VStack>
+            <VStack spacing={0} align="center">
+              <Text fontSize="lg" fontWeight="bold" color="orange.500">
+                {combinedHighPriorityCount}
+              </Text>
+              <Text fontSize="xs" color={colors.text.muted}>High Priority</Text>
+            </VStack>
+          </HStack>
+        );
+      })()}
 
       <Divider mb={3} />
 
       {/* Notifications List */}
       <Box maxH="400px" overflowY="auto">
-        {notificationsLoading || summaryLoading ? (
+        {notificationsLoading || summaryLoading || oldNotificationsLoading ? (
           <Flex justify="center" p={4}>
             <Spinner size="md" />
           </Flex>
-        ) : notifications.length === 0 ? (
-          <Text textAlign="center" color={colors.text.muted} p={4}>
-            {showUnreadOnly ? 'No unread notifications' : 'No notifications'}
-          </Text>
-        ) : (
-          notifications.map(renderNotificationItem)
-        )}
+        ) : (() => {
+          // Map live task notifications to UnifiedNotification format
+          const mappedLiveNotifications: UnifiedNotification[] = liveNotificationItems.map(item => ({
+            ...item,
+            notificationType: item.source === 'LIVE_TASK_DATA' ? 'task_notification' : 'unknown',
+            updatedAt: item.createdAt,
+            entityType: undefined,
+            entityId: undefined,
+            readAt: undefined,
+            dismissedAt: undefined,
+            expiresAt: undefined,
+          }));
+          
+          // Combine live task notifications with business rule notifications
+          const allNotifications = [
+            ...mappedLiveNotifications,
+            ...notifications
+          ];
+          
+          // Apply filters if showUnreadOnly is enabled
+          const filteredNotifications = showUnreadOnly 
+            ? allNotifications.filter(n => !n.isRead)
+            : allNotifications;
+          
+          return filteredNotifications.length === 0 ? (
+            <Text textAlign="center" color={colors.text.muted} p={4}>
+              {showUnreadOnly ? 'No unread notifications' : 'No notifications'}
+            </Text>
+          ) : (
+            filteredNotifications.map(renderNotificationItem)
+          );
+        })()}
       </Box>
     </Box>
   );

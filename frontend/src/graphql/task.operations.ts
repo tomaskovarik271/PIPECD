@@ -134,4 +134,21 @@ export const GET_DEAL_TASK_INDICATORS = gql`
       totalActiveTasks
     }
   }
+`;
+
+export const GET_GLOBAL_TASK_INDICATORS = gql`
+  query GetGlobalTaskIndicators($userId: ID!) {
+    globalTaskIndicators(userId: $userId) {
+      tasksDueToday
+      tasksOverdue
+      tasksHighPriority
+      totalActiveTasks
+      tasksByPriority {
+        urgent
+        high
+        medium
+        low
+      }
+    }
+  }
 `; 

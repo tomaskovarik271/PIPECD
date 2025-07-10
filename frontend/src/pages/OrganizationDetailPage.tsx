@@ -210,7 +210,7 @@ const OrganizationDetailPage = () => {
       display="flex"
       alignItems="center"
       justifyContent="center"
-      p={4} 
+      p={4}
     >
       <Box 
         bg={colors.bg.surface}
@@ -231,10 +231,10 @@ const OrganizationDetailPage = () => {
             w={{base: "100%", lg: "calc(100vw - 450px - 20rem)"}}
             maxW={{base: "100%", lg: "calc(100vw - 450px - 20rem)"}}
             p={{base: 4, md: 8}} 
-            overflowY="auto"
+        overflowY="auto"
             overflowX="hidden"
-            sx={{
-              '&::-webkit-scrollbar': { width: '8px' },
+        sx={{
+            '&::-webkit-scrollbar': { width: '8px' },
               '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '8px' },
               '&::-webkit-scrollbar-track': { background: colors.bg.elevated },
             }}
@@ -242,45 +242,45 @@ const OrganizationDetailPage = () => {
             <VStack spacing={6} align="stretch" maxW="100%" w="100%">
               {/* Header Section */}
               <Box>
-                <Breadcrumb 
-                  spacing="8px" 
+              <Breadcrumb 
+                spacing="8px" 
                   separator={<Text color={colors.text.muted}>/</Text>}
                   color={colors.text.muted}
-                  fontSize="sm"
+                fontSize="sm"
                   mb={4}
-                >
-                  <BreadcrumbItem>
-                    <BreadcrumbLink 
-                      as={RouterLink} 
-                      to="/organizations" 
+              >
+                <BreadcrumbItem>
+                  <BreadcrumbLink 
+                    as={RouterLink} 
+                    to="/organizations" 
                       color={colors.text.link}
-                      _hover={{textDecoration: 'underline'}}
-                    >
-                      Organizations
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                  <BreadcrumbItem isCurrentPage>
-                    <BreadcrumbLink 
-                      href="#" 
+                    _hover={{textDecoration: 'underline'}}
+                  >
+                    Organizations
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbItem isCurrentPage>
+                  <BreadcrumbLink 
+                    href="#" 
                       color={colors.text.secondary}
-                      _hover={{textDecoration: 'none', cursor: 'default'}}
-                    >
-                      {currentOrganization.name}
-                    </BreadcrumbLink>
-                  </BreadcrumbItem>
-                </Breadcrumb>
-                <Heading 
-                  size="xl" 
+                    _hover={{textDecoration: 'none', cursor: 'default'}}
+                  >
+                    {currentOrganization.name}
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+              </Breadcrumb>
+              <Heading 
+                size="xl" 
                   color={colors.text.primary}
-                >
-                  {currentOrganization.name}
-                </Heading>
-              </Box>
+              >
+                {currentOrganization.name}
+              </Heading>
+            </Box>
 
               {/* Tabs Section */}
-              <Box 
+            <Box 
                 bg={colors.component.kanban.column} 
-                borderRadius="xl" 
+              borderRadius="xl" 
                 border="1px solid" 
                 borderColor={colors.component.kanban.cardBorder} 
                 minH="400px" 
@@ -335,95 +335,95 @@ const OrganizationDetailPage = () => {
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
                         <VStack spacing={6} align="stretch">
-                          <Heading 
-                            size="md" 
+              <Heading 
+                size="md" 
                             color={colors.text.primary}
-                          >
-                            Organization Information
-                          </Heading>
-                          <VStack spacing={4} align="stretch">
-                            {/* Name Field */}
-                            <HStack justifyContent="space-between" alignItems="center">
-                              <Text fontSize="sm" color={colors.text.muted}>Name</Text>
-                              {!isEditingName ? (
-                                <HStack spacing={2}>
-                                  <Text 
-                                    fontSize="md" 
-                                    fontWeight="medium" 
-                                    color={colors.text.secondary}
-                                  >
-                                    {currentOrganization.name}
-                                  </Text>
-                                  <IconButton 
-                                    icon={<EditIcon />} 
-                                    size="xs" 
-                                    variant="ghost" 
-                                    aria-label="Edit Name" 
-                                    onClick={() => {
-                                      setIsEditingName(true);
-                                      setNewName(currentOrganization.name || '');
-                                    }}
-                                    color={colors.text.muted}
-                                    _hover={{color: colors.text.link}}
-                                    isDisabled={!canEditOrganization}
-                                  />
-                                </HStack>
-                              ) : (
-                                <HStack spacing={2} flex={1} justifyContent="flex-end">
-                                  <Input 
-                                    value={newName} 
-                                    onChange={(e) => setNewName(e.target.value)} 
-                                    placeholder="Enter organization name" 
-                                    size="sm" 
+              >
+                Organization Information
+              </Heading>
+              <VStack spacing={4} align="stretch">
+                {/* Name Field */}
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text fontSize="sm" color={colors.text.muted}>Name</Text>
+                  {!isEditingName ? (
+                    <HStack spacing={2}>
+                      <Text 
+                        fontSize="md" 
+                        fontWeight="medium" 
+                        color={colors.text.secondary}
+                      >
+                        {currentOrganization.name}
+                      </Text>
+                      <IconButton 
+                        icon={<EditIcon />} 
+                        size="xs" 
+                        variant="ghost" 
+                        aria-label="Edit Name" 
+                        onClick={() => {
+                          setIsEditingName(true);
+                          setNewName(currentOrganization.name || '');
+                        }}
+                        color={colors.text.muted}
+                        _hover={{color: colors.text.link}}
+                        isDisabled={!canEditOrganization}
+                      />
+                    </HStack>
+                  ) : (
+                    <HStack spacing={2} flex={1} justifyContent="flex-end">
+                      <Input 
+                        value={newName} 
+                        onChange={(e) => setNewName(e.target.value)} 
+                        placeholder="Enter organization name" 
+                        size="sm" 
                                     w="250px"
-                                    bg={colors.bg.input}
-                                    borderColor={colors.border.default}
-                                    _hover={{borderColor: colors.border.emphasis}}
-                                    _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
-                                  />
-                                  <IconButton 
-                                    icon={<CheckIcon />} 
-                                    size="xs" 
-                                    colorScheme="green" 
-                                    aria-label="Save Name" 
-                                    onClick={handleNameUpdate}
-                                  />
-                                  <IconButton 
-                                    icon={<SmallCloseIcon />} 
-                                    size="xs" 
-                                    variant="ghost" 
+                        bg={colors.bg.input}
+                        borderColor={colors.border.default}
+                        _hover={{borderColor: colors.border.emphasis}}
+                        _focus={{borderColor: colors.border.focus, boxShadow: `0 0 0 1px ${colors.border.focus}`}}
+                      />
+                      <IconButton 
+                        icon={<CheckIcon />} 
+                        size="xs" 
+                        colorScheme="green" 
+                        aria-label="Save Name" 
+                        onClick={handleNameUpdate}
+                      />
+                      <IconButton 
+                        icon={<SmallCloseIcon />} 
+                        size="xs" 
+                        variant="ghost" 
                                     aria-label="Cancel Edit" 
-                                    onClick={() => setIsEditingName(false)}
+                        onClick={() => setIsEditingName(false)}
                                     color={colors.text.muted}
-                                  />
-                                </HStack>
-                              )}
-                            </HStack>
+                      />
+                    </HStack>
+                  )}
+                </HStack>
 
-                            {/* Account Manager Field */}
-                            <HStack justifyContent="space-between" alignItems="center">
-                              <Text fontSize="sm" color={colors.text.muted}>Account Manager</Text>
-                              <HStack spacing={2}>
-                                <Text 
-                                  fontSize="md" 
-                                  fontWeight="medium" 
-                                  color={colors.text.secondary}
-                                >
-                                  {currentOrganization.accountManager?.display_name || 'Not assigned'}
-                                </Text>
-                                <IconButton 
-                                  icon={<EditIcon />} 
-                                  size="xs" 
-                                  variant="ghost" 
-                                  aria-label="Assign Account Manager" 
-                                  onClick={() => setIsAccountManagerModalOpen(true)}
-                                  color={colors.text.muted}
-                                  _hover={{color: colors.text.link}}
-                                  isDisabled={!canEditOrganization}
-                                />
-                              </HStack>
-                            </HStack>
-                          </VStack>
+                {/* Account Manager Field */}
+                <HStack justifyContent="space-between" alignItems="center">
+                  <Text fontSize="sm" color={colors.text.muted}>Account Manager</Text>
+                    <HStack spacing={2}>
+                      <Text 
+                        fontSize="md" 
+                        fontWeight="medium" 
+                      color={colors.text.secondary}
+                    >
+                      {currentOrganization.accountManager?.display_name || 'Not assigned'}
+                      </Text>
+                      <IconButton 
+                        icon={<EditIcon />} 
+                        size="xs" 
+                        variant="ghost" 
+                      aria-label="Assign Account Manager" 
+                      onClick={() => setIsAccountManagerModalOpen(true)}
+                        color={colors.text.muted}
+                        _hover={{color: colors.text.link}}
+                        isDisabled={!canEditOrganization}
+                      />
+                    </HStack>
+                </HStack>
+              </VStack>
                         </VStack>
                       </Box>
                     </TabPanel>
@@ -435,86 +435,86 @@ const OrganizationDetailPage = () => {
                           organizationId={currentOrganization.id}
                           organizationName={currentOrganization.name}
                         />
-                      </Box>
+            </Box>
                     </TabPanel>
 
                     {/* Custom Fields Tab */}
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
                         <VStack spacing={6} align="stretch">
-                          <Heading 
-                            size="md" 
-                            color={colors.text.primary}
-                          >
-                            Custom Information
-                          </Heading>
+                <Heading 
+                  size="md" 
+                  color={colors.text.primary}
+                >
+                  Custom Information
+                </Heading>
                           {organizationCustomFieldDefinitions.length > 0 ? (
-                            <VStack spacing={4} align="stretch">
-                              {organizationCustomFieldDefinitions.map((definition) => {
-                                const customFieldValue = currentOrganization.customFieldValues?.find(
-                                  (cfv) => cfv.definition?.fieldName === definition.fieldName
-                                );
+                        <VStack spacing={4} align="stretch">
+                  {organizationCustomFieldDefinitions.map((definition) => {
+                    const customFieldValue = currentOrganization.customFieldValues?.find(
+                      (cfv) => cfv.definition?.fieldName === definition.fieldName
+                    );
 
-                                let displayValue = '-';
-                                if (customFieldValue) {
-                                  if (definition.fieldType === 'TEXT' || definition.fieldType === 'TEXT_AREA') {
-                                    displayValue = customFieldValue.stringValue || '-';
-                                  } else if (definition.fieldType === 'NUMBER') {
-                                    displayValue = customFieldValue.numberValue?.toString() || '-';
-                                  } else if (definition.fieldType === 'BOOLEAN') {
-                                    displayValue = customFieldValue.booleanValue ? 'Yes' : 'No';
-                                  } else if (definition.fieldType === 'DATE') {
-                                    displayValue = customFieldValue.dateValue || '-';
-                                  } else if (definition.fieldType === 'DROPDOWN' || definition.fieldType === 'MULTI_SELECT') {
-                                    displayValue = customFieldValue.selectedOptionValues?.join(', ') || '-';
-                                  }
-                                }
+                                         let displayValue = '-';
+                     if (customFieldValue) {
+                       if (definition.fieldType === 'TEXT' || definition.fieldType === 'TEXT_AREA') {
+                         displayValue = customFieldValue.stringValue || '-';
+                       } else if (definition.fieldType === 'NUMBER') {
+                         displayValue = customFieldValue.numberValue?.toString() || '-';
+                       } else if (definition.fieldType === 'BOOLEAN') {
+                         displayValue = customFieldValue.booleanValue ? 'Yes' : 'No';
+                       } else if (definition.fieldType === 'DATE') {
+                         displayValue = customFieldValue.dateValue || '-';
+                       } else if (definition.fieldType === 'DROPDOWN' || definition.fieldType === 'MULTI_SELECT') {
+                         displayValue = customFieldValue.selectedOptionValues?.join(', ') || '-';
+                       }
+                     }
 
-                                return (
-                                  <HStack key={definition.id} justifyContent="space-between" alignItems="center">
-                                    <Text fontSize="sm" color={colors.text.muted}>
-                                      {definition.fieldLabel}
-                                    </Text>
-                                    <Text 
-                                      fontSize="md" 
-                                      fontWeight="medium" 
-                                      color={colors.text.secondary}
+                    return (
+                      <HStack key={definition.id} justifyContent="space-between" alignItems="center">
+                        <Text fontSize="sm" color={colors.text.muted}>
+                          {definition.fieldLabel}
+                          </Text>
+                        <Text 
+                          fontSize="md" 
+                          fontWeight="medium" 
+                          color={colors.text.secondary}
                                       maxW="300px"
                                       wordBreak="break-word"
                                       textAlign="right"
-                                    >
-                                      {displayValue}
-                                    </Text>
-                                  </HStack>
-                                );
-                              })}
-                            </VStack>
+                        >
+                          {displayValue}
+                        </Text>
+                      </HStack>
+                    );
+                  })}
+                        </VStack>
                           ) : (
                             <Text color={colors.text.muted} textAlign="center" py={8}>
                               No custom fields defined for organizations.
                             </Text>
                           )}
                         </VStack>
-                      </Box>
+            </Box>
                     </TabPanel>
 
                     {/* Notes/Stickers Tab */}
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
                         <VStack spacing={4} align="stretch">
-                          <Heading 
-                            size="md" 
-                            color={colors.text.primary}
-                          >
+              <Heading 
+                size="md" 
+                color={colors.text.primary}
+              >
                             Notes & Stickers
-                          </Heading>
+              </Heading>
                           <Box>
-                            <StickerBoard 
-                              entityType="ORGANIZATION"
-                              entityId={currentOrganization.id}
-                            />
-                          </Box>
-                        </VStack>
+              <StickerBoard 
+                entityType="ORGANIZATION"
+                entityId={currentOrganization.id}
+              />
+            </Box>
+          </VStack>
                       </Box>
                     </TabPanel>
                   </TabPanels>
@@ -651,35 +651,35 @@ const OrganizationDetailPage = () => {
                       color={colors.text.secondary}
                     >
                       {formatDate(currentOrganization.updated_at)}
-                    </Text>
+               </Text>
                   </HStack>
                 </VStack>
               </Box>
             </VStack>
           </Box>
         </Flex>
-      </Box>
+             </Box>
 
-      {/* Account Manager Assignment Modal */}
-      <AccountManagerAssignmentModal
-        isOpen={isAccountManagerModalOpen}
-        onClose={() => setIsAccountManagerModalOpen(false)}
-        organization={currentOrganization ? {
-          id: currentOrganization.id,
-          name: currentOrganization.name,
-          accountManager: currentOrganization.accountManager ? {
-            id: currentOrganization.accountManager.id,
-            display_name: currentOrganization.accountManager.display_name || currentOrganization.accountManager.email,
-            email: currentOrganization.accountManager.email,
-            avatar_url: currentOrganization.accountManager.avatar_url || undefined
-          } : null
-        } : null}
-        onAssignmentComplete={() => {
-          if (organizationId) {
-            fetchOrganizationById(organizationId);
-          }
-        }}
-      />
+        {/* Account Manager Assignment Modal */}
+          <AccountManagerAssignmentModal
+            isOpen={isAccountManagerModalOpen}
+          onClose={() => setIsAccountManagerModalOpen(false)}
+          organization={currentOrganization ? {
+              id: currentOrganization.id,
+              name: currentOrganization.name,
+            accountManager: currentOrganization.accountManager ? {
+              id: currentOrganization.accountManager.id,
+              display_name: currentOrganization.accountManager.display_name || currentOrganization.accountManager.email,
+              email: currentOrganization.accountManager.email,
+              avatar_url: currentOrganization.accountManager.avatar_url || undefined
+            } : null
+          } : null}
+            onAssignmentComplete={() => {
+            if (organizationId) {
+              fetchOrganizationById(organizationId);
+            }
+          }}
+        />
     </Box>
   );
 };

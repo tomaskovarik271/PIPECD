@@ -236,7 +236,7 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
       } else if (person.primaryOrganization && organizations.length > 0) {
         // Use primary organization from role-based system
         organizationName = person.primaryOrganization.name;
-        label = `${personName} (${organizationName})`;
+          label = `${personName} (${organizationName})`;
         isFromSelectedOrg = person.primaryOrganization.id === organizationId;
       } else {
         // No organization
@@ -514,18 +514,18 @@ function CreateDealModal({ isOpen, onClose, onDealCreated }: CreateDealModalProp
             {customFieldsError && <Alert status="error"><AlertIcon />Error loading custom fields: {customFieldsError}</Alert>}
             
             {!customFieldsLoading && !customFieldsError && activeDealCustomFields.length > 0 && (
-              <Box my={4} p={4} borderWidth="1px" borderRadius="md" borderColor="gray.200">
-                <Text fontSize="lg" fontWeight="semibold" mb={3}>Custom Fields</Text>
+              <>
+                <Text fontSize="lg" fontWeight="semibold" mt={4} mb={2}>Custom Fields</Text>
                 {activeDealCustomFields.map((def) => (
                   <CustomFieldRenderer
                     key={def.id}
                     definition={def}
                     value={customFieldFormValues[def.fieldName]}
-                    onChange={(value) => handleCustomFieldChange(def.fieldName, value)}
+                    onChange={(value) => handleCustomFieldChange(def.fieldName, value || '')}
                     isRequired={def.isRequired}
                   />
                 ))}
-              </Box>
+              </>
             )}
           </VStack>
         </ModalBody>

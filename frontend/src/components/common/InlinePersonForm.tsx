@@ -279,13 +279,13 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
           <FormControl>
             <FormLabel fontSize="sm">First Name</FormLabel>
             <HStack>
-              <Input
-                placeholder="John"
-                value={formData.first_name}
-                onChange={(e) => handleInputChange('first_name', e.target.value)}
-                bg={colors.bg.input}
-                borderColor={colors.border.input}
-              />
+            <Input
+              placeholder="John"
+              value={formData.first_name}
+              onChange={(e) => handleInputChange('first_name', e.target.value)}
+              bg={colors.bg.input}
+              borderColor={colors.border.input}
+            />
               {isCheckingPersonDuplicates && <Spinner size="sm" />}
             </HStack>
           </FormControl>
@@ -400,7 +400,7 @@ const InlinePersonForm: React.FC<InlinePersonFormProps> = ({
 
         <FormControl>
           <FormLabel fontSize="sm">Organization</FormLabel>
-          <Select
+          <Select 
             placeholder="Select organization (optional)"
             value={formData.organization_id}
             onChange={(e) => handleInputChange('organization_id', e.target.value)}

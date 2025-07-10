@@ -341,7 +341,7 @@ const LeadDetailPage = () => {
       >
         <Center h="full">
           <Spinner size="xl" color={colors.interactive.default} />
-        </Center>
+      </Center>
       </Box>
     );
   }
@@ -366,9 +366,9 @@ const LeadDetailPage = () => {
             {error}
           </Text>
           <Button as={RouterLink} to="/leads" mt={6} colorScheme="blue" variant="outline">
-            Back to Leads
-          </Button>
-        </Center>
+              Back to Leads
+            </Button>
+      </Center>
       </Box>
     );
   }

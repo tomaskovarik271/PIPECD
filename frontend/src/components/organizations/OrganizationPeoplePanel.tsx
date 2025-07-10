@@ -60,7 +60,7 @@ const OrganizationPeoplePanel: React.FC<OrganizationPeoplePanelProps> = ({
       organizationId, 
       includeFormerEmployees 
     },
-    fetchPolicy: 'cache-and-network',
+      fetchPolicy: 'cache-and-network',
   });
 
   const people = data?.peopleByOrganization || [];
@@ -116,7 +116,7 @@ const OrganizationPeoplePanel: React.FC<OrganizationPeoplePanelProps> = ({
     refetch();
     onAddPersonClose();
   };
-  
+
   // Get existing people IDs for filtering
   const existingPeopleIds = people.map((person: Person) => person.id);
 
@@ -169,15 +169,15 @@ const OrganizationPeoplePanel: React.FC<OrganizationPeoplePanelProps> = ({
       {consolidatedContacts.length > 0 && (
         <FormControl display="flex" alignItems="center" mb={3}>
           <FormLabel htmlFor="include-former" fontSize="sm" mb={0} color={colors.text.secondary}>
-            Include former employees
-          </FormLabel>
-          <Switch
-            id="include-former"
+              Include former employees
+            </FormLabel>
+            <Switch
+              id="include-former"
             size="sm"
-            isChecked={includeFormerEmployees}
-            onChange={(e) => setIncludeFormerEmployees(e.target.checked)}
-          />
-        </FormControl>
+              isChecked={includeFormerEmployees}
+              onChange={(e) => setIncludeFormerEmployees(e.target.checked)}
+            />
+          </FormControl>
       )}
 
       {consolidatedContacts.length === 0 ? (
@@ -187,15 +187,15 @@ const OrganizationPeoplePanel: React.FC<OrganizationPeoplePanelProps> = ({
             No {includeFormerEmployees ? '' : 'active '}people found for {organizationName}
           </Text>
           <HStack spacing={2} mt={3}>
-            <Button 
-              size="sm" 
-              colorScheme="blue"
-              leftIcon={<Icon as={FaPlus} />}
-              onClick={onAddPersonOpen}
-            >
-              Add Person
-            </Button>
-          </HStack>
+          <Button
+            size="sm"
+            colorScheme="blue"
+            leftIcon={<Icon as={FaPlus} />}
+            onClick={onAddPersonOpen}
+          >
+            Add Person
+          </Button>
+        </HStack>
         </Center>
       ) : (
         <VStack spacing={3} align="stretch" bg={colors.component.kanban.card} p={4} borderRadius="lg" borderWidth="1px" borderColor={colors.component.kanban.cardBorder} boxShadow="metallic">
@@ -210,7 +210,7 @@ const OrganizationPeoplePanel: React.FC<OrganizationPeoplePanelProps> = ({
                 p={3}
                 borderRadius="md"
                 bg={colors.component.kanban.card}
-                borderWidth="1px"
+              borderWidth="1px"
                 borderColor={colors.component.kanban.cardBorder}
                 boxShadow="metallic"
                 position="relative"
@@ -245,7 +245,7 @@ const OrganizationPeoplePanel: React.FC<OrganizationPeoplePanelProps> = ({
                         as={RouterLink} 
                         to={`/people/${contact.person.id}`} 
                         fontWeight="medium" 
-                        color={colors.text.link} 
+                        color={colors.text.link}
                         _hover={{ textDecoration: 'underline' }}
                         fontSize="sm"
                       >
@@ -305,18 +305,18 @@ const OrganizationPeoplePanel: React.FC<OrganizationPeoplePanelProps> = ({
                         </Link>
                       </HStack>
                     )}
-                  </VStack>
+                    </VStack>
                   
                   <VStack spacing={1}>
                     <Tooltip label="Manage Roles">
-                      <Button
+                    <Button
                         size="xs"
-                        variant="outline"
+                      variant="outline"
                         colorScheme="blue"
                         onClick={() => handleManageRoles(contact.person)}
-                      >
+                    >
                         Manage
-                      </Button>
+                    </Button>
                     </Tooltip>
                     {contact.person.email && (
                       <SmartEmailButton
@@ -364,7 +364,7 @@ const OrganizationPeoplePanel: React.FC<OrganizationPeoplePanelProps> = ({
           )}
         </VStack>
       )}
-      
+
       {/* Role Management Modal */}
       {selectedPerson && (
         <RoleManagementModal

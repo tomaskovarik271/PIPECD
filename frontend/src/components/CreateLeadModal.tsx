@@ -73,7 +73,7 @@ const CreateLeadModal: React.FC<CreateLeadModalProps> = ({ isOpen, onClose }) =>
     estimatedValue: undefined,
     wfmProjectTypeId: '',
   });
-
+  
   // NEW: Track selected entities for linking
   const [selectedPersonId, setSelectedPersonId] = useState<string | undefined>();
   const [selectedOrganizationId, setSelectedOrganizationId] = useState<string | undefined>();

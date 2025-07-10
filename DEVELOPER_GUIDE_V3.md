@@ -222,6 +222,12 @@ PipeCD has undergone major architectural cleanup by removing complex systems:
 - Enums: `activity_type`, `activity_status`, `reminder_type`, `notification_type`
 - **Reason**: Google Calendar provides superior native activity management
 
+**REPLACED WITH**: Universal Notification System (Migration 20250730000072)
+- **Current**: Business rule notifications (ACTIVE) + System notifications (infrastructure exists)
+- **Tables**: `business_rule_notifications`, `system_notifications`, `unified_notifications` view
+- **Functions**: `get_user_notification_summary()`, `mark_all_notifications_read()`
+- **Status**: Business rules generate notifications, system notifications not actively used
+
 ### 2. Relations Intelligence System (Migration 20250730000048)
 **REMOVED**: Complex relationship mapping system that added unnecessary complexity
 - Tables: `organization_relationships`, `person_relationships`, `person_organizational_roles`
