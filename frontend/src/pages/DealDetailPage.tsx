@@ -140,19 +140,84 @@ const DealDetailPage = () => {
   const styles = useThemeStyles();
   const currentThemeName = useThemeStore((state) => state.currentTheme);
 
-  // NEW: Quick schedule functionality
-  const { quickSchedule, embeddedModal } = useQuickSchedule();
-
-  // Deal CRUD permissions
-  const userPermissions = useAppStore((state) => state.userPermissions);
-  const session = useAppStore((state) => state.session);
-  const currentUserId = session?.user.id;
+  // Store hooks
+  const fetchDealById = useAppStore((state) => state.fetchDealById);
   const deal = useAppStore((state) => state.currentDeal);
   const isLoadingDeal = useAppStore((state) => state.currentDealLoading);
   const dealError = useAppStore((state) => state.currentDealError);
+  const userPermissions = useAppStore((state) => state.userPermissions);
+  const session = useAppStore((state) => state.session);
+  const userId = session?.user.id;
   const updateDealStoreAction = useDealsStore((state) => state.updateDeal);
-  const toast = useToast();
+  
+  // User list and custom fields for dropdowns
+  const { users: userList, fetchUsers: fetchUserList, hasFetched: usersHaveBeenFetched } = useUserListStore();
+  const { definitions: customFieldDefinitions, fetchCustomFieldDefinitions } = useCustomFieldDefinitionStore();
+  
+  // State variables
+  const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const [newAmount, setNewAmount] = useState<string>('');
+  const [isEditingCloseDate, setIsEditingCloseDate] = useState(false);
+  const [newCloseDateStr, setNewCloseDateStr] = useState<string>('');
+  const [isEditingOwner, setIsEditingOwner] = useState(false);
+  const [newOwnerId, setNewOwnerId] = useState<string | null>(null);
+  const [isCustomFieldsExpanded, setIsCustomFieldsExpanded] = useState(true);
+  const [emailRefreshTrigger, setEmailRefreshTrigger] = useState(0);
+  
+  // Count states for tab badges
+  const [documentCount, setDocumentCount] = useState(0);
+  const [contactsCount, setContactsCount] = useState(0);
+  const [stickyNotesCount, setStickyNotesCount] = useState(0);
+  const [tasksCount, setTasksCount] = useState(0);
 
+  const toast = useToast();
+  const { isOpen: isEditDealModalOpen, onOpen: onEditDealModalOpen, onClose: onEditDealModalClose } = useDisclosure();
+
+  // NEW: Quick schedule functionality
+  const { quickSchedule, embeddedModal } = useQuickSchedule();
+
+  // Memoized callback functions to prevent re-renders
+  const handleStickyNotesCountChange = useCallback((count: number) => {
+    setStickyNotesCount(count);
+  }, []);
+
+  const handleDocumentCountChange = useCallback((count: number) => {
+    setDocumentCount(count);
+  }, []);
+
+  const handleContactsCountChange = useCallback((count: number) => {
+    setContactsCount(count);
+  }, []);
+
+  const handleTasksCountChange = useCallback((count: number) => {
+    setTasksCount(count);
+  }, []);
+
+  // Helper function for theme-specific accent colors
+  const getAccentColor = () => {
+    switch (currentThemeName) {
+      case 'industrialMetal':
+        return 'rgba(255, 170, 0, 0.6)'; // Hazard yellow for industrial only
+      default:
+        return 'transparent'; // No accent for modern themes
+    }
+  };
+
+  // Fetch data on component mount
+  useEffect(() => {
+    if (dealId) {
+      fetchDealById(dealId);
+      fetchCustomFieldDefinitions('DEAL');
+      if (!usersHaveBeenFetched) {
+        fetchUserList();
+      }
+    }
+    return () => {
+      // Cleanup if needed
+    };
+  }, [dealId, fetchDealById, fetchCustomFieldDefinitions, usersHaveBeenFetched, fetchUserList]);
+
+  // Deal CRUD permissions
   const canEditDeal = useMemo(() => {
     if (!userPermissions) return false;
     
@@ -391,9 +456,9 @@ const DealDetailPage = () => {
         my={{base: 0, md: 4}}
       >
         {/* NEW: Responsive grid layout (replaces Flex with calc() problems) */}
-        <SimpleGrid columns={{base: 1, md: 12}} gap={{base: 4, md: 6}}>
+        <SimpleGrid columns={{base: 1, lg: 12}} gap={{base: 4, md: 6}}>
           {/* Main Content (Left Column) */}
-          <Box colSpan={{base: 12, md: 8}} p={{base: 4, md: 6, lg: 8}} overflowY="auto" overflowX="hidden" sx={{
+          <Box gridColumn={{base: "1", lg: "1 / 9"}} p={{base: 4, md: 6, lg: 8}} overflowY="auto" overflowX="hidden" sx={{
               '&::-webkit-scrollbar': { width: '8px' },
               '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '8px' },
               '&::-webkit-scrollbar-track': { background: colors.bg.elevated },
@@ -554,7 +619,7 @@ const DealDetailPage = () => {
           </Box>
 
           {/* Right Sidebar - Enhanced with Key Information */}
-          <Box colSpan={{base: 12, md: 4}} bg={colors.component.kanban.column} p={{base: 4, md: 6}} borderLeftWidth={{base: 0, lg: "1px"}} borderTopWidth={{base: "1px", lg: 0}} borderColor={colors.component.kanban.cardBorder} overflowY="auto" flexShrink={0} boxShadow="steelPlate" position="relative" _before={{
+          <Box gridColumn={{base: "1", lg: "9 / 13"}} bg={colors.component.kanban.column} p={{base: 4, md: 6}} borderLeftWidth={{base: 0, lg: "1px"}} borderTopWidth={{base: "1px", lg: 0}} borderColor={colors.component.kanban.cardBorder} overflowY="auto" flexShrink={0} boxShadow="steelPlate" position="relative" _before={{
               content: '""',
               position: 'absolute',
               top: 0,
