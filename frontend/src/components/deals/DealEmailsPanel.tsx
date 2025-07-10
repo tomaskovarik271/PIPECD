@@ -1,79 +1,95 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Box,
   VStack,
   HStack,
   Text,
-  Button,
   Input,
   InputGroup,
   InputLeftElement,
+  Button,
+  IconButton,
   Select,
   Badge,
-  Spinner,
   Alert,
   AlertIcon,
-  Divider,
-  IconButton,
+  Spinner,
+  Center,
+  Grid,
+  GridItem,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
   useToast,
+  useDisclosure,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalCloseButton,
-  ModalBody,
   ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  Textarea,
   FormControl,
   FormLabel,
-  Textarea,
-  Grid,
-  GridItem,
-  Card,
-  CardBody,
-  Flex,
+  Collapse,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Divider,
   Tag,
   TagLabel,
-  TagCloseButton,
+  TagLeftIcon,
   Tooltip,
-  Collapse,
-  RadioGroup,
-  Radio,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
+  Heading,
+  Switch,
+  Checkbox,
+  SimpleGrid,
+  Flex,
+  Card,
+  CardBody,
   Icon,
+  useColorModeValue
 } from '@chakra-ui/react';
-import { 
-  FiSearch, 
-  FiFilter, 
-  FiMail, 
-  FiMoreVertical, 
-  FiArchive, 
-  FiStar, 
-  FiPaperclip, 
-  FiClock, 
-  FiUser, 
-  FiPhone, 
-  FiCalendar, 
-  FiFileText, 
-  FiPlus, 
-  FiX, 
-  FiChevronDown, 
-  FiChevronUp,
+import {
+  FiSearch,
+  FiFilter,
+  FiMail,
+  FiMoreVertical,
+  FiPaperclip,
+  FiClock,
+  FiCalendar,
+  FiCheckCircle,
+  FiEdit3,
+  FiExternalLink,
   FiZap,
-  FiEdit,
-  FiExternalLink
+  FiFileText,
+  FiArchive,
+  FiStar,
+  FiUser
 } from 'react-icons/fi';
-import { FaTasks, FaUserPlus, FaMapPin } from 'react-icons/fa';
+import { FaReply, FaReplyAll, FaForward, FaClipboardList } from 'react-icons/fa';
+import { EmailIcon, AttachmentIcon, TimeIcon, CheckIcon, ChevronDownIcon } from '@chakra-ui/icons';
+import { formatDistanceToNow, format } from 'date-fns';
 import { useQuery, useMutation, gql } from '@apollo/client';
+
+// Import components
+import EmailContactFilter from './EmailContactFilter';
+import { SmartEmailButton } from '../common/SmartEmailComposer';
+// Temporarily commented out for responsive system testing
+// import { EmailToNoteModal } from './EmailToNoteModal';
+// import { EmailMarkReadButton } from './EmailMarkReadButton';
+// import { CreateTaskFromEmailModal } from './CreateTaskFromEmailModal';
+import CreateContactFromEmailModal from './CreateContactFromEmailModal';
+
+// Store imports
+import { useAppStore } from '../../stores/useAppStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useThemeStore } from '../../stores/useThemeStore';
-import EmailContactFilter from './EmailContactFilter';
-import CreateContactFromEmailModal from './CreateContactFromEmailModal';
-import { SmartEmailButton } from '../common/SmartEmailComposer';
-// Task creation modal removed with activities system
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 // GraphQL Queries and Mutations
 const GET_EMAIL_THREADS = gql`
@@ -447,6 +463,9 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   const currentThemeName = useThemeStore((state) => state.currentTheme);
   const toast = useToast();
 
+  // NEW: Responsive layout for email panel grid
+  const { emailPanelGridStyles, isMobile, isTablet } = useResponsiveLayout();
+
   // Helper function for theme-specific accent colors
   const getAccentColor = () => {
     switch (currentThemeName) {
@@ -813,10 +832,12 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
         pointerEvents: 'none',
       }}
     >
-      <Grid templateColumns="1fr 2fr" h="full">
+      {/* NEW: Responsive email panel layout */}
+      <Box {...emailPanelGridStyles}>
         {/* Left Panel - Thread List */}
-        <GridItem 
-          borderRightWidth="1px" 
+        <Box 
+          borderRightWidth={{base: 0, md: "1px"}} 
+          borderBottomWidth={{base: "1px", md: 0}}
           borderColor={colors.border.default} 
           sx={{
             display: 'flex',
@@ -1168,10 +1189,10 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
                 ))
             )}
           </Box>
-        </GridItem>
+        </Box>
 
         {/* Right Panel - Message View */}
-        <GridItem>
+        <Box>
           {selectedThreadId ? (
             threadLoading ? (
               <Box p={6} textAlign="center">
@@ -1395,8 +1416,8 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
               </Text>
             </Box>
           )}
-        </GridItem>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Old Compose Email Modal removed - now using unified SmartEmailComposer */}
 

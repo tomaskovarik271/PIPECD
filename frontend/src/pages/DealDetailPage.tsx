@@ -100,6 +100,7 @@ import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsW
 import { useQuickSchedule } from '../hooks/useQuickSchedule';
 import { SmartEmailButton } from '../components/common/SmartEmailComposer';
 import { EmbeddedCalendarModal } from '../components/calendar/EmbeddedCalendarModal';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 // Type imports
 
@@ -137,6 +138,16 @@ const DealDetailPage = () => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
   const currentThemeName = useThemeStore((state) => state.currentTheme);
+  
+  // NEW: Responsive layout system (replaces problematic calc() patterns)
+  const {
+    detailPageGridStyles,
+    mainContentStyles,
+    rightSidebarStyles,
+    isMobile,
+    isTablet,
+    isDesktop
+  } = useResponsiveLayout({ hasRightSidebar: true, hasTabs: true });
   
   // Helper function for theme-specific accent colors
   const getAccentColor = () => {
@@ -453,23 +464,22 @@ const DealDetailPage = () => {
     >
       <Box 
         bg={colors.bg.surface}
-        maxW="90vw" 
         w="full" 
         h="full"  
         maxH="calc(100% - 0px)" 
-        borderRadius="xl" 
-        borderWidth="1px"
+        borderRadius={{base: "none", md: "xl"}}
+        borderWidth={{base: "0", md: "1px"}}
         borderColor={colors.border.default}
         overflow="hidden" 
+        mx={{base: 0, md: 4}}
+        my={{base: 0, md: 4}}
       >
-        <Flex h="full" direction={{base: "column", lg: "row"}} w="100%" maxW="100%">
+        {/* NEW: Responsive grid layout (replaces Flex with calc() problems) */}
+        <Box {...detailPageGridStyles}>
           {/* Main Content (Left Column) */}
           <Box 
-            flex="1"
-            minW="0"
-            w={{base: "100%", lg: "calc(100vw - 450px - 20rem)"}}
-            maxW={{base: "100%", lg: "calc(100vw - 450px - 20rem)"}}
-            p={{base: 4, md: 8}} 
+            {...mainContentStyles}
+            p={{base: 4, md: 6, lg: 8}} 
             overflowY="auto"
             overflowX="hidden"
             sx={{
@@ -635,15 +645,13 @@ const DealDetailPage = () => {
 
           {/* Right Sidebar - Enhanced with Key Information */}
           <Box 
+            {...rightSidebarStyles}
             bg={colors.component.kanban.column}
             p={{base: 4, md: 6}} 
             borderLeftWidth={{base: 0, lg: "1px"}} 
             borderTopWidth={{base: "1px", lg: 0}}
             borderColor={colors.component.kanban.cardBorder}
             overflowY="auto"
-            w="450px"
-            minW="450px"
-            maxW="450px"
             flexShrink={0}
             boxShadow="steelPlate"
             position="relative"
@@ -1064,7 +1072,7 @@ const DealDetailPage = () => {
               )}
             </VStack>
           </Box>
-        </Flex>
+        </Box>
       </Box>
 
       {/* Edit Deal Modal */}
