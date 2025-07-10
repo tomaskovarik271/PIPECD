@@ -89,7 +89,6 @@ import CreateContactFromEmailModal from './CreateContactFromEmailModal';
 import { useAppStore } from '../../stores/useAppStore';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { useThemeStore } from '../../stores/useThemeStore';
-import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 // GraphQL Queries and Mutations
 const GET_EMAIL_THREADS = gql`
@@ -464,7 +463,7 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
   const toast = useToast();
 
   // NEW: Responsive layout for email panel grid
-  const { emailPanelGridStyles, isMobile, isTablet } = useResponsiveLayout();
+  // const { emailPanelGridStyles, isMobile, isTablet } = useResponsiveLayout();
 
   // Helper function for theme-specific accent colors
   const getAccentColor = () => {
@@ -833,7 +832,12 @@ const DealEmailsPanel: React.FC<DealEmailsPanelProps> = ({
       }}
     >
       {/* NEW: Responsive email panel layout */}
-      <Box {...emailPanelGridStyles}>
+      <Box 
+        display="grid" 
+        gridTemplateColumns={{ base: "1fr", md: "1fr 3fr" }} 
+        gap={{ base: 0, md: 0 }} 
+        h="full"
+      >
         {/* Left Panel - Thread List */}
         <Box 
           borderRightWidth={{base: 0, md: "1px"}} 

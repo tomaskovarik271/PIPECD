@@ -47,7 +47,8 @@ import {
   Link,
   Progress,
   Collapse,
-  Icon
+  Icon,
+  SimpleGrid
 } from '@chakra-ui/react';
 import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
 import { 
@@ -138,105 +139,20 @@ const DealDetailPage = () => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
   const currentThemeName = useThemeStore((state) => state.currentTheme);
-  
-  // NEW: Responsive layout system (replaces problematic calc() patterns)
-  const {
-    detailPageGridStyles,
-    mainContentStyles,
-    rightSidebarStyles,
-    isMobile,
-    isTablet,
-    isDesktop
-  } = useResponsiveLayout({ hasRightSidebar: true, hasTabs: true });
-  
-  // Helper function for theme-specific accent colors
-  const getAccentColor = () => {
-    switch (currentThemeName) {
-      case 'industrialMetal':
-        return 'rgba(255, 170, 0, 0.6)'; // Hazard yellow for industrial only
-      default:
-        return 'transparent'; // No accent for modern themes
-    }
-  };
-  
-  const fetchDealById = useAppStore((state) => state.fetchDealById);
-  const currentDeal = useAppStore((state) => state.currentDeal);
-  const isLoadingDeal = useAppStore((state) => state.currentDealLoading);
-  const dealError = useAppStore((state) => state.currentDealError);
+
+  // NEW: Quick schedule functionality
+  const { quickSchedule, embeddedModal } = useQuickSchedule();
+
+  // Deal CRUD permissions
   const userPermissions = useAppStore((state) => state.userPermissions);
   const session = useAppStore((state) => state.session);
   const currentUserId = session?.user.id;
+  const deal = useAppStore((state) => state.currentDeal);
+  const isLoadingDeal = useAppStore((state) => state.currentDealLoading);
+  const dealError = useAppStore((state) => state.currentDealError);
   const updateDealStoreAction = useDealsStore((state) => state.updateDeal);
   const toast = useToast();
 
-  // Activities functionality removed - using Google Calendar integration instead
-  
-  // Document count state for tab display
-  const [documentCount, setDocumentCount] = useState(0);
-  
-  // Organization contacts count state for tab display
-  const [contactsCount, setContactsCount] = useState(0);
-  
-  // Sticky notes count state for tab display
-  const [stickyNotesCount, setStickyNotesCount] = useState(0);
-  
-  // Tasks count state for tab display
-  const [tasksCount, setTasksCount] = useState(0);
-  
-  // State for inline editing in right sidebar
-  const [isEditingAmount, setIsEditingAmount] = useState(false);
-  const [newAmount, setNewAmount] = useState<string>('');
-  const [isEditingCloseDate, setIsEditingCloseDate] = useState(false);
-  const [newCloseDateStr, setNewCloseDateStr] = useState<string>('');
-  const [isEditingOwner, setIsEditingOwner] = useState(false);
-  const [newOwnerId, setNewOwnerId] = useState<string | null>(null);
-  
-  // State for collapsible custom fields
-  const [isCustomFieldsExpanded, setIsCustomFieldsExpanded] = useState(true);
-  
-  // Email refresh trigger
-  const [emailRefreshTrigger, setEmailRefreshTrigger] = useState(0);
-  
-  // Direct calendar scheduling (no modal needed)
-  const { quickSchedule, embeddedModal } = useQuickSchedule();
-  
-  // Memoize callbacks to prevent infinite re-renders
-  const handleStickyNotesCountChange = useCallback((count: number) => {
-    setStickyNotesCount(count);
-  }, []);
-  
-  const handleDocumentCountChange = useCallback((count: number) => {
-    setDocumentCount(count);
-  }, []);
-  
-  const handleContactsCountChange = useCallback((count: number) => {
-    setContactsCount(count);
-  }, []);
-
-  const handleTasksCountChange = useCallback((count: number) => {
-    setTasksCount(count);
-  }, []);
-
-  const { isOpen: isEditDealModalOpen, onOpen: onEditDealModalOpen, onClose: onEditDealModalClose } = useDisclosure();
-
-  const { definitions: customFieldDefinitions, fetchCustomFieldDefinitions } = useCustomFieldDefinitionStore();
-  const { users: userList, fetchUsers: fetchUserList, hasFetched: usersHaveBeenFetched } = useUserListStore();
-
-  useEffect(() => {
-    if (dealId) {
-      fetchDealById(dealId);
-      // Activities fetch removed - using Google Calendar integration instead
-      fetchCustomFieldDefinitions('DEAL');
-      if (!usersHaveBeenFetched) {
-        fetchUserList();
-      }
-    }
-    return () => {
-      // useAppStore.setState({ currentDeal: null, currentDealError: null });
-    };
-  }, [dealId, fetchDealById, fetchCustomFieldDefinitions, usersHaveBeenFetched, fetchUserList]);
-
-  // Permission checks
   const canEditDeal = useMemo(() => {
     if (!userPermissions) return false;
     
@@ -251,19 +167,19 @@ const DealDetailPage = () => {
 
   // Calculate effective probability for display
   const getEffectiveProbabilityDisplay = useMemo(() => {
-    if (!currentDeal) return { value: null, display: 'N/A' };
+    if (!deal) return { value: null, display: 'N/A' };
 
     // Check for manual probability first (using deal_specific_probability)
-    if ((currentDeal as any).deal_specific_probability !== null && (currentDeal as any).deal_specific_probability !== undefined) {
+    if ((deal as any).deal_specific_probability !== null && (deal as any).deal_specific_probability !== undefined) {
       return {
-        value: (currentDeal as any).deal_specific_probability,
-        display: `${((currentDeal as any).deal_specific_probability * 100).toFixed(0)}% (manual)`
+        value: (deal as any).deal_specific_probability,
+        display: `${((deal as any).deal_specific_probability * 100).toFixed(0)}% (manual)`
       };
     }
 
     // Fall back to WFM step probability (check metadata)
-    if (currentDeal.currentWfmStep && (currentDeal.currentWfmStep as any).metadata && typeof (currentDeal.currentWfmStep as any).metadata === 'object') {
-      const stepProbability = ((currentDeal.currentWfmStep as any).metadata as { deal_probability?: number }).deal_probability;
+    if (deal.currentWfmStep && (deal.currentWfmStep as any).metadata && typeof (deal.currentWfmStep as any).metadata === 'object') {
+      const stepProbability = ((deal.currentWfmStep as any).metadata as { deal_probability?: number }).deal_probability;
       if (stepProbability != null) {
         return {
           value: stepProbability,
@@ -273,7 +189,7 @@ const DealDetailPage = () => {
     }
 
     return { value: null, display: 'N/A' };
-  }, [currentDeal]);
+  }, [deal]);
 
   const handleDealUpdated = () => {
     if (dealId) {
@@ -333,7 +249,7 @@ const DealDetailPage = () => {
   };
 
   const handleCustomFieldUpdate = async (fieldId: string, value: any) => {
-    if (!currentDeal) return;
+    if (!deal) return;
     
     try {
       // Create a single CustomFieldValueInput object for this field
@@ -344,7 +260,7 @@ const DealDetailPage = () => {
         // For now, assuming most custom fields are text/string fields
       };
       
-      await handleDealUpdate(currentDeal.id, {
+      await handleDealUpdate(deal.id, {
         customFields: [customFieldInput]
       });
     } catch (error) {
@@ -360,10 +276,10 @@ const DealDetailPage = () => {
   };
 
   const handleAmountUpdate = async () => {
-    if (!currentDeal || newAmount === '') return;
+    if (!deal || newAmount === '') return;
     
     try {
-      await handleDealUpdate(currentDeal.id, {
+      await handleDealUpdate(deal.id, {
         amount: parseFloat(newAmount)
       });
       setIsEditingAmount(false);
@@ -381,10 +297,10 @@ const DealDetailPage = () => {
   };
 
   const handleCloseDateUpdate = async () => {
-    if (!currentDeal) return;
+    if (!deal) return;
     
     try {
-      await handleDealUpdate(currentDeal.id, {
+      await handleDealUpdate(deal.id, {
         expected_close_date: newCloseDateStr || null
       });
       setIsEditingCloseDate(false);
@@ -395,10 +311,10 @@ const DealDetailPage = () => {
   };
 
   const handleOwnerUpdate = async () => {
-    if (!currentDeal) return;
+    if (!deal) return;
     
     try {
-      await handleDealUpdate(currentDeal.id, {
+      await handleDealUpdate(deal.id, {
         assignedToUserId: newOwnerId
       });
       setIsEditingOwner(false);
@@ -439,7 +355,7 @@ const DealDetailPage = () => {
     );
   }
 
-  if (!currentDeal) {
+  if (!deal) {
     return (
       <Center h="100vh" flexDirection="column" bg={colors.bg.elevated} borderRadius="xl" p={6}>
         <Icon as={WarningIcon} w={8} h={8} color={colors.text.warning} mb={4} />
@@ -475,23 +391,17 @@ const DealDetailPage = () => {
         my={{base: 0, md: 4}}
       >
         {/* NEW: Responsive grid layout (replaces Flex with calc() problems) */}
-        <Box {...detailPageGridStyles}>
+        <SimpleGrid columns={{base: 1, md: 12}} gap={{base: 4, md: 6}}>
           {/* Main Content (Left Column) */}
-          <Box 
-            {...mainContentStyles}
-            p={{base: 4, md: 6, lg: 8}} 
-            overflowY="auto"
-            overflowX="hidden"
-            sx={{
+          <Box colSpan={{base: 12, md: 8}} p={{base: 4, md: 6, lg: 8}} overflowY="auto" overflowX="hidden" sx={{
               '&::-webkit-scrollbar': { width: '8px' },
               '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '8px' },
               '&::-webkit-scrollbar-track': { background: colors.bg.elevated },
-            }}
-          >
+            }}>
             <VStack spacing={6} align="stretch" maxW="100%" w="100%">
               {/* Header Section */}
               <DealHeader 
-                deal={currentDeal as Deal}
+                deal={deal as Deal}
                 isEditing={false}
                 setIsEditing={() => {}}
                 dealActivities={[]} // Activities removed - using Google Calendar integration instead
@@ -573,7 +483,7 @@ const DealDetailPage = () => {
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
                         <DealNotesPanel 
-                          dealId={currentDeal.id}
+                          dealId={deal.id}
                           onNoteCountChange={handleStickyNotesCountChange}
                         />
                       </Box>
@@ -581,15 +491,15 @@ const DealDetailPage = () => {
                     
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
-                        <DealTimelinePanel deal={currentDeal as Deal} />
+                        <DealTimelinePanel deal={deal as Deal} />
                       </Box>
                     </TabPanel>
                     
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
                         <DealTasksPanel 
-                          dealId={currentDeal.id}
-                          dealName={currentDeal.name}
+                          dealId={deal.id}
+                          dealName={deal.name}
                           onTaskCountChange={handleTasksCountChange}
                         />
                       </Box>
@@ -601,8 +511,8 @@ const DealDetailPage = () => {
                       <Box w="100%" maxW="100%">
                         <DealEmailsPanel 
                           dealId={dealId!} 
-                          primaryContactEmail={currentDeal.person?.email || undefined}
-                          dealName={currentDeal.name}
+                          primaryContactEmail={deal.person?.email || undefined}
+                          dealName={deal.name}
                           refreshTrigger={emailRefreshTrigger}
                         />
                       </Box>
@@ -612,7 +522,7 @@ const DealDetailPage = () => {
                       <Box w="100%" maxW="100%">
                         <SharedDriveDocumentBrowser 
                           dealId={dealId!} 
-                          dealName={currentDeal.name}
+                          dealName={deal.name}
                           onDocumentCountChange={handleDocumentCountChange}
                         />
                       </Box>
@@ -621,20 +531,20 @@ const DealDetailPage = () => {
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
                         <DealOrganizationContactsPanel 
-                          organization={currentDeal.organization ? {
-                            id: currentDeal.organization.id,
-                            name: currentDeal.organization.name
+                          organization={deal.organization ? {
+                            id: deal.organization.id,
+                            name: deal.organization.name
                           } : null} 
                           onContactCountChange={handleContactsCountChange}
-                          dealId={currentDeal.id}
-                          dealName={currentDeal.name}
+                          dealId={deal.id}
+                          dealName={deal.name}
                         />
                       </Box>
                     </TabPanel>
 
                     <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
                       <Box w="100%" maxW="100%">
-                        <DealHistoryPanel historyEntries={currentDeal.history} />
+                        <DealHistoryPanel historyEntries={deal.history} />
                       </Box>
                     </TabPanel>
                   </TabPanels>
@@ -644,18 +554,7 @@ const DealDetailPage = () => {
           </Box>
 
           {/* Right Sidebar - Enhanced with Key Information */}
-          <Box 
-            {...rightSidebarStyles}
-            bg={colors.component.kanban.column}
-            p={{base: 4, md: 6}} 
-            borderLeftWidth={{base: 0, lg: "1px"}} 
-            borderTopWidth={{base: "1px", lg: 0}}
-            borderColor={colors.component.kanban.cardBorder}
-            overflowY="auto"
-            flexShrink={0}
-            boxShadow="steelPlate"
-            position="relative"
-            _before={{
+          <Box colSpan={{base: 12, md: 4}} bg={colors.component.kanban.column} p={{base: 4, md: 6}} borderLeftWidth={{base: 0, lg: "1px"}} borderTopWidth={{base: "1px", lg: 0}} borderColor={colors.component.kanban.cardBorder} overflowY="auto" flexShrink={0} boxShadow="steelPlate" position="relative" _before={{
               content: '""',
               position: 'absolute',
               top: 0,
@@ -666,13 +565,11 @@ const DealDetailPage = () => {
                 ? 'linear-gradient(180deg, rgba(255, 170, 0, 0.6) 0%, rgba(255, 170, 0, 0.8) 50%, rgba(255, 170, 0, 0.6) 100%)'
                 : 'none',
               pointerEvents: 'none',
-            }}
-            sx={{
+            }} sx={{
               '&::-webkit-scrollbar': { width: '8px' },
               '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '8px' },
               '&::-webkit-scrollbar-track': { background: colors.bg.elevated },
-            }}
-          >
+            }}>
             <VStack spacing={6} align="stretch">
               {/* Key Information Section */}
               <Box 
@@ -702,7 +599,7 @@ const DealDetailPage = () => {
                     {!isEditingAmount ? (
                       <HStack spacing={2}>
                         <Text fontSize="md" fontWeight="semibold" color={colors.status.success}>
-                          {currentDeal.amount ? CurrencyFormatter.format(currentDeal.amount, currentDeal.currency || 'USD', { precision: 0 }) : '-'}
+                          {deal.amount ? CurrencyFormatter.format(deal.amount, deal.currency || 'USD', { precision: 0 }) : '-'}
                         </Text>
                         <IconButton 
                           icon={<EditIcon />} 
@@ -711,7 +608,7 @@ const DealDetailPage = () => {
                           aria-label="Edit Amount" 
                           onClick={() => {
                             setIsEditingAmount(true);
-                            setNewAmount(currentDeal.amount ? String(currentDeal.amount) : '');
+                            setNewAmount(deal.amount ? String(deal.amount) : '');
                           }}
                           color={colors.text.secondary}
                           _hover={{color: colors.text.link}}
@@ -777,7 +674,7 @@ const DealDetailPage = () => {
                     {!isEditingCloseDate ? (
                       <HStack spacing={2}>
                         <Text fontSize="md" fontWeight="medium" color={colors.text.primary}>
-                          {currentDeal.expected_close_date ? new Date(currentDeal.expected_close_date).toLocaleDateString() : '-'}
+                          {deal.expected_close_date ? new Date(deal.expected_close_date).toLocaleDateString() : '-'}
                         </Text>
                         <IconButton 
                           icon={<EditIcon />} 
@@ -786,8 +683,8 @@ const DealDetailPage = () => {
                           aria-label="Edit Expected Close Date" 
                           onClick={() => {
                             setIsEditingCloseDate(true);
-                            if (currentDeal.expected_close_date) {
-                              const date = new Date(currentDeal.expected_close_date);
+                            if (deal.expected_close_date) {
+                              const date = new Date(deal.expected_close_date);
                               setNewCloseDateStr(date.toISOString().split('T')[0]);
                             } else {
                               setNewCloseDateStr('');
@@ -837,12 +734,12 @@ const DealDetailPage = () => {
                       <HStack spacing={2}>
                         <Avatar 
                           size="xs" 
-                          name={currentDeal.assignedToUser?.display_name || 'Unassigned'}
-                          src={currentDeal.assignedToUser?.avatar_url || undefined}
+                          name={deal.assignedToUser?.display_name || 'Unassigned'}
+                          src={deal.assignedToUser?.avatar_url || undefined}
                           bg={colors.interactive.default}
                         />
                         <Text fontSize="md" fontWeight="medium" color={colors.text.primary}>
-                          {currentDeal.assignedToUser?.display_name || 'Unassigned'}
+                          {deal.assignedToUser?.display_name || 'Unassigned'}
                         </Text>
                         <IconButton 
                           icon={<EditIcon />} 
@@ -851,7 +748,7 @@ const DealDetailPage = () => {
                           aria-label="Edit Owner" 
                           onClick={() => {
                             setIsEditingOwner(true);
-                            setNewOwnerId(currentDeal.assigned_to_user_id || null);
+                            setNewOwnerId(deal.assigned_to_user_id || null);
                           }}
                           color={colors.text.secondary}
                           _hover={{color: colors.text.link}}
@@ -911,7 +808,7 @@ const DealDetailPage = () => {
                       border="1px solid"
                       borderColor={colors.border.default}
                     >
-                      #{(currentDeal as any).project_id || '-'}
+                      #{(deal as any).project_id || '-'}
                     </Text>
                   </HStack>
 
@@ -921,7 +818,7 @@ const DealDetailPage = () => {
                       leftIcon={<CalendarIcon />}
                       colorScheme="blue"
                       size="md"
-                      onClick={() => quickSchedule({ deal: currentDeal, useEmbeddedModal: true })}
+                      onClick={() => quickSchedule({ deal: deal, useEmbeddedModal: true })}
                       width="100%"
                       variant="solid"
                     >
@@ -967,8 +864,8 @@ const DealDetailPage = () => {
                   <Collapse in={isCustomFieldsExpanded} animateOpacity>
                     <DealCustomFieldsPanel
                       customFieldDefinitions={customFieldDefinitions || []}
-                      customFieldValues={currentDeal.customFieldValues || []}
-                      dealId={currentDeal.id}
+                      customFieldValues={deal.customFieldValues || []}
+                      dealId={deal.id}
                       onUpdate={canEditDeal ? handleCustomFieldUpdate : undefined}
                       getLinkDisplayDetails={getLinkDisplayDetails}
                     />
@@ -977,7 +874,7 @@ const DealDetailPage = () => {
               )}
 
               {/* Primary Contact Section */}
-              {currentDeal.person && (
+              {deal.person && (
                 <Box 
                   p={5} 
                   bg={colors.component.kanban.card} 
@@ -1001,35 +898,35 @@ const DealDetailPage = () => {
                   <HStack spacing={3} alignItems="center">
                     <Avatar 
                       size="md" 
-                      name={`${currentDeal.person?.first_name || ''} ${currentDeal.person?.last_name || ''}`}
+                      name={`${deal.person?.first_name || ''} ${deal.person?.last_name || ''}`}
                       bg={colors.interactive.default}
                       color={colors.text.onAccent}
                     />
                     <VStack align="start" spacing={0} flex={1}>
-                      <Link as={RouterLink} to={`/people/${currentDeal.person?.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
-                        {currentDeal.person?.first_name} {currentDeal.person?.last_name}
+                      <Link as={RouterLink} to={`/people/${deal.person?.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
+                        {deal.person?.first_name} {deal.person?.last_name}
                       </Link>
-                      {currentDeal.person?.email && (
+                      {deal.person?.email && (
                         <Text fontSize="sm" color={colors.text.secondary}>
-                          {currentDeal.person?.email}
+                          {deal.person?.email}
                         </Text>
                       )}
                     </VStack>
                   </HStack>
-                  {currentDeal.person?.email && (
+                  {deal.person?.email && (
                     <Box mt={3}>
                       <SmartEmailButton
-                        to={currentDeal.person.email}
+                        to={deal.person.email}
                         size="xs"
                         variant="outline"
                         width="full"
                         context={{
-                          dealId: currentDeal.id,
-                          dealName: currentDeal.name,
-                          personId: currentDeal.person.id,
-                          personName: `${currentDeal.person.first_name || ''} ${currentDeal.person.last_name || ''}`.trim(),
-                          organizationId: currentDeal.organization?.id,
-                          organizationName: currentDeal.organization?.name,
+                          dealId: deal.id,
+                          dealName: deal.name,
+                          personId: deal.person.id,
+                          personName: `${deal.person.first_name || ''} ${deal.person.last_name || ''}`.trim(),
+                          organizationId: deal.organization?.id,
+                          organizationName: deal.organization?.name,
                         }}
                       >
                         Email
@@ -1040,7 +937,7 @@ const DealDetailPage = () => {
               )}
 
               {/* Organization Section */}
-              {currentDeal.organization && (
+              {deal.organization && (
                 <Box 
                   p={5} 
                   bg={colors.component.kanban.card} 
@@ -1063,8 +960,8 @@ const DealDetailPage = () => {
                   <Heading size="sm" mb={3} color={colors.text.primary}>Organization</Heading>
                   <HStack spacing={3} alignItems="center">
                     <VStack align="start" spacing={0}>
-                      <Link as={RouterLink} to={`/organizations/${currentDeal.organization.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
-                        {currentDeal.organization.name}
+                      <Link as={RouterLink} to={`/organizations/${deal.organization.id}`} fontWeight="medium" color={colors.text.link} _hover={{textDecoration: 'underline'}}>
+                        {deal.organization.name}
                       </Link>
                     </VStack>
                   </HStack>
@@ -1072,7 +969,7 @@ const DealDetailPage = () => {
               )}
             </VStack>
           </Box>
-        </Box>
+        </SimpleGrid>
       </Box>
 
       {/* Edit Deal Modal */}
@@ -1080,7 +977,7 @@ const DealDetailPage = () => {
         <EditDealModal
           isOpen={isEditDealModalOpen}
           onClose={onEditDealModalClose}
-          deal={currentDeal}
+          deal={deal}
           onDealUpdated={handleDealUpdated}
         />
       )}
