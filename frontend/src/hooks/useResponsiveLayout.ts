@@ -73,9 +73,10 @@ export const useResponsiveLayout = (config: ResponsiveLayoutConfig = {}) => {
       position: 'relative' as const
     },
     lg: {
-      // Desktop: Flexible width controlled by grid
+      // Desktop: Flexible width controlled by grid with minimum
       display: hasRightSidebar ? 'block' : 'none',
-      width: '100%', // Let grid control the width
+      width: '100%',
+      minWidth: '380px', // Ensure minimum width for content
       position: 'relative' as const
     }
   });
@@ -97,18 +98,18 @@ export const useResponsiveLayout = (config: ResponsiveLayoutConfig = {}) => {
       width: '100%'
     },
     lg: {
-      // Desktop: Two-column grid when sidebar exists
+      // Desktop: Better balanced proportions
       display: hasRightSidebar ? 'grid' : 'flex',
-      gridTemplateColumns: hasRightSidebar ? '2fr 1fr' : undefined, // Changed from 1fr 450px
+      gridTemplateColumns: hasRightSidebar ? '1fr 380px' : undefined, // Fixed but flexible sidebar
       flexDirection: hasRightSidebar ? undefined : 'column' as const,
       gap: responsiveSpacing.sectionGap.lg,
       width: '100%',
       alignItems: 'flex-start'
     },
     xl: {
-      // Large screens: Better proportions
+      // Large screens: More content space but adequate sidebar
       display: hasRightSidebar ? 'grid' : 'flex',
-      gridTemplateColumns: hasRightSidebar ? '3fr 1fr' : undefined, // Even more content space
+      gridTemplateColumns: hasRightSidebar ? '1fr 420px' : undefined, // Slightly wider sidebar for large screens
       flexDirection: hasRightSidebar ? undefined : 'column' as const,
       gap: responsiveSpacing.sectionGap.lg,
       width: '100%',
