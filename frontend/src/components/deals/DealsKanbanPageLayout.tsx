@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import {
   Box,
   Button,
@@ -9,6 +9,14 @@ import {
   MenuItemOption,
   HStack,
   Select,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+
 } from '@chakra-ui/react';
 import { ChevronDownIcon } from '@chakra-ui/icons';
 import DealsKanbanPageView from './DealsKanbanPageView';
@@ -20,6 +28,12 @@ import { useThemeColors, useThemeStyles } from '../../hooks/useThemeColors';
 import { useAppStore } from '../../stores/useAppStore';
 import { TbCurrencyDollar, TbWorld } from 'react-icons/tb';
 import { CurrencyFormatter } from '../../lib/utils/currencyFormatter';
+import { LabelFilter } from './LabelFilter';
+import { AdvancedFilterBuilder } from '../common/AdvancedFilterBuilder';
+import { ConsolidatedFilterBar } from './ConsolidatedFilterBar';
+import { getAvailableFilterFields } from '../../utils/filterFields';
+import type { DealFilters, FilterCriteria } from '../../types/filters';
+import { useSavedFiltersStore } from '../../stores/useSavedFiltersStore';
 
 interface QuickFilter {
   key: string;
@@ -47,6 +61,14 @@ interface DealsKanbanPageLayoutProps {
   onSearchChange: (value: string) => void;
   kanbanCompactMode: boolean;
   setKanbanCompactMode: (isCompact: boolean) => void;
+  selectedLabels: Array<{ labelText: string; colorHex: string }>;
+  setSelectedLabels: (labels: Array<{ labelText: string; colorHex: string }>) => void;
+  labelFilterLogic: 'AND' | 'OR';
+  setLabelFilterLogic: (logic: 'AND' | 'OR') => void;
+  // Advanced filtering props
+  isUsingAdvancedFilters?: boolean;
+  onApplyAdvancedFilters?: (filters: DealFilters) => void;
+  onClearAdvancedFilters?: () => void;
 }
 
 const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
@@ -65,10 +87,29 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
   onSearchChange,
   kanbanCompactMode,
   setKanbanCompactMode: _setKanbanCompactMode,
+  selectedLabels,
+  setSelectedLabels,
+  labelFilterLogic,
+  setLabelFilterLogic,
+  // Advanced filtering props
+  isUsingAdvancedFilters = false,
+  onApplyAdvancedFilters,
+  onClearAdvancedFilters,
 }) => {
   const colors = useThemeColors();
   const styles = useThemeStyles();
   const pageLayoutStyles = usePageLayoutStyles(true);
+  
+  // Advanced filter state
+  const { 
+    isOpen: isAdvancedFilterOpen, 
+    onOpen: onOpenAdvancedFilter, 
+    onClose: onCloseAdvancedFilter 
+  } = useDisclosure();
+  const [filterCriteria, setFilterCriteria] = useState<FilterCriteria[]>([]);
+  
+  // Saved filters functionality
+  const { savedFilters, addSavedFilter } = useSavedFiltersStore();
   
   // Currency display mode from app store
   const { 
@@ -192,6 +233,21 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
     setSelectedAssignedUserIds(valueArray);
   }, [setSelectedAssignedUserIds]);
 
+  // Advanced filter handlers
+  const handleApplyAdvancedFilters = useCallback((filters: DealFilters) => {
+    if (onApplyAdvancedFilters) {
+      onApplyAdvancedFilters(filters);
+    }
+    onCloseAdvancedFilter();
+  }, [onApplyAdvancedFilters, onCloseAdvancedFilter]);
+
+  const handleClearAdvancedFilters = useCallback(() => {
+    setFilterCriteria([]);
+    if (onClearAdvancedFilters) {
+      onClearAdvancedFilters();
+    }
+  }, [onClearAdvancedFilters]);
+
   // Enhanced secondary actions with currency display toggle
   const secondaryActions = (
     <HStack spacing={3}>
@@ -275,6 +331,19 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
           </MenuList>
         </Menu>
       )}
+
+      {/* Consolidated Filters */}
+      <ConsolidatedFilterBar
+        selectedLabels={selectedLabels}
+        onLabelsChange={setSelectedLabels}
+        labelFilterLogic={labelFilterLogic}
+        onLogicChange={setLabelFilterLogic}
+        isUsingAdvancedFilters={isUsingAdvancedFilters}
+        onOpenAdvancedFilter={onOpenAdvancedFilter}
+        onClearAdvancedFilters={handleClearAdvancedFilters}
+        showColumnSelector={false}
+        isDisabled={pageIsLoading}
+      />
     </HStack>
   );
 
@@ -312,6 +381,25 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
           isCompact={kanbanCompactMode}
         />
       </Box>
+
+      {/* Advanced Filter Modal */}
+      <Modal isOpen={isAdvancedFilterOpen} onClose={onCloseAdvancedFilter} size="6xl">
+        <ModalOverlay />
+        <ModalContent maxW="90vw" maxH="90vh">
+          <ModalHeader>Advanced Filters</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <AdvancedFilterBuilder
+              availableFields={getAvailableFilterFields()}
+              onApplyFilters={handleApplyAdvancedFilters}
+              onSaveFilter={addSavedFilter}
+              savedFilters={savedFilters}
+              initialFilters={filterCriteria}
+              onFiltersChange={setFilterCriteria}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </>
   );
 };

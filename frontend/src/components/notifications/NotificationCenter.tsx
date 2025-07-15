@@ -174,15 +174,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     refetch
   } = useGlobalTaskIndicators(user?.id || null);
 
-  // Debug logging
-  console.log('NotificationCenter Debug:', {
-    userId: user?.id,
-    taskIndicators,
-    unreadCount,
-    liveNotificationItems,
-    loading: notificationsLoading,
-    error: notificationsError
-  });
+  // Debug logging removed to prevent console spam
 
   // State for business rule notifications (still using stored notifications)
   const [businessRuleNotifications, setBusinessRuleNotifications] = useState<UnifiedNotification[]>([]);
@@ -467,14 +459,16 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     </Card>
   );
 
-  const NotificationTrigger = () => (
+  const NotificationTrigger = React.forwardRef<HTMLButtonElement>((props, ref) => (
     <Box position="relative">
       <IconButton
+        ref={ref}
         icon={<FiBell />}
         variant="ghost"
         onClick={onOpen}
         aria-label="Open notifications"
         size={position === 'header' ? 'sm' : 'md'}
+        {...props}
       />
       {showBadge && (() => {
         const totalUnreadCount = unreadCount + (summary?.unreadCount || 0);
@@ -497,7 +491,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         );
       })()}
     </Box>
-  );
+  ));
 
   const NotificationContent = () => (
     <Box maxW={maxWidth} w="full">

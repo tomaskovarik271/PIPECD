@@ -45,6 +45,460 @@ export interface DealServiceUpdateData {
   assigned_to_user_id?: string | null; // Added for assignment
 }
 
+// Add filtering interfaces and enhanced query functions after the existing interfaces
+
+// ===============================
+// FILTERING INTERFACES
+// ===============================
+
+export interface DealFilters {
+  // Basic text search
+  search?: string;
+
+  // Deal properties
+  amountMin?: number;
+  amountMax?: number;
+  currency?: string;
+  expectedCloseDateFrom?: string;
+  expectedCloseDateTo?: string;
+  createdDateFrom?: string;
+  createdDateTo?: string;
+  dealSpecificProbabilityMin?: number;
+  dealSpecificProbabilityMax?: number;
+
+  // Relationships
+  personIds?: string[];
+  organizationIds?: string[];
+  assignedToUserIds?: string[];
+  unassigned?: boolean;
+
+  // WFM/Pipeline filtering
+  wfmWorkflowIds?: string[];
+  wfmStepIds?: string[];
+  wfmStatusIds?: string[];
+  wfmProjectTypeIds?: string[];
+
+  // Custom fields filtering
+  customFieldFilters?: CustomFieldFilter[];
+
+  // Labels filtering
+  labelTexts?: string[];
+  labelFilterLogic?: 'AND' | 'OR';
+
+  // Date-based quick filters
+  createdToday?: boolean;
+  createdThisWeek?: boolean;
+  createdThisMonth?: boolean;
+  closingToday?: boolean;
+  closingThisWeek?: boolean;
+  closingThisMonth?: boolean;
+  overdue?: boolean;
+
+  // Advanced filters
+  hasActivities?: boolean;
+  hasCustomFields?: boolean;
+  hasPerson?: boolean;
+  hasOrganization?: boolean;
+}
+
+export interface CustomFieldFilter {
+  fieldName: string;
+  operator: FieldFilterOperator;
+  value: string;
+  values?: string[];
+}
+
+export type FieldFilterOperator = 
+  | 'EQUALS'
+  | 'NOT_EQUALS'
+  | 'CONTAINS'
+  | 'NOT_CONTAINS'
+  | 'STARTS_WITH'
+  | 'ENDS_WITH'
+  | 'GREATER_THAN'
+  | 'LESS_THAN'
+  | 'GREATER_EQUAL'
+  | 'LESS_EQUAL'
+  | 'IS_NULL'
+  | 'IS_NOT_NULL'
+  | 'IN'
+  | 'NOT_IN'
+  | 'BETWEEN';
+
+export interface DealSort {
+  field: string;
+  direction: 'ASC' | 'DESC';
+}
+
+// Mapping from GraphQL enum values to database column names
+const SORT_FIELD_MAPPING: Record<string, string> = {
+  'NAME': 'name',
+  'AMOUNT': 'amount',
+  'AMOUNT_USD': 'amount_usd',
+  'EXPECTED_CLOSE_DATE': 'expected_close_date',
+  'CREATED_AT': 'created_at',
+  'UPDATED_AT': 'updated_at',
+  'DEAL_SPECIFIC_PROBABILITY': 'deal_specific_probability',
+  'WEIGHTED_AMOUNT': 'weighted_amount',
+  'PROJECT_ID': 'project_id'
+};
+
+export interface DealsQueryOptions {
+  filters?: DealFilters;
+  sort?: DealSort;
+  limit?: number;
+  offset?: number;
+  includeTotalCount?: boolean;
+}
+
+export interface DealsQueryResult {
+  deals: DbDeal[];
+  totalCount?: number;
+  hasNextPage?: boolean;
+}
+
+// ===============================
+// ENHANCED FILTERING FUNCTIONS
+// ===============================
+
+export async function getDealsFiltered(
+  userId: string, 
+  accessToken: string, 
+  options: DealsQueryOptions = {}
+): Promise<DealsQueryResult> {
+  const supabase = getAuthenticatedClient(accessToken);
+  
+  // Base query with comprehensive joins for filtering
+  let query = supabase
+    .from('deals')
+    .select(`
+      id, user_id, name, amount, currency, amount_usd, exchange_rate_used, 
+      expected_close_date, created_at, updated_at, person_id, organization_id, 
+      project_id, deal_specific_probability, wfm_project_id, assigned_to_user_id, 
+      custom_field_values,
+      person:people(id, first_name, last_name, email),
+      organization:organizations(id, name),
+      wfmProject:wfm_projects(id, name, current_step_id, project_type_id,
+        workflow:workflows(id, name),
+        projectType:project_types(id, name),
+        currentStep:workflow_steps!wfm_projects_current_step_id_fkey(id, step_order, metadata)
+      ),
+      labels:deal_labels(id, label_text, color_hex)
+      ${options.includeTotalCount ? '' : ''}
+    `, { count: options.includeTotalCount ? 'exact' : undefined });
+
+  // Apply filters
+  if (options.filters) {
+    query = applyDealFilters(query, options.filters);
+  }
+
+  // Apply sorting
+  if (options.sort) {
+    const { field, direction } = options.sort;
+    // Convert GraphQL enum field name to database column name
+    const dbColumnName = SORT_FIELD_MAPPING[field] || field.toLowerCase();
+    query = query.order(dbColumnName, { ascending: direction === 'ASC' });
+  } else {
+    // Default sort by created_at DESC
+    query = query.order('created_at', { ascending: false });
+  }
+
+  // Apply pagination
+  if (options.limit) {
+    if (options.offset) {
+      query = query.range(options.offset, options.offset + options.limit - 1);
+    } else {
+      query = query.limit(options.limit);
+    }
+  }
+
+  const { data, error, count } = await query;
+  handleSupabaseError(error, 'fetching filtered deals');
+
+  return {
+    deals: (data || []) as DbDeal[],
+    totalCount: count || undefined,
+    hasNextPage: options.limit ? (data?.length || 0) === options.limit : false
+  };
+}
+
+// Helper function to apply filters to Supabase query
+function applyDealFilters(query: any, filters: DealFilters) {
+  // Basic text search across multiple fields
+  if (filters.search) {
+    const searchTerm = filters.search.toLowerCase();
+    query = query.or(`
+      name.ilike.%${searchTerm}%,
+      person.first_name.ilike.%${searchTerm}%,
+      person.last_name.ilike.%${searchTerm}%,
+      person.email.ilike.%${searchTerm}%,
+      organization.name.ilike.%${searchTerm}%
+    `);
+  }
+
+  // Amount filters
+  if (filters.amountMin !== undefined) {
+    query = query.gte('amount', filters.amountMin);
+  }
+  if (filters.amountMax !== undefined) {
+    query = query.lte('amount', filters.amountMax);
+  }
+
+  // Currency filter
+  if (filters.currency) {
+    query = query.eq('currency', filters.currency);
+  }
+
+  // Date range filters
+  if (filters.expectedCloseDateFrom) {
+    query = query.gte('expected_close_date', filters.expectedCloseDateFrom);
+  }
+  if (filters.expectedCloseDateTo) {
+    query = query.lte('expected_close_date', filters.expectedCloseDateTo);
+  }
+  if (filters.createdDateFrom) {
+    query = query.gte('created_at', filters.createdDateFrom);
+  }
+  if (filters.createdDateTo) {
+    query = query.lte('created_at', filters.createdDateTo);
+  }
+
+  // Probability filters
+  if (filters.dealSpecificProbabilityMin !== undefined) {
+    query = query.gte('deal_specific_probability', filters.dealSpecificProbabilityMin);
+  }
+  if (filters.dealSpecificProbabilityMax !== undefined) {
+    query = query.lte('deal_specific_probability', filters.dealSpecificProbabilityMax);
+  }
+
+  // Relationship filters
+  if (filters.personIds && filters.personIds.length > 0) {
+    query = query.in('person_id', filters.personIds);
+  }
+  if (filters.organizationIds && filters.organizationIds.length > 0) {
+    query = query.in('organization_id', filters.organizationIds);
+  }
+  if (filters.assignedToUserIds && filters.assignedToUserIds.length > 0) {
+    query = query.in('assigned_to_user_id', filters.assignedToUserIds);
+  }
+  if (filters.unassigned) {
+    query = query.is('assigned_to_user_id', null);
+  }
+
+  // WFM/Pipeline filters - These need to be handled via joins
+  if (filters.wfmStepIds && filters.wfmStepIds.length > 0) {
+    query = query.in('wfmProject.currentStep.id', filters.wfmStepIds);
+  }
+  if (filters.wfmProjectTypeIds && filters.wfmProjectTypeIds.length > 0) {
+    query = query.in('wfmProject.project_type_id', filters.wfmProjectTypeIds);
+  }
+
+  // Quick date filters
+  if (filters.createdToday) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    query = query.gte('created_at', today.toISOString())
+               .lt('created_at', tomorrow.toISOString());
+  }
+
+  if (filters.createdThisWeek) {
+    const startOfWeek = new Date();
+    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    query = query.gte('created_at', startOfWeek.toISOString());
+  }
+
+  if (filters.createdThisMonth) {
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+    query = query.gte('created_at', startOfMonth.toISOString());
+  }
+
+  if (filters.closingToday) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    query = query.gte('expected_close_date', today.toISOString())
+               .lt('expected_close_date', tomorrow.toISOString());
+  }
+
+  if (filters.closingThisMonth) {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    endOfMonth.setHours(23, 59, 59, 999);
+    query = query.gte('expected_close_date', startOfMonth.toISOString())
+               .lte('expected_close_date', endOfMonth.toISOString());
+  }
+
+  if (filters.overdue) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    query = query.lt('expected_close_date', today.toISOString())
+               .not('expected_close_date', 'is', null);
+  }
+
+  // Advanced filters
+  if (filters.hasPerson !== undefined) {
+    if (filters.hasPerson) {
+      query = query.not('person_id', 'is', null);
+    } else {
+      query = query.is('person_id', null);
+    }
+  }
+
+  if (filters.hasOrganization !== undefined) {
+    if (filters.hasOrganization) {
+      query = query.not('organization_id', 'is', null);
+    } else {
+      query = query.is('organization_id', null);
+    }
+  }
+
+  if (filters.hasCustomFields !== undefined) {
+    if (filters.hasCustomFields) {
+      query = query.not('custom_field_values', 'is', null);
+    } else {
+      query = query.is('custom_field_values', null);
+    }
+  }
+
+  // Custom field filters - This is complex and may need post-processing
+  if (filters.customFieldFilters && filters.customFieldFilters.length > 0) {
+    // For now, we'll handle this in post-processing since JSONB querying in Supabase is limited
+    console.warn('Custom field filtering will be handled in post-processing');
+  }
+
+  // Label filters
+  if (filters.labelTexts && filters.labelTexts.length > 0) {
+    if (filters.labelFilterLogic === 'AND') {
+      // Deal must have ALL specified labels - complex query
+      console.warn('AND label filtering will be handled in post-processing');
+    } else {
+      // Deal must have ANY of the specified labels
+      query = query.in('labels.label_text', filters.labelTexts);
+    }
+  }
+
+  return query;
+}
+
+// Apply custom field filters in post-processing
+function applyCustomFieldFiltersPostProcess(deals: DbDeal[], filters: CustomFieldFilter[]): DbDeal[] {
+  return deals.filter(deal => {
+    if (!deal.custom_field_values) return false;
+    
+    return filters.every(filter => {
+      const fieldValue = deal.custom_field_values![filter.fieldName];
+      return applyFieldOperator(fieldValue, filter.operator, filter.value, filter.values);
+    });
+  });
+}
+
+// Apply label filters in post-processing for complex logic
+function applyLabelFiltersPostProcess(deals: DbDeal[], labelTexts: string[], logic: 'AND' | 'OR' = 'OR'): DbDeal[] {
+  return deals.filter(deal => {
+    const dealLabels = (deal as any).labels || [];
+    const dealLabelTexts = dealLabels.map((label: any) => label.label_text);
+    
+    if (logic === 'AND') {
+      return labelTexts.every(labelText => dealLabelTexts.includes(labelText));
+    } else {
+      return labelTexts.some(labelText => dealLabelTexts.includes(labelText));
+    }
+  });
+}
+
+function applyFieldOperator(
+  fieldValue: any, 
+  operator: FieldFilterOperator, 
+  value: string, 
+  values?: string[]
+): boolean {
+  switch (operator) {
+    case 'EQUALS':
+      return fieldValue === value;
+    case 'NOT_EQUALS':
+      return fieldValue !== value;
+    case 'CONTAINS':
+      return String(fieldValue || '').toLowerCase().includes(value.toLowerCase());
+    case 'NOT_CONTAINS':
+      return !String(fieldValue || '').toLowerCase().includes(value.toLowerCase());
+    case 'STARTS_WITH':
+      return String(fieldValue || '').toLowerCase().startsWith(value.toLowerCase());
+    case 'ENDS_WITH':
+      return String(fieldValue || '').toLowerCase().endsWith(value.toLowerCase());
+    case 'GREATER_THAN':
+      return Number(fieldValue) > Number(value);
+    case 'LESS_THAN':
+      return Number(fieldValue) < Number(value);
+    case 'GREATER_EQUAL':
+      return Number(fieldValue) >= Number(value);
+    case 'LESS_EQUAL':
+      return Number(fieldValue) <= Number(value);
+    case 'IS_NULL':
+      return fieldValue == null;
+    case 'IS_NOT_NULL':
+      return fieldValue != null;
+    case 'IN':
+      return values ? values.includes(String(fieldValue)) : false;
+    case 'NOT_IN':
+      return values ? !values.includes(String(fieldValue)) : true;
+    default:
+      return true;
+  }
+}
+
+// Quick filter functions
+export async function getMyOpenDeals(userId: string, accessToken: string): Promise<DbDeal[]> {
+  const result = await getDealsFiltered(userId, accessToken, {
+    filters: {
+      assignedToUserIds: [userId],
+      // Add filter for open deals (not in final WFM steps)
+    }
+  });
+  return result.deals;
+}
+
+export async function getDealsClosingThisMonth(userId: string, accessToken: string): Promise<DbDeal[]> {
+  const result = await getDealsFiltered(userId, accessToken, {
+    filters: {
+      closingThisMonth: true
+    }
+  });
+  return result.deals;
+}
+
+export async function getUnassignedDeals(userId: string, accessToken: string): Promise<DbDeal[]> {
+  const result = await getDealsFiltered(userId, accessToken, {
+    filters: {
+      unassigned: true
+    }
+  });
+  return result.deals;
+}
+
+export async function searchDeals(
+  userId: string, 
+  accessToken: string, 
+  searchQuery: string, 
+  additionalFilters?: DealFilters, 
+  limit: number = 20
+): Promise<DbDeal[]> {
+  const result = await getDealsFiltered(userId, accessToken, {
+    filters: {
+      search: searchQuery,
+      ...additionalFilters
+    },
+    limit
+  });
+  return result.deals;
+}
+
 // --- Deal CRUD Operations ---
 
 export async function getDeals(userId: string, accessToken: string): Promise<DbDeal[]> {

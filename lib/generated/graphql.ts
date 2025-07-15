@@ -57,6 +57,12 @@ export type AccountPortfolioStats = {
   totalDealValue: Scalars["Float"]["output"];
 };
 
+export type AddLabelToDealInput = {
+  colorHex?: InputMaybe<Scalars["String"]["input"]>;
+  dealId: Scalars["ID"]["input"];
+  labelText: Scalars["String"]["input"];
+};
+
 export type AgentConfig = {
   __typename?: "AgentConfig";
   autoExecute: Scalars["Boolean"]["output"];
@@ -250,6 +256,18 @@ export type AvailabilitySlot = {
   available: Scalars["Boolean"]["output"];
   end: Scalars["DateTime"]["output"];
   start: Scalars["DateTime"]["output"];
+};
+
+export enum BulkLabelOperation {
+  Add = "ADD",
+  Remove = "REMOVE",
+  Replace = "REPLACE",
+}
+
+export type BulkLabelOperationInput = {
+  dealIds: Array<Scalars["ID"]["input"]>;
+  labelTexts: Array<Scalars["String"]["input"]>;
+  operation: BulkLabelOperation;
 };
 
 export type BulkTaskUpdatesInput = {
@@ -927,6 +945,7 @@ export type Deal = {
   formattedAmount?: Maybe<Scalars["String"]["output"]>;
   history?: Maybe<Array<DealHistoryEntry>>;
   id: Scalars["ID"]["output"];
+  labels: Array<DealLabel>;
   name: Scalars["String"]["output"];
   organization?: Maybe<Organization>;
   organization_id?: Maybe<Scalars["ID"]["output"]>;
@@ -988,6 +1007,17 @@ export type DealInput = {
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   wfmProjectTypeId: Scalars["ID"]["input"];
+};
+
+export type DealLabel = {
+  __typename?: "DealLabel";
+  colorHex: Scalars["String"]["output"];
+  createdAt: Scalars["String"]["output"];
+  createdByUserId?: Maybe<Scalars["ID"]["output"]>;
+  dealId: Scalars["ID"]["output"];
+  id: Scalars["ID"]["output"];
+  labelText: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type DealParticipant = {
@@ -1389,6 +1419,23 @@ export type GenerateTaskContentInput = {
   useWholeThread: Scalars["Boolean"]["input"];
 };
 
+export type GlobalTaskIndicator = {
+  __typename?: "GlobalTaskIndicator";
+  tasksByPriority: GlobalTaskPriorityBreakdown;
+  tasksDueToday: Scalars["Int"]["output"];
+  tasksHighPriority: Scalars["Int"]["output"];
+  tasksOverdue: Scalars["Int"]["output"];
+  totalActiveTasks: Scalars["Int"]["output"];
+};
+
+export type GlobalTaskPriorityBreakdown = {
+  __typename?: "GlobalTaskPriorityBreakdown";
+  high: Scalars["Int"]["output"];
+  low: Scalars["Int"]["output"];
+  medium: Scalars["Int"]["output"];
+  urgent: Scalars["Int"]["output"];
+};
+
 export type GoogleCalendar = {
   __typename?: "GoogleCalendar";
   accessRole: Scalars["String"]["output"];
@@ -1435,6 +1482,28 @@ export type GoogleTokenInput = {
   expires_at?: InputMaybe<Scalars["DateTime"]["input"]>;
   granted_scopes: Array<Scalars["String"]["input"]>;
   refresh_token?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export enum LabelFilterLogic {
+  And = "AND",
+  Or = "OR",
+}
+
+export type LabelSuggestion = {
+  __typename?: "LabelSuggestion";
+  colorHex: Scalars["String"]["output"];
+  isExactMatch: Scalars["Boolean"]["output"];
+  labelText: Scalars["String"]["output"];
+  similarityScore?: Maybe<Scalars["Float"]["output"]>;
+  usageCount: Scalars["Int"]["output"];
+};
+
+export type LabelUsageStats = {
+  __typename?: "LabelUsageStats";
+  averageLabelsPerDeal: Scalars["Float"]["output"];
+  mostPopularLabels: Array<LabelSuggestion>;
+  totalLabels: Scalars["Int"]["output"];
+  totalUniqueLabels: Scalars["Int"]["output"];
 };
 
 export type Lead = {
@@ -1618,6 +1687,7 @@ export type Mutation = {
   addAgentV2Thoughts: Array<AgentThought>;
   addDealContextToEvent: CalendarEvent;
   addDealParticipant: DealParticipant;
+  addLabelToDeal: Deal;
   archiveThread: Scalars["Boolean"]["output"];
   assignAccountManager: Organization;
   assignTask: Task;
@@ -1628,9 +1698,11 @@ export type Mutation = {
   bulkAssignTasks: Array<Task>;
   bulkConvertLeads: Array<LeadConversionResult>;
   bulkDeleteTasks: Scalars["Boolean"]["output"];
+  bulkLabelOperation: Array<Deal>;
   bulkUpdateBusinessRuleStatus: Array<BusinessRule>;
   bulkUpdateTasks: Array<Task>;
   cleanupExpiredNotifications: Scalars["Int"]["output"];
+  cleanupUnusedLabels: Scalars["Int"]["output"];
   completeTask: Task;
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
@@ -1703,6 +1775,7 @@ export type Mutation = {
   markSystemNotificationAsRead: Scalars["Boolean"]["output"];
   markThreadAsRead: Scalars["Boolean"]["output"];
   markThreadAsUnread: Scalars["Boolean"]["output"];
+  mergeSimilarLabels: Scalars["Int"]["output"];
   moveDriveFile: DriveFile;
   moveStickersBulk: Array<SmartSticker>;
   pinEmail: EmailPin;
@@ -1712,6 +1785,7 @@ export type Mutation = {
   removeDealContextFromEvent: CalendarEvent;
   removeDealParticipant: Scalars["Boolean"]["output"];
   removeDocumentAttachment: Scalars["Boolean"]["output"];
+  removeLabelFromDeal: Deal;
   removeNoteDocumentAttachment: Scalars["Boolean"]["output"];
   removeUserRole: User;
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
@@ -1743,6 +1817,7 @@ export type Mutation = {
   updateDealWFMProgress: Deal;
   updateDocumentAttachmentCategory: DealDocumentAttachment;
   updateEmailPin: EmailPin;
+  updateLabel: DealLabel;
   updateLead?: Maybe<Lead>;
   updateLeadCurrency: CurrencyOperationResult;
   updateLeadWFMProgress: Lead;
@@ -1793,6 +1868,10 @@ export type MutationAddDealParticipantArgs = {
   input: DealParticipantInput;
 };
 
+export type MutationAddLabelToDealArgs = {
+  input: AddLabelToDealInput;
+};
+
 export type MutationArchiveThreadArgs = {
   threadId: Scalars["String"]["input"];
 };
@@ -1838,6 +1917,10 @@ export type MutationBulkDeleteTasksArgs = {
   taskIds: Array<Scalars["ID"]["input"]>;
 };
 
+export type MutationBulkLabelOperationArgs = {
+  input: BulkLabelOperationInput;
+};
+
 export type MutationBulkUpdateBusinessRuleStatusArgs = {
   ruleIds: Array<Scalars["ID"]["input"]>;
   status: RuleStatusEnum;
@@ -1846,6 +1929,10 @@ export type MutationBulkUpdateBusinessRuleStatusArgs = {
 export type MutationBulkUpdateTasksArgs = {
   taskIds: Array<Scalars["ID"]["input"]>;
   updates: BulkTaskUpdatesInput;
+};
+
+export type MutationCleanupUnusedLabelsArgs = {
+  daysUnused?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type MutationCompleteTaskArgs = {
@@ -2145,6 +2232,11 @@ export type MutationMarkThreadAsUnreadArgs = {
   threadId: Scalars["String"]["input"];
 };
 
+export type MutationMergeSimilarLabelsArgs = {
+  labelsToMerge: Array<Scalars["String"]["input"]>;
+  primaryLabelText: Scalars["String"]["input"];
+};
+
 export type MutationMoveDriveFileArgs = {
   fileId: Scalars["String"]["input"];
   newParentId: Scalars["String"]["input"];
@@ -2182,6 +2274,10 @@ export type MutationRemoveDealParticipantArgs = {
 
 export type MutationRemoveDocumentAttachmentArgs = {
   attachmentId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveLabelFromDealArgs = {
+  input: RemoveLabelFromDealInput;
 };
 
 export type MutationRemoveNoteDocumentAttachmentArgs = {
@@ -2324,6 +2420,10 @@ export type MutationUpdateDocumentAttachmentCategoryArgs = {
 export type MutationUpdateEmailPinArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateEmailPinInput;
+};
+
+export type MutationUpdateLabelArgs = {
+  input: UpdateLabelInput;
 };
 
 export type MutationUpdateLeadArgs = {
@@ -2661,9 +2761,11 @@ export type Query = {
   dealFolderFiles: Array<DriveFile>;
   /** Get deal folder information, auto-creating if needed */
   dealFolderInfo: DealFolderInfo;
+  dealLabels: Array<DealLabel>;
   dealTaskIndicators: Array<DealTaskIndicator>;
   deals: Array<Deal>;
   dealsByCurrency: Array<DealsByCurrencyResult>;
+  dealsByLabels: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   exchangeRate?: Maybe<ExchangeRate>;
   exchangeRates: Array<ExchangeRate>;
@@ -2693,11 +2795,13 @@ export type Query = {
   getSticker?: Maybe<SmartSticker>;
   getStickerCategories: Array<StickerCategory>;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
+  globalTaskIndicators: GlobalTaskIndicator;
   googleCalendars: Array<GoogleCalendar>;
   /** Get Google Drive configuration settings */
   googleDriveSettings: GoogleDriveConfig;
   googleIntegrationStatus: GoogleIntegrationStatus;
   health: Scalars["String"]["output"];
+  labelUsageStats: LabelUsageStats;
   lead?: Maybe<Lead>;
   leads: Array<Lead>;
   leadsStats: LeadsStats;
@@ -2719,6 +2823,7 @@ export type Query = {
   personHistory: Array<PersonHistory>;
   personList: Array<PersonListItem>;
   personOrganizationRoles: Array<PersonOrganizationRole>;
+  popularLabels: Array<LabelSuggestion>;
   previewRuleExecution: BusinessRuleExecutionResult;
   reactivationPlan?: Maybe<ReactivationPlan>;
   reactivationPlans: Array<ReactivationPlan>;
@@ -2731,6 +2836,7 @@ export type Query = {
   searchSharedDriveFiles: Array<DriveFile>;
   searchStickers: StickerConnection;
   suggestEmailParticipants: Array<Person>;
+  suggestLabels: Array<LabelSuggestion>;
   supabaseConnectionTest: Scalars["String"]["output"];
   systemNotification?: Maybe<SystemNotification>;
   systemNotifications: SystemNotificationsConnection;
@@ -2879,8 +2985,19 @@ export type QueryDealFolderInfoArgs = {
   dealId: Scalars["ID"]["input"];
 };
 
+export type QueryDealLabelsArgs = {
+  dealId: Scalars["ID"]["input"];
+};
+
 export type QueryDealTaskIndicatorsArgs = {
   dealIds: Array<Scalars["ID"]["input"]>;
+};
+
+export type QueryDealsByLabelsArgs = {
+  labelTexts: Array<Scalars["String"]["input"]>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  logic?: InputMaybe<LabelFilterLogic>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryExchangeRateArgs = {
@@ -2997,6 +3114,10 @@ export type QueryGetWfmAllowedTransitionsArgs = {
   workflowId: Scalars["ID"]["input"];
 };
 
+export type QueryGlobalTaskIndicatorsArgs = {
+  userId: Scalars["ID"]["input"];
+};
+
 export type QueryLeadArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -3032,6 +3153,10 @@ export type QueryPersonHistoryArgs = {
 
 export type QueryPersonOrganizationRolesArgs = {
   personId: Scalars["ID"]["input"];
+};
+
+export type QueryPopularLabelsArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryPreviewRuleExecutionArgs = {
@@ -3090,6 +3215,12 @@ export type QuerySearchStickersArgs = {
 export type QuerySuggestEmailParticipantsArgs = {
   dealId: Scalars["ID"]["input"];
   threadId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type QuerySuggestLabelsArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  input: Scalars["String"]["input"];
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QuerySystemNotificationArgs = {
@@ -3250,6 +3381,11 @@ export enum ReactivationStrategy {
   Nurturing = "NURTURING",
   RelationshipBuilding = "RELATIONSHIP_BUILDING",
 }
+
+export type RemoveLabelFromDealInput = {
+  dealId: Scalars["ID"]["input"];
+  labelId: Scalars["ID"]["input"];
+};
 
 export type Role = {
   __typename?: "Role";
@@ -3892,6 +4028,12 @@ export type UpdateEmailPinInput = {
   notes?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type UpdateLabelInput = {
+  colorHex?: InputMaybe<Scalars["String"]["input"]>;
+  labelId: Scalars["ID"]["input"];
+  labelText?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type UpdateStickerInput = {
   categoryId?: InputMaybe<Scalars["ID"]["input"]>;
   color?: InputMaybe<Scalars["String"]["input"]>;
@@ -4231,6 +4373,7 @@ export type DirectiveResolverFn<
 export type ResolversTypes = {
   AIGeneratedTaskContent: ResolverTypeWrapper<AiGeneratedTaskContent>;
   AccountPortfolioStats: ResolverTypeWrapper<AccountPortfolioStats>;
+  AddLabelToDealInput: AddLabelToDealInput;
   AgentConfig: ResolverTypeWrapper<AgentConfig>;
   AgentConfigInput: AgentConfigInput;
   AgentConversation: ResolverTypeWrapper<AgentConversation>;
@@ -4253,6 +4396,8 @@ export type ResolversTypes = {
   AttachFileInput: AttachFileInput;
   AvailabilitySlot: ResolverTypeWrapper<AvailabilitySlot>;
   Boolean: ResolverTypeWrapper<Scalars["Boolean"]["output"]>;
+  BulkLabelOperation: BulkLabelOperation;
+  BulkLabelOperationInput: BulkLabelOperationInput;
   BulkTaskUpdatesInput: BulkTaskUpdatesInput;
   BusinessRule: ResolverTypeWrapper<BusinessRule>;
   BusinessRuleAnalytics: ResolverTypeWrapper<BusinessRuleAnalytics>;
@@ -4323,6 +4468,7 @@ export type ResolversTypes = {
   DealFolderInfo: ResolverTypeWrapper<DealFolderInfo>;
   DealHistoryEntry: ResolverTypeWrapper<DealHistoryEntry>;
   DealInput: DealInput;
+  DealLabel: ResolverTypeWrapper<DealLabel>;
   DealParticipant: ResolverTypeWrapper<DealParticipant>;
   DealParticipantInput: DealParticipantInput;
   DealSubfolders: ResolverTypeWrapper<DealSubfolders>;
@@ -4364,6 +4510,8 @@ export type ResolversTypes = {
   ExtendedThinkingAnalysis: ResolverTypeWrapper<ExtendedThinkingAnalysis>;
   Float: ResolverTypeWrapper<Scalars["Float"]["output"]>;
   GenerateTaskContentInput: GenerateTaskContentInput;
+  GlobalTaskIndicator: ResolverTypeWrapper<GlobalTaskIndicator>;
+  GlobalTaskPriorityBreakdown: ResolverTypeWrapper<GlobalTaskPriorityBreakdown>;
   GoogleCalendar: ResolverTypeWrapper<GoogleCalendar>;
   GoogleDriveConfig: ResolverTypeWrapper<GoogleDriveConfig>;
   GoogleIntegrationStatus: ResolverTypeWrapper<GoogleIntegrationStatus>;
@@ -4372,6 +4520,9 @@ export type ResolversTypes = {
   ID: ResolverTypeWrapper<Scalars["ID"]["output"]>;
   Int: ResolverTypeWrapper<Scalars["Int"]["output"]>;
   JSON: ResolverTypeWrapper<Scalars["JSON"]["output"]>;
+  LabelFilterLogic: LabelFilterLogic;
+  LabelSuggestion: ResolverTypeWrapper<LabelSuggestion>;
+  LabelUsageStats: ResolverTypeWrapper<LabelUsageStats>;
   Lead: ResolverTypeWrapper<Lead>;
   LeadConversionData: LeadConversionData;
   LeadConversionInput: LeadConversionInput;
@@ -4406,6 +4557,7 @@ export type ResolversTypes = {
   ReactivationPlanInput: ReactivationPlanInput;
   ReactivationPlanStatus: ReactivationPlanStatus;
   ReactivationStrategy: ReactivationStrategy;
+  RemoveLabelFromDealInput: RemoveLabelFromDealInput;
   Role: ResolverTypeWrapper<Role>;
   RuleAction: ResolverTypeWrapper<RuleAction>;
   RuleActionInput: RuleActionInput;
@@ -4466,6 +4618,7 @@ export type ResolversTypes = {
   UpdateConversationInput: UpdateConversationInput;
   UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
+  UpdateLabelInput: UpdateLabelInput;
   UpdateStickerInput: UpdateStickerInput;
   UpdateSystemNotificationInput: UpdateSystemNotificationInput;
   UpdateTaskAutomationRuleInput: UpdateTaskAutomationRuleInput;
@@ -4495,6 +4648,7 @@ export type ResolversTypes = {
 export type ResolversParentTypes = {
   AIGeneratedTaskContent: AiGeneratedTaskContent;
   AccountPortfolioStats: AccountPortfolioStats;
+  AddLabelToDealInput: AddLabelToDealInput;
   AgentConfig: AgentConfig;
   AgentConfigInput: AgentConfigInput;
   AgentConversation: AgentConversation;
@@ -4514,6 +4668,7 @@ export type ResolversParentTypes = {
   AttachFileInput: AttachFileInput;
   AvailabilitySlot: AvailabilitySlot;
   Boolean: Scalars["Boolean"]["output"];
+  BulkLabelOperationInput: BulkLabelOperationInput;
   BulkTaskUpdatesInput: BulkTaskUpdatesInput;
   BusinessRule: BusinessRule;
   BusinessRuleAnalytics: BusinessRuleAnalytics;
@@ -4573,6 +4728,7 @@ export type ResolversParentTypes = {
   DealFolderInfo: DealFolderInfo;
   DealHistoryEntry: DealHistoryEntry;
   DealInput: DealInput;
+  DealLabel: DealLabel;
   DealParticipant: DealParticipant;
   DealParticipantInput: DealParticipantInput;
   DealSubfolders: DealSubfolders;
@@ -4607,6 +4763,8 @@ export type ResolversParentTypes = {
   ExtendedThinkingAnalysis: ExtendedThinkingAnalysis;
   Float: Scalars["Float"]["output"];
   GenerateTaskContentInput: GenerateTaskContentInput;
+  GlobalTaskIndicator: GlobalTaskIndicator;
+  GlobalTaskPriorityBreakdown: GlobalTaskPriorityBreakdown;
   GoogleCalendar: GoogleCalendar;
   GoogleDriveConfig: GoogleDriveConfig;
   GoogleIntegrationStatus: GoogleIntegrationStatus;
@@ -4615,6 +4773,8 @@ export type ResolversParentTypes = {
   ID: Scalars["ID"]["output"];
   Int: Scalars["Int"]["output"];
   JSON: Scalars["JSON"]["output"];
+  LabelSuggestion: LabelSuggestion;
+  LabelUsageStats: LabelUsageStats;
   Lead: Lead;
   LeadConversionData: LeadConversionData;
   LeadConversionInput: LeadConversionInput;
@@ -4643,6 +4803,7 @@ export type ResolversParentTypes = {
   Query: {};
   ReactivationPlan: ReactivationPlan;
   ReactivationPlanInput: ReactivationPlanInput;
+  RemoveLabelFromDealInput: RemoveLabelFromDealInput;
   Role: Role;
   RuleAction: RuleAction;
   RuleActionInput: RuleActionInput;
@@ -4688,6 +4849,7 @@ export type ResolversParentTypes = {
   UpdateConversationInput: UpdateConversationInput;
   UpdateCurrencyInput: UpdateCurrencyInput;
   UpdateEmailPinInput: UpdateEmailPinInput;
+  UpdateLabelInput: UpdateLabelInput;
   UpdateStickerInput: UpdateStickerInput;
   UpdateSystemNotificationInput: UpdateSystemNotificationInput;
   UpdateTaskAutomationRuleInput: UpdateTaskAutomationRuleInput;
@@ -5717,6 +5879,11 @@ export type DealResolvers<
     Partial<DealHistoryArgs>
   >;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  labels?: Resolver<
+    Array<ResolversTypes["DealLabel"]>,
+    ParentType,
+    ContextType
+  >;
   name?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   organization?: Resolver<
     Maybe<ResolversTypes["Organization"]>,
@@ -5812,6 +5979,25 @@ export type DealHistoryEntryResolvers<
   eventType?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
   user?: Resolver<Maybe<ResolversTypes["User"]>, ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type DealLabelResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["DealLabel"] = ResolversParentTypes["DealLabel"],
+> = {
+  colorHex?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  createdByUserId?: Resolver<
+    Maybe<ResolversTypes["ID"]>,
+    ParentType,
+    ContextType
+  >;
+  dealId?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  id?: Resolver<ResolversTypes["ID"], ParentType, ContextType>;
+  labelText?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  updatedAt?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
@@ -6419,6 +6605,35 @@ export type ExtendedThinkingAnalysisResolvers<
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
+export type GlobalTaskIndicatorResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GlobalTaskIndicator"] = ResolversParentTypes["GlobalTaskIndicator"],
+> = {
+  tasksByPriority?: Resolver<
+    ResolversTypes["GlobalTaskPriorityBreakdown"],
+    ParentType,
+    ContextType
+  >;
+  tasksDueToday?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  tasksHighPriority?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  tasksOverdue?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalActiveTasks?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type GlobalTaskPriorityBreakdownResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["GlobalTaskPriorityBreakdown"] = ResolversParentTypes["GlobalTaskPriorityBreakdown"],
+> = {
+  high?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  low?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  medium?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  urgent?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type GoogleCalendarResolvers<
   ContextType = GraphQLContext,
   ParentType extends
@@ -6531,6 +6746,43 @@ export interface JsonScalarConfig
   extends GraphQLScalarTypeConfig<ResolversTypes["JSON"], any> {
   name: "JSON";
 }
+
+export type LabelSuggestionResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["LabelSuggestion"] = ResolversParentTypes["LabelSuggestion"],
+> = {
+  colorHex?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  isExactMatch?: Resolver<ResolversTypes["Boolean"], ParentType, ContextType>;
+  labelText?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  similarityScore?: Resolver<
+    Maybe<ResolversTypes["Float"]>,
+    ParentType,
+    ContextType
+  >;
+  usageCount?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
+export type LabelUsageStatsResolvers<
+  ContextType = GraphQLContext,
+  ParentType extends
+    ResolversParentTypes["LabelUsageStats"] = ResolversParentTypes["LabelUsageStats"],
+> = {
+  averageLabelsPerDeal?: Resolver<
+    ResolversTypes["Float"],
+    ParentType,
+    ContextType
+  >;
+  mostPopularLabels?: Resolver<
+    Array<ResolversTypes["LabelSuggestion"]>,
+    ParentType,
+    ContextType
+  >;
+  totalLabels?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  totalUniqueLabels?: Resolver<ResolversTypes["Int"], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
 
 export type LeadResolvers<
   ContextType = GraphQLContext,
@@ -6840,6 +7092,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationAddDealParticipantArgs, "input">
   >;
+  addLabelToDeal?: Resolver<
+    ResolversTypes["Deal"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationAddLabelToDealArgs, "input">
+  >;
   archiveThread?: Resolver<
     ResolversTypes["Boolean"],
     ParentType,
@@ -6900,6 +7158,12 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationBulkDeleteTasksArgs, "taskIds">
   >;
+  bulkLabelOperation?: Resolver<
+    Array<ResolversTypes["Deal"]>,
+    ParentType,
+    ContextType,
+    RequireFields<MutationBulkLabelOperationArgs, "input">
+  >;
   bulkUpdateBusinessRuleStatus?: Resolver<
     Array<ResolversTypes["BusinessRule"]>,
     ParentType,
@@ -6919,6 +7183,12 @@ export type MutationResolvers<
     ResolversTypes["Int"],
     ParentType,
     ContextType
+  >;
+  cleanupUnusedLabels?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationCleanupUnusedLabelsArgs, "daysUnused">
   >;
   completeTask?: Resolver<
     ResolversTypes["Task"],
@@ -7359,6 +7629,15 @@ export type MutationResolvers<
     ContextType,
     RequireFields<MutationMarkThreadAsUnreadArgs, "threadId">
   >;
+  mergeSimilarLabels?: Resolver<
+    ResolversTypes["Int"],
+    ParentType,
+    ContextType,
+    RequireFields<
+      MutationMergeSimilarLabelsArgs,
+      "labelsToMerge" | "primaryLabelText"
+    >
+  >;
   moveDriveFile?: Resolver<
     ResolversTypes["DriveFile"],
     ParentType,
@@ -7412,6 +7691,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationRemoveDocumentAttachmentArgs, "attachmentId">
+  >;
+  removeLabelFromDeal?: Resolver<
+    ResolversTypes["Deal"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationRemoveLabelFromDealArgs, "input">
   >;
   removeNoteDocumentAttachment?: Resolver<
     ResolversTypes["Boolean"],
@@ -7609,6 +7894,12 @@ export type MutationResolvers<
     ParentType,
     ContextType,
     RequireFields<MutationUpdateEmailPinArgs, "id" | "input">
+  >;
+  updateLabel?: Resolver<
+    ResolversTypes["DealLabel"],
+    ParentType,
+    ContextType,
+    RequireFields<MutationUpdateLabelArgs, "input">
   >;
   updateLead?: Resolver<
     Maybe<ResolversTypes["Lead"]>,
@@ -8131,6 +8422,12 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryDealFolderInfoArgs, "dealId">
   >;
+  dealLabels?: Resolver<
+    Array<ResolversTypes["DealLabel"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryDealLabelsArgs, "dealId">
+  >;
   dealTaskIndicators?: Resolver<
     Array<ResolversTypes["DealTaskIndicator"]>,
     ParentType,
@@ -8142,6 +8439,15 @@ export type QueryResolvers<
     Array<ResolversTypes["DealsByCurrencyResult"]>,
     ParentType,
     ContextType
+  >;
+  dealsByLabels?: Resolver<
+    Array<ResolversTypes["Deal"]>,
+    ParentType,
+    ContextType,
+    RequireFields<
+      QueryDealsByLabelsArgs,
+      "labelTexts" | "limit" | "logic" | "offset"
+    >
   >;
   discoverAgentTools?: Resolver<
     ResolversTypes["ToolDiscoveryResponse"],
@@ -8319,6 +8625,12 @@ export type QueryResolvers<
       "fromStepId" | "workflowId"
     >
   >;
+  globalTaskIndicators?: Resolver<
+    ResolversTypes["GlobalTaskIndicator"],
+    ParentType,
+    ContextType,
+    RequireFields<QueryGlobalTaskIndicatorsArgs, "userId">
+  >;
   googleCalendars?: Resolver<
     Array<ResolversTypes["GoogleCalendar"]>,
     ParentType,
@@ -8335,6 +8647,11 @@ export type QueryResolvers<
     ContextType
   >;
   health?: Resolver<ResolversTypes["String"], ParentType, ContextType>;
+  labelUsageStats?: Resolver<
+    ResolversTypes["LabelUsageStats"],
+    ParentType,
+    ContextType
+  >;
   lead?: Resolver<
     Maybe<ResolversTypes["Lead"]>,
     ParentType,
@@ -8440,6 +8757,12 @@ export type QueryResolvers<
     ContextType,
     RequireFields<QueryPersonOrganizationRolesArgs, "personId">
   >;
+  popularLabels?: Resolver<
+    Array<ResolversTypes["LabelSuggestion"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QueryPopularLabelsArgs, "limit">
+  >;
   previewRuleExecution?: Resolver<
     ResolversTypes["BusinessRuleExecutionResult"],
     ParentType,
@@ -8509,6 +8832,12 @@ export type QueryResolvers<
     ParentType,
     ContextType,
     RequireFields<QuerySuggestEmailParticipantsArgs, "dealId">
+  >;
+  suggestLabels?: Resolver<
+    Array<ResolversTypes["LabelSuggestion"]>,
+    ParentType,
+    ContextType,
+    RequireFields<QuerySuggestLabelsArgs, "input" | "limit">
   >;
   supabaseConnectionTest?: Resolver<
     ResolversTypes["String"],
@@ -9818,6 +10147,7 @@ export type Resolvers<ContextType = GraphQLContext> = {
   DealDocumentAttachment?: DealDocumentAttachmentResolvers<ContextType>;
   DealFolderInfo?: DealFolderInfoResolvers<ContextType>;
   DealHistoryEntry?: DealHistoryEntryResolvers<ContextType>;
+  DealLabel?: DealLabelResolvers<ContextType>;
   DealParticipant?: DealParticipantResolvers<ContextType>;
   DealSubfolders?: DealSubfoldersResolvers<ContextType>;
   DealTaskIndicator?: DealTaskIndicatorResolvers<ContextType>;
@@ -9842,11 +10172,15 @@ export type Resolvers<ContextType = GraphQLContext> = {
   EmailThreadConnection?: EmailThreadConnectionResolvers<ContextType>;
   ExchangeRate?: ExchangeRateResolvers<ContextType>;
   ExtendedThinkingAnalysis?: ExtendedThinkingAnalysisResolvers<ContextType>;
+  GlobalTaskIndicator?: GlobalTaskIndicatorResolvers<ContextType>;
+  GlobalTaskPriorityBreakdown?: GlobalTaskPriorityBreakdownResolvers<ContextType>;
   GoogleCalendar?: GoogleCalendarResolvers<ContextType>;
   GoogleDriveConfig?: GoogleDriveConfigResolvers<ContextType>;
   GoogleIntegrationStatus?: GoogleIntegrationStatusResolvers<ContextType>;
   GoogleTokenData?: GoogleTokenDataResolvers<ContextType>;
   JSON?: GraphQLScalarType;
+  LabelSuggestion?: LabelSuggestionResolvers<ContextType>;
+  LabelUsageStats?: LabelUsageStatsResolvers<ContextType>;
   Lead?: LeadResolvers<ContextType>;
   LeadConversionResult?: LeadConversionResultResolvers<ContextType>;
   LeadHistoryEntry?: LeadHistoryEntryResolvers<ContextType>;

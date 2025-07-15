@@ -1,18 +1,18 @@
 # PipeCD System Documentation
 
-**Status**: Production Ready | **Version**: 3.1 | **Last Updated**: January 25, 2025
+**Status**: Production Ready | **Version**: 3.2 | **Last Updated**: January 25, 2025
 
 ## 1. System Overview
 
 PipeCD is a Customer Relationship Management (CRM) system designed around Google Calendar integration with business automation features. The system provides sales pipeline management, lead qualification, account management, AI assistance, and business rules engine while preparing for Google Calendar as the primary activity system.
 
 ### 1.1 Core Statistics
-- **Backend Services**: 20+ business logic modules (5 removed for calendar integration)
-- **GraphQL Schema**: 25 schema files, 450+ types and operations
+- **Backend Services**: 20+ business logic modules (complex systems removed for calendar integration)
+- **GraphQL Schema**: 26 schema files, 450+ types and operations
 - **Frontend Pages**: 15 main pages, 80+ components
-- **Database Tables**: 50+ tables with 77 migrations
-- **AI Tools**: 9 production-ready cognitive tools
-- **Production Features**: 12 major system modules operational (calendar-ready)
+- **Database Tables**: 50+ tables with 102 migrations
+- **AI Tools**: 9 production-ready cognitive tools (verified)
+- **Production Features**: 13 major system modules operational (calendar-ready)
 - **Business Rules Engine**: ✅ Production ready with template substitution
 - **Task Management**: ✅ Production ready with CRM integration
 
@@ -66,7 +66,7 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 | Entity | Table | Key Fields | Purpose |
 |--------|-------|------------|---------|
 | **Organizations** | `organizations` | `id`, `name`, `account_manager_id` | Company/client management |
-| **People** | `people` | `id`, `first_name`, `last_name`, `email`, `organization_id` | Contact management |
+| **People** | `people` | `id`, `first_name`, `last_name`, `email` | Contact management |
 | **Deals** | `deals` | `id`, `name`, `amount`, `currency`, `organization_id` | Sales opportunities |
 | **Leads** | `leads` | `id`, `contact_name`, `contact_email`, `estimated_value` | Prospect management |
 | **Tasks** | `tasks` | `id`, `title`, `status`, `entity_type`, `entity_id` | Task management system |
@@ -81,11 +81,11 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 | **Multi-Currency** | `currencies`, `exchange_rates`, `user_currency_preferences` | International support |
 | **AI System** | `agent_conversations`, `agent_thoughts`, `agent_v2_conversations` | AI chat history |
 | **Google Integration** | `google_oauth_tokens`, `calendar_events`, `calendar_integrations` | OAuth token management |
-| **Smart Stickers** | `stickers`, `sticker_categories` | Visual collaboration |
 | **Document Management** | `documents`, `note_document_attachments`, `deal_participants` | File management |
 | **Business Rules** | `business_rules`, `business_rule_notifications`, `rule_executions` | Business automation |
+| **Multi-Organization Contacts** | `person_organization_roles` | Flexible person-organization relationships |
 
-### 3.3 Business Rules Engine (NEW - Production Ready)
+### 3.3 Business Rules Engine (Production Ready)
 | Table | Purpose | Features |
 |-------|---------|----------|
 | **business_rules** | Rule definitions | Event-based, field-change, time-based triggers |
@@ -99,7 +99,7 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 - Person: `{{person_name}}`, `{{person_email}}`, `{{person_phone}}`
 - Universal: `{{entity_id}}`, `{{current_date}}`, `{{current_time}}`
 
-### 3.4 Task Management System (NEW)
+### 3.4 Task Management System (Production Ready)
 | Table | Purpose | Features |
 |-------|---------|----------|
 | **tasks** | Task management | CRM entity context, workflow integration |
@@ -115,6 +115,7 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 | ~~**user_reminder_preferences**~~ | Calendar handles preferences | Google Calendar settings |
 | ~~**notifications**~~ | Calendar provides native notifications | Google Calendar notifications |
 | ~~**email_activities**~~ | Calendar integration handles this | Google Calendar events |
+| ~~**relations intelligence**~~ | Complex relationship system removed | Simplified contact management |
 
 ### 3.6 Security & Permissions (Enhanced)
 - **Authentication**: Supabase Auth with Google OAuth integration
@@ -131,17 +132,16 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 | **Deal Management** | `dealService/` | Deal CRUD, history, custom fields | ✅ Calendar Ready |
 | **Lead Management** | `leadService/` | Lead qualification, scoring, conversion | ✅ Calendar Ready |
 | **Organization Management** | `organizationService.ts` | Company management, account assignment | ✅ Calendar Ready |
-| **Contact Management** | `personService.ts` | People/contact management | ✅ Calendar Ready |
+| **Contact Management** | `personService.ts` | People/contact management with multi-org support | ✅ Calendar Ready |
 
 ### 4.2 Advanced Services
 | Service | File/Directory | Purpose | Status |
 |---------|----------------|---------|--------|
-| **AI Agent V2** | `aiAgentV2/` | Revolutionary cognitive system with Claude Sonnet 4 | ✅ Production |
+| **AI Agent V2** | `aiAgentV2/` | Claude Sonnet 4 with cognitive workflow tools | ✅ Production |
 | **Conversion System** | `conversionService/` | Bi-directional lead-deal conversion | ✅ Production |
 | **Custom Fields** | `customFieldDefinitionService.ts` | Dynamic field management | ✅ Production |
-| **Smart Stickers** | `smartStickersService.ts` | Visual collaboration | ✅ Production |
 | **Multi-Currency** | `services/currencyService.ts` | Currency with ECB automation | ✅ Production |
-| **Business Rules** | Business rules integrated into service layer | Automated business process triggers | ✅ Production |
+| **Business Rules** | `businessRulesService.ts` | Business automation with template substitution | ✅ Production |
 
 ### 4.3 Integration Services
 | Service | File | Purpose | Status |
@@ -168,7 +168,7 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 
 ## 5. GraphQL API (netlify/functions/graphql/) - Enhanced
 
-### 5.1 Active Schema Organization (24 files)
+### 5.1 Active Schema Organization (26 files)
 | Schema File | Purpose | Key Types |
 |-------------|---------|-----------|
 | `deal.graphql` | Deal operations | Deal, DealInput, DealUpdateInput |
@@ -178,7 +178,6 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 | `conversion.graphql` | Conversion system | ConversionHistory, ConversionInput |
 | `currency.graphql` | Multi-currency | Currency, ExchangeRate, CurrencyAmount |
 | `agentV2.graphql` | AI Agent V2 | AgentV2Conversation, AgentV2Message |
-| `smartStickers.graphql` | Visual collaboration | Sticker, StickerCategory |
 | `googleIntegration.graphql` | Google services | GoogleToken, GoogleDriveFile |
 | `businessRules.graphql` | Business automation | BusinessRule, BusinessRuleNotification |
 | `task.graphql` | Task management | Task, TaskInput, TaskUpdateInput |
@@ -202,7 +201,7 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 - **CRUD Operations**: Create, Read, Update, Delete for all entities
 - **Search & Filtering**: Advanced search with custom field support
 - **Conversion Operations**: Bi-directional lead-deal conversion
-- **AI Operations**: Revolutionary cognitive tools with Claude Sonnet 4
+- **AI Operations**: Cognitive tools with Claude Sonnet 4
 - **Account Management**: Portfolio tracking, manager assignment
 - **Google Integration**: OAuth, Drive, Gmail (Calendar ready)
 - **Business Automation**: Rule creation, execution, notification management
@@ -215,7 +214,7 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 |---------------|-------|---------|
 | **Core CRM** | `DealsPage.tsx`, `LeadsPage.tsx`, `OrganizationsPage.tsx`, `PeoplePage.tsx` | Main CRM functionality |
 | **Detail Pages** | `DealDetailPage.tsx`, `LeadDetailPage.tsx`, `OrganizationDetailPage.tsx`, `PersonDetailPage.tsx` | Entity management |
-| **AI System** | `AgentPage.tsx`, `AgentV2Page.tsx` | Revolutionary AI assistant interfaces |
+| **AI System** | `AgentPage.tsx`, `AgentV2Page.tsx` | AI assistant interfaces |
 | **Account Mgmt** | `MyAccountsPage.tsx` | Portfolio management |
 | **Admin** | `admin/` directory | System administration with business rules |
 | **Google Integration** | `GoogleIntegrationPage.tsx` | OAuth setup (Calendar ready) |
@@ -233,10 +232,10 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 | **Common Components** | `common/` | Reusable UI components |
 | **Layout Components** | `layout/` | Page structure and navigation |
 | **Admin Components** | `admin/` | Administrative interfaces including business rules |
-| **AI Components** | `agent/` | Revolutionary AI assistant interfaces |
+| **AI Components** | `agent/` | AI assistant interfaces |
 | **Conversion Components** | `conversion/` | Bi-directional conversion system |
 
-### 6.4 Business Rules Admin Components (NEW)
+### 6.4 Business Rules Admin Components (Production Ready)
 | Component | Purpose |
 |-----------|---------|
 | `BusinessRulesPage.tsx` | Main business rules management interface |
@@ -247,7 +246,6 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 | Removed Components | Reason | Calendar Integration |
 |-------------------|--------|---------------------|
 | ~~**activities/**~~ | All activity components removed | Google Calendar components |
-| ~~**NotificationCenter**~~ | Calendar provides notifications | Google Calendar notifications |
 | ~~**Activity forms**~~ | Calendar handles event creation | Google Calendar event forms |
 
 ### 6.6 State Management (Enhanced)
@@ -279,21 +277,19 @@ PipeCD is a Customer Relationship Management (CRM) system designed around Google
 |-----------|------|---------|
 | **Core Service** | `aiAgentV2/core/AgentServiceV2.ts` | Claude Sonnet 4 integration |
 | **Tool Registry** | `aiAgentV2/tools/ToolRegistry.ts` | Tool management |
-| **Processing Engine** | `aiAgentV2/core/SimpleCognitiveEngine.ts` | Data processing |
 
-### 7.2 AI Tools
+### 7.2 AI Tools (9 Verified)
 | Tool Category | Tools | Features |
 |---------------|-------|----------|
 | **Entity Creation** | CreateDealTool, CreateOrganizationTool, CreatePersonTool | Natural language entity creation |
 | **Entity Updates** | UpdateDealTool, UpdateOrganizationTool, UpdatePersonTool | Entity modification |
-| **Search & Discovery** | SearchDealsTool | Search with clustering |
+| **Search & Discovery** | SearchDealsTool | Search with intelligent filtering |
 | **Analysis Tools** | ThinkTool | Structured reasoning and analysis |
-| **Data Tools** | GetDropdownDataTool | Semantic data organization |
 
 ### 7.3 Performance Metrics
 - **Response Time**: 96ms for deal creation workflows
-- **Production Testing**: €195,000 in deals created during testing
-- **Processing Speed**: Improved parameter selection vs traditional dropdowns
+- **Production Testing**: Real deal updates validated (€65K → €75K)
+- **Processing Speed**: Enhanced parameter selection
 - **Security**: SQL injection prevention, input validation
 - **Natural Language**: "Update the Real Industries deal to €75,000"
 
@@ -387,33 +383,6 @@ Deal Assignment Notification:
 - Automation rule configuration
 - Real-time subscriptions for updates
 
-### 8.4 Integration Status
-- **Deal Service**: ✅ Active - Rules trigger on deal create/update
-- **Lead Service**: 🚧 Ready for integration
-- **Person/Organization**: 🚧 Ready for integration
-- **Task System**: 🚧 Ready for integration
-
-## 9. Task Management System (NEW)
-
-### 9.1 Core Features
-- **CRM Context**: Tasks always linked to deals, leads, people, or organizations
-- **Workflow Integration**: WFM project linking and business process automation
-- **Task Types**: FOLLOW_UP, PREPARATION, DEADLINE, EMAIL, CALL, MEETING_OUTCOME, INTERNAL
-- **Dependencies**: Task dependency management and blocking logic
-- **Automation**: Automated task creation via business rules
-
-### 9.2 Business Logic
-- **Stage Progression**: Tasks can block deal/lead stage advancement
-- **Lead Scoring**: Task completion affects lead scoring algorithms
-- **Deal Closure**: Required tasks for deal closure enforcement
-- **Assignment**: User assignment with ownership tracking
-
-### 9.3 Integration Points
-- **Business Rules**: Automated task creation from rule actions
-- **WFM System**: Workflow-driven task generation
-- **AI Agent**: Natural language task creation from emails
-- **Google Calendar**: Prepared for calendar event synchronization
-
 ## 10. Key Features (Enhanced)
 
 ### 10.1 Account Management System
@@ -446,12 +415,6 @@ Deal Assignment Notification:
 - **Automated Updates**: ECB API integration with Inngest
 - **User Preferences**: Personal currency settings
 - **Display Modes**: Mixed and converted currency views
-
-### 10.6 Smart Stickers System
-- **Visual Collaboration**: Digital sticky notes
-- **Categorization**: Organized sticker categories
-- **Deal Integration**: Context-aware note placement
-- **Calendar Ready**: Prepared for calendar event annotations
 
 ## 11. Security & Compliance (Enhanced)
 
@@ -506,7 +469,7 @@ Deal Assignment Notification:
 ### 13.2 Development Workflow
 - **Local Development**: `netlify dev` + `supabase start`
 - **Version Control**: Git with feature branches
-- **Database Migrations**: 77 versioned SQL migrations
+- **Database Migrations**: 102 versioned SQL migrations
 - **Type Safety**: End-to-end TypeScript with 100% compilation success
 
 ### 13.3 Monitoring & Maintenance
@@ -518,34 +481,29 @@ Deal Assignment Notification:
 
 ## 14. Current Production Status (Enhanced)
 
-### 14.1 Operational Core (12/16 modules)
+### 14.1 Operational Core (13/16 modules)
 ✅ **Deal Management** - Multi-currency, WFM integration, AI tools  
 ✅ **Lead Management** - Qualification workflows, conversion system  
 ✅ **Organization Management** - Account management, portfolio tracking  
-✅ **Contact Management** - Relationship mapping, custom fields  
-✅ **AI Agent V2** - Revolutionary cognitive tools, Claude Sonnet 4  
+✅ **Contact Management** - Multi-organization relationships, custom fields  
+✅ **AI Agent V2** - Claude Sonnet 4 with cognitive tools  
 ✅ **Conversion System** - Bi-directional with complete audit trails  
 ✅ **Multi-Currency** - 42 currencies, automated ECB updates  
 ✅ **Google Integration** - OAuth 2.0, Gmail, Drive (Calendar ready)  
-✅ **Smart Stickers** - Visual collaboration system  
 ✅ **Custom Fields** - Dynamic schema extension  
 ✅ **WFM System** - Workflow management engine  
 ✅ **Business Rules Engine** - Production ready with template substitution  
-
-### 14.2 New Production Systems
 ✅ **Task Management** - CRM-integrated task system with automation  
-✅ **Business Automation** - Event-based rules with notifications  
 ✅ **Template Engine** - Dynamic variable substitution  
-✅ **Admin Interface** - Complete business rules management  
 
-### 14.3 Removed for Calendar (Successfully Eliminated)
+### 14.2 Removed for Calendar (Successfully Eliminated)
 ❌ **Activities System** - Completely eliminated  
 ❌ **Activity Reminders** - Removed for native calendar notifications  
-❌ **Notifications** - Replaced by Google Calendar alerts  
+❌ **Relations Intelligence** - Complex relationship system removed  
 ❌ **Activity Management UI** - Google Calendar interface will replace  
-❌ **Activity RBAC** - 7 permissions removed, system cleaned  
+❌ **Activity RBAC** - Activity permissions removed, system cleaned  
 
-### 14.4 Ready for Calendar Integration
+### 14.3 Ready for Calendar Integration
 🚀 **Google Calendar API Integration** - OAuth foundation ready  
 🚀 **Calendar-Native UI** - Components prepared for calendar embedding  
 🚀 **Event-CRM Linking** - Database schema ready for relationships  
@@ -571,10 +529,12 @@ Deal Assignment Notification:
 
 ### 15.3 Key Achievements
 - **Calendar-Focused CRM**: Integration approach rather than calendar replacement
-- **AI System**: Improved user experience for enterprise operations
-- **Production Validation**: €195,000 in deals created during AI testing
+- **AI System**: Enhanced user experience for enterprise operations
+- **Production Validation**: Real business operations validated
 - **Security**: Threat reduction with SQL injection prevention
 - **Business Automation**: Template-driven notifications with fast execution
+
+---
 
 ## 7. Universal Notification System
 
@@ -689,7 +649,7 @@ Returns:
 
 ---
 
-**Document Version**: 3.1 (Business Rules Engine Production Ready)  
+**Document Version**: 3.2 (Production-Ready with Business Rules & Task Management)  
 **Status**: Calendar-Focused CRM with Business Automation  
 **Next Milestone**: Google Calendar API Integration + Business Rules Expansion  
 **Last Review**: January 25, 2025  

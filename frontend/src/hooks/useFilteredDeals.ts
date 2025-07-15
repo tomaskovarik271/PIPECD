@@ -8,6 +8,8 @@ interface UseFilteredDealsProps {
   selectedAssignedUserIds: string[];
   searchTerm?: string;
   includeFinalSteps?: boolean;
+  selectedLabels?: Array<{ labelText: string; colorHex: string }>;
+  labelFilterLogic?: 'AND' | 'OR';
 }
 
 export function useFilteredDeals({
@@ -17,6 +19,8 @@ export function useFilteredDeals({
   selectedAssignedUserIds,
   searchTerm,
   includeFinalSteps = false,
+  selectedLabels = [],
+  labelFilterLogic = 'OR',
 }: UseFilteredDealsProps): Deal[] {
   return useMemo(() => {
     let filtered = deals;
@@ -55,13 +59,40 @@ export function useFilteredDeals({
         return deal.assigned_to_user_id && selectedAssignedUserIds.includes(deal.assigned_to_user_id);
       });
     }
-    // Search Term Filter (on deal name)
+    // Add search term filter
     if (searchTerm && searchTerm.trim() !== '') {
-      const lowerSearchTerm = searchTerm.toLowerCase();
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(deal => 
-        deal.name?.toLowerCase().includes(lowerSearchTerm)
+        deal.name?.toLowerCase().includes(searchLower) ||
+        deal.organization?.name?.toLowerCase().includes(searchLower) ||
+        deal.person?.first_name?.toLowerCase().includes(searchLower) ||
+        deal.person?.last_name?.toLowerCase().includes(searchLower)
       );
     }
+
+    // Add label filtering
+    if (selectedLabels.length > 0) {
+      const selectedLabelTexts = selectedLabels.map(label => label.labelText);
+      
+      filtered = filtered.filter(deal => {
+        if (!deal.labels || deal.labels.length === 0) return false;
+        
+        const dealLabelTexts = deal.labels.map(label => label.labelText);
+        
+        if (labelFilterLogic === 'AND') {
+          // Deal must have ALL selected labels
+          return selectedLabelTexts.every(labelText => 
+            dealLabelTexts.includes(labelText)
+      );
+        } else {
+          // Deal must have ANY of the selected labels
+          return selectedLabelTexts.some(labelText => 
+            dealLabelTexts.includes(labelText)
+          );
+        }
+      });
+    }
+
     return filtered;
-  }, [deals, activeQuickFilterKey, currentUserId, selectedAssignedUserIds, searchTerm, includeFinalSteps]);
+  }, [deals, activeQuickFilterKey, currentUserId, selectedAssignedUserIds, searchTerm, includeFinalSteps, selectedLabels, labelFilterLogic]);
 } 

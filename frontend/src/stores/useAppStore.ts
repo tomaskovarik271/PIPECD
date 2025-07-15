@@ -75,6 +75,15 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
           id
           name
       }
+      labels {
+        id
+        dealId
+        labelText
+        colorHex
+        createdByUserId
+        createdAt
+        updatedAt
+      }
       customFieldValues {
         definition {
           id

@@ -15,7 +15,8 @@ import { useNavigate } from 'react-router-dom';
 import { useThemeColors } from '../../hooks/useThemeColors';
 import { formatDistanceToNowStrict, isPast } from 'date-fns';
 import { useAppStore } from '../../stores/useAppStore';
-import { FiClock, FiAlertTriangle } from 'react-icons/fi';
+
+import { ConsolidatedCardIndicators } from './ConsolidatedCardIndicators';
 // Activity indicators removed - using Google Calendar integration instead
 
 // Extended Deal type that includes project_id which may be present on some deals
@@ -146,7 +147,6 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
         >
           {/* Header Row: Name + Task Indicators + Amount */}
           <HStack justify="space-between" mb={2} align="center">
-            <HStack spacing={2} flex={1} minWidth={0}>
               <Text 
                 fontWeight="semibold" 
                 color={colors.text.primary}
@@ -157,51 +157,25 @@ const DealCardKanbanCompact: React.FC<DealCardKanbanCompactProps> = React.memo((
               >
                 {deal.name}
               </Text>
-              {/* Task indicators */}
-              <HStack spacing={1} flexShrink={0}>
-                {taskIndicators && taskIndicators.tasksDueToday > 0 && (
-                  <Tooltip label={`${taskIndicators.tasksDueToday} task${taskIndicators.tasksDueToday > 1 ? 's' : ''} due today`} placement="top">
-                    <Tag size="sm" colorScheme="orange" variant="solid" cursor="help">
-                      <FiClock size={8} style={{ marginRight: '2px' }} />
-                      {taskIndicators.tasksDueToday}
-                    </Tag>
-                  </Tooltip>
-                )}
-                {taskIndicators && taskIndicators.tasksOverdue > 0 && (
-                  <Tooltip label={`${taskIndicators.tasksOverdue} overdue task${taskIndicators.tasksOverdue > 1 ? 's' : ''}`} placement="top">
-                    <Tag size="sm" colorScheme="red" variant="solid" cursor="help">
-                      <FiAlertTriangle size={8} style={{ marginRight: '2px' }} />
-                      {taskIndicators.tasksOverdue}
-                    </Tag>
-                  </Tooltip>
-                )}
-              </HStack>
-            </HStack>
             <Text fontSize="sm" fontWeight="bold" color={colors.text.success} ml={2} flexShrink={0}>
-              {formatDealAmount(deal, currencyDisplayMode, baseCurrencyForConversion)}
+              {formatDealAmount(deal as Deal, currencyDisplayMode, baseCurrencyForConversion)}
             </Text>
           </HStack>
 
-          {/* Organization + Project ID */}
-          <HStack justify="space-between" mb={2}>
-            <Text fontSize="xs" color={colors.text.muted} noOfLines={1} flex={1} minWidth={0}>
+          {/* Organization */}
+          <Text fontSize="xs" color={colors.text.muted} noOfLines={1} mb={2}>
               {deal.organization?.name || 'No org'}
             </Text>
-            {deal.project_id && (
-              <Text 
-                fontSize="xs" 
-                color={colors.text.link}
-                fontFamily="mono"
-                fontWeight="medium"
-                bg={colors.bg.input}
-                px={1.5}
-                py={0.5}
-                borderRadius="sm"
-              >
-                #{deal.project_id}
-              </Text>
-            )}
-          </HStack>
+
+          {/* Consolidated Indicators */}
+          <Box mb={2}>
+            <ConsolidatedCardIndicators 
+              deal={deal as Deal}
+              taskIndicators={taskIndicators}
+              maxVisibleIndicators={2}
+              showProjectId={true}
+            />
+          </Box>
 
           {/* Progress Bar */}
           <Progress 

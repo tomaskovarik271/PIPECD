@@ -66,7 +66,8 @@ import {
   ArrowDownIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  SmallCloseIcon
+  SmallCloseIcon,
+  AddIcon
 } from '@chakra-ui/icons';
 import { FaClipboardList, FaPhone } from 'react-icons/fa';
 import { FiClock } from 'react-icons/fi';
@@ -101,7 +102,10 @@ import { UpcomingMeetingsWidget } from '../components/calendar/UpcomingMeetingsW
 import { useQuickSchedule } from '../hooks/useQuickSchedule';
 import { SmartEmailButton } from '../components/common/SmartEmailComposer';
 import { EmbeddedCalendarModal } from '../components/calendar/EmbeddedCalendarModal';
-import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { DealLabels } from '../components/deals/DealLabels';
+import { LabelInput } from '../components/deals/LabelInput';
+import { REMOVE_DEAL_LABEL_MUTATION } from '../lib/graphql/dealLabelsOperations';
+import { gqlClient } from '../lib/graphqlClient';
 
 // Type imports
 
@@ -163,6 +167,7 @@ const DealDetailPage = () => {
   const [newOwnerId, setNewOwnerId] = useState<string | null>(null);
   const [isCustomFieldsExpanded, setIsCustomFieldsExpanded] = useState(true);
   const [emailRefreshTrigger, setEmailRefreshTrigger] = useState(0);
+  const [isAddingLabel, setIsAddingLabel] = useState(false);
   
   // Count states for tab badges
   const [documentCount, setDocumentCount] = useState(0);
@@ -207,7 +212,7 @@ const DealDetailPage = () => {
   useEffect(() => {
     if (dealId) {
       fetchDealById(dealId);
-      fetchCustomFieldDefinitions('DEAL');
+      fetchCustomFieldDefinitions('DEAL' as any);
       if (!usersHaveBeenFetched) {
         fetchUserList();
       }
@@ -389,6 +394,66 @@ const DealDetailPage = () => {
     }
   };
 
+  const handleLabelAdded = async (labelText: string, colorHex: string) => {
+    console.log('Label added:', { labelText, colorHex, dealId: deal?.id });
+    setIsAddingLabel(false);
+    
+    // Refresh deal data to show the new label
+    if (dealId) {
+      await fetchDealById(dealId);
+    }
+    
+    toast({
+      title: 'Label Added',
+      description: `Added label "${labelText}" to deal`,
+      status: 'success',
+      duration: 3000,
+      isClosable: true,
+    });
+  };
+
+  const handleRemoveLabel = async (labelId: string) => {
+    if (!deal?.id) return;
+    
+    try {
+      console.log('Attempting to remove label:', { labelId, dealId: deal.id });
+      
+      const response = await gqlClient.request(REMOVE_DEAL_LABEL_MUTATION, {
+        input: {
+          dealId: deal.id,
+          labelId: labelId
+        }
+      });
+      
+      console.log('Remove label response:', response);
+      
+      // Refresh deal data to remove the label from UI
+      await fetchDealById(deal.id);
+      
+      toast({
+        title: 'Label Removed',
+        description: 'Label has been removed from the deal',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error('Error removing label:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      toast({
+        title: 'Error',
+        description: 'Failed to remove label. Please try again.',
+        status: 'error',
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleCancelAddLabel = () => {
+    setIsAddingLabel(false);
+  };
+
   if (isLoadingDeal) {
     return (
       <Center h="100vh" bg={colors.bg.app}>
@@ -456,17 +521,17 @@ const DealDetailPage = () => {
         my={{base: 0, md: 4}}
       >
         {/* NEW: Responsive grid layout (replaces Flex with calc() problems) */}
-        <SimpleGrid columns={{base: 1, lg: 12}} gap={{base: 4, md: 6}}>
+        <SimpleGrid columns={{base: 1, lg: 12}} gap={{base: 4, md: 6}} h="calc(100vh - 2rem)">
           {/* Main Content (Left Column) */}
-          <Box gridColumn={{base: "1", lg: "1 / 9"}} p={{base: 4, md: 6, lg: 8}} overflowY="auto" overflowX="hidden" sx={{
-              '&::-webkit-scrollbar': { width: '8px' },
-              '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '8px' },
-              '&::-webkit-scrollbar-track': { background: colors.bg.elevated },
-            }}>
+          <Box gridColumn={{base: "1", lg: "1 / 9"}} p={{base: 4, md: 6, lg: 8}} overflowY="auto" overflowX="hidden" h="full" sx={{
+            '&::-webkit-scrollbar': { width: '8px' },
+            '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '8px' },
+            '&::-webkit-scrollbar-track': { background: colors.bg.elevated },
+          }}>
             <VStack spacing={6} align="stretch" maxW="100%" w="100%">
               {/* Header Section */}
               <DealHeader 
-                deal={deal as Deal}
+                deal={deal as any}
                 isEditing={false}
                 setIsEditing={() => {}}
                 dealActivities={[]} // Activities removed - using Google Calendar integration instead
@@ -478,11 +543,14 @@ const DealDetailPage = () => {
                 borderRadius="xl" 
                 border="1px solid" 
                 borderColor={colors.component.kanban.cardBorder} 
-                minH="400px" 
+                minH="600px" 
+                maxH="calc(100vh - 300px)"
                 w="100%" 
                 maxW="100%"
                 boxShadow="steelPlate"
                 position="relative"
+                display="flex"
+                flexDirection="column"
                 _before={{
                   content: '""',
                   position: 'absolute',
@@ -494,9 +562,17 @@ const DealDetailPage = () => {
                   pointerEvents: 'none',
                 }}
               >
-                <Tabs variant="line" colorScheme="blue" size="md" isFitted>
-                  <TabList borderBottomColor={colors.border.default}>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                <Tabs variant="line" colorScheme="blue" size="md" h="full" display="flex" flexDirection="column">
+                  <TabList 
+                    borderBottomColor={colors.border.default} 
+                    flexShrink={0} 
+                    bg={colors.bg.surface} 
+                    borderTopRadius="xl"
+                    flexWrap="wrap"
+                    maxH="80px"
+                    overflowY="auto"
+                  >
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="120px">
                       <HStack spacing={2}>
                         <Text>Notes</Text>
                         <Badge colorScheme="yellow" variant="solid" borderRadius="full" fontSize="xs">
@@ -504,13 +580,13 @@ const DealDetailPage = () => {
                         </Badge>
                       </HStack>
                     </Tab>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="120px">
                       <HStack spacing={2}>
                         <Icon as={FiClock} />
                         <Text>Meetings</Text>
                       </HStack>
                     </Tab>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="100px">
                       <HStack spacing={2}>
                         <Icon as={FaClipboardList} />
                         <Text>Tasks</Text>
@@ -520,10 +596,10 @@ const DealDetailPage = () => {
                       </HStack>
                     </Tab>
                     {/* Activities tab removed - using Google Calendar integration instead */}
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="80px">
                       Emails
                     </Tab>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="120px">
                       <HStack spacing={2}>
                         <Text>Documents</Text>
                         <Badge colorScheme="green" variant="solid" borderRadius="full" fontSize="xs">
@@ -531,7 +607,7 @@ const DealDetailPage = () => {
                         </Badge>
                       </HStack>
                     </Tab>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="100px">
                       <HStack spacing={2}>
                         <Text>Contacts</Text>
                         <Badge colorScheme="purple" variant="solid" borderRadius="full" fontSize="xs">
@@ -539,29 +615,41 @@ const DealDetailPage = () => {
                         </Badge>
                       </HStack>
                     </Tab>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="80px">
                       History
                     </Tab>
                   </TabList>
-                
-                  <TabPanels p={{base: 3, md: 4}} minH="350px" w="100%" maxW="100%">
-                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                      <Box w="100%" maxW="100%">
+
+                  <TabPanels flex="1" minH="0" overflow="hidden">
+                    <TabPanel h="full" p={0} overflow="hidden">
+                      <Box h="full" overflowY="auto" p={{base: 3, md: 4}} sx={{
+                        '&::-webkit-scrollbar': { width: '6px' },
+                        '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '6px' },
+                        '&::-webkit-scrollbar-track': { background: 'transparent' },
+                      }}>
                         <DealNotesPanel 
                           dealId={deal.id}
                           onNoteCountChange={handleStickyNotesCountChange}
                         />
                       </Box>
                     </TabPanel>
-                    
-                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                      <Box w="100%" maxW="100%">
-                        <DealTimelinePanel deal={deal as Deal} />
+
+                    <TabPanel h="full" p={0} overflow="hidden">
+                      <Box h="full" overflowY="auto" p={{base: 3, md: 4}} sx={{
+                        '&::-webkit-scrollbar': { width: '6px' },
+                        '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '6px' },
+                        '&::-webkit-scrollbar-track': { background: 'transparent' },
+                      }}>
+                        <DealTimelinePanel deal={deal as any} />
                       </Box>
                     </TabPanel>
-                    
-                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                      <Box w="100%" maxW="100%">
+
+                    <TabPanel h="full" p={0} overflow="hidden">
+                      <Box h="full" overflowY="auto" p={{base: 3, md: 4}} sx={{
+                        '&::-webkit-scrollbar': { width: '6px' },
+                        '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '6px' },
+                        '&::-webkit-scrollbar-track': { background: 'transparent' },
+                      }}>
                         <DealTasksPanel 
                           dealId={deal.id}
                           dealName={deal.name}
@@ -569,11 +657,20 @@ const DealDetailPage = () => {
                         />
                       </Box>
                     </TabPanel>
-                  
+
                     {/* Activities panel removed - using Google Calendar integration instead */}
                     
-                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                      <Box w="100%" maxW="100%">
+                    <TabPanel h="full" p={0} overflow="auto">
+                      <Box 
+                        h="full" 
+                        w="full" 
+                        minW="800px"
+                        sx={{
+                          '&::-webkit-scrollbar': { width: '6px', height: '6px' },
+                          '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '6px' },
+                          '&::-webkit-scrollbar-track': { background: 'transparent' },
+                        }}
+                      >
                         <DealEmailsPanel 
                           dealId={dealId!} 
                           primaryContactEmail={deal.person?.email || undefined}
@@ -583,8 +680,12 @@ const DealDetailPage = () => {
                       </Box>
                     </TabPanel>
 
-                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                      <Box w="100%" maxW="100%">
+                    <TabPanel h="full" p={0} overflow="hidden">
+                      <Box h="full" overflowY="auto" p={{base: 3, md: 4}} sx={{
+                        '&::-webkit-scrollbar': { width: '6px' },
+                        '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '6px' },
+                        '&::-webkit-scrollbar-track': { background: 'transparent' },
+                      }}>
                         <SharedDriveDocumentBrowser 
                           dealId={dealId!} 
                           dealName={deal.name}
@@ -593,8 +694,12 @@ const DealDetailPage = () => {
                       </Box>
                     </TabPanel>
 
-                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                      <Box w="100%" maxW="100%">
+                    <TabPanel h="full" p={0} overflow="hidden">
+                      <Box h="full" overflowY="auto" p={{base: 3, md: 4}} sx={{
+                        '&::-webkit-scrollbar': { width: '6px' },
+                        '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '6px' },
+                        '&::-webkit-scrollbar-track': { background: 'transparent' },
+                      }}>
                         <DealOrganizationContactsPanel 
                           organization={deal.organization ? {
                             id: deal.organization.id,
@@ -607,8 +712,12 @@ const DealDetailPage = () => {
                       </Box>
                     </TabPanel>
 
-                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                      <Box w="100%" maxW="100%">
+                    <TabPanel h="full" p={0} overflow="hidden">
+                      <Box h="full" overflowY="auto" p={{base: 3, md: 4}} sx={{
+                        '&::-webkit-scrollbar': { width: '6px' },
+                        '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '6px' },
+                        '&::-webkit-scrollbar-track': { background: 'transparent' },
+                      }}>
                         <DealHistoryPanel historyEntries={deal.history} />
                       </Box>
                     </TabPanel>
@@ -619,7 +728,7 @@ const DealDetailPage = () => {
           </Box>
 
           {/* Right Sidebar - Enhanced with Key Information */}
-          <Box gridColumn={{base: "1", lg: "9 / 13"}} bg={colors.component.kanban.column} p={{base: 4, md: 6}} borderLeftWidth={{base: 0, lg: "1px"}} borderTopWidth={{base: "1px", lg: 0}} borderColor={colors.component.kanban.cardBorder} overflowY="auto" flexShrink={0} boxShadow="steelPlate" position="relative" _before={{
+          <Box gridColumn={{base: "1", lg: "9 / 13"}} bg={colors.component.kanban.column} p={{base: 4, md: 6}} borderLeftWidth={{base: 0, lg: "1px"}} borderTopWidth={{base: "1px", lg: 0}} borderColor={colors.component.kanban.cardBorder} overflowY="auto" h="full" flexShrink={0} boxShadow="steelPlate" position="relative" _before={{
               content: '""',
               position: 'absolute',
               top: 0,
@@ -883,13 +992,77 @@ const DealDetailPage = () => {
                       leftIcon={<CalendarIcon />}
                       colorScheme="blue"
                       size="md"
-                      onClick={() => quickSchedule({ deal: deal, useEmbeddedModal: true })}
+                      onClick={() => quickSchedule({ deal: deal as any, useEmbeddedModal: true })}
                       width="100%"
                       variant="solid"
                     >
                       Schedule Meeting
                     </Button>
                   </Box>
+                </VStack>
+              </Box>
+
+              {/* Labels Section */}
+              <Box 
+                p={5} 
+                bg={colors.component.kanban.card} 
+                borderRadius="lg" 
+                border="1px solid" 
+                borderColor={colors.component.kanban.cardBorder}
+                boxShadow="metallic"
+                position="relative"
+                _before={{
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: '2px',
+                  background: `linear-gradient(90deg, transparent 0%, ${getAccentColor()} 50%, transparent 100%)`,
+                  pointerEvents: 'none',
+                }}
+              >
+                <Heading size="sm" mb={4} color={colors.text.primary}>Labels</Heading>
+                <VStack spacing={3} align="stretch">
+                  {deal.labels && deal.labels.length > 0 ? (
+                    <DealLabels 
+                      labels={deal.labels} 
+                      size="md" 
+                      isEditable={true}
+                      onRemoveLabel={handleRemoveLabel}
+                      showTooltip={true}
+                    />
+                  ) : (
+                    <Text fontSize="sm" color={colors.text.muted} fontStyle="italic">
+                      No labels assigned
+                    </Text>
+                  )}
+                  {isAddingLabel ? (
+                    <VStack spacing={2} align="stretch">
+                      <LabelInput
+                        dealId={deal.id}
+                        onLabelAdded={handleLabelAdded}
+                        placeholder="Enter label name..."
+                      />
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        onClick={handleCancelAddLabel}
+                      >
+                        Cancel
+                      </Button>
+                    </VStack>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      leftIcon={<AddIcon />}
+                      colorScheme="blue"
+                      onClick={() => setIsAddingLabel(true)}
+                    >
+                      Add Label
+                    </Button>
+                  )}
                 </VStack>
               </Box>
 
@@ -1042,7 +1215,7 @@ const DealDetailPage = () => {
         <EditDealModal
           isOpen={isEditDealModalOpen}
           onClose={onEditDealModalClose}
-          deal={deal}
+          deal={deal as any}
           onDealUpdated={handleDealUpdated}
         />
       )}

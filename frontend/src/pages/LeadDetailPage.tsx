@@ -701,9 +701,13 @@ const LeadDetailPage = () => {
 
       {/* Main Content */}
       <Tabs variant="enclosed" colorScheme="orange">
-        <TabList>
-          <Tab>Details</Tab>
-          <Tab>Smart Stickers</Tab>
+        <TabList 
+          flexWrap="wrap"
+          maxH="80px"
+          overflowY="auto"
+        >
+          <Tab minW="120px">Details</Tab>
+          <Tab minW="140px">Smart Stickers</Tab>
         </TabList>
 
         <TabPanels>

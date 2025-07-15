@@ -1,5 +1,5 @@
 # Developer Guide V3 - PIPECD
-*Complete Testing Stack Redesign & System Documentation*
+*Complete System Documentation & Architecture Reference*
 
 ## Table of Contents
 1. [System Overview](#system-overview)
@@ -33,7 +33,7 @@
 ### Key Features
 - **Deals Pipeline**: Kanban-based deal management with WFM integration
 - **Lead Management**: Bi-directional conversion system with reactivation planning
-- **Contact Management**: Organizations, People with account manager assignment
+- **Contact Management**: Organizations, People with multi-organization relationships
 - **Multi-Currency**: 42 currencies with ECB exchange rate integration
 - **Document Management**: Google Drive integration with dual attachment system
 - **Email Integration**: Gmail threads with contact discovery and filtering
@@ -80,7 +80,7 @@ public.user_roles           -- User-role assignment
 
 ## Database Schema & Migrations
 
-PipeCD has **77 migration files** implementing a comprehensive enterprise CRM schema:
+PipeCD has **102 migration files** implementing a comprehensive enterprise CRM schema:
 
 ### Core Entity Tables
 ```sql
@@ -104,9 +104,9 @@ public.wfm_projects       -- Project instances
 public.organizations.account_manager_id  -- Account manager assignment
 -- Permissions: assign_account_manager, manage_own_accounts, view_account_portfolio
 
--- Deal Participants System (Migration 20250730000042)
-public.deal_participants    -- Many-to-many deal-person relationships
--- Extends deals.person_id (primary) with additional participants for email filtering
+-- Multi-Organization Contacts (Migration 20250730000079)
+public.person_organization_roles  -- Many-to-many person-organization relationships
+-- Replaces legacy single organization_id with flexible role-based system
 
 -- Bi-Directional Conversion System (Migration 20250730000052)
 public.conversion_history      -- Audit trail for lead-deal conversions
@@ -201,7 +201,7 @@ public.agent_thoughts          -- V2 thinking analysis
 ### Smart Features
 ```sql
 -- Smart Stickers System (Migration 20250730000027)
-public.smart_stickers         -- Visual note system with categories
+public.stickers         -- Visual note system with categories
 public.sticker_categories     -- Sticker categorization
 
 -- Custom Fields System
@@ -344,7 +344,7 @@ npm run test:all          # Complete test suite
 
 ### Contact Management
 - **Organizations**: Company management with account manager assignment
-- **People**: Contact management with organizational relationships
+- **People**: Contact management with multi-organization relationships via person_organization_roles
 - **Account Management**: Portfolio view for account managers
 - **Duplicate Detection**: Smart detection during creation
 
@@ -358,7 +358,7 @@ npm run test:all          # Complete test suite
 
 ## AI Agent System
 
-PipeCD features the world's first AI-optimized enterprise CRM with **AI Agent V2** using Claude Sonnet 4:
+PipeCD features an AI-optimized enterprise CRM with **AI Agent V2** using Claude Sonnet 4:
 
 ### AI Agent V2 Architecture
 - **Claude Sonnet 4**: Advanced reasoning capabilities
@@ -366,7 +366,7 @@ PipeCD features the world's first AI-optimized enterprise CRM with **AI Agent V2
 - **Tool Registry**: Extensible tool system for CRM operations
 - **Production Hardening**: Enterprise-grade security and reliability
 
-### Core AI Tools
+### Core AI Tools (9 Verified)
 ```typescript
 // Entity Creation Tools
 CreateDealTool           // Creates deals with organization linking
@@ -375,7 +375,6 @@ CreatePersonTool         // Creates people with email validation
 
 // Data Retrieval Tools
 SearchDealsTool          // GraphQL-first deal searching
-GetDropdownDataTool      // Cognitive dropdown system for AI optimization
 
 // Entity Management Tools
 UpdateDealTool          // Deal updates with change analysis
@@ -387,7 +386,6 @@ ThinkTool              // Structured reasoning and analysis
 ```
 
 ### Revolutionary Features
-- **Cognitive Dropdown System**: 90% reduction in cognitive load for AI parameter selection
 - **GraphQL-First Architecture**: AI uses same queries as frontend for perfect consistency
 - **Workflow Transparency**: Complete audit trails with 6-step workflow documentation
 - **Business Intelligence**: Embedded business logic in tools, not just API wrappers
@@ -585,18 +583,29 @@ public.task_history (
 ### Task Types & Business Logic
 ```typescript
 enum TaskType {
+  DISCOVERY = 'DISCOVERY',
+  DEMO_PREPARATION = 'DEMO_PREPARATION', 
+  PROPOSAL_CREATION = 'PROPOSAL_CREATION',
+  NEGOTIATION_PREP = 'NEGOTIATION_PREP',
+  CONTRACT_REVIEW = 'CONTRACT_REVIEW',
+  DEAL_CLOSURE = 'DEAL_CLOSURE',
+  LEAD_QUALIFICATION = 'LEAD_QUALIFICATION',
+  LEAD_NURTURING = 'LEAD_NURTURING',
   FOLLOW_UP = 'FOLLOW_UP',
-  PREPARATION = 'PREPARATION', 
-  DEADLINE = 'DEADLINE',
-  EMAIL = 'EMAIL',
-  CALL = 'CALL',
-  MEETING_OUTCOME = 'MEETING_OUTCOME',
-  INTERNAL = 'INTERNAL'
+  LEAD_SCORING_REVIEW = 'LEAD_SCORING_REVIEW',
+  STAKEHOLDER_MAPPING = 'STAKEHOLDER_MAPPING',
+  RELATIONSHIP_BUILDING = 'RELATIONSHIP_BUILDING',
+  RENEWAL_PREPARATION = 'RENEWAL_PREPARATION',
+  DATA_ENRICHMENT = 'DATA_ENRICHMENT',
+  CRM_UPDATE = 'CRM_UPDATE',
+  REPORTING = 'REPORTING'
 }
 
 enum TaskStatus {
   TODO = 'TODO',
   IN_PROGRESS = 'IN_PROGRESS',
+  WAITING_ON_CUSTOMER = 'WAITING_ON_CUSTOMER',
+  WAITING_ON_INTERNAL = 'WAITING_ON_INTERNAL',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED'
 }
@@ -679,7 +688,7 @@ supabase db reset --local       # Full reset (ask permission first)
 - **GraphQL Query Analysis**: Automated performance tracking
 - **Database Query Optimization**: Systematic SELECT * replacement
 - **Frontend Bundle Optimization**: Code splitting and lazy loading
-- **Memory Management**: Garbage collection monitoring
+- **Memory Management**: LRU caching and leak prevention
 
 ### Optimization Plan
 1. **Phase 1**: Remaining 41 SELECT * queries → specific field selection
@@ -762,5 +771,5 @@ read_only -- 7 permissions (view-only access)
 
 ---
 
-*This guide represents the complete state of PipeCD after comprehensive analysis of all migration files (77 total), service implementations, backend architecture, and frontend implementation. The system is a sophisticated enterprise CRM with modern React frontend, GraphQL API, business rules engine, task management system, and production-ready features.*
+*This guide represents the complete state of PipeCD after comprehensive analysis of all migration files (102 total), service implementations, backend architecture, and frontend implementation. The system is a sophisticated enterprise CRM with modern React frontend, GraphQL API, business rules engine, task management system, and production-ready features.*
  

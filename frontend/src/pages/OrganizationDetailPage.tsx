@@ -27,6 +27,7 @@ import {
   TabPanel,
   Badge,
   Flex,
+  SimpleGrid,
 } from '@chakra-ui/react';
 import { ArrowBackIcon, WarningIcon, EditIcon, CheckIcon, SmallCloseIcon } from '@chakra-ui/icons';
 import { useOrganizationsStore, Organization } from '../stores/useOrganizationsStore';
@@ -214,27 +215,27 @@ const OrganizationDetailPage = () => {
     >
       <Box 
         bg={colors.bg.surface}
-        maxW="90vw" 
         w="full" 
-        h="full"  
-        maxH="calc(100% - 0px)" 
-        borderRadius="xl" 
-        borderWidth="1px"
+        h="100vh"  
+        maxH="100vh" 
+        borderRadius={{base: "none", md: "xl"}}
+        borderWidth={{base: "0", md: "1px"}}
         borderColor={colors.border.default}
         overflow="hidden" 
+        mx={{base: 0, md: 4}}
+        my={{base: 0, md: 4}}
       >
-        <Flex h="full" direction={{base: "column", lg: "row"}} w="100%" maxW="100%">
+        {/* NEW: Responsive grid layout (replaces Flex with calc() problems) */}
+        <SimpleGrid columns={{base: 1, lg: 12}} gap={{base: 4, md: 6}} h="calc(100vh - 2rem)">
           {/* Main Content (Left Column) */}
           <Box 
-            flex="1"
-            minW="0"
-            w={{base: "100%", lg: "calc(100vw - 450px - 20rem)"}}
-            maxW={{base: "100%", lg: "calc(100vw - 450px - 20rem)"}}
-            p={{base: 4, md: 8}} 
-        overflowY="auto"
+            gridColumn={{base: "1", lg: "1 / 9"}} 
+            p={{base: 4, md: 6, lg: 8}} 
+            overflowY="auto" 
             overflowX="hidden"
-        sx={{
-            '&::-webkit-scrollbar': { width: '8px' },
+            h="full"
+            sx={{
+              '&::-webkit-scrollbar': { width: '8px' },
               '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '8px' },
               '&::-webkit-scrollbar-track': { background: colors.bg.elevated },
             }}
@@ -242,52 +243,55 @@ const OrganizationDetailPage = () => {
             <VStack spacing={6} align="stretch" maxW="100%" w="100%">
               {/* Header Section */}
               <Box>
-              <Breadcrumb 
-                spacing="8px" 
+                <Breadcrumb 
+                  spacing="8px" 
                   separator={<Text color={colors.text.muted}>/</Text>}
                   color={colors.text.muted}
-                fontSize="sm"
+                  fontSize="sm"
                   mb={4}
-              >
-                <BreadcrumbItem>
-                  <BreadcrumbLink 
-                    as={RouterLink} 
-                    to="/organizations" 
+                >
+                  <BreadcrumbItem>
+                    <BreadcrumbLink 
+                      as={RouterLink} 
+                      to="/organizations" 
                       color={colors.text.link}
-                    _hover={{textDecoration: 'underline'}}
-                  >
-                    Organizations
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbItem isCurrentPage>
-                  <BreadcrumbLink 
-                    href="#" 
+                      _hover={{textDecoration: 'underline'}}
+                    >
+                      Organizations
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbItem isCurrentPage>
+                    <BreadcrumbLink 
+                      href="#" 
                       color={colors.text.secondary}
-                    _hover={{textDecoration: 'none', cursor: 'default'}}
-                  >
-                    {currentOrganization.name}
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-              </Breadcrumb>
-              <Heading 
-                size="xl" 
+                      _hover={{textDecoration: 'none', cursor: 'default'}}
+                    >
+                      {currentOrganization.name}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                </Breadcrumb>
+                <Heading 
+                  size="xl" 
                   color={colors.text.primary}
-              >
-                {currentOrganization.name}
-              </Heading>
-            </Box>
+                >
+                  {currentOrganization.name}
+                </Heading>
+              </Box>
 
               {/* Tabs Section */}
-            <Box 
+              <Box 
                 bg={colors.component.kanban.column} 
-              borderRadius="xl" 
+                borderRadius="xl" 
                 border="1px solid" 
                 borderColor={colors.component.kanban.cardBorder} 
-                minH="400px" 
+                minH="600px" 
+                maxH="calc(100vh - 300px)"
                 w="100%" 
                 maxW="100%"
                 boxShadow="steelPlate"
                 position="relative"
+                display="flex"
+                flexDirection="column"
                 _before={{
                   content: '""',
                   position: 'absolute',
@@ -299,20 +303,28 @@ const OrganizationDetailPage = () => {
                   pointerEvents: 'none',
                 }}
               >
-                <Tabs variant="line" colorScheme="blue" size="md" isFitted>
-                  <TabList borderBottomColor={colors.border.default}>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                <Tabs variant="line" colorScheme="blue" size="md" h="full" display="flex" flexDirection="column">
+                  <TabList 
+                    borderBottomColor={colors.border.default} 
+                    flexShrink={0} 
+                    bg={colors.bg.surface} 
+                    borderTopRadius="xl"
+                    flexWrap="wrap"
+                    maxH="80px"
+                    overflowY="auto"
+                  >
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="140px">
                       Organization Details
                     </Tab>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="100px">
                       <HStack spacing={2}>
                         <Text>People</Text>
-                                                 <Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
-                           {currentOrganization.people?.length || 0}
-                         </Badge>
+                        <Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
+                          {currentOrganization.people?.length || 0}
+                        </Badge>
                       </HStack>
                     </Tab>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="140px">
                       <HStack spacing={2}>
                         <Text>Custom Fields</Text>
                         <Badge colorScheme="purple" variant="solid" borderRadius="full" fontSize="xs">
@@ -320,7 +332,7 @@ const OrganizationDetailPage = () => {
                         </Badge>
                       </HStack>
                     </Tab>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium">
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="80px">
                       <HStack spacing={2}>
                         <Text>Notes</Text>
                         <Badge colorScheme="yellow" variant="solid" borderRadius="full" fontSize="xs">
@@ -330,10 +342,14 @@ const OrganizationDetailPage = () => {
                     </Tab>
                   </TabList>
                   
-                  <TabPanels p={{base: 3, md: 4}} minH="350px" w="100%" maxW="100%">
+                  <TabPanels flex="1" minH="0" overflow="hidden">
                     {/* Organization Details Tab */}
-                    <TabPanel w="100%" maxW="100%" overflowX="auto" overflowY="visible">
-                      <Box w="100%" maxW="100%">
+                    <TabPanel h="full" p={0} overflow="hidden">
+                      <Box h="full" overflowY="auto" p={{base: 3, md: 4}} sx={{
+                        '&::-webkit-scrollbar': { width: '6px' },
+                        '&::-webkit-scrollbar-thumb': { background: colors.component.table.border, borderRadius: '6px' },
+                        '&::-webkit-scrollbar-track': { background: 'transparent' },
+                      }}>
                         <VStack spacing={6} align="stretch">
               <Heading 
                 size="md" 
@@ -525,16 +541,14 @@ const OrganizationDetailPage = () => {
 
           {/* Right Sidebar - Key Information */}
           <Box 
+            gridColumn={{base: "1", lg: "9 / 13"}}
             bg={colors.component.kanban.column}
             p={{base: 4, md: 6}} 
             borderLeftWidth={{base: 0, lg: "1px"}} 
             borderTopWidth={{base: "1px", lg: 0}}
             borderColor={colors.component.kanban.cardBorder}
             overflowY="auto"
-            w="450px"
-            minW="450px"
-            maxW="450px"
-            flexShrink={0}
+            h="full"
             boxShadow="steelPlate"
             position="relative"
             _before={{
@@ -657,7 +671,7 @@ const OrganizationDetailPage = () => {
               </Box>
             </VStack>
           </Box>
-        </Flex>
+        </SimpleGrid>
              </Box>
 
         {/* Account Manager Assignment Modal */}

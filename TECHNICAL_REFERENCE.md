@@ -1,12 +1,12 @@
 # PipeCD Technical Reference
 
-**Version**: 3.1 | **Last Updated**: January 25, 2025
+**Version**: 3.2 | **Last Updated**: January 25, 2025
 
 ## 1. Database Schema Reference
 
 ### 1.1 Core Tables
 - **organizations**: Company management with account_manager_id
-- **people**: Contact management with organization relationships  
+- **people**: Contact management with organization relationships via person_organization_roles  
 - **deals**: Sales opportunities with currency and WFM integration
 - **leads**: Prospect management with qualification scoring
 
@@ -14,18 +14,20 @@
 - **WFM Tables**: wfm_workflows, wfm_statuses, wfm_steps, wfm_projects, wfm_project_types
 - **Custom Fields**: custom_field_definitions, custom_field_values
 - **Multi-Currency**: currencies, exchange_rates, user_currency_preferences
-- **Conversion System**: conversion_history
-- **Google Integration**: google_oauth_tokens
+- **Conversion System**: conversion_history, reactivation_plans
+- **Google Integration**: google_oauth_tokens, calendar_events, calendar_integrations
 - **AI System**: agent_conversations, agent_thoughts, agent_v2_conversations
 - **Smart Stickers**: stickers, sticker_categories
 - **Document Management**: documents, note_document_attachments, deal_participants
 - **Business Rules**: business_rules, business_rule_notifications, rule_executions
 - **Task Management**: tasks, task_dependencies, task_automation_rules, task_history
+- **Multi-Organization Contacts**: person_organization_roles
 
-### 1.3 Removed Systems (Prepared for Google Calendar)
-- ~~**Activities**: Removed in favor of Google Calendar integration~~
+### 1.3 Removed Systems (Calendar Integration Ready)
+- ~~**Activities System**: Removed in favor of Google Calendar integration (Migration 20250730000056)~~
 - ~~**Activity Reminders**: Eliminated for native calendar notifications~~
-- ~~**Notifications**: Replaced by Google Calendar native alerts~~
+- ~~**Relations Intelligence**: Complex relationship mapping removed (Migration 20250730000048)~~
+- ~~**Activity RBAC**: Activity permissions removed from system (Migration 20250730000057)~~
 
 ## 2. Service Layer Architecture
 
@@ -33,13 +35,13 @@
 - `dealService/`: Deal CRUD, history, custom fields
 - `leadService/`: Lead qualification, scoring, conversion  
 - `organizationService.ts`: Company management, account assignment
-- `personService.ts`: Contact management
+- `personService.ts`: Contact management with multi-organization support
 
 ### 2.2 Advanced Services
-- `aiAgentV2/`: AI with Claude Sonnet 4 and workflow tools
+- `aiAgentV2/`: AI with Claude Sonnet 4 and cognitive workflow tools
 - `conversionService/`: Bi-directional lead-deal conversion
 - `services/currencyService.ts`: Multi-currency with ECB integration
-- `smartStickersService.ts`: Visual collaboration system
+- `businessRulesService.ts`: Business automation with template substitution
 
 ### 2.3 Integration Services  
 - `googleDriveService.ts`: Document management
@@ -51,16 +53,22 @@
 - ~~`activityService.ts`: Removed for Google Calendar~~
 - ~~`activityReminderService/`: Eliminated for native calendar notifications~~
 
+### 2.5 Workflow Services
+- `wfmWorkflowService.ts`: Workflow definitions
+- `wfmStatusService.ts`: Status management
+- `wfmProjectService.ts`: Project tracking
+- `wfmProjectTypeService.ts`: Project type definitions
+
 ## 3. GraphQL API Structure
 
-### 3.1 Schema Files (25 total - 3 removed)
+### 3.1 Schema Files (26 total)
 - Core entities: deal.graphql, lead.graphql, organization.graphql, person.graphql
-- Systems: conversion.graphql, currency.graphql, agentV2.graphql, smartStickers.graphql
+- Systems: conversion.graphql, currency.graphql, agentV2.graphql, task.graphql
 - Integrations: googleDrive.graphql, emails.graphql, googleIntegration.graphql
 - WFM: wfmWorkflow.graphql, wfmStatus.graphql, wfmProjectType.graphql
-- Business Automation: businessRules.graphql, task.graphql
+- Business Automation: businessRules.graphql
 
-### 3.2 Removed Schema Files (Google Calendar Ready)
+### 3.2 Removed Schema Files (Calendar Integration Ready)
 - ~~activity.graphql: Removed for Google Calendar API~~
 - ~~activityReminders.graphql: Eliminated for native notifications~~
 - ~~notifications.graphql: Replaced by Google Calendar alerts~~
@@ -69,45 +77,43 @@
 - Query resolvers: Data fetching operations
 - Mutation resolvers: Data modification operations  
 - Entity resolvers: Field-level resolvers
-- Specialized resolvers: AI, conversion, account management
+- Specialized resolvers: AI, conversion, business rules, account management
 
 ## 4. Frontend Architecture
 
-### 4.1 Page Structure (15 pages - 3 removed for calendar)
+### 4.1 Page Structure (15 pages)
 - Core CRM: DealsPage, LeadsPage, OrganizationsPage, PeoplePage
 - Detail pages: Entity-specific management interfaces
 - AI system: AgentPage, AgentV2Page
 - Account management: MyAccountsPage
-- Admin: User roles, custom fields, WFM management
+- Admin: User roles, custom fields, WFM management, business rules
 
 ### 4.2 Component Categories
 - Entity management: deals/, leads/, organizations/, people/
 - Common components: Reusable UI components
 - Layout components: Page structure and navigation
-- Admin components: System administration
+- Admin components: System administration including business rules
 - AI components: Agent interfaces with tool execution
 
 ### 4.3 Removed Components (Calendar Integration Ready)
 - ~~activities/: All activity components removed~~
 - ~~ActivitiesPage, ActivityDetailPage: Eliminated~~
-- ~~NotificationCenter: Replaced by Google Calendar~~
 - ~~Activity forms and management: Google Calendar handles this~~
 
 ## 5. AI System Implementation
 
-### 5.1 AI Agent V2 Tools
+### 5.1 AI Agent V2 Tools (9 Verified Tools)
 - **Entity Creation**: CreateDealTool, CreateOrganizationTool, CreatePersonTool
 - **Entity Updates**: UpdateDealTool, UpdateOrganizationTool, UpdatePersonTool  
-- **Search & Discovery**: SearchDealsTool with clustering
+- **Search & Discovery**: SearchDealsTool
 - **Analysis Tools**: ThinkTool with structured reasoning
-- **Data Tools**: GetDropdownDataTool with semantic processing
 
 ### 5.2 AI Features
-- **Optimized Dropdown System**: Improved user experience
-- **Semantic Clustering**: Pattern-based data organization
-- **Contextual Processing**: Claude Sonnet 4 with business logic
-- **Transparent Workflows**: Audit trails for all operations
-- **Performance**: 96ms total execution for complex workflows
+- **Claude Sonnet 4 Integration**: Advanced language model with tool support
+- **Streaming Interface**: Real-time response streaming
+- **Tool Execution Transparency**: Complete workflow audit trails
+- **Conversation Memory**: Persistent chat history
+- **Production Validated**: Real deal updates (€65K → €75K in 96ms)
 
 ### 5.3 Tool Development Pattern
 ```typescript
@@ -130,7 +136,7 @@ export class ExampleTool implements ToolExecutor {
 - Supabase Auth with Google OAuth integration
 - Role-based access control (admin, member, read_only)
 - Row Level Security policies
-- **Clean RBAC System**: 57 permissions across 11 resources (activity permissions removed)
+- **Clean RBAC System**: 77 permissions across 12 resources (activity permissions removed)
 
 ### 6.2 Permission Distribution
 - **Admin Role**: 77 permissions (includes business rules and task management)
@@ -153,15 +159,15 @@ export class ExampleTool implements ToolExecutor {
 
 ### 7.2 AI System Performance
 - **Sub-second Execution**: 96ms for complex deal creation workflows
-- **Production Validation**: €195,000 in deals created during testing
-- **Cognitive Processing**: 3x faster parameter selection
+- **Production Validation**: Real deal updates validated in production
+- **Cognitive Processing**: Enhanced parameter selection
 - **Error Recovery**: 95% tool success rate
 
 ### 7.3 Frontend Performance
 - React.memo and useCallback optimizations
 - Component virtualization for large lists
 - Parallel data fetching with Promise.all
-- Memory leak prevention
+- Memory leak prevention with LRU caching
 
 ## 8. Business Rules Engine (Production Ready)
 
@@ -262,7 +268,7 @@ DATA_ENRICHMENT, CRM_UPDATE, REPORTING
 ### 11.2 Development Workflow
 - Local development: `netlify dev` + `supabase start`
 - Version control: Git with feature branches
-- Database migrations: Versioned SQL files (77 migrations total)
+- Database migrations: Versioned SQL files (102 migrations total)
 - Type safety: End-to-end TypeScript with generated GraphQL types
 
 ### 11.3 Production Hardening
@@ -273,49 +279,51 @@ DATA_ENRICHMENT, CRM_UPDATE, REPORTING
 - **Task System Monitoring**: Task completion rates and automation effectiveness
 - **Security**: SQL injection prevention, XSS protection, permission validation
 
-## 10. Current Production Status
+## 12. Current Production Status
 
-### 10.1 Operational Core (Clean & Ready)
+### 12.1 Operational Core (Calendar-Ready)
 ✅ **Deal Management** - Multi-currency, WFM integration, AI tools  
 ✅ **Lead Management** - Qualification workflows, conversion system  
 ✅ **Organization Management** - Account management, portfolio tracking  
-✅ **Contact Management** - Relationship mapping, custom fields  
-✅ **AI Agent V2** - Revolutionary cognitive tools, Claude Sonnet 4  
+✅ **Contact Management** - Multi-organization relationships, custom fields  
+✅ **AI Agent V2** - Claude Sonnet 4 with cognitive tools  
 ✅ **Conversion System** - Bi-directional with complete audit trails  
 ✅ **Multi-Currency** - 42 currencies, automated ECB updates  
 ✅ **Google Integration** - OAuth 2.0, Gmail, Drive (Calendar ready)  
-✅ **Smart Stickers** - Visual collaboration system  
 ✅ **Custom Fields** - Dynamic schema extension  
 ✅ **WFM System** - Workflow management engine  
+✅ **Business Rules Engine** - Production ready with template substitution  
+✅ **Task Management** - CRM-integrated task system with automation  
 
-### 10.2 Removed for Calendar (Ready for Integration)
+### 12.2 Removed for Calendar (Successfully Eliminated)
 ❌ **Activities System** - Completely eliminated  
 ❌ **Activity Reminders** - Removed for native calendar notifications  
-❌ **Notifications** - Replaced by Google Calendar alerts  
+❌ **Relations Intelligence** - Complex relationship system removed  
 
-### 10.3 Architecture Metrics
-- **Backend Services**: 20+ modules (5 removed)
-- **GraphQL Operations**: 400+ types and operations  
-- **Frontend Components**: 80+ components (20+ removed)
-- **Database Tables**: 45+ tables (5 removed)
+### 12.3 Architecture Metrics
+- **Backend Services**: 20+ modules (complex systems removed)
+- **GraphQL Operations**: 450+ types and operations  
+- **Frontend Components**: 80+ components (activity components removed)
+- **Database Tables**: 50+ tables (activity tables removed)
+- **Database Migrations**: 102 migration files
 - **AI Tools**: 9 production-ready cognitive tools
-- **Permissions**: 57 clean permissions (7 activity permissions removed)
+- **Permissions**: 77 clean permissions (activity permissions removed)
 
-## 11. Revolutionary Achievements
+## 13. Revolutionary Achievements
 
-### 11.1 World's First Calendar-Native CRM
+### 13.1 World's First Calendar-Native CRM
 - **Paradigm Shift**: Calendar as PRIMARY system vs. trying to replace it
 - **Zero Learning Curve**: Users keep their beloved Google Calendar experience
 - **Business Intelligence**: CRM context overlaid on familiar interface
 - **Automatic Updates**: Future Google Calendar features inherited automatically
 
-### 11.2 AI-Optimized Enterprise System
-- **Cognitive Dropdown System**: 90% reduction in cognitive load
+### 13.2 AI-Optimized Enterprise System
 - **Natural Language CRM**: "Update the Real Industries deal to €75,000"
 - **Sub-second Performance**: Enterprise operations in 96ms
 - **Complete Transparency**: Full workflow audit trails
+- **Production Validated**: Real business operations
 
-### 11.3 Production-Grade Architecture
+### 13.3 Production-Grade Architecture
 - **Enterprise Security**: 95% threat reduction, zero SQL injection risk
 - **Performance Excellence**: 99.5% uptime target, 3x faster error recovery
 - **Scalability**: Serverless architecture with automatic scaling
@@ -323,6 +331,7 @@ DATA_ENRICHMENT, CRM_UPDATE, REPORTING
 
 ---
 
-**Document Status**: Google Calendar Integration Ready | **Version**: 3.0  
+**Document Status**: Google Calendar Integration Ready | **Version**: 3.2  
 **Next Milestone**: Calendar-Native CRM Implementation  
+**Last Review**: January 25, 2025  
 **Next Review**: February 25, 2025 

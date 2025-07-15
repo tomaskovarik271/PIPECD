@@ -9,11 +9,20 @@ import {
   useToast,
   VStack,
   Button,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  IconButton,
+  Tooltip,
 } from '@chakra-ui/react';
 import CreateDealModal from '../components/CreateDealModal';
 import EditDealModal from '../components/EditDealModal';
 import { ConvertDealModal } from '../components/conversion/ConvertDealModal';
-import { SettingsIcon, ViewIcon as PageViewIcon } from '@chakra-ui/icons';
+import { SettingsIcon, ViewIcon as PageViewIcon, SearchIcon } from '@chakra-ui/icons';
 import { useAppStore } from '../stores/useAppStore';
 import { useDealsStore, Deal } from '../stores/useDealsStore';
 import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
@@ -23,6 +32,11 @@ import ColumnSelector from '../components/common/ColumnSelector';
 import EmptyState from '../components/common/EmptyState';
 import DealsKanbanPageLayout from '../components/deals/DealsKanbanPageLayout';
 import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
+import { LabelFilter } from '../components/deals/LabelFilter';
+import { AdvancedFilterBuilder } from '../components/common/AdvancedFilterBuilder';
+import { ConsolidatedFilterBar } from '../components/deals/ConsolidatedFilterBar';
+import { getAvailableFilterFields } from '../utils/filterFields';
+import type { DealFilters, FilterCriteria } from '../types/filters';
 
 import { useDealsPageModals } from '../hooks/useDealsPageModals';
 import { useDealDataManagement } from '../hooks/useDealDataManagement';
@@ -34,6 +48,7 @@ import { useFilteredDeals } from '../hooks/useFilteredDeals';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { usePageLayoutStyles } from '../utils/headerUtils';
 import { CurrencyFormatter } from '../lib/utils/currencyFormatter';
+import { useSavedFiltersStore } from '../stores/useSavedFiltersStore';
 
 function DealsPage() {
   const navigate = useNavigate();
@@ -46,7 +61,15 @@ function DealsPage() {
     dealsViewMode,
     setDealsViewMode,
     kanbanCompactMode,
-    setKanbanCompactMode
+    setKanbanCompactMode,
+    // Advanced filtering
+    filteredDeals,
+    filteredDealsLoading,
+    filteredDealsError,
+    activeFilters,
+    totalFilteredCount,
+    fetchFilteredDeals,
+    clearFilters
   } = useDealsStore();
   
   const userPermissions = useAppStore((state) => state.userPermissions);
@@ -87,8 +110,24 @@ function DealsPage() {
   const { users: userList, loading: usersLoading, error: usersError, fetchUsers, hasFetched: hasFetchedUsers } = useUserListStore();
   const [selectedAssignedUserIds, setSelectedAssignedUserIds] = useState<string[]>([]);
 
+  // Saved filters functionality
+  const { savedFilters, addSavedFilter } = useSavedFiltersStore();
+
   // Search term state for the unified header
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Label filtering state
+  const [selectedLabels, setSelectedLabels] = useState<Array<{ labelText: string; colorHex: string }>>([]);
+  const [labelFilterLogic, setLabelFilterLogic] = useState<'AND' | 'OR'>('OR');
+
+  // Advanced filter state
+  const { 
+    isOpen: isAdvancedFilterOpen, 
+    onOpen: onOpenAdvancedFilter, 
+    onClose: onCloseAdvancedFilter 
+  } = useDisclosure();
+  const [filterCriteria, setFilterCriteria] = useState<FilterCriteria[]>([]);
+  const [isUsingAdvancedFilters, setIsUsingAdvancedFilters] = useState(false);
 
   // NEW: Use semantic tokens instead of manual theme checking
   const colors = useThemeColors();
@@ -161,7 +200,7 @@ function DealsPage() {
   }, [standardColumns, customFieldColumns, actionsColumn]);
 
   const defaultVisibleColumnKeys = useMemo(() => [
-    'name', 'project_id', 'person', 'organization', 'assignedToUser', 'stage', 'amount', 'expected_close_date', 'actions'
+    'name', 'labels', 'project_id', 'person', 'organization', 'assignedToUser', 'stage', 'amount', 'expected_close_date', 'actions'
   ], []);
 
   useEffect(() => {
@@ -186,13 +225,34 @@ function DealsPage() {
   
   const pageIsLoading = dealsLoading || customFieldsLoading;
 
-  const displayedDeals = useFilteredDeals({
+  // Advanced filter handlers
+  const handleApplyAdvancedFilters = useCallback((filters: DealFilters) => {
+    setIsUsingAdvancedFilters(true);
+    fetchFilteredDeals(filters);
+    onCloseAdvancedFilter();
+  }, [fetchFilteredDeals, onCloseAdvancedFilter]);
+
+  const handleClearAdvancedFilters = useCallback(() => {
+    setIsUsingAdvancedFilters(false);
+    setFilterCriteria([]);
+    clearFilters();
+  }, [clearFilters]);
+
+  // Get basic filtered deals (when not using advanced filters)
+  const basicFilteredDeals = useFilteredDeals({
     deals,
-    activeQuickFilterKey: null, // No more quick filters
+    activeQuickFilterKey: null,
     currentUserId,
     selectedAssignedUserIds,
     searchTerm,
+    selectedLabels,
+    labelFilterLogic,
   });
+
+  // Determine which deals to display
+  const displayedDeals = useMemo(() => {
+    return isUsingAdvancedFilters ? filteredDeals : basicFilteredDeals;
+  }, [isUsingAdvancedFilters, filteredDeals, basicFilteredDeals]);
   
   // Calculate statistics for the header with multi-currency support
   const totalValueFormatted = useMemo(() => 
@@ -266,19 +326,21 @@ function DealsPage() {
     navigate(`/deals/${deal.id}`);
   }, [navigate]);
 
-  // Secondary actions (column selector)
-  const secondaryActions = dealsViewMode === 'table' ? (
-    <Button 
-      leftIcon={<SettingsIcon />} 
-      onClick={openColumnSelectorModal}
-      size="md"
-      height="40px"
-      minW="110px"
-      {...styles.button.secondary}
-    >
-      Columns
-    </Button>
-  ) : null;
+  // Secondary actions (consolidated filter bar)
+  const secondaryActions = (
+    <ConsolidatedFilterBar
+      selectedLabels={selectedLabels}
+      onLabelsChange={setSelectedLabels}
+      labelFilterLogic={labelFilterLogic}
+      onLogicChange={setLabelFilterLogic}
+      isUsingAdvancedFilters={isUsingAdvancedFilters}
+      onOpenAdvancedFilter={onOpenAdvancedFilter}
+      onClearAdvancedFilters={handleClearAdvancedFilters}
+      showColumnSelector={dealsViewMode === 'table'}
+      onOpenColumnSelector={openColumnSelectorModal}
+      isDisabled={pageIsLoading}
+    />
+  );
 
   if (dealsViewMode === 'kanban-compact') {
     // Always use compact mode for kanban view
@@ -299,7 +361,7 @@ function DealsPage() {
         userList={userList}
         usersLoading={usersLoading}
           userPermissions={userPermissions || []}
-        dealsViewMode="kanban" // Always pass kanban for the layout component
+        dealsViewMode="kanban-compact" // Always pass kanban-compact for the layout component
         setDealsViewMode={setDealsViewMode}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
@@ -308,6 +370,14 @@ function DealsPage() {
           // Always stay in compact mode - no toggle functionality
           setDealsViewMode('kanban-compact');
         }}
+        selectedLabels={selectedLabels}
+        setSelectedLabels={setSelectedLabels}
+        labelFilterLogic={labelFilterLogic}
+        setLabelFilterLogic={setLabelFilterLogic}
+        // Advanced filtering props
+        isUsingAdvancedFilters={isUsingAdvancedFilters}
+        onApplyAdvancedFilters={handleApplyAdvancedFilters}
+        onClearAdvancedFilters={handleClearAdvancedFilters}
         />
 
         {/* Modals - moved here so they work in kanban view too */}
@@ -504,9 +574,34 @@ function DealsPage() {
           isOpen={isConvertModalOpen}
           onClose={closeConvertModal}
           onConversionComplete={handleConversionComplete}
-          deal={dealToConvert}
+          deal={dealToConvert as any}
         />
       )}
+
+      {/* Advanced Filter Modal */}
+      <Modal 
+        isOpen={isAdvancedFilterOpen} 
+        onClose={onCloseAdvancedFilter}
+        size="6xl"
+        scrollBehavior="inside"
+      >
+        <ModalOverlay />
+        <ModalContent maxW="90vw" maxH="90vh">
+          <ModalHeader>Advanced Deal Filters</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <AdvancedFilterBuilder
+              initialFilters={filterCriteria}
+              onFiltersChange={setFilterCriteria}
+              onApplyFilters={handleApplyAdvancedFilters}
+              onSaveFilter={addSavedFilter}
+              savedFilters={savedFilters}
+              availableFields={getAvailableFilterFields()}
+              isLoading={filteredDealsLoading}
+            />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </>
   );
 }

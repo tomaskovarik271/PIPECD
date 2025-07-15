@@ -38,7 +38,6 @@ export const dealParticipantService = {
           last_name,
           email,
           phone,
-          organization_id,
           created_at,
           updated_at,
           user_id,

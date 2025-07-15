@@ -1,0 +1,1 @@
+https://gist.githubusercontent.com/sergeyk/b1eb7bf8fd8db2566c082409dbd3eca9/raw/aa483ea1bed1c9ca1decb8e1b4d74a097283be2b/claude_code_prompts_and_tools.yaml

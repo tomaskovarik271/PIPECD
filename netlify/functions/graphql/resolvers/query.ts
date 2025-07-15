@@ -3,7 +3,7 @@ import { GraphQLError } from 'graphql';
 import { supabase, supabaseAdmin } from '../../../../lib/supabaseClient';
 import { personService } from '../../../../lib/personService';
 import { organizationService } from '../../../../lib/organizationService';
-import { dealService } from '../../../../lib/dealService';
+import * as dealService from '../../../../lib/dealService/dealCrud';
 import { accountManagementQueries } from './organization';
 
 import * as userProfileService from '../../../../lib/userProfileService';
@@ -27,9 +27,12 @@ import type {
     User as GraphQLUser,
     PersonListItem as GraphQLPersonListItem,
     WfmWorkflowTransition as GraphQLWfmWorkflowTransition,
-    QueryGetWfmAllowedTransitionsArgs
+    QueryGetWfmAllowedTransitionsArgs,
+    Deal as GraphQLDeal
 } from '../../../../lib/generated/graphql';
 
+// Add new import for filtering types
+import type { DealFilters, DealsQueryOptions, DealSort } from '../../../../lib/dealService/dealCrud';
 
 
 export const Query: QueryResolvers<GraphQLContext> = {
@@ -106,7 +109,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
             email: p.email,
             phone: p.phone,
             notes: p.notes,
-            organization_id: p.organization_id,
+            organization_id: (p as any).organization_id,
             db_custom_field_values: (p as any).custom_field_values,
           })) as any; 
       } catch (e) {
@@ -130,7 +133,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
             email: p.email,
             phone: p.phone,
             notes: p.notes,
-            organization_id: p.organization_id,
+            organization_id: (p as any).organization_id,
             db_custom_field_values: (p as any).custom_field_values,
           } as any; 
       } catch (e) {
@@ -223,6 +226,7 @@ export const Query: QueryResolvers<GraphQLContext> = {
            throw processZodError(e, 'fetching deals list');
        }
     },
+
     deal: async (_parent, args, context) => {
        // console.log('[Plain Resolver Query.deal] Received args:', JSON.stringify(args, null, 2));
        if (!args || args.id === undefined || args.id === null) { 

@@ -12,6 +12,11 @@ import type {
   MutationDeleteDealArgs,
   MutationUpdateDealWfmProgressArgs,
 } from '../generated/graphql/graphql';
+import { 
+  GET_DEALS_FILTERED,
+  type DealsFilteredResponse 
+} from '../lib/graphql/dealOperations';
+import type { DealFilters } from '../types/filters';
 
 // Re-export core Deal types
 export type { Deal, DealInput, Maybe };
@@ -100,6 +105,15 @@ const DEAL_CORE_FIELDS_FRAGMENT = gql`
     deal_specific_probability
     weighted_amount
     wfm_project_id
+    labels {
+      id
+      dealId
+      labelText
+      colorHex
+      createdByUserId
+      createdAt
+      updatedAt
+    }
   }
 `;
 
@@ -238,6 +252,16 @@ interface DealsState {
   deleteDeal: (id: string) => Promise<boolean>;
   updateDealWFMProgress: (dealId: string, targetWfmWorkflowStepId: string) => Promise<Deal | null>;
 
+  // Advanced filtering state and actions
+  filteredDeals: Deal[];
+  filteredDealsLoading: boolean;
+  filteredDealsError: string | null;
+  activeFilters: DealFilters | null;
+  totalFilteredCount: number;
+  hasNextPage: boolean;
+  fetchFilteredDeals: (filters: DealFilters, sort?: any, pagination?: { first?: number; after?: string }) => Promise<void>;
+  clearFilters: () => void;
+
   // View State and Actions
   dealsViewMode: 'table' | 'kanban-compact';
   setDealsViewMode: (mode: 'table' | 'kanban-compact') => void;
@@ -274,6 +298,15 @@ export const useDealsStore = create<DealsState>((set, get) => ({
   dealsLoading: false,
   dealsError: null,
   hasInitiallyFetchedDeals: false,
+  
+  // Advanced filtering state
+  filteredDeals: [],
+  filteredDealsLoading: false,
+  filteredDealsError: null,
+  activeFilters: null,
+  totalFilteredCount: 0,
+  hasNextPage: false,
+  
   dealsViewMode: getDealsViewModeFromLocalStorage(),
   kanbanCompactMode: getKanbanCompactModeFromLocalStorage(),
 
@@ -428,6 +461,56 @@ export const useDealsStore = create<DealsState>((set, get) => ({
     } catch (error) {
       console.warn('Could not access localStorage to set kanbanCompactMode.', error);
     }
+  },
+
+  // Advanced filtering methods
+  fetchFilteredDeals: async (filters: DealFilters, sort?: any, pagination?: { first?: number; after?: string }) => {
+    set({ filteredDealsLoading: true, filteredDealsError: null });
+    try {
+      const variables = {
+        filters,
+        sort: sort || { field: 'EXPECTED_CLOSE_DATE', direction: 'ASC' },
+        first: pagination?.first || 50,
+        after: pagination?.after
+      };
+
+      const data = await gqlClient.request<DealsFilteredResponse>(GET_DEALS_FILTERED, variables);
+      
+      const deals = data.dealsFiltered.nodes;
+      const totalCount = data.dealsFiltered.totalCount;
+      const hasNextPage = data.dealsFiltered.pageInfo.hasNextPage;
+
+      set({
+        filteredDeals: deals,
+        filteredDealsLoading: false,
+        activeFilters: filters,
+        totalFilteredCount: totalCount,
+        hasNextPage
+      });
+    } catch (error: unknown) {
+      console.error("Error fetching filtered deals:", error);
+      let message = 'Failed to fetch filtered deals';
+      if (isGraphQLErrorWithMessage(error) && error.response?.errors?.[0]?.message) {
+        message = error.response.errors[0].message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
+      set({ 
+        filteredDealsError: message, 
+        filteredDealsLoading: false, 
+        filteredDeals: [] 
+      });
+    }
+  },
+
+  clearFilters: () => {
+    set({
+      filteredDeals: [],
+      filteredDealsError: null,
+      activeFilters: null,
+      totalFilteredCount: 0,
+      hasNextPage: false
+    });
   },
 
   // This is optimistic update: it replaces the deal in the store immediately.

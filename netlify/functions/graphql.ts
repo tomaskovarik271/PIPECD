@@ -47,6 +47,9 @@ import {
   smartStickerMutations
 } from './graphql/resolvers/smartStickers';
 
+// Import Deal Labels Resolvers
+import { dealLabelsResolvers } from './graphql/resolvers/dealLabelsResolvers';
+
 // Import Email Resolvers
 import { emailQueries } from './graphql/resolvers/queries/emailQueries';
 import { emailMutations } from './graphql/resolvers/mutations/emailMutations';
@@ -155,7 +158,8 @@ const loadTypeDefs = (): string => {
     'calendar.graphql',
     'task.graphql',
     'businessRules.graphql',
-    'notifications.graphql'
+    'notifications.graphql',
+    'dealLabels.graphql'
   ];
 
   try {
@@ -209,6 +213,7 @@ export const resolvers = {
     ...businessRulesResolvers.Query,
     ...notificationQueries,
     ...PersonOrganizationRoleQueries,
+    ...dealLabelsResolvers.Query,
   },
   Mutation: {
     ...BaseMutation,
@@ -233,6 +238,7 @@ export const resolvers = {
     ...businessRulesResolvers.Mutation,
     ...notificationMutations,
     ...PersonOrganizationRoleMutations,
+    ...dealLabelsResolvers.Mutation,
   },
   Person: {
     ...Person,
@@ -243,6 +249,7 @@ export const resolvers = {
   Deal: {
     ...Deal,
     ...currencyResolvers.Deal,
+    ...dealLabelsResolvers.Deal,
   },
   Lead: {
     ...Lead,

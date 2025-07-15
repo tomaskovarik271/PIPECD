@@ -1,0 +1,117 @@
+# Deal Labels System GraphQL Schema
+# Simple Gmail-style labeling for deals
+
+# Core Types
+type DealLabel {
+    id: ID!
+    dealId: ID!
+    labelText: String!
+    colorHex: String!
+    createdByUserId: ID
+    createdAt: String!
+    updatedAt: String!
+}
+
+# Label suggestions for autocomplete
+type LabelSuggestion {
+    labelText: String!
+    usageCount: Int!
+    colorHex: String!
+    isExactMatch: Boolean!
+    similarityScore: Float
+}
+
+# Label usage statistics
+type LabelUsageStats {
+    totalLabels: Int!
+    totalUniqueLabels: Int!
+    averageLabelsPerDeal: Float!
+    mostPopularLabels: [LabelSuggestion!]!
+}
+
+# Input Types
+input AddLabelToDealInput {
+    dealId: ID!
+    labelText: String!
+    colorHex: String
+}
+
+input RemoveLabelFromDealInput {
+    dealId: ID!
+    labelId: ID!
+}
+
+input UpdateLabelInput {
+    labelId: ID!
+    labelText: String
+    colorHex: String
+}
+
+input BulkLabelOperationInput {
+    dealIds: [ID!]!
+    labelTexts: [String!]!
+    operation: BulkLabelOperation!
+}
+
+enum BulkLabelOperation {
+    ADD
+    REMOVE
+    REPLACE
+}
+
+# Extend existing Deal type to include labels
+extend type Deal {
+    labels: [DealLabel!]!
+}
+
+# Queries
+extend type Query {
+    # Get labels for a specific deal
+    dealLabels(dealId: ID!): [DealLabel!]!
+    
+    # Label suggestions for autocomplete
+    suggestLabels(
+        input: String!
+        dealId: ID
+        limit: Int = 10
+    ): [LabelSuggestion!]!
+    
+    # Popular labels for filtering UI
+    popularLabels(limit: Int = 20): [LabelSuggestion!]!
+    
+    # Label usage statistics
+    labelUsageStats: LabelUsageStats!
+    
+    # Search deals by labels
+    dealsByLabels(
+        labelTexts: [String!]!
+        logic: LabelFilterLogic = OR
+        limit: Int = 50
+        offset: Int = 0
+    ): [Deal!]!
+}
+
+enum LabelFilterLogic {
+    AND  # Deal must have ALL specified labels
+    OR   # Deal must have ANY of the specified labels
+}
+
+# Mutations
+extend type Mutation {
+    # Basic label operations
+    addLabelToDeal(input: AddLabelToDealInput!): Deal!
+    removeLabelFromDeal(input: RemoveLabelFromDealInput!): Deal!
+    updateLabel(input: UpdateLabelInput!): DealLabel!
+    
+    # Bulk operations
+    bulkLabelOperation(input: BulkLabelOperationInput!): [Deal!]!
+    
+    # Label cleanup and management
+    mergeSimilarLabels(
+        primaryLabelText: String!
+        labelsToMerge: [String!]!
+    ): Int! # Returns number of labels merged
+    
+    # Remove unused labels (labels not used in last N days)
+    cleanupUnusedLabels(daysUnused: Int = 30): Int! # Returns number of labels removed
+} 

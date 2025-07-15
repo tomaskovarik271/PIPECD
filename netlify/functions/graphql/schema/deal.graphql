@@ -61,3 +61,152 @@ input DealUpdateInput {
   customFields: [CustomFieldValueInput!]
   assignedToUserId: ID # ID of the user to assign/reassign this deal to
 } 
+
+# Add comprehensive filtering input types after the existing Deal type and inputs
+
+# ===============================
+# FILTERING SYSTEM
+# ===============================
+
+input DealFiltersInput {
+  # Basic text search
+  search: String
+
+  # Deal properties
+  amountMin: Float
+  amountMax: Float
+  currency: String
+  expectedCloseDateFrom: DateTime
+  expectedCloseDateTo: DateTime
+  createdDateFrom: DateTime  
+  createdDateTo: DateTime
+  dealSpecificProbabilityMin: Float
+  dealSpecificProbabilityMax: Float
+
+  # Relationships
+  personIds: [ID!]
+  organizationIds: [ID!]
+  assignedToUserIds: [ID!]
+  unassigned: Boolean # Special filter for unassigned deals
+
+  # WFM/Pipeline filtering
+  wfmWorkflowIds: [ID!]
+  wfmStepIds: [ID!]
+  wfmStatusIds: [ID!]
+  wfmProjectTypeIds: [ID!]
+
+  # Custom fields filtering
+  customFieldFilters: [CustomFieldFilterInput!]
+
+  # Labels filtering
+  labelTexts: [String!]
+  labelFilterLogic: LabelFilterLogic
+
+  # Date-based quick filters
+  createdToday: Boolean
+  createdThisWeek: Boolean
+  createdThisMonth: Boolean
+  closingToday: Boolean
+  closingThisWeek: Boolean
+  closingThisMonth: Boolean
+  overdue: Boolean
+
+  # Advanced filters
+  hasActivities: Boolean
+  hasCustomFields: Boolean
+  hasPerson: Boolean
+  hasOrganization: Boolean
+}
+
+input CustomFieldFilterInput {
+  fieldName: String!
+  operator: FieldFilterOperator!
+  value: String!
+  values: [String!] # For IN/NOT_IN operators
+}
+
+enum FieldFilterOperator {
+  EQUALS
+  NOT_EQUALS
+  CONTAINS
+  NOT_CONTAINS
+  STARTS_WITH
+  ENDS_WITH
+  GREATER_THAN
+  LESS_THAN
+  GREATER_EQUAL
+  LESS_EQUAL
+  IS_NULL
+  IS_NOT_NULL
+  IN
+  NOT_IN
+  BETWEEN
+}
+
+input DealSortInput {
+  field: DealSortField!
+  direction: SortDirection!
+}
+
+enum DealSortField {
+  NAME
+  AMOUNT
+  AMOUNT_USD
+  EXPECTED_CLOSE_DATE
+  CREATED_AT
+  UPDATED_AT
+  DEAL_SPECIFIC_PROBABILITY
+  WEIGHTED_AMOUNT
+  PROJECT_ID
+}
+
+enum SortDirection {
+  ASC
+  DESC
+}
+
+# Connection type for paginated results
+type DealsConnection {
+  nodes: [Deal!]!
+  totalCount: Int!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  pageInfo: PageInfo!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}
+
+# ===============================
+# QUERY EXTENSIONS
+# ===============================
+
+# Extend the Query type to include filtered deals
+extend type Query {
+  # Enhanced deals query with comprehensive filtering
+  dealsFiltered(
+    filters: DealFiltersInput
+    sort: DealSortInput
+    first: Int = 50
+    after: String
+    last: Int
+    before: String
+  ): DealsConnection!
+
+  # Quick filter queries for common use cases
+  myDeals(filters: DealFiltersInput): [Deal!]!
+  myOpenDeals: [Deal!]!
+  dealsClosingThisMonth: [Deal!]!
+  unassignedDeals: [Deal!]!
+
+  # Search deals with full-text search
+  searchDeals(
+    query: String!
+    filters: DealFiltersInput
+    limit: Int = 20
+  ): [Deal!]!
+} 

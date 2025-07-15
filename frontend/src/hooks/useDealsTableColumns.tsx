@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'; // Added React import for JSX
 import { Link as RouterLink } from 'react-router-dom';
 import { HStack, IconButton, Text, Link, Icon, Tag } from '@chakra-ui/react';
 import { ViewIcon, EditIcon, DeleteIcon, ArrowBackIcon } from '@chakra-ui/icons';
+import { DealLabels } from '../components/deals/DealLabels';
 
 import type { ColumnDefinition } from '../components/common/SortableTable';
 import type { Deal } from '../stores/useDealsStore';
@@ -67,6 +68,22 @@ export const useDealsTableColumns = (props: UseDealsTableColumnsProps): UseDeals
       renderCell: (d) => d.organization?.name || '-',
       isSortable: true,
       sortAccessor: (d) => d.organization?.name?.toLowerCase(),
+    },
+    {
+      key: 'labels',
+      header: 'Labels',
+      renderCell: (d) => d.labels && d.labels.length > 0 ? (
+        <DealLabels 
+          labels={d.labels} 
+          size="sm" 
+          maxVisible={2}
+          isEditable={false}
+          showTooltip={true}
+        />
+      ) : (
+        <Text fontSize="sm" color="gray.500">-</Text>
+      ),
+      isSortable: false,
     },
     {
       key: 'assignedToUser',

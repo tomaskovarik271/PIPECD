@@ -1,0 +1,92 @@
+,field,id,label
+0,status,open,Open
+1,status,lost,Lost
+2,status,won,Won
+3,status,deleted,Deleted
+4,lost_reason,51,Lost in tender
+5,lost_reason,52,No feedback
+6,lost_reason,53,No interest
+7,lost_reason,54,Can't deliver
+8,lost_reason,55,No need right now
+9,lost_reason,262,Price too high
+10,lost_reason,263,Tender cancelled
+11,lost_reason,264,Duplicate
+12,lost_reason,265,On hold
+13,lost_reason,266,No specified reason
+14,visible_to,1,Item owner
+15,visible_to,3,Item owner’s visibility group
+16,visible_to,5,Item owner’s visibility group and sub-groups
+17,visible_to,7,All users
+18,label,1353,Tier 1
+19,label,1354,Tier 2
+20,label,1355,Tier 3
+21,label,56,Verbal Confirmation
+22,label,404,ambition
+23,label,1308,Rotting
+24,label,1359,Ambassador
+25,label,302,Cold
+26,label,301,Warm
+27,label,261,Hot
+28,label,1369,Manila HUB
+29,label,1385,INSURANCE
+30,label,1397,5Mio potential
+31,label,1399,PARTNERSHIP
+32,source_origin,ManuallyCreated,Manually created
+33,source_origin,Import,Import
+34,source_origin,API,API
+35,source_origin,Automation,Automation
+36,source_origin,Marketplace,Marketplace
+37,source_origin,Prospector,Prospector
+38,source_origin,LeadSuggestion,Lead suggestions
+39,source_origin,WebForms,Web Forms
+40,source_origin,Chatbot,Chatbot
+41,source_origin,LiveChat,Live Chat
+42,source_origin,WebVisitors,Web Visitors
+43,source_origin,Campaigns,Campaigns
+44,source_origin,MessagingInbox,Messaging inbox
+45,source_channel,438,Ambassador
+46,source_channel,444,Campaigns
+47,source_channel,1319,Carlos Meza
+48,source_channel,586,Cold Outreach
+49,source_channel,584,Customer Referral
+50,source_channel,583,Event
+51,source_channel,1317,Existing Customer
+52,source_channel,1307,Martin Pejsa
+53,source_channel,585,Partner
+54,source_channel,582,Personal Network
+55,source_channel,440,Web forms
+56,type_of_project_or_function,341,AI Transformation
+57,type_of_project_or_function,211,Collaborative Innovation
+58,type_of_project_or_function,210,Foresight
+59,type_of_project_or_function,267,Ideapoly
+60,type_of_project_or_function,268,IT/Development
+61,type_of_project_or_function,208,MVP
+62,type_of_project_or_function,1318,nFrontier
+63,type_of_project_or_function,209,Scale
+64,type_of_project_or_function,206,Venture Design
+65,type_of_project_or_function,269,Venture Factory
+66,type_of_project_or_function,1324,Studio Marketing Services
+67,domain,338,7.35 MENA
+68,domain,549,7.49 SKY
+69,domain,550,7.51 Elevator
+70,domain,552,7.54 Ambi
+71,domain,553,7.55 JTI
+72,domain,554,7.56 Playmobil
+73,domain,555,7.57 Maturity
+74,domain,1398,Temp
+75,domain,340,ROCKET (Legacy - dont use)
+76,domain,339,CMC (Legacy - dont use)
+77,domain,551,7.52 Shape (Legacy - dont use)
+78,domain,819,7.64 Asahi (Legacy - dont use)
+79,product_101,362,Fintech | NOORA
+80,product_101,363,Fintech | Risk Management
+81,product_101,364,Fintech | Payment gateway
+82,product_101,365,Fintech | By now pay later (BNPL)
+83,product_101,366,Fintech | Insurance service
+84,product_101,367,AI | Transformation
+85,product_101,368,AI | AI POCs
+86,product_101,369,AI | GRIX
+87,product_101,370,AI | Venturia
+88,product_101,371,AI | Chatbot Factory
+89,product_101,372,Others | Green energy platform
+90,product_101,373,Others | Loyalty

@@ -48,6 +48,12 @@ export type AccountPortfolioStats = {
   totalDealValue: Scalars["Float"]["output"];
 };
 
+export type AddLabelToDealInput = {
+  colorHex?: InputMaybe<Scalars["String"]["input"]>;
+  dealId: Scalars["ID"]["input"];
+  labelText: Scalars["String"]["input"];
+};
+
 export type AgentConfig = {
   __typename?: "AgentConfig";
   autoExecute: Scalars["Boolean"]["output"];
@@ -241,6 +247,18 @@ export type AvailabilitySlot = {
   available: Scalars["Boolean"]["output"];
   end: Scalars["DateTime"]["output"];
   start: Scalars["DateTime"]["output"];
+};
+
+export enum BulkLabelOperation {
+  Add = "ADD",
+  Remove = "REMOVE",
+  Replace = "REPLACE",
+}
+
+export type BulkLabelOperationInput = {
+  dealIds: Array<Scalars["ID"]["input"]>;
+  labelTexts: Array<Scalars["String"]["input"]>;
+  operation: BulkLabelOperation;
 };
 
 export type BulkTaskUpdatesInput = {
@@ -918,6 +936,7 @@ export type Deal = {
   formattedAmount?: Maybe<Scalars["String"]["output"]>;
   history?: Maybe<Array<DealHistoryEntry>>;
   id: Scalars["ID"]["output"];
+  labels: Array<DealLabel>;
   name: Scalars["String"]["output"];
   organization?: Maybe<Organization>;
   organization_id?: Maybe<Scalars["ID"]["output"]>;
@@ -979,6 +998,17 @@ export type DealInput = {
   organization_id?: InputMaybe<Scalars["ID"]["input"]>;
   person_id?: InputMaybe<Scalars["ID"]["input"]>;
   wfmProjectTypeId: Scalars["ID"]["input"];
+};
+
+export type DealLabel = {
+  __typename?: "DealLabel";
+  colorHex: Scalars["String"]["output"];
+  createdAt: Scalars["String"]["output"];
+  createdByUserId?: Maybe<Scalars["ID"]["output"]>;
+  dealId: Scalars["ID"]["output"];
+  id: Scalars["ID"]["output"];
+  labelText: Scalars["String"]["output"];
+  updatedAt: Scalars["String"]["output"];
 };
 
 export type DealParticipant = {
@@ -1380,6 +1410,23 @@ export type GenerateTaskContentInput = {
   useWholeThread: Scalars["Boolean"]["input"];
 };
 
+export type GlobalTaskIndicator = {
+  __typename?: "GlobalTaskIndicator";
+  tasksByPriority: GlobalTaskPriorityBreakdown;
+  tasksDueToday: Scalars["Int"]["output"];
+  tasksHighPriority: Scalars["Int"]["output"];
+  tasksOverdue: Scalars["Int"]["output"];
+  totalActiveTasks: Scalars["Int"]["output"];
+};
+
+export type GlobalTaskPriorityBreakdown = {
+  __typename?: "GlobalTaskPriorityBreakdown";
+  high: Scalars["Int"]["output"];
+  low: Scalars["Int"]["output"];
+  medium: Scalars["Int"]["output"];
+  urgent: Scalars["Int"]["output"];
+};
+
 export type GoogleCalendar = {
   __typename?: "GoogleCalendar";
   accessRole: Scalars["String"]["output"];
@@ -1426,6 +1473,28 @@ export type GoogleTokenInput = {
   expires_at?: InputMaybe<Scalars["DateTime"]["input"]>;
   granted_scopes: Array<Scalars["String"]["input"]>;
   refresh_token?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export enum LabelFilterLogic {
+  And = "AND",
+  Or = "OR",
+}
+
+export type LabelSuggestion = {
+  __typename?: "LabelSuggestion";
+  colorHex: Scalars["String"]["output"];
+  isExactMatch: Scalars["Boolean"]["output"];
+  labelText: Scalars["String"]["output"];
+  similarityScore?: Maybe<Scalars["Float"]["output"]>;
+  usageCount: Scalars["Int"]["output"];
+};
+
+export type LabelUsageStats = {
+  __typename?: "LabelUsageStats";
+  averageLabelsPerDeal: Scalars["Float"]["output"];
+  mostPopularLabels: Array<LabelSuggestion>;
+  totalLabels: Scalars["Int"]["output"];
+  totalUniqueLabels: Scalars["Int"]["output"];
 };
 
 export type Lead = {
@@ -1609,6 +1678,7 @@ export type Mutation = {
   addAgentV2Thoughts: Array<AgentThought>;
   addDealContextToEvent: CalendarEvent;
   addDealParticipant: DealParticipant;
+  addLabelToDeal: Deal;
   archiveThread: Scalars["Boolean"]["output"];
   assignAccountManager: Organization;
   assignTask: Task;
@@ -1619,9 +1689,11 @@ export type Mutation = {
   bulkAssignTasks: Array<Task>;
   bulkConvertLeads: Array<LeadConversionResult>;
   bulkDeleteTasks: Scalars["Boolean"]["output"];
+  bulkLabelOperation: Array<Deal>;
   bulkUpdateBusinessRuleStatus: Array<BusinessRule>;
   bulkUpdateTasks: Array<Task>;
   cleanupExpiredNotifications: Scalars["Int"]["output"];
+  cleanupUnusedLabels: Scalars["Int"]["output"];
   completeTask: Task;
   composeEmail: EmailMessage;
   connectGoogleIntegration: GoogleIntegrationStatus;
@@ -1694,6 +1766,7 @@ export type Mutation = {
   markSystemNotificationAsRead: Scalars["Boolean"]["output"];
   markThreadAsRead: Scalars["Boolean"]["output"];
   markThreadAsUnread: Scalars["Boolean"]["output"];
+  mergeSimilarLabels: Scalars["Int"]["output"];
   moveDriveFile: DriveFile;
   moveStickersBulk: Array<SmartSticker>;
   pinEmail: EmailPin;
@@ -1703,6 +1776,7 @@ export type Mutation = {
   removeDealContextFromEvent: CalendarEvent;
   removeDealParticipant: Scalars["Boolean"]["output"];
   removeDocumentAttachment: Scalars["Boolean"]["output"];
+  removeLabelFromDeal: Deal;
   removeNoteDocumentAttachment: Scalars["Boolean"]["output"];
   removeUserRole: User;
   revokeGoogleIntegration: Scalars["Boolean"]["output"];
@@ -1734,6 +1808,7 @@ export type Mutation = {
   updateDealWFMProgress: Deal;
   updateDocumentAttachmentCategory: DealDocumentAttachment;
   updateEmailPin: EmailPin;
+  updateLabel: DealLabel;
   updateLead?: Maybe<Lead>;
   updateLeadCurrency: CurrencyOperationResult;
   updateLeadWFMProgress: Lead;
@@ -1784,6 +1859,10 @@ export type MutationAddDealParticipantArgs = {
   input: DealParticipantInput;
 };
 
+export type MutationAddLabelToDealArgs = {
+  input: AddLabelToDealInput;
+};
+
 export type MutationArchiveThreadArgs = {
   threadId: Scalars["String"]["input"];
 };
@@ -1829,6 +1908,10 @@ export type MutationBulkDeleteTasksArgs = {
   taskIds: Array<Scalars["ID"]["input"]>;
 };
 
+export type MutationBulkLabelOperationArgs = {
+  input: BulkLabelOperationInput;
+};
+
 export type MutationBulkUpdateBusinessRuleStatusArgs = {
   ruleIds: Array<Scalars["ID"]["input"]>;
   status: RuleStatusEnum;
@@ -1837,6 +1920,10 @@ export type MutationBulkUpdateBusinessRuleStatusArgs = {
 export type MutationBulkUpdateTasksArgs = {
   taskIds: Array<Scalars["ID"]["input"]>;
   updates: BulkTaskUpdatesInput;
+};
+
+export type MutationCleanupUnusedLabelsArgs = {
+  daysUnused?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type MutationCompleteTaskArgs = {
@@ -2136,6 +2223,11 @@ export type MutationMarkThreadAsUnreadArgs = {
   threadId: Scalars["String"]["input"];
 };
 
+export type MutationMergeSimilarLabelsArgs = {
+  labelsToMerge: Array<Scalars["String"]["input"]>;
+  primaryLabelText: Scalars["String"]["input"];
+};
+
 export type MutationMoveDriveFileArgs = {
   fileId: Scalars["String"]["input"];
   newParentId: Scalars["String"]["input"];
@@ -2173,6 +2265,10 @@ export type MutationRemoveDealParticipantArgs = {
 
 export type MutationRemoveDocumentAttachmentArgs = {
   attachmentId: Scalars["ID"]["input"];
+};
+
+export type MutationRemoveLabelFromDealArgs = {
+  input: RemoveLabelFromDealInput;
 };
 
 export type MutationRemoveNoteDocumentAttachmentArgs = {
@@ -2315,6 +2411,10 @@ export type MutationUpdateDocumentAttachmentCategoryArgs = {
 export type MutationUpdateEmailPinArgs = {
   id: Scalars["ID"]["input"];
   input: UpdateEmailPinInput;
+};
+
+export type MutationUpdateLabelArgs = {
+  input: UpdateLabelInput;
 };
 
 export type MutationUpdateLeadArgs = {
@@ -2652,9 +2752,11 @@ export type Query = {
   dealFolderFiles: Array<DriveFile>;
   /** Get deal folder information, auto-creating if needed */
   dealFolderInfo: DealFolderInfo;
+  dealLabels: Array<DealLabel>;
   dealTaskIndicators: Array<DealTaskIndicator>;
   deals: Array<Deal>;
   dealsByCurrency: Array<DealsByCurrencyResult>;
+  dealsByLabels: Array<Deal>;
   discoverAgentTools: ToolDiscoveryResponse;
   exchangeRate?: Maybe<ExchangeRate>;
   exchangeRates: Array<ExchangeRate>;
@@ -2684,11 +2786,13 @@ export type Query = {
   getSticker?: Maybe<SmartSticker>;
   getStickerCategories: Array<StickerCategory>;
   getWfmAllowedTransitions: Array<WfmWorkflowTransition>;
+  globalTaskIndicators: GlobalTaskIndicator;
   googleCalendars: Array<GoogleCalendar>;
   /** Get Google Drive configuration settings */
   googleDriveSettings: GoogleDriveConfig;
   googleIntegrationStatus: GoogleIntegrationStatus;
   health: Scalars["String"]["output"];
+  labelUsageStats: LabelUsageStats;
   lead?: Maybe<Lead>;
   leads: Array<Lead>;
   leadsStats: LeadsStats;
@@ -2710,6 +2814,7 @@ export type Query = {
   personHistory: Array<PersonHistory>;
   personList: Array<PersonListItem>;
   personOrganizationRoles: Array<PersonOrganizationRole>;
+  popularLabels: Array<LabelSuggestion>;
   previewRuleExecution: BusinessRuleExecutionResult;
   reactivationPlan?: Maybe<ReactivationPlan>;
   reactivationPlans: Array<ReactivationPlan>;
@@ -2722,6 +2827,7 @@ export type Query = {
   searchSharedDriveFiles: Array<DriveFile>;
   searchStickers: StickerConnection;
   suggestEmailParticipants: Array<Person>;
+  suggestLabels: Array<LabelSuggestion>;
   supabaseConnectionTest: Scalars["String"]["output"];
   systemNotification?: Maybe<SystemNotification>;
   systemNotifications: SystemNotificationsConnection;
@@ -2870,8 +2976,19 @@ export type QueryDealFolderInfoArgs = {
   dealId: Scalars["ID"]["input"];
 };
 
+export type QueryDealLabelsArgs = {
+  dealId: Scalars["ID"]["input"];
+};
+
 export type QueryDealTaskIndicatorsArgs = {
   dealIds: Array<Scalars["ID"]["input"]>;
+};
+
+export type QueryDealsByLabelsArgs = {
+  labelTexts: Array<Scalars["String"]["input"]>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+  logic?: InputMaybe<LabelFilterLogic>;
+  offset?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryExchangeRateArgs = {
@@ -2988,6 +3105,10 @@ export type QueryGetWfmAllowedTransitionsArgs = {
   workflowId: Scalars["ID"]["input"];
 };
 
+export type QueryGlobalTaskIndicatorsArgs = {
+  userId: Scalars["ID"]["input"];
+};
+
 export type QueryLeadArgs = {
   id: Scalars["ID"]["input"];
 };
@@ -3023,6 +3144,10 @@ export type QueryPersonHistoryArgs = {
 
 export type QueryPersonOrganizationRolesArgs = {
   personId: Scalars["ID"]["input"];
+};
+
+export type QueryPopularLabelsArgs = {
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QueryPreviewRuleExecutionArgs = {
@@ -3081,6 +3206,12 @@ export type QuerySearchStickersArgs = {
 export type QuerySuggestEmailParticipantsArgs = {
   dealId: Scalars["ID"]["input"];
   threadId?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type QuerySuggestLabelsArgs = {
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  input: Scalars["String"]["input"];
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
 };
 
 export type QuerySystemNotificationArgs = {
@@ -3241,6 +3372,11 @@ export enum ReactivationStrategy {
   Nurturing = "NURTURING",
   RelationshipBuilding = "RELATIONSHIP_BUILDING",
 }
+
+export type RemoveLabelFromDealInput = {
+  dealId: Scalars["ID"]["input"];
+  labelId: Scalars["ID"]["input"];
+};
 
 export type Role = {
   __typename?: "Role";
@@ -3881,6 +4017,12 @@ export type UpdateCurrencyInput = {
 
 export type UpdateEmailPinInput = {
   notes?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type UpdateLabelInput = {
+  colorHex?: InputMaybe<Scalars["String"]["input"]>;
+  labelId: Scalars["ID"]["input"];
+  labelText?: InputMaybe<Scalars["String"]["input"]>;
 };
 
 export type UpdateStickerInput = {
@@ -5089,6 +5231,28 @@ export type GetDealTaskIndicatorsQuery = {
   }>;
 };
 
+export type GetGlobalTaskIndicatorsQueryVariables = Exact<{
+  userId: Scalars["ID"]["input"];
+}>;
+
+export type GetGlobalTaskIndicatorsQuery = {
+  __typename?: "Query";
+  globalTaskIndicators: {
+    __typename?: "GlobalTaskIndicator";
+    tasksDueToday: number;
+    tasksOverdue: number;
+    tasksHighPriority: number;
+    totalActiveTasks: number;
+    tasksByPriority: {
+      __typename?: "GlobalTaskPriorityBreakdown";
+      urgent: number;
+      high: number;
+      medium: number;
+      low: number;
+    };
+  };
+};
+
 export type GetCurrenciesQueryVariables = Exact<{ [key: string]: never }>;
 
 export type GetCurrenciesQuery = {
@@ -6125,6 +6289,113 @@ export type GetDealFolderFilesQuery = {
       }> | null;
     }>;
   };
+};
+
+export type DealLabelFieldsFragment = {
+  __typename?: "DealLabel";
+  id: string;
+  dealId: string;
+  labelText: string;
+  colorHex: string;
+  createdByUserId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SuggestLabelsQueryVariables = Exact<{
+  input: Scalars["String"]["input"];
+  dealId?: InputMaybe<Scalars["ID"]["input"]>;
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type SuggestLabelsQuery = {
+  __typename?: "Query";
+  suggestLabels: Array<{
+    __typename?: "LabelSuggestion";
+    labelText: string;
+    usageCount: number;
+    colorHex: string;
+    isExactMatch: boolean;
+    similarityScore?: number | null;
+  }>;
+};
+
+export type AddLabelToDealMutationVariables = Exact<{
+  input: AddLabelToDealInput;
+}>;
+
+export type AddLabelToDealMutation = {
+  __typename?: "Mutation";
+  addLabelToDeal: {
+    __typename?: "Deal";
+    id: string;
+    name: string;
+    labels: Array<{
+      __typename?: "DealLabel";
+      id: string;
+      dealId: string;
+      labelText: string;
+      colorHex: string;
+      createdByUserId?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  };
+};
+
+export type RemoveLabelFromDealMutationVariables = Exact<{
+  input: RemoveLabelFromDealInput;
+}>;
+
+export type RemoveLabelFromDealMutation = {
+  __typename?: "Mutation";
+  removeLabelFromDeal: {
+    __typename?: "Deal";
+    id: string;
+    name: string;
+    labels: Array<{
+      __typename?: "DealLabel";
+      id: string;
+      dealId: string;
+      labelText: string;
+      colorHex: string;
+      createdByUserId?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
+  };
+};
+
+export type PopularLabelsQueryVariables = Exact<{
+  limit?: InputMaybe<Scalars["Int"]["input"]>;
+}>;
+
+export type PopularLabelsQuery = {
+  __typename?: "Query";
+  popularLabels: Array<{
+    __typename?: "LabelSuggestion";
+    labelText: string;
+    usageCount: number;
+    colorHex: string;
+  }>;
+};
+
+export type DealLabelsQueryVariables = Exact<{
+  dealId: Scalars["ID"]["input"];
+}>;
+
+export type DealLabelsQuery = {
+  __typename?: "Query";
+  dealLabels: Array<{
+    __typename?: "DealLabel";
+    id: string;
+    dealId: string;
+    labelText: string;
+    colorHex: string;
+    createdByUserId?: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
 };
 
 export type GetDealDocumentsQueryVariables = Exact<{
@@ -7949,6 +8220,16 @@ export type GetDealWithHistoryQuery = {
       id: string;
       name: string;
     } | null;
+    labels: Array<{
+      __typename?: "DealLabel";
+      id: string;
+      dealId: string;
+      labelText: string;
+      colorHex: string;
+      createdByUserId?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
     customFieldValues: Array<{
       __typename?: "CustomFieldValue";
       stringValue?: string | null;
@@ -8238,6 +8519,16 @@ export type DealCoreFieldsFragment = {
   deal_specific_probability?: number | null;
   weighted_amount?: number | null;
   wfm_project_id?: string | null;
+  labels: Array<{
+    __typename?: "DealLabel";
+    id: string;
+    dealId: string;
+    labelText: string;
+    colorHex: string;
+    createdByUserId?: string | null;
+    createdAt: string;
+    updatedAt: string;
+  }>;
 };
 
 export type GetDealsQueryVariables = Exact<{ [key: string]: never }>;
@@ -8314,6 +8605,16 @@ export type GetDealsQuery = {
       name: string;
       color?: string | null;
     } | null;
+    labels: Array<{
+      __typename?: "DealLabel";
+      id: string;
+      dealId: string;
+      labelText: string;
+      colorHex: string;
+      createdByUserId?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
   }>;
 };
 
@@ -8379,6 +8680,16 @@ export type CreateDealMutation = {
       name: string;
       color?: string | null;
     } | null;
+    labels: Array<{
+      __typename?: "DealLabel";
+      id: string;
+      dealId: string;
+      labelText: string;
+      colorHex: string;
+      createdByUserId?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
   };
 };
 
@@ -8420,6 +8731,16 @@ export type UpdateDealMutation = {
       email: string;
       avatar_url?: string | null;
     } | null;
+    labels: Array<{
+      __typename?: "DealLabel";
+      id: string;
+      dealId: string;
+      labelText: string;
+      colorHex: string;
+      createdByUserId?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
   } | null;
 };
 
@@ -8476,6 +8797,16 @@ export type UpdateDealWfmProgressMutation = {
       name: string;
       color?: string | null;
     } | null;
+    labels: Array<{
+      __typename?: "DealLabel";
+      id: string;
+      dealId: string;
+      labelText: string;
+      colorHex: string;
+      createdByUserId?: string | null;
+      createdAt: string;
+      updatedAt: string;
+    }>;
   };
 };
 

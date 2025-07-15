@@ -203,6 +203,38 @@ Comprehensive performance improvements across the entire system:
 - **Network Efficiency**: 20-40% payload reduction
 - **User Experience**: Sub-second response times maintained under load
 
+### **📱 RESPONSIVE LAYOUT SYSTEM**
+
+**✅ UNIFIED RESPONSIVE ARCHITECTURE**
+
+Implemented comprehensive responsive layout system across all detail pages:
+
+#### **Core Implementation**
+- **Mobile-First Design**: Single column layout on mobile, two-column on desktop
+- **Responsive Grid System**: `SimpleGrid` with `columns={{base: 1, lg: 12}}` pattern
+- **Tab Wrapping**: Tabs wrap to multiple rows on smaller screens instead of being cut off
+- **Proper Scrolling**: Independent scrolling for tab content and sidebar areas
+- **Theme Integration**: Full support across all three themes (Light, Dark, Industrial)
+
+#### **Detail Pages Enhanced**
+- **DealDetailPage**: Complete responsive redesign with grid layout
+- **OrganizationDetailPage**: Unified responsive architecture
+- **PersonDetailPage**: Consistent responsive patterns
+- **LeadDetailPage**: Responsive tab system implementation
+
+#### **Key Features**
+- **Flexible Tab System**: `flexWrap="wrap"` with `minW="120px"` for consistent sizing
+- **Overflow Management**: `maxH="80px"` with `overflowY="auto"` for tab overflow
+- **Email Tab Optimization**: `minW="800px"` ensures dual-pane layout works properly
+- **Sidebar Positioning**: Fixed 450px width on desktop, full-width stacking on mobile
+- **Custom Scrollbars**: Webkit-based styling for smooth scrolling experience
+
+#### **Technical Benefits**
+- **Layout Stability**: Grid system prevents layout shifts during content changes
+- **Performance**: Optimized scrolling and responsive transitions
+- **Accessibility**: Proper touch targets and keyboard navigation
+- **Cross-Browser**: Consistent experience across modern browsers
+
 ### **🎨 UI/UX ENHANCEMENTS**
 
 **✅ MODERN DESIGN SYSTEM**
@@ -376,9 +408,189 @@ cd frontend && npm run dev
 3. **Status Indicators**: Visual feedback for conversion states
 4. **History Views**: Conversion history and audit trails
 
-## 5. AI Agent Development
+## 5. Responsive Layout System
 
-### **5.1 Tool Development Pattern**
+### **5.1 Detail Page Architecture**
+
+**✅ COMPREHENSIVE RESPONSIVE LAYOUT IMPLEMENTATION**
+
+All detail pages (Deal, Organization, Person, Lead) now feature a unified responsive layout system that provides optimal user experience across all screen sizes.
+
+#### **Core Layout Pattern**
+```typescript
+// Responsive Grid System
+<SimpleGrid columns={{base: 1, lg: 12}} gap={4} h="calc(100vh - 2rem)">
+  {/* Main Content Area */}
+  <GridItem gridColumn={{base: "1", lg: "1 / 9"}} overflow="hidden">
+    <VStack spacing={4} h="full">
+      {/* Header Component */}
+      <EntityHeader />
+      
+      {/* Responsive Tab System */}
+      <Box flex="1" overflow="hidden" w="full">
+        <Tabs variant="enclosed" h="full" display="flex" flexDirection="column">
+          <TabList 
+            flexWrap="wrap" 
+            maxH="80px" 
+            overflowY="auto"
+            borderBottom="2px solid"
+            borderColor="gray.200"
+          >
+            {tabs.map((tab) => (
+              <Tab key={tab.id} minW="120px" px={4} py={2}>
+                {tab.label}
+              </Tab>
+            ))}
+          </TabList>
+          
+          <TabPanels flex="1" overflow="hidden">
+            {tabs.map((tab) => (
+              <TabPanel key={tab.id} h="full" overflow="auto" p={4}>
+                {tab.content}
+              </TabPanel>
+            ))}
+          </TabPanels>
+        </Tabs>
+      </Box>
+    </VStack>
+  </GridItem>
+  
+  {/* Sidebar */}
+  <GridItem gridColumn={{base: "1", lg: "9 / 13"}} overflow="hidden">
+    <EntitySidebar />
+  </GridItem>
+</SimpleGrid>
+```
+
+#### **Key Features**
+1. **Mobile-First Design**: Single column layout on mobile, two-column on desktop
+2. **Tab Wrapping**: Tabs wrap to multiple rows on smaller screens
+3. **Proper Scrolling**: Independent scrolling for tab content and sidebar
+4. **Consistent Spacing**: Unified spacing system across all detail pages
+5. **Theme Integration**: Full support for all three themes (Light, Dark, Industrial)
+
+### **5.2 Responsive Breakpoints**
+
+#### **Screen Size Strategy**
+- **Mobile (base)**: Single column layout, full-width components
+- **Tablet (md)**: Transitional layout with optimized spacing
+- **Desktop (lg)**: Two-column grid with fixed sidebar width
+- **Large Desktop (xl)**: Enhanced spacing and larger content areas
+
+#### **Component Responsiveness**
+```typescript
+// Responsive Component Pattern
+const ResponsiveComponent = () => {
+  return (
+    <Box
+      w="full"
+      maxW={{base: "100%", md: "90%", lg: "80%"}}
+      mx="auto"
+      px={{base: 4, md: 6, lg: 8}}
+    >
+      {/* Responsive content */}
+    </Box>
+  );
+};
+```
+
+### **5.3 Tab System Implementation**
+
+#### **Responsive Tab Features**
+1. **Flexible Wrapping**: `flexWrap="wrap"` allows tabs to wrap to multiple rows
+2. **Minimum Width**: `minW="120px"` ensures consistent tab sizing
+3. **Overflow Management**: `maxH="80px"` with `overflowY="auto"` for tab overflow
+4. **Scroll Optimization**: Custom scrollbar styling for better UX
+
+#### **Tab Content Management**
+```typescript
+// Tab Content Pattern
+<TabPanel h="full" overflow="auto" p={4}>
+  <VStack spacing={4} align="stretch">
+    {/* Tab content with proper spacing */}
+  </VStack>
+</TabPanel>
+```
+
+### **5.4 Special Considerations**
+
+#### **Email Tab Horizontal Scrolling**
+The email tab requires special handling due to its dual-pane layout:
+```typescript
+// Email Tab Specific Handling
+<TabPanel h="full" overflow="auto" p={4}>
+  <Box minW="800px"> {/* Ensures grid layout has sufficient space */}
+    <Grid templateColumns="1fr 2fr" gap={4}>
+      <GridItem>{/* Thread list */}</GridItem>
+      <GridItem>{/* Email detail */}</GridItem>
+    </Grid>
+  </Box>
+</TabPanel>
+```
+
+#### **Sidebar Positioning**
+- **Desktop**: Fixed 450px width on the right
+- **Mobile**: Full-width below main content
+- **Responsive**: Automatic stacking on smaller screens
+
+### **5.5 Performance Optimizations**
+
+#### **Scroll Performance**
+- **Custom Scrollbars**: Webkit-based styling for smooth scrolling
+- **Overflow Management**: Proper overflow handling prevents layout shifts
+- **Height Calculations**: Viewport-based height calculations for optimal space usage
+
+#### **Layout Stability**
+- **Grid System**: Prevents layout shifts during content changes
+- **Fixed Dimensions**: Consistent sidebar width maintains layout stability
+- **Responsive Breakpoints**: Smooth transitions between screen sizes
+
+### **5.6 Theme Integration**
+
+#### **Cross-Theme Compatibility**
+All responsive layouts work seamlessly across all three themes:
+- **Light Modern**: Clean, minimal responsive design
+- **Dark**: High contrast with proper spacing
+- **Industrial Metal**: Metallic styling with consistent layout
+
+#### **Theme-Specific Enhancements**
+```typescript
+// Theme-aware responsive styling
+const themeColors = useThemeColors();
+const scrollbarStyles = {
+  '&::-webkit-scrollbar': {
+    width: '8px',
+    height: '8px',
+  },
+  '&::-webkit-scrollbar-track': {
+    background: themeColors.background,
+  },
+  '&::-webkit-scrollbar-thumb': {
+    background: themeColors.primary,
+    borderRadius: '4px',
+  },
+};
+```
+
+### **5.7 Implementation Guidelines**
+
+#### **Best Practices**
+1. **Mobile-First**: Always design for mobile first, then enhance for desktop
+2. **Consistent Patterns**: Use the same responsive patterns across all pages
+3. **Test Thoroughly**: Test on multiple screen sizes and devices
+4. **Performance**: Monitor performance impact of responsive features
+5. **Accessibility**: Ensure responsive design maintains accessibility standards
+
+#### **Common Pitfalls to Avoid**
+- **Fixed Widths**: Avoid fixed pixel widths that don't scale
+- **Overflow Issues**: Always handle content overflow properly
+- **Layout Shifts**: Prevent layout shifts during responsive transitions
+- **Touch Targets**: Ensure touch targets are appropriately sized on mobile
+- **Performance**: Avoid excessive re-renders during responsive changes
+
+## 6. AI Agent Development
+
+### **6.1 Tool Development Pattern**
 
 #### **Tool Structure**
 ```typescript
@@ -408,7 +620,7 @@ export class ExampleTool implements ToolExecutor {
 4. **Service Layer**: Use service layer for business logic, not direct GraphQL
 5. **Structured Responses**: Consistent response format with success/error states
 
-### **5.2 Tool Registry Management**
+### **6.2 Tool Registry Management**
 
 #### **Registration Process**
 1. **Tool Implementation**: Create tool class with ToolExecutor interface
@@ -422,9 +634,9 @@ export class ExampleTool implements ToolExecutor {
 - **Workflow Management**: Status updates and business process automation
 - **Analytics**: Data analysis and reporting capabilities
 
-## 6. Testing Strategy
+## 7. Testing Strategy
 
-### **6.1 Automated Testing**
+### **7.1 Automated Testing**
 
 #### **Unit Testing**
 - **Service Layer**: Comprehensive testing of business logic
@@ -444,7 +656,7 @@ export class ExampleTool implements ToolExecutor {
 - **Performance Testing**: Load testing and performance benchmarks
 - **Security Testing**: Authentication and authorization validation
 
-### **6.2 Manual Testing**
+### **7.2 Manual Testing**
 
 #### **Feature Testing**
 - **Account Management**: Portfolio management and assignment workflows
@@ -458,9 +670,9 @@ export class ExampleTool implements ToolExecutor {
 - **Accessibility**: WCAG compliance and keyboard navigation
 - **Performance**: Page load times and interaction responsiveness
 
-## 7. Deployment & Operations
+## 8. Deployment & Operations
 
-### **7.1 Production Deployment**
+### **8.1 Production Deployment**
 
 #### **Environment Configuration**
 - **Environment Variables**: Secure configuration management
@@ -474,7 +686,7 @@ export class ExampleTool implements ToolExecutor {
 - **Database Monitoring**: Query performance and connection tracking
 - **User Analytics**: Usage patterns and feature adoption metrics
 
-### **7.2 Maintenance & Updates**
+### **8.2 Maintenance & Updates**
 
 #### **Regular Maintenance**
 - **Database Optimization**: Index maintenance and query optimization
@@ -488,9 +700,9 @@ export class ExampleTool implements ToolExecutor {
 - **Disaster Recovery**: Comprehensive disaster recovery procedures
 - **Data Migration**: Safe data migration procedures for schema changes
 
-## 8. Contributing Guidelines
+## 9. Contributing Guidelines
 
-### **8.1 Development Workflow**
+### **9.1 Development Workflow**
 
 #### **Branch Strategy**
 - **Feature Branches**: Individual features developed in separate branches
@@ -504,7 +716,7 @@ export class ExampleTool implements ToolExecutor {
 - **Atomic Commits**: Each commit should represent a single logical change
 - **Documentation**: Update relevant documentation with each feature
 
-### **8.2 Code Quality Standards**
+### **9.2 Code Quality Standards**
 
 #### **TypeScript Standards**
 - **Type Safety**: Comprehensive TypeScript usage with strict mode
@@ -518,9 +730,9 @@ export class ExampleTool implements ToolExecutor {
 - **Performance**: Optimized rendering with React.memo and useCallback
 - **Accessibility**: WCAG-compliant components and interactions
 
-## 9. Troubleshooting & FAQ
+## 10. Troubleshooting & FAQ
 
-### **9.1 Common Issues**
+### **10.1 Common Issues**
 
 #### **Development Environment**
 - **Database Connection**: Ensure Supabase is running locally
@@ -534,7 +746,7 @@ export class ExampleTool implements ToolExecutor {
 - **Bundle Size**: Analyze bundle size and implement code splitting
 - **Network Issues**: Optimize GraphQL queries and reduce payload size
 
-### **9.2 Debugging Tools**
+### **10.2 Debugging Tools**
 
 #### **Development Tools**
 - **React Developer Tools**: Component inspection and profiling
@@ -548,7 +760,7 @@ export class ExampleTool implements ToolExecutor {
 - **User Analytics**: User behavior tracking and analysis
 - **Database Monitoring**: Query performance and optimization
 
-## 10. Conclusion
+## 11. Conclusion
 
 PipeCD represents a revolutionary approach to CRM development, combining enterprise-grade functionality with cutting-edge AI capabilities. The system's architecture is designed for scalability, maintainability, and extensibility, making it suitable for organizations of all sizes.
 
