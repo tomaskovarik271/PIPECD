@@ -18,10 +18,13 @@ const GET_PEOPLE_QUERY = gql`
       last_name
       email
       phone
+      job_title
+      organization_id
       notes
       created_at
       updated_at
       primaryOrganization { id name }
+      organization { id name }
       customFieldValues {
         stringValue
         numberValue
@@ -51,6 +54,8 @@ const GET_PERSON_BY_ID_QUERY = gql`
       last_name
       email
       phone
+      job_title
+      organization_id
       notes
       created_at
       updated_at

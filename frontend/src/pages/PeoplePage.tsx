@@ -24,7 +24,7 @@ import { useViewPreferencesStore } from '../stores/useViewPreferencesStore';
 import SortableTable, { ColumnDefinition } from '../components/common/SortableTable';
 import ColumnSelector from '../components/common/ColumnSelector';
 import ConfirmationDialog from '../components/common/ConfirmationDialog';
-import CreatePersonForm from '../components/CreatePersonForm';
+import QuickContactModal from '../components/contacts/QuickContactModal';
 import EditPersonForm from '../components/EditPersonForm';
 import EmptyState from '../components/common/EmptyState';
 import UnifiedPageHeader from '../components/layout/UnifiedPageHeader';
@@ -358,18 +358,14 @@ function PeoplePage() {
       </Box>
 
       {/* Modals */}
-      {isCreateOpen && (
-        <Modal isOpen={isCreateOpen} onClose={onCreateClose} size="xl" isCentered scrollBehavior="inside">
-          <ModalOverlay />
-          <ModalContent>
-                            <ModalHeader>Create Person</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody pb={6}>
-              <CreatePersonForm onSuccess={onCreateClose} onClose={onCreateClose} />
-            </ModalBody>
-          </ModalContent>
-        </Modal>
-      )}
+      <QuickContactModal
+        isOpen={isCreateOpen}
+        onClose={onCreateClose}
+        onSuccess={() => {
+          fetchPeople(); // Refresh the people list
+          onCreateClose();
+        }}
+      />
 
       {isEditOpen && personToEdit && (
         <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)} size="xl" isCentered scrollBehavior="inside">

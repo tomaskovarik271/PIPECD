@@ -9,7 +9,7 @@ const DealsPage = lazy(() => import('./pages/DealsPage'));
 const LeadsPage = lazy(() => import('./pages/LeadsPage'));
 const LeadDetailPage = lazy(() => import('./pages/LeadDetailPage'));
 const PeoplePage = lazy(() => import('./pages/PeoplePage'));
-const PersonDetailPage = lazy(() => import('./pages/PersonDetailPage'));
+const PersonDetailPage = lazy(() => import('./pages/PersonDetailPageSimplified'));
 const OrganizationsPage = lazy(() => import('./pages/OrganizationsPage'));
 const OrganizationDetailPage = lazy(() => import('./pages/OrganizationDetailPage'));
 // Activities pages removed - using Google Calendar integration instead

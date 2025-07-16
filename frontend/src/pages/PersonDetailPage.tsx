@@ -44,8 +44,7 @@ import { format, parseISO } from 'date-fns';
 import { useThemeColors, useThemeStyles } from '../hooks/useThemeColors';
 import { useThemeStore } from '../stores/useThemeStore';
 import { StickerBoard } from '../components/common/StickerBoard';
-import PersonOrganizationRoles from '../components/people/PersonOrganizationRoles';
-import { GET_PERSON_ORGANIZATION_ROLES } from '../lib/graphql/personOrganizationRoleOperations';
+import InlineContactEditor from '../components/contacts/InlineContactEditor';
 
 // Helper to format dates
 const formatDate = (dateString: string | Date | undefined) => {
@@ -340,24 +339,14 @@ const PersonDetailPage = () => {
                     maxH="80px"
                     overflowY="auto"
                   >
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="140px">
-                      Contact Information
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="120px">
+                      Overview
                     </Tab>
-                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="140px">
-                      <HStack spacing={2}>
-                        <Text>Organizations</Text>
-                        <Badge colorScheme="blue" variant="solid" borderRadius="full" fontSize="xs">
-                          {currentPerson.organizationRoles?.length || (currentPerson.organization ? 1 : 0)}
-                        </Badge>
-                      </HStack>
+                    <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="100px">
+                      Activities
                     </Tab>
                     <Tab _selected={{ color: colors.text.link, borderColor: colors.text.link }} color={colors.text.secondary} fontWeight="medium" minW="80px">
-                      <HStack spacing={2}>
-                        <Text>Notes</Text>
-                        <Badge colorScheme="yellow" variant="solid" borderRadius="full" fontSize="xs">
-                          0
-                        </Badge>
-                      </HStack>
+                      Notes
                     </Tab>
                   </TabList>
                   

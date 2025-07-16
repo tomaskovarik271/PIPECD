@@ -16,6 +16,10 @@ type Person {
   phone: String
   notes: String
   
+  # Simplified contact management (90% use case)
+  job_title: String
+  organization_id: ID
+  
   # Multi-organization support via role-based system
   organizationRoles: [PersonOrganizationRole!]!
   primaryOrganization: Organization
@@ -87,7 +91,7 @@ input PersonOrganizationRoleUpdateInput {
   notes: String
 }
 
-# Enhanced PersonInput with multi-organization support only
+# Enhanced PersonInput with simplified contact management
 input PersonInput {
   first_name: String
   last_name: String
@@ -95,7 +99,11 @@ input PersonInput {
   phone: String
   notes: String
   
-  # Multi-organization roles
+  # Simplified contact management (90% use case)
+  job_title: String
+  organization_id: ID
+  
+  # Multi-organization roles (optional for complex scenarios)
   organizationRoles: [PersonOrganizationRoleInput!]
   
   # Custom fields
@@ -109,6 +117,10 @@ input PersonUpdateInput {
   email: String
   phone: String
   notes: String
+  
+  # Simplified contact management (90% use case)
+  job_title: String
+  organization_id: ID
   
   # Multi-organization roles (will replace existing roles)
   organizationRoles: [PersonOrganizationRoleInput!]

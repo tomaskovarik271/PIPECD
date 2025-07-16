@@ -40,6 +40,7 @@ export const personMutations: Pick<MutationResolvers<GraphQLContext>, 'createPer
             email: newPersonRecord.email,
             phone: newPersonRecord.phone,
             notes: newPersonRecord.notes,
+            job_title: newPersonRecord.job_title,
             organization_id: newPersonRecord.organization_id,
             db_custom_field_values: (newPersonRecord as any).custom_field_values,
           } as any;
@@ -85,6 +86,7 @@ export const personMutations: Pick<MutationResolvers<GraphQLContext>, 'createPer
             email: updatedPersonRecord.email,
             phone: updatedPersonRecord.phone,
             notes: updatedPersonRecord.notes,
+            job_title: updatedPersonRecord.job_title,
             organization_id: updatedPersonRecord.organization_id,
             db_custom_field_values: (updatedPersonRecord as any).custom_field_values,
           } as any;

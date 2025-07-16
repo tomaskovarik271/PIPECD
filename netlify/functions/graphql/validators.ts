@@ -31,6 +31,7 @@ const PersonBaseSchema = z.object({
   email: z.string().trim().email({ message: "Invalid email address" }).optional().nullable(),
   phone: z.string().trim().optional().nullable(),
   notes: z.string().trim().optional().nullable(),
+  job_title: z.string().trim().optional().nullable(),
   organization_id: z.string().uuid({ message: "Invalid Organization ID format" }).optional().nullable(),
   customFields: z.array(CustomFieldValueInputSchema).optional().nullable(),
 });
