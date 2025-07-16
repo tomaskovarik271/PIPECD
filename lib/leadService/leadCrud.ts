@@ -8,6 +8,7 @@ import { calculateLeadScoreFields } from './leadScoring';
 import { createWFMProject } from '../wfmProjectService';
 import type { GraphQLContext } from '../../netlify/functions/graphql/helpers';
 import type { User } from '@supabase/supabase-js';
+import { WFMOutcomeEngine } from '../wfmOutcomeEngine';
 
 // Interface for the raw lead data selected from the database
 export interface DbLead {
@@ -116,20 +117,21 @@ export async function createLead(userId: string, input: LeadInput, accessToken: 
 
   // Handle auto-default project type resolution for AI-created leads
   if (wfmProjectTypeId === 'AUTO_DEFAULT_LEAD_QUALIFICATION') {
-    // console.log('[leadCrud.createLead] Resolving AUTO_DEFAULT_LEAD_QUALIFICATION to actual project type...');
+    const wfmEngine = new WFMOutcomeEngine(supabase);
+    const projectTypeName = await wfmEngine.getProjectTypeMapping('LEAD');
+    
     const { data: leadProjectType, error: projectTypeLookupError } = await supabase
       .from('project_types')
       .select('id')
-      .eq('name', 'Lead Qualification and Conversion Process')
+      .eq('name', projectTypeName)
       .single();
     
     if (projectTypeLookupError || !leadProjectType) {
-      console.error('[leadCrud.createLead] Failed to find Lead Qualification project type:', projectTypeLookupError);
-      throw new GraphQLError('Default Lead Qualification project type not found. Please contact administrator.', { extensions: { code: 'CONFIGURATION_ERROR' } });
+      console.error('[leadCrud.createLead] Failed to find configured Lead project type:', projectTypeLookupError);
+      throw new GraphQLError(`Default Lead project type "${projectTypeName}" not found. Please contact administrator.`, { extensions: { code: 'CONFIGURATION_ERROR' } });
     }
     
     wfmProjectTypeId = leadProjectType.id;
-          // console.log(`[leadCrud.createLead] Resolved AUTO_DEFAULT_LEAD_QUALIFICATION to: ${wfmProjectTypeId}`);
   }
 
   if (!wfmProjectTypeId) {

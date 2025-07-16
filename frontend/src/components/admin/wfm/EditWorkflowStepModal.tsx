@@ -16,12 +16,14 @@ interface EditWorkflowStepModalProps {
   isOpen: boolean;
   onClose: () => void;
   step: WfmWorkflowStep;
+  workflowId?: string; // Add workflowId prop
 }
 
 const EditWorkflowStepModal: React.FC<EditWorkflowStepModalProps> = ({
   isOpen,
   onClose,
   step,
+  workflowId,
 }) => {
   const toast = useToast();
   const updateWorkflowStep = useWFMWorkflowStore((state) => state.updateWorkflowStep);
@@ -107,6 +109,7 @@ const EditWorkflowStepModal: React.FC<EditWorkflowStepModalProps> = ({
             onSubmit={handleSubmit}
             isSubmitting={isSubmitting}
             isSalesContext={isSalesContext} // Pass the context
+            workflowId={workflowId || currentWorkflowWithDetails?.id} // Pass the workflow ID for dynamic outcome types
             defaultValues={{
               name: defaultName,
               description: defaultDescription,

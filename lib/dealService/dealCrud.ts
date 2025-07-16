@@ -9,6 +9,7 @@ import { generateDealChanges, TRACKED_DEAL_FIELDS } from './dealHistory';
 import { createWFMProject } from '../wfmProjectService';
 import type { GraphQLContext } from '../../netlify/functions/graphql/helpers';
 import type { User } from '@supabase/supabase-js';
+import { WFMOutcomeEngine } from '../wfmOutcomeEngine';
 
 // Interface for the raw deal data selected from the database
 export interface DbDeal {
@@ -536,20 +537,21 @@ export async function createDeal(userId: string, input: DealInput, accessToken: 
 
   // Handle auto-default project type resolution for AI-created deals
   if (wfmProjectTypeId === 'AUTO_DEFAULT_SALES_DEAL') {
-    // console.log('[dealCrud.createDeal] Resolving AUTO_DEFAULT_SALES_DEAL to actual project type...');
+    const wfmEngine = new WFMOutcomeEngine(supabase);
+    const projectTypeName = await wfmEngine.getProjectTypeMapping('DEAL');
+    
     const { data: salesDealProjectType, error: projectTypeLookupError } = await supabase
       .from('project_types')
       .select('id')
-      .eq('name', 'Sales Deal')
+      .eq('name', projectTypeName)
       .single();
     
     if (projectTypeLookupError || !salesDealProjectType) {
-      console.error('[dealCrud.createDeal] Failed to find Sales Deal project type:', projectTypeLookupError);
-      throw new GraphQLError('Default Sales Deal project type not found. Please contact administrator.', { extensions: { code: 'CONFIGURATION_ERROR' } });
+      console.error('[dealCrud.createDeal] Failed to find configured Deal project type:', projectTypeLookupError);
+      throw new GraphQLError(`Default Deal project type "${projectTypeName}" not found. Please contact administrator.`, { extensions: { code: 'CONFIGURATION_ERROR' } });
     }
     
     wfmProjectTypeId = salesDealProjectType.id;
-          // console.log(`[dealCrud.createDeal] Resolved AUTO_DEFAULT_SALES_DEAL to: ${wfmProjectTypeId}`);
   }
 
   if (!wfmProjectTypeId) {

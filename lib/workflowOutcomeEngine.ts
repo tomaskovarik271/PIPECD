@@ -145,7 +145,7 @@ export class WorkflowOutcomeEngine {
 
       return outcomes;
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.getAvailableOutcomes] Error:', error);
+      console.error('[BusinessRuleEngine.getAvailableOutcomes] Error:', error);
       throw new GraphQLError('Failed to evaluate available outcomes', {
         extensions: { code: 'BUSINESS_RULE_ERROR' }
       });
@@ -198,7 +198,7 @@ export class WorkflowOutcomeEngine {
         rule_matches: matchingRules
       };
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.validateOutcomeExecution] Error:', error);
+      console.error('[BusinessRuleEngine.validateOutcomeExecution] Error:', error);
       return {
         valid: false,
         errors: ['Failed to validate outcome execution'],
@@ -298,7 +298,7 @@ export class WorkflowOutcomeEngine {
         history_recorded: historyRecorded
       };
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.executeOutcome] Error:', error);
+      console.error('[BusinessRuleEngine.executeOutcome] Error:', error);
       return {
         success: false,
         outcome_executed: outcome,
@@ -337,13 +337,13 @@ export class WorkflowOutcomeEngine {
       const { data, error } = await query;
       
       if (error) {
-        console.error('[WorkflowOutcomeEngine.getRulesForEntity] Database error:', error);
+        console.error('[BusinessRuleEngine.getRulesForEntity] Database error:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.getRulesForEntity] Error:', error);
+      console.error('[BusinessRuleEngine.getRulesForEntity] Error:', error);
       return [];
     }
   }
@@ -379,7 +379,7 @@ export class WorkflowOutcomeEngine {
           };
       }
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.evaluateRule] Error:', error);
+      console.error('[BusinessRuleEngine.evaluateRule] Error:', error);
       return {
         matches: false,
         blocking: true,
@@ -437,7 +437,7 @@ export class WorkflowOutcomeEngine {
         entity_data: data
       };
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.getEntityWFMState] Error:', error);
+      console.error('[BusinessRuleEngine.getEntityWFMState] Error:', error);
       return null;
     }
   }
@@ -474,7 +474,7 @@ export class WorkflowOutcomeEngine {
 
       return data.target_step_id;
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.findTargetStepForOutcome] Error:', error);
+      console.error('[BusinessRuleEngine.findTargetStepForOutcome] Error:', error);
       return null;
     }
   }
@@ -659,7 +659,7 @@ export class WorkflowOutcomeEngine {
 
       return !error;
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.updateEntityWFMStep] Error:', error);
+      console.error('[BusinessRuleEngine.updateEntityWFMStep] Error:', error);
       return false;
     }
   }
@@ -683,7 +683,7 @@ export class WorkflowOutcomeEngine {
 
       return !error;
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.updateEntityProbability] Error:', error);
+      console.error('[BusinessRuleEngine.updateEntityProbability] Error:', error);
       return false;
     }
   }
@@ -720,7 +720,7 @@ export class WorkflowOutcomeEngine {
 
       return !error;
     } catch (error) {
-      console.error('[WorkflowOutcomeEngine.recordOutcomeExecution] Error:', error);
+      console.error('[BusinessRuleEngine.recordOutcomeExecution] Error:', error);
       return false;
     }
   }

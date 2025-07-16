@@ -65,6 +65,13 @@ const GET_DEAL_WITH_HISTORY_QUERY = gql`
           color
         }
       }
+      wfmProject {
+        id
+        workflow {
+          id
+          name
+        }
+      }
       person {
           id
           first_name

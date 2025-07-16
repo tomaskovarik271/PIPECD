@@ -116,6 +116,8 @@ export async function validateConversion(
             errors.push('Cannot convert a won deal back to lead');
           }
           
+          // TODO: Replace with configurable WFM conversion rules from wfm_conversion_rules table
+          // This should use WFMOutcomeEngine.validateConversion() to get configurable thresholds
           if (stepMetadata?.deal_probability >= 0.9) {
             warnings.push('Deal has high probability (90%+) - confirm conversion is appropriate');
           }

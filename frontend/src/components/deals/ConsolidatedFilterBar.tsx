@@ -12,6 +12,9 @@ import {
   IconButton,
   Tooltip,
   Badge,
+  Switch,
+  FormControl,
+  FormLabel,
 } from '@chakra-ui/react';
 import { 
   ChevronDownIcon, 
@@ -19,7 +22,7 @@ import {
   SearchIcon,
   CloseIcon,
 } from '@chakra-ui/icons';
-import { FiFilter, FiTag } from 'react-icons/fi';
+import { FiFilter, FiTag, FiEye, FiEyeOff } from 'react-icons/fi';
 import { LabelFilter } from './LabelFilter';
 import { useThemeColors } from '../../hooks/useThemeColors';
 
@@ -34,6 +37,10 @@ interface ConsolidatedFilterBarProps {
   isUsingAdvancedFilters: boolean;
   onOpenAdvancedFilter: () => void;
   onClearAdvancedFilters: () => void;
+  
+  // Closed deals filtering
+  showClosedDeals?: boolean;
+  onShowClosedDealsChange?: (show: boolean) => void;
   
   // Column management
   showColumnSelector?: boolean;
@@ -51,6 +58,8 @@ export const ConsolidatedFilterBar: React.FC<ConsolidatedFilterBarProps> = ({
   isUsingAdvancedFilters,
   onOpenAdvancedFilter,
   onClearAdvancedFilters,
+  showClosedDeals = false,
+  onShowClosedDealsChange,
   showColumnSelector = true,
   onOpenColumnSelector,
   isDisabled = false,
@@ -58,7 +67,7 @@ export const ConsolidatedFilterBar: React.FC<ConsolidatedFilterBarProps> = ({
   const colors = useThemeColors();
 
   // Calculate total active filters for badge
-  const activeFilterCount = (selectedLabels.length > 0 ? 1 : 0) + (isUsingAdvancedFilters ? 1 : 0);
+  const activeFilterCount = (selectedLabels.length > 0 ? 1 : 0) + (isUsingAdvancedFilters ? 1 : 0) + (showClosedDeals ? 1 : 0);
   const hasActiveFilters = activeFilterCount > 0;
 
   return (
@@ -116,6 +125,39 @@ export const ConsolidatedFilterBar: React.FC<ConsolidatedFilterBarProps> = ({
 
             <MenuDivider />
 
+            {/* Show Closed Deals Section */}
+            {onShowClosedDealsChange && (
+              <>
+                <Box>
+                  <HStack align="center" mb={3}>
+                    {showClosedDeals ? <FiEye /> : <FiEyeOff />}
+                    <Text fontWeight="semibold" fontSize="sm">
+                      Show Closed Deals
+                    </Text>
+                    {showClosedDeals && (
+                      <Badge colorScheme="blue" size="sm">
+                        Active
+                      </Badge>
+                    )}
+                  </HStack>
+                  <FormControl display="flex" alignItems="center">
+                    <FormLabel htmlFor="show-closed-deals" mb="0" fontSize="sm">
+                      Include won/lost deals in view
+                    </FormLabel>
+                    <Switch
+                      id="show-closed-deals"
+                      isChecked={showClosedDeals}
+                      onChange={(e) => onShowClosedDealsChange(e.target.checked)}
+                      isDisabled={isDisabled || isUsingAdvancedFilters}
+                      colorScheme="blue"
+                    />
+                  </FormControl>
+                </Box>
+
+                <MenuDivider />
+              </>
+            )}
+
             {/* Advanced Filters Section */}
             <Box>
               <HStack align="center" mb={3}>
@@ -163,7 +205,10 @@ export const ConsolidatedFilterBar: React.FC<ConsolidatedFilterBarProps> = ({
       {hasActiveFilters && (
         <Text fontSize="sm" color={colors.text.muted}>
           {isUsingAdvancedFilters ? 'Advanced filters active' : 
-           selectedLabels.length > 0 ? `${selectedLabels.length} label${selectedLabels.length > 1 ? 's' : ''} selected` : ''}
+           [
+             selectedLabels.length > 0 ? `${selectedLabels.length} label${selectedLabels.length > 1 ? 's' : ''}` : '',
+             showClosedDeals ? 'closed deals visible' : ''
+           ].filter(Boolean).join(', ')}
         </Text>
       )}
 

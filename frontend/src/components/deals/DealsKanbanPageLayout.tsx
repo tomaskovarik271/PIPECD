@@ -65,6 +65,8 @@ interface DealsKanbanPageLayoutProps {
   setSelectedLabels: (labels: Array<{ labelText: string; colorHex: string }>) => void;
   labelFilterLogic: 'AND' | 'OR';
   setLabelFilterLogic: (logic: 'AND' | 'OR') => void;
+  showClosedDeals?: boolean;
+  onShowClosedDealsChange?: (show: boolean) => void;
   // Advanced filtering props
   isUsingAdvancedFilters?: boolean;
   onApplyAdvancedFilters?: (filters: DealFilters) => void;
@@ -91,6 +93,8 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
   setSelectedLabels,
   labelFilterLogic,
   setLabelFilterLogic,
+  showClosedDeals = false,
+  onShowClosedDealsChange,
   // Advanced filtering props
   isUsingAdvancedFilters = false,
   onApplyAdvancedFilters,
@@ -341,6 +345,8 @@ const DealsKanbanPageLayout: React.FC<DealsKanbanPageLayoutProps> = ({
         isUsingAdvancedFilters={isUsingAdvancedFilters}
         onOpenAdvancedFilter={onOpenAdvancedFilter}
         onClearAdvancedFilters={handleClearAdvancedFilters}
+        showClosedDeals={showClosedDeals}
+        onShowClosedDealsChange={onShowClosedDealsChange}
         showColumnSelector={false}
         isDisabled={pageIsLoading}
       />

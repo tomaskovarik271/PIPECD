@@ -22,10 +22,8 @@ import {
   Text,
 } from '@chakra-ui/react';
 import { useWFMStatusStore } from '../../../stores/useWFMStatusStore';
+import { useWFMOutcomes } from '../../../hooks/useWFMOutcomes';
 import { WfmStatus } from '../../../generated/graphql/graphql';
-
-// Define a list of common outcome types. This could be moved to a constants file.
-const OUTCOME_TYPES = ['OPEN', 'WON', 'LOST', 'ABANDONED', ''];
 
 const workflowStepSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -44,6 +42,7 @@ interface WorkflowStepFormProps {
   defaultValues?: Partial<WorkflowStepFormData>;
   isSubmitting: boolean;
   isSalesContext?: boolean;
+  workflowId?: string;
 }
 
 const WorkflowStepForm: React.FC<WorkflowStepFormProps> = ({
@@ -51,6 +50,7 @@ const WorkflowStepForm: React.FC<WorkflowStepFormProps> = ({
   defaultValues,
   isSubmitting,
   isSalesContext = false,
+  workflowId,
 }) => {
   const {
     control,
@@ -75,6 +75,9 @@ const WorkflowStepForm: React.FC<WorkflowStepFormProps> = ({
   const statuses = useWFMStatusStore((state) => state.statuses);
   const fetchWFMStatuses = useWFMStatusStore((state) => state.fetchWFMStatuses);
   const isLoadingStatuses = useWFMStatusStore((state) => state.loading);
+  
+  // Get dynamic outcome types from WFM Outcome Engine
+  const { outcomeTypes, loading: loadingOutcomes } = useWFMOutcomes(workflowId);
 
   useEffect(() => {
     fetchWFMStatuses();
@@ -171,10 +174,19 @@ const WorkflowStepForm: React.FC<WorkflowStepFormProps> = ({
                   name="outcome_type"
                   control={control}
                   render={({ field }) => (
-                    <Select {...field} value={field.value ?? ''} id="outcome_type" placeholder="Select outcome type (optional)">
-                      {OUTCOME_TYPES.map(type => (
-                        <option key={type} value={type}>{type || '(Clear Selection)'}</option>
-                      ))}
+                    <Select 
+                      {...field} 
+                      value={field.value ?? ''} 
+                      id="outcome_type" 
+                      placeholder="Select outcome type (optional)"
+                      isDisabled={loadingOutcomes}
+                    >
+                      {outcomeTypes.map((type: unknown) => {
+                        const typeStr = String(type);
+                        return (
+                          <option key={typeStr} value={typeStr}>{typeStr || '(Clear Selection)'}</option>
+                        );
+                      })}
                     </Select>
                   )}
                 />

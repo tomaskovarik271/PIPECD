@@ -7,6 +7,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { ToolDefinition, ToolExecutor, ToolExecutionContext } from './ToolRegistry';
 import { dealService } from '../../dealService';
 import type { DealInput } from '../../generated/graphql';
+import { WFMOutcomeEngine } from '../../wfmOutcomeEngine';
 
 export class CreateDealTool implements ToolExecutor {
   private workflowSteps: Array<{step: string, status: string, timestamp: string, details?: any}> = [];
@@ -82,15 +83,15 @@ export class CreateDealTool implements ToolExecutor {
       this.addWorkflowStep('organization_lookup', 'in_progress', `Searching for organization: "${input.organization_name}"`);
       const organization = await this.findOrCreateOrganization(input.organization_name, context);
       
-      // 2. Get "Sales Deal" project type (required for WFM integration)
-      this.addWorkflowStep('project_type_lookup', 'in_progress', 'Getting Sales Deal project type for WFM integration');
+      // 2. Get configured Deal project type (required for WFM integration)
+      this.addWorkflowStep('project_type_lookup', 'in_progress', 'Getting configured Deal project type for WFM integration');
       const salesDealProjectType = await this.getSalesDealProjectType();
       
       if (!salesDealProjectType) {
-        this.addWorkflowStep('project_type_lookup', 'failed', 'Sales Deal project type not found');
-        throw new Error('Sales Deal project type not found. Please contact administrator.');
+        this.addWorkflowStep('project_type_lookup', 'failed', 'Configured Deal project type not found');
+        throw new Error('Configured Deal project type not found. Please contact administrator.');
       }
-      this.addWorkflowStep('project_type_lookup', 'completed', `Found Sales Deal project type (ID: ${salesDealProjectType.id})`);
+      this.addWorkflowStep('project_type_lookup', 'completed', `Found Deal project type (ID: ${salesDealProjectType.id})`);
       
       // 3. Generate deal name if not provided
       const dealName = input.name || this.generateDealName(input.organization_name, input.project_description);
@@ -217,22 +218,25 @@ export class CreateDealTool implements ToolExecutor {
   }
 
   /**
-   * 🎯 Get "Sales Deal" project type (required for proper WFM integration)
+   * 🎯 Get configured Deal project type (required for proper WFM integration)
    */
   private async getSalesDealProjectType(): Promise<any> {
+    const wfmEngine = new WFMOutcomeEngine(this.supabaseClient);
+    const projectTypeName = await wfmEngine.getProjectTypeMapping('DEAL');
+    
     const { data: salesDealType, error } = await this.supabaseClient
       .from('project_types')
       .select('*')
-      .eq('name', 'Sales Deal')
+      .eq('name', projectTypeName)
       .single();
 
     if (error) {
-      console.error('Failed to find Sales Deal project type:', error);
+      console.error(`Failed to find configured Deal project type "${projectTypeName}":`, error);
       return null;
     }
 
     if (salesDealType) {
-      console.log(`✅ Found Sales Deal project type: ${salesDealType.id}`);
+      console.log(`✅ Found Deal project type: ${salesDealType.id}`);
       return salesDealType;
     }
 
