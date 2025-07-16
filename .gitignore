@@ -35,3 +35,6 @@ playwright-report/
 test-results/
 frontend/.vite/
 seeding_sql.txt
+
+# Project Management Documentation - Sensitive Data
+_project-management-documentation/pipedrive_dump/

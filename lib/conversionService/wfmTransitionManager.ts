@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '../database.types';
+import { WFMOutcomeEngine } from '../wfmOutcomeEngine';
 
 export interface WFMTransitionPlan {
   sourceProjectTypeId?: string;
@@ -92,8 +93,9 @@ export async function planWFMTransition(
     if (input.targetWfmProjectTypeId) {
       targetProjectTypeId = input.targetWfmProjectTypeId;
     } else {
-      // Use default project types based on target entity type
-      const projectTypeName = input.targetType === 'deal' ? 'Sales Deal' : 'Lead Qualification and Conversion Process';
+      // Use configurable project types based on target entity type
+      const wfmEngine = new WFMOutcomeEngine(supabase);
+      const projectTypeName = await wfmEngine.getProjectTypeMapping(input.targetType === 'deal' ? 'DEAL' : 'LEAD');
       
       const { data: defaultProjectType } = await supabase
         .from('project_types')

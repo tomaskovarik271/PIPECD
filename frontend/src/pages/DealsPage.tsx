@@ -120,6 +120,9 @@ function DealsPage() {
   const [selectedLabels, setSelectedLabels] = useState<Array<{ labelText: string; colorHex: string }>>([]);
   const [labelFilterLogic, setLabelFilterLogic] = useState<'AND' | 'OR'>('OR');
 
+  // Closed deals filtering state
+  const [showClosedDeals, setShowClosedDeals] = useState(false);
+
   // Advanced filter state
   const { 
     isOpen: isAdvancedFilterOpen, 
@@ -245,6 +248,7 @@ function DealsPage() {
     currentUserId,
     selectedAssignedUserIds,
     searchTerm,
+    includeFinalSteps: showClosedDeals,
     selectedLabels,
     labelFilterLogic,
   });
@@ -288,7 +292,8 @@ function DealsPage() {
   }, [displayedDeals]);
 
   const winRate = useMemo(() => {
-    // Get all deals including final steps for win rate calculation
+    // TODO: Replace with configurable WFM outcome rules from wfm_outcome_rules table
+    // This should use WFMOutcomeEngine.getWinRateCalculationRules() to get winning/excluded outcomes
     const allDeals = deals; // Use original deals array, not filtered
     const closedDeals = allDeals.filter(d => 
       d.currentWfmStep?.isFinalStep && 
@@ -336,6 +341,8 @@ function DealsPage() {
       isUsingAdvancedFilters={isUsingAdvancedFilters}
       onOpenAdvancedFilter={onOpenAdvancedFilter}
       onClearAdvancedFilters={handleClearAdvancedFilters}
+      showClosedDeals={showClosedDeals}
+      onShowClosedDealsChange={setShowClosedDeals}
       showColumnSelector={dealsViewMode === 'table'}
       onOpenColumnSelector={openColumnSelectorModal}
       isDisabled={pageIsLoading}
@@ -374,6 +381,8 @@ function DealsPage() {
         setSelectedLabels={setSelectedLabels}
         labelFilterLogic={labelFilterLogic}
         setLabelFilterLogic={setLabelFilterLogic}
+        showClosedDeals={showClosedDeals}
+        onShowClosedDealsChange={setShowClosedDeals}
         // Advanced filtering props
         isUsingAdvancedFilters={isUsingAdvancedFilters}
         onApplyAdvancedFilters={handleApplyAdvancedFilters}

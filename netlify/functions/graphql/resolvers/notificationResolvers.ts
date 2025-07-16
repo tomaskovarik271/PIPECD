@@ -264,7 +264,7 @@ export const notificationQueries = {
     }
   },
 
-  systemNotification: async (parent: any, args: any, context: GraphQLContext) => {
+  systemNotification: async (parent: any, args: any, context: GraphQLContext): Promise<any> => {
     requireAuthentication(context);
     const userId = context.currentUser?.id;
 

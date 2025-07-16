@@ -1,0 +1,261 @@
+# WFM Outcome Engine GraphQL Schema
+# Provides access to configurable WFM outcome rules, behaviors, and mappings
+
+type WFMOutcomeRule {
+  id: ID!
+  ruleName: String!
+  description: String
+  entityType: WFMEntityType!
+  outcomeType: WFMOutcomeType!
+  ruleType: WFMRuleType!
+  conditions: JSON!
+  restrictions: JSON!
+  targetStepMapping: JSON!
+  sideEffects: JSON!
+  isActive: Boolean!
+  priority: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdByUser: User
+  updatedByUser: User
+}
+
+type WFMWorkflowBehavior {
+  id: ID!
+  workflowId: ID!
+  behaviorType: WFMBehaviorType!
+  configuration: JSON!
+  appliesToSteps: [ID!]
+  userRoles: [String!]
+  isActive: Boolean!
+  priority: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdByUser: User
+  updatedByUser: User
+}
+
+type WFMStepMapping {
+  id: ID!
+  workflowId: ID!
+  outcomeType: WFMOutcomeType!
+  targetStepId: ID!
+  fromStepIds: [ID!]
+  conditions: JSON!
+  isActive: Boolean!
+  priority: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type WFMConversionRule {
+  id: ID!
+  ruleName: String!
+  description: String
+  fromEntityType: WFMEntityType!
+  toEntityType: WFMEntityType!
+  conditions: JSON!
+  restrictions: JSON!
+  fieldMappings: JSON!
+  requiredPermissions: [String!]
+  blockedStatuses: [String!]
+  isActive: Boolean!
+  priority: Int!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  createdByUser: User
+  updatedByUser: User
+}
+
+type WFMOutcomeOption {
+  outcomeType: WFMOutcomeType!
+  displayName: String!
+  available: Boolean!
+  reason: String
+  targetStepId: ID
+  sideEffects: JSON
+}
+
+type WFMExecutionResult {
+  success: Boolean!
+  outcomeExecuted: WFMOutcomeType!
+  targetStepId: ID!
+  sideEffectsApplied: JSON!
+  errors: [String!]!
+}
+
+type WFMUIConfiguration {
+  availableOutcomeTypes: [WFMOutcomeType!]!
+  metadataFields: [String!]!
+  metadataSchema: JSON!
+  kanbanSettings: JSON!
+}
+
+# Enums are defined in enums.graphql
+
+enum WFMRuleType {
+  ALLOW_FROM_ANY
+  PROBABILITY_THRESHOLD
+  STEP_SPECIFIC
+  WORKFLOW_SPECIFIC
+  PROJECT_TYPE_MAPPING
+  UI_BEHAVIOR
+  WIN_RATE_CALCULATION
+}
+
+enum WFMBehaviorType {
+  KANBAN_VISIBILITY
+  BUTTON_AVAILABILITY
+  AUTO_TRANSITIONS
+  UI_CUSTOMIZATION
+  METADATA_SCHEMA
+}
+
+# Input Types
+input CreateWFMOutcomeRuleInput {
+  ruleName: String!
+  description: String
+  entityType: WFMEntityType!
+  outcomeType: WFMOutcomeType!
+  ruleType: WFMRuleType!
+  conditions: JSON
+  restrictions: JSON
+  targetStepMapping: JSON
+  sideEffects: JSON
+  priority: Int
+}
+
+input UpdateWFMOutcomeRuleInput {
+  ruleName: String
+  description: String
+  entityType: WFMEntityType
+  outcomeType: WFMOutcomeType
+  ruleType: WFMRuleType
+  conditions: JSON
+  restrictions: JSON
+  targetStepMapping: JSON
+  sideEffects: JSON
+  isActive: Boolean
+  priority: Int
+}
+
+input CreateWFMWorkflowBehaviorInput {
+  workflowId: ID!
+  behaviorType: WFMBehaviorType!
+  configuration: JSON!
+  appliesToSteps: [ID!]
+  userRoles: [String!]
+  priority: Int
+}
+
+input UpdateWFMWorkflowBehaviorInput {
+  behaviorType: WFMBehaviorType
+  configuration: JSON
+  appliesToSteps: [ID!]
+  userRoles: [String!]
+  isActive: Boolean
+  priority: Int
+}
+
+input CreateWFMStepMappingInput {
+  workflowId: ID!
+  outcomeType: WFMOutcomeType!
+  targetStepId: ID!
+  fromStepIds: [ID!]
+  conditions: JSON
+  priority: Int
+}
+
+input UpdateWFMStepMappingInput {
+  outcomeType: WFMOutcomeType
+  targetStepId: ID
+  fromStepIds: [ID!]
+  conditions: JSON
+  isActive: Boolean
+  priority: Int
+}
+
+input CreateWFMConversionRuleInput {
+  ruleName: String!
+  description: String
+  fromEntityType: WFMEntityType!
+  toEntityType: WFMEntityType!
+  conditions: JSON
+  restrictions: JSON
+  fieldMappings: JSON
+  requiredPermissions: [String!]
+  blockedStatuses: [String!]
+  priority: Int
+}
+
+input UpdateWFMConversionRuleInput {
+  ruleName: String
+  description: String
+  conditions: JSON
+  restrictions: JSON
+  fieldMappings: JSON
+  requiredPermissions: [String!]
+  blockedStatuses: [String!]
+  isActive: Boolean
+  priority: Int
+}
+
+input WFMExecuteOutcomeInput {
+  entityId: ID!
+  entityType: WFMEntityType!
+  outcome: WFMOutcomeType!
+}
+
+# Queries
+extend type Query {
+  # Get WFM outcome rules
+  wfmOutcomeRules(entityType: WFMEntityType, outcomeType: WFMOutcomeType, ruleType: WFMRuleType, isActive: Boolean): [WFMOutcomeRule!]!
+  wfmOutcomeRule(id: ID!): WFMOutcomeRule
+  
+  # Get workflow behaviors
+  wfmWorkflowBehaviors(workflowId: ID, behaviorType: WFMBehaviorType, isActive: Boolean): [WFMWorkflowBehavior!]!
+  wfmWorkflowBehavior(id: ID!): WFMWorkflowBehavior
+  
+  # Get step mappings
+  wfmStepMappings(workflowId: ID, outcomeType: WFMOutcomeType, isActive: Boolean): [WFMStepMapping!]!
+  wfmStepMapping(id: ID!): WFMStepMapping
+  
+  # Get conversion rules
+  wfmConversionRules(fromEntityType: WFMEntityType, toEntityType: WFMEntityType, isActive: Boolean): [WFMConversionRule!]!
+  wfmConversionRule(id: ID!): WFMConversionRule
+  
+  # Get available outcomes for entity
+  wfmAvailableOutcomes(entityId: ID!, entityType: WFMEntityType!): [WFMOutcomeOption!]!
+  
+  # Get UI configuration for workflow
+  wfmUIConfiguration(workflowId: ID!, userRoles: [String!]): WFMUIConfiguration!
+  
+  # Get project type mapping
+  wfmProjectTypeMapping(entityType: WFMEntityType!): String!
+}
+
+# Mutations
+extend type Mutation {
+  # WFM Outcome Rules
+  createWFMOutcomeRule(input: CreateWFMOutcomeRuleInput!): WFMOutcomeRule!
+  updateWFMOutcomeRule(id: ID!, input: UpdateWFMOutcomeRuleInput!): WFMOutcomeRule!
+  deleteWFMOutcomeRule(id: ID!): Boolean!
+  
+  # WFM Workflow Behaviors
+  createWFMWorkflowBehavior(input: CreateWFMWorkflowBehaviorInput!): WFMWorkflowBehavior!
+  updateWFMWorkflowBehavior(id: ID!, input: UpdateWFMWorkflowBehaviorInput!): WFMWorkflowBehavior!
+  deleteWFMWorkflowBehavior(id: ID!): Boolean!
+  
+  # WFM Step Mappings
+  createWFMStepMapping(input: CreateWFMStepMappingInput!): WFMStepMapping!
+  updateWFMStepMapping(id: ID!, input: UpdateWFMStepMappingInput!): WFMStepMapping!
+  deleteWFMStepMapping(id: ID!): Boolean!
+  
+  # WFM Conversion Rules
+  createWFMConversionRule(input: CreateWFMConversionRuleInput!): WFMConversionRule!
+  updateWFMConversionRule(id: ID!, input: UpdateWFMConversionRuleInput!): WFMConversionRule!
+  deleteWFMConversionRule(id: ID!): Boolean!
+  
+  # Execute outcome
+  wfmExecuteOutcome(input: WFMExecuteOutcomeInput!): WFMExecutionResult!
+} 

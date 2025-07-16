@@ -19,6 +19,7 @@ import { useThemeColors } from '../../hooks/useThemeColors';
 import NotificationCenter from '../notifications/NotificationCenter';
 import { gql } from 'graphql-request';
 import { gqlClient } from '../../lib/graphqlClient';
+import { DealOutcomeButtons } from './DealOutcomeButtons';
 
 // Add GraphQL query for workflow steps
 const GET_DEAL_WORKFLOW_STEPS = gql`
@@ -289,6 +290,15 @@ export const DealHeader: React.FC<DealHeaderProps> = ({ deal, isEditing: _isEdit
 
         {/* Right side actions */}
         <HStack spacing={3} mt={{base: 3, md: 0}} flexShrink={0}>
+          {/* WFM Outcome Buttons */}
+          <DealOutcomeButtons 
+            deal={deal}
+            onOutcomeComplete={() => {
+              // Refresh deal data after outcome execution
+              window.location.reload();
+            }}
+          />
+          
           {/* Notification Center */}
           <NotificationCenter position="header" showBadge={true} />
 

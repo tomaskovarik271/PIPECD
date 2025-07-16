@@ -2,4 +2,17 @@ enum StageType {
   OPEN
   WON
   LOST
+}
+
+# WFM Outcome Engine Enums
+enum WFMEntityType {
+  DEAL
+  LEAD
+  ANY
+}
+
+enum WFMOutcomeType {
+  WON
+  LOST
+  CONVERTED
 } 

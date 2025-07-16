@@ -33,6 +33,7 @@ import { WFMWorkflowResolvers } from './graphql/resolvers/wfmWorkflow';
 import { WFMProjectTypeResolvers } from './graphql/resolvers/wfmProjectType';
 import { WFMProject } from './graphql/resolvers/wfmProject';
 import { WFMWorkflowStep as WFMWorkflowStepResolver } from './graphql/resolvers/wfmWorkflowStep';
+import { wfmOutcomeResolvers } from './graphql/resolvers/wfmOutcomeResolvers';
 
 // Import Agent Resolvers
 import { agentQueries, agentMutations } from './graphql/resolvers/agentResolvers';
@@ -104,26 +105,35 @@ const loadTypeDefs = (): string => {
   const allSchemaFiles = [
     'activity.graphql', 
     'agent.graphql',
+    'agentV2.graphql',
+    'appSettings.graphql',
     'base.graphql', 
+    'businessRules.graphql',
+    'calendar.graphql',
+    'conversion.graphql',
+    'currency.graphql',
     'customFields.graphql', 
     'deal.graphql',
     'dealFolders.graphql',
+    'dealLabels.graphql',
     'emails.graphql',
+    'enums.graphql',
     'googleDrive.graphql',
-    'lead.graphql',
-    'enums.graphql', 
     'googleIntegration.graphql',
     'history.graphql', 
+    'lead.graphql',
+    'notifications.graphql',
     'organization.graphql', 
     'person.graphql', 
     'scalars.graphql', 
     'schema.graphql', 
     'smartStickers.graphql',
+    'task.graphql',
     'user.graphql', 
     'user_profile.graphql',
     'wfm_definitions.graphql',
     'wfm_project.graphql',
-    'task.graphql'
+    'wfmOutcome.graphql'
   ];
 
   // !!! --- DEBUGGING: SELECT FILES TO LOAD --- !!!
@@ -150,6 +160,7 @@ const loadTypeDefs = (): string => {
     'smartStickers.graphql',
     'wfm_definitions.graphql',
     'wfm_project.graphql',
+    'wfmOutcome.graphql',
     'agent.graphql',
     'agentV2.graphql',
     'appSettings.graphql',
@@ -198,6 +209,7 @@ export const resolvers = {
     ...WFMStatusResolvers.Query,
     ...WFMWorkflowResolvers.Query,
     ...WFMProjectTypeResolvers.Query,
+    ...wfmOutcomeResolvers.Query,
     ...agentQueries,
     ...agentV2Resolvers.Query,
     ...conversionResolvers.Query,
@@ -222,6 +234,7 @@ export const resolvers = {
     ...WFMStatusResolvers.Mutation,
     ...WFMWorkflowResolvers.Mutation,
     ...WFMProjectTypeResolvers.Mutation,
+    ...wfmOutcomeResolvers.Mutation,
     ...agentMutations,
     ...agentV2Resolvers.Mutation,
     ...conversionResolvers.Mutation,
